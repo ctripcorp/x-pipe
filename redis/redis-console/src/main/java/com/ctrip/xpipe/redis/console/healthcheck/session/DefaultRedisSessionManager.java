@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.HashSet;
@@ -55,7 +54,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
-	@PostConstruct
+//	@PostConstruct
 	public void postConstruct(){
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override

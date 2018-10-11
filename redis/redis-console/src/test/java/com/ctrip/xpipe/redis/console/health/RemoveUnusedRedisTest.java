@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;

@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayService;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayAction;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;

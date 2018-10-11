@@ -191,7 +191,7 @@ public class AbstractTest {
                 return;
             }
             if (System.currentTimeMillis() >= maxTime) {
-                throw new TimeoutException("timtout still false:" + waitTimeMilli);
+                throw new TimeoutException("timeout still false:" + waitTimeMilli);
             }
             sleep(intervalMilli);
         }

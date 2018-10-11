@@ -4,15 +4,14 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.ping.PingActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -21,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implements RedisHealthCheckInstance {
 
-    private ConcurrentMap<Class<? extends HealthCheckAction>, HealthCheckAction> actions = Maps.newConcurrentMap();
+    private List<HealthCheckAction> actions = Lists.newCopyOnWriteArrayList();
 
     private RedisInstanceInfo redisInstanceInfo;
 
@@ -75,23 +74,23 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     @Override
     public void register(HealthCheckAction action) {
-        actions.put(action.getClass(), action);
+        actions.add(action);
     }
 
     @Override
     public void unregister(HealthCheckAction action) {
-        actions.remove(action.getClass());
+        actions.remove(action);
     }
 
     @Override
-    public Map<Class<? extends HealthCheckAction>, HealthCheckAction> getHealthCheckActions() {
+    public List<HealthCheckAction> getHealthCheckActions() {
         return actions;
     }
 
     @Override
     protected void doInitialize() throws Exception {
         super.doInitialize();
-        for(HealthCheckAction action : actions.values()) {
+        for(HealthCheckAction action : actions) {
             LifecycleHelper.initializeIfPossible(action);
         }
     }
@@ -99,14 +98,14 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
     @Override
     protected void doStart() throws Exception {
         super.doStart();
-        for(HealthCheckAction action : actions.values()) {
+        for(HealthCheckAction action : actions) {
             LifecycleHelper.startIfPossible(action);
         }
     }
 
     @Override
     protected void doStop() throws Exception {
-       for(HealthCheckAction action : actions.values()) {
+       for(HealthCheckAction action : actions) {
            try {
                LifecycleHelper.stopIfPossible(action);
            } catch (Exception e) {

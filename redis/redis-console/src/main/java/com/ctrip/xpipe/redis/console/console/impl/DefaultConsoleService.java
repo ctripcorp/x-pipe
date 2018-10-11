@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.healthcheck.action.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 
 /**

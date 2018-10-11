@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.factory.RedisHealthCheckInstanceFactory;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

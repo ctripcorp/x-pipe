@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.config;
 
-import com.ctrip.xpipe.redis.console.healthcheck.action.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 

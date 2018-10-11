@@ -296,7 +296,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 						long current = System.currentTimeMillis();
 						if ((current - repl_transfer_lastio) >= replTimeoutMilli) {
-							logger.info("[doRun][no action with master for a long time, close connection]{}, {}", channel, AbstractRedisMasterReplication.this);
+							logger.info("[doRun][no interaction with master for a long time, close connection]{}, {}", channel, AbstractRedisMasterReplication.this);
 							channel.close();
 						}
 					}

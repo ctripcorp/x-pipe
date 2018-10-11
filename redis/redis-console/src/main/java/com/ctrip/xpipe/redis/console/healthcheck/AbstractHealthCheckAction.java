@@ -38,12 +38,6 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         this.scheduled = scheduled;
         this.instance = instance;
         this.executors = executors;
-        instance.register(this);
-    }
-
-    @Override
-    protected void doInitialize() throws Exception {
-        super.doInitialize();
     }
 
     @Override
@@ -52,7 +46,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
     @Override
-    public void doStop() throws Exception {
+    public void doStop() {
         if(future != null) {
             future.cancel(true);
         }
@@ -60,7 +54,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
             listener.stopWatch(this);
         }
         listeners.clear();
-        super.doStop();
+        instance.unregister(this);
     }
 
     @Override
@@ -108,7 +102,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
             @Override
             protected void doRun() {
-                doScheduledTask();
+                doTask();
             }
         }, checkInterval, baseInterval, TimeUnit.MILLISECONDS);
     }
@@ -117,7 +111,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         return baseInterval + (((Math.abs(random.nextInt())) % DELTA));
     }
 
-    protected abstract void doScheduledTask();
+    protected abstract void doTask();
 
     protected int getBaseCheckInterval() {
         return instance.getHealthCheckConfig().checkIntervalMilli();
