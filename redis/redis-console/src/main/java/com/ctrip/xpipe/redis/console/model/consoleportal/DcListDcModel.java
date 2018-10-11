@@ -6,17 +6,17 @@ package com.ctrip.xpipe.redis.console.model.consoleportal;
  *     Spet 27, 2018
  */
 public class DcListDcModel {
-    protected Long dcId;
+    protected long dcId;
     protected String dcName;
     protected String dcDescription;
-    protected Integer clusterCount;
-    protected Integer redisCount;
-    protected Integer keeperCount;
-    protected Integer keeperContainerCount;
-    protected Integer clusterInActiveDcCount;
+    protected int clusterCount;
+    protected int redisCount;
+    protected int keeperCount;
+    protected int keeperContainerCount;
+    protected int clusterInActiveDcCount;
 
-    public DcListDcModel(Long dcId, String dcName, String dcDescription, Integer clusterCount,
-                         Integer redisCount, Integer keeperCount, Integer keeperContainerCount, Integer clusterInActiveDcCount){
+    public DcListDcModel(long dcId, String dcName, String dcDescription, int clusterCount,
+                         int redisCount, int keeperCount, int keeperContainerCount, int clusterInActiveDcCount){
         this.dcId = dcId;
         this.dcName = dcName;
         this.dcDescription = dcDescription;
@@ -29,7 +29,7 @@ public class DcListDcModel {
 
     public DcListDcModel(){}
 
-    public Long getDcId(){
+    public long getDcId(){
         return this.dcId;
     }
 
@@ -56,7 +56,7 @@ public class DcListDcModel {
         return this;
     }
 
-    public Integer getClusterCount(){
+    public int getClusterCount(){
         return this.clusterCount;
     }
 
@@ -64,7 +64,7 @@ public class DcListDcModel {
         this.clusterCount = clusterCount;
         return this;
     }
-    public Integer getRedisCount(){
+    public int getRedisCount(){
         return this.redisCount;
     }
 
@@ -73,7 +73,7 @@ public class DcListDcModel {
         return this;
     }
 
-    public Integer getKeeperCount(){
+    public int getKeeperCount(){
         return this.keeperCount;
     }
 
@@ -82,14 +82,14 @@ public class DcListDcModel {
         return this;
     }
 
-    public Integer getKeeperContainerCount(){return this.keeperContainerCount;}
+    public int getKeeperContainerCount(){return this.keeperContainerCount;}
 
     public DcListDcModel setKeeperContainerCount(Integer keeperContainerCount){
         this.keeperContainerCount = keeperContainerCount;
         return this;
     }
 
-    public Integer getClusterInActiveDcCount(){return this.clusterInActiveDcCount;}
+    public int getClusterInActiveDcCount(){return this.clusterInActiveDcCount;}
 
     public DcListDcModel setClusterInActiveDcCount(Integer clusterInActiveDcCount){
         this.clusterInActiveDcCount = clusterInActiveDcCount;

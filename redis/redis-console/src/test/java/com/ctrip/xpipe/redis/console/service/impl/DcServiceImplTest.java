@@ -1,21 +1,23 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.LinkedList;
 import java.util.List;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -23,21 +25,17 @@ import static org.mockito.Mockito.when;
  * Oct 8, 2018
  */
 public class DcServiceImplTest extends AbstractConsoleIntegrationTest{
+
+    @InjectMocks
+    private DcServiceImpl dcService = new DcServiceImpl();
+
     @Mock
-    private MetaCache metaCache;
-
-    @Autowired
-    private DcService dcService;
-
-    @BeforeClass
-    public static void beforeSetup(){
-        System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
-    }
+    private AdvancedDcMetaService dcMetaService;
 
     @Before
     public void beforeDcServiceImplTest(){
         MockitoAnnotations.initMocks(this);
-        when(metaCache.getXpipeMeta()).thenReturn(toBuild());
+        when(dcMetaService.getDcMeta(any())).thenReturn(toBuild().findDc("jq"));
     }
 
     private XpipeMeta toBuild(){
@@ -102,20 +100,34 @@ public class DcServiceImplTest extends AbstractConsoleIntegrationTest{
         return xpipeMeta;
     }
 
+    private List<DcTbl> toBuildTbl(){
+        List<DcTbl> result = new LinkedList<>();
+
+        DcTbl tbl1 = new DcTbl();
+        tbl1.setDcName("jq").setId(1);
+
+        DcTbl tbl2 = new DcTbl();
+        tbl2.setDcName("oy").setId(2);
+
+        result.add(tbl1);
+        result.add(tbl2);
+
+        return result;
+    }
+
     @Test
     public void testFindAllDcsRichinfo(){
+        dcService = spy(dcService);
+        Mockito.doReturn(toBuildTbl()).when(dcService).findAllDcs();
         List<DcListDcModel> result = dcService.findAllDcsRichInfo();
-        Assert.assertEquals(3, result.size());
+        Assert.assertEquals(2, result.size());
         result.forEach(dcListDcModel -> {
             if (dcListDcModel.getDcName() == "jq"){
-                Assert.assertEquals(4, (long)dcListDcModel.getRedisCount());
-                Assert.assertEquals(1, (long)dcListDcModel.getClusterCount());
+                Assert.assertEquals(2, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(2, (long)dcListDcModel.getClusterCount());
             }else if (dcListDcModel.getDcName() == "oy"){
-                Assert.assertEquals(4, (long)dcListDcModel.getRedisCount());
-                Assert.assertEquals(1, (long)dcListDcModel.getClusterCount());
-            }else if (dcListDcModel.getDcName() == "fra"){
-                Assert.assertEquals(0, (long)dcListDcModel.getRedisCount());
-                Assert.assertEquals(0, (long)dcListDcModel.getClusterCount());
+                Assert.assertEquals(2, (long)dcListDcModel.getRedisCount());
+                Assert.assertEquals(2, (long)dcListDcModel.getClusterCount());
             }
 
         });
