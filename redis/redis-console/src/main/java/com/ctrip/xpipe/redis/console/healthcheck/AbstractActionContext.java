@@ -9,7 +9,7 @@ import java.util.Objects;
  * <p>
  * Sep 06, 2018
  */
-public class AbstractActionContext<C> implements ActionContext<C> {
+public abstract class AbstractActionContext<C> implements ActionContext<C> {
 
     protected C c;
 
