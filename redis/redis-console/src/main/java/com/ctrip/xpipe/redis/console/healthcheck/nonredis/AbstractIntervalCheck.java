@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.ping;
 
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ public class PingActionFactory implements HealthCheckActionFactory<PingAction> {
     @Autowired
     private List<PingActionListener> listeners;
 
+    @Autowired
+    private DelayPingActionCollector collector;
+
     @Override
     public PingAction create(RedisHealthCheckInstance instance) {
         PingAction pingAction = new PingAction(scheduled, instance, executors);
@@ -37,6 +41,7 @@ public class PingActionFactory implements HealthCheckActionFactory<PingAction> {
         if(instance instanceof DefaultRedisHealthCheckInstance) {
             pingAction.addListener(((DefaultRedisHealthCheckInstance)instance).createDelayListener());
         }
+        pingAction.addListener(collector.createPingActionListener());
         return pingAction;
     }
 }

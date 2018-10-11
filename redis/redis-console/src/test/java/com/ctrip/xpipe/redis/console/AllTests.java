@@ -14,7 +14,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
-import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultSiteReliabilityCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatusTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.OuterClientServiceProcessorTest;

@@ -1,8 +1,8 @@
-package com.ctrip.xpipe.redis.console.health.sentinel.monitor;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.AbstractIntervalCheck;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;

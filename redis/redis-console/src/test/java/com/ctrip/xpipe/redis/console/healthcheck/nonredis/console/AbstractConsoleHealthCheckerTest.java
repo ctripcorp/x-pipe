@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.console;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.console;
 
 import org.junit.Assert;
 import org.junit.Test;

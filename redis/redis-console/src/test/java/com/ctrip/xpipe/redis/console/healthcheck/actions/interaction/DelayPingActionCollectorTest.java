@@ -27,7 +27,7 @@ import java.util.concurrent.Callable;
 public class DelayPingActionCollectorTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    private DelayPingActionCollector collector;
+    private DefaultDelayPingActionCollector collector;
 
     @Autowired
     private List<HealthCheckActionListener> listeners;
@@ -96,7 +96,7 @@ public class DelayPingActionCollectorTest extends AbstractConsoleIntegrationTest
     @Ignore
     @Test
     public void testReflection() throws Exception {
-        Class clazz = Class.forName(DelayPingActionCollector.class.getName() + "$PingActionListener");
+        Class clazz = Class.forName(DefaultDelayPingActionCollector.class.getName() + "$PingActionListener");
         logger.info("{}", clazz.getName());
         Constructor[] constructors = clazz.getDeclaredConstructors();
         Constructor constructor = constructors[0];

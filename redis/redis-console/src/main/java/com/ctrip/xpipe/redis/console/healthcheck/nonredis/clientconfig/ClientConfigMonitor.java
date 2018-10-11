@@ -1,10 +1,10 @@
-package com.ctrip.xpipe.redis.console.health.clientconfig;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.health.AbstractIntervalCheck;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;

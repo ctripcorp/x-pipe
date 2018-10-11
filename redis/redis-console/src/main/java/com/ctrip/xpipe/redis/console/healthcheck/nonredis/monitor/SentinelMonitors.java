@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.sentinel.monitor;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
 
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;

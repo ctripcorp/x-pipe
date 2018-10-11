@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DelayPingActionCollector;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.SiteReliabilityChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
@@ -35,7 +35,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     protected AlertManager alertManager;
 
     @Autowired
-    protected DelayPingActionCollector delayPingActionCollector;
+    protected DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
     @Autowired
     private ConsoleServiceManager consoleServiceManager;
@@ -117,14 +117,14 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     private boolean stateUpNow(AbstractInstanceEvent event) {
-        return delayPingActionCollector.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
+        return defaultDelayPingActionCollector.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
                 .equals(HEALTH_STATE.HEALTHY);
     }
 
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
         RedisInstanceInfo info = instanceEvent.getInstance().getRedisInstanceInfo();
         HostPort redisMaster = metaCache.findMasterInSameShard(info.getHostPort());
-        boolean masterUp = delayPingActionCollector.getState(redisMaster) == HEALTH_STATE.HEALTHY;
+        boolean masterUp = defaultDelayPingActionCollector.getState(redisMaster) == HEALTH_STATE.HEALTHY;
         if (!masterUp) {
             logger.info("[masterUp][master down instance:{}, master:{}]", info, redisMaster);
         }
@@ -142,6 +142,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     private FinalStateSetterManager<ClusterShardHostPort, Boolean> getHealthStateSetterManager() {
-        return delayPingActionCollector.getHealthStateSetterManager();
+        return defaultDelayPingActionCollector.getHealthStateSetterManager();
     }
 }

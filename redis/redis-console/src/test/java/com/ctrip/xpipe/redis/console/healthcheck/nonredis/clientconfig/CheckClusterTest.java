@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.clientconfig;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import org.junit.Assert;

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.sentinel.monitor;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;

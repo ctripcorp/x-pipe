@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.health.console;
+package com.ctrip.xpipe.redis.console.healthcheck.nonredis.console;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
