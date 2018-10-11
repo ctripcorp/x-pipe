@@ -2,8 +2,10 @@ package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
-import com.ctrip.xpipe.redis.console.health.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -23,5 +25,7 @@ public interface RedisHealthCheckInstance extends Lifecycle {
     void register(HealthCheckAction action);
 
     void unregister(HealthCheckAction action);
+
+    List<HealthCheckAction> getHealthCheckActions();
 
 }

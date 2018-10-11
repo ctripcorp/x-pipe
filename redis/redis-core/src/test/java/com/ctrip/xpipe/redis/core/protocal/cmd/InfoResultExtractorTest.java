@@ -50,4 +50,21 @@ public class InfoResultExtractorTest extends AbstractRedisTest {
         Assert.assertEquals("2", extractor.extract("sync_partial_err"));
 
     }
+
+    @Test
+    public void testParseSentinel() {
+        String info = "# Sentinel\r\n" +
+                "sentinel_masters:1\r\n" +
+                "sentinel_tilt:0\r\n" +
+                "sentinel_running_scripts:0\r\n" +
+                "sentinel_scripts_queue_length:0\r\n" +
+                "sentinel_simulate_failure_flags:0\r\n" +
+                "master0:name=cluster_shyinshard1,status=ok,address=10.2.58.242:6379,slaves=2,sentinels=3\r\n";
+        InfoResultExtractor extractor = new InfoResultExtractor(info);
+
+        Assert.assertEquals("name=cluster_shyinshard1,status=ok,address=10.2.58.242:6379,slaves=2,sentinels=3",
+                extractor.extract("master0"));
+
+
+    }
 }

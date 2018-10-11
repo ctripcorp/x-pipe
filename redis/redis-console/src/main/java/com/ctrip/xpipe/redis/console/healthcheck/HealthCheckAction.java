@@ -18,4 +18,5 @@ public interface HealthCheckAction<T extends ActionContext> extends Lifecycle {
     void addListeners(List<HealthCheckActionListener<T>> listeners);
 
     RedisHealthCheckInstance getActionInstance();
+
 }
