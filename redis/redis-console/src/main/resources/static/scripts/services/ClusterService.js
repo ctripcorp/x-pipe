@@ -63,9 +63,9 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             url: '/console/clusters/unhealthy',
             isArray: true
         },
-        find_clusters_by_dc_id :{
+        find_clusters_by_dc_name_bind :{
             method: 'GET',
-            url: '/console/clusters/allBind/:dcId',
+            url: '/console/clusters/allBind/:dcName',
             isArray: true
         },
         find_clusters_by_dc_name:{
@@ -249,10 +249,10 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
-    function findClustersByDcId(dcId) {
+    function findClustersByDcNameBind(dcName) {
         var d = $q.defer();
-        resource.find_clusters_by_dc_id(
-            {dcId: dcId},
+        resource.find_clusters_by_dc_name_bind(
+            {dcName: dcName},
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -288,7 +288,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getOrganizations: getOrganizations,
         getInvolvedOrgs: getInvolvedOrgs,
         getUnhealthyClusters: getUnhealthyClusters,
-        findClustersByDcId: findClustersByDcId,
+        findClustersByDcNameBind: findClustersByDcNameBind,
         findClustersByDcName : findClustersByDcName
     }
 }]);

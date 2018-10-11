@@ -9,7 +9,7 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $scope.deleteCluster = deleteCluster;
         $scope.showUnhealthyClusterOnly = false;
         $scope.dcName = $stateParams.dcName;
-        $scope.dcId = $stateParams.dcId;
+        $scope.type = $stateParams.type;
         
         var sourceClusters = [], copedClusters = [];
         if($scope.clusterName) {
@@ -42,10 +42,13 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                     }
                 });
             });
-        } else if($scope.dcId){
-            showClustersBindDc($scope.dcId);
-        }else if ($scope.dcName){
-            showClustersByActiveDc($scope.dcName);
+        }
+        else if ($scope.dcName){
+            if ($scope.type === "activeDC"){
+                showClustersByActiveDc($scope.dcName);
+            }else if ($scope.type === "bindDC"){
+                showClustersBindDc($scope.dcName);
+            }
         }
         else {
             showClusters();
@@ -88,10 +91,12 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         function showClusters() {
             if ($scope.showUnhealthyClusterOnly === true) {
                 showUnhealthyClusters();
-            } else if($scope.dcId){
-                showClustersBindDc($scope.dcId);
-            }else if ($scope.dcName){
-                showClustersByActiveDc($scope.dcName);
+            } else if ($scope.dcName){
+                if ($scope.type === "activeDC"){
+                    showClustersByActiveDc($scope.dcName);
+                }else if ($scope.type === "bindDC"){
+                    showClustersBindDc($scope.dcName);
+                }
             }
             else {
                 showAllClusters();
@@ -164,8 +169,8 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                 });
         }
 
-        function showClustersBindDc(dcId) {
-            ClusterService.findClustersByDcId(dcId).then(
+        function showClustersBindDc(dcName) {
+            ClusterService.findClustersByDcNameBind(dcName).then(
                 function (data) {
                     sourceClusters = data;
                     copedClusters = _.clone(sourceClusters);

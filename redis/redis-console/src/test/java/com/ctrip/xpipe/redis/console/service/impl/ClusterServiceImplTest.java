@@ -9,10 +9,7 @@ import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Maps;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -235,7 +232,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     public void testFindClustersByDcId(){
         try {
             Thread.sleep(3000);
-            List<ClusterTbl> result = clusterService.findAllClusterByDcId(1);
+            List<ClusterTbl> result = clusterService.findAllClusterByDcNameBind("jq");
             Assert.assertEquals(1, result.size());
         } catch (InterruptedException e) {
             e.printStackTrace();

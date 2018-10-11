@@ -16,10 +16,10 @@
 
                 </td>
                 <td data-title="'以该DC为主DC的cluster总数'">
-                    <a href="/#/cluster_list/{{dc.dcName}}">{{dc.clusterInActiveDcCount}}</a>
+                    <a ui-sref="cluster_list({clusterName:'',dcName:dc.dcName,type:'activeDC'})">{{dc.clusterInActiveDcCount}}</a>
                 </td>
                 <td ng-if="true" data-title="'cluster总数'" >
-                    <a href="/#/cluster_list/{{dc.dcId}}/{{dc.dcName}}">{{ dc.clusterCount }}</a>
+                    <a ui-sref="cluster_list({clusterName:'',dcName:dc.dcName,type:'bindDC'})">{{ dc.clusterCount }}</a>
                 </td>
                 <td ng-if="true" data-title="'redis总数'" ng-bind="dc.redisCount | limitTo:50"></td>
                 <td ng-if="true" data-title="'keeperContainer总数'" ng-bind="dc.keeperContainerCount | limitTo:50"></td>
