@@ -153,7 +153,7 @@ public class DelayPingActionCollector {
     }
 
     @Component
-    class LocalPingActionListener implements PingActionListener {
+    public class CollectorPingActionListener implements PingActionListener {
 
         @Override
         public void onAction(PingActionContext pingActionContext) {
@@ -174,7 +174,7 @@ public class DelayPingActionCollector {
     }
 
     @Component
-    class LocalDelayActionListener implements DelayActionListener {
+    public class CollectorDelayActionListener implements DelayActionListener {
 
         @Override
         public void onAction(DelayActionContext context) {
