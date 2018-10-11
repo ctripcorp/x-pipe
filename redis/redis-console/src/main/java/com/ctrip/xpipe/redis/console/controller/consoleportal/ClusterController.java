@@ -119,10 +119,10 @@ public class ClusterController extends AbstractConsoleController {
         clusterService.unbindDc(clusterName, dcName);
     }
 
-    @RequestMapping(value = "/clusters/allBind/{dcId}", method = RequestMethod.GET)
-    public List<ClusterTbl> findClustersByDcId(@PathVariable long dcId){
-        logger.info("[findClustersByDcId]dcId: {}", dcId);
-        return clusterService.findAllClusterByDcId(dcId);
+    @RequestMapping(value = "/clusters/allBind/{dcName}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClustersByDcNameBind(@PathVariable String dcName){
+        logger.info("[findClustersByDcId]dcName: {}", dcName);
+        return clusterService.findAllClusterByDcNameBind(dcName);
     }
 
     @RequestMapping(value = "/clusters/activeDc/{dcName}", method = RequestMethod.GET)

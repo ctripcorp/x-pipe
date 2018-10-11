@@ -42,22 +42,10 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
-            url: '/cluster_list?clusterName',
+            url: '/cluster_list?clusterName&dcName&type',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })
-        .state('dc_cluster_list',{
-            url:'/cluster_list/:dcId/:dcName',
-            templateUrl: 'views/index/cluster_list.html',
-            controller: 'ClusterListCtl'
-        })
-        .state(
-            'dc_cluster_activeDc_list',{
-                url:'/cluster_list/:dcName',
-                templateUrl: 'views/index/cluster_list.html',
-                controller: 'ClusterListCtl'
-            }
-        )
         .state('cluster_form', {
             url: '/cluster_form?clusterName&type',
             templateUrl: 'views/index/cluster_form.html',

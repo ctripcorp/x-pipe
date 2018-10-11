@@ -548,18 +548,18 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public List<ClusterTbl> findAllClusterByDcId(long dcId){
-		if (dcId <= 0)
+	public List<ClusterTbl> findAllClusterByDcNameBind(String dcName){
+		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
-		List<ClusterTbl>  result = new LinkedList<>();
-		List<DcClusterTbl> dcClusterTbls = dcClusterService.findAllByDcId(dcId);
-		if (dcClusterTbls == null || dcClusterTbls.size() == 0)
-			return Collections.emptyList();
+		long dcId = dcService.find(dcName).getId();
 
-		dcClusterTbls.forEach(dcClusterTbl -> result.add(find(dcClusterTbl.getClusterId())));
-
-		return result;
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersBindedByDcId(dcId, ClusterTblEntity.READSET_FULL);
+			}
+		});
 	}
 
 	@Override
