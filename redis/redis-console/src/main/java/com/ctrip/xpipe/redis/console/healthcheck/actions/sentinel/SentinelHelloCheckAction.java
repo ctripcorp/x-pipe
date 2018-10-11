@@ -29,17 +29,13 @@ public class SentinelHelloCheckAction extends AbstractCDLAHealthCheckAction {
 
     public static final String HELLO_CHANNEL = "__sentinel__:hello";
 
-    //concurrent set
-    private Set<SentinelHello> hellos = Sets.newHashSet();
-
-    private MetaCache metaCache;
+    private Set<SentinelHello> hellos = Sets.newCopyOnWriteArraySet();
 
     private ConsoleDbConfig consoleDbConfig;
 
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                                    ExecutorService executors, MetaCache metaCache, ConsoleDbConfig consoleDbConfig) {
+                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig) {
         super(scheduled, instance, executors);
-        this.metaCache = metaCache;
         this.consoleDbConfig = consoleDbConfig;
     }
 
@@ -72,7 +68,7 @@ public class SentinelHelloCheckAction extends AbstractCDLAHealthCheckAction {
     protected void processSentinelHellos() {
         getActionInstance().getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
         notifyListeners(new SentinelActionContext(getActionInstance(), hellos));
-        hellos = Sets.newHashSet();
+        hellos = Sets.newCopyOnWriteArraySet();
     }
 
     private boolean shouldStart() {

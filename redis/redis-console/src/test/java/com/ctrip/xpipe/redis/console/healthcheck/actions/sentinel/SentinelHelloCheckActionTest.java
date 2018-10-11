@@ -66,7 +66,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         });
         instance = newRandomRedisHealthCheckInstance("dc2", server.getPort());
         when(config.isSentinelAutoProcess()).thenReturn(true);
-        action = new SentinelHelloCheckAction(scheduled, instance, executors, metaCache, config);
+        action = new SentinelHelloCheckAction(scheduled, instance, executors, config);
     }
 
     @After
