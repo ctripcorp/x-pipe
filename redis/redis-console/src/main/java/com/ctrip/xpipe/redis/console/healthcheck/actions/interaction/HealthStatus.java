@@ -27,7 +27,7 @@ import java.util.function.IntSupplier;
  */
 public class HealthStatus extends AbstractObservable implements Startable, Stoppable {
 
-//    private static final Logger logger = LoggerFactory.getLogger(HealthStatus.class);
+    private static final Logger logger = LoggerFactory.getLogger(HealthStatus.class);
 
     public static long UNSET_TIME = -1L;
 
@@ -148,13 +148,15 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     private void setDelayHalfDown() {
         HEALTH_STATE preState = state.get();
         if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
-            logUnhealthy(preState, state.get());
+            logStateChange(preState, state.get());
         }
     }
 
     private void setDelayDown() {
         HEALTH_STATE preState = state.get();
-        state.compareAndSet(preState, preState.afterDelayFail());
+        if(state.compareAndSet(preState, preState.afterDelayFail())) {
+            logStateChange(preState, state.get());
+        }
         if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()){
             logger.info("[setSick]{}", this);
             notifyObservers(new InstanceSick(instance));
@@ -164,19 +166,15 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     private void setPingHalfDown() {
         HEALTH_STATE preState = state.get();
         if(state.compareAndSet(preState, preState.afterPingHalfFail())) {
-            logUnhealthy(preState, state.get());
-        }
-    }
-
-    private void logUnhealthy(HEALTH_STATE preState, HEALTH_STATE curState) {
-        if(!preState.equals(HEALTH_STATE.UNHEALTHY) && curState.equals(HEALTH_STATE.UNHEALTHY)){
-            logger.info("[unhealthy]{}, {}", this, preState);
+            logStateChange(preState, state.get());
         }
     }
 
     private void setPingDown() {
         HEALTH_STATE preState = state.get();
-        state.compareAndSet(preState, preState.afterPingFail());
+        if(state.compareAndSet(preState, preState.afterPingFail())) {
+            logStateChange(preState, state.get());
+        }
         if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()) {
             logger.info("[setDown] {}", this);
             notifyObservers(new InstanceDown(instance));
@@ -184,10 +182,18 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
     }
 
     private void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
+        logStateChange(pre, cur);
         if(cur.shouldNotifyMarkup() && pre.isToUpNotify()) {
-            logger.info("[shouldNotifyMarkup]{}", this);
+            logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
             notifyObservers(new InstanceUp(instance));
         }
+    }
+
+    private void logStateChange(HEALTH_STATE pre, HEALTH_STATE cur) {
+        if(pre.equals(cur)) {
+            return;
+        }
+        logger.info("[state-change][{}] {} -> {}", this, pre, cur);
     }
 
     @Override
