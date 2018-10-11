@@ -38,7 +38,6 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractConsoleIntegrat
         ConsoleDbConfig config = mock(ConsoleDbConfig.class);
         when(config.isSentinelAutoProcess()).thenReturn(true);
         factory.setConsoleDbConfig(config);
-        factory.setMetaCache(metaCache);
     }
 
     @Test

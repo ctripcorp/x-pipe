@@ -25,14 +25,11 @@ public class SentinelHelloCheckActionFactory extends AbstractCDLAHealthCheckActi
     private List<SentinelHelloCollector> collectors;
 
     @Autowired
-    private MetaCache metaCache;
-
-    @Autowired
     private ConsoleDbConfig consoleDbConfig;
 
     @Override
     public CrossDcLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
-        SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, metaCache, consoleDbConfig);
+        SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, consoleDbConfig);
         for(SentinelHelloCollector collector : collectors) {
             action.addListener(collector);
         }
@@ -42,12 +39,6 @@ public class SentinelHelloCheckActionFactory extends AbstractCDLAHealthCheckActi
     @Override
     public Class<? extends CrossDcLeaderAwareHealthCheckAction> support() {
         return SentinelHelloCheckAction.class;
-    }
-
-    @VisibleForTesting
-    protected SentinelHelloCheckActionFactory setMetaCache(MetaCache metaCache) {
-        this.metaCache = metaCache;
-        return this;
     }
 
     @VisibleForTesting
