@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
-import com.ctrip.xpipe.redis.console.healthcheck.action.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -112,7 +112,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String getXRedisMinimumRequestVersion() {
-        return getProperty(KEY_XREDIS_REQUEST_MINI_VERSION, "0.0.1");
+        return getProperty(KEY_XREDIS_REQUEST_MINI_VERSION, "0.0.3");
     }
 
     @Override

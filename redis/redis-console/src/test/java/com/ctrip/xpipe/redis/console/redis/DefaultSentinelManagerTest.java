@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.monitor.SentinelMonitors;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;

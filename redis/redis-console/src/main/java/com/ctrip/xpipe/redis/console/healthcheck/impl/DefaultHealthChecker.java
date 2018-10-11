@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  * Aug 27, 2018
  */
 @Component
-@ConditionalOnProperty(name = { com.ctrip.xpipe.redis.console.health.HealthChecker.ENABLED }, matchIfMissing = true)
+@ConditionalOnProperty(name = {HealthChecker.ENABLED }, matchIfMissing = true)
 public class DefaultHealthChecker extends AbstractLifecycle implements HealthChecker {
 
     @Autowired
