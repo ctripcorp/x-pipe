@@ -9,10 +9,7 @@ import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Maps;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -45,15 +42,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     @Autowired
     private ClusterDao clusterDao;
 
-    @BeforeClass
-    public static void beforeSetup(){
-        System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
-    }
-
-    @Before
-    public void beforeClusterServiceImplTest(){
-        MockitoAnnotations.initMocks(this);
-    }
 
 
     @Test
@@ -231,15 +219,4 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(20, kCounter);
     }
 
-    @Test
-    public void testFindClustersByDcId(){
-        try {
-            Thread.sleep(3000);
-            List<ClusterTbl> result = clusterService.findAllClusterByDcId(1);
-            Assert.assertEquals(1, result.size());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-    }
 }

@@ -150,13 +150,13 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				DcMeta dcMeta = dcMetaService.getDcMeta(dcTbl.getDcName());
 
 				DcListDcModel dcModel = new DcListDcModel();
-				Integer countRedisNums = 0, countKeeperNums = 0, countClusterInActiveDc = 0;
+				int countRedisNums = 0, countKeeperNums = 0, countClusterInActiveDc = 0;
 				dcModel.setDcId(dcTbl.getId());
 				dcModel.setClusterCount(dcMeta.getClusters().values().size());
 				dcModel.setDcName(dcMeta.getId());
 				dcModel.setKeeperContainerCount(dcMeta.getKeeperContainers().size());
 				for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
-					if (clusterMeta.getActiveDc() == dcTbl.getDcName())
+					if (dcTbl.getDcName().equals(clusterMeta.getActiveDc()))
 						countClusterInActiveDc++;
 
 					for (ShardMeta shardMeta: clusterMeta.getShards().values()){

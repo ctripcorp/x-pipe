@@ -121,6 +121,7 @@
 		<member name="count" value-type="long" select-expr="COUNT(*)" all="false" />
 		<var name="cluster-org-name" value-type="String"/>
 		<var name="cluster-names" value-type="java.util.List&lt;String&gt;" />
+		<var name="dc-id" value-type="long"/>
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
@@ -276,6 +277,19 @@
 					SET <FIELD name='status'/> = ${status}
 					WHERE <FIELD name='id'/> = ${id}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-clusters-binded-by-dc-id" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> join <TABLE name='dc-cluster-info'/> on <FIELD name='id'/> = dct.cluster_id
+					left join <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE dct.dc_id = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> ASC
 					]]>
 				</statement>
 			</query>
