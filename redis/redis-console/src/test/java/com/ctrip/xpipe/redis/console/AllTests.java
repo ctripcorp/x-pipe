@@ -87,6 +87,7 @@ import org.junit.runners.Suite.SuiteClasses;
 //        MultiShardMigrationTest.class,
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
+        ClusterServiceImplTest3.class,
 
         CheckPrepareRequestTest.class,
         ConfigDaoTest.class,
