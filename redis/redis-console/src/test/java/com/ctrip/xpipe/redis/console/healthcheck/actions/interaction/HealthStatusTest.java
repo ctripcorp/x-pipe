@@ -392,17 +392,40 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testNewAddedRedis() {
         when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(10);
-        when(config.getHealthyDelayMilli()).thenReturn(10);
+        when(config.delayDownAfterMilli()).thenReturn(60);
+        when(config.getHealthyDelayMilli()).thenReturn(20);
 
         Assert.assertEquals(HEALTH_STATE.UNKNOWN, healthStatus.getState());
         healthStatus.pong();
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
+
+    }
+
+    @Test
+    public void testNewAddedRedisUnHealthy() {
+        when(config.pingDownAfterMilli()).thenReturn(40);
+        when(config.delayDownAfterMilli()).thenReturn(60);
+        when(config.getHealthyDelayMilli()).thenReturn(20);
+
+        Assert.assertEquals(HEALTH_STATE.UNKNOWN, healthStatus.getState());
+        healthStatus.pong();
+        healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
 
         int N = 10;
-        for(int i = 0; i < 10; i++) {
-
+        for(int i = 0; i < N; i++) {
+            Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
+            healthStatus.pong();
+            healthStatus.healthStatusUpdate();
+            Assert.assertEquals(HEALTH_STATE.INSTANCEUP, healthStatus.getState());
+            sleep(10);
         }
+
+        sleep(20);
+        healthStatus.healthStatusUpdate();
+        Assert.assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
+
     }
 
     private void markup() {

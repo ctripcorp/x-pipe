@@ -114,15 +114,21 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         long currentTime = System.currentTimeMillis();
 
         // check ping down first, as ping has highest priority
-        long pingDownTime = currentTime - lastPongTime.get();
-        final int pingDownAfter = pingDownAfterMilli.getAsInt();
-        if(pingDownTime > pingDownAfter) {
-            setPingDown();
-        } else if(pingDownTime >= pingDownAfter/2) {
-            setPingHalfDown();
+        if(lastPongTime.get() != UNSET_TIME) {
+
+            long pingDownTime = currentTime - lastPongTime.get();
+            final int pingDownAfter = pingDownAfterMilli.getAsInt();
+            if (pingDownTime > pingDownAfter) {
+                setPingDown();
+            } else if (pingDownTime >= pingDownAfter / 2) {
+                setPingHalfDown();
+            }
         }
 
         // check delay then
+        if(lastHealthDelayTime.get() == UNSET_TIME) {
+            return;
+        }
         long delayDownTime = currentTime - lastHealthDelayTime.get();
         final int delayDownAfter = delayDownAfterMilli.getAsInt();
 
