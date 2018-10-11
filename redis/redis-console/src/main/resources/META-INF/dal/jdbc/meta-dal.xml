@@ -286,6 +286,7 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/> join <TABLE name='dc-cluster-info'/> on <FIELD name='id'/> = dct.cluster_id
+					left join <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE dct.dc_id = ${dc-id}
 					AND <FIELD name='deleted'/> = 0
 					ORDER BY <FIELD name='id'/> ASC
