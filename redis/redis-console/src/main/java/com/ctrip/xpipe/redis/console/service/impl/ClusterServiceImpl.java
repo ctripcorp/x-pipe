@@ -554,12 +554,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		long dcId = dcService.find(dcName).getId();
 
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+		List<ClusterTbl> result = queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override
 			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findClustersBindedByDcId(dcId, ClusterTblEntity.READSET_FULL);
+				return dao.findClustersBindedByDcId(dcId, ClusterTblEntity.READSET_FULL_WITH_ORG);
 			}
 		});
+
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
 	}
 
 	@Override
@@ -567,12 +570,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
-		long dcId = dcService.find(dcName).getId();
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
-			@Override
-			public List<ClusterTbl> doQuery() throws DalException {
-				return dao.findClustersByActiveDcId(dcId, ClusterTblEntity.READSET_FULL);
-			}
-		});
+		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
 	}
 }
