@@ -58,7 +58,7 @@ public abstract class AbstractIntervalCheck {
             protected void doRun() throws Exception {
                 checkStart();
             }
-        },1, 1, TimeUnit.SECONDS);
+        },1, 30, TimeUnit.SECONDS);
 
     }
 
