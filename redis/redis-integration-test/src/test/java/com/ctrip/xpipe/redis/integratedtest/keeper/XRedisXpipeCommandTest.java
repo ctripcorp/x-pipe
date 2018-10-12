@@ -26,6 +26,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class XRedisXpipeCommandTest extends AbstractKeeperIntegratedSingleDc {
 
+    @Override
+    protected boolean startServers() {
+        return false;
+    }
+
     @Test
     public void testRefullsync() throws Exception {
 

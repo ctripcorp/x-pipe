@@ -342,9 +342,17 @@ public class DefaultRedisSlave implements RedisSlave {
 	public boolean isOpen() {
 		return closeState.isOpen();
 	}
-	
-	public void close() throws IOException {
-		
+
+	@Override
+	public void close() {
+		close(0);
+	}
+
+	@VisibleForTesting
+	/**
+	 * testSleepMilli is for test
+	 */
+	protected void close(int testSleepMilli) {
 		logger.info("[close]{}", this);
 		if(closeState.isClosed()){
 			logger.info("[close][already closed]{}", this);
@@ -360,25 +368,35 @@ public class DefaultRedisSlave implements RedisSlave {
 		}, MoreExecutors.directExecutor());
 
 
-		if(closeState.isClosing()){
-			scheduled.schedule(new AbstractExceptionLogTask() {
-				@Override
-				protected void doRun() throws Exception {
-					logger.info("[wait for psync processed timeout close slave]{}", DefaultRedisSlave.this);
-					doRealClose();
+		synchronized (closeState) {
+			if (closeState.isClosing()) {
+				//for unit test
+				if (testSleepMilli > 0) {
+					try {
+						TimeUnit.MILLISECONDS.sleep(testSleepMilli);
+					} catch (InterruptedException e) {
+					}
 				}
-			}, waitForPsyncProcessedTimeoutMilli, TimeUnit.MILLISECONDS);
+				scheduled.schedule(new AbstractExceptionLogTask() {
+					@Override
+					protected void doRun() throws Exception {
+						logger.info("[wait for psync processed timeout close slave]{}", DefaultRedisSlave.this);
+						doRealClose();
+					}
+				}, waitForPsyncProcessedTimeoutMilli, TimeUnit.MILLISECONDS);
+			}
 		}
-
 	}
 
 	protected void doRealClose() throws IOException {
 
-		logger.info("[doRealClose]{}", this);
-		closeState.setClosed();
-		redisClient.close();
-		psyncExecutor.shutdownNow();
-		scheduled.shutdownNow();
+		synchronized (closeState) {
+			logger.info("[doRealClose]{}", this);
+			closeState.setClosed();
+			redisClient.close();
+			psyncExecutor.shutdownNow();
+			scheduled.shutdownNow();
+		}
 	}
 	
 	@Override

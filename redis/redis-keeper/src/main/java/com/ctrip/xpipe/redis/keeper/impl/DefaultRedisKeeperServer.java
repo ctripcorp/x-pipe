@@ -452,7 +452,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			try {
 				logger.info("[{}][close slave]{}", reason, redisSlave);
 				redisSlave.close();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				logger.error("[beginWriteRdb][close slaves]", e);
 			}
 		}
