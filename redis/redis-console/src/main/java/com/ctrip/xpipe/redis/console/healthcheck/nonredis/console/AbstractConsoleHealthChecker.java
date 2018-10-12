@@ -34,7 +34,7 @@ public abstract class AbstractConsoleHealthChecker implements CrossDcLeaderAware
     protected AlertManager alertManager;
 
     @Resource(name=ConsoleContextConfig.SCHEDULED_EXECUTOR)
-    ScheduledExecutorService schedule;
+    private ScheduledExecutorService schedule;
 
     protected Future future;
 
