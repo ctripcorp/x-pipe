@@ -81,10 +81,6 @@
         <logger name="org.springframework" level="INFO"/>
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
-        <logger name="com.ctrip.xpipe.redis.console.health" level="INFO" additivity="false">
-            <appender-ref ref="rollingHealthCheck"/>
-            <appender-ref ref="catAppender4Log4j2"/>
-        </logger>
 
         <logger name="com.ctrip.xpipe.redis.console.healthcheck" level="INFO" additivity="false">
             <appender-ref ref="rollingHealthCheck"/>

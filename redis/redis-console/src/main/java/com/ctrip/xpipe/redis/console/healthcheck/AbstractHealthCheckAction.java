@@ -42,6 +42,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     @Override
     public void doStart() {
+        logger.debug("[started][{}][{}]", getClass().getSimpleName(), instance.getRedisInstanceInfo());
         scheduleTask(getBaseCheckInterval());
     }
 
