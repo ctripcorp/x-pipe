@@ -46,9 +46,9 @@ public class HealthController extends AbstractConsoleController{
         }
         RedisHealthCheckInstanceModel model = new RedisHealthCheckInstanceModel(instance.toString());
         for(HealthCheckAction action : instance.getHealthCheckActions()) {
-            HealthCheckActionModel actionModel = new HealthCheckActionModel(action.getClass().getSimpleName());
+            HealthCheckActionModel actionModel = new HealthCheckActionModel(action.toString());
             for(Object listener : ((AbstractHealthCheckAction) action).getListeners()) {
-                actionModel.addListener(listener.getClass().getName());
+                actionModel.addListener(listener.toString());
             }
             model.addAction(actionModel);
         }
