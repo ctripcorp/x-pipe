@@ -19,10 +19,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import sun.java2d.SurfaceDataProxy;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -105,6 +109,48 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         Assert.assertTrue(redisSlave.getCloseState().isClosed());
     }
 
+    @Test
+    public void testConcurrentCloseAndMarkPsyncProcessed() throws IOException, InterruptedException {
+
+        int rount = 10;
+        final AtomicReference<Exception>  exception = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(rount*2);
+
+        for(int i=0;i<rount;i++) {
+
+            RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
+            redisSlave= new DefaultRedisSlave(redisClient);
+
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        redisSlave.close(50);
+                    } catch (Exception e) {
+                        logger.error("error close slave", e);
+                        exception.set(e);
+                    }finally {
+                        latch.countDown();
+                    }
+                }
+            });
+
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        sleep(3);
+                        redisSlave.markPsyncProcessed();
+                    }finally {
+                        latch.countDown();
+                    }
+                }
+            });
+        }
+
+        latch.await(5, TimeUnit.SECONDS);
+        Assert.assertNull(exception.get());
+    }
 
 
 
