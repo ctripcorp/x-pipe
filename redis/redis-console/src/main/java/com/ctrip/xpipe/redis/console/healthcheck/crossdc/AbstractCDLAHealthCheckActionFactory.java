@@ -86,7 +86,16 @@ public abstract class AbstractCDLAHealthCheckActionFactory implements CrossDcLea
     }
 
     private void registerTo(RedisHealthCheckInstance instance) {
-        instance.register(create(instance));
+        CrossDcLeaderAwareHealthCheckAction action = create(instance);
+        instance.register(action);
+        try {
+            LifecycleHelper.initializeIfPossible(action);
+            LifecycleHelper.stopIfPossible(action);
+        } catch (Exception e) {
+            instance.unregister(action);
+            logger.error("[registerTo][{}]", instance, e);
+        }
+
     }
 
     private void removeFrom(RedisHealthCheckInstance instance) {

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.crossdc.CrossDcLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,4 +102,9 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
         }
     }
 
+    @VisibleForTesting
+    protected DefaultRedisHealthCheckInstanceFactory setClusterServer(CrossDcClusterServer clusterServer) {
+        this.clusterServer = clusterServer;
+        return this;
+    }
 }
