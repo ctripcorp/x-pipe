@@ -39,7 +39,7 @@ public class PingActionFactory implements HealthCheckActionFactory<PingAction> {
         PingAction pingAction = new PingAction(scheduled, instance, executors);
         pingAction.addListeners(listeners);
         if(instance instanceof DefaultRedisHealthCheckInstance) {
-            pingAction.addListener(((DefaultRedisHealthCheckInstance)instance).createDelayListener());
+            pingAction.addListener(((DefaultRedisHealthCheckInstance)instance).createPingListener());
         }
         pingAction.addListener(collector.createPingActionListener());
         return pingAction;
