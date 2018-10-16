@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.proxy.endpoint;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -27,9 +28,13 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
 
     private static final int ENDPOINT_HEALTH_CHECK_INTERVAL = Integer.parseInt(System.getProperty("endpoint.health.check.interval", "1000"));
 
+    private static final String MONITOR_TYPE = "Endpoint.Health.State.Change";
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultEndpointHealthChecker.class);
 
     private ScheduledExecutorService scheduled;
+
+    private EventMonitor eventMonitor = EventMonitor.DEFAULT;
 
     private Map<Endpoint, EndpointHealthStatus> allHealthStatus = Maps.newConcurrentMap();
 
@@ -54,6 +59,7 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
     protected Map<Endpoint, EndpointHealthStatus> getAllHealthStatus() {
         return allHealthStatus;
     }
+
 
     @VisibleForTesting
     protected class EndpointHealthStatus {
@@ -82,13 +88,21 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
         }
 
         private synchronized void setHealthState(EndpointHealthState state) {
-            healthState.set(state);
+            EndpointHealthState previous = healthState.getAndSet(state);
+            EndpointHealthState current = state;
+
             if(EndpointHealthState.HEALTHY.equals(state)) {
                 lastHealthyTimeMilli = System.currentTimeMillis();
                 isHealthy = true;
             } else if(EndpointHealthState.UNHEALTHY.equals(state)) {
                 isHealthy = false;
                 checkIfNeedRemove();
+            }
+
+            if(!previous.equals(current)) {
+                String message = String.format("%s -> %s, %s", previous.name(), current.name(), endpoint.toString());
+                logger.info("[setHealthState][endpoint-state-change] {}", message);
+                eventMonitor.logEvent(MONITOR_TYPE, message);
             }
         }
 

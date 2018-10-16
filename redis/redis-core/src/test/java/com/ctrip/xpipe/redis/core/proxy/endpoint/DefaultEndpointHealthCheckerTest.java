@@ -73,10 +73,11 @@ public class DefaultEndpointHealthCheckerTest extends AbstractRedisTest {
         DefaultEndpointHealthChecker.EndpointHealthState state = checker.getAllHealthStatus().get(endpoint).getHealthState();
         Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.UNKNOWN, state);
 
-        sleep(2000);
+        sleep(10 * 2000);
         state = checker.getAllHealthStatus().get(endpoint).getHealthState();
         Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.HEALTHY, state);
         Assert.assertTrue(checker.checkConnectivity(endpoint));
+        logger.info("[jump out of]");
 
         server.stop();
         sleep(1000);
@@ -103,6 +104,7 @@ public class DefaultEndpointHealthCheckerTest extends AbstractRedisTest {
 
         sleep(1000);
         Assert.assertTrue(checker.checkConnectivity(endpoint));
+        sleep(2000);
 
         server.stop();
         sleep(10 * 1000);
