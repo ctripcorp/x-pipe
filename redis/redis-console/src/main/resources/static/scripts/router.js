@@ -1,7 +1,7 @@
 index_module.config(function ($stateProvider, $urlRouterProvider) {
 
 
-    $urlRouterProvider.otherwise("/dc_list");
+    $urlRouterProvider.otherwise("/cluster_list");
 
     $stateProvider
         .state('cluster_shards', {
