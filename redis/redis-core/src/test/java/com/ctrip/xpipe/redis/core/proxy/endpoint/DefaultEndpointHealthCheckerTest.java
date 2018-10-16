@@ -95,4 +95,19 @@ public class DefaultEndpointHealthCheckerTest extends AbstractRedisTest {
         Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.UNHEALTHY, state);
         Assert.assertFalse(checker.checkConnectivity(endpoint));
     }
+
+    @Ignore
+    @Test
+    public void testCancelPingAfterRemove() throws Exception {
+        checker.checkConnectivity(endpoint);
+
+        sleep(1000);
+        Assert.assertTrue(checker.checkConnectivity(endpoint));
+
+        server.stop();
+        sleep(10 * 1000);
+        Assert.assertFalse(checker.getAllHealthStatus().containsKey(endpoint));
+
+        sleep(10 * 1000);
+    }
 }

@@ -13,10 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -69,6 +66,8 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
 
         private Endpoint endpoint;
 
+        private ScheduledFuture future;
+
         private EndpointHealthStatus(Endpoint endpoint) {
             this.endpoint = endpoint;
             scheduledHealthCheck();
@@ -94,7 +93,7 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
         }
 
         private void scheduledHealthCheck() {
-            scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
                 @Override
                 protected void doRun() {
                     check();
@@ -120,6 +119,7 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
             long currentTime = System.currentTimeMillis();
             if(currentTime - lastHealthyTimeMilli >= DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI) {
                 logger.warn("[checkIfNeedRemove][over 10 min] remove health check for endpoint, {}", endpoint);
+                future.cancel(true);
                 allHealthStatus.remove(endpoint);
             }
         }
