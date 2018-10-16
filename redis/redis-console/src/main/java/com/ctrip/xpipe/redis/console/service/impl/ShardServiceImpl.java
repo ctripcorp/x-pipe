@@ -138,16 +138,19 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	if(null != shard) {
     		// Call shard event
 			Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
-			ShardEvent shardEvent = createShardDeleteEvent(clusterName, shardName, shard, sentinels);
+			ShardEvent shardEvent = null;
+			if(sentinels != null && !sentinels.isEmpty()) {
+				 shardEvent = createShardDeleteEvent(clusterName, shardName, shard, sentinels);
 
+			}
 			try {
 				shardDao.deleteShardsBatch(shard);
 			} catch (Exception e) {
 				throw new ServerException(e.getMessage());
 			}
-
-			shardEvent.onEvent();
-
+			if(shardEvent != null) {
+				shardEvent.onEvent();
+			}
     	}
     	
     	/** Notify meta server **/
