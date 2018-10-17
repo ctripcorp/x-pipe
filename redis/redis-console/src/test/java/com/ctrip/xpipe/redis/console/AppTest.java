@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
-import com.ctrip.xpipe.redis.console.health.HealthChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.After;
 import org.junit.Before;

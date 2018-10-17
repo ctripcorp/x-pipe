@@ -9,7 +9,7 @@ import io.netty.channel.Channel;
  * Jul 1, 2016
  */
 public interface NettyClient {
-	
+
 	void sendRequest(ByteBuf byteBuf);
 	
 	/**

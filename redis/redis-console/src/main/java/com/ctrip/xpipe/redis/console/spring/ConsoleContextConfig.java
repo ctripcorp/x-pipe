@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -22,9 +23,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.*;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author shyin
@@ -39,6 +38,10 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 	public final static String REDIS_COMMAND_EXECUTOR = "redisCommandExecutor";
 
 	public final static String KEYED_NETTY_CLIENT_POOL = "keyedClientPool";
+
+	public final static String PING_DELAY_EXECUTORS = "pingDelayExecutors";
+
+	public final static String PING_DELAY_SCHEDULED = "pingDelayScheduled";
 
 	@Bean(name = REDIS_COMMAND_EXECUTOR)
 	public ScheduledExecutorService getRedisCommandExecutor() {
@@ -69,6 +72,20 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 		ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
 				new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
 		return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
+	}
+
+	@Bean(name = PING_DELAY_EXECUTORS)
+	public ExecutorService getDelayPingExecturos() {
+		return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-").createExecutorService();
+	}
+
+	@Bean(name = PING_DELAY_SCHEDULED)
+	public ScheduledExecutorService getDelayPingScheduled() {
+		ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4),
+				XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
+		((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
+		((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+		return scheduled;
 	}
 
 	@Bean

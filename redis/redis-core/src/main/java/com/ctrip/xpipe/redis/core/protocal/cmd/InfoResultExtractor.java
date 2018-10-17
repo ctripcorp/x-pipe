@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,15 +58,20 @@ public class InfoResultExtractor {
                     keyValues = new HashMap<>();
                     String[] split = result.split("[\r\n]+");
                     for (String line : split) {
-                        if (line != null && line.startsWith("#")) {
+                        if(line == null || line.isEmpty()) {
                             continue;
                         }
-                        String[] keyValue = line.split("\\s*:\\s*");
-                        if (keyValue == null || keyValue.length != 2) {
+                        if (line.startsWith("#")) {
+                            continue;
+                        }
+                        int splitterIndex = line.indexOf(":");
+                        if (splitterIndex < 0 || splitterIndex >= line.length()) {
                             logger.warn("[wrong format]{}", line);
                             continue;
                         }
-                        keyValues.put(keyValue[0], keyValue[1]);
+
+                        keyValues.put(line.substring(0, splitterIndex).trim(),
+                                line.substring(splitterIndex + 1).trim());
                     }
                 }
             }

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -96,6 +97,10 @@ public class AlertManager {
             }
         }
         return date;
+    }
+
+    public void alert(RedisInstanceInfo info, ALERT_TYPE type, String message) {
+        doAlert(info.getDcId(), info.getClusterId(), info.getShardId(), info.getHostPort(), type, message, false);
     }
 
     public void alert(String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message){

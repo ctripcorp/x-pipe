@@ -8,8 +8,8 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayAction;
-import com.ctrip.xpipe.redis.console.healthcheck.delay.DelayService;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayAction;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
@@ -71,6 +71,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
+
+	@Autowired
+	private DcClusterService dcClusterService;
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -542,5 +545,31 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@VisibleForTesting
 	protected void setClusterDao(ClusterDao clusterDao) {
 		this.clusterDao = clusterDao;
+	}
+
+	@Override
+	public List<ClusterTbl> findAllClusterByDcNameBind(String dcName){
+		if (StringUtil.isEmpty(dcName))
+			return Collections.emptyList();
+
+		long dcId = dcService.find(dcName).getId();
+
+		List<ClusterTbl> result = queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersBindedByDcId(dcId, ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
+
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	@Override
+	public List<ClusterTbl> findAllClustersByDcName(String dcName){
+		if (StringUtil.isEmpty(dcName))
+			return Collections.emptyList();
+
+		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
 	}
 }

@@ -23,4 +23,10 @@ public interface RedisInstanceInfo {
     boolean isMaster();
 
     void isMaster(boolean master);
+
+    String getActiveDc();
+
+    void setActiveDc(String activeDc);
+
+    boolean isInActiveDc();
 }

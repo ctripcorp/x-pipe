@@ -14,15 +14,17 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
-import com.ctrip.xpipe.redis.console.health.BaseSamplePlanTest;
-import com.ctrip.xpipe.redis.console.health.clientconfig.CheckClusterTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.DefaultSentinelCollectorTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.SentinelHelloTest;
-import com.ctrip.xpipe.redis.console.health.sentinel.SentinelSamplePlanTest;
-import com.ctrip.xpipe.redis.console.healthcheck.action.DefaultSiteReliabilityCheckerTest;
-import com.ctrip.xpipe.redis.console.healthcheck.action.HealthStatusTest;
-import com.ctrip.xpipe.redis.console.healthcheck.action.OuterClientServiceProcessorTest;
-import com.ctrip.xpipe.redis.console.healthcheck.action.handler.TestAbstractHealthEventHandlerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultSiteReliabilityCheckerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatusTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.OuterClientServiceProcessorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.version.VersionCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterCheckActionFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.*;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
@@ -55,17 +57,20 @@ import org.junit.runners.Suite.SuiteClasses;
  *         Jun 23, 2016
  */
 @RunWith(Suite.class)
-@SuiteClasses({
+@SuiteClasses(value = {
         SentinelHelloTest.class,
-        DefaultSentinelCollectorTest.class,
+        DefaultSentinelHelloCollectorTest.class,
+        SentinelCollector4KeeperTest.class,
         ConsoleCrossDcServerTest.class,
 
         ClusterServiceImplTest.class,
         RedisServiceImplTest.class,
         KeepercontainerServiceImplTest.class,
         ShardServiceImplTest.class,
+        ShardServiceImplTest2.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
+        DcServiceImplTest.class,
 
         StateMachineTest.class,
         MigrationStatusTest.class,
@@ -86,6 +91,7 @@ import org.junit.runners.Suite.SuiteClasses;
 //        MultiShardMigrationTest.class,
         DefaultShardMigrationResultTest.class,
         ClusterCreateInfoTest.class,
+        ClusterServiceImplTest3.class,
 
         CheckPrepareRequestTest.class,
         ConfigDaoTest.class,
@@ -107,12 +113,10 @@ import org.junit.runners.Suite.SuiteClasses;
         RouteServiceImplTest.class,
         RouteServiceImplTest.class,
         ProxyServiceImplTest.class,
-        BaseSamplePlanTest.class,
 
         AdvancedDcMetaServiceTestForRoute.class,
         AdvancedDcMetaServiceTest.class,
         ClusterMetaServiceImplTest.class,
-        SentinelSamplePlanTest.class,
 
         HealthCheckEndpointFactoryTest.class,
         DefaultHealthCheckEndpointFactoryTest.class,
@@ -123,6 +127,13 @@ import org.junit.runners.Suite.SuiteClasses;
         HealthStatusTest.class,
         OuterClientServiceProcessorTest.class,
         TestAbstractHealthEventHandlerTest.class,
+        VersionCheckActionTest.class,
+        DiskLessReplCheckActionTest.class,
+        RedisMasterCheckActionTest.class,
+        SentinelHelloCheckActionFactoryTest.class,
+        RedisMasterCheckActionFactoryTest.class,
+        SentinelHelloCheckActionTest.class,
+        VersionCheckActionFactoryTest.class
 })
 public class AllTests {
 

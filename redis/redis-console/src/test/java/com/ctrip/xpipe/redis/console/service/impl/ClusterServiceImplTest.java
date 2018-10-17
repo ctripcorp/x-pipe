@@ -7,9 +7,10 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Maps;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -40,6 +41,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private ClusterDao clusterDao;
+
 
 
     @Test
