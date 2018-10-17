@@ -59,7 +59,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 				
 				@Override
 				public void doRun() {
-					logger.info("[{}][run][timeout]{}", AbstractNettyRequestResponseCommand.this.getClass().getSimpleName(), nettyClient);
+					AbstractNettyRequestResponseCommand.this.logger.info("[{}][run][timeout]{}", AbstractNettyRequestResponseCommand.this, nettyClient);
 					future().setFailure(new CommandTimeoutException("timeout " +  + getCommandTimeoutMilli()));
 				}
 			}, getCommandTimeoutMilli(), TimeUnit.MILLISECONDS);
