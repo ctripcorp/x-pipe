@@ -43,7 +43,7 @@ public class DefaultProxyEndpointSelector implements ProxyEndpointSelector {
         logger.debug("[candidates][before]{}", candidates);
         List<ProxyEndpoint> toBeSelected = Lists.newArrayList(candidates);
         toBeSelected.retainAll(endpointManager.getAllProxyEndpoints());
-        logger.info("[candidates][after]{}", toBeSelected);
+        logger.debug("[candidates][after]{}", toBeSelected);
 
         ProxyEndpoint endpoint = algorithm.nextHop(toBeSelected);
         if(endpoint == null) {
