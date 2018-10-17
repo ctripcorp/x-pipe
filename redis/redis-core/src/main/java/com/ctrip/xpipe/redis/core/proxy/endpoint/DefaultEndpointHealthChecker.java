@@ -7,7 +7,6 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.TcpPortCheck;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -62,7 +61,7 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
 
 
     @VisibleForTesting
-    protected class EndpointHealthStatus {
+    protected final class EndpointHealthStatus {
 
         private AtomicReference<EndpointHealthState> healthState = new AtomicReference<>(EndpointHealthState.UNKNOWN);
 
@@ -119,10 +118,14 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
             TcpPortCheckCommand command = new TcpPortCheckCommand(endpoint.getHost(), endpoint.getPort());
             command.execute().addListener(new CommandFutureListener<Boolean>() {
                 @Override
-                public void operationComplete(CommandFuture<Boolean> future) throws Exception {
-                    if(future.isSuccess() && future.get()) {
-                        setHealthState(healthState.get().afterSuccess());
-                        return;
+                public void operationComplete(CommandFuture<Boolean> future) {
+                    try {
+                        if (future.isSuccess() && future.get()) {
+                            setHealthState(healthState.get().afterSuccess());
+                            return;
+                        }
+                    } catch (Exception e) {
+                        logger.error("[check][operationComplete]", e);
                     }
                     setHealthState(healthState.get().afterFail());
                 }
