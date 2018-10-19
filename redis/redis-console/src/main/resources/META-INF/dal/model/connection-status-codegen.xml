@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model>
+  <entity name="connection-status" root="true">
+    <attribute name="timestamp" value-type="Date" format="yyyy-MM-dd HH:mm:ss.SSS" />
+    <attribute name="state" value-type="String" />
+    <attribute name="recv-Q" value-type="int" />
+    <attribute name="send-Q" value-type="int" />
+    <entity-ref name="local-address" />
+    <entity-ref name="remote-address" />
+    <entity-ref name="memory" />
+    <entity-ref name="info" />
+  </entity>
+  <entity name="local-address">
+    <attribute name="ip" value-type="String" />
+    <attribute name="port" value-type="int" />
+  </entity>
+  <entity name="remote-address">
+    <attribute name="ip" value-type="String" />
+    <attribute name="port" value-type="int" />
+  </entity>
+  <entity name="memory">
+    <attribute name="rmem-alloc" value-type="int" />
+    <attribute name="rcv-buf" value-type="int" />
+    <attribute name="wmem-alloc" value-type="int" />
+    <attribute name="snd-buf" value-type="int" />
+    <attribute name="fwd-alloc" value-type="int" />
+    <attribute name="wmem-queued" value-type="int" />
+    <attribute name="opt-mem" value-type="int" />
+    <attribute name="backlog" value-type="int" />
+  </entity>
+  <entity name="info">
+    <attribute name="rto" value-type="int" />
+    <attribute name="congestion-algorithm" value-type="String" />
+    <attribute name="ato" value-type="int" />
+    <attribute name="mss" value-type="int" />
+    <attribute name="cwnd" value-type="int" />
+    <attribute name="send" value-type="int" />
+    <attribute name="rcv_space" value-type="int" />
+    <attribute name="ssthresh" value-type="int" />
+    <attribute name="unacked" value-type="int" />
+    <attribute name="reordering" value-type="int" />
+    <attribute name="rcv_rtt" value-type="int" />
+    <entity-ref name="wscale" />
+    <entity-ref name="rtt" />
+    <entity-ref name="retrans" />
+  </entity>
+  <entity name="wscale">
+    <attribute name="snd-wscale" value-type="double" />
+    <attribute name="rcv-wscale" value-type="double" />
+  </entity>
+  <entity name="rtt">
+    <attribute name="avg-rtt" value-type="double" />
+    <attribute name="mean-rtt" value-type="double" />
+  </entity>
+  <entity name="retrans">
+    <attribute name="time-expire" value-type="int" />
+    <attribute name="occurs" value-type="int" />
+  </entity>
+</model>
+

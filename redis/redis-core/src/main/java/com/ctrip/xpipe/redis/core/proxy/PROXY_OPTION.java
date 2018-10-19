@@ -32,6 +32,18 @@ public enum PROXY_OPTION {
         protected ProxyOptionParser getProxyOptionParser() {
             return new UnknownOptionParser();
         }
+    },
+    PING {
+        @Override
+        protected ProxyOptionParser getProxyOptionParser() {
+            return null;
+        }
+    },
+    MONITOR {
+        @Override
+        protected ProxyOptionParser getProxyOptionParser() {
+            return null;
+        }
     };
 
     public static ProxyOptionParser parse(String option) {

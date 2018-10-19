@@ -1,0 +1,598 @@
+ESTAB      0      0             10.26.188.107:47862         10.15.206.22:443
+	 skmem:(r0,rb235128,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:458 rtt:176.498/45.981 ato:40 mss:1448 cwnd:10 send 656.3Kbps rcv_rtt:175 rcv_space:26883
+ESTAB      0      0             10.26.188.107:45172        10.26.187.169:2181
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.439/0.083 ato:40 mss:8949 cwnd:10 send 1630.8Mbps rcv_rtt:1 rcv_space:26883
+ESTAB      0      0             10.26.188.107:47498        10.26.191.182:4506
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:205 rtt:4.944/6.913 ato:40 mss:8949 cwnd:10 send 144.8Mbps rcv_rtt:81 rcv_space:26883
+ESTAB      0      0             10.26.188.107:47772        10.26.190.253:4505
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:206 rtt:5.845/10.13 ato:40 mss:8949 cwnd:10 send 122.5Mbps rcv_rtt:444316 rcv_space:26883
+ESTAB      0      0             10.26.188.107:37716        10.26.186.124:10090
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.32/0.037 ato:40 mss:8949 cwnd:3 ssthresh:2 send 671.2Mbps retrans:0/17 rcv_rtt:394163 rcv_space:30780
+SYN-SENT   0      1             10.26.188.107:49766        10.26.190.167:9092
+	 skmem:(r0,rb87380,t0,tb87380,f4294966016,w1280,o0,bl0) cubic rto:4000 mss:524 cwnd:1 ssthresh:7 unacked:1 retrans:1/2 lost:1
+ESTAB      0      0             10.26.188.107:50534        10.26.191.182:4505
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:207 rtt:6.226/10.859 ato:40 mss:8949 cwnd:10 send 115.0Mbps rcv_rtt:426708 rcv_space:26883
+ESTAB      0      48            10.26.188.107:22              10.8.218.6:46325
+	 skmem:(r0,rb235416,t0,tb156672,f5888,w2304,o0,bl0) cubic wscale:7,10 rto:391 rtt:190.545/26.378 ato:40 mss:1448 cwnd:7 ssthresh:7 send 425.6Kbps unacked:1 retrans:0/1 rcv_rtt:172 rcv_space:26847
+ESTAB      0      0             10.26.188.107:58638        10.26.190.253:4506
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:205 rtt:4.93/7.138 ato:40 mss:8949 cwnd:10 send 145.2Mbps rcv_rtt:81 rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:40854  ::ffff:10.26.190.62:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.696/0.216 ato:40 mss:8949 cwnd:10 send 1028.6Mbps rcv_rtt:104743 rcv_space:30400
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33320
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.415/1.844 ato:40 mss:1448 ssthresh:2 send 133.6Kbps retrans:0/24 rcv_rtt:359402 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39922
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.846/0.759 ato:40 mss:1448 ssthresh:2 send 134.0Kbps retrans:0/22 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:59260  ::ffff:10.26.187.64:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.23/0.014 ato:40 mss:8949 cwnd:10 send 3112.7Mbps rcv_rtt:384963 rcv_space:27657
+ESTAB      0      7      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:42000
+	 skmem:(r0,rb235416,t0,tb87380,f5888,w2304,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.392/0.132 ato:40 mss:1448 cwnd:10 ssthresh:7 send 672.0Kbps unacked:1 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33308
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.117/1.57 ato:40 mss:1448 ssthresh:2 send 133.1Kbps retrans:0/29 rcv_rtt:359449 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:39344  ::ffff:10.26.186.67:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.243/0.027 ato:40 mss:8949 cwnd:10 send 2946.2Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39928
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.477/0.223 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/27 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41990
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.295/0.211 ato:40 mss:1448 cwnd:10 ssthresh:7 send 664.6Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:42002
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.681/0.24 ato:40 mss:1448 cwnd:10 ssthresh:7 send 663.2Kbps rcv_space:26847
+LAST-ACK   0      1      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:41126
+	 skmem:(r0,rb235416,t0,tb87380,f4294966016,w1280,o0,bl0) cubic wscale:7,10 rto:528 rtt:173/86.5 mss:1448 cwnd:10 ssthresh:7 send 669.6Kbps unacked:1 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:42005
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.4/0.195 ato:40 mss:1448 cwnd:10 ssthresh:7 send 668.1Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:40010
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.286/0.125 ato:40 mss:1448 ssthresh:2 send 132.9Kbps retrans:0/23 rcv_rtt:359459 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41984
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.858/0.123 ato:40 mss:1448 cwnd:10 ssthresh:7 send 670.1Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33274
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.632/0.104 ato:40 mss:1448 ssthresh:2 send 134.2Kbps retrans:0/24 rcv_rtt:359165 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:54762 ::ffff:10.26.186.101:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.247/0.11 ato:40 mss:8949 cwnd:10 send 2898.5Mbps rcv_rtt:190792 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:40850  ::ffff:10.26.190.62:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.707/0.274 ato:40 mss:8949 cwnd:10 send 1012.6Mbps rcv_rtt:104770 rcv_space:30400
+ESTAB      0      0      ::ffff:10.26.188.107:54850  ::ffff:10.26.187.63:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.241/0.093 ato:40 mss:8949 cwnd:10 send 2970.6Mbps rcv_rtt:207465 rcv_space:27668
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60732
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.702/1.524 ato:40 mss:1448 ssthresh:2 send 133.4Kbps retrans:0/29 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:49904 ::ffff:10.26.186.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.302/0.03 ato:40 mss:8949 cwnd:10 send 2370.6Mbps rcv_rtt:384929 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33213
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.981/1.21 ato:40 mss:1448 ssthresh:2 send 132.4Kbps retrans:0/28 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:33156 ::ffff:10.26.190.169:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.706/0.029 ato:40 mss:8949 cwnd:10 send 1014.1Mbps rcv_rtt:384832 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:55510 ::ffff:10.26.190.163:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.722/0.294 ato:40 mss:8949 cwnd:10 send 991.6Mbps rcv_rtt:209698 rcv_space:27742
+ESTAB      0      0      ::ffff:10.26.188.107:43358 ::ffff:10.26.187.150:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.315/0.153 ato:63 mss:8949 cwnd:10 send 2272.8Mbps rcv_rtt:190907 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39962
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.36/0.933 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/18 rcv_rtt:359596 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:54832 ::ffff:10.26.186.101:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.354/0.134 ato:42 mss:8949 cwnd:10 send 2022.4Mbps rcv_rtt:207865 rcv_space:27668
+ESTAB      0      0      ::ffff:10.26.188.107:49822 ::ffff:10.26.186.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.304/0.057 ato:40 mss:8949 cwnd:10 send 2355.0Mbps rcv_rtt:385018 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:43596 ::ffff:10.26.187.150:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.253/0.013 ato:40 mss:8949 cwnd:10 send 2829.7Mbps rcv_rtt:385048 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:33998 ::ffff:10.26.186.253:6379
+	 skmem:(r0,rb413747,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.211/0.095 ato:54 mss:8949 cwnd:10 send 3393.0Mbps rcv_rtt:181095 rcv_space:31540
+ESTAB      0      0      ::ffff:10.26.188.107:38982 ::ffff:10.26.187.108:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.342/0.019 ato:40 mss:8949 cwnd:10 send 2093.3Mbps rcv_rtt:384883 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:37702 ::ffff:10.26.186.155:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.33/0.04 ato:40 mss:8949 cwnd:10 send 2169.5Mbps rcv_rtt:182783 rcv_space:27720
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60698
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.053/0.173 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/29 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:32778 ::ffff:10.26.187.218:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.314/0.019 ato:40 mss:8949 cwnd:10 send 2280.0Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41970
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.634/0.806 ato:40 mss:1448 cwnd:10 ssthresh:7 send 674.9Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:53552  ::ffff:10.26.186.12:6379
+	 skmem:(r0,rb235128,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.246/0.091 ato:40 mss:8949 cwnd:10 send 2910.2Mbps rcv_rtt:1 rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:58854 ::ffff:10.26.187.146:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.224/0.096 ato:40 mss:8949 cwnd:10 send 3196.1Mbps rcv_rtt:187573 rcv_space:27656
+ESTAB      0      0      ::ffff:10.26.188.107:48388  ::ffff:10.26.186.90:80
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.2/0.071 ato:40 mss:8949 cwnd:10 send 3579.6Mbps rcv_rtt:188846 rcv_space:27656
+ESTAB      0      0      ::ffff:10.26.188.107:53996  ::ffff:10.26.186.20:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.281/0.024 ato:40 mss:8949 cwnd:10 send 2547.8Mbps rcv_rtt:182783 rcv_space:27720
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39926
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.261/0.397 ato:40 mss:1448 ssthresh:2 send 134.5Kbps retrans:0/22 rcv_rtt:359214 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:59066 ::ffff:10.26.187.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.29/0.033 ato:40 mss:8949 cwnd:10 send 2468.7Mbps rcv_rtt:183217 rcv_space:27720
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55254
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.251/0.875 ato:40 mss:1448 ssthresh:2 send 135.3Kbps retrans:0/27 rcv_space:26847
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33254
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.895/0.109 ato:40 mss:1448 ssthresh:2 send 134.0Kbps unacked:1 retrans:0/13 rcv_rtt:359427 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:59004  ::ffff:10.26.187.64:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.2/0.077 ato:52 mss:8949 cwnd:10 send 3579.6Mbps rcv_rtt:190838 rcv_space:27740
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55242
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.762/0.58 ato:40 mss:1448 ssthresh:2 send 134.1Kbps retrans:0/27 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60804
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.823/0.826 ato:40 mss:1448 ssthresh:2 send 134.8Kbps retrans:0/35 rcv_rtt:359490 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33300
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:371 rtt:170.964/0.196 ato:40 mss:1448 ssthresh:2 send 135.5Kbps retrans:0/23 rcv_rtt:359336 rcv_space:26889
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:40022
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.55/0.169 ato:40 mss:1448 ssthresh:2 send 135.1Kbps unacked:1 retrans:0/21 rcv_rtt:359378 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:56950 ::ffff:10.26.190.163:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.73/0.025 ato:40 mss:8949 cwnd:10 send 980.7Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60728
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.678/0.58 ato:40 mss:1448 ssthresh:2 send 135.0Kbps retrans:0/25 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60730
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.093/0.332 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/36 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:55784 ::ffff:10.26.190.163:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.785/0.049 ato:40 mss:8949 cwnd:10 send 912.0Mbps rcv_rtt:385028 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39990
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.568/0.102 ato:40 mss:1448 ssthresh:2 send 135.0Kbps retrans:0/15 rcv_rtt:359397 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:55044  ::ffff:10.26.186.20:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.213/0.1 ato:40 mss:8949 cwnd:10 send 3361.1Mbps rcv_rtt:190085 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:59372 ::ffff:10.26.187.236:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.256/0.018 ato:40 mss:8949 cwnd:10 send 2796.6Mbps rcv_rtt:385018 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:55156  ::ffff:10.26.186.20:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.332/0.065 ato:40 mss:8949 cwnd:10 send 2156.4Mbps rcv_rtt:385089 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60788
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.09/0.292 ato:40 mss:1448 ssthresh:2 send 135.4Kbps retrans:0/25 rcv_rtt:359340 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60762
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.925/0.154 ato:40 mss:1448 ssthresh:2 send 134.0Kbps retrans:0/27 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:58974 ::ffff:10.26.187.146:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.334/0.028 ato:40 mss:8949 cwnd:10 send 2143.5Mbps rcv_rtt:384932 rcv_space:27657
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:40012
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.091/0.28 ato:40 mss:1448 ssthresh:2 send 133.8Kbps unacked:1 retrans:0/12 rcv_rtt:359455 rcv_space:26887
+ESTAB      0      0      ::ffff:10.26.188.107:47146 ::ffff:10.26.186.157:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.324/0.041 ato:40 mss:8949 cwnd:10 send 2209.6Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:41392 ::ffff:10.26.186.205:6379
+	 skmem:(r0,rb235128,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.278/0.113 ato:40 mss:8949 cwnd:10 send 2575.3Mbps rcv_rtt:1 rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:40236 ::ffff:10.26.187.128:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.264/0.022 ato:40 mss:8949 cwnd:10 send 2711.8Mbps rcv_rtt:385057 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:56500 ::ffff:10.26.186.137:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.315/0.035 ato:40 mss:8949 cwnd:10 send 2272.8Mbps rcv_rtt:423365 rcv_space:27720
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55258
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.563/0.596 ato:40 mss:1448 ssthresh:2 send 132.7Kbps retrans:0/28 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33228
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.343/0.086 ato:40 mss:1448 ssthresh:2 send 135.2Kbps retrans:0/26 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:56076 ::ffff:10.26.186.101:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.249/0.022 ato:40 mss:8949 cwnd:10 send 2875.2Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:55106 ::ffff:10.26.186.101:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.264/0.027 ato:40 mss:8949 cwnd:10 send 2711.8Mbps rcv_rtt:384902 rcv_space:27657
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33332
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.219/2.245 ato:40 mss:1448 ssthresh:2 send 134.5Kbps unacked:1 retrans:0/18 rcv_rtt:359303 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41956
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.299/0.92 ato:40 mss:1448 cwnd:10 ssthresh:7 send 668.4Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:51226  ::ffff:10.26.187.80:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.282/0.019 ato:40 mss:8949 cwnd:10 send 2538.7Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33322
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.401/0.196 ato:40 mss:1448 ssthresh:2 send 135.2Kbps retrans:0/16 rcv_rtt:359291 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39932
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.807/0.162 ato:40 mss:1448 ssthresh:2 send 134.8Kbps retrans:0/24 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:35724 ::ffff:10.26.191.100:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.779/0.042 ato:40 mss:8949 cwnd:10 send 919.0Mbps rcv_rtt:384951 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41980
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.291/1.469 ato:40 mss:1448 cwnd:10 ssthresh:7 send 664.6Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39996
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.642/2.438 ato:40 mss:1448 ssthresh:2 send 134.2Kbps retrans:0/17 rcv_rtt:359675 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:56242  ::ffff:10.26.186.20:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.279/0.032 ato:40 mss:8949 cwnd:10 send 2566.0Mbps rcv_space:26883
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33336
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.023/0.515 ato:40 mss:1448 ssthresh:2 send 134.7Kbps unacked:1 retrans:0/19 rcv_rtt:359441 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:33702 ::ffff:10.26.187.142:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.267/0.123 ato:40 mss:8949 cwnd:10 send 2681.3Mbps rcv_rtt:116354 rcv_space:27735
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39890
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.222/0.549 ato:40 mss:1448 ssthresh:2 send 133.7Kbps retrans:0/18 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:41116  ::ffff:10.26.190.62:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.831/0.018 ato:40 mss:8949 cwnd:10 send 861.5Mbps rcv_rtt:385242 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:33494 ::ffff:10.26.186.232:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.364/0.038 ato:40 mss:8949 cwnd:10 send 1966.8Mbps rcv_rtt:385111 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55225
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:371 rtt:170.886/0.108 ato:40 mss:1448 ssthresh:2 send 135.6Kbps retrans:0/26 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33224
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.543/0.302 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/21 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39992
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.939/0.136 ato:40 mss:1448 ssthresh:2 send 134.0Kbps retrans:0/21 rcv_rtt:359399 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60790
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.98/0.098 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/19 rcv_rtt:359443 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41961
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:171.96/1.303 ato:40 mss:1448 cwnd:10 ssthresh:7 send 673.6Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:34012  ::ffff:10.26.186.53:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.385/0.064 ato:40 mss:8949 cwnd:10 send 1859.5Mbps rcv_rtt:384786 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:54956  ::ffff:10.26.186.20:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.22/0.089 ato:40 mss:8949 cwnd:10 send 3254.2Mbps rcv_rtt:209293 rcv_space:27676
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55260
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.099/0.104 ato:40 mss:1448 ssthresh:2 send 135.4Kbps retrans:0/23 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33324
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.439/1.257 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/17 rcv_rtt:359282 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:36682 ::ffff:10.26.187.194:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.331/0.032 ato:40 mss:8949 cwnd:10 send 2162.9Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:48658  ::ffff:10.26.186.90:80
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.211/0.012 ato:40 mss:8949 cwnd:10 send 3393.0Mbps rcv_rtt:385000 rcv_space:27657
+ESTAB      0      74     ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60714
+	 skmem:(r0,rb235416,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.186/2.331 ato:40 mss:1448 ssthresh:2 send 133.8Kbps unacked:1 retrans:0/34 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33236
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.336/0.453 ato:40 mss:1448 ssthresh:2 send 132.9Kbps retrans:0/29 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:53710  ::ffff:10.26.186.12:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.262/0.027 ato:40 mss:8949 cwnd:10 send 2732.5Mbps rcv_rtt:384825 rcv_space:27657
+ESTAB      0      74     ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60754
+	 skmem:(r0,rb235416,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.765/2.375 ato:40 mss:1448 ssthresh:2 send 132.6Kbps unacked:1 retrans:0/21 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:59742 ::ffff:10.26.187.218:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.317/0.029 ato:40 mss:8949 cwnd:10 send 2258.4Mbps rcv_rtt:385144 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60820
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.421/0.802 ato:40 mss:1448 ssthresh:2 send 133.6Kbps retrans:0/25 rcv_rtt:359533 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33218
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.424/0.078 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/24 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:40166 ::ffff:10.26.187.189:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.337/0.034 ato:40 mss:8949 cwnd:10 send 2124.4Mbps rcv_rtt:385157 rcv_space:27657
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33250
+	 skmem:(r0,rb395758,t0,tb87380,f5888,w2304,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.062/0.077 ato:40 mss:1448 ssthresh:2 send 133.1Kbps unacked:1 retrans:0/16 rcv_rtt:359440 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33222
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.811/0.138 ato:40 mss:1448 ssthresh:2 send 134.8Kbps retrans:0/24 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55336
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.096/0.452 ato:40 mss:1448 ssthresh:2 send 135.4Kbps retrans:0/16 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33244
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.658/0.458 ato:40 mss:1448 cwnd:3 ssthresh:2 send 201.3Kbps retrans:0/11 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:54886  ::ffff:10.26.187.63:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.316/0.023 ato:40 mss:8949 cwnd:10 send 2265.6Mbps rcv_rtt:384960 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33304
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.544/1.037 ato:40 mss:1448 ssthresh:2 send 135.1Kbps retrans:0/13 rcv_rtt:359202 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33312
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.378/1.795 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/29 rcv_rtt:359371 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:33542  ::ffff:10.26.186.85:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.247/0.034 ato:40 mss:8949 cwnd:10 send 2898.5Mbps rcv_rtt:384817 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:49244  ::ffff:10.26.186.78:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.303/0.02 ato:40 mss:8949 cwnd:10 send 2362.8Mbps rcv_rtt:384934 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41985
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.799/2.015 ato:40 mss:1448 cwnd:10 ssthresh:7 send 666.5Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:33284  ::ffff:10.26.186.85:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.261/0.11 ato:49 mss:8949 cwnd:10 send 2743.0Mbps rcv_rtt:209107 rcv_space:27676
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55250
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.108/0.535 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/28 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60776
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.45/0.073 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/19 rcv_rtt:359502 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:40912  ::ffff:10.26.186.81:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.29/0.025 ato:40 mss:8949 cwnd:10 send 2468.7Mbps rcv_rtt:183215 rcv_space:27720
+ESTAB      0      0      ::ffff:10.26.188.107:55004  ::ffff:10.26.187.63:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.293/0.019 ato:40 mss:8949 cwnd:10 send 2443.4Mbps rcv_rtt:384723 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:41218  ::ffff:10.26.190.62:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.802/0.024 ato:40 mss:8949 cwnd:10 send 892.7Mbps rcv_rtt:384965 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60824
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.415/0.101 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/21 rcv_rtt:359267 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39934
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.062/1.168 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/32 rcv_rtt:359308 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:48788  ::ffff:10.26.186.78:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.226/0.084 ato:54 mss:8949 cwnd:10 send 3167.8Mbps rcv_rtt:189254 rcv_space:27664
+ESTAB      0      0      ::ffff:10.26.188.107:42224  ::ffff:10.26.186.81:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.276/0.041 ato:40 mss:8949 cwnd:10 send 2593.9Mbps rcv_rtt:385002 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39984
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:171.999/0.314 ato:40 mss:1448 ssthresh:2 send 134.7Kbps retrans:0/22 rcv_rtt:359658 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60836
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.661/0.331 ato:40 mss:1448 ssthresh:2 send 135.0Kbps retrans:0/19 rcv_rtt:359341 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:40264 ::ffff:10.26.187.128:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.283/0.026 ato:40 mss:8949 cwnd:10 send 2529.8Mbps rcv_rtt:385108 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33248
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:376 rtt:175.222/0.91 ato:40 mss:1448 ssthresh:2 send 132.2Kbps retrans:0/27 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33326
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.518/0.107 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/23 rcv_rtt:359367 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:43166  ::ffff:10.26.186.81:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.296/0.048 ato:40 mss:8949 cwnd:10 send 2418.6Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60848
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.925/0.181 ato:40 mss:1448 ssthresh:2 send 134.8Kbps retrans:0/12 rcv_rtt:359486 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41979
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.855/0.231 ato:40 mss:1448 cwnd:10 ssthresh:7 send 674.1Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:34794 ::ffff:10.26.186.232:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.331/0.02 ato:40 mss:8949 cwnd:10 send 2162.9Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39916
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.425/0.684 ato:40 mss:1448 ssthresh:2 send 133.6Kbps retrans:0/26 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:50958 ::ffff:10.26.187.105:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.313/0.026 ato:40 mss:8949 cwnd:10 send 2287.3Mbps rcv_rtt:385056 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:48626 ::ffff:10.26.186.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.3/0.028 ato:40 mss:8949 cwnd:10 send 2386.4Mbps rcv_rtt:183221 rcv_space:27797
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55249
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.19/0.495 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/29 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60742
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.937/0.132 ato:40 mss:1448 ssthresh:2 send 134.0Kbps retrans:0/25 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:59466 ::ffff:10.26.187.236:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.224/0.087 ato:40 mss:8949 cwnd:10 send 3196.1Mbps rcv_rtt:119598 rcv_space:30172
+ESTAB      0      0      ::ffff:10.26.188.107:32784 ::ffff:10.26.186.142:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.284/0.041 ato:40 mss:8949 cwnd:10 send 2520.8Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:42352  ::ffff:10.26.190.62:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.778/0.032 ato:40 mss:8949 cwnd:10 send 920.2Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33294
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.705/0.591 ato:40 mss:1448 ssthresh:2 send 133.4Kbps retrans:0/15 rcv_rtt:359354 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:41042  ::ffff:10.26.190.62:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.825/0.016 ato:40 mss:8949 cwnd:10 send 867.8Mbps rcv_rtt:385000 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:57652  ::ffff:10.26.187.24:6379
+	 skmem:(r0,rb235128,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.319/0.029 ato:44 mss:8949 cwnd:10 send 2244.3Mbps rcv_rtt:5045.25 rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:47742 ::ffff:10.26.187.237:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.265/0.039 ato:40 mss:8949 cwnd:10 send 2701.6Mbps rcv_rtt:211455 rcv_space:28875
+ESTAB      0      0      ::ffff:10.26.188.107:58676 ::ffff:10.26.187.218:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.325/0.025 ato:40 mss:8949 cwnd:10 send 2202.8Mbps rcv_rtt:209609 rcv_space:28798
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41960
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.624/2.43 ato:40 mss:1448 cwnd:10 ssthresh:7 send 663.4Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55345
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.509/0.199 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/26 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:58636  ::ffff:10.26.187.24:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.327/0.034 ato:40 mss:8949 cwnd:10 send 2189.4Mbps rcv_rtt:384786 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:42003
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:172.965/0.234 ato:40 mss:1448 cwnd:10 ssthresh:7 send 669.7Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:35398 ::ffff:10.26.187.194:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.269/0.119 ato:40 mss:8949 cwnd:10 send 2661.4Mbps rcv_rtt:207776 rcv_space:27668
+ESTAB      0      0      ::ffff:10.26.188.107:39890 ::ffff:10.26.187.189:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.259/0.101 ato:62 mss:8949 cwnd:10 send 2764.2Mbps rcv_rtt:188849 rcv_space:27656
+ESTAB      0      0      ::ffff:10.26.188.107:59880 ::ffff:10.26.187.218:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.308/0.042 ato:40 mss:8949 cwnd:10 send 2324.4Mbps rcv_rtt:384890 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60830
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.492/0.973 ato:40 mss:1448 ssthresh:2 send 133.5Kbps retrans:0/21 rcv_rtt:430554 rcv_space:28713
+ESTAB      0      0      ::ffff:10.26.188.107:34110  ::ffff:10.26.186.53:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.311/0.026 ato:40 mss:8949 cwnd:10 send 2302.0Mbps rcv_rtt:385006 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:42668 ::ffff:10.26.186.205:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.339/0.033 ato:40 mss:8949 cwnd:10 send 2111.9Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39964
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.206/0.091 ato:40 mss:1448 ssthresh:2 send 133.0Kbps retrans:0/37 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:40026
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.054/0.311 ato:40 mss:1448 ssthresh:2 send 135.4Kbps retrans:0/19 rcv_rtt:359561 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:55460  ::ffff:10.26.187.97:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.259/0.107 ato:40 mss:8949 cwnd:10 send 2764.2Mbps rcv_rtt:499629 rcv_space:27668
+ESTAB      0      77     ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55218
+	 skmem:(r0,rb235416,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.67/0.089 ato:40 mss:1448 ssthresh:2 send 134.2Kbps unacked:1 retrans:0/31 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55374
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.746/0.124 ato:40 mss:1448 ssthresh:2 send 134.1Kbps retrans:0/29 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:41636 ::ffff:10.26.186.205:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.329/0.02 ato:40 mss:8949 cwnd:10 send 2176.0Mbps rcv_rtt:385036 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39902
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.636/0.056 ato:40 mss:1448 ssthresh:2 send 134.2Kbps retrans:0/29 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:60138 ::ffff:10.26.187.146:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.32/0.017 ato:40 mss:8949 cwnd:10 send 2237.2Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:42110  ::ffff:10.26.186.81:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.299/0.038 ato:40 mss:8949 cwnd:10 send 2394.4Mbps rcv_rtt:384926 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:59838 ::ffff:10.26.187.218:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.319/0.017 ato:40 mss:8949 cwnd:10 send 2244.3Mbps rcv_rtt:384932 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:33996 ::ffff:10.26.186.253:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.279/0.028 ato:40 mss:8949 cwnd:10 send 2566.0Mbps rcv_rtt:384987 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:41080 ::ffff:10.26.186.207:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.285/0.14 ato:40 mss:8949 cwnd:10 send 2512.0Mbps rcv_rtt:426094 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33200
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.318/0.051 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/25 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:42001
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:170.92/0.284 ato:40 mss:1448 cwnd:10 ssthresh:7 send 677.7Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:41334 ::ffff:10.26.186.205:6379
+	 skmem:(r0,rb235128,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.331/0.165 ato:40 mss:8949 cwnd:10 send 2162.9Mbps rcv_rtt:1 rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:38770 ::ffff:10.26.186.155:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.292/0.025 ato:40 mss:8949 cwnd:10 send 2451.8Mbps rcv_rtt:384826 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:54722  ::ffff:10.26.187.63:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.254/0.091 ato:40 mss:8949 cwnd:10 send 2818.6Mbps rcv_rtt:94322.1 rcv_space:27720
+ESTAB      0      77     ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55339
+	 skmem:(r0,rb235416,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.208/0.054 ato:40 mss:1448 ssthresh:2 send 135.3Kbps unacked:1 retrans:0/27 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:55578  ::ffff:10.26.187.97:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.252/0.014 ato:40 mss:8949 cwnd:10 send 2841.0Mbps rcv_rtt:384948 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41969
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.655/0.806 ato:40 mss:1448 cwnd:10 ssthresh:7 send 674.8Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39956
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:376 rtt:175.175/2.802 ato:40 mss:1448 ssthresh:2 send 132.3Kbps retrans:0/20 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55223
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.434/0.178 ato:40 mss:1448 ssthresh:2 send 134.4Kbps retrans:0/23 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60814
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.945/0.986 ato:40 mss:1448 ssthresh:2 send 134.7Kbps retrans:0/12 rcv_rtt:359337 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:41230 ::ffff:10.26.187.189:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.341/0.034 ato:40 mss:8949 cwnd:10 send 2099.5Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:33084 ::ffff:10.26.190.169:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.711/0.284 ato:40 mss:8949 cwnd:10 send 1006.9Mbps rcv_rtt:106342 rcv_space:30476
+ESTAB      0      0      ::ffff:10.26.188.107:49628 ::ffff:10.26.186.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.246/0.101 ato:40 mss:8949 cwnd:10 send 2910.2Mbps rcv_rtt:189401 rcv_space:27664
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41974
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.867/0.197 ato:40 mss:1448 cwnd:10 ssthresh:7 send 670.1Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:38158  ::ffff:10.26.186.67:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.258/0.038 ato:40 mss:8949 cwnd:10 send 2774.9Mbps rcv_rtt:384736 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:51066 ::ffff:10.26.187.105:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.231/0.108 ato:40 mss:8949 cwnd:10 send 3099.2Mbps rcv_rtt:482640 rcv_space:27782
+ESTAB      0      0      ::ffff:10.26.188.107:55774 ::ffff:10.26.190.163:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.742/0.031 ato:40 mss:8949 cwnd:10 send 964.9Mbps rcv_rtt:385249 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33256
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.104/2.447 ato:40 mss:1448 ssthresh:2 send 133.1Kbps retrans:0/20 rcv_rtt:359428 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:40088 ::ffff:10.26.187.128:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.234/0.086 ato:51 mss:8949 cwnd:10 send 3059.5Mbps rcv_rtt:209778 rcv_space:27824
+ESTAB      0      0      ::ffff:10.26.188.107:33808 ::ffff:10.26.186.253:6379
+	 skmem:(r0,rb413747,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.222/0.101 ato:42 mss:8949 cwnd:10 send 3224.9Mbps rcv_rtt:180220 rcv_space:31540
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60774
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.496/0.09 ato:40 mss:1448 ssthresh:2 send 135.1Kbps retrans:0/19 rcv_rtt:430727 rcv_space:28714
+ESTAB      0      0      ::ffff:10.26.188.107:49922  ::ffff:10.26.187.80:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.273/0.029 ato:40 mss:8949 cwnd:10 send 2622.4Mbps rcv_rtt:384904 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:58910  ::ffff:10.26.187.24:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.335/0.018 ato:40 mss:8949 cwnd:10 send 2137.1Mbps rcv_rtt:384908 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:51964 ::ffff:10.26.186.107:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.225/0.018 ato:40 mss:8949 cwnd:10 send 3181.9Mbps rcv_rtt:384756 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33208
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.82/0.06 ato:40 mss:1448 ssthresh:2 send 134.8Kbps retrans:0/33 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39944
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.502/0.39 ato:40 mss:1448 ssthresh:2 send 135.1Kbps retrans:0/25 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:34630 ::ffff:10.26.190.169:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.879/0.219 ato:40 mss:8949 cwnd:10 send 814.5Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:54962 ::ffff:10.26.186.101:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.291/0.129 ato:40 mss:8949 cwnd:10 send 2460.2Mbps rcv_rtt:190818 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:38266  ::ffff:10.26.186.67:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.234/0.014 ato:40 mss:8949 cwnd:10 send 3059.5Mbps rcv_rtt:385076 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33280
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.543/0.442 ato:40 mss:1448 ssthresh:2 send 135.1Kbps retrans:0/25 rcv_rtt:359466 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:54388  ::ffff:10.26.187.97:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.292/0.016 ato:40 mss:8949 cwnd:10 send 2451.8Mbps rcv_rtt:422466 rcv_space:27720
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60842
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.523/0.839 ato:40 mss:1448 ssthresh:2 send 133.5Kbps retrans:0/17 rcv_rtt:359390 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:60256 ::ffff:10.26.187.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.316/0.03 ato:40 mss:8949 cwnd:10 send 2265.6Mbps rcv_rtt:385009 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:54952  ::ffff:10.26.186.20:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.184/0.08 ato:40 mss:8949 cwnd:10 send 3890.9Mbps rcv_rtt:190589 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:55100  ::ffff:10.26.187.63:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.3/0.021 ato:40 mss:8949 cwnd:10 send 2386.4Mbps rcv_rtt:384989 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33216
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.389/0.185 ato:40 mss:1448 ssthresh:2 send 135.2Kbps retrans:0/22 rcv_space:26847
+ESTAB      0      7      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41966
+	 skmem:(r0,rb235416,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.582/0.106 ato:40 mss:1448 cwnd:10 ssthresh:7 send 663.5Kbps unacked:1 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33290
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.104/0.173 ato:40 mss:1448 ssthresh:2 send 135.4Kbps retrans:0/14 rcv_rtt:359436 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:59740 ::ffff:10.26.187.236:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.266/0.053 ato:40 mss:8949 cwnd:10 send 2691.4Mbps rcv_rtt:384985 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41989
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.853/0.346 ato:40 mss:1448 cwnd:10 ssthresh:7 send 666.3Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:59994  ::ffff:10.26.187.24:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.275/0.035 ato:40 mss:8949 cwnd:10 send 2603.3Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:33564 ::ffff:10.26.187.142:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.286/0.141 ato:40 mss:8949 cwnd:10 send 2503.2Mbps rcv_rtt:22250 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33270
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.106/0.41 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/20 rcv_rtt:359132 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39940
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.504/0.218 ato:40 mss:1448 ssthresh:2 send 135.1Kbps retrans:0/19 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:59014 ::ffff:10.26.187.146:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.32/0.022 ato:40 mss:8949 cwnd:10 send 2237.2Mbps rcv_rtt:384856 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60750
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.644/0.615 ato:40 mss:1448 ssthresh:2 send 132.7Kbps retrans:0/30 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33240
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.342/0.095 ato:40 mss:1448 cwnd:3 ssthresh:2 send 202.8Kbps retrans:0/27 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39988
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.736/0.925 ato:40 mss:1448 ssthresh:2 send 133.4Kbps retrans:0/21 rcv_rtt:359531 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33272
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:376 rtt:175.114/0.209 ato:40 mss:1448 ssthresh:2 send 132.3Kbps retrans:0/22 rcv_rtt:359316 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:39860 ::ffff:10.26.186.155:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.271/0.025 ato:40 mss:8949 cwnd:10 send 2641.8Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:48888  ::ffff:10.26.186.78:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.229/0.101 ato:74 mss:8949 cwnd:10 send 3126.3Mbps rcv_rtt:187788 rcv_space:27656
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39900
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.317/0.568 ato:40 mss:1448 ssthresh:2 send 135.2Kbps retrans:0/25 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39998
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.933/2.581 ato:40 mss:1448 ssthresh:2 send 133.2Kbps retrans:0/17 rcv_rtt:359675 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:38042 ::ffff:10.26.186.195:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.285/0.036 ato:44 mss:8949 cwnd:10 send 2512.0Mbps rcv_rtt:121740 rcv_space:29491
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60746
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.019/0.106 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/15 rcv_rtt:430443 rcv_space:28714
+ESTAB      0      0      ::ffff:10.26.188.107:51788 ::ffff:10.26.186.107:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.238/0.032 ato:40 mss:8949 cwnd:10 send 3008.1Mbps rcv_rtt:385036 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55192
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.853/0.1 ato:40 mss:1448 ssthresh:2 send 134.0Kbps retrans:0/31 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:60708 ::ffff:10.26.187.236:6379
+	 skmem:(r0,rb235128,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.275/0.034 ato:40 mss:8949 cwnd:10 send 2603.3Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33284
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.45/0.085 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/19 rcv_rtt:359427 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:50098 ::ffff:10.26.187.237:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.248/0.027 ato:40 mss:8949 cwnd:10 send 2886.8Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:57462 ::ffff:10.26.186.137:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.226/0.088 ato:40 mss:8949 cwnd:10 send 3167.8Mbps rcv_rtt:486974 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:40004
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.131/0.079 ato:40 mss:1448 ssthresh:2 send 133.0Kbps retrans:0/20 rcv_rtt:359576 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:40288 ::ffff:10.26.187.189:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.353/0.031 ato:40 mss:8949 cwnd:10 send 2028.1Mbps rcv_rtt:384963 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:51600 ::ffff:10.26.187.154:2280
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.319/0.021 mss:8949 cwnd:8 ssthresh:7 send 1795.4Mbps retrans:0/2 rcv_space:26883
+ESTAB      0      74     ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60734
+	 skmem:(r0,rb235416,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.906/0.089 ato:40 mss:1448 ssthresh:2 send 134.8Kbps unacked:1 retrans:0/21 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33214
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.366/0.268 ato:40 mss:1448 cwnd:3 ssthresh:2 send 202.8Kbps retrans:0/15 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39960
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.449/0.946 ato:40 mss:1448 ssthresh:2 send 133.6Kbps retrans:0/20 rcv_rtt:359468 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55351
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.533/0.033 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/22 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55245
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.13/0.84 ato:40 mss:1448 cwnd:3 ssthresh:2 send 199.6Kbps retrans:0/34 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:34552 ::ffff:10.26.191.100:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.794/0.038 ato:40 mss:8949 cwnd:10 send 901.7Mbps rcv_rtt:208952 rcv_space:28721
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39910
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.8/0.513 ato:40 mss:1448 ssthresh:2 send 133.3Kbps retrans:0/21 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:58916 ::ffff:10.26.186.137:6379
+	 skmem:(r0,rb235128,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.256/0.011 ato:40 mss:8949 cwnd:10 send 2796.6Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60822
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.251/1.667 ato:40 mss:1448 ssthresh:2 send 134.5Kbps retrans:0/20 rcv_rtt:359169 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:33398  ::ffff:10.26.186.85:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.269/0.139 ato:41 mss:8949 cwnd:10 send 2661.4Mbps rcv_rtt:51609.1 rcv_space:29491
+ESTAB      0      0      ::ffff:10.26.188.107:42430 ::ffff:10.26.186.207:6379
+	 skmem:(r0,rb235128,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.303/0.014 ato:40 mss:8949 cwnd:10 send 2362.8Mbps rcv_space:26883
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39936
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.102/1.821 ato:40 mss:1448 ssthresh:2 send 133.1Kbps retrans:0/20 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:35654 ::ffff:10.26.187.194:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.328/0.02 ato:40 mss:8949 cwnd:7 ssthresh:7 send 1527.9Mbps retrans:0/1 rcv_rtt:384832 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41987
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.385/0.368 ato:40 mss:1448 cwnd:10 ssthresh:7 send 668.1Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:60090 ::ffff:10.26.187.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.331/0.167 ato:40 mss:8949 cwnd:10 send 2162.9Mbps rcv_rtt:189361 rcv_space:27732
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60706
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.46/0.079 ato:40 mss:1448 ssthresh:2 send 133.6Kbps retrans:0/13 rcv_rtt:430668 rcv_space:28713
+ESTAB      0      0      ::ffff:10.26.188.107:33368 ::ffff:10.26.186.232:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.362/0.026 ato:40 mss:8949 cwnd:10 send 1977.7Mbps rcv_rtt:385055 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39952
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.535/1.005 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/24 rcv_rtt:359629 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33238
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.341/0.186 ato:40 mss:1448 ssthresh:2 send 133.7Kbps retrans:0/31 rcv_space:26847
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33334
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.292/1.356 ato:40 mss:1448 ssthresh:2 send 133.7Kbps unacked:1 retrans:0/21 rcv_rtt:359300 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:35584  ::ffff:10.26.187.69:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.339/0.044 ato:40 mss:8949 cwnd:10 send 2111.9Mbps rcv_rtt:385086 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41988
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:376 rtt:175.133/1.318 ato:40 mss:1448 cwnd:10 ssthresh:7 send 661.4Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:33030 ::ffff:10.26.190.169:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.737/0.304 ato:40 mss:8949 cwnd:10 send 971.4Mbps rcv_rtt:123683 rcv_space:27735
+ESTAB      0      0      ::ffff:10.26.188.107:38850 ::ffff:10.26.187.108:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.34/0.032 ato:40 mss:8949 cwnd:10 send 2105.6Mbps rcv_rtt:385100 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:41544 ::ffff:10.26.186.205:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.338/0.012 ato:40 mss:8949 cwnd:10 send 2118.1Mbps rcv_rtt:384812 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:40150 ::ffff:10.26.187.189:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.34/0.025 ato:40 mss:8949 cwnd:10 send 2105.6Mbps rcv_rtt:384891 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:54694  ::ffff:10.26.187.63:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.328/0.169 ato:40 mss:8949 cwnd:10 send 2182.7Mbps rcv_rtt:189871 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:55570 ::ffff:10.26.190.163:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.769/0.033 ato:40 mss:8949 cwnd:10 send 931.0Mbps rcv_rtt:384780 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:60334 ::ffff:10.26.187.143:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.327/0.03 ato:40 mss:8949 cwnd:10 send 2189.4Mbps rcv_rtt:385067 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39974
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.14/0.367 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/30 rcv_rtt:359676 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41962
+	 skmem:(r0,rb235416,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:376 rtt:175.566/0.408 ato:40 mss:1448 cwnd:10 ssthresh:7 send 659.8Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:35344 ::ffff:10.26.187.194:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.263/0.106 ato:40 mss:8949 cwnd:10 send 2722.1Mbps rcv_rtt:189058 rcv_space:28196
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60802
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.539/0.623 ato:40 mss:1448 ssthresh:2 send 135.1Kbps retrans:0/30 rcv_rtt:359500 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33302
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.158/0.152 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/22 rcv_rtt:359322 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55334
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.833/1.1 ato:40 mss:1448 ssthresh:2 send 133.3Kbps retrans:0/23 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60850
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.745/0.264 ato:40 mss:1448 ssthresh:2 send 134.1Kbps retrans:0/20 rcv_rtt:359579 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:33362  ::ffff:10.26.186.85:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.237/0.027 ato:40 mss:8949 cwnd:10 send 3020.8Mbps rcv_rtt:385071 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:53832  ::ffff:10.26.186.12:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.285/0.013 ato:40 mss:8949 cwnd:10 send 2512.0Mbps rcv_rtt:384948 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39942
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.496/1.844 ato:40 mss:1448 ssthresh:2 send 132.8Kbps retrans:0/25 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60770
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.037/0.155 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/14 rcv_rtt:430695 rcv_space:28714
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33288
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.541/0.209 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/23 rcv_rtt:359359 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39966
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.051/0.104 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/19 rcv_rtt:359599 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:51844 ::ffff:10.26.186.107:6379
+	 skmem:(r0,rb413747,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.181/0.076 ato:48 mss:8949 cwnd:10 send 3955.4Mbps rcv_rtt:155382 rcv_space:33495
+ESTAB      0      0      ::ffff:10.26.188.107:53508  ::ffff:10.26.186.12:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.251/0.104 ato:40 mss:8949 cwnd:10 send 2852.3Mbps rcv_rtt:190056 rcv_space:27725
+ESTAB      0      7      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:41272
+	 skmem:(r0,rb395758,t0,tb87380,f1792,w2304,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.625/0.294 ato:40 mss:1448 ssthresh:2 send 134.2Kbps unacked:1 retrans:0/12 rcv_rtt:359267 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39978
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.19/0.178 ato:40 mss:1448 ssthresh:2 send 133.8Kbps retrans:0/24 rcv_rtt:359660 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:33290 ::ffff:10.26.186.232:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.274/0.126 ato:40 mss:8949 cwnd:10 send 2612.8Mbps rcv_rtt:487080 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:54870 ::ffff:10.26.186.101:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.269/0.035 ato:40 mss:8949 cwnd:10 send 2661.4Mbps rcv_rtt:384926 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:48384  ::ffff:10.26.186.90:80
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.186/0.075 ato:40 mss:8949 cwnd:10 send 3849.0Mbps rcv_rtt:182247 rcv_space:27782
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:40008
+	 skmem:(r0,rb395758,t0,tb87380,f4096,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.775/0.116 ato:40 mss:1448 ssthresh:2 send 134.9Kbps retrans:0/19 rcv_rtt:359128 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:34096  ::ffff:10.26.186.53:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.374/0.036 ato:40 mss:8949 cwnd:10 send 1914.2Mbps rcv_rtt:384932 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:38152  ::ffff:10.26.186.67:6379
+	 skmem:(r0,rb395758,t0,tb332800,f8192,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.226/0.097 ato:42 mss:8949 cwnd:10 send 3167.8Mbps rcv_rtt:190276 rcv_space:27725
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:33822
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:373 rtt:172.536/1.279 ato:40 mss:1448 ssthresh:2 send 134.3Kbps retrans:0/30 rcv_rtt:359494 rcv_space:26890
+ESTAB      0      0      ::ffff:10.26.188.107:34028 ::ffff:10.26.186.253:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.272/0.017 ato:40 mss:8949 cwnd:10 send 2632.1Mbps rcv_rtt:385110 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.28.97.222:39976
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:372 rtt:171.603/0.293 ato:40 mss:1448 ssthresh:2 send 135.0Kbps retrans:0/23 rcv_rtt:359665 rcv_space:26889
+ESTAB      0      0      ::ffff:10.26.188.107:80       ::ffff:10.28.98.6:60704
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.118/0.2 ato:40 mss:1448 ssthresh:2 send 133.1Kbps retrans:0/34 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:35684 ::ffff:10.26.191.100:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.796/0.022 ato:40 mss:8949 cwnd:10 send 899.4Mbps rcv_rtt:384978 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:41976
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:375 rtt:174.744/0.204 ato:40 mss:1448 cwnd:10 ssthresh:7 send 662.9Kbps rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:80    ::ffff:10.15.142.142:55239
+	 skmem:(r0,rb235416,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.036/0.282 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/28 rcv_space:26847
+ESTAB      0      0      ::ffff:10.26.188.107:45858 ::ffff:10.26.186.157:6379
+	 skmem:(r0,rb395758,t0,tb332800,f0,w0,o0,bl0) cubic wscale:7,10 rto:201 rtt:0.35/0.048 ato:40 mss:8949 cwnd:10 send 2045.5Mbps rcv_rtt:384884 rcv_space:27657
+ESTAB      0      0      ::ffff:10.26.188.107:80     ::ffff:10.15.139.92:33316
+	 skmem:(r0,rb395758,t0,tb87380,f0,w0,o0,bl0) cubic wscale:7,10 rto:374 rtt:173.048/0.486 ato:40 mss:1448 ssthresh:2 send 133.9Kbps retrans:0/17 rcv_rtt:359388 rcv_space:26890
