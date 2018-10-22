@@ -68,6 +68,8 @@ public class NettySlaveHandler extends ChannelTrafficStatisticsHandler{
 	
 	@Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
+		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(readBytes);
+		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(writtenBytes);
         if (readBytes > 0) {
             String type = String.format("Keeper.In.%s", redisKeeperServer.getClusterId());
             String name = String.format("%s-%s-%s:%s", redisMasterReplication.redisMaster().roleDesc(), redisKeeperServer.getShardId(), remoteIp, remotePort);

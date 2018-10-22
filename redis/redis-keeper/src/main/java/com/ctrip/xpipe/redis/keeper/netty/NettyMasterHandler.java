@@ -91,6 +91,8 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	
 	 @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
+		 redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(readBytes);
+		 redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(writtenBytes);
         if (writtenBytes > 0) {
             String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
             String name = null;

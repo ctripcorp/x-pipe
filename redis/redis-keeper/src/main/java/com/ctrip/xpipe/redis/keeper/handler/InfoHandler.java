@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
@@ -9,8 +7,11 @@ import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Maps;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -20,6 +21,18 @@ import java.util.Set;
  */
 public class InfoHandler extends AbstractCommandHandler{
 
+	private Map<String, InfoSection> sections = Maps.newConcurrentMap();
+
+	public InfoHandler() {
+		register(new InfoAll());
+		register(new InfoServer());
+		register(new InfoReplication());
+		register(new InfoStats());
+	}
+
+	private void register(InfoSection section) {
+		sections.put(section.name().toLowerCase().trim(), section);
+	}
 
 	@Override
 	public String[] getCommands() {
@@ -36,56 +49,141 @@ public class InfoHandler extends AbstractCommandHandler{
 	protected void doHandle(String[] args, RedisClient redisClient) {
 		logger.debug("[doHandle]{},{}", redisClient, StringUtil.join(" ", args));
 
-		boolean isDefault = false;
-		boolean isAll = false;
-		String section = null;
-
-		if(args.length == 0){
-
-			isDefault = true;
-		}
-
-		if(args.length == 1){
-
-			if(args[0].equalsIgnoreCase("all")){
-				isAll = true;
-			}else{
-				section = args[0];
-			}
-		}
-
-		StringBuilder sb = new StringBuilder();
 		RedisKeeperServer redisKeeperServer = redisClient.getRedisKeeperServer();
-
-		server(isDefault, isAll, section, sb, redisKeeperServer);
-		replication(isDefault, isAll, section, sb, redisKeeperServer);
-		detail(isDefault, isAll, section, sb, redisKeeperServer);
-
-		redisClient.sendMessage(new BulkStringParser(sb.toString()).format());
+		String result;
+		if(args.length == 0){
+			result = new DefaultInfoSections().getInfo(redisKeeperServer);
+		} else {
+			result = doSectionHandler(args[0], redisKeeperServer);
+		}
+		redisClient.sendMessage(new BulkStringParser(result).format());
 	}
 
-	private void server(boolean isDefault, boolean isAll, String section, StringBuilder sb,
-			RedisKeeperServer redisKeeperServer) {
+	private String doSectionHandler(String section, RedisKeeperServer redisKeeperServer) {
+		return sections.get(section.toLowerCase().trim()).getInfo(redisKeeperServer);
+	}
 
-		if(isDefault || isAll || "server".equalsIgnoreCase(section)){
+	private interface InfoSection {
 
-			sb.append("# Server" + RedisProtocol.CRLF);
-			sb.append(redisKeeperServer.info() + RedisProtocol.CRLF);
+		String getInfo(RedisKeeperServer keeperServer);
 
+		String name();
+
+	}
+
+	private abstract class AbstractInfoSection implements InfoSection {
+
+		protected String getHeader() {
+			return String.format("# %s%s", name(), RedisProtocol.CRLF);
 		}
 
+		protected String strAndNum(String key, long val) {
+			return String.format("%s:%d%s", key, val, RedisProtocol.CRLF);
+		}
+
+		protected String strAndNum(String key, int val) {
+			return String.format("%s:%d%s", key, val, RedisProtocol.CRLF);
+		}
+
+		protected String strAndStr(String key, String val) {
+			return String.format("%s:%s%s", key, val, RedisProtocol.CRLF);
+		}
 	}
 
-	private void replication(boolean isDefault, boolean isAll, String section, StringBuilder sb, RedisKeeperServer redisKeeperServer) {
+	private class InfoAll extends AbstractInfoSection {
 
-		if(isDefault || isAll || "replication".equalsIgnoreCase(section)){
-			
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(sections.get("server").getInfo(keeperServer));
+			sb.append(RedisProtocol.CRLF);
+			sb.append(sections.get("replication").getInfo(keeperServer));
+			sb.append(RedisProtocol.CRLF);
+			sb.append(sections.get("stats").getInfo(keeperServer));
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "All";
+		}
+	}
+
+	private class DefaultInfoSections extends AbstractInfoSection {
+
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+			return sections.get("all").getInfo(keeperServer);
+		}
+
+		@Override
+		public String name() {
+			return null;
+		}
+	}
+
+	private class InfoStats extends AbstractInfoSection {
+
+		private static final String KEY_TOTAL_NET_INPUT_BYTES = "total_net_input_bytes";
+
+		private static final String KEY_TOTAL_NET_OUTPUT_BYTES = "total_net_output_bytes";
+
+		private static final String KEY_INSTANTANEOUS_INPUT_KBPS = "instantaneous_input_kbps";
+
+		private static final String KEY_INSTANTANEOUS_OUTPUT_KBPS = "instantaneous_output_kbps";
+
+		private static final String KEY_TOTAL_SYNC_FULL = "sync_full";
+
+		private static final String KEY_TOTAL_SYNC_PARTIAL_OK = "sync_partial_ok";
+
+		private static final String KEY_TOTAL_SYNC_PARTIAL_ERROR = "sync_partial_err";
+
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+			KeeperStats stats = keeperServer.getKeeperMonitor().getKeeperStats();
+			StringBuilder sb = new StringBuilder();
+			sb.append(getHeader());
+			sb.append(strAndNum(KEY_TOTAL_SYNC_FULL, stats.getFullSyncCount()));
+			sb.append(strAndNum(KEY_TOTAL_SYNC_PARTIAL_OK, stats.getPartialSyncCount()));
+			sb.append(strAndNum(KEY_TOTAL_SYNC_PARTIAL_ERROR, stats.getPartialSyncErrorCount()));
+			sb.append(strAndNum(KEY_TOTAL_NET_INPUT_BYTES, stats.getInputBytes()));
+			sb.append(strAndNum(KEY_TOTAL_NET_OUTPUT_BYTES, stats.getOutputBytes()));
+			sb.append(strAndNum(KEY_INSTANTANEOUS_INPUT_KBPS, stats.getInputInstantaneousBPS()));
+			sb.append(strAndNum(KEY_INSTANTANEOUS_OUTPUT_KBPS, stats.getOutputInstantaneousBPS()));
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "Stats";
+		}
+	}
+
+	private class InfoServer extends AbstractInfoSection {
+
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(getHeader());
+			sb.append(keeperServer.info() + RedisProtocol.CRLF);
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "Server";
+		}
+	}
+
+	private class InfoReplication extends AbstractInfoSection {
+
+		@Override
+		public String getInfo(RedisKeeperServer redisKeeperServer) {
+			StringBuilder sb = new StringBuilder();
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			long slaveReplOffset = replicationStore.getEndOffset();
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
-
-
-			sb.append("# Replication" + RedisProtocol.CRLF);
+			sb.append(getHeader());
 			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
 			sb.append(RedisProtocol.KEEPER_ROLE_PREFIX + ":" + redisKeeperServer.role() + RedisProtocol.CRLF);
 			sb.append("state:" + redisKeeperServer.getRedisKeeperServerState().keeperState() + RedisProtocol.CRLF);
@@ -103,7 +201,7 @@ public class InfoHandler extends AbstractCommandHandler{
 			}
 			/**
 			 * To make sure keeper is the least option to be the new master when master is down
-             */
+			 */
 			sb.append("slave_repl_offset:" + slaveReplOffset + RedisProtocol.CRLF);
 			sb.append("slave_priority:0" + RedisProtocol.CRLF);
 
@@ -114,55 +212,42 @@ public class InfoHandler extends AbstractCommandHandler{
 				sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.info()));
 				slaveIndex++;
 			}
-			
+
 			long beginOffset = keeperRepl.getBeginOffset();
 			MetaStore metaStore = replicationStore.getMetaStore();
-			String replid = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId(); 
+			String replid = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId();
 			String replid2 = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId2();
 			long  secondReplIdOffset = metaStore == null? ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET : metaStore.getSecondReplIdOffset();
-			
-			if(replid == null){ 
-				replid = ReplicationStoreMeta.EMPTY_REPL_ID; 
+
+			if(replid == null){
+				replid = ReplicationStoreMeta.EMPTY_REPL_ID;
 			}
-			if(replid2 == null){ 
-				replid2 = ReplicationStoreMeta.EMPTY_REPL_ID; 
+			if(replid2 == null){
+				replid2 = ReplicationStoreMeta.EMPTY_REPL_ID;
 			}
-			
+
 			sb.append("master_replid:" + replid + RedisProtocol.CRLF);
 			sb.append("master_replid2:" + replid2 + RedisProtocol.CRLF);
 			sb.append("master_repl_offset:" + keeperRepl.getEndOffset() + RedisProtocol.CRLF);
 			sb.append("second_repl_offset:" + secondReplIdOffset + RedisProtocol.CRLF);
-			
+
 			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_first_byte_offset:" + beginOffset+ RedisProtocol.CRLF);
-            try {
+			try {
 				long endOffset = keeperRepl.getEndOffset();
-                sb.append("master_repl_offset:" + endOffset + RedisProtocol.CRLF);
-                sb.append("repl_backlog_size:" + (endOffset - beginOffset + 1) + RedisProtocol.CRLF);
-                sb.append("repl_backlog_histlen:" + (endOffset - beginOffset + 1)+ RedisProtocol.CRLF);
+				sb.append("master_repl_offset:" + endOffset + RedisProtocol.CRLF);
+				sb.append("repl_backlog_size:" + (endOffset - beginOffset + 1) + RedisProtocol.CRLF);
+				sb.append("repl_backlog_histlen:" + (endOffset - beginOffset + 1)+ RedisProtocol.CRLF);
 			} catch (Throwable ex) {
 				sb.append("error_message:" + ex.getMessage() + RedisProtocol.CRLF);
 				logger.info("Cannot calculate end offset", ex);
 			}
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "Replication";
 		}
 	}
-
-	private void detail(boolean isDefault, boolean isAll, String section, StringBuilder sb, RedisKeeperServer redisKeeperServer) {
-		if(isDefault || isAll || "replication".equalsIgnoreCase(section)) {
-			Endpoint endpoint = redisKeeperServer.getRedisMaster().masterEndPoint();
-			if(!(endpoint instanceof ProxyEnabled)) {
-				return;
-			}
-			sb.append(String.format("# Replication Detail%s", RedisProtocol.CRLF));
-			Set<RedisSlave> slaves = redisKeeperServer.slaves();
-			int slaveIndex = 0;
-			for(RedisSlave slave : slaves){
-				if(slave.getClientEndpoint() != null) {
-					sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.getClientEndpoint()));
-					slaveIndex++;
-				}
-			}
-		}
-	}
-
 }

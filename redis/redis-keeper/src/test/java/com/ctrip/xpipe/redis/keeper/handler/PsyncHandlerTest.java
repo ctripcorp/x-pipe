@@ -55,7 +55,7 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 		
 		when(redisSlave.getRedisKeeperServer()).thenReturn(redisKeeperServer);
 		when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-		when(redisKeeperServer.getKeeperMonitor()).thenReturn(new DefaultKeeperMonitor(redisKeeperServer));
+		when(redisKeeperServer.getKeeperMonitor()).thenReturn(new DefaultKeeperMonitor(redisKeeperServer, scheduled));
 		when(redisKeeperServer.getKeeperConfig()).thenReturn(KeeperConfig);
 
 		when(keeperRepl.getBeginOffset()).thenReturn(begin);
