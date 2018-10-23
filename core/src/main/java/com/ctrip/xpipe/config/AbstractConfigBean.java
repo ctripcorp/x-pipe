@@ -107,23 +107,21 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		long currentConfigVersion = configVersion.get();
 
 		T val = cache.get(key);
-		if(val == null) {
+		String value;
+		if(val == null && (value = config.get(key, null)) != null) {
 			synchronized (this) {
 				if(cache.get(key) == null) {
-					String value = getProperty(key, null);
+					T result = parser.apply(value);
 
-					if (value != null) {
-						T result = parser.apply(value);
+					if (result != null) {
 
-						if (result != null) {
-
-							if (configVersion.get() == currentConfigVersion) {
-								cache.put(key, result);
-							}
-
-							return result;
+						if (configVersion.get() == currentConfigVersion) {
+							cache.put(key, result);
 						}
+
+						return result;
 					}
+
 				}
 				return cache.get(key);
 			}
