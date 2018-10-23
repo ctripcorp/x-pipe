@@ -81,6 +81,10 @@ public class InfoHandler extends AbstractCommandHandler{
 			return String.format("%s:%d%s", key, val, RedisProtocol.CRLF);
 		}
 
+		protected String strAndNum(String key, float val) {
+			return String.format("%s:%f%s", key, val, RedisProtocol.CRLF);
+		}
+
 		protected String strAndNum(String key, int val) {
 			return String.format("%s:%d%s", key, val, RedisProtocol.CRLF);
 		}
@@ -140,6 +144,7 @@ public class InfoHandler extends AbstractCommandHandler{
 
 		@Override
 		public String getInfo(RedisKeeperServer keeperServer) {
+			float kilo = 1024;
 			KeeperStats stats = keeperServer.getKeeperMonitor().getKeeperStats();
 			StringBuilder sb = new StringBuilder();
 			sb.append(getHeader());
@@ -148,8 +153,8 @@ public class InfoHandler extends AbstractCommandHandler{
 			sb.append(strAndNum(KEY_TOTAL_SYNC_PARTIAL_ERROR, stats.getPartialSyncErrorCount()));
 			sb.append(strAndNum(KEY_TOTAL_NET_INPUT_BYTES, stats.getInputBytes()));
 			sb.append(strAndNum(KEY_TOTAL_NET_OUTPUT_BYTES, stats.getOutputBytes()));
-			sb.append(strAndNum(KEY_INSTANTANEOUS_INPUT_KBPS, stats.getInputInstantaneousBPS()));
-			sb.append(strAndNum(KEY_INSTANTANEOUS_OUTPUT_KBPS, stats.getOutputInstantaneousBPS()));
+			sb.append(strAndNum(KEY_INSTANTANEOUS_INPUT_KBPS, ((float)stats.getInputInstantaneousBPS() / kilo)));
+			sb.append(strAndNum(KEY_INSTANTANEOUS_OUTPUT_KBPS, ((float)stats.getOutputInstantaneousBPS() / kilo)));
 			return sb.toString();
 		}
 
