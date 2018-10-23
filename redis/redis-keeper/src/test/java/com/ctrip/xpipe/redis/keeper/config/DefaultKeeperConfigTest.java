@@ -100,4 +100,9 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		sleep(1000 * 60);
 	}
 
+	@Test
+	public void testNullPointExceptionWhenNoValueSet() {
+		KeeperConfig keeperConfig = new DefaultKeeperConfig();
+		keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
+	}
 }
