@@ -216,6 +216,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
+		keeperMonitor.getKeeperStats().start();
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
@@ -226,7 +227,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	protected void doStop() throws Exception {
-		
+		keeperMonitor.getKeeperStats().stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		this.leaderElector.stop();
 		stopServer();

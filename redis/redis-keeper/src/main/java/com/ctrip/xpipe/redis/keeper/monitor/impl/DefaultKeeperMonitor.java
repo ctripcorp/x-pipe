@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 /**
  * @author wenchao.meng
  *
@@ -14,14 +16,15 @@ import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
  */
 public class DefaultKeeperMonitor implements KeeperMonitor{
 
-	private KeeperStats keeperStats = new DefaultKeeperStats();
+	private KeeperStats keeperStats;
 	
 	private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
 	
 	private RedisKeeperServer redisKeeperServer;
 	
-	public DefaultKeeperMonitor(RedisKeeperServer redisKeeperServer) {
+	public DefaultKeeperMonitor(RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
 		this.redisKeeperServer = redisKeeperServer;
+		this.keeperStats = new DefaultKeeperStats(scheduled);
 	}
 	
 	@Override
