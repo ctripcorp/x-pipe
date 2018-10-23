@@ -50,39 +50,27 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 	}
 
 	protected Integer getIntProperty(String key, Integer defaultValue){
-		try {
-			if (intergerCache == null) {
-				synchronized (this) {
-					if (intergerCache == null) {
-						intergerCache = Maps.newConcurrentMap();
-					}
+		if (intergerCache == null) {
+			synchronized (this) {
+				if (intergerCache == null) {
+					intergerCache = Maps.newConcurrentMap();
 				}
 			}
-
-			return getValueFromCache(key, Functions.TO_INT_FUNCTION, intergerCache, defaultValue);
-		} catch (Throwable ex) {
-			logger.error(String.format("getIntProperty for %s failed, return default value %d", key, defaultValue), ex);
 		}
-		return defaultValue;
-		
+
+		return getValueFromCache(key, Functions.TO_INT_FUNCTION, intergerCache, defaultValue);
 	}
 
 	protected Long getLongProperty(String key, Long defaultValue){
-		try {
-			if (longCache == null) {
-				synchronized (this) {
-					if (longCache == null) {
-						longCache = Maps.newConcurrentMap();
-					}
+		if (longCache == null) {
+			synchronized (this) {
+				if (longCache == null) {
+					longCache = Maps.newConcurrentMap();
 				}
 			}
-
-			return getValueFromCache(key, Functions.TO_LONG_FUNCTION, longCache, defaultValue);
-		} catch (Throwable ex) {
-			logger.error(String.format("getLongProperty for %s failed, return default value %d", key, defaultValue), ex);
 		}
-		return defaultValue;
-		
+
+		return getValueFromCache(key, Functions.TO_LONG_FUNCTION, longCache, defaultValue);
 	}
 
 	protected Boolean getBooleanProperty(String key, Boolean defaultValue){
@@ -117,18 +105,27 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 
 	private <T> T getValueAndStoreToCache(String key, Function<String, T> parser, Map<String, T> cache, T defaultValue) {
 		long currentConfigVersion = configVersion.get();
-		String value = getProperty(key, null);
 
-		if (value != null) {
-			T result = parser.apply(value);
+		T val = cache.get(key);
+		if(val == null) {
+			synchronized (this) {
+				if(cache.get(key) == null) {
+					String value = getProperty(key, null);
 
-			if (result != null) {
-				synchronized (this) {
-					if (configVersion.get() == currentConfigVersion) {
-						cache.put(key, result);
+					if (value != null) {
+						T result = parser.apply(value);
+
+						if (result != null) {
+
+							if (configVersion.get() == currentConfigVersion) {
+								cache.put(key, result);
+							}
+
+							return result;
+						}
 					}
 				}
-				return result;
+				return cache.get(key);
 			}
 		}
 
