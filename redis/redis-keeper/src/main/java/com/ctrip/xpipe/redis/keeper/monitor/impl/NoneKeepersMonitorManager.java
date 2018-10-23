@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.*;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 /**
  * @author wenchao.meng
  *
@@ -13,8 +15,12 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 	
 	public static class NoneKeeperMonitor implements KeeperMonitor{
 		
-		private KeeperStats keeperStats = new DefaultKeeperStats();
-		private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats(); 
+		private KeeperStats keeperStats;
+		private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
+
+		public NoneKeeperMonitor(ScheduledExecutorService scheduled) {
+			keeperStats = new DefaultKeeperStats(scheduled);
+		}
 
 		@Override
 		public CommandStoreDelay createCommandStoreDelay(CommandStore commandStore) {
@@ -33,7 +39,7 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 	}
 
 	@Override
-	protected KeeperMonitor createKeeperMonitor(RedisKeeperServer redisKeeperServer) {
-		return new NoneKeeperMonitor();
+	protected KeeperMonitor createKeeperMonitor(RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
+		return new NoneKeeperMonitor(scheduled);
 	}
 }

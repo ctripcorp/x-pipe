@@ -294,6 +294,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public void onChange(String key, String oldValue, String newValue) {
+        super.onChange(key, oldValue, newValue);
         if(!listeners.containsKey(key)) {
             return;
         }
