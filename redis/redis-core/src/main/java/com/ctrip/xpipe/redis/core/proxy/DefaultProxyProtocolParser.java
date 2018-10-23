@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -52,23 +53,23 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
 
 
     @Override
-    public ProxyProtocol read(String protocol) {
+    public ProxyConnectProtocol read(String protocol) {
         if(!protocol.toLowerCase().startsWith(ProxyProtocol.KEY_WORD.toLowerCase())) {
             throw new ProxyProtocolException("proxy protocol format error: " + protocol);
         }
-        ProxyProtocol proxyProtocol = new DefaultProxyProtocol(this);
-        proxyProtocol.setContent(protocol);
+        ProxyConnectProtocol proxyConnectProtocol = new DefaultProxyConnectProtocol(this);
+        proxyConnectProtocol.setContent(protocol);
 
         protocol = removeKeyWord(protocol);
         String[] allOption = protocol.split(LINE_SPLITTER);
         for(String option : allOption) {
             addProxyParser(PROXY_OPTION.parse(option.trim()));
         }
-        return proxyProtocol;
+        return proxyConnectProtocol;
     }
 
     @Override
-    public ProxyProtocol read(ByteBuf byteBuf) {
+    public ProxyConnectProtocol read(ByteBuf byteBuf) {
         RedisClientProtocol<String> redisClientProtocol = simpleStringParser.read(byteBuf);
         if(redisClientProtocol == null) {
             return null;

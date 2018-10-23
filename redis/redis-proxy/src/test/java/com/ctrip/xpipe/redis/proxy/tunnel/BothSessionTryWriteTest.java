@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
@@ -67,18 +67,18 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
 
     private EventLoopGroup eventLoopGroup2 = new NioEventLoopGroup(1, XpipeThreadFactory.create("frontend"));
 
-    private ProxyProtocol proxyProtocol;
+    private ProxyConnectProtocol proxyConnectProtocol;
 
     private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379\r\n";
 
     @Before
     public void beforeBothSessionTryWriteTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
+        when(tunnelManager.create(frontChannel, proxyConnectProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
 
-        proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, proxyResourceManager);
+        proxyConnectProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
+        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager);
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
         ResourceManager resourceManager = mock(ResourceManager.class);

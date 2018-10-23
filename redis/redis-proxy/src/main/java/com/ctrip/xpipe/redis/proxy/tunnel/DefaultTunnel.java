@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.proxy.Session;
@@ -44,7 +44,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private volatile BackendSession backend;
 
-    private ProxyProtocol protocol;
+    private ProxyConnectProtocol protocol;
 
     private AtomicReference<TunnelState> tunnelState = new AtomicReference<>(new TunnelHalfEstablished(this));
 
@@ -52,7 +52,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private ResourceManager proxyResourceManager;
 
-    public DefaultTunnel(Channel frontendChannel, ProxyProtocol protocol, ProxyConfig config,
+    public DefaultTunnel(Channel frontendChannel, ProxyConnectProtocol protocol, ProxyConfig config,
                          ResourceManager proxyResourceManager) {
 
         this.config = config;
@@ -116,7 +116,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
     @Override
-    public ProxyProtocol getProxyProtocol() {
+    public ProxyConnectProtocol getProxyProtocol() {
         return protocol;
     }
 

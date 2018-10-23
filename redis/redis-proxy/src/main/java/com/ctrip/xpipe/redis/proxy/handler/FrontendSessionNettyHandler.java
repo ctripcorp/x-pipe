@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -22,7 +22,7 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if(msg instanceof ProxyProtocol) {
+        if(msg instanceof ProxyConnectProtocol) {
             logger.info("[channelRead][ProxyProtocol-Received] {}", msg.toString());
             handleProxyProtocol(ctx, msg);
             return;
@@ -45,7 +45,7 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
     private void handleProxyProtocol(ChannelHandlerContext ctx, Object msg) {
         logger.debug("[doChannelRead][ProxyProtocol] {}", msg);
         try {
-            tunnel = tunnelManager.create(ctx.channel(), (ProxyProtocol) msg);
+            tunnel = tunnelManager.create(ctx.channel(), (ProxyConnectProtocol) msg);
             session = tunnel.frontend();
         } catch (Exception e) {
             logger.error("[channelRead] Error when create tunnel: ", e);

@@ -12,7 +12,7 @@ import org.junit.Test;
  * <p>
  * May 29, 2018
  */
-public class ProxyProtocolDecoderTest extends AbstractNettyTest {
+public class ProxyConnectProtocolDecoderTest extends AbstractNettyTest {
 
     private ProxyProtocolDecoder decoder = new ProxyProtocolDecoder(128);
 

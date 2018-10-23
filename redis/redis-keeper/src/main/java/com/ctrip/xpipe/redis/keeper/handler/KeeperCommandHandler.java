@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -95,7 +95,7 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 
 	// setstate ACTIVE 127.0.0.1 6379 PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://127.0.0.2;80 TCP
 	@VisibleForTesting
-	protected ProxyProtocol getProxyProtocol(String[] args) {
+	protected ProxyConnectProtocol getProxyProtocol(String[] args) {
 		String[] protocolArr = new String[args.length - 4];
 		System.arraycopy(args, 4, protocolArr, 0, protocolArr.length);
 		String scheme = protocolArr[protocolArr.length - 1];

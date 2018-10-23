@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
@@ -53,9 +53,9 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         return endpoint;
     }
 
-    private ProxyProtocol getProxyProtocol(HostPort hostPort, RouteMeta route) {
+    private ProxyConnectProtocol getProxyProtocol(HostPort hostPort, RouteMeta route) {
         String uri = String.format("%s://%s:%d", ProxyEndpoint.PROXY_SCHEME.TCP, hostPort.getHost(), hostPort.getPort());
-        String protocol = String.format("%s %s %s %s;", ProxyProtocol.KEY_WORD, PROXY_OPTION.ROUTE, route.getRouteInfo(), uri);
+        String protocol = String.format("%s %s %s %s;", ProxyConnectProtocol.KEY_WORD, PROXY_OPTION.ROUTE, route.getRouteInfo(), uri);
         return new DefaultProxyProtocolParser().read(protocol);
     }
 

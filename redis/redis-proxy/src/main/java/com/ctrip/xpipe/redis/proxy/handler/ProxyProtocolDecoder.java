@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
@@ -44,14 +44,14 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
         checkValid(in);
 
         try {
-            ProxyProtocol proxyProtocol = parser.read(in);
-            if(proxyProtocol == null) {
+            ProxyConnectProtocol proxyConnectProtocol = parser.read(in);
+            if(proxyConnectProtocol == null) {
                 return;
             }
             if(ctx.channel().remoteAddress() instanceof InetSocketAddress) {
-                proxyProtocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
+                proxyConnectProtocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
             }
-            out.add(proxyProtocol);
+            out.add(proxyConnectProtocol);
             finished = true;
         } catch (ProxyProtocolException e) {
             throw e;

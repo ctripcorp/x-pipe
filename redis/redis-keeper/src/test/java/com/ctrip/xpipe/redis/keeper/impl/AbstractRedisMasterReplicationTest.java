@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
@@ -67,7 +67,7 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
         System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "0");
         Server server = startEmptyServer();
-        ProxyProtocol protocol = new DefaultProxyProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
+        ProxyConnectProtocol protocol = new DefaultProxyProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
         ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
 
         when(redisMaster.masterEndPoint()).thenReturn(endpoint);

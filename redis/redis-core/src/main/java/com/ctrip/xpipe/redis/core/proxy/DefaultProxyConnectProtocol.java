@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
 import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
@@ -17,19 +17,19 @@ import java.util.List;
  * <p>
  * May 09, 2018
  */
-public class DefaultProxyProtocol implements ProxyProtocol {
+public class DefaultProxyConnectProtocol implements ProxyConnectProtocol {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyProtocol.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyConnectProtocol.class);
 
     private ProxyProtocolParser parser;
 
     private String content;
 
-    public DefaultProxyProtocol() {
+    public DefaultProxyConnectProtocol() {
 
     }
 
-    public DefaultProxyProtocol(ProxyProtocolParser parser) {
+    public DefaultProxyConnectProtocol(ProxyProtocolParser parser) {
         this.parser = parser;
     }
 

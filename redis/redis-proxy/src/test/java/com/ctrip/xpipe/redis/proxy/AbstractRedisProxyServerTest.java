@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.proxy;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
@@ -71,7 +71,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private DefaultProxyServer server;
 
-    private ProxyProtocol proxyProtocol;
+    private ProxyConnectProtocol proxyConnectProtocol;
 
     private AtomicBoolean serverStarted = new AtomicBoolean(false);
 
@@ -155,24 +155,24 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         return b;
     }
 
-    public ProxyProtocol protocol() {
-        if(proxyProtocol == null) {
+    public ProxyConnectProtocol protocol() {
+        if(proxyConnectProtocol == null) {
             String protocolStr = String.format("Proxy ROUTE %s,%s,%s %s,%s %s;FORWARD_FOR %s",
                     newProxyEndpoint(true, false), newProxyEndpoint(false, true), newProxyEndpoint(true, true),
                     newProxyEndpoint(true, true), newProxyEndpoint(false, true),
                     newProxyEndpoint(true, false),
                     newProxyEndpoint(true, false));
-            proxyProtocol = new DefaultProxyProtocolParser().read(protocolStr);
+            proxyConnectProtocol = new DefaultProxyProtocolParser().read(protocolStr);
         }
-        return proxyProtocol;
+        return proxyConnectProtocol;
     }
 
-    public ProxyProtocol protocol(String route) {
-        if(proxyProtocol == null) {
+    public ProxyConnectProtocol protocol(String route) {
+        if(proxyConnectProtocol == null) {
             String protocolStr = route;
-            proxyProtocol = new DefaultProxyProtocolParser().read(protocolStr);
+            proxyConnectProtocol = new DefaultProxyProtocolParser().read(protocolStr);
         }
-        return proxyProtocol;
+        return proxyConnectProtocol;
     }
 
     protected ProxyEndpoint newProxyEndpoint(boolean isLocal, boolean isSSL) {

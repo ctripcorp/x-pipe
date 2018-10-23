@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import io.netty.buffer.ByteBuf;
 
@@ -14,9 +14,9 @@ public interface ProxyProtocolParser {
 
     ByteBuf format();
 
-    ProxyProtocol read(String protocol);
+    ProxyConnectProtocol read(String protocol);
 
-    ProxyProtocol read(ByteBuf byteBuf);
+    ProxyConnectProtocol read(ByteBuf byteBuf);
 
     ProxyOptionParser getProxyOptionParser(PROXY_OPTION option);
 

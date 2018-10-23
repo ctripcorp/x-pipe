@@ -32,7 +32,7 @@ import org.junit.runners.Suite;
         AbstractSessionNettyHandlerTest.class,
         FrontendSessionNettyHandlerTest.class,
         BackendSessionHandlerTest.class,
-        ProxyProtocolDecoderTest.class,
+        ProxyConnectProtocolDecoderTest.class,
 
         DefaultTunnelTest.class,
         DefaultBackendSessionTest.class,

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
@@ -97,7 +97,7 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     @Override
-    public Tunnel create(Channel frontendChannel, ProxyProtocol protocol) {
+    public Tunnel create(Channel frontendChannel, ProxyConnectProtocol protocol) {
         Tunnel tunnel = MapUtils.getOrCreate(cache, frontendChannel, new ObjectFactory<Tunnel>() {
             @Override
             public Tunnel create() {

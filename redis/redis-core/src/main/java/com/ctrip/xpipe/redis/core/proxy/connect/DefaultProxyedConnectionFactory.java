@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.connect;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.ProxyedConnectionFactory;
@@ -22,7 +22,7 @@ public class DefaultProxyedConnectionFactory implements ProxyedConnectionFactory
     }
 
     @Override
-    public ChannelFuture getProxyedConnectionChannelFuture(ProxyProtocol protocol, Bootstrap bootstrap) {
+    public ChannelFuture getProxyedConnectionChannelFuture(ProxyConnectProtocol protocol, Bootstrap bootstrap) {
         ProxyEndpointSelector selector = resourceManager.createProxyEndpointSelector(protocol);
         ProxyEndpoint proxyEndpoint = selector.nextHop();
         return bootstrap.connect(proxyEndpoint.getHost(), proxyEndpoint.getPort());

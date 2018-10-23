@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
@@ -70,7 +70,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     private EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("Test"));
 
-    private ProxyProtocol proxyProtocol;
+    private ProxyConnectProtocol proxyConnectProtocol;
 
     private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379\r\n";
 
@@ -79,12 +79,12 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
     @Before
     public void beforeDefaultTunnelTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
+        when(tunnelManager.create(frontChannel, proxyConnectProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new FrontendSessionNettyHandler(tunnelManager),
                 new TunnelTrafficReporter(6000, frontend));
 
-        proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, mock(ResourceManager.class));
+        proxyConnectProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
+        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, mock(ResourceManager.class));
 
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);
@@ -104,7 +104,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
     @After
     public void afterbeforeDefaultTunnelTest() {
         backend = null;
-        proxyProtocol = null;
+        proxyConnectProtocol = null;
         frontend = null;
         frontChannel = null;
         tunnel = null;
@@ -211,7 +211,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void getProxyProtocol() {
-        Assert.assertEquals(proxyProtocol, tunnel.getProxyProtocol());
+        Assert.assertEquals(proxyConnectProtocol, tunnel.getProxyProtocol());
     }
 
     @Test

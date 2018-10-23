@@ -5,7 +5,7 @@ package com.ctrip.xpipe.api.proxy;
  * <p>
  * Oct 23, 2018
  */
-public interface ProxyProtocol {
-    public static final String KEY_WORD = "PROXY";
+public interface ProxyStatsProtocol extends ProxyProtocol {
+
 
 }
