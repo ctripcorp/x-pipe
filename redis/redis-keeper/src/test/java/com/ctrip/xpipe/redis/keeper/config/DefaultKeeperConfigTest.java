@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -30,6 +31,29 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 
 		logger.info("[testReplicationStoreMaxCommandsToTransferBeforeCreateRdb]{}", value);
 		Assert.assertEquals(value, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
+	}
+
+	@Ignore
+	@Test
+	public void testGetLongProperty() {
+		KeeperConfig keeperConfig = new DefaultKeeperConfig();
+		long value = 10L * (1<<30);
+
+		System.setProperty(DefaultKeeperConfig.KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, String.valueOf(value));
+
+		for(int i = 0; i < 100; i++) {
+			Assert.assertEquals(value, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
+		}
+		long preValue = value;
+		value = 10L * (1<<10);
+
+		System.setProperty(DefaultKeeperConfig.KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB, String.valueOf(value));
+		((DefaultKeeperConfig) keeperConfig)
+				.onChange(DefaultKeeperConfig.KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB,
+						String.valueOf(preValue), String.valueOf(value));
+		for(int i = 0; i < 100; i++) {
+			Assert.assertEquals(value, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
+		}
 	}
 
 }
