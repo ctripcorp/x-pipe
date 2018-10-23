@@ -112,7 +112,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 
 	protected KeeperMonitor createkeeperMonitor(){
-		return new NoneKeeperMonitor();
+		return new NoneKeeperMonitor(scheduled);
 	}
 
 	protected String randomKeeperRunid(){
