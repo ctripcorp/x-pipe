@@ -183,4 +183,12 @@ public abstract class ChannelTrafficStatisticsHandler extends AbstractNettyHandl
             }
         }
     }
+
+    protected long getWrittenBytes() {
+        return writtenBytes.get();
+    }
+
+    protected long getReadBytes() {
+        return readBytes.get();
+    }
 }
