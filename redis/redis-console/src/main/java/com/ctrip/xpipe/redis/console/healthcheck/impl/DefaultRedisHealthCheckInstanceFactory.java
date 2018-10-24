@@ -87,7 +87,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     private void initActions(DefaultRedisHealthCheckInstance instance) {
         for(HealthCheckActionFactory factory : factories) {
             if(factory instanceof CrossDcLeaderAwareHealthCheckActionFactory) {
-                installActionIfNeeded(factory, instance);
+                installActionIfNeeded((CrossDcLeaderAwareHealthCheckActionFactory) factory, instance);
             } else {
                 instance.register(factory.create(instance));
             }
@@ -95,9 +95,11 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
 
     }
 
-    private void installActionIfNeeded(HealthCheckActionFactory factory,
+    private void installActionIfNeeded(CrossDcLeaderAwareHealthCheckActionFactory factory,
                                        DefaultRedisHealthCheckInstance instance) {
+        logger.debug("[try install action] {}", factory.support());
         if(clusterServer != null && clusterServer.amILeader()) {
+            logger.debug("[cluster server not null][installed]");
             instance.register(factory.create(instance));
         }
     }

@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 /**
  * @author wenchao.meng
  *
@@ -17,8 +19,8 @@ public class DefaultKeepersMonitorManager extends AbstractKeepersMonitorManager 
 	public KeeperConfig keeperConfig;
 
 	@Override
-	protected KeeperMonitor createKeeperMonitor(RedisKeeperServer redisKeeperServer) {
-		return new DefaultKeeperMonitor(redisKeeperServer);
+	protected KeeperMonitor createKeeperMonitor(RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
+		return new DefaultKeeperMonitor(redisKeeperServer, scheduled);
 	}
 	
 }

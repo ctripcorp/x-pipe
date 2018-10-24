@@ -67,6 +67,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisServiceImplTest.class,
         KeepercontainerServiceImplTest.class,
         ShardServiceImplTest.class,
+        ShardServiceImplTest2.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
         DcServiceImplTest.class,

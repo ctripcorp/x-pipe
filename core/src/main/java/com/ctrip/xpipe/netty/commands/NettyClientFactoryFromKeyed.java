@@ -44,4 +44,9 @@ public class NettyClientFactoryFromKeyed implements PooledObjectFactory<NettyCli
     public void passivateObject(PooledObject<NettyClient> p) throws Exception {
         keyedPoolClientFactory.passivateObject(key, p);
     }
+
+    @Override
+    public String toString() {
+        return key.toString();
+    }
 }

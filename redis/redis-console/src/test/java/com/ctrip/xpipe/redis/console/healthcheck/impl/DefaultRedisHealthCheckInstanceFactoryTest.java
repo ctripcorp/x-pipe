@@ -2,10 +2,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
+import com.ctrip.xpipe.redis.console.controller.api.HealthController;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Test;
@@ -25,18 +24,37 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
     @Autowired
     private DefaultRedisHealthCheckInstanceFactory factory;
 
+    @Autowired
+    private HealthCheckInstanceManager instanceManager;
+
+    @Autowired
+    private ConsoleCrossDcServer crossDcServer;
+
+    @Autowired
+    private HealthController controller;
+
     @Test
     public void create() throws Exception {
         Server server = startServer("+PONG\r\n");
-        CrossDcClusterServer clusterServer = mock(CrossDcClusterServer.class);
-        when(clusterServer.amILeader()).thenReturn(true);
-        factory.setClusterServer(clusterServer);
-        RedisHealthCheckInstance instance = factory.create(newRandomFakeRedisMeta().setPort(server.getPort()));
+        crossDcServer.start();
+        factory.setClusterServer(crossDcServer);
+        RedisHealthCheckInstance instance = instanceManager.getOrCreate(newRandomFakeRedisMeta().setPort(server.getPort()));
         for(HealthCheckAction action : instance.getHealthCheckActions()) {
             logger.info("[action] {}", action);
             for(Object listener : ((AbstractHealthCheckAction) action).getListeners()) {
                 logger.info("   [listener] {}", listener);
             }
         }
+        logger.info("=====================splitter=======================================");
+        crossDcServer.setCrossDcLeader(true, "leader");
+        sleep(100);
+        for(HealthCheckAction action : instance.getHealthCheckActions()) {
+            logger.info("[action] {}", action);
+            for(Object listener : ((AbstractHealthCheckAction) action).getListeners()) {
+                logger.info("   [listener] {}", listener);
+            }
+        }
+
+        logger.info("{}", controller.getHealthCheckInstance(instance.getEndpoint().getHost(), instance.getEndpoint().getPort()));
     }
 }
