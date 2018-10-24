@@ -127,7 +127,7 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 	}
 
 	private void updatePerSec() {
-		int interval = 1000;
+		int interval = 100;
 		future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() {

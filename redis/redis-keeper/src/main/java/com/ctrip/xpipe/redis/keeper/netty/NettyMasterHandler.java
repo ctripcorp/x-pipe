@@ -58,7 +58,6 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
 		}
 
-		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(getReadBytes());
 		byteBufReadPolicy.read(ctx.channel(), (ByteBuf)msg, new ByteBufReadAction() {
 			
 			@Override
@@ -92,6 +91,8 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	
 	 @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
+		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(writtenBytes);
+		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(readBytes);
         if (writtenBytes > 0) {
             String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
             String name = null;
@@ -108,6 +109,6 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 
     @Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(getWrittenBytes());
+
     }
 }
