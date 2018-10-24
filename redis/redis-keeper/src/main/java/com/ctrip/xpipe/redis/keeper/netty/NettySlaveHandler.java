@@ -53,7 +53,6 @@ public class NettySlaveHandler extends ChannelTrafficStatisticsHandler{
 	@Override
 	protected void doChannelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 
-		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(getReadBytes());
 		ByteBuf byteBuf = (ByteBuf) msg;
 		byteBufReadPolicy.read(ctx.channel(), byteBuf, new ByteBufReadAction() {
 			@Override
@@ -80,6 +79,6 @@ public class NettySlaveHandler extends ChannelTrafficStatisticsHandler{
 
 	@Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(getWrittenBytes());
+
     }
 }
