@@ -15,6 +15,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.FileRegion;
 
 /**
  * @author wenchao.meng
@@ -57,8 +58,9 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 		if(logger.isDebugEnabled()){
 			logger.debug(String.format("0X%X, %s", msg.hashCode(), msg.getClass()));
 		}
-
-		byteBufReadPolicy.read(ctx.channel(), (ByteBuf)msg, new ByteBufReadAction() {
+		ByteBuf byteBuf = (ByteBuf) msg;
+		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(byteBuf.readableBytes());
+		byteBufReadPolicy.read(ctx.channel(), byteBuf, new ByteBufReadAction() {
 			
 			@Override
 			public void read(Channel channel, ByteBuf byteBuf) throws ByteBufReadActionException {
@@ -91,8 +93,6 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	
 	 @Override
     protected void doReportTraffic(long readBytes, long writtenBytes, String remoteIp, int remotePort) {
-		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(writtenBytes);
-		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseInputBytes(readBytes);
         if (writtenBytes > 0) {
             String type = String.format("Keeper.Out.%s", redisKeeperServer.getClusterId());
             String name = null;
@@ -109,6 +109,12 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 
     @Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-
+		long writtenBytes = 0L;
+		if (msg instanceof ByteBuf) {
+			writtenBytes = ((ByteBuf) msg).readableBytes();
+		} else if (msg instanceof FileRegion) {
+			writtenBytes = (((FileRegion) msg).count());
+		}
+		redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseOutputBytes(writtenBytes);
     }
 }
