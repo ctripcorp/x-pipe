@@ -90,7 +90,7 @@ public abstract class AbstractCDLAHealthCheckActionFactory implements CrossDcLea
         instance.register(action);
         try {
             LifecycleHelper.initializeIfPossible(action);
-            LifecycleHelper.stopIfPossible(action);
+            LifecycleHelper.startIfPossible(action);
         } catch (Exception e) {
             instance.unregister(action);
             logger.error("[registerTo][{}]", instance, e);
