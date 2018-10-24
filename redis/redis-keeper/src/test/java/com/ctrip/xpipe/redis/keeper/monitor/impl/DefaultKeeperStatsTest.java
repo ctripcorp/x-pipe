@@ -34,16 +34,12 @@ public class DefaultKeeperStatsTest extends AbstractTest {
     public void testGetInputInstantaneousKBPS() throws Exception {
         int n = 10;
         keeperStats.start();
-        ScheduledFuture future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                keeperStats.increaseInputBytes(FIXED_INCREASING_BYTES);
-            }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
-
-        sleep(1000 * (n - 1));
-        future.cancel(true);
+        for(int i = 0; i < 10; i++) {
+            keeperStats.increaseInputBytes(1000);
+            sleep(1000);
+        }
         long stats = keeperStats.getInputInstantaneousBPS();
+        logger.info("{}", stats);
     }
 
     @Test
