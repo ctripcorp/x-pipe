@@ -48,8 +48,7 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
             for(DcClusterDelayMarkDown config : dcClusters) {
                 if(config.matches(info.getDcId(), info.getClusterId())) {
                     logger.warn("[markdown] configured, markdown later in {} sec, {}", config.getDelaySecond(), info);
-                    alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(),
-                            ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, info.getDcId());
+                    alertManager.alert(info, ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, info.getDcId());
                     return config;
                 }
             }
