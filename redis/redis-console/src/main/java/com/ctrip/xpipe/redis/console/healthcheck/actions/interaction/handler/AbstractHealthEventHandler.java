@@ -76,13 +76,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             markdown(event);
         } else {
             logger.info("[quorumMarkInstanceDown][quorum fail]{}, {}", info.getClusterShardHostport(), quorum);
-            alertManager.alert(
-                    info.getClusterId(),
-                    info.getShardId(),
-                    info.getHostPort(),
-                    ALERT_TYPE.QUORUM_DOWN_FAIL,
-                    info.getHostPort().toString()
-            );
+            alertManager.alert(info, ALERT_TYPE.QUORUM_DOWN_FAIL, info.getHostPort().toString());
         }
     }
 
