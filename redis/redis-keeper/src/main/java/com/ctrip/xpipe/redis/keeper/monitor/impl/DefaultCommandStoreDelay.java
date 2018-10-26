@@ -273,7 +273,7 @@ public class DefaultCommandStoreDelay implements CommandStoreDelay{
 			
 			public void reset() {
 				try{
-					if(endSendTime.get() == 0){
+					if(endSendTime.get() == 0 && System.nanoTime() - beginSendTime.get() >= delayLogLimitMicro.getAsInt() * 1000){
 						logger.info("[reset][has not flushed]{}, off:{}, delay:{} micro", commandsListener, offset, (System.nanoTime() - beginSendTime.get())/1000);
 					}
 				}finally{
