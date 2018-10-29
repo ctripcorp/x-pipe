@@ -12,7 +12,7 @@ import io.netty.channel.ChannelPromise;
  * <p>
  * May 15, 2018
  */
-public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
+public class SessionTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     private Session session;
 
@@ -20,7 +20,7 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     private String CAT_NAME_IN, CAT_NAME_OUT;
 
-    public TunnelTrafficReporter(long reportIntervalMillis, Session session) {
+    public SessionTrafficReporter(long reportIntervalMillis, Session session) {
         super(reportIntervalMillis);
         this.session = session;
     }

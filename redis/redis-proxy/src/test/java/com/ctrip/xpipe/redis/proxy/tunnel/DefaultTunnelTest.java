@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
@@ -82,7 +82,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
         MockitoAnnotations.initMocks(this);
         when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new FrontendSessionNettyHandler(tunnelManager),
-                new TunnelTrafficReporter(6000, frontend));
+                new SessionTrafficReporter(6000, frontend));
 
         proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
         tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, mock(ResourceManager.class),
@@ -92,7 +92,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
         tunnel.setBackend(backend);
 
         EmbeddedChannel backendChannel = new EmbeddedChannel(new BackendSessionHandler(tunnel),
-                new TunnelTrafficReporter(6000, backend));
+                new SessionTrafficReporter(6000, backend));
         when(backend.getChannel()).thenReturn(backendChannel);
         when(frontend.getChannel()).thenReturn(frontChannel);
 

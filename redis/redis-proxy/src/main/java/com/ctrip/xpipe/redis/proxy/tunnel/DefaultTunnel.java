@@ -8,7 +8,7 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
@@ -291,7 +291,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         public void onInit() {
             frontend.markUnReadable();
             frontend.getChannel().pipeline()
-                    .addLast(new TunnelTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
+                    .addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }
 
         @Override
