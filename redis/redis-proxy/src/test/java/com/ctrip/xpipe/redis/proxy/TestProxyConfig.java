@@ -11,6 +11,8 @@ public class TestProxyConfig implements ProxyConfig {
 
     private int frontendTcpPort = 8992, frontendTlsPort = 443;
 
+    private int sessionIdleTime = 1000;
+
     @Override
     public int frontendTcpPort() {
         return frontendTcpPort;
@@ -47,8 +49,8 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int getCloseChannelAfterReadCloseMilli() {
-        return 1000;
+    public int getSessionIdleTimeMilli() {
+        return sessionIdleTime;
     }
 
     @Override
@@ -83,6 +85,11 @@ public class TestProxyConfig implements ProxyConfig {
 
     public TestProxyConfig setFrontendTlsPort(int frontendTlsPort) {
         this.frontendTlsPort = frontendTlsPort;
+        return this;
+    }
+
+    public TestProxyConfig setSessionIdleTime(int sessionIdleTime) {
+        this.sessionIdleTime = sessionIdleTime;
         return this;
     }
 }

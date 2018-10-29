@@ -4,9 +4,10 @@ import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfigTest;
 import com.ctrip.xpipe.redis.proxy.handler.*;
 import com.ctrip.xpipe.redis.proxy.integrate.TestCloseOnBothSide;
 import com.ctrip.xpipe.redis.proxy.integrate.TestTLSWithTwoProxy;
+import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionStatsTest;
+import com.ctrip.xpipe.redis.proxy.monitor.tunnel.DefaultTunnelMonitorTest;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSessionTest;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSessionTest;
-import com.ctrip.xpipe.redis.proxy.session.SessionWritableEventHandlerTest;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosedTest;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosingTest;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablishedTest;
@@ -40,9 +41,10 @@ import org.junit.runners.Suite;
 
         TestCloseOnBothSide.class,
         InternalNetworkHandlerTest.class,
-        SessionWritableEventHandlerTest.class,
         BothSessionTryWriteTest.class,
-        TestTLSWithTwoProxy.class
+        TestTLSWithTwoProxy.class,
+        DefaultSessionStatsTest.class,
+        DefaultTunnelMonitorTest.class
 //        TestMassTCPPacketWithOneProxyServer.class,
 //        TestTLSWithTwoProxy.class
 

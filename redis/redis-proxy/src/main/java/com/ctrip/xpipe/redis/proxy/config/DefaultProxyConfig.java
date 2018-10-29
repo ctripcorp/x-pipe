@@ -47,7 +47,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
 
-    private static final String KEY_SESSION_CLOSE_AFTER_READ_CLOSE_MILLI = "proxy.session.close.after.read.close.milli";
+    private static final String KEY_SESSION_IDLE_TIME_MILLI = "proxy.session.idle.time.milli";
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
@@ -118,8 +118,8 @@ public class DefaultProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int getCloseChannelAfterReadCloseMilli() {
-        return getIntProperty(KEY_SESSION_CLOSE_AFTER_READ_CLOSE_MILLI, 30 * 1000);
+    public int getSessionIdleTimeMilli() {
+        return getIntProperty(KEY_SESSION_IDLE_TIME_MILLI, 40 * 1000);
     }
 
 

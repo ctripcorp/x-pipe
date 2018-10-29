@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.netty.ChannelTrafficStatisticsHandler;
 import com.ctrip.xpipe.redis.proxy.Session;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
@@ -34,10 +35,16 @@ public class TunnelTrafficReporter extends ChannelTrafficStatisticsHandler {
 
     @Override
     protected void doChannelRead(ChannelHandlerContext ctx, Object msg) {
+        if(msg instanceof ByteBuf) {
+            session.getSessionMonitor().getSessionStats().increaseInputBytes(((ByteBuf) msg).readableBytes());
+        }
     }
 
     @Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        if(msg instanceof ByteBuf) {
+            session.getSessionMonitor().getSessionStats().increaseOutputBytes(((ByteBuf) msg).readableBytes());
+        }
     }
 
     @Override

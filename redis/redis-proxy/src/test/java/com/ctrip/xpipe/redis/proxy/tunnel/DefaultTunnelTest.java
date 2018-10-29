@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
@@ -84,7 +85,8 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
                 new TunnelTrafficReporter(6000, frontend));
 
         proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, mock(ResourceManager.class));
+        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, mock(ResourceManager.class),
+                mock(TunnelMonitorManager.class));
 
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);

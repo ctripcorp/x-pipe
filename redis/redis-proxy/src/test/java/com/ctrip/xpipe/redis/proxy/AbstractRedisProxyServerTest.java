@@ -13,7 +13,10 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
+import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
@@ -63,6 +66,8 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private TunnelManager tunnelManager;
 
+    private ResourceManager resourceManager = new TestResourceManager();
+
     private NextHopAlgorithm algorithm = new LocalNextHopAlgorithm();
 
     private NettySslHandlerFactory clientFactory = new NettyClientSslHandlerFactory(config);
@@ -77,7 +82,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private DefaultTunnel tunnel;
 
-    protected ProxyRelatedResourceManager proxyResourceManager = new ProxyRelatedResourceManager();
+    protected TestResourceManager proxyResourceManager = new TestResourceManager();
 
     @BeforeClass
     public static void beforeAbstractRedisProxyServerTestClass() {
@@ -104,7 +109,8 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(2));
         ComponentRegistryHolder.initializeRegistry(registry);
 
-        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(), new ProxyRelatedResourceManager().setEndpointManager(endpointManager));
+        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(),
+                resourceManager, new DefaultTunnelMonitorManager(resourceManager));
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
 

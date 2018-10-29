@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
@@ -34,5 +35,7 @@ public interface Tunnel extends Lifecycle, Releasable, Observable, Observer {
     void forwardToFrontend(ByteBuf message);
 
     ProxyProtocol getProxyProtocol();
+
+    TunnelMonitor getTunnelMonitor();
 
 }

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
@@ -78,7 +79,7 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
 
         proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, proxyResourceManager);
+        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, proxyResourceManager, new DefaultTunnelMonitorManager(proxyResourceManager));
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
         ResourceManager resourceManager = mock(ResourceManager.class);

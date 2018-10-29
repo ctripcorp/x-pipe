@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.monitor;
+package com.ctrip.xpipe.redis.core.monitor;
 
 /**
  * @author chen.zhu

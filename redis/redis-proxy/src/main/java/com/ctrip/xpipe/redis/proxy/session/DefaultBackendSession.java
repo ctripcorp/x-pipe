@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -165,6 +166,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     public SessionState getSessionState() {
         return sessionState.get();
+    }
+
+    @Override
+    public SessionMonitor getSessionMonitor() {
+        return tunnel().getTunnelMonitor().getBackendSessionMonitor();
     }
 
     @VisibleForTesting

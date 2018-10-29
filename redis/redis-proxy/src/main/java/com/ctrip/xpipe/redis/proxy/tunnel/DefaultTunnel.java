@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
@@ -50,16 +52,22 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
 
     private ProxyConfig config;
 
-    private ResourceManager proxyResourceManager;
+    private ResourceManager resourceManager;
+
+    private TunnelMonitorManager tunnelMonitorManager;
+
+    private TunnelMonitor tunnelMonitor;
 
     public DefaultTunnel(Channel frontendChannel, ProxyProtocol protocol, ProxyConfig config,
-                         ResourceManager proxyResourceManager) {
+                         ResourceManager resourceManager, TunnelMonitorManager tunnelMonitorManager) {
 
         this.config = config;
         this.protocol = protocol;
         this.frontendChannel = frontendChannel;
-        this.proxyResourceManager = proxyResourceManager;
+        this.resourceManager = resourceManager;
         this.identity = new TunnelIdentity(frontendChannel, protocol.getFinalStation());
+        this.tunnelMonitorManager = tunnelMonitorManager;
+        this.tunnelMonitor = tunnelMonitorManager.getOrCreate(this);
     }
 
     @Override
@@ -118,6 +126,11 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     @Override
     public ProxyProtocol getProxyProtocol() {
         return protocol;
+    }
+
+    @Override
+    public TunnelMonitor getTunnelMonitor() {
+        return tunnelMonitor;
     }
 
     /**
@@ -189,7 +202,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         frontend = new DefaultFrontendSession(this, frontendChannel, config.getTrafficReportIntervalMillis());
         // share the nio event loop to avoid oom
         backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
-                config.getTrafficReportIntervalMillis(), proxyResourceManager);
+                config.getTrafficReportIntervalMillis(), resourceManager);
 
         registerSessionEventHandlers();
         frontend.addObserver(this);
@@ -204,20 +217,17 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         super.doStart();
         LifecycleHelper.startIfPossible(frontend);
         LifecycleHelper.startIfPossible(backend);
+        tunnelMonitor.start();
     }
 
     private void registerSessionEventHandlers() {
         frontend.addSessionEventHandler(new FrontendSessionEventHandler());
         backend.addSessionEventHandler(new BackendSessionEventHandler());
-
-        frontend.addSessionEventHandler(new SessionWritableEventHandler(frontend,
-                proxyResourceManager.getGlobalSharedScheduled(), config));
-        backend.addSessionEventHandler(new SessionWritableEventHandler(backend,
-                proxyResourceManager.getGlobalSharedScheduled(), config));
     }
 
     @Override
     protected void doStop() throws Exception {
+        tunnelMonitorManager.remove(this);
         release();
         super.doStop();
     }
