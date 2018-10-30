@@ -25,8 +25,15 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	private int  currentIndex = 0;
 	private RedisClientProtocol<?> currentParser  = null;
 	private ARRAY_STATE arrayState = ARRAY_STATE.READ_SIZE;
-	
+
+	private int bulkStringInitSize;
+
 	public ArrayParser() {
+
+	}
+	
+	public ArrayParser(int bulkStringInitSize) {
+		this.bulkStringInitSize = bulkStringInitSize;
 	}
 	
 	public ArrayParser(Object []payload){
@@ -79,13 +86,13 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 									byteBuf.readByte();
 									break;
 								case DOLLAR_BYTE:
-									currentParser = new BulkStringParser(new ByteArrayOutputStreamPayload());
+									currentParser = new BulkStringParser(new ByteArrayOutputStreamPayload(bulkStringInitSize));
 									break;
 								case COLON_BYTE:
 									currentParser = new LongParser();
 									break;
 								case ASTERISK_BYTE:
-									currentParser = new ArrayParser();
+									currentParser = new ArrayParser(bulkStringInitSize);
 									break;
 								case MINUS_BYTE:
 									currentParser = new RedisErrorParser();

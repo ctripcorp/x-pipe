@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 2016年4月24日 下午8:53:30
  */
 public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
-	
+
 	private int INIT_SIZE = 2 << 10;
 	private byte []data;
 	private AtomicInteger pos  = new AtomicInteger(0);
@@ -21,6 +21,13 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 	public ByteArrayOutputStreamPayload() {
 		
 	}
+
+	public ByteArrayOutputStreamPayload(int INIT_SIZE) {
+		if(INIT_SIZE > 0) {
+			this.INIT_SIZE = INIT_SIZE;
+		}
+	}
+
 	public ByteArrayOutputStreamPayload(String message) {
 		data = message.getBytes();
 		pos.set(data.length);
