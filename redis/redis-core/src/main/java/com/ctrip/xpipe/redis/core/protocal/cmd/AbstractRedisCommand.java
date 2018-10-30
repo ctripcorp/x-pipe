@@ -58,7 +58,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		READING_CONTENT;
 	}
 	
-	private COMMAND_RESPONSE_STATE commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
+	protected COMMAND_RESPONSE_STATE commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
 	
 	private int sign;
 	
