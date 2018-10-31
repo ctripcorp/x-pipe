@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.monitor;
 
-import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
+import com.ctrip.xpipe.api.lifecycle.Startable;
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
 
 /**
@@ -8,10 +9,12 @@ import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
  * <p>
  * Jun 07, 2018
  */
-public interface TunnelMonitor {
+public interface TunnelMonitor extends Startable, Stoppable {
+
+    SessionMonitor getFrontendSessionMonitor();
+
+    SessionMonitor getBackendSessionMonitor();
 
     TunnelStats getTunnelStats();
-
-    SocketStats getSocketStats();
 
 }

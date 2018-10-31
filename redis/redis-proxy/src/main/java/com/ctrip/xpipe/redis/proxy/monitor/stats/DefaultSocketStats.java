@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.proxy.monitor.stats;
 /**
  * @author chen.zhu
  * <p>
- * Oct 24, 2018
+ * Oct 31, 2018
  */
-public interface SocketStats {
-
+public class DefaultSocketStats implements SocketStats {
 }

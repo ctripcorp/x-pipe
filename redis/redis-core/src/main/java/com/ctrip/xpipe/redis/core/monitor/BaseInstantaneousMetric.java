@@ -1,6 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.monitor.impl;
-
-import com.ctrip.xpipe.redis.keeper.monitor.InstantaneousMetric;
+package com.ctrip.xpipe.redis.core.monitor;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,11 +43,4 @@ public class BaseInstantaneousMetric implements InstantaneousMetric {
         statsCount ++;
     }
 
-    static InstantaneousMetric createInputBytesMetric() {
-        return new BaseInstantaneousMetric();
-    }
-
-    static InstantaneousMetric createOutputBytesMetric() {
-        return new BaseInstantaneousMetric();
-    }
 }

@@ -65,18 +65,4 @@ public class ProxyRelatedResourceManager implements ResourceManager {
         return selector;
     }
 
-    public ProxyRelatedResourceManager setConfig(ProxyConfig config) {
-        this.config = config;
-        return this;
-    }
-
-    public ProxyRelatedResourceManager setEndpointManager(ProxyEndpointManager endpointManager) {
-        this.endpointManager = endpointManager;
-        return this;
-    }
-
-    public ProxyRelatedResourceManager setClientSslHandlerFactory(NettySslHandlerFactory clientSslHandlerFactory) {
-        this.clientSslHandlerFactory = clientSslHandlerFactory;
-        return this;
-    }
 }

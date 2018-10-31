@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.session;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.Channel;
@@ -62,5 +63,10 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
     @Override
     public SessionState getSessionState() {
         return sessionState.get();
+    }
+
+    @Override
+    public SessionMonitor getSessionMonitor() {
+        return tunnel().getTunnelMonitor().getFrontendSessionMonitor();
     }
 }
