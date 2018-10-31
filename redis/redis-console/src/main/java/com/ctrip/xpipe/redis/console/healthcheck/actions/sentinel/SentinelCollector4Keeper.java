@@ -75,7 +75,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector {
 
         MASTER_GOOD_MONITOR_GOOD {
             @Override
-            public String getMessage() {
+            public String getMessage(String expect, String actual) {
                 return null;
             }
 
@@ -85,8 +85,9 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector {
         },
         MASTER_GOOD_MONITOR_BAD {
             @Override
-            public String getMessage() {
-                return "monitor master correct, monitor name incorrect. monitor removed already";
+            public String getMessage(String expect, String actual) {
+                return String.format("monitor master correct, monitor name incorrect. " +
+                        "monitor name {expected: %s, actual: %s}", expect, actual);
             }
 
             @Override
@@ -95,14 +96,16 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector {
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
 
                 collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName());
-                collector.alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(),
-                        ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage());
+                collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
+                        getMessage(collector.metaCache.getSentinelMonitorName(info.getClusterId(), info.getShardId()),
+                                hello.getMonitorName()));
             }
         },
         MASTER_BAD_MONITOR_GOOD {
             @Override
-            public String getMessage() {
-                return "monitor master incorrect, monitor name correct";
+            public String getMessage(String expect, String actual) {
+                return String.format("monitor master incorrect: {expect: %s, actual: %s}, monitor name correct",
+                        expect, actual);
             }
 
             @Override
@@ -113,33 +116,33 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector {
                 // check again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
                 boolean checkAgain = false;
                 try {
-                    checkAgain = ObjectUtils.equals(masterAddr,
-                            collector.metaCache.findMaster(info.getClusterId(), info.getShardId()));
+                    HostPort expect = collector.metaCache.findMaster(info.getClusterId(), info.getShardId());
+                    checkAgain = ObjectUtils.equals(masterAddr, expect);
+                    if(!checkAgain) {
+                        collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
+                                getMessage(expect.toString(), masterAddr.toString()));
+                    } else {
+                        logger.warn("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                                info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
+                    }
                 } catch (Exception e) {
                     logger.error("[doAction]", e);
                 }
 
-                if(!checkAgain) {
-                    collector.alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(),
-                            ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage());
-                } else {
-                    logger.warn("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
-                            info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
-                }
             }
         },
         MASTER_BAD_MONITOR_BAD {
             @Override
-            public String getMessage() {
-                return "monitor master and name both incorrect for backup site redis";
+            public String getMessage(String expect, String actual) {
+                return String.format("monitor master and name both incorrect for backup site redis, " +
+                        "received sentinel hello: %s", actual);
             }
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
                 logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
-                collector.alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(),
-                        ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage());
+                collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage(null, hello.toString()));
             }
         }
         ;
@@ -159,7 +162,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector {
 
         }
 
-        protected abstract String getMessage();
+        protected abstract String getMessage(String expect, String actual);
 
         protected abstract void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info);
 

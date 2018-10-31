@@ -35,9 +35,9 @@ public enum CREDIS_SERVICE {
 	public static class PATH {
 
 		public static final String PATH_PREFIX = "/";
-		public static final String PATH_MIGRATION_PUBLISH = "/KeeperApi/primarydc/{clusterName}/{primaryDcName}";
-		public static final String PATH_SWITCH_STATUS  = "/KeeperApi/SwitchReadStatus";
-		public static final String PATH_QUERY_STATUS = "KeeperApi/QueryReadStatus";
-		public static final String PATH_QUERY_CLUSTER = "KeeperApi/querycluster/{clusterName}/";
+		public static final String PATH_MIGRATION_PUBLISH = "/keeperApi/primarydc/{clusterName}/{primaryDcName}";
+		public static final String PATH_SWITCH_STATUS  = "/keeperApi/switchReadStatus";
+		public static final String PATH_QUERY_STATUS = "keeperApi/queryReadStatus";
+		public static final String PATH_QUERY_CLUSTER = "keeperApi/querycluster";
 	}
 }

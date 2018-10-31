@@ -14,6 +14,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public abstract class AbstractCDLAHealthCheckAction extends AbstractHealthCheckAction implements CrossDcLeaderAwareHealthCheckAction {
 
+    private static final int START_TIME_INTERVAL_MILLI = 5 * 60 * 1000;
+
     public AbstractCDLAHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);
     }
@@ -21,6 +23,11 @@ public abstract class AbstractCDLAHealthCheckAction extends AbstractHealthCheckA
     @Override
     protected int getBaseCheckInterval() {
         return getActionInstance().getHealthCheckConfig().getRedisConfCheckIntervalMilli();
+    }
+
+    @Override
+    protected int getCheckTimeInterval(int baseInterval) {
+        return Math.abs(random.nextInt(START_TIME_INTERVAL_MILLI) % START_TIME_INTERVAL_MILLI);
     }
 
 
