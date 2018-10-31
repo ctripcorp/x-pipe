@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.monitor.session;
 
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
@@ -9,7 +10,7 @@ import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
  * <p>
  * Oct 29, 2018
  */
-public class DefaultSessionMonitor implements SessionMonitor {
+public class DefaultSessionMonitor extends AbstractStartStoppable implements SessionMonitor {
 
     private ResourceManager resourceManager;
 
@@ -17,14 +18,40 @@ public class DefaultSessionMonitor implements SessionMonitor {
 
     private SessionStats sessionStats;
 
+    private OutboundBufferMonitor outboundBufferMonitor;
+
     public DefaultSessionMonitor(ResourceManager resourceManager, Session session) {
         this.resourceManager = resourceManager;
         this.sessionStats = new DefaultSessionStats(resourceManager.getGlobalSharedScheduled());
+        this.outboundBufferMonitor = new DefaultOutboundBufferMonitor(session);
         this.session = session;
     }
 
     @Override
     public SessionStats getSessionStats() {
         return sessionStats;
+    }
+
+    @Override
+    public OutboundBufferMonitor getOutboundBufferMonitor() {
+        return outboundBufferMonitor;
+    }
+
+    @Override
+    protected void doStart() {
+        try {
+            sessionStats.start();
+        } catch (Exception e) {
+            logger.error("[doStart]", e);
+        }
+    }
+
+    @Override
+    protected void doStop() {
+        try {
+            sessionStats.stop();
+        } catch (Exception e) {
+            logger.error("[doStart]", e);
+        }
     }
 }

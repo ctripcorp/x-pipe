@@ -51,8 +51,8 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
 
     @Override
     protected void doStart() throws Exception {
-        frontendSessionMonitor.getSessionStats().start();
-        backendSessionMonitor.getSessionStats().start();
+        frontendSessionMonitor.start();
+        backendSessionMonitor.start();
         monitorSession();
     }
 
@@ -61,8 +61,8 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
         if(future != null) {
             future.cancel(true);
         }
-        frontendSessionMonitor.getSessionStats().stop();
-        backendSessionMonitor.getSessionStats().stop();
+        frontendSessionMonitor.stop();
+        backendSessionMonitor.stop();
     }
 
     private void monitorSession() {
