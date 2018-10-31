@@ -7,6 +7,8 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.net.InetSocketAddress;
+
 /**
  * @author chen.zhu
  * <p>
@@ -45,7 +47,11 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
     private void handleProxyProtocol(ChannelHandlerContext ctx, Object msg) {
         logger.debug("[doChannelRead][ProxyProtocol] {}", msg);
         try {
-            tunnel = tunnelManager.create(ctx.channel(), (ProxyConnectProtocol) msg);
+            ProxyConnectProtocol protocol = (ProxyConnectProtocol) msg;
+            if(ctx.channel().remoteAddress() instanceof InetSocketAddress) {
+                protocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
+            }
+            tunnel = tunnelManager.create(ctx.channel(), protocol);
             session = tunnel.frontend();
         } catch (Exception e) {
             logger.error("[channelRead] Error when create tunnel: ", e);

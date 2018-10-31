@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfoTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
-import com.ctrip.xpipe.redis.core.proxy.parser.ping.ProxyPingResponseTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 import org.junit.runner.RunWith;
@@ -53,8 +52,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	RoleCommandTest.class,
 	PingCommandTest.class,
 	RedisCommandTest.class,
-	DefaultSlaveOfCommandTest.class,
-	ProxyPingResponseTest.class,
+	DefaultSlaveOfCommandTest.class
 })
 public class AllTests {
 

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
@@ -83,7 +83,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
         frontChannel = new EmbeddedChannel(new FrontendSessionNettyHandler(tunnelManager),
                 new TunnelTrafficReporter(6000, frontend));
 
-        proxyConnectProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
+        proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
         tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, mock(ResourceManager.class));
 
         tunnel.setFrontend(frontend);

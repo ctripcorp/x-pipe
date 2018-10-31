@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
@@ -102,6 +102,6 @@ public class KeeperCommandHandler extends AbstractCommandHandler{
 		protocolArr[protocolArr.length - 1] = String.format("%s://%s:%s", scheme, args[2], args[3]);
 		String protocol = StringUtil.join(WHITE_SPACE, protocolArr);
 		logger.info("[getProxyProtocol] protocol: {}", protocol);
-		return new DefaultProxyProtocolParser().read(protocol);
+		return new DefaultProxyConnectProtocolParser().read(protocol);
 	}
 }

@@ -5,7 +5,7 @@ package com.ctrip.xpipe.redis.core.proxy.parser;
  * <p>
  * Oct 18, 2018
  */
-public interface ProxyReqResOptionParser extends ProxyOptionParser {
+public interface ProxyReqResOptionParser<T> extends ProxyOptionParser {
 
-    ProxyProtocolResponse getResponse();
+    T getResponse();
 }

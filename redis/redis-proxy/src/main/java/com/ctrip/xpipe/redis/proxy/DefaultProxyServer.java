@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.InternalNetworkHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
+import com.ctrip.xpipe.redis.proxy.handler.ProxyReqResProtocolHandler;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
@@ -91,6 +92,7 @@ public class DefaultProxyServer implements ProxyServer {
                 p.addLast(new InternalNetworkHandler(config.getInternalNetworkPrefix()));
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
+                p.addLast(new ProxyReqResProtocolHandler());
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
             }
         });
@@ -117,6 +119,7 @@ public class DefaultProxyServer implements ProxyServer {
                 }
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
+                p.addLast(new ProxyReqResProtocolHandler());
                 p.addLast(new FrontendSessionNettyHandler(tunnelManager));
             }
         });

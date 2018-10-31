@@ -6,7 +6,7 @@ import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
@@ -162,7 +162,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
                     newProxyEndpoint(true, true), newProxyEndpoint(false, true),
                     newProxyEndpoint(true, false),
                     newProxyEndpoint(true, false));
-            proxyConnectProtocol = new DefaultProxyProtocolParser().read(protocolStr);
+            proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         }
         return proxyConnectProtocol;
     }
@@ -170,7 +170,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     public ProxyConnectProtocol protocol(String route) {
         if(proxyConnectProtocol == null) {
             String protocolStr = route;
-            proxyConnectProtocol = new DefaultProxyProtocolParser().read(protocolStr);
+            proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         }
         return proxyConnectProtocol;
     }

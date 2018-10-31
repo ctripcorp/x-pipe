@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
@@ -12,7 +12,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -30,7 +29,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private int maxLength, readLength = 0, bufReadIndex = 0;
 
-    private ProxyProtocolParser parser = new DefaultProxyProtocolParser();
+    private ProxyProtocolParser parser = new DefaultProxyConnectProtocolParser();
 
     public static final int DEFAULT_MAX_LENGTH = 2048;
 
@@ -39,17 +38,14 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
 
         checkValid(in);
 
         try {
-            ProxyConnectProtocol proxyConnectProtocol = parser.read(in);
+            ProxyProtocol proxyConnectProtocol = parser.read(in);
             if(proxyConnectProtocol == null) {
                 return;
-            }
-            if(ctx.channel().remoteAddress() instanceof InetSocketAddress) {
-                proxyConnectProtocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
             }
             out.add(proxyConnectProtocol);
             finished = true;

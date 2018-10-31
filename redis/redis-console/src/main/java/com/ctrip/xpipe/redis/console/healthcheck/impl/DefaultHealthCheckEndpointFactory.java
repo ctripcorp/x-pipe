@@ -9,7 +9,7 @@ import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -56,7 +56,7 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     private ProxyConnectProtocol getProxyProtocol(HostPort hostPort, RouteMeta route) {
         String uri = String.format("%s://%s:%d", ProxyEndpoint.PROXY_SCHEME.TCP, hostPort.getHost(), hostPort.getPort());
         String protocol = String.format("%s %s %s %s;", ProxyConnectProtocol.KEY_WORD, PROXY_OPTION.ROUTE, route.getRouteInfo(), uri);
-        return new DefaultProxyProtocolParser().read(protocol);
+        return new DefaultProxyConnectProtocolParser().read(protocol);
     }
 
     @VisibleForTesting

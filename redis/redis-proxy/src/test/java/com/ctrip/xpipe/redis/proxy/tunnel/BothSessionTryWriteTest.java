@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
@@ -77,7 +77,7 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         when(tunnelManager.create(frontChannel, proxyConnectProtocol)).thenReturn(tunnel);
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
 
-        proxyConnectProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
+        proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
         tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager);
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);

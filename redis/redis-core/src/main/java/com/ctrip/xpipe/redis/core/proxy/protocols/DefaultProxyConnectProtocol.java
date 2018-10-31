@@ -1,11 +1,12 @@
-package com.ctrip.xpipe.redis.core.proxy;
+package com.ctrip.xpipe.redis.core.proxy.protocols;
 
 import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
+import com.ctrip.xpipe.redis.core.proxy.ProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,20 +18,14 @@ import java.util.List;
  * <p>
  * May 09, 2018
  */
-public class DefaultProxyConnectProtocol implements ProxyConnectProtocol {
+public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConnectProtocolParser> implements ProxyConnectProtocol {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyConnectProtocol.class);
 
-    private ProxyProtocolParser parser;
-
     private String content;
 
-    public DefaultProxyConnectProtocol() {
-
-    }
-
-    public DefaultProxyConnectProtocol(ProxyProtocolParser parser) {
-        this.parser = parser;
+    public DefaultProxyConnectProtocol(ProxyConnectProtocolParser parser) {
+        super(parser);
     }
 
     @Override
@@ -47,12 +42,7 @@ public class DefaultProxyConnectProtocol implements ProxyConnectProtocol {
 
     @Override
     public String getForwardFor() {
-        return parser.getProxyOptionParser(PROXY_OPTION.FORWARD_FOR).getPayload();
-    }
-
-    @Override
-    public ByteBuf output() {
-        return parser.format();
+        return parser.getProxyOptionParser(PROXY_OPTION.FORWARD_FOR).output();
     }
 
     @Override

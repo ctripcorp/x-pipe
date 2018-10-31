@@ -1,11 +1,11 @@
-package com.ctrip.xpipe.redis.core.proxy;
+package com.ctrip.xpipe.redis.core.proxy.parser;
 
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
+import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 
@@ -17,17 +17,13 @@ import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.
 /**
  * @author chen.zhu
  * <p>
- * May 04, 2018
+ * Oct 24, 2018
  */
-public class DefaultProxyProtocolParser implements ProxyProtocolParser {
+public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> implements ProxyProtocolParser {
 
     private SimpleStringParser simpleStringParser = new SimpleStringParser();
 
     private List<ProxyOptionParser> parsers = Lists.newArrayList();
-
-    public void addProxyParser(ProxyOptionParser parser) {
-        parsers.add(parser);
-    }
 
     @Override
     public ProxyOptionParser getProxyOptionParser(PROXY_OPTION proxyOption) {
@@ -45,31 +41,29 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
     public ByteBuf format() {
         StringBuilder proxyProtocol = new StringBuilder(ProxyProtocol.KEY_WORD).append(WHITE_SPACE);
         for(ProxyOptionParser parser : parsers) {
-            proxyProtocol.append(parser.getPayload()).append(";");
+            proxyProtocol.append(parser.output()).append(";");
         }
         return new SimpleStringParser(proxyProtocol.toString()).format();
     }
 
-
-
     @Override
-    public ProxyConnectProtocol read(String protocol) {
+    public V read(String protocol) {
         if(!protocol.toLowerCase().startsWith(ProxyProtocol.KEY_WORD.toLowerCase())) {
             throw new ProxyProtocolException("proxy protocol format error: " + protocol);
         }
-        ProxyConnectProtocol proxyConnectProtocol = new DefaultProxyConnectProtocol(this);
-        proxyConnectProtocol.setContent(protocol);
+        V proxyProtocol = newProxyProtocol(protocol);
 
         protocol = removeKeyWord(protocol);
         String[] allOption = protocol.split(LINE_SPLITTER);
         for(String option : allOption) {
             addProxyParser(PROXY_OPTION.parse(option.trim()));
         }
-        return proxyConnectProtocol;
+        validate(proxyProtocol, getParsers());
+        return proxyProtocol;
     }
 
     @Override
-    public ProxyConnectProtocol read(ByteBuf byteBuf) {
+    public V read(ByteBuf byteBuf) {
         RedisClientProtocol<String> redisClientProtocol = simpleStringParser.read(byteBuf);
         if(redisClientProtocol == null) {
             return null;
@@ -77,7 +71,20 @@ public class DefaultProxyProtocolParser implements ProxyProtocolParser {
         return read(redisClientProtocol.getPayload());
     }
 
+
     private String removeKeyWord(String protocol) {
         return protocol.substring(ProxyProtocol.KEY_WORD.length());
     }
+
+    private void addProxyParser(ProxyOptionParser parser) {
+        parsers.add(parser);
+    }
+
+    private List<ProxyOptionParser> getParsers() {
+        return parsers;
+    }
+
+    protected abstract V newProxyProtocol(String protocol);
+
+    protected abstract void validate(V proxyProtocol, List<ProxyOptionParser> parsers);
 }

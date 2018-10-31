@@ -19,8 +19,6 @@ public interface ProxyConnectProtocol extends ProxyProtocol {
 
     String getForwardFor();
 
-    ByteBuf output();
-
     void setContent(String content);
 
     String getContent();
