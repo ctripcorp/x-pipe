@@ -14,4 +14,8 @@ public interface KeepercontainerService {
 	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
 
 	void addKeeperContainer(KeeperContainerCreateInfo createInfo);
+
+	List<KeeperContainerCreateInfo> getDcAllKeeperContainers(String dcName);
+
+	void updateKeeperContainer(KeeperContainerCreateInfo createInfo);
 }

@@ -76,6 +76,11 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
         return organizationDao.findInvolvedOrgs();
     }
 
+    @Override
+    public OrganizationModel getOrganization(long xpipeOrgId) {
+        return null;
+    }
+
     // Try to retrieve organization info from some source
     List<OrganizationTbl> retrieveOrgInfoFromRemote() {
         return TransactionMonitor.DEFAULT.logTransactionSwallowException("OrganizationService",

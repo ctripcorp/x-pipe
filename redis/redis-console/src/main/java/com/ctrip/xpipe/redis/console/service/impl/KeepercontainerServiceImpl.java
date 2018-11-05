@@ -5,12 +5,19 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCre
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class KeepercontainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
@@ -24,6 +31,9 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private OrganizationService organizationService;
+
+  @Autowired
+  private DcMetaService dcMetaService;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -146,6 +156,28 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
+  @Override
+  public List<KeeperContainerCreateInfo> getDcAllKeeperContainers(String dc) {
+    List<KeepercontainerTbl> keepercontainerTbls = queryHandler.handleQuery(() ->
+            dao.findByDcName(dc, KeepercontainerTblEntity.READSET_FULL));
+
+    return Lists.newArrayList(Lists.transform(keepercontainerTbls, new Function<KeepercontainerTbl, KeeperContainerCreateInfo>() {
+      @Override
+      public KeeperContainerCreateInfo apply(KeepercontainerTbl input) {
+        return new KeeperContainerCreateInfo()
+                .setDcName(dc).setActive(input.isKeepercontainerActive())
+                .setKeepercontainerIp(input.getKeepercontainerIp())
+                .setKeepercontainerPort(input.getKeepercontainerPort())
+                .setKeepercontainerOrgId(input.getKeepercontainerOrgId());
+      }
+    }));
+  }
+
+  @Override
+  public void updateKeeperContainer(KeeperContainerCreateInfo createInfo) {
+
+  }
+
   private boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
     List<KeepercontainerTbl> keepercontainerTbls = findAllByDcName(createInfo.getDcName());
     for(KeepercontainerTbl kc : keepercontainerTbls) {
@@ -154,5 +186,17 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
       }
     }
     return false;
+  }
+
+  private class OrgInfoTranslator {
+
+    private Map<Long, OrganizationTbl> cache = Maps.newHashMap();
+
+    private OrganizationTbl getFromXPipeId(long id) {
+      if(cache.containsKey(id)) {
+        return cache.get(id);
+      }
+      organizationService
+    }
   }
 }

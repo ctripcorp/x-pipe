@@ -156,6 +156,14 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
         }
     }
 
+    @Test
+    public void testGetDcAllKeeperContainers() {
+        testAddKeeperContainer2();
+        List<KeeperContainerCreateInfo> keepers = keepercontainerService.getDcAllKeeperContainers(dcNames[0]);
+        keepers.forEach(kc -> logger.info("[keeper] {}", kc));
+
+    }
+
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
