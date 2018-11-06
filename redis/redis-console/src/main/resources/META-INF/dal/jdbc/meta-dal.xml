@@ -1039,6 +1039,19 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-by-ip-port" type="SELECT" multiple="false">
+				<param name="keepercontainer-ip"/>
+				<param name="keepercontainer-port"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-ip'/> = ${keepercontainer-ip}
+					AND <FIELD name='keepercontainer-port'/> = ${keepercontainer-port}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
