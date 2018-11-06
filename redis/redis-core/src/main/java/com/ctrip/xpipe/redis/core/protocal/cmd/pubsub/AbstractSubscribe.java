@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -22,8 +21,6 @@ import io.netty.channel.Channel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.COMMAND_RESPONSE_STATE.READING_SIGN;
 
 /**
  * @author chen.zhu
@@ -86,11 +83,11 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
                 int readIndex = byteBuf.readerIndex();
                 byte sign = byteBuf.getByte(readIndex);
                 if(sign == RedisClientProtocol.ASTERISK_BYTE){
+                    commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
                     redisClientProtocol = new ArrayParser(bulkStringInitSize);
                 } else {
                     throw new IllegalArgumentException("subscribe should response with redis array format");
                 }
-                commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
             case READING_CONTENT:
                 RedisClientProtocol<?> resultParser = redisClientProtocol.read(byteBuf);
                 if(resultParser == null){

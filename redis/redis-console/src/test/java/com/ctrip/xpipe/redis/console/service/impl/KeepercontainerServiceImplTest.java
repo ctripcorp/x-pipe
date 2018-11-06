@@ -156,6 +156,36 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
         }
     }
 
+    @Test
+    public void testGetDcAllKeeperContainers() {
+        testAddKeeperContainer2();
+        List<KeeperContainerCreateInfo> keepers = keepercontainerService.getDcAllKeeperContainers(dcNames[0]);
+        keepers.forEach(kc -> logger.info("[keeper] {}", kc));
+    }
+
+    @Test
+    public void testUpdate() {
+        List<KeeperContainerCreateInfo> keepers = keepercontainerService.getDcAllKeeperContainers(dcNames[0]);
+        KeeperContainerCreateInfo sample = null;
+        for(KeeperContainerCreateInfo info : keepers) {
+            if(info.getKeepercontainerOrgId() != 0L) {
+                sample = info;
+                break;
+            }
+        }
+        if(sample != null) {
+            logger.info("[sample] {}", sample);
+            sample.setKeepercontainerOrgId(0L);
+            keepercontainerService.updateKeeperContainer(sample);
+            KeepercontainerTbl ktl = keepercontainerService.findByIpPort(sample.getKeepercontainerIp(),
+                    sample.getKeepercontainerPort());
+
+            Assert.assertNotNull(ktl);
+            Assert.assertEquals(0L, ktl.getKeepercontainerOrgId());
+            logger.info("[ktl] {}", ktl);
+        }
+    }
+
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
