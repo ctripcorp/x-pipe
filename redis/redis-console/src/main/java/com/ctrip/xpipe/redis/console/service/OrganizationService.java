@@ -10,9 +10,16 @@ import java.util.List;
  * Sep 04, 2017
  */
 public interface OrganizationService {
+
     void updateOrganizations();
+
     List<OrganizationTbl> getAllOrganizations();
+
     OrganizationTbl getOrganizationTblByCMSOrganiztionId(long organizationId);
+
     OrganizationTbl getOrgByName(String name);
+
     List<OrganizationTbl> getInvolvedOrgs();
+
+    OrganizationTbl getOrganization(long xpipeOrgId);
 }
