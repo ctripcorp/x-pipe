@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.api.organization.OrganizationModel;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 
 import java.util.List;
@@ -22,5 +21,5 @@ public interface OrganizationService {
 
     List<OrganizationTbl> getInvolvedOrgs();
 
-    OrganizationModel getOrganization(long xpipeOrgId);
+    OrganizationTbl getOrganization(long xpipeOrgId);
 }

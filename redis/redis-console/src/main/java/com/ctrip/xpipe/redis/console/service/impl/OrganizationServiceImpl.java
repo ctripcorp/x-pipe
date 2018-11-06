@@ -77,8 +77,8 @@ public class OrganizationServiceImpl extends AbstractConsoleService<Organization
     }
 
     @Override
-    public OrganizationModel getOrganization(long xpipeOrgId) {
-        return null;
+    public OrganizationTbl getOrganization(long xpipeOrgId) {
+        return organizationDao.findByPK(xpipeOrgId);
     }
 
     // Try to retrieve organization info from some source

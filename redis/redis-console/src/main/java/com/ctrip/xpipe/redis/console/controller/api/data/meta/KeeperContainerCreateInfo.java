@@ -85,6 +85,7 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
                 ", keepercontainerIp='" + keepercontainerIp + '\'' +
                 ", keepercontainerPort=" + keepercontainerPort +
                 ", keepercontainerOrgId=" + keepercontainerOrgId +
+                ", orgName='" + orgName + '\'' +
                 ", active=" + active +
                 '}';
     }

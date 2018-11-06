@@ -5,9 +5,6 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCre
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -31,9 +28,6 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private OrganizationService organizationService;
-
-  @Autowired
-  private DcMetaService dcMetaService;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -161,21 +155,55 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     List<KeepercontainerTbl> keepercontainerTbls = queryHandler.handleQuery(() ->
             dao.findByDcName(dc, KeepercontainerTblEntity.READSET_FULL));
 
+    OrgInfoTranslator translator = new OrgInfoTranslator();
     return Lists.newArrayList(Lists.transform(keepercontainerTbls, new Function<KeepercontainerTbl, KeeperContainerCreateInfo>() {
       @Override
       public KeeperContainerCreateInfo apply(KeepercontainerTbl input) {
-        return new KeeperContainerCreateInfo()
+        OrganizationTbl org = translator.getFromXPipeId(input.getKeepercontainerOrgId());
+
+        KeeperContainerCreateInfo info = new KeeperContainerCreateInfo()
                 .setDcName(dc).setActive(input.isKeepercontainerActive())
                 .setKeepercontainerIp(input.getKeepercontainerIp())
-                .setKeepercontainerPort(input.getKeepercontainerPort())
-                .setKeepercontainerOrgId(input.getKeepercontainerOrgId());
+                .setKeepercontainerPort(input.getKeepercontainerPort());
+        if(org != null) {
+          info.setKeepercontainerOrgId(org.getOrgId()).setOrgName(org.getOrgName());
+        } else {
+          info.setKeepercontainerOrgId(0L);
+        }
+        return info;
       }
     }));
   }
 
   @Override
   public void updateKeeperContainer(KeeperContainerCreateInfo createInfo) {
+    KeepercontainerTbl kc = findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort());
+    if(kc == null) {
+      throw new IllegalArgumentException(String.format("%s:%d keeper container not found",
+              createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort()));
+    }
+    if(createInfo.getKeepercontainerOrgId() != 0L) {
+      OrganizationTbl org = organizationService.getOrganizationTblByCMSOrganiztionId(createInfo.getKeepercontainerOrgId());
+      kc.setKeepercontainerOrgId(org.getId());
+    } else {
+      kc.setKeepercontainerOrgId(0L);
+    }
+    kc.setKeepercontainerActive(createInfo.isActive());
+    queryHandler.handleUpdate(new DalQuery<Integer>() {
+      @Override
+      public Integer doQuery() throws DalException {
+        return dao.updateByPK(kc, KeepercontainerTblEntity.UPDATESET_FULL);
+      }
+    });
+  }
 
+  protected KeepercontainerTbl findByIpPort(String ip, int port) {
+    return queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
+      @Override
+      public KeepercontainerTbl doQuery() throws DalException {
+        return dao.findByIpPort(ip, port, KeepercontainerTblEntity.READSET_FULL);
+      }
+    });
   }
 
   private boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
@@ -193,10 +221,15 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     private Map<Long, OrganizationTbl> cache = Maps.newHashMap();
 
     private OrganizationTbl getFromXPipeId(long id) {
+      if(id == 0L) {
+        return null;
+      }
       if(cache.containsKey(id)) {
         return cache.get(id);
       }
-      organizationService
+      OrganizationTbl org = organizationService.getOrganization(id);
+      cache.put(id, org);
+      return org;
     }
   }
 }
