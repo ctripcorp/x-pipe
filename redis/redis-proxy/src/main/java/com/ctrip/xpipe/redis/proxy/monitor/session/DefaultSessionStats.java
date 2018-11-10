@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.proxy.monitor.session;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
+import com.google.common.collect.Lists;
 
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -14,11 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * Oct 29, 2018
  */
-public class DefaultSessionStats extends AbstractStartStoppable implements SessionStats {
-
-    private ScheduledFuture future;
-
-    private ScheduledExecutorService scheduled;
+public class DefaultSessionStats extends AbstractStats implements SessionStats {
 
     private AtomicLong inputBytes = new AtomicLong(0L);
 
@@ -30,8 +26,12 @@ public class DefaultSessionStats extends AbstractStartStoppable implements Sessi
 
     private volatile long lastUpdateTime = System.currentTimeMillis();
 
+    private AtomicBoolean flag = new AtomicBoolean(false);
+
+    private List<AutoReadEvent> autoReadEvents = Lists.newLinkedList();
+
     public DefaultSessionStats(ScheduledExecutorService scheduled) {
-        this.scheduled = scheduled;
+        super(scheduled);
     }
 
     @Override
@@ -75,27 +75,49 @@ public class DefaultSessionStats extends AbstractStartStoppable implements Sessi
         return outputMetric.getInstantaneousMetric();
     }
 
-    private void updatePerSec() {
-        int interval = 100;
-        future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                inputMetric.trackInstantaneousMetric(inputBytes.get());
-                outputMetric.trackInstantaneousMetric(outputBytes.get());
-            }
-        }, interval, interval, TimeUnit.MILLISECONDS);
+    @Override
+    public List<AutoReadEvent> getAutoReadEvents() {
+        return autoReadEvents;
     }
 
     @Override
     protected void doStart() {
         updateLastTime();
-        updatePerSec();
+        super.doStart();
     }
 
     @Override
-    protected void doStop() {
-        if(future != null) {
-            future.cancel(true);
+    protected void doTask() {
+        inputMetric.trackInstantaneousMetric(inputBytes.get());
+        outputMetric.trackInstantaneousMetric(outputBytes.get());
+    }
+
+    @Override
+    protected int getCheckIntervalMilli() {
+        return 100;
+    }
+
+    @Override
+    public void onInit() {
+
+    }
+
+    @Override
+    public void onEstablished() {
+
+    }
+
+    @Override
+    public void onWritable() {
+        if(flag.compareAndSet(true, false)) {
+            autoReadEvents.get(autoReadEvents.size() - 1).setEndTime(System.currentTimeMillis());
+        }
+    }
+
+    @Override
+    public void onNotWritable() {
+        if(flag.compareAndSet(false, true)) {
+            autoReadEvents.add(new AutoReadEvent().setStartTime(System.currentTimeMillis()));
         }
     }
 }

@@ -1,14 +1,23 @@
 package com.ctrip.xpipe.redis.proxy.resource;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
@@ -24,6 +33,8 @@ import static org.junit.Assert.*;
  * Oct 29, 2018
  */
 public class TestResourceManager implements ResourceManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(TestResourceManager.class);
 
     private NettySslHandlerFactory clientSslHandlerFactory = new NettyClientSslHandlerFactory(new TestProxyConfig());
 
@@ -58,11 +69,15 @@ public class TestResourceManager implements ResourceManager {
     }
 
     @Override
-    public ProxyEndpointSelector createProxyEndpointSelector(ProxyProtocol protocol) {
-        ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
-        selector.setNextHopAlgorithm(algorithm);
-        selector.setSelectStrategy(new SelectOneCycle(selector));
-        return selector;
+    public SimpleKeyedObjectPool<Endpoint, NettyClient> getKeyedObjectPool() {
+        XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(new SslEnabledNettyClientFactory(this));
+        try {
+            LifecycleHelper.initializeIfPossible(keyedObjectPool);
+            LifecycleHelper.startIfPossible(keyedObjectPool);
+        } catch (Exception e) {
+            logger.error("[createKeyedObjectPool]", e);
+        }
+        return keyedObjectPool;
     }
 
     public TestResourceManager setConfig(ProxyConfig config) {
@@ -78,5 +93,13 @@ public class TestResourceManager implements ResourceManager {
     public TestResourceManager setClientSslHandlerFactory(NettySslHandlerFactory clientSslHandlerFactory) {
         this.clientSslHandlerFactory = clientSslHandlerFactory;
         return this;
+    }
+
+    @Override
+    public ProxyEndpointSelector createProxyEndpointSelector(ProxyConnectProtocol protocol) {
+        ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
+        selector.setNextHopAlgorithm(algorithm);
+        selector.setSelectStrategy(new SelectOneCycle(selector));
+        return selector;
     }
 }

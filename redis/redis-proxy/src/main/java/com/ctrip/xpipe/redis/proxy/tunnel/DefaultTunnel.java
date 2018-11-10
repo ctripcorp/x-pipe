@@ -8,6 +8,7 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
@@ -21,6 +22,7 @@ import com.ctrip.xpipe.redis.proxy.tunnel.state.*;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,9 +68,8 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         this.protocol = protocol;
         this.frontendChannel = frontendChannel;
         this.resourceManager = resourceManager;
-        this.identity = new TunnelIdentity(frontendChannel, protocol.getFinalStation());
+        this.identity = new TunnelIdentity(frontendChannel, protocol.getFinalStation(), protocol.getSource());
         this.tunnelMonitorManager = tunnelMonitorManager;
-        this.tunnelMonitor = tunnelMonitorManager.getOrCreate(this);
     }
 
     @Override
@@ -135,7 +136,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     }
 
     /**
-     * Observe for session change, see @DefaultSessionStore frontend() & backend()
+     * Observe for session change, see frontend() & backend()
      * receives SessionStateChangeEvent | TunnelStateChangeEvent*/
     @Override
     public void update(Object args, Observable observable) {
@@ -205,6 +206,8 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         backend = new DefaultBackendSession(this, frontend.getChannel().eventLoop(),
                 config.getTrafficReportIntervalMillis(), resourceManager);
 
+        this.tunnelMonitor = tunnelMonitorManager.getOrCreate(this);
+        addObserver(tunnelMonitor.getTunnelStats());
         registerSessionEventHandlers();
         frontend.addObserver(this);
         backend.addObserver(this);
@@ -224,6 +227,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     private void registerSessionEventHandlers() {
         frontend.addSessionEventHandler(new FrontendSessionEventHandler());
         backend.addSessionEventHandler(new BackendSessionEventHandler());
+
+        frontend.addSessionEventHandler(tunnelMonitor.getFrontendSessionMonitor().getSessionStats());
+        backend.addSessionEventHandler(tunnelMonitor.getBackendSessionMonitor().getSessionStats());
     }
 
     @Override
@@ -291,8 +297,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         @Override
         public void onInit() {
             frontend.markUnReadable();
-            frontend.getChannel().pipeline()
-                    .addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
+            ChannelPipeline pipeline = frontend.getChannel().pipeline();
+            pipeline.addLast(new FrontendSessionNettyHandler(DefaultTunnel.this));
+            pipeline.addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }
 
         @Override

@@ -27,12 +27,7 @@ public class DefaultTunnelMonitorTest extends AbstractRedisProxyServerTest {
         tunnel = mock(Tunnel.class);
         TestProxyConfig testProxyConfig = (TestProxyConfig) proxyResourceManager.getProxyConfig();
         testProxyConfig.setSessionIdleTime(10);
-        monitor = new DefaultTunnelMonitor(proxyResourceManager, tunnel) {
-            @Override
-            protected int getCheckInterval() {
-                return 5;
-            }
-        };
+        monitor = new DefaultTunnelMonitor(proxyResourceManager, tunnel);
 
     }
 

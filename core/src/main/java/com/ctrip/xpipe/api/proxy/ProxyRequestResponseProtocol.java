@@ -7,6 +7,6 @@ package com.ctrip.xpipe.api.proxy;
  */
 public interface ProxyRequestResponseProtocol extends ProxyProtocol {
 
-    ProxyProtocolResponser getResponser();
+    String getContent();
 
 }

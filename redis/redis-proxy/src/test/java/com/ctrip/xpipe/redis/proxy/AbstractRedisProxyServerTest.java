@@ -207,7 +207,6 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         if(serverStarted.compareAndSet(false, true)) {
             server = new DefaultProxyServer();
             server.setConfig(config());
-            server.setServerSslHandlerFactory(serverFactory());
             server.setTunnelManager(tunnelManager());
             server.start();
         }

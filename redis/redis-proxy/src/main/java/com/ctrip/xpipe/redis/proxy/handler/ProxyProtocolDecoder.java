@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
+import com.ctrip.xpipe.redis.core.proxy.parser.CompositeProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -29,7 +30,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private int maxLength, readLength = 0, bufReadIndex = 0;
 
-    private ProxyProtocolParser parser = new DefaultProxyConnectProtocolParser();
+    private ProxyProtocolParser parser = new CompositeProxyProtocolParser();
 
     public static final int DEFAULT_MAX_LENGTH = 2048;
 
@@ -43,11 +44,11 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
         checkValid(in);
 
         try {
-            ProxyProtocol proxyConnectProtocol = parser.read(in);
-            if(proxyConnectProtocol == null) {
+            ProxyProtocol protocol = parser.read(in);
+            if(protocol == null) {
                 return;
             }
-            out.add(proxyConnectProtocol);
+            out.add(protocol);
             finished = true;
         } catch (ProxyProtocolException e) {
             throw e;

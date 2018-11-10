@@ -55,7 +55,6 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         FoundationService service = FoundationService.DEFAULT;
         service = spy(FoundationService.DEFAULT);
         doReturn("127.0.0.1").when(service).getLocalIp();
-        server.setServerSslHandlerFactory(new NettyServerSslHandlerFactory(new TestProxyConfig()));
         DefaultProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()-> 180);
         endpointManager.setHealthChecker(new EndpointHealthChecker() {
             @Override
@@ -68,12 +67,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         server.setTunnelManager(new DefaultTunnelManager()
                 .setConfig(server.getConfig()).setProxyResourceManager(resourceManager)
                 .setTunnelMonitorManager(new DefaultTunnelMonitorManager(resourceManager)));
-
-        ComponentRegistry registry = mock(ComponentRegistry.class);
-        when(registry.getComponent(CLIENT_SSL_HANDLER_FACTORY)).thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));
-        when(registry.getComponent(SERVER_SSL_HANDLER_FACTORY)).thenReturn(new NettyServerSslHandlerFactory(new TestProxyConfig()));
-        when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(OsUtils.getCpuCount()));
-        ComponentRegistryHolder.initializeRegistry(registry);
+        server.setResourceManager(resourceManager);
     }
 
     protected String generateSequncialString(int length) {

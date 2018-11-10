@@ -15,19 +15,15 @@ import io.netty.channel.Channel;
  * <p>
  * Oct 18, 2018
  */
-public class PingOptionParser extends AbstractProxyOptionParser implements ProxyReqResOptionParser<ProxyPongEntity> {
+public class SimplePingOptionParser extends AbstractProxyOptionParser implements ProxyReqResOptionParser<ProxyPongEntity> {
 
-    private static final String PING = "PING";
+    private static final String PING = PROXY_OPTION.PING.name();
 
-    private Channel channel;
-
-    public PingOptionParser(Channel channel) {
-        this.channel = channel;
-    }
 
     @Override
     public ProxyPongEntity getResponse() {
-        return new ProxyPongEntity(HostPort.fromString(ChannelUtil.getSimpleIpport(channel.localAddress())));
+//        return new ProxyPongEntity(HostPort.fromString(ChannelUtil.getSimpleIpport(channel.localAddress())));
+        return null;
     }
 
     @Override
@@ -37,7 +33,7 @@ public class PingOptionParser extends AbstractProxyOptionParser implements Proxy
 
     @Override
     public String output() {
-        return null;
+        return PING;
     }
 
     @Override

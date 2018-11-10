@@ -8,6 +8,8 @@ import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.session.SessionStats;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.DefaultTunnelStats;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,6 +31,8 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
 
     private SessionMonitor backendSessionMonitor;
 
+    private TunnelStats tunnelStats;
+
     private ScheduledFuture future;
 
     public DefaultTunnelMonitor(ResourceManager resourceManager, Tunnel tunnel) {
@@ -36,6 +40,7 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
         this.tunnel = tunnel;
         frontendSessionMonitor = new DefaultSessionMonitor(resourceManager, tunnel.frontend());
         backendSessionMonitor = new DefaultSessionMonitor(resourceManager, tunnel.backend());
+        tunnelStats = new DefaultTunnelStats(tunnel);
 
     }
 
@@ -50,10 +55,14 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
     }
 
     @Override
+    public TunnelStats getTunnelStats() {
+        return tunnelStats;
+    }
+
+    @Override
     protected void doStart() throws Exception {
         frontendSessionMonitor.start();
         backendSessionMonitor.start();
-        monitorSession();
     }
 
     @Override
@@ -65,36 +74,4 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
         backendSessionMonitor.stop();
     }
 
-    private void monitorSession() {
-        int interval = getCheckInterval();
-        ScheduledExecutorService scheduled = resourceManager.getGlobalSharedScheduled();
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                boolean frontend = checkSessionStats(frontendSessionMonitor.getSessionStats());
-                boolean backend = checkSessionStats(backendSessionMonitor.getSessionStats());
-                int threshold = resourceManager.getProxyConfig().getSessionIdleTimeMilli();
-                if(!frontend) {
-                    logger.warn("[monitorSession] close frontend, because no input/output for {} milli", threshold);
-                    EventMonitor.DEFAULT.logAlertEvent("[FRONTEND][IDLE CLOSE]" + tunnel.toString());
-                    tunnel.frontend().release();
-                }
-                if(!backend) {
-                    logger.warn("[monitorSession] close backend, because no input/output for {} milli", threshold);
-                    EventMonitor.DEFAULT.logAlertEvent("[BACKEND][IDLE CLOSE]" + tunnel.toString());
-                    tunnel.backend().release();
-                }
-            }
-        }, interval, interval, TimeUnit.MILLISECONDS);
-    }
-
-    protected int getCheckInterval() {
-        return 10 * 1000;
-    }
-
-    private boolean checkSessionStats(SessionStats stats) {
-        long delta = System.currentTimeMillis() - stats.lastUpdateTime();
-        long idleTime = resourceManager.getProxyConfig().getSessionIdleTimeMilli();
-        return delta < idleTime;
-    }
 }

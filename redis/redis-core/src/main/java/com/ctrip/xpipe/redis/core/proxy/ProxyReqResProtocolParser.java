@@ -16,4 +16,5 @@ public interface ProxyReqResProtocolParser extends ProxyProtocolParser {
     @Override
     ProxyRequestResponseProtocol read(ByteBuf byteBuf);
 
+    String getContent();
 }

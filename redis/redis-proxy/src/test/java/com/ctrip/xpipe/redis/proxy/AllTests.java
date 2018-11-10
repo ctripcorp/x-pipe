@@ -44,9 +44,8 @@ import org.junit.runners.Suite;
         BothSessionTryWriteTest.class,
         TestTLSWithTwoProxy.class,
         DefaultSessionStatsTest.class,
-        DefaultTunnelMonitorTest.class
-//        TestMassTCPPacketWithOneProxyServer.class,
-//        TestTLSWithTwoProxy.class
+        ProxyPingHandlerTest.class
+//        TestMassTCPPacketWithOneProxyServer.class
 
 })
 public class AllTests {

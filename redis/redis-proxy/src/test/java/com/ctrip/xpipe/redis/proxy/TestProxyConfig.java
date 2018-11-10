@@ -49,11 +49,6 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int getSessionIdleTimeMilli() {
-        return sessionIdleTime;
-    }
-
-    @Override
     public String getServerCertChainFilePath() {
         return "/opt/cert/server.crt";
     }

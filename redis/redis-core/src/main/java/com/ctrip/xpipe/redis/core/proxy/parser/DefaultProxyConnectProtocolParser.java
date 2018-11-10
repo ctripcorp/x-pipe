@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 
+
 /**
  * @author chen.zhu
  * <p>
@@ -18,11 +19,6 @@ public class DefaultProxyConnectProtocolParser extends AbstractProxyProtocolPars
         ProxyConnectProtocol proxyConnectProtocol = new DefaultProxyConnectProtocol(this);
         proxyConnectProtocol.setContent(protocol);
         return proxyConnectProtocol;
-    }
-
-    @Override
-    protected void validate(ProxyConnectProtocol proxyProtocol) {
-
     }
 
 }

@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.ProxyConnectProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
 import org.slf4j.Logger;
@@ -21,6 +23,8 @@ import java.util.List;
 public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConnectProtocolParser> implements ProxyConnectProtocol {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyConnectProtocol.class);
+
+    private static final String UNKNOWN_SOURCE = "UnknownSource";
 
     private String content;
 
@@ -65,6 +69,18 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
     public String getFinalStation() {
         ProxyRouteParser routeParser = (ProxyRouteParser) parser.getProxyOptionParser(PROXY_OPTION.ROUTE);
         return routeParser.getFinalStation();
+    }
+
+    @Override
+    public String getSource() {
+        ForwardForOptionParser forwardForOptionParser = (ForwardForOptionParser) parser
+                .getProxyOptionParser(PROXY_OPTION.FORWARD_FOR);
+        String forwardFor = forwardForOptionParser.output();
+        if(forwardFor == null || forwardFor.isEmpty()) {
+            return UNKNOWN_SOURCE;
+        }
+        String[] paths = forwardForOptionParser.output().split(AbstractProxyOptionParser.WHITE_SPACE);
+        return paths[0];
     }
 
     @Override

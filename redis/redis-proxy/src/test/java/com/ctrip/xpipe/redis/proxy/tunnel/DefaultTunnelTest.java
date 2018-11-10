@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
@@ -73,7 +74,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     private ProxyConnectProtocol proxyConnectProtocol;
 
-    private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379\r\n";
+    private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\r\n";
 
     private ByteBuf testByteBuf = Unpooled.copiedBuffer("TEST".getBytes());
 
@@ -81,13 +82,14 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
     public void beforeDefaultTunnelTest() {
         MockitoAnnotations.initMocks(this);
         when(tunnelManager.create(frontChannel, proxyConnectProtocol)).thenReturn(tunnel);
-        frontChannel = new EmbeddedChannel(new FrontendSessionNettyHandler(tunnelManager),
-                new SessionTrafficReporter(6000, frontend));
-
+        frontChannel = new EmbeddedChannel();
 
         proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, mock(ResourceManager.class),
-                mock(TunnelMonitorManager.class));
+        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager,
+                new DefaultTunnelMonitorManager(proxyResourceManager));
+
+        frontChannel.pipeline().addLast(new FrontendSessionNettyHandler(tunnel),
+                new SessionTrafficReporter(6000, frontend));
 
 
         tunnel.setFrontend(frontend);

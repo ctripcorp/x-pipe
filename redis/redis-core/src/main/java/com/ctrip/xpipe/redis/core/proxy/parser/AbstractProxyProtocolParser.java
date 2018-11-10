@@ -51,15 +51,14 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
         if(!protocol.toLowerCase().startsWith(ProxyProtocol.KEY_WORD.toLowerCase())) {
             throw new ProxyProtocolException("proxy protocol format error: " + protocol);
         }
-        V proxyProtocol = newProxyProtocol(protocol);
 
-        protocol = removeKeyWord(protocol);
-        String[] allOption = protocol.split(LINE_SPLITTER);
+        String options = removeKeyWord(protocol);
+        String[] allOption = options.split(LINE_SPLITTER);
         for(String option : allOption) {
-            addProxyParser(PROXY_OPTION.parse(option.trim()));
+            addProxyParser(PROXY_OPTION.getOptionParser(option.trim()));
         }
-        validate(proxyProtocol, getParsers());
-        return proxyProtocol;
+        validate(parsers);
+        return newProxyProtocol(protocol);
     }
 
     @Override
@@ -72,7 +71,7 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
     }
 
 
-    private String removeKeyWord(String protocol) {
+    protected String removeKeyWord(String protocol) {
         return protocol.substring(ProxyProtocol.KEY_WORD.length());
     }
 
@@ -80,11 +79,11 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
         parsers.add(parser);
     }
 
-    private List<ProxyOptionParser> getParsers() {
+    protected List<ProxyOptionParser> getParsers() {
         return parsers;
     }
 
     protected abstract V newProxyProtocol(String protocol);
 
-    protected abstract void validate(V proxyProtocol, List<ProxyOptionParser> parsers);
+    protected void validate(List<ProxyOptionParser> parsers) {}
 }

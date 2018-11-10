@@ -2,13 +2,16 @@ package com.ctrip.xpipe.redis.proxy.monitor.session;
 
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import com.ctrip.xpipe.redis.proxy.session.SessionEventHandler;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
  * <p>
  * Oct 29, 2018
  */
-public interface SessionStats extends Startable, Stoppable {
+public interface SessionStats extends Startable, Stoppable, SessionEventHandler {
 
     void increaseInputBytes(long bytes);
 
@@ -23,4 +26,29 @@ public interface SessionStats extends Startable, Stoppable {
     long getInputInstantaneousBPS();
 
     long getOutputInstantaneousBPS();
+
+    List<AutoReadEvent> getAutoReadEvents();
+
+    class AutoReadEvent {
+        private long startTime;
+        private long endTime;
+
+        public long getStartTime() {
+            return startTime;
+        }
+
+        public AutoReadEvent setStartTime(long startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+
+        public long getEndTime() {
+            return endTime;
+        }
+
+        public AutoReadEvent setEndTime(long endTime) {
+            this.endTime = endTime;
+            return this;
+        }
+    }
 }

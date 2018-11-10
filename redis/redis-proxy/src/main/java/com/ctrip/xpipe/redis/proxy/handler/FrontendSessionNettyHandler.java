@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.exception.ResourceIncorrectException;
-import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
-import java.net.InetSocketAddress;
 
 /**
  * @author chen.zhu
@@ -16,19 +14,13 @@ import java.net.InetSocketAddress;
  */
 public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
 
-    private TunnelManager tunnelManager;
-
-    public FrontendSessionNettyHandler(TunnelManager tunnelManager) {
-        this.tunnelManager = tunnelManager;
+    public FrontendSessionNettyHandler(Tunnel tunnel) {
+        this.tunnel = tunnel;
+        this.setSession(tunnel.frontend());
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if(msg instanceof ProxyConnectProtocol) {
-            logger.info("[channelRead][ProxyProtocol-Received] {}", msg.toString());
-            handleProxyProtocol(ctx, msg);
-            return;
-        }
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
         if(msg instanceof ByteBuf) {
             if(tunnel != null) {
@@ -39,24 +31,9 @@ public class FrontendSessionNettyHandler extends AbstractSessionNettyHandler {
                 ctx.channel().close();
             }
         } else {
-            throw new ResourceIncorrectException("Unexpected type for read: {}" + msg.getClass().getName());
+            throw new ResourceIncorrectException("Unexpected type for read: " + msg.getClass().getName());
         }
         ctx.fireChannelRead(msg);
-    }
-
-    private void handleProxyProtocol(ChannelHandlerContext ctx, Object msg) {
-        logger.debug("[doChannelRead][ProxyProtocol] {}", msg);
-        try {
-            ProxyConnectProtocol protocol = (ProxyConnectProtocol) msg;
-            if(ctx.channel().remoteAddress() instanceof InetSocketAddress) {
-                protocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
-            }
-            tunnel = tunnelManager.create(ctx.channel(), protocol);
-            session = tunnel.frontend();
-        } catch (Exception e) {
-            logger.error("[channelRead] Error when create tunnel: ", e);
-            throw e;
-        }
     }
 
 }

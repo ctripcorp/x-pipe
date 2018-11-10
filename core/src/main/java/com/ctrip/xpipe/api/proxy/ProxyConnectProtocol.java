@@ -27,6 +27,8 @@ public interface ProxyConnectProtocol extends ProxyProtocol {
 
     String getFinalStation();
 
+    String getSource();
+
     boolean isCompressed();
 
     CompressAlgorithm compressAlgorithm();

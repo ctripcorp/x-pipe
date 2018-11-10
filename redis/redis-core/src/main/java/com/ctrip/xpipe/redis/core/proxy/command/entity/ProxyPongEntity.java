@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.core.proxy.command.entity;
 
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
+import io.netty.buffer.ByteBuf;
 
 import java.util.Objects;
 
@@ -10,6 +13,8 @@ import java.util.Objects;
  * Oct 24, 2018
  */
 public class ProxyPongEntity {
+
+    private static final String PONG_PREFIX = String.format("%s %s", ProxyProtocol.KEY_WORD, "PONG");
 
     private HostPort direct;
 
@@ -54,4 +59,15 @@ public class ProxyPongEntity {
 
         return Objects.hash(direct, real, rtt);
     }
+
+    public ByteBuf output() {
+        String pong;
+        if(real != null) {
+            pong = String.format("%s %s %s %d", PONG_PREFIX, direct.toString(), real.toString(), rtt);
+        } else {
+            pong = String.format("%s %s", PONG_PREFIX, direct.toString());
+        }
+        return new SimpleStringParser(pong).format();
+    }
+
 }

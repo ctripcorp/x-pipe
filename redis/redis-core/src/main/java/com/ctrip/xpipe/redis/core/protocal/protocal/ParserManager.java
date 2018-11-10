@@ -38,7 +38,7 @@ public class ParserManager {
 				
 				Constructor constructor = getConstructor(parser.getClass(), o.getClass());
 				if(constructor == null){
-					logger.warn("[parse][support argument, but can not find constructor]{},{}", parser, o);
+					logger.warn("[getOptionParser][support argument, but can not find constructor]{},{}", parser, o);
 					continue;
 				}
 				RedisClientProtocol curParser;
@@ -47,7 +47,7 @@ public class ParserManager {
 					return curParser.format();
 				} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 						| InvocationTargetException e) {
-					logger.error("[parse][invocate constructor error]" + parser + "," + o, e);
+					logger.error("[getOptionParser][invocate constructor error]" + parser + "," + o, e);
 				}
 			}
 		}

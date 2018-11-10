@@ -4,10 +4,8 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.concurrent.FastThreadLocalThreadFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
-import com.ctrip.xpipe.redis.proxy.handler.InternalNetworkHandler;
-import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
-import com.ctrip.xpipe.redis.proxy.handler.ProxyReqResProtocolHandler;
+import com.ctrip.xpipe.redis.proxy.handler.*;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
@@ -50,8 +48,8 @@ public class DefaultProxyServer implements ProxyServer {
     @Autowired
     private TunnelManager tunnelManager;
 
-    @Resource(name = Production.SERVER_SSL_HANDLER_FACTORY)
-    private NettySslHandlerFactory serverSslHandlerFactory;
+    @Autowired
+    private PingStatsManager pingStatsManager;
 
     private ChannelFuture tcpFuture, tlsFuture;
 
@@ -60,8 +58,6 @@ public class DefaultProxyServer implements ProxyServer {
     public static final int WRITE_LOW_WATER_MARK = 10 * MEGA_BYTE;
 
     public static final int WRITE_HIGH_WATER_MARK = 5 * WRITE_LOW_WATER_MARK;
-
-    public static final int FIXED_RCVBUF_ALLOCATE_SIZE = 1024;
 
     public DefaultProxyServer() {
     }
@@ -92,8 +88,7 @@ public class DefaultProxyServer implements ProxyServer {
                 p.addLast(new InternalNetworkHandler(config.getInternalNetworkPrefix()));
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
-                p.addLast(new ProxyReqResProtocolHandler());
-                p.addLast(new FrontendSessionNettyHandler(tunnelManager));
+                p.addLast(new ProxyProtocolHandler(tunnelManager, resourceManager, pingStatsManager));
             }
         });
         // port 80 bind only local address
@@ -115,12 +110,11 @@ public class DefaultProxyServer implements ProxyServer {
             public void initChannel(SocketChannel ch) throws Exception {
                 ChannelPipeline p = ch.pipeline();
                 if(!config.noTlsNettyHandler()) {
-                    p.addLast(serverSslHandlerFactory.createSslHandler(ch));
+                    p.addLast(resourceManager.getServerSslHandlerFactory().createSslHandler(ch));
                 }
                 p.addLast(new LoggingHandler(LogLevel.DEBUG));
                 p.addLast(new ProxyProtocolDecoder(ProxyProtocolDecoder.DEFAULT_MAX_LENGTH));
-                p.addLast(new ProxyReqResProtocolHandler());
-                p.addLast(new FrontendSessionNettyHandler(tunnelManager));
+                p.addLast(new ProxyProtocolHandler(tunnelManager, resourceManager, pingStatsManager));
             }
         });
         logger.info("[startTlsServer] bind tls port: {}", config.frontendTlsPort());
@@ -166,8 +160,8 @@ public class DefaultProxyServer implements ProxyServer {
     }
 
     @VisibleForTesting
-    public DefaultProxyServer setServerSslHandlerFactory(NettySslHandlerFactory serverSslHandlerFactory) {
-        this.serverSslHandlerFactory = serverSslHandlerFactory;
+    public DefaultProxyServer setResourceManager(ResourceManager resourceManager) {
+        this.resourceManager = resourceManager;
         return this;
     }
 

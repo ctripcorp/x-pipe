@@ -1,14 +1,10 @@
 package com.ctrip.xpipe.redis.core.proxy.protocols;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyCommand;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyRequestResponseProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyReqResProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.command.ProxyPingCommand;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,26 +13,29 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Oct 24, 2018
  */
-public class DefaultProxyReqResProtocol extends AbstractProxyProtocol<ProxyReqResProtocolParser>
-        implements ProxyRequestResponseProtocol {
+public class DefaultProxyReqResProtocol implements ProxyRequestResponseProtocol {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyReqResProtocol.class);
 
+    private ProxyReqResProtocolParser parser;
+
+    private String content;
+
     public DefaultProxyReqResProtocol(ProxyReqResProtocolParser parser) {
-        super(parser);
+        this.parser = parser;
+    }
+
+    public DefaultProxyReqResProtocol(String content) {
+        this.content = content;
     }
 
     @Override
-    public void response(Channel channel) {
-        parser.getAsyncResponse(channel).addListener(new CommandFutureListener<ByteBuf>() {
-            @Override
-            public void operationComplete(CommandFuture<ByteBuf> future) throws Exception {
-                if(future.isSuccess()) {
-                    channel.writeAndFlush(future.get());
-                } else {
-                    logger.error("[response]", future.cause());
-                }
-            }
-        });
+    public String getContent() {
+        return content == null ? parser.getContent() : content;
+    }
+
+    @Override
+    public ByteBuf output() {
+        return new SimpleStringParser(String.format("%s %s", ProxyProtocol.KEY_WORD, getContent())).format();
     }
 }

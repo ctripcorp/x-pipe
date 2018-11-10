@@ -70,7 +70,7 @@ public class DefaultProxyConfig implements ProxyConfig {
         try {
             compositeConfig.addConfig(new DefaultFileConfig(PROXY_PROPERTIES_PATH, PROXY_PROPERTIES_FILE));
         } catch (Exception e) {
-            logger.info("[DefaultProxyConfig]{}", e);
+            logger.warn("", e);
         }
 
         try {
@@ -116,12 +116,6 @@ public class DefaultProxyConfig implements ProxyConfig {
         String internalNetworkPrefix = getProperty(KEY_INTERNAL_NETWORK_PREFIX, "10");
         return IpUtils.splitIpAddr(internalNetworkPrefix);
     }
-
-    @Override
-    public int getSessionIdleTimeMilli() {
-        return getIntProperty(KEY_SESSION_IDLE_TIME_MILLI, 40 * 1000);
-    }
-
 
     @Override
     public String getServerCertChainFilePath() {

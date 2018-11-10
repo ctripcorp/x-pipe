@@ -45,11 +45,9 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
     @Before
     public void beforeFrontendSessionNettyHandlerTest() {
         MockitoAnnotations.initMocks(this);
-        handler = new FrontendSessionNettyHandler(manager);
-        handler.setTunnel(tunnel);
-        handler.setSession(session);
         when(manager.create(any(), any())).thenReturn(tunnel);
         when(tunnel.frontend()).thenReturn(session);
+        handler = new FrontendSessionNettyHandler(tunnel);
         channel = new EmbeddedChannel(handler);
     }
 
@@ -59,11 +57,10 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
 
     }
 
-    @Test
+    @Test(expected = ResourceIncorrectException.class)
     public void channelRead() {
         channel.writeInbound(new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379"));
-        verify(manager).create(any(), any());
-        verify(tunnel).frontend();
+        verify(session).release();
     }
 
     @Test
@@ -86,7 +83,6 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
     @Test(expected = ResourceIncorrectException.class)
     public void testChannelRead3() {
         channel.writeInbound("Hello Wrold");
-        verify(manager, never()).create(any(), any());
         verify(tunnel, never()).forwardToBackend(any());
     }
 
