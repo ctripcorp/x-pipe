@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.proxy.parser.CompositeProxyProtocolParser;
@@ -49,7 +50,9 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 return;
             }
             out.add(protocol);
-            finished = true;
+            if(protocol instanceof ProxyConnectProtocol) {
+                finished = true;
+            }
         } catch (ProxyProtocolException e) {
             throw e;
         } catch (Throwable t) {

@@ -41,7 +41,6 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
         }
         logger.info("[channelRead][ProxyProtocol-Received] {}", msg.toString());
         handleProxyProtocol(ctx, msg);
-        uninstallSelf(ctx);
     }
 
     private void handleProxyProtocol(ChannelHandlerContext ctx, Object msg) {
@@ -52,6 +51,7 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
                 protocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
             }
             tunnel = tunnelManager.create(ctx.channel(), protocol);
+            uninstallSelf(ctx);
         } else if(msg instanceof ProxyRequestResponseProtocol) {
             ProxyRequestResponseProtocol protocol = (ProxyRequestResponseProtocol) msg;
             protocolHandlerManager.handle(ctx.channel(),
