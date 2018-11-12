@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
+import java.util.Objects;
+
 /**
  * @author chen.zhu
  * <p>
@@ -57,5 +59,22 @@ public class PingStatsResult {
         HostPort direct = HostPort.fromString(input[2].toString());
         HostPort real = HostPort.fromString(input[3].toString());
         return new PingStatsResult(start, end, direct, real);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PingStatsResult that = (PingStatsResult) o;
+        return start == that.start &&
+                end == that.end &&
+                Objects.equals(direct, that.direct) &&
+                Objects.equals(real, that.real);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(start, end, direct, real);
     }
 }

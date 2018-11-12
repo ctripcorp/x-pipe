@@ -24,7 +24,10 @@ public abstract class AbstractProxyProtocolOptionHandler implements ProxyProtoco
 
     protected abstract void doHandle(Channel channel, String[] content);
 
+
     protected interface Responser {
+
+        // synchonized method
         void response(Channel channel);
     }
 }

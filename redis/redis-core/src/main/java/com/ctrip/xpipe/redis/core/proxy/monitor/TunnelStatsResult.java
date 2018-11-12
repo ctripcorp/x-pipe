@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.monitor;
 
+import java.util.Objects;
+
 public class TunnelStatsResult {
 
     public static final long NOT_CLOSE = -1L;
@@ -74,5 +76,24 @@ public class TunnelStatsResult {
 
     public String getCloseFrom() {
         return closeFrom;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TunnelStatsResult that = (TunnelStatsResult) o;
+        return protocolRecvTime == that.protocolRecvTime &&
+                protocolSndTime == that.protocolSndTime &&
+                closeTime == that.closeTime &&
+                Objects.equals(tunnelId, that.tunnelId) &&
+                Objects.equals(tunnelState, that.tunnelState) &&
+                Objects.equals(closeFrom, that.closeFrom);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(tunnelId, tunnelState, protocolRecvTime, protocolSndTime, closeTime, closeFrom);
     }
 }

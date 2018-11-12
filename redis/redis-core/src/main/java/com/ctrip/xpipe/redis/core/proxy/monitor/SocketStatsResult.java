@@ -2,10 +2,12 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author chen.zhu
@@ -57,5 +59,38 @@ public class SocketStatsResult {
             strs.add(objects[i].toString());
         }
         return new SocketStatsResult(strs, timestamp);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SocketStatsResult that = (SocketStatsResult) o;
+        if(timestamp != that.timestamp) {
+            return false;
+        }
+        return ObjectUtils.equals(result, that.result, new ObjectUtils.EqualFunction<List<String>>() {
+            @Override
+            public boolean equals(List<String> obj1, List<String> obj2) {
+                if(obj1 == null || obj2 == null) {
+                    return false;
+                }
+                if(obj1.size() != obj2.size()) {
+                    return false;
+                }
+                for(int i = 0; i < obj1.size(); i++) {
+                    if(!obj1.get(i).equalsIgnoreCase(obj2.get(i))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(result, timestamp);
     }
 }

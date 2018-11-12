@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.proxy.handler;
+package com.ctrip.xpipe.redis.proxy.handler.response;
 
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;

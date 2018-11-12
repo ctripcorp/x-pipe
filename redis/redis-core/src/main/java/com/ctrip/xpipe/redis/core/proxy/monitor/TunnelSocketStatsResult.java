@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 
+import java.util.Objects;
+
 public class TunnelSocketStatsResult {
 
     private String tunnelId;
@@ -53,5 +55,21 @@ public class TunnelSocketStatsResult {
 
     public SocketStatsResult getBackendSocketStats() {
         return backendSocketStats;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TunnelSocketStatsResult that = (TunnelSocketStatsResult) o;
+        return Objects.equals(tunnelId, that.tunnelId) &&
+                Objects.equals(frontendSocketStats, that.frontendSocketStats) &&
+                Objects.equals(backendSocketStats, that.backendSocketStats);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(tunnelId, frontendSocketStats, backendSocketStats);
     }
 }

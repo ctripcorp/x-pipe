@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy;
 
-import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfigTest;
 import com.ctrip.xpipe.redis.proxy.handler.*;
+import com.ctrip.xpipe.redis.proxy.handler.response.ProxyMonitorHandlerTest;
 import com.ctrip.xpipe.redis.proxy.integrate.TestCloseOnBothSide;
 import com.ctrip.xpipe.redis.proxy.integrate.TestMassTCPPacketWithOneProxyServer;
 import com.ctrip.xpipe.redis.proxy.integrate.TestTLSWithTwoProxy;
