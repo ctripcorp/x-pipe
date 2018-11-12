@@ -49,6 +49,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public boolean startMonitor() {
+        return false;
+    }
+
+    @Override
     public String getServerCertChainFilePath() {
         return "/opt/cert/server.crt";
     }

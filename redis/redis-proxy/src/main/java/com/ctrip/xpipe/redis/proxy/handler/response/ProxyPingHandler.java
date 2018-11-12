@@ -1,7 +1,5 @@
-package com.ctrip.xpipe.redis.proxy.handler;
+package com.ctrip.xpipe.redis.proxy.handler.response;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
@@ -62,19 +60,13 @@ public class ProxyPingHandler extends AbstractProxyProtocolOptionHandler {
             ProxyPingCommand command = new ProxyPingCommand(resourceManager.getKeyedObjectPool().getKeyPool(target),
                     resourceManager.getGlobalSharedScheduled());
             long start = System.currentTimeMillis();
-            command.future().addListener(new CommandFutureListener<ProxyPongEntity>() {
-                @Override
-                public void operationComplete(CommandFuture<ProxyPongEntity> commandFuture) throws Exception {
-                    if(commandFuture.isSuccess()) {
-                        ProxyPongEntity entity = commandFuture.getNow();
-                        ProxyPongEntity result = new ProxyPongEntity(direct, entity.getDirect(), System.currentTimeMillis() - start);
-                        channel.writeAndFlush(result.output());
-                    } else {
-                        channel.writeAndFlush(new ProxyPongEntity(direct, direct, INFINITE).output());
-                    }
-                }
-            });
-            command.execute();
+            try {
+                ProxyPongEntity entity = command.execute().get();
+                ProxyPongEntity result = new ProxyPongEntity(direct, entity.getDirect(), System.currentTimeMillis() - start);
+                channel.writeAndFlush(result.output());
+            } catch (Exception e) {
+                channel.writeAndFlush(new ProxyPongEntity(direct, direct, INFINITE).output());
+            }
         }
     }
 }

@@ -3,9 +3,11 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.handler.response.ProxyMonitorHandler;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
@@ -13,9 +15,7 @@ import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
-import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
-import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStats;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelEstablished;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -33,9 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
@@ -177,6 +176,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         return  channel;
     }
 
+    @Ignore
     @Test
     public void testArrayParser() {
         Object[][] resultSet = new Object[2][];

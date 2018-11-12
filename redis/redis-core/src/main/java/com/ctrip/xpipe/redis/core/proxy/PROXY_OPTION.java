@@ -3,8 +3,9 @@ package com.ctrip.xpipe.redis.core.proxy;
 
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.UnknownOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.monitor.MonitorOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.ping.SimplePingOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.ping.PingOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public enum PROXY_OPTION {
     PING {
         @Override
         public ProxyOptionParser getProxyOptionParser() {
-            return new SimplePingOptionParser();
+            return new PingOptionParser();
         }
 
         @Override
@@ -63,7 +64,7 @@ public enum PROXY_OPTION {
     MONITOR {
         @Override
         public ProxyOptionParser getProxyOptionParser() {
-            return null;
+            return new MonitorOptionParser();
         }
 
         @Override

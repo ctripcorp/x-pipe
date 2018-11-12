@@ -55,7 +55,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         AtomicReference<ByteBuf> byteBufAtomicReference = new AtomicReference<>(byteBuf);
         ChannelFuture receiveServer = startReceiveServer(port, byteBufAtomicReference);
 
-        String total = protocol + message;
+        final String total = protocol + message;
         int index = 2;
         String sendout = total.substring(0, index);
         write(clientFuture, sendout);
@@ -81,6 +81,8 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         ByteBuf expected = UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(message.getBytes());
 
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
+
+        expected.release();
     }
 
     @Ignore
@@ -152,6 +154,6 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     }
 
     private String generateProxyProtocol(int port) {
-        return String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT2, port);
+        return String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d;FORWARD_FOR 127.0.0.1:80\r\n", PROXY_PORT2, port);
     }
 }

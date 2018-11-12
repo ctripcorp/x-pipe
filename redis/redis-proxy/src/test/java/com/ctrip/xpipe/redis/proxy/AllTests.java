@@ -3,8 +3,14 @@ package com.ctrip.xpipe.redis.proxy;
 import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfigTest;
 import com.ctrip.xpipe.redis.proxy.handler.*;
 import com.ctrip.xpipe.redis.proxy.integrate.TestCloseOnBothSide;
+import com.ctrip.xpipe.redis.proxy.integrate.TestMassTCPPacketWithOneProxyServer;
 import com.ctrip.xpipe.redis.proxy.integrate.TestTLSWithTwoProxy;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManagerTest;
+import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultOutboundBufferMonitorTest;
+import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitorTest;
 import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionStatsTest;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManagerTest;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsTest;
 import com.ctrip.xpipe.redis.proxy.monitor.tunnel.DefaultTunnelMonitorTest;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSessionTest;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSessionTest;
@@ -28,7 +34,6 @@ import org.junit.runners.Suite;
         SessionClosingTest.class,
         SessionInitTest.class,
         SessionEstablishedTest.class,
-        DefaultProxyConfigTest.class,
 
         AbstractSessionNettyHandlerTest.class,
         FrontendSessionNettyHandlerTest.class,
@@ -42,10 +47,17 @@ import org.junit.runners.Suite;
         TestCloseOnBothSide.class,
         InternalNetworkHandlerTest.class,
         BothSessionTryWriteTest.class,
-        TestTLSWithTwoProxy.class,
         DefaultSessionStatsTest.class,
-        ProxyPingHandlerTest.class
-//        TestMassTCPPacketWithOneProxyServer.class
+        ProxyPingHandlerTest.class,
+        DefaultSessionMonitorTest.class,
+        DefaultOutboundBufferMonitorTest.class,
+        DefaultTunnelMonitorTest.class,
+        DefaultTunnelMonitorManagerTest.class,
+        DefaultPingStatsManagerTest.class,
+        ProxyMonitorHandlerTest.class,
+        DefaultPingStatsTest.class,
+        TestTLSWithTwoProxy.class,
+        TestMassTCPPacketWithOneProxyServer.class
 
 })
 public class AllTests {

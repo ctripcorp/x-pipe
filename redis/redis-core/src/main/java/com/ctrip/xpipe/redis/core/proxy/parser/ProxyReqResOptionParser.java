@@ -7,5 +7,5 @@ package com.ctrip.xpipe.redis.core.proxy.parser;
  */
 public interface ProxyReqResOptionParser<T> extends ProxyOptionParser {
 
-    T getResponse();
+    T getContent();
 }

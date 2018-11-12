@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public abstract class AbstractProxyCommand<T> extends AbstractRedisCommand<T> implements ProxyCommand<T> {
 
-    private static final int DEFAULT_PROXY_COMMAND_TIMEOUT = 5000;
+    private static final int DEFAULT_PROXY_COMMAND_TIMEOUT = 10000;
 
     public AbstractProxyCommand(String host, int port, ScheduledExecutorService scheduled) {
         super(host, port, scheduled, DEFAULT_PROXY_COMMAND_TIMEOUT);

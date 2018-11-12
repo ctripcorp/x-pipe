@@ -5,6 +5,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
 
 /**
  * @author chen.zhu
@@ -46,5 +48,26 @@ public class DefaultSessionStatsTest extends AbstractRedisProxyServerTest {
         Assert.assertTrue(System.currentTimeMillis() - sessionStats.lastUpdateTime() < 10);
         sleep(100);
         Assert.assertTrue(System.currentTimeMillis() - sessionStats.lastUpdateTime() >= 100);
+    }
+
+    @Test
+    public void testGetAutoReadEvents() {
+        List<SessionStats.AutoReadEvent> events = sessionStats.getAutoReadEvents();
+        Assert.assertNotNull(events);
+        Assert.assertTrue(events.isEmpty());
+
+        sessionStats.onWritable();
+        events = sessionStats.getAutoReadEvents();
+        Assert.assertNotNull(events);
+        Assert.assertTrue(events.isEmpty());
+
+        sessionStats.onNotWritable();
+        sleep(100);
+        sessionStats.onWritable();
+        Assert.assertNotNull(events);
+        Assert.assertFalse(events.isEmpty());
+
+        SessionStats.AutoReadEvent event = events.get(0);
+        logger.info("{}", event);
     }
 }

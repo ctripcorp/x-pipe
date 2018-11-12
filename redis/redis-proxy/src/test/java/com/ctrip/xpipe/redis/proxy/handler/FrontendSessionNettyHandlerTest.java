@@ -57,9 +57,19 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
 
     }
 
-    @Test(expected = ResourceIncorrectException.class)
-    public void channelRead() {
-        channel.writeInbound(new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379"));
+    @Test
+    public void testChannelRead() {
+        Throwable throwable = null;
+        logger.info("[channelRead] exception expected");
+        try {
+            channel.writeInbound(new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379"));
+            channel.checkException();
+        } catch (Exception e) {
+            throwable = e;
+        }
+        Assert.assertNotNull(throwable);
+        Assert.assertTrue(throwable instanceof ResourceIncorrectException);
+
         verify(session).release();
     }
 
@@ -80,9 +90,17 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
         verify(tunnel).forwardToBackend(any());
     }
 
-    @Test(expected = ResourceIncorrectException.class)
+    @Test
     public void testChannelRead3() {
-        channel.writeInbound("Hello Wrold");
+        Throwable throwable = null;
+        logger.info("[channelRead][exception expected]");
+        try {
+            channel.writeInbound("Hello Wrold");
+        } catch (Exception e) {
+            throwable = e;
+        }
+        Assert.assertNotNull(throwable);
+        Assert.assertTrue(throwable instanceof ResourceIncorrectException);
         verify(tunnel, never()).forwardToBackend(any());
     }
 

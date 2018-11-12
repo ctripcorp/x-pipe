@@ -30,8 +30,8 @@ public class CompositeProxyProtocolParser implements ProxyProtocolParser {
         String proto = removeKeyWord(protocol);
         String[] allOption = proto.split(LINE_SPLITTER);
         for(String option : allOption) {
-            boolean responsable = PROXY_OPTION.parse(option.trim()).hasResponse();
-            if(responsable) {
+            boolean responsible = PROXY_OPTION.parse(option.trim()).hasResponse();
+            if(responsible) {
                 parser = new DefaultProxyReqResProtocolParser();
             } else {
                 parser = new DefaultProxyConnectProtocolParser();

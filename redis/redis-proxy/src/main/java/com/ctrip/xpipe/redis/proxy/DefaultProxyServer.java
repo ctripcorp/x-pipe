@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.concurrent.FastThreadLocalThreadFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
-import com.ctrip.xpipe.redis.proxy.handler.*;
+import com.ctrip.xpipe.redis.proxy.handler.InternalNetworkHandler;
+import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
+import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolHandler;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
-import com.ctrip.xpipe.redis.proxy.spring.Production;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 
 /**

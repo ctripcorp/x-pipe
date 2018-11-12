@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.proxy.handler;
+package com.ctrip.xpipe.redis.proxy.handler.response;
 
 import io.netty.channel.Channel;
 

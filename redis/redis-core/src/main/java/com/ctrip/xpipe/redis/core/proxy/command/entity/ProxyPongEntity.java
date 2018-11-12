@@ -70,4 +70,12 @@ public class ProxyPongEntity {
         return new SimpleStringParser(pong).format();
     }
 
+    @Override
+    public String toString() {
+        return "ProxyPongEntity{" +
+                "direct=" + direct +
+                ", real=" + real +
+                ", rtt=" + rtt +
+                '}';
+    }
 }

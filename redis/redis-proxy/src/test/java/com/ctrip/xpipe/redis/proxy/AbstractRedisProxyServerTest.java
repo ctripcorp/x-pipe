@@ -6,14 +6,15 @@ import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
@@ -87,6 +88,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     @BeforeClass
     public static void beforeAbstractRedisProxyServerTestClass() {
         System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
+        System.setProperty(DefaultSessionMonitor.SESSION_MONITOR_SHOULD_START, "false");
     }
 
     @Before

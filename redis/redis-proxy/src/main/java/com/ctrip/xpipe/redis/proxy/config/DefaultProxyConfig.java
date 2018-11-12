@@ -47,7 +47,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
 
-    private static final String KEY_SESSION_IDLE_TIME_MILLI = "proxy.session.idle.time.milli";
+    private static final String KEY_START_PROXY_MONITOR = "proxy.monitor.start";
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
@@ -115,6 +115,11 @@ public class DefaultProxyConfig implements ProxyConfig {
     public String[] getInternalNetworkPrefix() {
         String internalNetworkPrefix = getProperty(KEY_INTERNAL_NETWORK_PREFIX, "10");
         return IpUtils.splitIpAddr(internalNetworkPrefix);
+    }
+
+    @Override
+    public boolean startMonitor() {
+        return getBooleanProperty(KEY_START_PROXY_MONITOR, false);
     }
 
     @Override

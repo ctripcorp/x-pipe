@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
-import com.ctrip.xpipe.redis.core.proxy.parser.CompositeProxyProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.CompositeProxyProtocolParser;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -33,7 +33,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private ProxyProtocolParser parser = new CompositeProxyProtocolParser();
 
-    public static final int DEFAULT_MAX_LENGTH = 2048;
+    public static final int DEFAULT_MAX_LENGTH = 1024;
 
     public ProxyProtocolDecoder(int maxLength) {
         this.maxLength = maxLength;
@@ -50,13 +50,16 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 return;
             }
             out.add(protocol);
+            // connection protocol, drop all protocol stuffs & build connection chain; otherwise, response for request
             if(protocol instanceof ProxyConnectProtocol) {
                 finished = true;
             }
-        } catch (ProxyProtocolException e) {
-            throw e;
         } catch (Throwable t) {
-            throw new ProxyProtocolException("Proxy Protocol Analysis Error", t);
+            if(t instanceof ProxyProtocolException) {
+                throw t;
+            } else {
+                throw new ProxyProtocolException("Proxy Protocol Analysis Error", t);
+            }
         }
 
     }
@@ -80,18 +83,21 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                     + maxLength + ')');
         }
         if(bufReadIndex < PREFIX.length && !matchProtocolFormat(in)) {
-            String insideMessage = ByteBufUtil.prettyHexDump(in);
-            logger.error("[checkValid] receive: {}", insideMessage);
+            String insideMessage = ByteBufUtil.prettyHexDump(in, in.readerIndex(), Math.min(PREFIX.length, in.readableBytes()));
+            logger.debug("[checkValid] receive: idx:{}, {}", bufReadIndex, insideMessage);
             throw new ProxyProtocolException("Format error: " + insideMessage);
         }
         readLength += in.readableBytes();
     }
 
     private boolean matchProtocolFormat(ByteBuf in) {
+        int index = in.readerIndex();
         for(; bufReadIndex < PREFIX.length && bufReadIndex < in.readableBytes(); bufReadIndex++) {
-            if(in.getByte(bufReadIndex) != PREFIX[bufReadIndex]) {
+            if(in.getByte(index) != PREFIX[bufReadIndex]) {
+                logger.warn("not equal: {}, {}", Character.toChars(in.getByte(index)), PREFIX[bufReadIndex]);
                 return false;
             }
+            index ++;
         }
         return true;
     }
@@ -99,5 +105,15 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     @VisibleForTesting
     protected boolean isFinished() {
         return finished;
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if(!(cause instanceof ProxyProtocolException)) {
+            logger.error("[exceptionCaught][close channel]" + ChannelUtil.getDesc(ctx.channel()), cause);
+            super.exceptionCaught(ctx, cause);
+        }
+        ctx.channel().close();
+
     }
 }

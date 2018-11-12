@@ -1,6 +1,5 @@
-package com.ctrip.xpipe.redis.proxy.handler;
+package com.ctrip.xpipe.redis.proxy.handler.response;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;

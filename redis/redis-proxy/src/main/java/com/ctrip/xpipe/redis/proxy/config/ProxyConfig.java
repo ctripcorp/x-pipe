@@ -25,4 +25,6 @@ public interface ProxyConfig extends TLSConfig {
     // to avoid any connect outside internal network
     String[] getInternalNetworkPrefix();
 
+    boolean startMonitor();
+
 }

@@ -1,9 +1,10 @@
-package com.ctrip.xpipe.redis.proxy.monitor.stats;
+package com.ctrip.xpipe.redis.proxy.monitor.stats.impl;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
 import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;

@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.proxy.monitor.session;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
-import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultSocketStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultSocketStats;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 
 /**
@@ -19,6 +19,10 @@ public class DefaultSessionMonitor extends AbstractStartStoppable implements Ses
     private OutboundBufferMonitor outboundBufferMonitor;
 
     private SocketStats socketStats;
+
+    public static final String SESSION_MONITOR_SHOULD_START = "proxy.session.monitor.start";
+
+    private static final boolean shouldStart = Boolean.parseBoolean(System.getProperty(SESSION_MONITOR_SHOULD_START, "true"));
 
     public DefaultSessionMonitor(ResourceManager resourceManager, Session session) {
         this.sessionStats = new DefaultSessionStats(resourceManager.getGlobalSharedScheduled());
@@ -38,18 +42,22 @@ public class DefaultSessionMonitor extends AbstractStartStoppable implements Ses
 
     @Override
     public SocketStats getSocketStats() {
-        return null;
+        return socketStats;
     }
 
     @Override
     protected void doStart() throws Exception {
-        sessionStats.start();
-        socketStats.start();
+        if(shouldStart) {
+            sessionStats.start();
+            socketStats.start();
+        }
     }
 
     @Override
     protected void doStop() throws Exception {
-        sessionStats.stop();
-        socketStats.stop();
+        if(shouldStart) {
+            sessionStats.stop();
+            socketStats.stop();
+        }
     }
 }

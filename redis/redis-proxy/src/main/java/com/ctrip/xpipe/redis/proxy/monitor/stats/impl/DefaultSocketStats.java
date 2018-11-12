@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
 import com.ctrip.xpipe.utils.AbstractScriptExecutor;
-
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;

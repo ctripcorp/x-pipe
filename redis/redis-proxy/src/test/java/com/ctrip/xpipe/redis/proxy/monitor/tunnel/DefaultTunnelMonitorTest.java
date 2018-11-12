@@ -5,10 +5,11 @@ import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -32,13 +33,17 @@ public class DefaultTunnelMonitorTest extends AbstractRedisProxyServerTest {
     }
 
     @Test
-    public void testMonitorShutdownTunnel() throws Exception {
-        FrontendSession frontend = mock(FrontendSession.class);
-        BackendSession backend = mock(BackendSession.class);
-        when(tunnel.frontend()).thenReturn(frontend);
-        when(tunnel.backend()).thenReturn(backend);
-        monitor.start();
-        sleep(50);
-        verify(frontend, atLeastOnce()).release();
+    public void testGetFrontendSessionMonitor() {
+        Assert.assertNotNull(monitor.getFrontendSessionMonitor());
+    }
+
+    @Test
+    public void testGetBackendSessionMonitor() {
+        Assert.assertNotNull(monitor.getBackendSessionMonitor());
+    }
+
+    @Test
+    public void testGetTunnelStats() {
+        Assert.assertNotNull(monitor.getTunnelStats());
     }
 }

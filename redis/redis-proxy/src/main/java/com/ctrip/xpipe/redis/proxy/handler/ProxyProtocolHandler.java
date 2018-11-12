@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyRequestResponseProtocol;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.handler.response.ProxyReqResProtocolHandlerManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;

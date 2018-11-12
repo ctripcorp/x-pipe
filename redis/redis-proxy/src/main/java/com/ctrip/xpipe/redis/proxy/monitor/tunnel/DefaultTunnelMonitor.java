@@ -1,20 +1,14 @@
 package com.ctrip.xpipe.redis.proxy.monitor.tunnel;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor;
-import com.ctrip.xpipe.redis.proxy.monitor.session.SessionStats;
-import com.ctrip.xpipe.redis.proxy.monitor.stats.DefaultTunnelStats;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultTunnelStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
@@ -23,21 +17,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class DefaultTunnelMonitor extends AbstractStartStoppable implements TunnelMonitor {
 
-    private ResourceManager resourceManager;
-
-    private Tunnel tunnel;
-
     private SessionMonitor frontendSessionMonitor;
 
     private SessionMonitor backendSessionMonitor;
 
     private TunnelStats tunnelStats;
 
-    private ScheduledFuture future;
-
     public DefaultTunnelMonitor(ResourceManager resourceManager, Tunnel tunnel) {
-        this.resourceManager = resourceManager;
-        this.tunnel = tunnel;
         frontendSessionMonitor = new DefaultSessionMonitor(resourceManager, tunnel.frontend());
         backendSessionMonitor = new DefaultSessionMonitor(resourceManager, tunnel.backend());
         tunnelStats = new DefaultTunnelStats(tunnel);
@@ -67,9 +53,6 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
 
     @Override
     protected void doStop() throws Exception {
-        if(future != null) {
-            future.cancel(true);
-        }
         frontendSessionMonitor.stop();
         backendSessionMonitor.stop();
     }

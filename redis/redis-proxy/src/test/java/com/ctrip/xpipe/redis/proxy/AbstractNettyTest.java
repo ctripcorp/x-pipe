@@ -47,8 +47,8 @@ public class AbstractNettyTest {
             }
             if(msg instanceof ByteBuf) {
                 Assert.assertEquals(expected, ((ByteBuf) msg).toString(Charset.defaultCharset()));
+                ((ByteBuf) msg).release();
             }
-            super.channelRead(ctx, msg);
         }
     }
 }

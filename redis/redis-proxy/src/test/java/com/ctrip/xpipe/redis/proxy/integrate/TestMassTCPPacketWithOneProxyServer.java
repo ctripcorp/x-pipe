@@ -78,8 +78,11 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
         ByteBuf expected = UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(message.getBytes());
 
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
+
+        expected.release();
     }
 
+    @Ignore
     @Test
     public void testStabilityWithTwo() throws TimeoutException, InterruptedException {
         int port1 = randomPort(), port2 = randomPort();
@@ -175,6 +178,8 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
         expected = UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(message2.getBytes());
 
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference2.get()));
+
+        expected.release();
     }
 
     @Ignore
@@ -246,12 +251,13 @@ public class TestMassTCPPacketWithOneProxyServer extends AbstractProxyIntegratio
 
             logger.info("[testStabilityWithN] count: {}", i);
             Assert.assertEquals(0, ByteBufUtil.compare(expected, references[i].get()));
+            expected.release();
         }
     }
 
 
     private String generateProxyProtocol(int port) {
-        return String.format("+PROXY ROUTE TCP://127.0.0.1:%d\r\n", port);
+        return String.format("+PROXY ROUTE TCP://127.0.0.1:%d;FORWARD_FOR 127.0.0.1:80\r\n", port);
     }
 
 }

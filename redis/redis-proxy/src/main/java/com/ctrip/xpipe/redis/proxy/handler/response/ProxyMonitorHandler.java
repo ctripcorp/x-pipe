@@ -1,20 +1,24 @@
-package com.ctrip.xpipe.redis.proxy.handler;
+package com.ctrip.xpipe.redis.proxy.handler.response;
 
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
+import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.parser.monitor.ProxyMonitorParser;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProxyMonitorHandler.class);
 
     private TunnelManager tunnelManager;
 
@@ -30,7 +34,11 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
         if(content.length < 1) {
             throw new IllegalArgumentException("monitor option is needed");
         }
-        ProxyMonitorParser.Type type = ProxyMonitorParser.Type.valueOf(content[0]);
+        ProxyMonitorParser.Type type = ProxyMonitorParser.Type.parse(content[0]);
+        if(type == null) {
+            logger.warn("[doHandle] unknown type: {}", content[0]);
+            return;
+        }
         switch (type) {
             case SocketStats:
                 new SocketStatsResponser().response(channel);

@@ -25,7 +25,7 @@ public class ProxyConnectProtocolDecoderTest extends AbstractNettyTest {
             channel.writeInbound(Unpooled.copiedBuffer("Test".getBytes()));
             counter += "Test".getBytes().length;
         }
-        channel.checkException();
+
     }
 
 

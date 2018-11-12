@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -32,7 +33,7 @@ public class DefaultPingStatsManager implements PingStatsManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPingStatsManager.class);
 
-    private static final int CHECK_INTERVAL = 1000;
+    protected static final int CHECK_INTERVAL = 1000;
 
     private static final int INSTANCE_NUM_FOR_ONE_ENDPOINT = 3;
 
@@ -45,6 +46,14 @@ public class DefaultPingStatsManager implements PingStatsManager {
     private List<PingStats> allPingStats = Lists.newCopyOnWriteArrayList();
 
     private Set<ProxyEndpoint> allEndpoints = Sets.newHashSet();
+
+    public DefaultPingStatsManager() {
+    }
+
+    protected DefaultPingStatsManager(ResourceManager resourceManager, ProxyEndpointManager endpointManager) {
+        this.resourceManager = resourceManager;
+        this.endpointManager = endpointManager;
+    }
 
     @Override
     public List<PingStats> getAllPingStats() {
@@ -70,8 +79,10 @@ public class DefaultPingStatsManager implements PingStatsManager {
         ScheduledExecutorService scheduled = resourceManager.getGlobalSharedScheduled();
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
-            protected void doRun() throws Exception {
-                createOrRemove();
+            protected void doRun() {
+                if(resourceManager.getProxyConfig().startMonitor()) {
+                    createOrRemove();
+                }
             }
         }, CHECK_INTERVAL, CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     }
@@ -126,4 +137,13 @@ public class DefaultPingStatsManager implements PingStatsManager {
         return result;
     }
 
+    @VisibleForTesting
+    protected ResourceManager getResourceManager() {
+        return resourceManager;
+    }
+
+    @VisibleForTesting
+    protected ProxyEndpointManager getEndpointManager() {
+        return endpointManager;
+    }
 }

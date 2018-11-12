@@ -3,19 +3,15 @@ package com.ctrip.xpipe.redis.proxy.integrate;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
-import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
-import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
-import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
 import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
+import com.ctrip.xpipe.redis.proxy.session.BackendSession;
+import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
-import com.ctrip.xpipe.utils.OsUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -28,11 +24,12 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.junit.BeforeClass;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ctrip.xpipe.redis.proxy.spring.Production.*;
+import static com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor.SESSION_MONITOR_SHOULD_START;
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
 import static org.mockito.Mockito.*;
 
@@ -42,6 +39,11 @@ import static org.mockito.Mockito.*;
  * May 23, 2018
  */
 public class AbstractProxyIntegrationTest extends AbstractTest {
+
+    @BeforeClass
+    public static void beforeAbstractProxyIntegrationTest() {
+        System.setProperty(SESSION_MONITOR_SHOULD_START, "false");
+    }
 
     protected void prepare(DefaultProxyServer server) {
         sameStuff(server);
@@ -182,5 +184,21 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
                 .option(ChannelOption.TCP_NODELAY, true)
                 .handler(new LoggingHandler(LogLevel.DEBUG));
         return b;
+    }
+
+    protected static Session mockSession() {
+        return mock(Session.class);
+    }
+
+    protected static FrontendSession mockFrontendSession() {
+        return mock(FrontendSession.class);
+    }
+
+    protected static BackendSession mockBackendSession() {
+        return mock(BackendSession.class);
+    }
+
+    protected static Channel mockChannel() {
+        return mock(Channel.class);
     }
 }

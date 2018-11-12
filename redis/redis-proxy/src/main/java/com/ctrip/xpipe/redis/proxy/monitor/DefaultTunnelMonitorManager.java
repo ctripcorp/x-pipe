@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.tunnel.DefaultTunnelMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,5 +51,10 @@ public class DefaultTunnelMonitorManager implements TunnelMonitorManager {
         } catch (Exception e) {
             logger.error("[stop tunnel-monitor]", e);
         }
+    }
+
+    @VisibleForTesting
+    protected Map<Tunnel, TunnelMonitor> getTunnelMonitors() {
+        return tunnelMonitors;
     }
 }

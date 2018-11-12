@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.monitor.session;
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.proxy.session.SessionEventHandler;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 
 import java.util.List;
 
@@ -49,6 +50,14 @@ public interface SessionStats extends Startable, Stoppable, SessionEventHandler 
         public AutoReadEvent setEndTime(long endTime) {
             this.endTime = endTime;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return "AutoReadEvent{" +
+                    "startTime=" + DateTimeUtils.timeAsString(startTime) +
+                    ", endTime=" + DateTimeUtils.timeAsString(endTime) +
+                    '}';
         }
     }
 }

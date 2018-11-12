@@ -13,17 +13,17 @@ import io.netty.channel.Channel;
 public class MonitorOptionParser extends AbstractProxyOptionParser implements ProxyReqResOptionParser<String> {
 
     @Override
-    public String getResponse() {
-        return null;
-    }
-
-    @Override
     public String output() {
-        return null;
+        return output;
     }
 
     @Override
     public PROXY_OPTION option() {
-        return null;
+        return PROXY_OPTION.MONITOR;
+    }
+
+    @Override
+    public String getContent() {
+        return output;
     }
 }

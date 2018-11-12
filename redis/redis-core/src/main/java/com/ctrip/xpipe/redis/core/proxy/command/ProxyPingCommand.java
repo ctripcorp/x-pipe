@@ -37,7 +37,7 @@ public class ProxyPingCommand extends AbstractProxyCommand<ProxyPongEntity> {
     }
 
     public ProxyPingCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
-                            ProxyEndpoint endpoint) {
+                            ProxyEndpoint target) {
         super(clientPool, scheduled);
         this.target = target;
     }
