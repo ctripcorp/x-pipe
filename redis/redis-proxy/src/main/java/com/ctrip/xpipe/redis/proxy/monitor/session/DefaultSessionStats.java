@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.monitor.session;
 
 import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
 
 import java.util.Arrays;
@@ -125,11 +126,11 @@ public class DefaultSessionStats extends AbstractStats implements SessionStats {
     @Override
     public String toString() {
         return "DefaultSessionStats{" +
-                "inputBytes=" + inputBytes +
-                ", outputBytes=" + outputBytes +
-                ", inputMetric=" + inputMetric +
-                ", outputMetric=" + outputMetric +
-                ", lastUpdateTime=" + lastUpdateTime +
+                "inputBytes=" + inputBytes.get() +
+                ", outputBytes=" + outputBytes.get() +
+                ", inputMetric=" + inputMetric.getInstantaneousMetric() +
+                ", outputMetric=" + outputMetric.getInstantaneousMetric() +
+                ", lastUpdateTime=" + DateTimeUtils.timeAsString(lastUpdateTime) +
                 ", autoReadEvents=" + Arrays.deepToString(autoReadEvents.toArray(new AutoReadEvent[0])) +
                 '}';
     }

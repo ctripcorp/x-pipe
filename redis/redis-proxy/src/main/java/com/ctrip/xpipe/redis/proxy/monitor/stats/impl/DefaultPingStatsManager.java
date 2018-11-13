@@ -15,10 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.ctrip.xpipe.redis.proxy.spring.Production.GLOBAL_ENDPOINT_MANAGER;
@@ -46,6 +48,8 @@ public class DefaultPingStatsManager implements PingStatsManager {
     private List<PingStats> allPingStats = Lists.newCopyOnWriteArrayList();
 
     private Set<ProxyEndpoint> allEndpoints = Sets.newHashSet();
+
+    private ScheduledFuture future;
 
     public DefaultPingStatsManager() {
     }
@@ -77,7 +81,7 @@ public class DefaultPingStatsManager implements PingStatsManager {
     @PostConstruct
     public void postConstruct() {
         ScheduledExecutorService scheduled = resourceManager.getGlobalSharedScheduled();
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() {
                 if(resourceManager.getProxyConfig().startMonitor()) {
@@ -85,6 +89,20 @@ public class DefaultPingStatsManager implements PingStatsManager {
                 }
             }
         }, CHECK_INTERVAL, CHECK_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        if(future != null) {
+            future.cancel(true);
+        }
+        for(PingStats pingStats : allPingStats) {
+            try {
+                pingStats.stop();
+            } catch (Exception e) {
+                logger.error("[preDestroy]", e);
+            }
+        }
     }
 
     private void createOrRemove() {

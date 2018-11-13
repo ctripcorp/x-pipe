@@ -96,4 +96,16 @@ public class TunnelStatsResult {
 
         return Objects.hash(tunnelId, tunnelState, protocolRecvTime, protocolSndTime, closeTime, closeFrom);
     }
+
+    @Override
+    public String toString() {
+        return "TunnelStatsResult{" +
+                "tunnelId='" + tunnelId + '\'' +
+                ", tunnelState='" + tunnelState + '\'' +
+                ", protocolRecvTime=" + protocolRecvTime +
+                ", protocolSndTime=" + protocolSndTime +
+                ", closeTime=" + closeTime +
+                ", closeFrom='" + closeFrom + '\'' +
+                '}';
+    }
 }

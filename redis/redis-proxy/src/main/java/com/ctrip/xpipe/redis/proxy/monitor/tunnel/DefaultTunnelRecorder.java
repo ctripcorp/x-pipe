@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.monitor.tunnel;
 
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelRecorder;
 import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
@@ -14,19 +15,27 @@ public class DefaultTunnelRecorder implements TunnelRecorder {
 
     @Override
     public void record(Tunnel tunnel) {
-        logger.info("{}", tunnel.identity().toString());
-        logger.info("{}", tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult().toString());
+        StringBuilder sb = new StringBuilder(tunnel.identity().toString());
+        sb.append(RedisProtocol.CRLF);
+        sb.append(tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult().toString()).append(RedisProtocol.CRLF);
 
-        logger.info("{}:", SESSION_TYPE.FRONTEND.name());
-        logger.info("{}\r\n", tunnel.getTunnelMonitor().getFrontendSessionMonitor().getOutboundBufferMonitor().getOutboundBufferCumulation());
-        logger.info("{}\r\n", tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSocketStats().getSocketStatsResult());
-        logger.info("{}\r\n", tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats());
+        sb.append(SESSION_TYPE.FRONTEND.name()).append(RedisProtocol.CRLF);
+        sb.append("outbound buffer: ")
+                .append(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getOutboundBufferMonitor().getOutboundBufferCumulation())
+                .append(RedisProtocol.CRLF);
+        sb.append(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSocketStats().getSocketStatsResult().toString())
+                .append(RedisProtocol.CRLF);
+        sb.append(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().toString()).append(RedisProtocol.CRLF);
 
-        logger.info("{}:", SESSION_TYPE.BACKEND.name());
-        logger.info("{}\r\n", tunnel.getTunnelMonitor().getBackendSessionMonitor().getOutboundBufferMonitor().getOutboundBufferCumulation());
-        logger.info("{}\r\n", tunnel.getTunnelMonitor().getBackendSessionMonitor().getSocketStats().getSocketStatsResult());
-        logger.info("{}\r\n", tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats());
+        sb.append(SESSION_TYPE.BACKEND.name()).append(RedisProtocol.CRLF);
+        sb.append("outbound buffer: ")
+                .append(tunnel.getTunnelMonitor().getBackendSessionMonitor().getOutboundBufferMonitor().getOutboundBufferCumulation())
+                .append(RedisProtocol.CRLF);
+        sb.append(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSocketStats().getSocketStatsResult().toString())
+                .append(RedisProtocol.CRLF);
+        sb.append(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().toString()).append(RedisProtocol.CRLF);
 
-        logger.info("{}", LINE_SPLITTER);
+        sb.append(LINE_SPLITTER).append(RedisProtocol.CRLF);
+        logger.info("{}", sb.toString());
     }
 }

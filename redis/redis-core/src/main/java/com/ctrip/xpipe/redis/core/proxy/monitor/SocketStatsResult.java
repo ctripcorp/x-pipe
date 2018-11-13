@@ -6,6 +6,7 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -92,5 +93,13 @@ public class SocketStatsResult {
     public int hashCode() {
 
         return Objects.hash(result, timestamp);
+    }
+
+    @Override
+    public String toString() {
+        return "SocketStatsResult{" +
+                "result=" + Arrays.deepToString(result.toArray(new String[0])) +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }
