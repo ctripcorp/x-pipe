@@ -50,7 +50,7 @@ public class DefaultPingStatsManager implements PingStatsManager {
     public DefaultPingStatsManager() {
     }
 
-    protected DefaultPingStatsManager(ResourceManager resourceManager, ProxyEndpointManager endpointManager) {
+    public DefaultPingStatsManager(ResourceManager resourceManager, ProxyEndpointManager endpointManager) {
         this.resourceManager = resourceManager;
         this.endpointManager = endpointManager;
     }
@@ -145,5 +145,15 @@ public class DefaultPingStatsManager implements PingStatsManager {
     @VisibleForTesting
     protected ProxyEndpointManager getEndpointManager() {
         return endpointManager;
+    }
+
+    public DefaultPingStatsManager setResourceManager(ResourceManager resourceManager) {
+        this.resourceManager = resourceManager;
+        return this;
+    }
+
+    public DefaultPingStatsManager setEndpointManager(ProxyEndpointManager endpointManager) {
+        this.endpointManager = endpointManager;
+        return this;
     }
 }

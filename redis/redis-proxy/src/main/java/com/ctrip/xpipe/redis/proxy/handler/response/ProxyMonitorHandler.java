@@ -91,9 +91,9 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
         protected Object format(Tunnel tunnel) {
             String tunnelId = tunnel.identity().toString();
             SocketStatsResult frontendSocketStats = tunnel.getTunnelMonitor().getFrontendSessionMonitor()
-                    .getSocketStats().getSocketStats();
+                    .getSocketStats().getSocketStatsResult();
             SocketStatsResult backendSocketStats = tunnel.getTunnelMonitor().getBackendSessionMonitor()
-                    .getSocketStats().getSocketStats();
+                    .getSocketStats().getSocketStatsResult();
             TunnelSocketStatsResult result = new TunnelSocketStatsResult(tunnelId, frontendSocketStats, backendSocketStats);
             return result.format();
         }

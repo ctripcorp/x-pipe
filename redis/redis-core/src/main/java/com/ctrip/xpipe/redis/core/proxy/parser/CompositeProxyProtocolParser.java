@@ -51,8 +51,14 @@ public class CompositeProxyProtocolParser implements ProxyProtocolParser {
         RedisClientProtocol<String> redisClientProtocol = simpleStringParser.read(byteBuf);
         if(redisClientProtocol == null) {
             return null;
+        } else {
+            resetSimpleStringParser();
         }
         return read(redisClientProtocol.getPayload());
+    }
+
+    private void resetSimpleStringParser() {
+        simpleStringParser = new SimpleStringParser();
     }
 
     @Override

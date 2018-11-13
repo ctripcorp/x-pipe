@@ -68,8 +68,11 @@ public class DefaultTunnelStats implements TunnelStats {
 
     @Override
     public TunnelStatsResult getTunnelStatsResult() {
-        return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), getProtocolRecTime(),
-                getProtocolSendTime(), getCloseTime(), closeFrom.name());
+        if(closeFrom != null) {
+            return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), getProtocolRecTime(),
+                    getProtocolSendTime(), getCloseTime(), closeFrom.name());
+        }
+        return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), getProtocolRecTime(), getProtocolSendTime());
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
@@ -70,6 +71,10 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
                 .setConfig(server.getConfig()).setProxyResourceManager(resourceManager)
                 .setTunnelMonitorManager(new DefaultTunnelMonitorManager(resourceManager)));
         server.setResourceManager(resourceManager);
+        if(server.getPingStatsManager() != null) {
+            ((DefaultPingStatsManager)server.getPingStatsManager()).setResourceManager(resourceManager)
+                    .setEndpointManager(endpointManager);
+        }
     }
 
     protected String generateSequncialString(int length) {

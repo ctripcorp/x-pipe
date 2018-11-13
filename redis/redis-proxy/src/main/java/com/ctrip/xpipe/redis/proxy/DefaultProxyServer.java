@@ -173,4 +173,20 @@ public class DefaultProxyServer implements ProxyServer {
     public TunnelManager getTunnelManager() {
         return this.tunnelManager;
     }
+
+    @VisibleForTesting
+    public DefaultProxyServer setPingStatsManager(PingStatsManager pingStatsManager) {
+        this.pingStatsManager = pingStatsManager;
+        return this;
+    }
+
+    @VisibleForTesting
+    public PingStatsManager getPingStatsManager() {
+        return pingStatsManager;
+    }
+
+    @VisibleForTesting
+    public ResourceManager getResourceManager() {
+        return resourceManager;
+    }
 }

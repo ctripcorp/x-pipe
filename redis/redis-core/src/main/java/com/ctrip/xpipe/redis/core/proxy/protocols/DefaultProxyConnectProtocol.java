@@ -80,7 +80,10 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
             return UNKNOWN_SOURCE;
         }
         String[] paths = forwardForOptionParser.output().split(AbstractProxyOptionParser.WHITE_SPACE);
-        return paths[0];
+        if(paths.length < 2) {
+            return UNKNOWN_SOURCE;
+        }
+        return paths[1];
     }
 
     @Override

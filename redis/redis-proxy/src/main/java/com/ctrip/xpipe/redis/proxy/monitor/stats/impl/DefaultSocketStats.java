@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.SocketStats;
 import com.ctrip.xpipe.utils.AbstractScriptExecutor;
+import com.google.common.collect.Lists;
 import io.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
@@ -23,7 +24,9 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
 
     private int localPort = -1, remotePort = -1;
 
-    private AtomicReference<SocketStatsResult> result = new AtomicReference<>();
+    private static final SocketStatsResult EMPTY_ONE = new SocketStatsResult(Lists.newArrayList("Empty"));
+
+    private AtomicReference<SocketStatsResult> result = new AtomicReference<>(EMPTY_ONE);
 
     public DefaultSocketStats(ScheduledExecutorService scheduled, Session session) {
         super(scheduled);
@@ -31,7 +34,7 @@ public class DefaultSocketStats extends AbstractStats implements SocketStats {
     }
 
     @Override
-    public SocketStatsResult getSocketStats() {
+    public SocketStatsResult getSocketStatsResult() {
         return result.get();
     }
 

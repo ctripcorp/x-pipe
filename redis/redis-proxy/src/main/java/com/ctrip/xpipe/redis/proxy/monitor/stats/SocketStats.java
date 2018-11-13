@@ -12,6 +12,6 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
  */
 public interface SocketStats extends Startable, Stoppable {
 
-    SocketStatsResult getSocketStats();
+    SocketStatsResult getSocketStatsResult();
 
 }

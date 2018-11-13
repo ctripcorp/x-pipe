@@ -26,8 +26,8 @@ public class DefaultSocketStatsTest extends AbstractTest {
         when(channel.remoteAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 6379));
         when(channel.localAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 6389));
         SocketStats socketStats = new DefaultSocketStats(scheduled, session);
-        socketStats.getSocketStats();
+        socketStats.getSocketStatsResult();
         sleep(1000);
-        socketStats.getSocketStats();
+        socketStats.getSocketStatsResult();
     }
 }

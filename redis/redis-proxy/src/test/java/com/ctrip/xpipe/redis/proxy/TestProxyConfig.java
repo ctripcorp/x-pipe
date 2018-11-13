@@ -11,7 +11,7 @@ public class TestProxyConfig implements ProxyConfig {
 
     private int frontendTcpPort = 8992, frontendTlsPort = 443;
 
-    private int sessionIdleTime = 1000;
+    private boolean startMonitor = false;
 
     @Override
     public int frontendTcpPort() {
@@ -50,7 +50,7 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public boolean startMonitor() {
-        return false;
+        return startMonitor;
     }
 
     @Override
@@ -88,8 +88,8 @@ public class TestProxyConfig implements ProxyConfig {
         return this;
     }
 
-    public TestProxyConfig setSessionIdleTime(int sessionIdleTime) {
-        this.sessionIdleTime = sessionIdleTime;
+    public TestProxyConfig setStartMonitor(boolean startMonitor) {
+        this.startMonitor = startMonitor;
         return this;
     }
 }

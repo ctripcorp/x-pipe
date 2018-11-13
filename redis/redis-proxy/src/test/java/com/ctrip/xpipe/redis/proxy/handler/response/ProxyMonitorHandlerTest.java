@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
-import com.ctrip.xpipe.redis.proxy.handler.response.ProxyMonitorHandler;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
@@ -63,10 +62,10 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         SessionMonitor backend = mock(SessionMonitor.class);
 
         SocketStats socketStats1 = mock(SocketStats.class);
-        when(socketStats1.getSocketStats()).thenReturn(new SocketStatsResult(Lists.newArrayList(template1, template2)));
+        when(socketStats1.getSocketStatsResult()).thenReturn(new SocketStatsResult(Lists.newArrayList(template1, template2)));
         when(frontend.getSocketStats()).thenReturn(socketStats1);
         SocketStats socketStats2 = mock(SocketStats.class);
-        when(socketStats2.getSocketStats()).thenReturn(new SocketStatsResult(Lists.newArrayList(template3, template4)));
+        when(socketStats2.getSocketStatsResult()).thenReturn(new SocketStatsResult(Lists.newArrayList(template3, template4)));
         when(backend.getSocketStats()).thenReturn(socketStats2);
 
         when(tunnelMonitor.getFrontendSessionMonitor()).thenReturn(frontend);
