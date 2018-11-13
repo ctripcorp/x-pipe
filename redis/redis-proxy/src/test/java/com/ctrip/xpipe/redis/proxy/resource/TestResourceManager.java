@@ -40,6 +40,8 @@ public class TestResourceManager implements ResourceManager {
 
     private NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 
+    private volatile SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool;
+
     @Override
     public NettySslHandlerFactory getClientSslHandlerFactory() {
         return clientSslHandlerFactory;
@@ -62,13 +64,20 @@ public class TestResourceManager implements ResourceManager {
 
     @Override
     public SimpleKeyedObjectPool<Endpoint, NettyClient> getKeyedObjectPool() {
-        XpipeNettyClientKeyedObjectPool keyedObjectPool = new XpipeNettyClientKeyedObjectPool(new SslEnabledNettyClientFactory(this));
-        try {
-            LifecycleHelper.initializeIfPossible(keyedObjectPool);
-            LifecycleHelper.startIfPossible(keyedObjectPool);
-        } catch (Exception e) {
-            logger.error("[createKeyedObjectPool]", e);
+        if(keyedObjectPool == null) {
+            synchronized (this) {
+                if(keyedObjectPool == null) {
+                    keyedObjectPool = new XpipeNettyClientKeyedObjectPool(new SslEnabledNettyClientFactory(this));
+                    try {
+                        LifecycleHelper.initializeIfPossible(keyedObjectPool);
+                        LifecycleHelper.startIfPossible(keyedObjectPool);
+                    } catch (Exception e) {
+                        logger.error("[createKeyedObjectPool]", e);
+                    }
+                }
+            }
         }
+
         return keyedObjectPool;
     }
 

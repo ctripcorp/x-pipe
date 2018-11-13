@@ -50,9 +50,12 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 return;
             }
             out.add(protocol);
+
             // connection protocol, drop all protocol stuffs & build connection chain; otherwise, response for request
             if(protocol instanceof ProxyConnectProtocol) {
                 finished = true;
+            } else {
+                reset();
             }
         } catch (Throwable t) {
             if(t instanceof ProxyProtocolException) {
@@ -115,5 +118,11 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
         }
         ctx.channel().close();
 
+    }
+
+    private void reset() {
+        readLength = 0;
+        bufReadIndex = 0;
+        parser = new CompositeProxyProtocolParser();
     }
 }

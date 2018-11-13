@@ -80,6 +80,13 @@ public class ProxyPingCommand extends AbstractProxyCommand<ProxyPongEntity> {
         throw new IllegalArgumentException("Proxy Pong Response not valid as: " + response);
     }
 
+    @Override
+    protected boolean logRequest() {
+        return false;
+    }
 
-
+    @Override
+    protected boolean logResponse() {
+        return false;
+    }
 }

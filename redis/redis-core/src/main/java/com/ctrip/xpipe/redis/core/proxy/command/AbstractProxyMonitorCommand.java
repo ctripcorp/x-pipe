@@ -52,6 +52,16 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
         return result;
     }
 
+    @Override
+    protected boolean logRequest() {
+        return false;
+    }
+
+    @Override
+    protected boolean logResponse() {
+        return false;
+    }
+
     protected abstract T[] initArray(Object[] objects);
 
     protected abstract T parseObject(Object object);

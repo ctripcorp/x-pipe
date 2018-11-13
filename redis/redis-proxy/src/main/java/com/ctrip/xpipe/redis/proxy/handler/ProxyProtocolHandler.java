@@ -40,7 +40,6 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
         if(!(msg instanceof ProxyProtocol)) {
             logger.error("[channelRead] not proxy protocol, class: {}", msg.getClass());
         }
-        logger.info("[channelRead][ProxyProtocol-Received] {}", msg.toString());
         handleProxyProtocol(ctx, msg);
     }
 
@@ -48,6 +47,7 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
         logger.debug("[doChannelRead][ProxyProtocol] {}", msg);
         if(msg instanceof ProxyConnectProtocol) {
             ProxyConnectProtocol protocol = (ProxyConnectProtocol) msg;
+            logger.info("[channelRead][ProxyProtocol-Received] {}", protocol.toString());
             if (ctx.channel().remoteAddress() instanceof InetSocketAddress) {
                 protocol.recordForwardFor((InetSocketAddress) ctx.channel().remoteAddress());
             }
