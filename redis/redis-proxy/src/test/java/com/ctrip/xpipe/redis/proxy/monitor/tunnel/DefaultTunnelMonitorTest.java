@@ -24,7 +24,7 @@ public class DefaultTunnelMonitorTest extends AbstractRedisProxyServerTest {
     public void beforeDefaultTunnelMonitorTest() throws Exception {
         tunnel = mock(Tunnel.class);
         TestProxyConfig testProxyConfig = (TestProxyConfig) proxyResourceManager.getProxyConfig();
-        monitor = new DefaultTunnelMonitor(proxyResourceManager, tunnel);
+        monitor = new DefaultTunnelMonitor(proxyResourceManager, tunnel, new DefaultTunnelRecorder());
 
     }
 

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.monitor;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.tunnel.DefaultTunnelMonitor;
+import com.ctrip.xpipe.redis.proxy.monitor.tunnel.DefaultTunnelRecorder;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -27,6 +28,8 @@ public class DefaultTunnelMonitorManager implements TunnelMonitorManager {
 
     private ResourceManager resourceManager;
 
+    private TunnelRecorder recorder = new DefaultTunnelRecorder();
+
     public DefaultTunnelMonitorManager(ResourceManager resourceManager) {
         this.resourceManager = resourceManager;
     }
@@ -36,7 +39,7 @@ public class DefaultTunnelMonitorManager implements TunnelMonitorManager {
         return MapUtils.getOrCreate(tunnelMonitors, tunnel, new ObjectFactory<TunnelMonitor>() {
             @Override
             public TunnelMonitor create() {
-                return new DefaultTunnelMonitor(resourceManager, tunnel);
+                return new DefaultTunnelMonitor(resourceManager, tunnel, recorder);
             }
         });
     }

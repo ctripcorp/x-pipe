@@ -92,12 +92,13 @@ public class DefaultTunnelStats implements TunnelStats {
 
     @Override
     public void onClosing() {
-
+        closeTimestamp = System.currentTimeMillis();
+        tunnel.getTunnelMonitor().record(tunnel);
     }
 
     @Override
     public void onClosed() {
-        closeTimestamp = System.currentTimeMillis();
+
     }
 
     // observer for tunnel change

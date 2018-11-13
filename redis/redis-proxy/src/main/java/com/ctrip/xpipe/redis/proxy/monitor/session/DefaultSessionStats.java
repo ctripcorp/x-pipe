@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.AbstractStats;
 import com.google.common.collect.Lists;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -119,5 +120,17 @@ public class DefaultSessionStats extends AbstractStats implements SessionStats {
         if(flag.compareAndSet(false, true)) {
             autoReadEvents.add(new AutoReadEvent().setStartTime(System.currentTimeMillis()));
         }
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultSessionStats{" +
+                "inputBytes=" + inputBytes +
+                ", outputBytes=" + outputBytes +
+                ", inputMetric=" + inputMetric +
+                ", outputMetric=" + outputMetric +
+                ", lastUpdateTime=" + lastUpdateTime +
+                ", autoReadEvents=" + Arrays.deepToString(autoReadEvents.toArray(new AutoReadEvent[0])) +
+                '}';
     }
 }

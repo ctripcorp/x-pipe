@@ -4,6 +4,7 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelRecorder;
 import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultTunnelStats;
@@ -23,7 +24,10 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
 
     private TunnelStats tunnelStats;
 
-    public DefaultTunnelMonitor(ResourceManager resourceManager, Tunnel tunnel) {
+    private TunnelRecorder recorder;
+
+    public DefaultTunnelMonitor(ResourceManager resourceManager, Tunnel tunnel, TunnelRecorder recorder) {
+        this.recorder = recorder;
         frontendSessionMonitor = new DefaultSessionMonitor(resourceManager, tunnel.frontend());
         backendSessionMonitor = new DefaultSessionMonitor(resourceManager, tunnel.backend());
         tunnelStats = new DefaultTunnelStats(tunnel);
@@ -43,6 +47,11 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
     @Override
     public TunnelStats getTunnelStats() {
         return tunnelStats;
+    }
+
+    @Override
+    public void record(Tunnel tunnel) {
+        recorder.record(tunnel);
     }
 
     @Override
