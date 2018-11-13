@@ -5,8 +5,8 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
 import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor;
-import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultTunnelStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultTunnelStats;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 
 

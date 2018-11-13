@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 public class DefaultTunnelMonitorManagerTest extends AbstractProxyIntegrationTest {

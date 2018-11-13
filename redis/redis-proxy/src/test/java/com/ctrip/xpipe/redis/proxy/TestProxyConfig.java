@@ -55,27 +55,27 @@ public class TestProxyConfig implements ProxyConfig {
 
     @Override
     public String getServerCertChainFilePath() {
-        return "/opt/cert/server.crt";
+        return "src/test/resources/cert/server.crt";
     }
 
     @Override
     public String getClientCertChainFilePath() {
-        return "/opt/cert/client.crt";
+        return "src/test/resources/cert/client.crt";
     }
 
     @Override
     public String getServerKeyFilePath() {
-        return "/opt/cert/pkcs8_server.key";
+        return "src/test/resources/cert/pkcs8_server.key";
     }
 
     @Override
     public String getClientKeyFilePath() {
-        return "/opt/cert/pkcs8_client.key";
+        return "src/test/resources/cert/pkcs8_client.key";
     }
 
     @Override
     public String getRootFilePath() {
-        return "/opt/cert/ca.crt";
+        return "src/test/resources/cert/ca.crt";
     }
 
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {

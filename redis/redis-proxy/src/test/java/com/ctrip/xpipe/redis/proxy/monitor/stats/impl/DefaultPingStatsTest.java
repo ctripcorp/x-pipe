@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.proxy.monitor.stats.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.command.ProxyPingCommand;
-import com.ctrip.xpipe.redis.core.proxy.command.entity.ProxyPongEntity;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
@@ -12,8 +10,6 @@ import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class DefaultPingStatsTest extends AbstractProxyIntegrationTest {
 
