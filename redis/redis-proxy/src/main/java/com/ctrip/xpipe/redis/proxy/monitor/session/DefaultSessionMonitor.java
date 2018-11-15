@@ -20,11 +20,14 @@ public class DefaultSessionMonitor extends AbstractStartStoppable implements Ses
 
     private SocketStats socketStats;
 
+    private ResourceManager resourceManager;
+
     public static final String SESSION_MONITOR_SHOULD_START = "proxy.session.monitor.start";
 
     private static final boolean shouldStart = Boolean.parseBoolean(System.getProperty(SESSION_MONITOR_SHOULD_START, "true"));
 
     public DefaultSessionMonitor(ResourceManager resourceManager, Session session) {
+        this.resourceManager = resourceManager;
         this.sessionStats = new DefaultSessionStats(resourceManager.getGlobalSharedScheduled());
         this.outboundBufferMonitor = new DefaultOutboundBufferMonitor(session);
         this.socketStats = new DefaultSocketStats(resourceManager.getGlobalSharedScheduled(), session);
@@ -47,7 +50,7 @@ public class DefaultSessionMonitor extends AbstractStartStoppable implements Ses
 
     @Override
     protected void doStart() throws Exception {
-        if(shouldStart) {
+        if(shouldStart && resourceManager.getProxyConfig().startMonitor()) {
             sessionStats.start();
             socketStats.start();
         }
@@ -55,7 +58,7 @@ public class DefaultSessionMonitor extends AbstractStartStoppable implements Ses
 
     @Override
     protected void doStop() throws Exception {
-        if(shouldStart) {
+        if(shouldStart && resourceManager.getProxyConfig().startMonitor()) {
             sessionStats.stop();
             socketStats.stop();
         }
