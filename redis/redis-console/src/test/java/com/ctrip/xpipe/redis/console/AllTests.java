@@ -42,6 +42,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublish
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollectorManagerTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
@@ -133,7 +134,8 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelHelloCheckActionFactoryTest.class,
         RedisMasterCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
-        VersionCheckActionFactoryTest.class
+        VersionCheckActionFactoryTest.class,
+        DefaultProxyMonitorCollectorManagerTest.class
 })
 public class AllTests {
 

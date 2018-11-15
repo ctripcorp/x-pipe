@@ -3,13 +3,17 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
+import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,6 +29,15 @@ public class ProxyServiceImpl implements ProxyService {
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private ProxyChainAnalyzer analyzer;
+
+    @Autowired
+    private ProxyMonitorCollectorManager proxyMonitorCollectorManager;
+
+    @Autowired
+    private ShardService shardService;
 
     @Override
     public List<ProxyModel> getActiveProxies() {
@@ -65,5 +78,37 @@ public class ProxyServiceImpl implements ProxyService {
     @Override
     public List<ProxyTbl> getActiveProxyTbls() {
         return proxyDao.getActiveProxyTbls();
+    }
+
+    @Override
+    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId) {
+        return analyzer.getProxyChain(backupDcId, clusterId, shardId);
+    }
+
+    @Override
+    public ProxyChain getProxyChain(String tunnelId) {
+        return analyzer.getProxyChain(tunnelId);
+    }
+
+    @Override
+    public List<TunnelInfo> getProxyTunnels(String dcId, String ip) {
+        List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
+        for(ProxyMonitorCollector collector : collectors) {
+            if(collector.getProxyInfo().getDcName().equalsIgnoreCase(dcId)
+                    && collector.getProxyInfo().getHostPort().getHost().equalsIgnoreCase(ip)) {
+                return collector.getTunnelInfos();
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<ProxyChain> getProxyChains(String backupDcId, String clusterId) {
+        List<ShardTbl> shards = shardService.findAllShardNamesByClusterName(clusterId);
+        List<ProxyChain> proxyChains = Lists.newArrayList();
+        for(ShardTbl shard : shards) {
+            proxyChains.add(analyzer.getProxyChain(backupDcId, clusterId, shard.getShardName()));
+        }
+        return proxyChains;
     }
 }

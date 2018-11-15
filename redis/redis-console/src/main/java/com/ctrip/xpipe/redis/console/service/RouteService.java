@@ -23,4 +23,6 @@ public interface RouteService {
     void deleteRoute(long id);
 
     void addRoute(RouteModel model);
+
+    boolean existsRouteBetweenDc(String activeDc, String backupDc);
 }
