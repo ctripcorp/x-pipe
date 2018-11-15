@@ -123,18 +123,6 @@
                      			,]]></manifest>
                   </configuration>
                </execution>
-               <execution>
-                  <id>generate dal model files</id>
-                  <phase>generate-sources</phase>
-                  <goals>
-                     <goal>dal-model</goal>
-                  </goals>
-                  <configuration>
-                     <manifest><![CDATA[
-                        ${basedir}/src/main/resources/META-INF/dal/model/connection-status-manifest.xml,
-                     ]]></manifest>
-                  </configuration>
-               </execution>
             </executions>
          </plugin>
          <plugin>
