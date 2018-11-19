@@ -63,10 +63,10 @@ public abstract class AbstractScriptExecutor<V> extends AbstractCommand<V> imple
                 if (sr != null) {
                     sr.close();
                 }
-                t.complete();
             } catch (IOException e) {
                 future().setFailure(e);
             }
+            t.complete();
         }
         return null;
     }
