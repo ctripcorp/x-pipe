@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<wizard package="com.ctrip.framework.xpipe.redis.console">
-   <model package="com.ctrip.framework.xpipe.redis.console.status" name="connection-status">
-      <sample-model>src/test/resources/ss.xml</sample-model>
-   </model>
-</wizard>
