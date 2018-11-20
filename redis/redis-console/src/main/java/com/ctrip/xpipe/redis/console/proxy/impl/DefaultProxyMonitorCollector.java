@@ -188,7 +188,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
             for(TunnelStatsResult tunnelStats : getTunnelStatsResults()) {
                 String id = tunnelStats.getTunnelId();
                 if(!tunnels.containsKey(id)) {
-                    tunnels.put(id, new DefaultTunnelInfo(getProxyInfo().getDcName(), id));
+                    tunnels.put(id, new DefaultTunnelInfo(getProxyInfo(), id));
                 }
                 tunnels.get(id).setTunnelStatsResult(tunnelStats);
             }

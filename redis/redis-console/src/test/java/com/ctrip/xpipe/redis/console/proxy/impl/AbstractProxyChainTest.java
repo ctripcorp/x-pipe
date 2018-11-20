@@ -1,12 +1,18 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.google.common.collect.Lists;
 
+
 public class AbstractProxyChainTest extends AbstractRedisTest {
+
+    protected ProxyModel getProxy(String dcId) {
+        return new ProxyModel().setDcName(dcId);
+    }
 
     protected TunnelSocketStatsResult genTunnelSSR(String tunnelId) {
         return new TunnelSocketStatsResult(tunnelId, new SocketStatsResult(Lists.newArrayList()), new SocketStatsResult(Lists.newArrayList()));

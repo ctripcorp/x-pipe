@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -29,17 +30,18 @@ public class ProxyChainController extends AbstractConsoleController {
     private ClusterService clusterService;
 
     @Autowired
-    private ShardService shardService;
-
-    @Autowired
     private RedisService redisService;
 
     @Autowired
     private DcService dcService;
 
-    @RequestMapping(value = "/{dcName}/{proxyIp}", method = RequestMethod.GET)
+    @RequestMapping(value = "/proxy/{proxyIp}/{dcName}", method = RequestMethod.GET)
     public List<TunnelModel> getTunnelModels(@PathVariable String dcName, @PathVariable String proxyIp) {
+        logger.info("[getTunnelModels] {}, {}", dcName, proxyIp);
         List<TunnelInfo> tunnelInfos = proxyService.getProxyTunnels(dcName, proxyIp);
+        if(tunnelInfos == null) {
+            return Collections.emptyList();
+        }
         List<TunnelModel> results = Lists.newArrayListWithCapacity(tunnelInfos.size());
         for(TunnelInfo info : tunnelInfos) {
             ProxyChain chain = proxyService.getProxyChain(info.getTunnelId());

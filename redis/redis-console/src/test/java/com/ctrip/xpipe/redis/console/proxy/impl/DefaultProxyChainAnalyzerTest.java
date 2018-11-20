@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
@@ -38,9 +39,9 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
         ProxyMonitorCollector collector2 = mock(ProxyMonitorCollector.class);
         String tunnelId1 = generateTunnelId();
         String tunnelId2 = generateTunnelId();
-        when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo("SHAOY", tunnelId1)
+        when(collector1.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("SHAOY"), tunnelId1)
                 .setSocketStatsResult(genTunnelSSR(tunnelId1)).setTunnelStatsResult(genTunnelSR(tunnelId1))));
-        when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo("FRA-AWS", tunnelId2)
+        when(collector2.getTunnelInfos()).thenReturn(Lists.newArrayList(new DefaultTunnelInfo(getProxy("FRA-AWS"), tunnelId2)
                 .setSocketStatsResult(genTunnelSSR(tunnelId2)).setTunnelStatsResult(genTunnelSR(tunnelId2))));
         when(manager.getProxyMonitorResults()).thenReturn(Lists.newArrayList(collector1, collector2));
 

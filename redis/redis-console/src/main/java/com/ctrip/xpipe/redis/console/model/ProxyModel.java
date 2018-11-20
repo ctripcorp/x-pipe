@@ -62,6 +62,11 @@ public class ProxyModel {
         return this;
     }
 
+    public ProxyModel setHostPort(HostPort hostPort) {
+        this.hostPort = hostPort;
+        return this;
+    }
+
     public static ProxyModel fromProxyTbl(ProxyTbl proxyTbl, DcService dcService) {
         ProxyModel model = new ProxyModel();
         model = model.setActive(proxyTbl.isActive()).setUri(proxyTbl.getUri()).setId(proxyTbl.getId());

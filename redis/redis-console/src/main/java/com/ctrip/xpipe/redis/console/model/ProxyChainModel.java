@@ -19,7 +19,7 @@ public class ProxyChainModel {
 
     private String backupDcKeeper;
 
-    private List<String> tunnelIds;
+    private List<TunnelInfo> tunnels;
 
     private final static String UNKNOWN = "UNKNOWN:-1";
 
@@ -28,7 +28,7 @@ public class ProxyChainModel {
         this.redisMaster = master == null ?  UNKNOWN : new HostPort(master.getRedisIp(), master.getRedisPort()).toString();
         this.activeDcKeeper = acitveDcKeeperTbl == null ?  UNKNOWN :new HostPort(acitveDcKeeperTbl.getRedisIp(), acitveDcKeeperTbl.getRedisPort()).toString();
         this.backupDcKeeper = backupDcKeeperTbl == null ?  UNKNOWN :new HostPort(backupDcKeeperTbl.getRedisIp(), backupDcKeeperTbl.getRedisPort()).toString();
-        this.tunnelIds = Lists.newArrayList(chain.getTunnels().stream().map(TunnelInfo::getTunnelId).collect(Collectors.toList()));
+        this.tunnels = chain.getTunnels();
     }
 
     public String getShardId() {
@@ -47,7 +47,7 @@ public class ProxyChainModel {
         return backupDcKeeper;
     }
 
-    public List<String> getTunnelIds() {
-        return tunnelIds;
+    public List<TunnelInfo> getTunnels() {
+        return tunnels;
     }
 }

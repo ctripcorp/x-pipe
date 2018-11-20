@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
@@ -12,12 +13,15 @@ public class DefaultTunnelInfo implements TunnelInfo {
 
     private String tunnelId;
 
+    private ProxyModel proxyModel;
+
     private TunnelStatsResult tunnelStatsResult;
 
     private TunnelSocketStatsResult socketStatsResult;
 
-    public DefaultTunnelInfo(String dcId, String tunnelId) {
-        this.dcId = dcId;
+    public DefaultTunnelInfo(ProxyModel proxyModel, String tunnelId) {
+        this.proxyModel = proxyModel;
+        this.dcId = proxyModel.getDcName();
         this.tunnelId = tunnelId;
     }
 
@@ -29,6 +33,11 @@ public class DefaultTunnelInfo implements TunnelInfo {
     @Override
     public String getTunnelId() {
         return tunnelId;
+    }
+
+    @Override
+    public ProxyModel getProxyModel() {
+        return proxyModel;
     }
 
     @Override

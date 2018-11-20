@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
@@ -28,19 +29,19 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
     @PostConstruct
     public void postConstruct() {
         String tunnelId1 = generateTunnelId(), tunnelId2 = generateTunnelId();
-        List<TunnelInfo> infos = Lists.newArrayList(new DefaultTunnelInfo("fra", tunnelId1)
+        List<TunnelInfo> infos = Lists.newArrayList(new DefaultTunnelInfo(getProxy("jq").setHostPort(new HostPort("127.0.0.1", 443)), tunnelId1)
                 .setTunnelStatsResult(genTunnelSR(tunnelId1)).setSocketStatsResult(genTunnelSSR(tunnelId1)),
-                new DefaultTunnelInfo("fra", tunnelId2)
+                new DefaultTunnelInfo(getProxy("fra").setHostPort(new HostPort("127.0.0.3", 80)), tunnelId2)
                         .setTunnelStatsResult(genTunnelSR(tunnelId2)).setSocketStatsResult(genTunnelSSR(tunnelId2)));
         ProxyChain chain = new DefaultProxyChain("fra", "cluster1", "shard1", infos);
         addProxyChain(new DcClusterShard("fra", "cluster1", "shard1"), chain);
 
         String tunnelId3 = generateTunnelId(), tunnelId4 = generateTunnelId();
-        infos = Lists.newArrayList(new DefaultTunnelInfo("fra", tunnelId3)
+        infos = Lists.newArrayList(new DefaultTunnelInfo(getProxy("jq").setHostPort(new HostPort("127.0.0.1", 443)), tunnelId3)
                         .setTunnelStatsResult(genTunnelSR(tunnelId3)).setSocketStatsResult(genTunnelSSR(tunnelId3)),
-                new DefaultTunnelInfo("fra", tunnelId4)
+                new DefaultTunnelInfo(getProxy("fra").setHostPort(new HostPort("127.0.0.3", 80)), tunnelId4)
                         .setTunnelStatsResult(genTunnelSR(tunnelId4)).setSocketStatsResult(genTunnelSSR(tunnelId4)));
-        chain = new DefaultProxyChain("fra", "cluster1", "shard1", infos);
+        chain = new DefaultProxyChain("fra", "cluster1", "shard2", infos);
         addProxyChain(new DcClusterShard("fra", "cluster1", "shard2"), chain);
     }
 

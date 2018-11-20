@@ -1,5 +1,5 @@
-index_module.controller('ProxyChainCtl',['$rootScope', '$scope', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
-    function ($rootScope, $scope, ProxyService, ClusterService, NgTableParams, $stateParams) {
+index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
+    function ($rootScope, $scope, $window, ProxyService, ClusterService, NgTableParams, $stateParams) {
 
         $scope.dcs, $scope.chains;
         $scope.clusterName = $stateParams.clusterName;
@@ -7,6 +7,7 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', 'ProxyService',
         $scope.switchDc = switchDc;
         $scope.loadChains = loadChains;
         $scope.loadProxyChains = loadProxyChains;
+        $scope.gotoProxy = gotoProxy;
 
         if ($scope.clusterName) {
             loadChains();
@@ -71,6 +72,11 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', 'ProxyService',
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));
                 });
+        }
+
+        function gotoProxy(proxyDcId, proxyIp) {
+            var uri = "/#/proxy/" + proxyIp + "/" + proxyDcId;
+            $window.open(uri);
         }
 
 }]);
