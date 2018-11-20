@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 
@@ -40,5 +41,10 @@ public class DefaultProxyChain implements ProxyChain {
     @Override
     public List<TunnelInfo> getTunnels() {
         return tunnelInfos;
+    }
+
+    @Override
+    public String toString() {
+        return JsonCodec.INSTANCE.encode(this);
     }
 }

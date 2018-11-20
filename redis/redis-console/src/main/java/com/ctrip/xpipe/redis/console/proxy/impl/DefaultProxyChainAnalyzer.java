@@ -10,15 +10,21 @@ import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +32,8 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 @Component
+@Lazy
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     private Logger logger = LoggerFactory.getLogger(DefaultProxyChainAnalyzer.class);
@@ -43,6 +51,16 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executors;
+
+    @PostConstruct
+    public void postConstruct() {
+        proxyMonitorCollectorManager.register(this);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        proxyMonitorCollectorManager.stopNotify(this);
+    }
 
     @Override
     public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId) {
@@ -94,6 +112,24 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
             new ShardTunnelsUpdater(commandFuture.getNow()).execute(executors);
         });
 
+    }
+
+    @VisibleForTesting
+    protected DefaultProxyChainAnalyzer setProxyMonitorCollectorManager(ProxyMonitorCollectorManager proxyMonitorCollectorManager) {
+        this.proxyMonitorCollectorManager = proxyMonitorCollectorManager;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected DefaultProxyChainAnalyzer setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected DefaultProxyChainAnalyzer setExecutors(ExecutorService executors) {
+        this.executors = executors;
+        return this;
     }
 
     private class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<TunnelInfo>>> {

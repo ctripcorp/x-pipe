@@ -34,19 +34,23 @@
                             <th>
                                 upstream-keeper
                             </th>
-                            <th>
-                                proxy1
-                            </th>
-                            <th>
-                            	proxy2
-                            </th>
+                            <th>proxy-1</th>
+                            <th>proxy-2</th>
+                            <th>proxy-3</th>
                             <th>
                             	downstream-keeper
                             </th>
                         </tr>
                         </thead>
                         <tbody>
-
+                            <tr>
+                                <td ng-bind="proxyChain.redisMaster"></td>
+                                <td ng-bind="proxyChain.activeDcKeeper"></td>
+                                <td ng-bind="proxyChain.tunnelIds[0]"></td>
+                                <td ng-bind="proxyChain.tunnelIds[1]"></td>
+                                <td ng-bind="proxyChain.tunnelIds[2]"></td>
+                                <td ng-bind="proxyChain.backupDcKeeper"></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

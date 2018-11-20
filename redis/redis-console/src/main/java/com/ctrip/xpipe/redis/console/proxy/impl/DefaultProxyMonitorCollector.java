@@ -112,7 +112,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     private void notifyListeners() {
-        listeners.forEach(listener -> listener.onChange());
+        listeners.forEach(listener -> listener.onChange(this));
     }
 
     private abstract class AbstractInfoUpdater<T> {

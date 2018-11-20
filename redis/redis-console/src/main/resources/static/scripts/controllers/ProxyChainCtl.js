@@ -1,15 +1,15 @@
-index_module.controller('DcListCtl',['$rootScope', '$scope', 'DcService', 'NgTableParams', '$stateParams',
+index_module.controller('ProxyChainCtl',['$rootScope', '$scope', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
     function ($rootScope, $scope, ProxyService, ClusterService, NgTableParams, $stateParams) {
 
         $scope.dcs, $scope.chains;
         $scope.clusterName = $stateParams.clusterName;
 
         $scope.switchDc = switchDc;
-        $scope.loadCluster = loadCluster;
+        $scope.loadChains = loadChains;
         $scope.loadProxyChains = loadProxyChains;
 
         if ($scope.clusterName) {
-            loadCluster();
+            loadChains();
         }
 
         function switchDc(dc) {
@@ -17,10 +17,10 @@ index_module.controller('DcListCtl',['$rootScope', '$scope', 'DcService', 'NgTab
             loadProxyChains($scope.clusterName, dc.dcName);
         }
 
-        function loadCluster() {
+        function loadChains() {
             ClusterService.findClusterDCs($scope.clusterName)
                 .then(function (result) {
-                    if (!result || result.length == 0) {
+                    if (!result || result.length === 0) {
                         $scope.dcs = [];
                         $scope.shards = [];
                         return;

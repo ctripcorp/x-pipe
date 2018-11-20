@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -23,6 +24,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -38,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollectorManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyMonitorCollectorManager.class);

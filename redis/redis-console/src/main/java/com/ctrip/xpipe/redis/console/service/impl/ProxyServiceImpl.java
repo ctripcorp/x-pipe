@@ -107,7 +107,10 @@ public class ProxyServiceImpl implements ProxyService {
         List<ShardTbl> shards = shardService.findAllShardNamesByClusterName(clusterId);
         List<ProxyChain> proxyChains = Lists.newArrayList();
         for(ShardTbl shard : shards) {
-            proxyChains.add(analyzer.getProxyChain(backupDcId, clusterId, shard.getShardName()));
+            ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterId, shard.getShardName());
+            if(chain != null) {
+                proxyChains.add(chain);
+            }
         }
         return proxyChains;
     }
