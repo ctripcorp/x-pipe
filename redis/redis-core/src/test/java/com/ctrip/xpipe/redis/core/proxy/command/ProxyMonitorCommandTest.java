@@ -1,9 +1,15 @@
 package com.ctrip.xpipe.redis.core.proxy.command;
 
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
@@ -12,6 +18,7 @@ import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
@@ -86,6 +93,98 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
         Assert.assertEquals(N, results.length);
         for(int i = 0; i < N; i++) {
             Assert.assertEquals(PingStatsResult.parse(samples[i]), results[i]);
+        }
+    }
+
+    //manually
+    @Ignore
+    @Test
+    public void testProxyMonitorSocketStatsManual() throws Exception {
+        objectPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint("PROXYTCP://10.2.131.200:80"));
+
+        Command command = new AbstractProxyMonitorCommand.ProxyMonitorPingStatsCommand(objectPool, scheduled);
+        command.future().addListener(new CommandFutureListener<PingStatsResult[]>() {
+            @Override
+            public void operationComplete(CommandFuture<PingStatsResult[]> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    logger.error("[update][{}]", getClass().getSimpleName(), commandFuture.cause());
+                }
+                logger.info("{}", commandFuture.getNow());
+            }
+        });
+        command.execute();
+        command = new AbstractProxyMonitorCommand.ProxyMonitorTunnelStatsCommand(objectPool, scheduled);
+        command.future().addListener(new CommandFutureListener<TunnelStatsResult[]>() {
+            @Override
+            public void operationComplete(CommandFuture<TunnelStatsResult[]> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    logger.error("[update][{}]", getClass().getSimpleName(), commandFuture.cause());
+                }
+                logger.info("{}", commandFuture.getNow());
+            }
+        });
+        command.execute();
+        command = new AbstractProxyMonitorCommand.ProxyMonitorSocketStatsCommand(objectPool, scheduled);
+        command.future().addListener(new CommandFutureListener<TunnelSocketStatsResult[]>() {
+            @Override
+            public void operationComplete(CommandFuture<TunnelSocketStatsResult[]> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    logger.error("[update][{}]", getClass().getSimpleName(), commandFuture.cause());
+                }
+                logger.info("{}", commandFuture.getNow());
+            }
+        });
+        command.execute();
+        sleep(1000);
+    }
+
+    @Ignore
+    @Test
+    public void testManual() throws Exception {
+        objectPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint("PROXYTCP://10.2.131.200:80"));
+        new SocketStatsResultsUpdater().update();
+        sleep(200);
+        Assert.assertTrue(socketStatsResults.size() > 1);
+        logger.info("{}", socketStatsResults);
+    }
+
+    private abstract class AbstractInfoUpdater<T> {
+
+        public void update() {
+            Command<T[]> command = getCommand();
+            command.future().addListener(new CommandFutureListener<T[]>() {
+                @Override
+                public void operationComplete(CommandFuture<T[]> commandFuture) throws Exception {
+                    if(!commandFuture.isSuccess()) {
+                        logger.error("[update][{}]", getClass().getSimpleName(), commandFuture.cause());
+                    }
+                    updateRelevantField(commandFuture.getNow());
+                }
+            });
+            command.execute();
+        }
+
+        protected abstract void updateRelevantField(T[] updates);
+
+        protected abstract Command<T[]> getCommand();
+    }
+
+    private List<TunnelSocketStatsResult> socketStatsResults = Lists.newArrayList();
+
+    private SimpleObjectPool<NettyClient> objectPool;
+
+    private class SocketStatsResultsUpdater extends AbstractInfoUpdater<TunnelSocketStatsResult> {
+
+        @Override
+        protected void updateRelevantField(TunnelSocketStatsResult[] updates) {
+            synchronized (this) {
+                socketStatsResults = Lists.newArrayList(updates);
+            }
+        }
+
+        @Override
+        protected Command<TunnelSocketStatsResult[]> getCommand() {
+            return new AbstractProxyMonitorCommand.ProxyMonitorSocketStatsCommand(objectPool, scheduled);
         }
     }
 

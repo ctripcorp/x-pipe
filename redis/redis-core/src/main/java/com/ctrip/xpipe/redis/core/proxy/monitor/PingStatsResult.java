@@ -77,4 +77,14 @@ public class PingStatsResult {
 
         return Objects.hash(start, end, direct, real);
     }
+
+    @Override
+    public String toString() {
+        return "PingStatsResult{" +
+                "start=" + start +
+                ", end=" + end +
+                ", direct=" + direct.toString() +
+                ", real=" + real.toString() +
+                '}';
+    }
 }

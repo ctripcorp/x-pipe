@@ -124,7 +124,7 @@ public class DefaultProxyServer implements ProxyServer {
 
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(new NioEventLoopGroup(1, FastThreadLocalThreadFactory.create("boss-" + prefix)),
-                new NioEventLoopGroup(OsUtils.getCpuCount() * 2, FastThreadLocalThreadFactory.create("worker-" + prefix)))
+                new NioEventLoopGroup(Math.min(OsUtils.getCpuCount() * 2, 8), FastThreadLocalThreadFactory.create("worker-" + prefix)))
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)

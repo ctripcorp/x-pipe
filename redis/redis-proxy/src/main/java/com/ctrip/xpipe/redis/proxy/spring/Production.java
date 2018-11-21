@@ -58,7 +58,7 @@ public class Production extends AbstractProfile {
 
     @Bean(name = GLOBAL_SCHEDULED)
     public ScheduledExecutorService getScheduled() {
-        int corePoolSize = OsUtils.getCpuCount();
+        int corePoolSize = Math.min(OsUtils.getCpuCount(), 4);
         return MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(corePoolSize, XpipeThreadFactory.create(GLOBAL_SCHEDULED)),
                 1, TimeUnit.SECONDS

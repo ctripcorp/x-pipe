@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -30,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Lazy
@@ -52,14 +56,30 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executors;
 
+    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    private ScheduledExecutorService scheduled;
+
+    private ScheduledFuture future;
+
+    public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "1000"));
+
     @PostConstruct
     public void postConstruct() {
         proxyMonitorCollectorManager.register(this);
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                fullUpdate();
+            }
+        }, Math.min(10, ANALYZE_INTERVAL * 30), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy
     public void preDestroy() {
         proxyMonitorCollectorManager.stopNotify(this);
+        if(future != null) {
+            future.cancel(true);
+        }
     }
 
     @Override
@@ -69,12 +89,22 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     @Override
     public ProxyChain getProxyChain(String tunnelId) {
-        return chains.get(reverseMap.get(tunnelId));
+        if(reverseMap.containsKey(tunnelId)) {
+            return chains.get(reverseMap.get(tunnelId));
+        }
+        return null;
+    }
+
+    @Override
+    public List<ProxyChain> getProxyChains() {
+        return Lists.newArrayList(chains.values());
     }
 
     @Override
     public void onGlobalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType type) {
+        logger.info("[before][fullUpdate] {}", chains.keySet());
         fullUpdate();
+        logger.info("[after][fullUpdate] {}", chains.keySet());
     }
 
     @Override
@@ -82,18 +112,8 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     }
 
-    private void notifyListeners(Map<DcClusterShard, ProxyChain> expired,
-                                 Map<DcClusterShard, ProxyChain> current) {
-        executors.execute(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                for(Map.Entry<DcClusterShard, ProxyChain> entry : expired.entrySet()) {
-                    if(!entry.getValue().equals(current.get(entry.getKey()))) {
-                        entry.getValue().getTunnels().forEach(tunnelInfo -> reverseMap.remove(tunnelInfo.getTunnelId()));
-                    }
-                }
-            }
-        });
+    private void notifyListeners(Map<DcClusterShard, ProxyChain> expired, Map<DcClusterShard, ProxyChain> current) {
+
     }
 
     private void fullUpdate() {
@@ -108,6 +128,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         future.addListener(commandFuture -> {
             if(!commandFuture.isSuccess()) {
                 logger.error("[fullUpdate]", commandFuture.cause());
+                return;
             }
             new ShardTunnelsUpdater(commandFuture.getNow()).execute(executors);
         });
@@ -115,19 +136,19 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     }
 
     @VisibleForTesting
-    protected DefaultProxyChainAnalyzer setProxyMonitorCollectorManager(ProxyMonitorCollectorManager proxyMonitorCollectorManager) {
+    public DefaultProxyChainAnalyzer setProxyMonitorCollectorManager(ProxyMonitorCollectorManager proxyMonitorCollectorManager) {
         this.proxyMonitorCollectorManager = proxyMonitorCollectorManager;
         return this;
     }
 
     @VisibleForTesting
-    protected DefaultProxyChainAnalyzer setMetaCache(MetaCache metaCache) {
+    public DefaultProxyChainAnalyzer setMetaCache(MetaCache metaCache) {
         this.metaCache = metaCache;
         return this;
     }
 
     @VisibleForTesting
-    protected DefaultProxyChainAnalyzer setExecutors(ExecutorService executors) {
+    public DefaultProxyChainAnalyzer setExecutors(ExecutorService executors) {
         this.executors = executors;
         return this;
     }
@@ -176,27 +197,33 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         @Override
         protected void doExecute() {
             Map<DcClusterShard, ProxyChain> results = Maps.newConcurrentMap();
+            Map<String, DcClusterShard> tunnelMapping = Maps.newConcurrentMap();
             for(Map.Entry<SourceDest, List<TunnelInfo>> entry : notReadyChains.entrySet()) {
                 HostPort activeDcKeeper = getActiveDcKeeper(entry.getKey());
                 Pair<String, String> clusterShard = metaCache.findClusterShard(activeDcKeeper);
+                if(clusterShard == null || StringUtil.isEmpty(clusterShard.getKey()) || StringUtil.isEmpty(clusterShard.getValue())) {
+                    continue;
+                }
                 String activeDcId = metaCache.getActiveDc(clusterShard.getKey(), clusterShard.getValue());
                 String backupDcId = null;
                 for(TunnelInfo info : entry.getValue()) {
-                    if(info.getTunnelDcId().equalsIgnoreCase(activeDcId))
-                        continue;
-                    backupDcId = info.getTunnelDcId();
+                    if(!info.getTunnelDcId().equalsIgnoreCase(activeDcId)) {
+                        backupDcId = info.getTunnelDcId();
+                        break;
+                    }
                 }
                 if(backupDcId != null) {
                     DcClusterShard key = new DcClusterShard(backupDcId, clusterShard.getKey(), clusterShard.getValue());
                     results.put(key, new DefaultProxyChain(backupDcId, clusterShard.getKey(), clusterShard.getValue(), entry.getValue()));
 
-                    entry.getValue().forEach(tunnelInfo -> reverseMap.put(tunnelInfo.getTunnelId(), key));
+                    entry.getValue().forEach(tunnelInfo -> tunnelMapping.put(tunnelInfo.getTunnelId(), key));
                 }
             }
 
             synchronized (this) {
                 Map<DcClusterShard, ProxyChain> expired = chains;
                 chains = results;
+                reverseMap = tunnelMapping;
                 notifyListeners(expired, results);
             }
 
@@ -219,7 +246,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
     }
 
-    private static class DcClusterShard {
+    public final static class DcClusterShard {
 
         private String dcId;
 
@@ -259,6 +286,15 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         public int hashCode() {
 
             return Objects.hash(dcId, clusterId, shardId);
+        }
+
+        @Override
+        public String toString() {
+            return "DcClusterShard{" +
+                    "dcId='" + dcId + '\'' +
+                    ", clusterId='" + clusterId + '\'' +
+                    ", shardId='" + shardId + '\'' +
+                    '}';
         }
     }
 
@@ -301,6 +337,14 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         private static SourceDest parse(String content) {
             String[] result = StringUtil.splitRemoveEmpty(SPLITTER, content);
             return new SourceDest(result[0], result[result.length - 1]);
+        }
+
+        @Override
+        public String toString() {
+            return "SourceDest{" +
+                    "source='" + source + '\'' +
+                    ", dest='" + dest + '\'' +
+                    '}';
         }
     }
 }
