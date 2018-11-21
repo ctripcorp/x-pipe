@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.utils.DateTimeUtils;
-
 import java.util.Objects;
 
 public class TunnelStatsResult {

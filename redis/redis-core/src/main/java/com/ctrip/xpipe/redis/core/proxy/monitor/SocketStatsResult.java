@@ -101,6 +101,7 @@ public class SocketStatsResult {
         return "SocketStatsResult{" +
                 "result=" + Arrays.deepToString(result.toArray(new String[0])) +
                 ", timestamp=" + DateTimeUtils.timeAsString(timestamp) +
+
                 '}';
     }
 }
