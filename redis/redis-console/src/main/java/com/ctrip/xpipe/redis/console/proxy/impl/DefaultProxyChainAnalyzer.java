@@ -132,7 +132,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         return this;
     }
 
-    private class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<TunnelInfo>>> {
+    private final class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<TunnelInfo>>> {
 
         private List<TunnelInfo> tunnels;
 
@@ -143,7 +143,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
 
         @Override
-        protected void doExecute() throws Exception {
+        protected void doExecute() {
             for(TunnelInfo tunnelInfo : tunnels) {
                 SourceDest sourceDest = SourceDest.parse(tunnelInfo.getTunnelId());
                 if(!result.containsKey(sourceDest)) {
@@ -165,7 +165,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
     }
 
-    private class ShardTunnelsUpdater extends AbstractCommand<Void> {
+    private final class ShardTunnelsUpdater extends AbstractCommand<Void> {
 
         private Map<SourceDest, List<TunnelInfo>> notReadyChains;
 
@@ -174,7 +174,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
 
         @Override
-        protected void doExecute() throws Exception {
+        protected void doExecute() {
             Map<DcClusterShard, ProxyChain> results = Maps.newConcurrentMap();
             for(Map.Entry<SourceDest, List<TunnelInfo>> entry : notReadyChains.entrySet()) {
                 HostPort activeDcKeeper = getActiveDcKeeper(entry.getKey());
