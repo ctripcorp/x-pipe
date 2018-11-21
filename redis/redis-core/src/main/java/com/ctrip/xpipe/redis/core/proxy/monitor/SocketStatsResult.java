@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.proxy.monitor;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -99,7 +100,8 @@ public class SocketStatsResult {
     public String toString() {
         return "SocketStatsResult{" +
                 "result=" + Arrays.deepToString(result.toArray(new String[0])) +
-                ", timestamp=" + timestamp +
+                ", timestamp=" + DateTimeUtils.timeAsString(timestamp) +
+
                 '}';
     }
 }

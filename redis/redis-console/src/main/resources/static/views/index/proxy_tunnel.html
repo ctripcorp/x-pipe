@@ -1,0 +1,31 @@
+<div>
+
+    <div>
+
+        <div class="col-xs-12">
+            <div class="panel panel-primary" style="margin-top: 15px;">
+
+                <table class="table table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th>tunnel</th>
+                        <th>chain</th>
+                        <th>socket-stats</th>
+                        <th>tunnel-stats</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="tunnel in tunnels">
+                            <td ng-bind="tunnel.tunnelId"></td>
+                            <td><a ui-sref="cluster_dc_proxy_chains({clusterName: tunnel.clusterId, currentDcName: tunnel.backupDcId})">{{tunnel.backupDcId}}-{{tunnel.clusterId}}-{{tunnel.shardId}}</a></td>
+                            <td>{{prettyJson(tunnel.tunnelInfo.tunnelSocketStatsResult)}}</td>
+                            <td>{{prettyJson(tunnel.tunnelInfo.tunnelStatsResult)}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
