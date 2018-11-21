@@ -31,6 +31,53 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
                 controller: 'DcListCtl'
             }
         )
+        .state('cluster_dc_proxy_chains', {
+            url: '/chain/:clusterName/:currentDcName',
+            params: {
+                clusterName: {
+                    value: '',
+                    squash: false
+                },
+                currentDcName: {
+                    value: '',
+                    squash: false
+                }
+            },
+            templateUrl: 'views/index/cluster_proxy_chain.html',
+            controller: 'ProxyChainCtl'
+        })
+        .state('proxy_tunnels', {
+            url: '/proxy/:proxyIp/:dcId',
+            params: {
+                proxyIp: {
+                    value: '',
+                    squash: false
+                },
+                dcId: {
+                    value: '',
+                    squash: false
+                }
+
+            },
+            templateUrl: 'views/index/proxy_tunnel.html',
+            controller: 'TunnelsCtl'
+        })
+        .state('proxy_pings', {
+            url: '/proxy/pings',
+            params: {
+                proxyIp: {
+                    value: '',
+                    squash: false
+                },
+                dcId: {
+                    value: '',
+                    squash: false
+                }
+
+            },
+            templateUrl: 'views/index/proxy_ping.html',
+            controller: 'ProxyCollectorCtl'
+        })
         .state('cluster_dc_shard_update', {
         	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',
         	templateUrl: 'views/index/cluster_dc_shard_update.html',

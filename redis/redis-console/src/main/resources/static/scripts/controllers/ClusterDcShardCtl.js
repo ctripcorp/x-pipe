@@ -1,13 +1,16 @@
-index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService','HealthCheckService',
-    function ($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService) {
+index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService', 'HealthCheckService', 'ProxyService',
+    function ($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService, ProxyService) {
 
         $scope.dcs, $scope.shards;
         $scope.clusterName = $stateParams.clusterName;
+        $scope.routeAvail = false;
+        $scope.activeDcName;
         
         $scope.switchDc = switchDc;
         $scope.loadCluster = loadCluster;
         $scope.loadShards = loadShards;
         $scope.gotoHickwall = gotoHickwall;
+        $scope.existsRoute = existsRoute;
         
         if ($scope.clusterName) {
             loadCluster();
@@ -15,13 +18,14 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         
         function switchDc(dc) {
             $scope.currentDcName = dc.dcName;
+            existsRoute($scope.activeDcName, $scope.currentDcName);
             loadShards($scope.clusterName, dc.dcName);
         }
 
         function loadCluster() {
             ClusterService.findClusterDCs($scope.clusterName)
                 .then(function (result) {
-                    if (!result || result.length == 0) {
+                    if (!result || result.length === 0) {
                         $scope.dcs = [];
                         $scope.shards = [];
                         return;
@@ -40,10 +44,11 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                             ClusterService.load_cluster($stateParams.clusterName).then(function(result) {
                                 var cluster = result;
                                 var filteredDc = $scope.dcs.filter(function(dc) {
-                                    return dc.id == cluster.activedcId;
+                                    return dc.id === cluster.activedcId;
                                 })
                                 if(filteredDc.length > 0) {
                                     $scope.currentDcName = filteredDc[0].dcName;
+                                    $scope.activeDcName = filteredDc[0].dcName;
                                 } else {
                                     $scope.currentDcName = $scope.dcs[0].dcName; 
                                 }
@@ -94,6 +99,15 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         				$window.open(result.addr, '_blank');	
         			}
         		});
+        }
+
+        function existsRoute(activeDcName, backupDcName) {
+            ProxyService.existsRouteBetween(activeDcName, backupDcName)
+                .then(function (result) {
+                    $scope.routeAvail = (result.state === 0);
+                }, function (result) {
+                    $scope.routeAvail = false;
+                });
         }
         
         $scope.refreshHealthStatus = $interval(healthCheck, 2000);

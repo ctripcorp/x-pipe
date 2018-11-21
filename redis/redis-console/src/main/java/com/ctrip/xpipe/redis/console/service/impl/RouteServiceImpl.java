@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RouteService;
+import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class RouteServiceImpl implements RouteService {
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private DcMetaService metaService;
 
     @Override
     public List<RouteTbl> getActiveRouteTbls() {
@@ -66,5 +70,16 @@ public class RouteServiceImpl implements RouteService {
     @Override
     public void addRoute(RouteModel model) {
         routeDao.insert(model.toRouteTbl(dcService));
+    }
+
+    @Override
+    public boolean existsRouteBetweenDc(String activeDc, String backupDc) {
+        List<RouteModel> routes = getActiveRoutes();
+        for(RouteModel route : routes) {
+            if(route.getSrcDcName().equalsIgnoreCase(backupDc)
+                    && route.getDstDcName().equalsIgnoreCase(activeDc))
+                return true;
+        }
+        return false;
     }
 }
