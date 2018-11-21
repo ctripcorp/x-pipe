@@ -47,7 +47,7 @@ public class AsyncNettyClient extends DefaultNettyClient {
 
     @Override
     public void sendRequest(ByteBuf byteBuf) {
-        if(future.isSuccess()) {
+        if(future.channel().isActive()) {
             super.sendRequest(byteBuf);
         } else {
             future.addListener(new ChannelFutureListener() {
@@ -62,7 +62,7 @@ public class AsyncNettyClient extends DefaultNettyClient {
 
     @Override
     public void sendRequest(ByteBuf byteBuf, ByteBufReceiver byteBufReceiver) {
-        if(future.isSuccess()) {
+        if(future.channel().isActive()) {
             super.sendRequest(byteBuf, byteBufReceiver);
         } else {
             future.addListener(new ChannelFutureListener() {

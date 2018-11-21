@@ -4,7 +4,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocol;
+import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
@@ -63,7 +63,7 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
     @Test
     public void testProxiedMasterTimeoutMilli() throws CreateRdbDumperException {
-        target = new ProxyEnabledEndpoint("localhost", randomPort(), new DefaultProxyProtocol());
+        target = new ProxyEnabledEndpoint("localhost", randomPort(), new DefaultProxyConnectProtocol(null));
         this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, eventLoopGroup, replicationStoreManager, scheduled, mock(ProxyResourceManager.class));
         keeperRedisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
         RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper();

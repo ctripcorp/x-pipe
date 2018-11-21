@@ -25,7 +25,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 
 	public static final int DEFAULT_KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD = Integer.parseInt(System.getProperty("KEYED_POOLED_CLIENT_FACTORY_EVNET_LOOP_THREAD", "8"));
 	private int eventLoopThreads;
-	private NioEventLoopGroup eventLoopGroup;
+	protected NioEventLoopGroup eventLoopGroup;
 	protected Bootstrap b = new Bootstrap();
 	protected int connectTimeoutMilli = 2000;
 	private static Logger logger = LoggerFactory.getLogger(NettyKeyedPoolClientFactory.class);
@@ -43,6 +43,10 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	protected void doStart() throws Exception {
 		
 		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, XpipeThreadFactory.create("NettyKeyedPoolClientFactory"));
+		initBootstrap();
+	}
+
+	protected void initBootstrap() {
 		b.group(eventLoopGroup).channel(NioSocketChannel.class)
 				.option(ChannelOption.TCP_NODELAY, true)
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMilli)

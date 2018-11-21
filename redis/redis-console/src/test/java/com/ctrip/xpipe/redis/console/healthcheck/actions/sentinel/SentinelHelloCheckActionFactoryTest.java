@@ -34,7 +34,6 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractConsoleIntegrat
     @Before
     public void beforeSentinelHelloCheckActionFactoryTest() {
         metaCache = spy(metaCache);
-        doReturn(false).when(metaCache).inBackupDc(any(HostPort.class));
         ConsoleDbConfig config = mock(ConsoleDbConfig.class);
         when(config.isSentinelAutoProcess()).thenReturn(true);
         factory.setConsoleDbConfig(config);

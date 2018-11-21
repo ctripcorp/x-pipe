@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.proxy.model.SessionMeta;
+import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.session.SESSION_TYPE;
 import com.ctrip.xpipe.redis.proxy.session.SessionEventHandler;
 import com.ctrip.xpipe.redis.proxy.session.SessionState;
@@ -36,6 +37,8 @@ public interface Session extends Lifecycle, Releasable, Observable {
     void setWritableState(SessionWritableState state);
 
     void addSessionEventHandler(SessionEventHandler handler);
+
+    SessionMonitor getSessionMonitor();
 
     enum SessionWritableState {
         WRITABLE, UNWRITABLE

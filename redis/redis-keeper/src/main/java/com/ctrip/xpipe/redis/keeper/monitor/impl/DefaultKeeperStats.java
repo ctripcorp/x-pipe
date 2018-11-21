@@ -2,16 +2,14 @@ package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.keeper.monitor.InstantaneousMetric;
+import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng
@@ -38,9 +36,9 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 
 	private ScheduledFuture future;
 
-	private InstantaneousMetric inputBytesInstantaneousMetric = BaseInstantaneousMetric.createInputBytesMetric();
+	private InstantaneousMetric inputBytesInstantaneousMetric = new BaseInstantaneousMetric();
 
-	private InstantaneousMetric outputBytesInstantaneousMetric = BaseInstantaneousMetric.createOutputBytesMetric();
+	private InstantaneousMetric outputBytesInstantaneousMetric = new BaseInstantaneousMetric();
 
 	public DefaultKeeperStats(ScheduledExecutorService scheduled) {
 		this.scheduled = scheduled;

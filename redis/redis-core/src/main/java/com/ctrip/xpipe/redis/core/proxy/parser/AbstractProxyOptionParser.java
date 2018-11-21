@@ -23,8 +23,4 @@ public abstract class AbstractProxyOptionParser implements ProxyOptionParser {
         return this;
     }
 
-    @Override
-    public String getPayload() {
-        return output;
-    }
 }

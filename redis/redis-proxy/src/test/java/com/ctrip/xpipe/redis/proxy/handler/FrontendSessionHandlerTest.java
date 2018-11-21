@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -12,7 +13,12 @@ import org.junit.Test;
  */
 public class FrontendSessionHandlerTest extends AbstractRedisProxyServerTest {
 
-    private FrontendSessionNettyHandler handler = new FrontendSessionNettyHandler(tunnelManager());
+    private FrontendSessionNettyHandler handler;
+
+    @Before
+    public void beforeFrontendSessionHandlerTest() throws Exception {
+        handler = new FrontendSessionNettyHandler(tunnel());
+    }
 
     @Test
     public void testFormatByteBuf() {

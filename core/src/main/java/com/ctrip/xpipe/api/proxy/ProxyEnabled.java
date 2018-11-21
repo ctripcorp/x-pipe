@@ -7,5 +7,5 @@ package com.ctrip.xpipe.api.proxy;
  */
 public interface ProxyEnabled {
 
-    ProxyProtocol getProxyProtocol();
+    ProxyConnectProtocol getProxyProtocol();
 }

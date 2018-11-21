@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu

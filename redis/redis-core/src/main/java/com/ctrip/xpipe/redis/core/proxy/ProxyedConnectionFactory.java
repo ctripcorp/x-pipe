@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 
@@ -11,5 +11,5 @@ import io.netty.channel.ChannelFuture;
  */
 public interface ProxyedConnectionFactory {
 
-    ChannelFuture getProxyedConnectionChannelFuture(ProxyProtocol protocol, Bootstrap bootstrap);
+    ChannelFuture getProxyedConnectionChannelFuture(ProxyConnectProtocol protocol, Bootstrap bootstrap);
 }
