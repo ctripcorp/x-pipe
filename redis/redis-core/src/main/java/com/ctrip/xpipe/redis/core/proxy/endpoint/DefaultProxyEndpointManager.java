@@ -75,7 +75,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         if(future != null) {
             future.cancel(true);
         }

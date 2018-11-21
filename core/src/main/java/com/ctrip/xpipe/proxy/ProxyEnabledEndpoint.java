@@ -2,7 +2,7 @@ package com.ctrip.xpipe.proxy;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 
 import java.net.InetSocketAddress;
@@ -14,20 +14,20 @@ import java.net.InetSocketAddress;
  */
 public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, ProxyEnabled {
 
-    private ProxyProtocol protocol;
+    private ProxyConnectProtocol protocol;
 
-    public ProxyEnabledEndpoint(String ip, int port, ProxyProtocol protocol) {
+    public ProxyEnabledEndpoint(String ip, int port, ProxyConnectProtocol protocol) {
         super(ip, port);
         this.protocol = protocol;
     }
 
-    public ProxyEnabledEndpoint(InetSocketAddress address, ProxyProtocol protocol) {
+    public ProxyEnabledEndpoint(InetSocketAddress address, ProxyConnectProtocol protocol) {
         super(address);
         this.protocol = protocol;
     }
 
     @Override
-    public ProxyProtocol getProxyProtocol() {
+    public ProxyConnectProtocol getProxyProtocol() {
         return protocol;
     }
 

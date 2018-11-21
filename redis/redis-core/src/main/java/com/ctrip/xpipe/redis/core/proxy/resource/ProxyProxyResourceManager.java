@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.resource;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 
@@ -21,7 +21,7 @@ public class ProxyProxyResourceManager implements ProxyResourceManager {
     }
 
     @Override
-    public ProxyEndpointSelector createProxyEndpointSelector(ProxyProtocol protocol) {
+    public ProxyEndpointSelector createProxyEndpointSelector(ProxyConnectProtocol protocol) {
         ProxyEndpointSelector selector = new DefaultProxyEndpointSelector(protocol.nextEndpoints(), endpointManager);
         selector.setNextHopAlgorithm(algorithm);
         selector.setSelectStrategy(new SelectOneCycle(selector));

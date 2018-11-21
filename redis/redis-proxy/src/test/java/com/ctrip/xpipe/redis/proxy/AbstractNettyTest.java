@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -42,13 +42,13 @@ public class AbstractNettyTest {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            if(msg instanceof ProxyProtocol) {
-                logger.info("{}", ((ProxyProtocol) msg).getContent());
+            if(msg instanceof ProxyConnectProtocol) {
+                logger.info("{}", ((ProxyConnectProtocol) msg).getContent());
             }
             if(msg instanceof ByteBuf) {
                 Assert.assertEquals(expected, ((ByteBuf) msg).toString(Charset.defaultCharset()));
+                ((ByteBuf) msg).release();
             }
-            super.channelRead(ctx, msg);
         }
     }
 }

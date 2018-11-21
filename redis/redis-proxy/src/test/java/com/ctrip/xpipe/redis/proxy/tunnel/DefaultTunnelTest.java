@@ -1,17 +1,18 @@
 package com.ctrip.xpipe.redis.proxy.tunnel;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointSelector;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.proxy.AbstractRedisProxyServerTest;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
@@ -70,27 +71,31 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     private EventLoopGroup eventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("Test"));
 
-    private ProxyProtocol proxyProtocol;
+    private ProxyConnectProtocol proxyConnectProtocol;
 
-    private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379\r\n";
+    private static final String PROXY_PROTOCOL = "PROXY ROUTE TCP://127.0.0.1:6379;FORWARD_FOR 127.0.0.1:80\r\n";
 
     private ByteBuf testByteBuf = Unpooled.copiedBuffer("TEST".getBytes());
 
     @Before
     public void beforeDefaultTunnelTest() {
         MockitoAnnotations.initMocks(this);
-        when(tunnelManager.create(frontChannel, proxyProtocol)).thenReturn(tunnel);
-        frontChannel = new EmbeddedChannel(new FrontendSessionNettyHandler(tunnelManager),
-                new TunnelTrafficReporter(6000, frontend));
+        when(tunnelManager.create(frontChannel, proxyConnectProtocol)).thenReturn(tunnel);
+        frontChannel = new EmbeddedChannel();
 
-        proxyProtocol = new DefaultProxyProtocolParser().read(PROXY_PROTOCOL);
-        tunnel = new DefaultTunnel(frontChannel, proxyProtocol, config, mock(ResourceManager.class));
+        proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
+        tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager,
+                new DefaultTunnelMonitorManager(proxyResourceManager));
+
+        frontChannel.pipeline().addLast(new FrontendSessionNettyHandler(tunnel),
+                new SessionTrafficReporter(6000, frontend));
+
 
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);
 
         EmbeddedChannel backendChannel = new EmbeddedChannel(new BackendSessionHandler(tunnel),
-                new TunnelTrafficReporter(6000, backend));
+                new SessionTrafficReporter(6000, backend));
         when(backend.getChannel()).thenReturn(backendChannel);
         when(frontend.getChannel()).thenReturn(frontChannel);
 
@@ -104,7 +109,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
     @After
     public void afterbeforeDefaultTunnelTest() {
         backend = null;
-        proxyProtocol = null;
+        proxyConnectProtocol = null;
         frontend = null;
         frontChannel = null;
         tunnel = null;
@@ -211,7 +216,7 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void getProxyProtocol() {
-        Assert.assertEquals(proxyProtocol, tunnel.getProxyProtocol());
+        Assert.assertEquals(proxyConnectProtocol, tunnel.getProxyProtocol());
     }
 
     @Test
