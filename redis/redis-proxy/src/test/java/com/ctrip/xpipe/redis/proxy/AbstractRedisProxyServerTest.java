@@ -3,17 +3,21 @@ package com.ctrip.xpipe.redis.proxy;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.*;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
+import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.BackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultBackendSession;
 import com.ctrip.xpipe.redis.proxy.session.DefaultFrontendSession;
@@ -63,6 +67,8 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private TunnelManager tunnelManager;
 
+    private ResourceManager resourceManager = new TestResourceManager();
+
     private NextHopAlgorithm algorithm = new LocalNextHopAlgorithm();
 
     private NettySslHandlerFactory clientFactory = new NettyClientSslHandlerFactory(config);
@@ -71,17 +77,18 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     private DefaultProxyServer server;
 
-    private ProxyProtocol proxyProtocol;
+    private ProxyConnectProtocol proxyConnectProtocol;
 
     private AtomicBoolean serverStarted = new AtomicBoolean(false);
 
     private DefaultTunnel tunnel;
 
-    protected ProxyRelatedResourceManager proxyResourceManager = new ProxyRelatedResourceManager();
+    protected TestResourceManager proxyResourceManager = new TestResourceManager();
 
     @BeforeClass
     public static void beforeAbstractRedisProxyServerTestClass() {
         System.setProperty(CatConfig.CAT_ENABLED_KEY, "false");
+        System.setProperty(DefaultSessionMonitor.SESSION_MONITOR_SHOULD_START, "false");
     }
 
     @Before
@@ -104,7 +111,8 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(2));
         ComponentRegistryHolder.initializeRegistry(registry);
 
-        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(), new ProxyRelatedResourceManager().setEndpointManager(endpointManager));
+        tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(),
+                resourceManager, new DefaultTunnelMonitorManager(resourceManager));
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
 
@@ -155,24 +163,24 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         return b;
     }
 
-    public ProxyProtocol protocol() {
-        if(proxyProtocol == null) {
+    public ProxyConnectProtocol protocol() {
+        if(proxyConnectProtocol == null) {
             String protocolStr = String.format("Proxy ROUTE %s,%s,%s %s,%s %s;FORWARD_FOR %s",
                     newProxyEndpoint(true, false), newProxyEndpoint(false, true), newProxyEndpoint(true, true),
                     newProxyEndpoint(true, true), newProxyEndpoint(false, true),
                     newProxyEndpoint(true, false),
                     newProxyEndpoint(true, false));
-            proxyProtocol = new DefaultProxyProtocolParser().read(protocolStr);
+            proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         }
-        return proxyProtocol;
+        return proxyConnectProtocol;
     }
 
-    public ProxyProtocol protocol(String route) {
-        if(proxyProtocol == null) {
+    public ProxyConnectProtocol protocol(String route) {
+        if(proxyConnectProtocol == null) {
             String protocolStr = route;
-            proxyProtocol = new DefaultProxyProtocolParser().read(protocolStr);
+            proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         }
-        return proxyProtocol;
+        return proxyConnectProtocol;
     }
 
     protected ProxyEndpoint newProxyEndpoint(boolean isLocal, boolean isSSL) {
@@ -201,7 +209,6 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         if(serverStarted.compareAndSet(false, true)) {
             server = new DefaultProxyServer();
             server.setConfig(config());
-            server.setServerSslHandlerFactory(serverFactory());
             server.setTunnelManager(tunnelManager());
             server.start();
         }

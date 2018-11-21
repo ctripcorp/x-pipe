@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
@@ -181,7 +181,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	public void testReconnectAfterTryConnectThroughException() throws Exception {
 		System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "0");
 		Server server = startEmptyServer();
-		ProxyProtocol protocol = new DefaultProxyProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
+		ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:"+server.getPort());
 		ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
 
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);

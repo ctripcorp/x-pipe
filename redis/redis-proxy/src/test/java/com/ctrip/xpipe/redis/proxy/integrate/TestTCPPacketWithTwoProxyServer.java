@@ -6,10 +6,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,6 +82,7 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
     }
 
+    @Ignore
     @Test
     public void testStabilityWithN() throws TimeoutException, InterruptedException {
         int N = 100;

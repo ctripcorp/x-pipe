@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.FailSafeCommandWrapper;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -207,7 +207,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private ChannelFuture tryConnectThroughProxy(Bootstrap b) {
 		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
-		ProxyProtocol protocol = endpoint.getProxyProtocol();
+		ProxyConnectProtocol protocol = endpoint.getProxyProtocol();
 		if(selector == null) {
 			selector = proxyResourceManager.createProxyEndpointSelector(protocol);
 		}
