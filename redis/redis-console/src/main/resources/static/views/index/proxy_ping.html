@@ -1,0 +1,54 @@
+<div>
+    <h3 class="header smaller lighter blue">
+        <span>Proxy-Ping-Stats</span>
+    </h3>
+    <div>
+        <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+            <li ng-repeat="dc in dcs" ng-class="{'active': currentDcId == dc.dcName}">
+                <a ng-click="switchDc(dc)" data-toggle="tab">
+                    {{dc.dcName}}
+                </a>
+            </li>
+        </ul>
+
+        <div ng-if="dcs && dcs.length">
+            <div class="col-xs-12">
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="proxyCollector in collectors">
+                    <header class="panel-heading">
+                        <div class="row">
+                            <div class="col-md-6">{{proxyCollector.proxyInfo.hostPort.host}}</div>
+                            <div class="col-md-6 text-right">
+                                <a class="btn btn-primary btn-sm" ui-sref="proxy_tunnels({proxyIp: proxyCollector.proxyInfo.hostPort.host, dcId: currentDcId})">Proxy-Detail</a>
+                            </div>
+                        </div>
+                        </header>
+
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>Direct</th>
+                            <th>Real</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="pingStatsResult in proxyCollector.pingStatsResults">
+
+                            <td ng-bind="prettyJson(pingStatsResult.direct)"></td>
+                            <td ng-bind="prettyJson(pingStatsResult.real)"></td>
+                            <td>{{pingStatsResult.start | date:'yyyy-MM-dd HH:mm:ss:sss'}}</td>
+                            <td>{{pingStatsResult.end | date:'yyyy-MM-dd HH:mm:ss:sss'}}</td>
+                           </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div ng-if="(!dcs || !dcs.length) && clusterName">
+            无shards
+        </div>
+    </div>
+</div>
+
