@@ -17,7 +17,7 @@
                     <tbody>
                         <tr ng-repeat="tunnel in tunnels">
                             <td ng-bind="tunnel.tunnelId"></td>
-                            <td><a ng-click="gotoChain(tunnel.backupDcId, tunnel.clusterId)">{{tunnel.backupDcId}}-{{tunnel.clusterId}}-{{tunnel.shardId}}</a></td>
+                            <td><a ui-sref="cluster_dc_proxy_chains({clusterName: tunnel.clusterId, currentDcName: tunnel.backupDcId})">{{tunnel.backupDcId}}-{{tunnel.clusterId}}-{{tunnel.shardId}}</a></td>
                             <td>{{prettyJson(tunnel.tunnelInfo.tunnelSocketStatsResult)}}</td>
                             <td>{{prettyJson(tunnel.tunnelInfo.tunnelStatsResult)}}</td>
                         </tr>

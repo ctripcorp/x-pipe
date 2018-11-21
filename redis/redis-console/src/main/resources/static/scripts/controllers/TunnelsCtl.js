@@ -6,7 +6,7 @@ index_module.controller('TunnelsCtl',['$rootScope', '$scope', 'toastr', 'AppUtil
         $scope.tunnels = [];
 
         $scope.loadTunnels = loadTunnels;
-        $scope.prettyJson = prettyJson;
+        $scope.prettyJson = syntaxHighlight;
         $scope.gotoChain = gotoChain;
 
         if ($scope.dcId && $scope.proxyIp) {
@@ -23,7 +23,12 @@ index_module.controller('TunnelsCtl',['$rootScope', '$scope', 'toastr', 'AppUtil
         }
 
         function prettyJson(obj) {
-            return JSON.stringify(obj);
+            return JSON.stringify(obj, null, '\t');
+        }
+
+        function syntaxHighlight(obj) {
+            var json = JSON.stringify(obj, null, '\t');
+            return json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         function gotoChain(backupDcId, clusterId) {

@@ -2,13 +2,16 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ProxyChainModel;
+import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.TunnelModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
+import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 @RestController
@@ -34,6 +38,12 @@ public class ProxyChainController extends AbstractConsoleController {
 
     @Autowired
     private DcService dcService;
+
+
+    @RequestMapping(value = "/proxy/collectors/{dcName}", method = RequestMethod.GET)
+    public List<ProxyPingStatsModel> getProxyMonitorCollectors(@PathVariable String dcName) {
+        return proxyService.getProxyMonitorCollectors(dcName);
+    }
 
     @RequestMapping(value = "/proxy/{proxyIp}/{dcName}", method = RequestMethod.GET)
     public List<TunnelModel> getTunnelModels(@PathVariable String dcName, @PathVariable String proxyIp) {

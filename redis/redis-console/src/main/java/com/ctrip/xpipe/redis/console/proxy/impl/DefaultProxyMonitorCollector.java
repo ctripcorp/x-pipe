@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -35,16 +36,21 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     private List<TunnelSocketStatsResult> socketStatsResults;
 
+    @JsonIgnore
     private List<TunnelInfo> tunnelInfos;
 
+    @JsonIgnore
     private ScheduledFuture future;
 
+    @JsonIgnore
     private ScheduledExecutorService scheduled;
 
+    @JsonIgnore
     private SimpleObjectPool<NettyClient> objectPool;
 
     private ProxyModel model;
 
+    @JsonIgnore
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
     public DefaultProxyMonitorCollector(ScheduledExecutorService scheduled,

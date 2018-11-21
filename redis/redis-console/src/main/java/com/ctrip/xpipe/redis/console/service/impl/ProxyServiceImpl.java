@@ -2,12 +2,14 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
+import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -113,5 +116,20 @@ public class ProxyServiceImpl implements ProxyService {
             }
         }
         return proxyChains;
+    }
+
+    @Override
+    public List<ProxyPingStatsModel> getProxyMonitorCollectors(String dcName) {
+        if(StringUtil.isEmpty(dcName)) {
+            return Collections.emptyList();
+        }
+        List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
+        List<ProxyPingStatsModel> result = Lists.newArrayListWithCapacity(collectors.size());
+        for(ProxyMonitorCollector collector : collectors) {
+            if(dcName.equalsIgnoreCase(collector.getProxyInfo().getDcName())) {
+                result.add(new ProxyPingStatsModel(collector.getProxyInfo(), collector.getPingStatsResults()));
+            }
+        }
+        return result;
     }
 }

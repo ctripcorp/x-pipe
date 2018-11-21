@@ -46,8 +46,8 @@
                             <tr>
                                 <td ng-bind="proxyChain.redisMaster"></td>
                                 <td ng-bind="proxyChain.activeDcKeeper"></td>
-                                <td><a ng-click="gotoProxy(proxyChain.tunnels[0].proxyModel.dcName, proxyChain.tunnels[0].proxyModel.hostPort.host)">{{proxyChain.tunnels[0].tunnelId}}</a></td>
-                                <td><a ng-click="gotoProxy(proxyChain.tunnels[1].proxyModel.dcName, proxyChain.tunnels[1].proxyModel.hostPort.host)">{{proxyChain.tunnels[1].tunnelId}}}</a></td>
+                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.tunnels[0].proxyModel.hostPort.host, dcId: proxyChain.tunnels[0].proxyModel.dcName})">{{proxyChain.tunnels[0].tunnelId}}</a></td>
+                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.tunnels[1].proxyModel.hostPort.host, dcId: proxyChain.tunnels[1].proxyModel.dcName})">{{proxyChain.tunnels[1].tunnelId}}}</a></td>
                                 <td ng-bind="proxyChain.tunnels[2].tunnelId"></td>
                                 <td ng-bind="proxyChain.backupDcKeeper"></td>
                             </tr>
