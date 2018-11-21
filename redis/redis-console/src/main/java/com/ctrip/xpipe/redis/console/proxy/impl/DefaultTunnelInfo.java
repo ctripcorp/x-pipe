@@ -73,4 +73,15 @@ public class DefaultTunnelInfo implements TunnelInfo {
 
         return Objects.hash(tunnelId);
     }
+
+    @Override
+    public String toString() {
+        return "DefaultTunnelInfo{" +
+                "dcId='" + dcId + '\'' +
+                ", tunnelId='" + tunnelId + '\'' +
+                ", proxyModel=" + proxyModel.toString() +
+                ", tunnelStatsResult=" + tunnelStatsResult.toString() +
+                ", socketStatsResult=" + socketStatsResult.toString() +
+                '}';
+    }
 }

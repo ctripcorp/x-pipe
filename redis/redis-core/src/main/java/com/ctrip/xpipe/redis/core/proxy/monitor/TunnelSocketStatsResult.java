@@ -72,4 +72,13 @@ public class TunnelSocketStatsResult {
 
         return Objects.hash(tunnelId, frontendSocketStats, backendSocketStats);
     }
+
+    @Override
+    public String toString() {
+        return "TunnelSocketStatsResult{" +
+                "tunnelId='" + tunnelId + '\'' +
+                ", frontendSocketStats=" + frontendSocketStats.toString() +
+                ", backendSocketStats=" + backendSocketStats.toString() +
+                '}';
+    }
 }

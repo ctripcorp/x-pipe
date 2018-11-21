@@ -130,7 +130,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         for(Listener listener : listeners) {
             executors.execute(new AbstractExceptionLogTask() {
                 @Override
-                protected void doRun() throws Exception {
+                protected void doRun() {
                     listener.onGlobalEvent(type);
                 }
             });
@@ -141,7 +141,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         for(Listener listener : listeners) {
             executors.execute(new AbstractExceptionLogTask() {
                 @Override
-                protected void doRun() throws Exception {
+                protected void doRun() {
                     listener.onLocalEvent(type, proxyModel);
                 }
             });
@@ -218,7 +218,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         return 60 * 1000;
     }
 
-    private class ProxyInUseRuler implements Ruler<ProxyModel> {
+    private final class ProxyInUseRuler implements Ruler<ProxyModel> {
 
         private Set<Long> proxyIds = Sets.newHashSet();
 
@@ -251,7 +251,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         }
     }
 
-    private class TcpPortOnlyProxyRuler implements Ruler<ProxyModel> {
+    private final class TcpPortOnlyProxyRuler implements Ruler<ProxyModel> {
 
         @Override
         public boolean matches(ProxyModel proxyModel) {

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class DefaultProxyChain implements ProxyChain {
@@ -45,6 +46,11 @@ public class DefaultProxyChain implements ProxyChain {
 
     @Override
     public String toString() {
-        return JsonCodec.INSTANCE.encode(this);
+        return "DefaultProxyChain{" +
+                "backupDcId='" + backupDcId + '\'' +
+                ", clusterId='" + clusterId + '\'' +
+                ", shardId='" + shardId + '\'' +
+                ", tunnelInfos=" + Arrays.deepToString(tunnelInfos.toArray(new TunnelInfo[0])) +
+                '}';
     }
 }
