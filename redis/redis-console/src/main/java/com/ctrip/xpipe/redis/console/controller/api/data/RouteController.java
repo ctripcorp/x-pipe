@@ -5,14 +5,12 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.service.RouteService;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -89,5 +87,17 @@ public class RouteController {
             logger.error("[deleteRoute]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @RequestMapping(value = "/exist/route/active/{activeDc}/backup/{backupDc}", method = RequestMethod.GET)
+    public RetMessage existRoutes(@PathVariable String activeDc, @PathVariable String backupDc) {
+        logger.info("[existRoutes] {}, {}", activeDc, backupDc);
+        if(StringUtil.trimEquals(activeDc, backupDc, true)) {
+            return RetMessage.createFailMessage("false");
+        }
+        if(service.existsRouteBetweenDc(activeDc, backupDc)) {
+            return RetMessage.createSuccessMessage();
+        }
+        return RetMessage.createFailMessage("false");
     }
 }

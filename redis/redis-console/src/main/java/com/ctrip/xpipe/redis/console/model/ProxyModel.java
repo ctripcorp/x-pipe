@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 
 import java.util.Objects;
 
@@ -20,6 +23,8 @@ public class ProxyModel {
     private long id;
 
     private boolean active;
+
+    private HostPort hostPort;
 
     public String getUri() {
         return uri;
@@ -57,6 +62,11 @@ public class ProxyModel {
         return this;
     }
 
+    public ProxyModel setHostPort(HostPort hostPort) {
+        this.hostPort = hostPort;
+        return this;
+    }
+
     public static ProxyModel fromProxyTbl(ProxyTbl proxyTbl, DcService dcService) {
         ProxyModel model = new ProxyModel();
         model = model.setActive(proxyTbl.isActive()).setUri(proxyTbl.getUri()).setId(proxyTbl.getId());
@@ -76,6 +86,13 @@ public class ProxyModel {
         return proto;
     }
 
+    public HostPort getHostPort() {
+        if(hostPort == null) {
+            Endpoint endpoint = new DefaultProxyEndpoint(uri);
+            hostPort = new HostPort(endpoint.getHost(), endpoint.getPort());
+        }
+        return hostPort;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

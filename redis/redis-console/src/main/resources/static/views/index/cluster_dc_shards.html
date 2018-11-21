@@ -23,6 +23,7 @@
                         <div class="row">
                             <div class="col-md-6">{{shard.shardTbl.shardName}}</div>
                             <div class="col-md-6 text-right">
+                                <a class="btn btn-primary btn-sm" ng-if="routeAvail === true" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
                             	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>
                             </div>
                         </div>
