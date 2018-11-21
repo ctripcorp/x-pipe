@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.core.proxy.netty;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
@@ -51,7 +52,7 @@ public class ProxyEnabledNettyKeyedPoolClientFactoryTest extends AbstractRedisTe
     public void testMakeProxyedObject() throws Exception {
         FakeRedisServer server = startFakeRedisServer();
         Endpoint endpoint = new ProxyEnabledEndpoint("localhost", server.getPort(),
-                new DefaultProxyProtocolParser().read("PROXY ROUTE PROXYTCP://10.2.131.200:80 TCP://10.32.21.145:" + server.getPort()));
+                (ProxyConnectProtocol) new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://10.2.131.200:80 TCP://10.32.21.145:" + server.getPort()));
         NettyClient client = factory.makeObject(endpoint).getObject();
 
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 1000);

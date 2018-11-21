@@ -2,11 +2,12 @@ package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.TunnelClosed;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -49,6 +50,9 @@ public class DefaultTunnelManager implements TunnelManager {
 
     @Autowired
     private ResourceManager proxyResourceManager;
+
+    @Autowired
+    private TunnelMonitorManager tunnelMonitorManager;
 
     private Map<Channel, Tunnel> cache = Maps.newConcurrentMap();
 
@@ -97,11 +101,11 @@ public class DefaultTunnelManager implements TunnelManager {
     }
 
     @Override
-    public Tunnel create(Channel frontendChannel, ProxyProtocol protocol) {
+    public Tunnel create(Channel frontendChannel, ProxyConnectProtocol protocol) {
         Tunnel tunnel = MapUtils.getOrCreate(cache, frontendChannel, new ObjectFactory<Tunnel>() {
             @Override
             public Tunnel create() {
-                return new DefaultTunnel(frontendChannel, protocol, config, proxyResourceManager);
+                return new DefaultTunnel(frontendChannel, protocol, config, proxyResourceManager, tunnelMonitorManager);
             }
         });
         initAndStart(tunnel);
@@ -196,6 +200,11 @@ public class DefaultTunnelManager implements TunnelManager {
     @VisibleForTesting
     public DefaultTunnelManager setProxyResourceManager(ResourceManager manager) {
         this.proxyResourceManager = manager;
+        return this;
+    }
+
+    public DefaultTunnelManager setTunnelMonitorManager(TunnelMonitorManager tunnelMonitorManager) {
+        this.tunnelMonitorManager = tunnelMonitorManager;
         return this;
     }
 }

@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.DefaultProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 
 import java.net.InetSocketAddress;
@@ -24,7 +24,7 @@ public class ProxyCommandHandler extends AbstractCommandHandler {
         String proxyProtocol = restructCommand(args);
         logger.info("[doHandle]receive proxy protocol: {}", proxyProtocol);
 
-        ProxyProtocol protocol = new DefaultProxyProtocolParser().read(proxyProtocol);
+        ProxyConnectProtocol protocol = (ProxyConnectProtocol) new DefaultProxyConnectProtocolParser().read(proxyProtocol);
         protocol.recordForwardFor((InetSocketAddress) redisClient.channel().remoteAddress());
         String forwardFor = protocol.getForwardFor();
 

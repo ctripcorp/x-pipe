@@ -20,9 +20,8 @@ public class ProxyApplication {
         System.setProperty("spring.profiles.active", "production");
         SpringApplication application = new SpringApplication(ProxyApplication.class);
 
-        final ConfigurableApplicationContext context = application.run(args);
+        application.run(args);
 
-        initComponentRegistry(context);
     }
 
     private static void initComponentRegistry(ConfigurableApplicationContext context) throws Exception {

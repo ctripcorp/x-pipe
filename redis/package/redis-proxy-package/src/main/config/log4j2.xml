@@ -57,7 +57,7 @@
             <appender-ref ref="catAppender4Log4j2"/>
         </root>
 
-        <logger name="com.ctrip.xpipe.redis.proxy.monitor.recorder" level="INFO" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.proxy.monitor.tunnel.DefaultTunnelRecorder" level="INFO" additivity="false">
             <appender-ref ref="rollingTunnelMonitor"/>
         </logger>
     </loggers>
