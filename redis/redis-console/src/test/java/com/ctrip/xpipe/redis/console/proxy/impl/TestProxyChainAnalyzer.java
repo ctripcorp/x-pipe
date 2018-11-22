@@ -56,6 +56,11 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
     }
 
     @Override
+    public List<ProxyChain> getProxyChains() {
+        return Lists.newArrayList(tunnels.values());
+    }
+
+    @Override
     public void onGlobalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType type) {
 
     }

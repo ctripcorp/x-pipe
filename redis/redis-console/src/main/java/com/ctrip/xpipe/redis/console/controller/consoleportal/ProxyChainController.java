@@ -55,6 +55,10 @@ public class ProxyChainController extends AbstractConsoleController {
         List<TunnelModel> results = Lists.newArrayListWithCapacity(tunnelInfos.size());
         for(TunnelInfo info : tunnelInfos) {
             ProxyChain chain = proxyService.getProxyChain(info.getTunnelId());
+            if(chain == null) {
+                logger.warn("[tunnelId] {}, no chains", info.getTunnelId());
+                continue;
+            }
             results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDc(), chain.getCluster(), chain.getShard(), info));
         }
         return results;

@@ -73,14 +73,15 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         return MapUtils.getOrCreate(proxySamples, proxyModel, new ObjectFactory<ProxyMonitorCollector>() {
             @Override
             public ProxyMonitorCollector create() {
+                logger.info("[create proxy monitor collector] {}", proxyModel);
                 ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel);
-                result.addListener(DefaultProxyMonitorCollectorManager.this);
+//                result.addListener(DefaultProxyMonitorCollectorManager.this);
                 try {
                     result.start();
                 } catch (Exception e) {
                     logger.error("[getOrCreate]", e);
                 }
-                notifyListeners(proxyModel, ProxyMonitorCollectType.CREATE);
+//                notifyListeners(proxyModel, ProxyMonitorCollectType.CREATE);
                 return result;
             }
         });
@@ -222,6 +223,8 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
 
         private Set<Long> proxyIds = Sets.newHashSet();
 
+        private Set<String> samples = Sets.newHashSet();
+
         private ProxyInUseRuler() {
             List<RouteModel> routes = routeService.getActiveRoutes();
             for(RouteModel route : routes) {
@@ -230,11 +233,17 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
                 }
                 addProxyIds(route);
             }
+            List<ProxyModel> activeProxies = proxyService.getActiveProxies();
+            for(ProxyModel model : activeProxies) {
+                if(proxyIds.contains(model.getId())) {
+                    samples.add(model.getHostPort().getHost());
+                }
+            }
         }
 
         @Override
         public boolean matches(ProxyModel proxyModel) {
-            return proxyIds.contains(proxyModel.getId());
+            return samples.contains(proxyModel.getHostPort().getHost());
         }
 
         private void addProxyIds(RouteModel route) {

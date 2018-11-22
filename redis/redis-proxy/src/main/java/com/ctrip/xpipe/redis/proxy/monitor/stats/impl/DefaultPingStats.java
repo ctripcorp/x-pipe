@@ -34,6 +34,7 @@ public class DefaultPingStats extends AbstractStats implements PingStats {
         this.endpoint = endpoint;
         this.target = new HostPort(endpoint.getHost(), endpoint.getPort());
         this.objectPool = keyedObjectPool.getKeyPool(endpoint);
+        this.result = new PingStatsResult(-1, -1, target, target);
     }
 
     @Override

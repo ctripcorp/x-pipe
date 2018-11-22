@@ -28,8 +28,7 @@ public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHan
 
     private Map<PROXY_OPTION, ProxyProtocolOptionHandler> handlers = Maps.newConcurrentMap();
 
-    private ExecutorService sequentialExecutor = Executors.newSingleThreadExecutor(
-            XpipeThreadFactory.create("ProxyReqResProtocolHandler"));
+    private ExecutorService sequentialExecutor;
 
     public ProxyReqResProtocolHandlerManager(ResourceManager resourceManager, TunnelManager tunnelManager,
                                              PingStatsManager pingStatsManager) {
@@ -60,6 +59,10 @@ public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHan
     }
 
     private void sequentiallyExecute(Runnable run) {
+        if(sequentialExecutor == null) {
+            sequentialExecutor = Executors.newSingleThreadExecutor(
+                    XpipeThreadFactory.create("ProxyReqResProtocolHandler"));
+        }
         sequentialExecutor.execute(run);
     }
 
