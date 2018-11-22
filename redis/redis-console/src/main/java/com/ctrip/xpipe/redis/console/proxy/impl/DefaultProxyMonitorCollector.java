@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,22 +69,22 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     @Override
     public List<PingStatsResult> getPingStatsResults() {
-        return pingStatsResults;
+        return pingStatsResults == null ? Collections.emptyList() : pingStatsResults;
     }
 
     @Override
     public List<TunnelStatsResult> getTunnelStatsResults() {
-        return tunnelStatsResults;
+        return tunnelStatsResults == null ? Collections.emptyList() : tunnelStatsResults;
     }
 
     @Override
     public List<TunnelSocketStatsResult> getTunnelSocketStatsResults() {
-        return socketStatsResults;
+        return socketStatsResults == null ? Collections.emptyList() : socketStatsResults;
     }
 
     @Override
     public List<TunnelInfo> getTunnelInfos() {
-        return tunnelInfos;
+        return tunnelInfos == null ? Collections.emptyList() : tunnelInfos;
     }
 
     @Override
@@ -127,9 +128,10 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
             Command<T[]> command = getCommand();
             command.future().addListener(new CommandFutureListener<T[]>() {
                 @Override
-                public void operationComplete(CommandFuture<T[]> commandFuture) throws Exception {
+                public void operationComplete(CommandFuture<T[]> commandFuture) {
                     if(!commandFuture.isSuccess()) {
                         logger.error("[update][{}]", getClass().getSimpleName(), commandFuture.cause());
+                        return;
                     }
                     updateRelevantField(commandFuture.getNow());
                 }
@@ -146,7 +148,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
         @Override
         protected void updateRelevantField(PingStatsResult[] updates) {
-            synchronized (this) {
+            synchronized (DefaultProxyMonitorCollector.this) {
                 pingStatsResults = Lists.newArrayList(updates);
             }
         }
@@ -161,7 +163,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
         @Override
         protected void updateRelevantField(TunnelSocketStatsResult[] updates) {
-            synchronized (this) {
+            synchronized (DefaultProxyMonitorCollector.this) {
                 socketStatsResults = Lists.newArrayList(updates);
             }
         }
@@ -176,7 +178,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
         @Override
         protected void updateRelevantField(TunnelStatsResult[] updates) {
-            synchronized (this) {
+            synchronized (DefaultProxyMonitorCollector.this) {
                 tunnelStatsResults = Lists.newArrayList(updates);
             }
         }
@@ -200,9 +202,13 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
             }
             for(TunnelSocketStatsResult socketStats : getTunnelSocketStatsResults()) {
                 String id = socketStats.getTunnelId();
+                if(!tunnels.containsKey(id)) {
+                    tunnels.put(id, new DefaultTunnelInfo(getProxyInfo(), id));
+                }
                 tunnels.get(id).setSocketStatsResult(socketStats);
             }
             tunnelInfos = Lists.newArrayList(tunnels.values());
+//            logger.info("[TunnelAggregator] {}", tunnelInfos);
         }
     }
 }
