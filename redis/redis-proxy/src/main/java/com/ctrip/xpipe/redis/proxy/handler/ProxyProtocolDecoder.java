@@ -51,12 +51,12 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 return;
             }
             out.add(protocol);
-            logger.info("[protocol-added] {}", protocol.getClass());
             // connection protocol, drop all protocol stuffs & build connection chain; otherwise, response for request
             if(protocol instanceof ProxyConnectProtocol) {
                 finished = true;
             } else {
-                logger.info("[response-protocol] {}", ((ProxyRequestResponseProtocol)protocol).getContent());
+                logger.info("[{}][response-protocol] {}", ChannelUtil.getDesc(ctx.channel()),
+                        ((ProxyRequestResponseProtocol)protocol).getContent());
                 reset();
             }
         } catch (Throwable t) {
