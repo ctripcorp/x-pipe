@@ -54,6 +54,11 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public int getResponseTimeout() {
+        return 100;
+    }
+
+    @Override
     public String getServerCertChainFilePath() {
         return "src/test/resources/cert/server.crt";
     }
