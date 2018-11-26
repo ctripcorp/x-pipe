@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.netty.commands.*;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
+import com.ctrip.xpipe.utils.OsUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -29,7 +30,7 @@ public class SslEnabledNettyClientFactory extends NettyKeyedPoolClientFactory {
     private ResourceManager resourceManager;
 
     public SslEnabledNettyClientFactory(ResourceManager resourceManager) {
-        this.resourceManager = resourceManager;
+        this(Math.min(4, OsUtils.getCpuCount()), resourceManager);
     }
 
     public SslEnabledNettyClientFactory(int eventLoopThreads, ResourceManager resourceManager) {

@@ -113,6 +113,7 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
             }
         });
         command.execute();
+        logger.info("[ping-stats]");
         command = new AbstractProxyMonitorCommand.ProxyMonitorTunnelStatsCommand(objectPool, scheduled);
         command.future().addListener(new CommandFutureListener<TunnelStatsResult[]>() {
             @Override
@@ -124,6 +125,7 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
             }
         });
         command.execute();
+        logger.info("[tunnel-stats]");
         command = new AbstractProxyMonitorCommand.ProxyMonitorSocketStatsCommand(objectPool, scheduled);
         command.future().addListener(new CommandFutureListener<TunnelSocketStatsResult[]>() {
             @Override
@@ -135,7 +137,8 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
             }
         });
         command.execute();
-        sleep(1000);
+        logger.info("[socket-stats]");
+        sleep(5000);
     }
 
     @Ignore

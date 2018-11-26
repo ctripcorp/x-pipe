@@ -52,12 +52,7 @@ public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHan
 
     @Override
     public void handle(Channel channel, String[] content) {
-        sequentiallyExecute(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                getHandler(content[0]).handle(channel, content);
-            }
-        });
+        getHandler(content[0]).handle(channel, content);
     }
 
     private void sequentiallyExecute(Runnable run) {
