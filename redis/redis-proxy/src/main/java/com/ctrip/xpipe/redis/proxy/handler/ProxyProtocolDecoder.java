@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyRequestResponseProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.CompositeProxyProtocolParser;
@@ -50,11 +51,12 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 return;
             }
             out.add(protocol);
-
+            logger.info("[protocol-added] {}", protocol.getClass());
             // connection protocol, drop all protocol stuffs & build connection chain; otherwise, response for request
             if(protocol instanceof ProxyConnectProtocol) {
                 finished = true;
             } else {
+                logger.info("[response-protocol] {}", ((ProxyRequestResponseProtocol)protocol).getContent());
                 reset();
             }
         } catch (Throwable t) {
