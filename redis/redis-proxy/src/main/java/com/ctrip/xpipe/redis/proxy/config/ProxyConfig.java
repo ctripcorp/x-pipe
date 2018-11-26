@@ -27,4 +27,6 @@ public interface ProxyConfig extends TLSConfig {
 
     boolean startMonitor();
 
+    int getResponseTimeout();
+
 }

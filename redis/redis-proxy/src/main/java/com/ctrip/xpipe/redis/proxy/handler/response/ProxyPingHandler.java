@@ -17,6 +17,7 @@ public class ProxyPingHandler extends AbstractProxyProtocolOptionHandler {
     public static final int INFINITE = -99999999;
 
     public ProxyPingHandler(ResourceManager resourceManager) {
+        super(()->resourceManager.getProxyConfig().getResponseTimeout());
         this.resourceManager = resourceManager;
     }
 
