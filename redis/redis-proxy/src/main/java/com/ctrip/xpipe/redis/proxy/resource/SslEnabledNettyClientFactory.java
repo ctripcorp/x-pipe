@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.proxy.resource;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.netty.commands.AsyncNettyClient;
-import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.netty.commands.NettyClientHandler;
-import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.netty.commands.*;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -17,6 +14,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author chen.zhu
@@ -44,10 +45,11 @@ public class SslEnabledNettyClientFactory extends NettyKeyedPoolClientFactory {
     }
 
     @Override
-    public PooledObject<NettyClient> makeObject(Endpoint key) {
+    public PooledObject<NettyClient> makeObject(Endpoint key) throws Exception {
         ProxyEndpoint endpoint = (ProxyEndpoint) key;
         ChannelFuture f = getBootstrap(endpoint).connect(key.getHost(), key.getPort());
-        NettyClient nettyClient = new AsyncNettyClient(f, key);
+        f.get(5000, TimeUnit.MILLISECONDS);
+        NettyClient nettyClient = new DefaultNettyClient(f.channel());
         f.channel().attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
         return new DefaultPooledObject<>(nettyClient);
     }
