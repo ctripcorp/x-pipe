@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
@@ -85,7 +86,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         when(tunnelManager.tunnels()).thenReturn(Lists.newArrayList(tunnel));
 
         pingStatsManager = mock(PingStatsManager.class);
-        handler = new ProxyMonitorHandler(tunnelManager, pingStatsManager);
+        handler = new ProxyMonitorHandler(tunnelManager, pingStatsManager, new TestProxyConfig());
     }
 
     @Test
@@ -93,7 +94,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
         AtomicReference<ByteBuf> result = new AtomicReference<>();
         Channel channel = getWriteBackChannel(result);
-        handler.doHandle(channel, new String[]{"SocketStats"});
+        handler.handle(channel, new String[]{"SocketStats"});
         waitConditionUntilTimeOut(()->result.get() != null, 1000);
 //        logger.info("{}", ByteBufUtils.readToString(result.get()));
         ArrayParser parser = (ArrayParser) new ArrayParser().read(result.get());

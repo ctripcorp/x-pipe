@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.parser.monitor.ProxyMonitorParser;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
@@ -24,14 +25,18 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
 
     private PingStatsManager pingStatsManager;
 
-    public ProxyMonitorHandler(TunnelManager tunnelManager, PingStatsManager pingStatsManager) {
+    private ProxyConfig proxyConfig;
+
+    public ProxyMonitorHandler(TunnelManager tunnelManager, PingStatsManager pingStatsManager, ProxyConfig proxyConfig) {
+        super(()->proxyConfig.getResponseTimeout());
         this.tunnelManager = tunnelManager;
         this.pingStatsManager = pingStatsManager;
+        this.proxyConfig = proxyConfig;
     }
 
     @Override
     protected void doHandle(Channel channel, String[] content) {
-        if(content.length < 1) {
+        if(content == null || content.length < 1) {
             throw new IllegalArgumentException("monitor option is needed");
         }
         ProxyMonitorParser.Type type = ProxyMonitorParser.Type.parse(content[0]);
@@ -39,6 +44,7 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
             logger.warn("[doHandle] unknown type: {}", content[0]);
             return;
         }
+        long start = System.currentTimeMillis();
         switch (type) {
             case SocketStats:
                 new SocketStatsResponser().response(channel);
@@ -52,7 +58,6 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
             default:
                 break;
         }
-
     }
 
     @Override
