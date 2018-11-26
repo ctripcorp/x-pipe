@@ -49,6 +49,8 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_START_PROXY_MONITOR = "proxy.monitor.start";
 
+    private static final String KEY_PROXY_RESPONSE_TIMEOUT = "proxy.response.timeout";
+
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
     public DefaultProxyConfig() {
@@ -108,7 +110,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     @Override
     public int getFixedRecvBufferSize() {
-        return getIntProperty(KEY_RECV_BUFFER_SIZE, 1536);
+        return getIntProperty(KEY_RECV_BUFFER_SIZE, 4096);
     }
 
     @Override
@@ -120,6 +122,11 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public boolean startMonitor() {
         return getBooleanProperty(KEY_START_PROXY_MONITOR, false);
+    }
+
+    @Override
+    public int getResponseTimeout() {
+        return getIntProperty(KEY_PROXY_RESPONSE_TIMEOUT, 1000);
     }
 
     @Override

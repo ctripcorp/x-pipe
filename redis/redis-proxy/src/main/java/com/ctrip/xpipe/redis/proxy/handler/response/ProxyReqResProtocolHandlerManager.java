@@ -20,6 +20,8 @@ import java.util.concurrent.Executors;
  */
 public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHandler {
 
+    private static final String TYPE = "Proxy.Response";
+
     private ResourceManager resourceManager;
 
     private TunnelManager tunnelManager;
@@ -40,7 +42,7 @@ public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHan
 
     private void init() {
         putHandler(new ProxyPingHandler(resourceManager));
-        putHandler(new ProxyMonitorHandler(tunnelManager, pingStatsManager));
+        putHandler(new ProxyMonitorHandler(tunnelManager, pingStatsManager, resourceManager.getProxyConfig()));
     }
 
     @Override
