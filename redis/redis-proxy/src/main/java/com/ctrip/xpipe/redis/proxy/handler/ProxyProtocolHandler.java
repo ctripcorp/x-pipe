@@ -37,7 +37,7 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if(!(msg instanceof ProxyProtocol)) {
             logger.error("[channelRead] not proxy protocol, class: {}", msg.getClass());
         }
@@ -56,11 +56,12 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
             uninstallSelf(ctx);
         } else if(msg instanceof ProxyRequestResponseProtocol) {
             ProxyRequestResponseProtocol protocol = (ProxyRequestResponseProtocol) msg;
-            logger.info("[ProxyRequestResponseProtocol][{}] {}", ChannelUtil.getDesc(ctx.channel()), protocol.getContent());
+            logger.debug("[ProxyRequestResponseProtocol][{}] {}", ChannelUtil.getDesc(ctx.channel()), protocol.getContent());
             long start = System.currentTimeMillis();
             protocolHandlerManager.handle(ctx.channel(),
                     StringUtil.splitRemoveEmpty(AbstractProxyOptionParser.ELEMENT_SPLITTER, protocol.getContent()));
-            logger.info("[ProxyRequestResponseProtocol][{}] {}; duration: {}", ChannelUtil.getDesc(ctx.channel()), protocol.getContent(), System.currentTimeMillis() - start);
+            logger.debug("[ProxyRequestResponseProtocol][{}] {}; duration: {}", ChannelUtil.getDesc(ctx.channel()),
+                    protocol.getContent(), System.currentTimeMillis() - start);
         }
     }
 

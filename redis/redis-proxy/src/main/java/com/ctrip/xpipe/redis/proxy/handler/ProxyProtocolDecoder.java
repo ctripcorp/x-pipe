@@ -56,7 +56,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 finished = true;
                 continuouslyDecode = false;
             } else {
-                logger.info("[{}][response-protocol] {}", ChannelUtil.getDesc(ctx.channel()),
+                logger.debug("[{}][response-protocol] {}", ChannelUtil.getDesc(ctx.channel()),
                         ((ProxyRequestResponseProtocol)protocol).getContent());
                 continuouslyDecode = true;
                 reset();
