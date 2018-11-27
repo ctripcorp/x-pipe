@@ -28,10 +28,6 @@ public class AppTest extends AbstractProxyIntegrationTest {
 
     private ScheduledExecutorService scheduled;
 
-    private static final int FIRST_PROXY_TCP_PORT = 8992, SEC_PROXY_TCP_PORT = 8993;
-
-    private static final int FIRST_PROXY_TLS_PORT = 1443, SEC_PROXY_TLS_PORT = 2443;
-
     private static final int ECHO_SERVER_PORT = randomPort();
 
     @BeforeClass
@@ -61,29 +57,6 @@ public class AppTest extends AbstractProxyIntegrationTest {
         logger.info("[wait for proxy warm up]...");
         Thread.sleep(1000);
         startEchoClient(FIRST_PROXY_TCP_PORT, protocol, speed);
-    }
-
-    private void startFirstProxy() throws Exception {
-        // uncomment disable netty bytebuf test
-//        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
-        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
-                .setFrontendTcpPort(FIRST_PROXY_TCP_PORT).setFrontendTlsPort(FIRST_PROXY_TLS_PORT).setStartMonitor(true))
-                .setPingStatsManager(new DefaultPingStatsManager());
-        prepare(server);
-        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true);
-        ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
-        server.start();
-    }
-
-
-    private void startSecondaryProxy() throws Exception {
-        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
-                .setFrontendTcpPort(SEC_PROXY_TCP_PORT).setFrontendTlsPort(SEC_PROXY_TLS_PORT).setStartMonitor(true))
-                .setPingStatsManager(new DefaultPingStatsManager());
-        prepare(server);
-        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true).startMonitor();
-        ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
-        server.start();
     }
 
     private void startEchoClient(int firstProxyPort, String protocol, int speed) throws Exception {
