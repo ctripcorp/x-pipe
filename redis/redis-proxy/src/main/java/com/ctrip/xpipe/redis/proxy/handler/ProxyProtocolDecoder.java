@@ -26,7 +26,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private static final Logger logger = LoggerFactory.getLogger(ProxyProtocolDecoder.class);
 
-    private boolean finished = false;
+    private boolean finished = false, continuouslyDecode = false;
 
     private static final char[] PREFIX = new char[]{'+', 'P', 'R', 'O', 'X', 'Y'};
 
@@ -54,9 +54,11 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
             // connection protocol, drop all protocol stuffs & build connection chain; otherwise, response for request
             if(protocol instanceof ProxyConnectProtocol) {
                 finished = true;
+                continuouslyDecode = false;
             } else {
                 logger.info("[{}][response-protocol] {}", ChannelUtil.getDesc(ctx.channel()),
                         ((ProxyRequestResponseProtocol)protocol).getContent());
+                continuouslyDecode = true;
                 reset();
             }
         } catch (Throwable t) {
@@ -79,7 +81,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     @Override
     public boolean isSingleDecode() {
-        return true;
+        return !continuouslyDecode;
     }
 
     private void checkValid(ByteBuf in) {
