@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
+import com.ctrip.xpipe.redis.proxy.ProxyServer;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
@@ -82,7 +83,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         }
     }
 
-    protected void startFirstProxy() throws Exception {
+    protected DefaultProxyServer startFirstProxy() throws Exception {
         // uncomment disable netty bytebuf test
 //        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
@@ -92,6 +93,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true);
         ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
         server.start();
+        return server;
     }
 
 

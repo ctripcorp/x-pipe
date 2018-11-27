@@ -46,11 +46,10 @@ public class SslEnabledNettyClientFactory extends NettyKeyedPoolClientFactory {
     }
 
     @Override
-    public PooledObject<NettyClient> makeObject(Endpoint key) throws Exception {
+    public PooledObject<NettyClient> makeObject(Endpoint key) {
         ProxyEndpoint endpoint = (ProxyEndpoint) key;
         ChannelFuture f = getBootstrap(endpoint).connect(key.getHost(), key.getPort());
-        f.get(5000, TimeUnit.MILLISECONDS);
-        NettyClient nettyClient = new DefaultNettyClient(f.channel());
+        NettyClient nettyClient = new AsyncNettyClient(f, key);
         f.channel().attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
         return new DefaultPooledObject<>(nettyClient);
     }
