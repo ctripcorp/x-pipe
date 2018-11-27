@@ -21,6 +21,8 @@ public abstract class AbstractScriptExecutor<V> extends AbstractCommand<V> imple
 
     private static final String SYSTEM = "System";
 
+    private static final String BIN_BASH = "/bin/sh", DASH_C = "-c";
+
     @Override
     protected void doExecute() throws Exception {
         List<String> lines = getBashCommandInfo(getScript());
@@ -31,11 +33,11 @@ public abstract class AbstractScriptExecutor<V> extends AbstractCommand<V> imple
     }
 
     private List<String> getBashCommandInfo(String command) {
-        String[] cmds = command.split("\\s+");
+        String[] cmds = new String[] {BIN_BASH, DASH_C, command};
         return getBashCommandInfo(cmds);
     }
 
-    private List<String> getBashCommandInfo(String [] commands) {
+    private List<String> getBashCommandInfo(String[] commands) {
         InputStreamReader sr = null;
         BufferedReader br = null;
         Transaction t = Cat.newTransaction(SYSTEM, "Bash.Command");
