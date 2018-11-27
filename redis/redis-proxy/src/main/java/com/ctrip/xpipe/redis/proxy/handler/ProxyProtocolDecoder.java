@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyRequestResponseProtocol;
 import com.ctrip.xpipe.redis.core.exception.ProxyProtocolException;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.CompositeProxyProtocolParser;
@@ -25,7 +26,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private static final Logger logger = LoggerFactory.getLogger(ProxyProtocolDecoder.class);
 
-    private boolean finished = false;
+    private boolean finished = false, continuouslyDecode = false;
 
     private static final char[] PREFIX = new char[]{'+', 'P', 'R', 'O', 'X', 'Y'};
 
@@ -50,11 +51,14 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
                 return;
             }
             out.add(protocol);
-
             // connection protocol, drop all protocol stuffs & build connection chain; otherwise, response for request
             if(protocol instanceof ProxyConnectProtocol) {
                 finished = true;
+                continuouslyDecode = false;
             } else {
+                logger.debug("[{}][response-protocol] {}", ChannelUtil.getDesc(ctx.channel()),
+                        ((ProxyRequestResponseProtocol)protocol).getContent());
+                continuouslyDecode = true;
                 reset();
             }
         } catch (Throwable t) {
@@ -77,7 +81,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     @Override
     public boolean isSingleDecode() {
-        return true;
+        return !continuouslyDecode;
     }
 
     private void checkValid(ByteBuf in) {
@@ -95,7 +99,8 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
 
     private boolean matchProtocolFormat(ByteBuf in) {
         int index = in.readerIndex();
-        for(; bufReadIndex < PREFIX.length && bufReadIndex < in.readableBytes(); bufReadIndex++) {
+        int totalReadableBytes = in.readableBytes();
+        for(; bufReadIndex < PREFIX.length && bufReadIndex < totalReadableBytes; bufReadIndex++) {
             if(in.getByte(index) != PREFIX[bufReadIndex]) {
                 logger.warn("not equal: {}, {}", Character.toChars(in.getByte(index)), PREFIX[bufReadIndex]);
                 return false;

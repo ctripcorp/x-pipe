@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.proxy.handler.response.ProxyReqResProtocolHandlerMa
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -36,7 +37,7 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if(!(msg instanceof ProxyProtocol)) {
             logger.error("[channelRead] not proxy protocol, class: {}", msg.getClass());
         }
@@ -55,8 +56,12 @@ public class ProxyProtocolHandler extends ChannelInboundHandlerAdapter {
             uninstallSelf(ctx);
         } else if(msg instanceof ProxyRequestResponseProtocol) {
             ProxyRequestResponseProtocol protocol = (ProxyRequestResponseProtocol) msg;
+            logger.debug("[ProxyRequestResponseProtocol][{}] {}", ChannelUtil.getDesc(ctx.channel()), protocol.getContent());
+            long start = System.currentTimeMillis();
             protocolHandlerManager.handle(ctx.channel(),
                     StringUtil.splitRemoveEmpty(AbstractProxyOptionParser.ELEMENT_SPLITTER, protocol.getContent()));
+            logger.debug("[ProxyRequestResponseProtocol][{}] {}; duration: {}", ChannelUtil.getDesc(ctx.channel()),
+                    protocol.getContent(), System.currentTimeMillis() - start);
         }
     }
 

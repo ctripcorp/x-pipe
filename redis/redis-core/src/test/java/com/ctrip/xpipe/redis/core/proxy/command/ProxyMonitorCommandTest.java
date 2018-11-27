@@ -6,9 +6,11 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
@@ -16,6 +18,7 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
+import io.netty.buffer.*;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -113,6 +116,7 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
             }
         });
         command.execute();
+        logger.info("[ping-stats]");
         command = new AbstractProxyMonitorCommand.ProxyMonitorTunnelStatsCommand(objectPool, scheduled);
         command.future().addListener(new CommandFutureListener<TunnelStatsResult[]>() {
             @Override
@@ -124,6 +128,7 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
             }
         });
         command.execute();
+        logger.info("[tunnel-stats]");
         command = new AbstractProxyMonitorCommand.ProxyMonitorSocketStatsCommand(objectPool, scheduled);
         command.future().addListener(new CommandFutureListener<TunnelSocketStatsResult[]>() {
             @Override
@@ -135,7 +140,8 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
             }
         });
         command.execute();
-        sleep(1000);
+        logger.info("[socket-stats]");
+        sleep(5000);
     }
 
     @Ignore

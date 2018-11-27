@@ -20,8 +20,6 @@ import java.util.concurrent.Executors;
  */
 public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHandler {
 
-    private static final String TYPE = "Proxy.Response";
-
     private ResourceManager resourceManager;
 
     private TunnelManager tunnelManager;
@@ -30,7 +28,8 @@ public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHan
 
     private Map<PROXY_OPTION, ProxyProtocolOptionHandler> handlers = Maps.newConcurrentMap();
 
-    private ExecutorService sequentialExecutor;
+    private final static ExecutorService sequentialExecutor = Executors.newSingleThreadExecutor(
+            XpipeThreadFactory.create("ProxyReqResProtocolHandler"));
 
     public ProxyReqResProtocolHandlerManager(ResourceManager resourceManager, TunnelManager tunnelManager,
                                              PingStatsManager pingStatsManager) {
@@ -61,10 +60,6 @@ public class ProxyReqResProtocolHandlerManager implements ProxyProtocolOptionHan
     }
 
     private void sequentiallyExecute(Runnable run) {
-        if(sequentialExecutor == null) {
-            sequentialExecutor = Executors.newSingleThreadExecutor(
-                    XpipeThreadFactory.create("ProxyReqResProtocolHandler"));
-        }
         sequentialExecutor.execute(run);
     }
 

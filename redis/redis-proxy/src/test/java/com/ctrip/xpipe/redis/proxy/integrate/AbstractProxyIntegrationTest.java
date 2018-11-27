@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.Session;
+import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
 import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
@@ -41,6 +42,10 @@ import static org.mockito.Mockito.*;
  */
 public class AbstractProxyIntegrationTest extends AbstractTest {
 
+    public static final int FIRST_PROXY_TCP_PORT = 8992, SEC_PROXY_TCP_PORT = 8993;
+
+    public static final int FIRST_PROXY_TLS_PORT = 1443, SEC_PROXY_TLS_PORT = 2443;
+
     @BeforeClass
     public static void beforeAbstractProxyIntegrationTest() {
         System.setProperty(SESSION_MONITOR_SHOULD_START, "false");
@@ -54,7 +59,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         sameStuff(server);
     }
 
-    private void sameStuff(DefaultProxyServer server) {
+    protected void sameStuff(DefaultProxyServer server) {
         FoundationService service = FoundationService.DEFAULT;
         service = spy(FoundationService.DEFAULT);
         doReturn("127.0.0.1").when(service).getLocalIp();
@@ -75,6 +80,29 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
             ((DefaultPingStatsManager)server.getPingStatsManager()).setResourceManager(resourceManager)
                     .setEndpointManager(endpointManager);
         }
+    }
+
+    protected void startFirstProxy() throws Exception {
+        // uncomment disable netty bytebuf test
+//        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
+        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
+                .setFrontendTcpPort(FIRST_PROXY_TCP_PORT).setFrontendTlsPort(FIRST_PROXY_TLS_PORT).setStartMonitor(true))
+                .setPingStatsManager(new DefaultPingStatsManager());
+        prepare(server);
+        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true);
+        ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
+        server.start();
+    }
+
+
+    protected void startSecondaryProxy() throws Exception {
+        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
+                .setFrontendTcpPort(SEC_PROXY_TCP_PORT).setFrontendTlsPort(SEC_PROXY_TLS_PORT).setStartMonitor(true))
+                .setPingStatsManager(new DefaultPingStatsManager());
+        prepare(server);
+        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true).startMonitor();
+        ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
+        server.start();
     }
 
     protected String generateSequncialString(int length) {

@@ -89,7 +89,7 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
 
         @Override
         protected List<Tunnel> getSamples() {
-            return Lists.newArrayList(tunnelManager.tunnels());
+            return tunnelManager.tunnels();
         }
 
         @Override
@@ -122,7 +122,7 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
 
         @Override
         List<Tunnel> getSamples() {
-            return Lists.newArrayList(tunnelManager.tunnels());
+            return tunnelManager.tunnels();
         }
 
         @Override
