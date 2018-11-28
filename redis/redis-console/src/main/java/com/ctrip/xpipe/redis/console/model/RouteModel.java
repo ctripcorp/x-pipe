@@ -111,31 +111,24 @@ public class RouteModel {
         return this;
     }
 
-    public static RouteModel fromRouteTbl(RouteTbl routeTbl, DcService dcService) {
+    public static RouteModel fromRouteTbl(RouteTbl routeTbl, DcIdNameMapper mapper) {
         RouteModel model = new RouteModel();
         model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds())
                 .setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
 
-        model.setSrcDcName(dcService.find(routeTbl.getSrcDcId()).getDcName())
-                .setDstDcName(dcService.find(routeTbl.getDstDcId()).getDcName());
+        model.setSrcDcName(mapper.getName(routeTbl.getSrcDcId()))
+                .setDstDcName(mapper.getName(routeTbl.getDstDcId()));
 
         model.setTag(routeTbl.getTag()).setOptionProxyIds(routeTbl.getOptionalProxyIds())
                 .setOrgId(routeTbl.getRouteOrgId());
         return model;
     }
 
-    public RouteTbl toRouteTbl(DcService dcService) {
+    public RouteTbl toRouteTbl(DcIdNameMapper mapper) {
         RouteTbl proto = new RouteTbl();
         proto.setActive(active).setId(id).setOptionalProxyIds(optionProxyIds).setSrcProxyIds(srcProxyIds)
                 .setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId);
-        DcTbl srcDc = dcService.find(srcDcName), dstDc = dcService.find(dstDcName);
-        if(srcDc == null) {
-            throw new XpipeRuntimeException("Source Dc not found");
-        }
-        if(dstDc == null) {
-            throw new XpipeRuntimeException("Destination Dc not found");
-        }
-        proto.setSrcDcId(srcDc.getId()).setDstDcId(dstDc.getId());
+        proto.setSrcDcId(mapper.getId(srcDcName)).setDstDcId(mapper.getId(dstDcName));
         return proto;
     }
 

@@ -33,7 +33,6 @@ public class DefaultProxyMonitorCollectorManagerTest extends AbstractRedisTest {
         manager.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool());
         manager.setScheduled(scheduled);
         manager.setProxyService(proxyService);
-        manager.setRouteService(routeService);
     }
 
     @After
@@ -52,29 +51,6 @@ public class DefaultProxyMonitorCollectorManagerTest extends AbstractRedisTest {
     }
 
     @Test
-    public void testUpdateWithTLSNotSelect() {
-        when(proxyService.getActiveProxies()).thenReturn(Lists.newArrayList(
-                newProxyModel("PROXYTLS://127.0.0.1:443"),
-                newProxyModel("PROXYTLS://127.0.0.2:443"),
-                newProxyModel("PROXYTLS://127.0.0.3:443")));
-        when(routeService.getActiveRoutes()).thenReturn(newRouteModel());
-        manager.update();
-        Assert.assertTrue(manager.getProxyMonitorResults().isEmpty());
-    }
-
-    @Test
-    public void testUpdateWithTCPSelect() {
-        when(proxyService.getActiveProxies()).thenReturn(Lists.newArrayList(
-                newProxyModel("PROXYTCP://127.0.0.1:443"),
-                newProxyModel("PROXYTCP://127.0.0.2:443"),
-                newProxyModel("PROXYTCP://127.0.0.3:443")));
-        when(routeService.getActiveRoutes()).thenReturn(newRouteModel());
-        manager.update();
-        Assert.assertFalse(manager.getProxyMonitorResults().isEmpty());
-        Assert.assertEquals(3, manager.getProxyMonitorResults().size());
-    }
-
-    @Test
     public void testUpdateWithNoProxyInterest() {
         when(proxyService.getActiveProxies()).thenReturn(Lists.newArrayList(
                 newProxyModel("PROXYTCP://127.0.0.1:443"),
@@ -86,7 +62,7 @@ public class DefaultProxyMonitorCollectorManagerTest extends AbstractRedisTest {
     }
 
     private ProxyModel newProxyModel(String uri) {
-        return new ProxyModel().setActive(true).setDcName("dc").setId(index ++).setUri(uri);
+        return new ProxyModel().setActive(true).setDcName("dc").setId(index ++).setUri(uri).setMonitorActive(true);
     }
 
     private List<RouteModel> newRouteModel() {

@@ -48,10 +48,6 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
         String cluster = "cluster", shard = "shard";
         when(metaCache.findClusterShard(any(HostPort.class))).thenReturn(new Pair<>(cluster, shard));
         when(metaCache.getActiveDc(cluster, shard)).thenReturn("SHAOY");
-
-        analyzer.onGlobalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType.UPDATE);
-
-        sleep(150);
     }
 
     @Test

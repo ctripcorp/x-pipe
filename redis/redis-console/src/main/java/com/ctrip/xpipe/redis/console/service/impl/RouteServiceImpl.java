@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
+import com.ctrip.xpipe.redis.console.model.DcIdNameMapper;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.model.RouteTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RouteService;
-import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +27,6 @@ public class RouteServiceImpl implements RouteService {
     @Autowired
     private DcService dcService;
 
-    @Autowired
-    private DcMetaService metaService;
-
     @Override
     public List<RouteTbl> getActiveRouteTbls() {
         return routeDao.getAllAvailableRoutes();
@@ -37,10 +34,11 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteModel> getAllRoutes() {
+        DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
         List<RouteModel> clone = Lists.transform(routeDao.getAllRoutes(), new Function<RouteTbl, RouteModel>() {
             @Override
             public RouteModel apply(RouteTbl input) {
-                return RouteModel.fromRouteTbl(input, dcService);
+                return RouteModel.fromRouteTbl(input, mapper);
             }
         });
         return Lists.newArrayList(clone);
@@ -48,10 +46,11 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteModel> getActiveRoutes() {
+        DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
         List<RouteModel> clone = Lists.transform(routeDao.getAllAvailableRoutes(), new Function<RouteTbl, RouteModel>() {
             @Override
             public RouteModel apply(RouteTbl input) {
-                return RouteModel.fromRouteTbl(input, dcService);
+                return RouteModel.fromRouteTbl(input, mapper);
             }
         });
         return Lists.newArrayList(clone);
@@ -59,7 +58,8 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public void updateRoute(RouteModel model) {
-        routeDao.update(model.toRouteTbl(dcService));
+        DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
+        routeDao.update(model.toRouteTbl(mapper));
     }
 
     @Override
@@ -69,7 +69,8 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public void addRoute(RouteModel model) {
-        routeDao.insert(model.toRouteTbl(dcService));
+        DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
+        routeDao.insert(model.toRouteTbl(mapper));
     }
 
     @Override
