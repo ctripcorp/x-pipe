@@ -77,7 +77,7 @@ public class ProxyModel {
 
     public ProxyTbl toProxyTbl(DcIdNameMapper mapper) {
         ProxyTbl proto = new ProxyTbl();
-        proto.setActive(active).setId(id).setUri(uri);
+        proto.setActive(active).setId(id).setUri(uri).setMonitorActive(monitorActive);
         proto.setDcId(mapper.getId(dcName));
         return proto;
     }

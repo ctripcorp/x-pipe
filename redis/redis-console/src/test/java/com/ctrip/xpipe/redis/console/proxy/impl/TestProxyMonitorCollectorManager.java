@@ -82,4 +82,14 @@ public class TestProxyMonitorCollectorManager extends AbstractProxyChainTest imp
 
         return objectPool;
     }
+
+    @Override
+    public void isCrossDcLeader() {
+
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+
+    }
 }

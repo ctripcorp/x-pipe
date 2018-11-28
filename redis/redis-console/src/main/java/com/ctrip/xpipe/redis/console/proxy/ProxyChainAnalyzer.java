@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.proxy;
 
+import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
+
 import java.util.List;
 
-public interface ProxyChainAnalyzer {
+public interface ProxyChainAnalyzer extends CrossDcLeaderAware {
 
     ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId);
 

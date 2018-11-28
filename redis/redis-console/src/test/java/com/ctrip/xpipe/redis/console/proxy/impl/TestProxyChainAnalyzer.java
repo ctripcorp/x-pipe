@@ -71,4 +71,14 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
     public void addProxyChain(String tunnelId, ProxyChain chain) {
         tunnels.put(tunnelId, chain);
     }
+
+    @Override
+    public void isCrossDcLeader() {
+
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+
+    }
 }

@@ -17,6 +17,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
@@ -52,11 +54,16 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
 
     private ScheduledFuture future;
 
+    private AtomicBoolean taskTrigger = new AtomicBoolean(false);
+
     @PostConstruct
     public void postConstruct() {
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() {
+                if(!taskTrigger.get()) {
+                    return;
+                }
                 update();
             }
         }, getStartTime(), getPeriodic(), TimeUnit.MILLISECONDS);
@@ -148,6 +155,16 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
 
     protected int getPeriodic() {
         return 1000;
+    }
+
+    @Override
+    public void isCrossDcLeader() {
+        taskTrigger.set(true);
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+        taskTrigger.set(false);
     }
 
     private final class TcpPortOnlyProxyRuler implements Ruler<ProxyModel> {

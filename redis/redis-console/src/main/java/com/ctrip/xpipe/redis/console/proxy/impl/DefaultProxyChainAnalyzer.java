@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @Lazy
@@ -63,6 +64,8 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     private ScheduledFuture future;
 
+    private AtomicBoolean taskTrigger = new AtomicBoolean(false);
+
     public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "1000"));
 
     @PostConstruct
@@ -70,6 +73,9 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
+                if(!taskTrigger.get()) {
+                    return;
+                }
                 fullUpdate();
             }
         }, Math.min(5, ANALYZE_INTERVAL * 5), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
@@ -139,6 +145,16 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     public DefaultProxyChainAnalyzer setExecutors(ExecutorService executors) {
         this.executors = executors;
         return this;
+    }
+
+    @Override
+    public void isCrossDcLeader() {
+        taskTrigger.set(true);
+    }
+
+    @Override
+    public void notCrossDcLeader() {
+        taskTrigger.set(false);
     }
 
     private final class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<TunnelInfo>>> {
