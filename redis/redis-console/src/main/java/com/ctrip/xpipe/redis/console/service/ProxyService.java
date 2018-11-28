@@ -21,6 +21,8 @@ public interface ProxyService {
 
     List<ProxyModel> getAllProxies();
 
+    List<ProxyModel> getMonitorActiveProxies();
+
     void updateProxy(ProxyModel model);
 
     void deleteProxy(long id);

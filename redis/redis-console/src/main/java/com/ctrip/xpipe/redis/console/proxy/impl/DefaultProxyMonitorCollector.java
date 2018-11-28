@@ -6,10 +6,11 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
@@ -51,9 +52,6 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     private ProxyModel model;
 
-    @JsonIgnore
-    private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
-
     public DefaultProxyMonitorCollector(ScheduledExecutorService scheduled,
                                         SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool,
                                         ProxyModel model) {
@@ -88,27 +86,24 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     @Override
-    public void addListener(Listener listener) {
-        listeners.add(listener);
-    }
-
-    @Override
-    public void removeListener(Listener listener) {
-        listeners.remove(listener);
-    }
-
-    @Override
     protected void doStart() {
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() {
-                new PingResultsUpdater().update();
-                new TunnelStatsResultsUpdater().update();
-                new SocketStatsResultsUpdater().update();
-                new TunnelAggregator().update();
-                notifyListeners();
+
+                SequenceCommandChain serial = new SequenceCommandChain(
+                        new PingResultsUpdater().command(),
+                        new TunnelStatsResultsUpdater().command(),
+                        new SocketStatsResultsUpdater().command(),
+                        new TunnelAggregator().command());
+
+                serial.execute().addListener(commandFuture -> {
+                    if(!commandFuture.isSuccess()) {
+                        logger.error("[doStart]", commandFuture.cause());
+                    }
+                });
             }
-        }, 1000, 1000, TimeUnit.MILLISECONDS);
+        }, getStartInterval(), 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -118,13 +113,13 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
         }
     }
 
-    private void notifyListeners() {
-        listeners.forEach(listener -> listener.onChange(this));
+    protected int getStartInterval() {
+        return 2000;
     }
 
     private abstract class AbstractInfoUpdater<T> {
 
-        public void update() {
+        public Command<T[]> command() {
             Command<T[]> command = getCommand();
             command.future().addListener(new CommandFutureListener<T[]>() {
                 @Override
@@ -136,7 +131,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                     updateRelevantField(commandFuture.getNow());
                 }
             });
-            command.execute();
+            return command;
         }
 
         protected abstract void updateRelevantField(T[] updates);
@@ -191,7 +186,27 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     private class TunnelAggregator {
 
-        public void update() {
+        public Command<Void> command() {
+            return new AbstractCommand<Void>() {
+                @Override
+                protected void doExecute() throws Exception {
+                    update();
+                    future().setSuccess();
+                }
+
+                @Override
+                protected void doReset() {
+
+                }
+
+                @Override
+                public String getName() {
+                    return "TunnelAggregator";
+                }
+            };
+        }
+
+        private void update() {
             Map<String, DefaultTunnelInfo> tunnels = Maps.newHashMap();
             for(TunnelStatsResult tunnelStats : getTunnelStatsResults()) {
                 String id = tunnelStats.getTunnelId();
@@ -208,7 +223,6 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                 tunnels.get(id).setSocketStatsResult(socketStats);
             }
             tunnelInfos = Lists.newArrayList(tunnels.values());
-//            logger.info("[TunnelAggregator] {}", tunnelInfos);
         }
     }
 }

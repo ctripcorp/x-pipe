@@ -1459,6 +1459,7 @@
 				<member name='dc_id'/>
 				<member name="uri"/>
 				<member name="active"/>
+				<member name="monitor-active"/>
 			</readset>
 		</readsets>
 		<query-defs>
@@ -1469,6 +1470,16 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
 					AND <FIELD name='active'/> = 1
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-monitor-active" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='monitor-active'/> = 1
 					]]>
 				</statement>
 			</query>

@@ -306,6 +306,7 @@ CREATE TABLE `proxy_tbl` (
   `dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'dc id',
   `uri` varchar(256) NOT NULL DEFAULT 'TCP' COMMENT 'scheme, like PROXYTCP, PROXYTLS://127.0.0.1:8080, TCP://127.0.0.1:8090',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
+  `monitor_active` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'active or not',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
