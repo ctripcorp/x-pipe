@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
-import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Lists;
@@ -68,21 +67,6 @@ public class TestProxyMonitorCollectorManager extends AbstractProxyChainTest imp
 
     @Override
     public void remove(ProxyModel proxyModel) {
-
-    }
-
-    @Override
-    public void register(Listener listener) {
-
-    }
-
-    @Override
-    public void stopNotify(Listener listener) {
-
-    }
-
-    @Override
-    public void onChange(ProxyMonitorCollector collector) {
 
     }
 

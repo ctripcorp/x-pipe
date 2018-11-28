@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
-import com.ctrip.xpipe.redis.console.model.ProxyModel;
-import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
-import com.ctrip.xpipe.redis.console.model.ProxyTbl;
-import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
@@ -44,28 +41,32 @@ public class ProxyServiceImpl implements ProxyService {
 
     @Override
     public List<ProxyModel> getActiveProxies() {
-        List<ProxyTbl> proxyTbls = proxyDao.getActiveProxyTbls();
-        List<ProxyModel> proxies = Lists.newArrayListWithCapacity(proxyTbls.size());
-        for(ProxyTbl proxy : proxyTbls) {
-            proxies.add(ProxyModel.fromProxyTbl(proxy, dcService));
-        }
-        return proxies;
+        return convert(proxyDao.getActiveProxyTbls());
     }
 
     @Override
     public List<ProxyModel> getAllProxies() {
-        List<ProxyModel> clone = Lists.transform(proxyDao.getAllProxyTbls(), new Function<ProxyTbl, ProxyModel>() {
-            @Override
-            public ProxyModel apply(ProxyTbl input) {
-                return ProxyModel.fromProxyTbl(input, dcService);
-            }
-        });
+        return convert(proxyDao.getAllProxyTbls());
+    }
+
+    @Override
+    public List<ProxyModel> getMonitorActiveProxies() {
+        return convert(proxyDao.getMonitorActiveProxyTbls());
+    }
+
+    private List<ProxyModel> convert(List<ProxyTbl> proxyTbls) {
+        DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
+        List<ProxyModel> clone = proxyTbls.stream().map(input -> {
+            assert input != null;
+            return ProxyModel.fromProxyTbl(input, mapper);
+        }).collect(Collectors.toList());
         return Lists.newArrayList(clone);
     }
 
     @Override
     public void updateProxy(ProxyModel model) {
-        proxyDao.update(model.toProxyTbl(dcService));
+        DcIdNameMapper mapper = new DcIdNameMapper.OneTimeMapper(dcService);
+        proxyDao.update(model.toProxyTbl(mapper));
     }
 
     @Override
@@ -75,7 +76,8 @@ public class ProxyServiceImpl implements ProxyService {
 
     @Override
     public void addProxy(ProxyModel model) {
-        proxyDao.insert(model.toProxyTbl(dcService));
+        DcIdNameMapper mapper = new DcIdNameMapper.OneTimeMapper(dcService);
+        proxyDao.insert(model.toProxyTbl(mapper));
     }
 
     @Override

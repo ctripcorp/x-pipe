@@ -18,7 +18,7 @@ public class ProxyModelTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testToProxyTblNullPointException() {
         ProxyModel model = new ProxyModel().setActive(false).setUri("PROXYTCP://10.2.131.202:80").setDcName(dcNames[0]);
-        ProxyTbl proto = model.toProxyTbl(dcService);
+        ProxyTbl proto = model.toProxyTbl(new DcIdNameMapper.OneTimeMapper(dcService));
         logger.info("[proto] {}", proto);
     }
 }

@@ -25,9 +25,15 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
 
     @Test
     public void testManual() throws Exception {
-        ProxyModel proxyModel = new ProxyModel().setUri("PROXYTCP://10.2.131.200:80").setDcName("FAT-AWS").setId(1L).setActive(true);
+        ProxyModel proxyModel = new ProxyModel().setUri("PROXYTCP://10.2.131.200:80").setDcName("FAT-AWS")
+                .setId(1L).setActive(true).setMonitorActive(true);
         XpipeNettyClientKeyedObjectPool keyedObjectPool = getXpipeNettyClientKeyedObjectPool();
-        ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel);
+        ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel) {
+            @Override
+            protected int getStartInterval() {
+                return 0;
+            }
+        };
         result.start();
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
@@ -41,7 +47,7 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
                 logger.info("");
                 logger.info("");
             }
-        }, 1000 * 10, 1000, TimeUnit.MILLISECONDS);
+        }, 1000 * 2, 1000, TimeUnit.MILLISECONDS);
         sleep(1000 * 60 * 100);
     }
 
@@ -72,23 +78,8 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
 
         analyzer.setExecutors(executors);
 
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() throws Exception {
-                analyzer.onGlobalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType.UPDATE);
-            }
-        }, 1000 * 5, 2000, TimeUnit.MILLISECONDS);
-        sleep(1000 * 60 * 1000);
     }
 
-    private class LocalListener implements ProxyMonitorCollector.Listener {
 
-        private final AtomicInteger counter = new AtomicInteger(0);
-
-        @Override
-        public void onChange(ProxyMonitorCollector collector) {
-
-        }
-    }
 
 }

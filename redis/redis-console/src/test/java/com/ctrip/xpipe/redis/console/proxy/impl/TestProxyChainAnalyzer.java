@@ -60,15 +60,6 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
         return Lists.newArrayList(tunnels.values());
     }
 
-    @Override
-    public void onGlobalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType type) {
-
-    }
-
-    @Override
-    public void onLocalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType type, ProxyModel proxyModel) {
-
-    }
 
     public void addProxyChain(DcClusterShard dcClusterShard, ProxyChain chain) {
         chains.put(dcClusterShard, chain);

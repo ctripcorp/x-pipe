@@ -5,9 +5,9 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -42,16 +41,19 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     private Logger logger = LoggerFactory.getLogger(DefaultProxyChainAnalyzer.class);
 
-    private Map<DcClusterShard, ProxyChain> chains = Maps.newConcurrentMap();
+    private volatile Map<DcClusterShard, ProxyChain> chains = Maps.newConcurrentMap();
 
     // tunnelId
-    private Map<String, DcClusterShard> reverseMap = Maps.newConcurrentMap();
+    private volatile Map<String, DcClusterShard> reverseMap = Maps.newConcurrentMap();
 
     @Autowired
     private ProxyMonitorCollectorManager proxyMonitorCollectorManager;
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private RouteService routeService;
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executors;
@@ -65,18 +67,16 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     @PostConstruct
     public void postConstruct() {
-        proxyMonitorCollectorManager.register(this);
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
                 fullUpdate();
             }
-        }, Math.min(10, ANALYZE_INTERVAL * 30), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
+        }, Math.min(5, ANALYZE_INTERVAL * 5), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy
     public void preDestroy() {
-        proxyMonitorCollectorManager.stopNotify(this);
         if(future != null) {
             future.cancel(true);
         }
@@ -100,24 +100,12 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         return Lists.newArrayList(chains.values());
     }
 
-    @Override
-    public void onGlobalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType type) {
-        logger.info("[before][fullUpdate] {}", chains.keySet());
-        fullUpdate();
-        logger.info("[after][fullUpdate] {}", chains.keySet());
-    }
-
-    @Override
-    public void onLocalEvent(ProxyMonitorCollectorManager.ProxyMonitorCollectType type, ProxyModel proxyModel) {
-
-    }
 
     private void notifyListeners(Map<DcClusterShard, ProxyChain> expired, Map<DcClusterShard, ProxyChain> current) {
 
     }
 
     private void fullUpdate() {
-
         List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
         List<TunnelInfo> tunnels = Lists.newArrayList();
         for(ProxyMonitorCollector collector : collectors) {
@@ -207,8 +195,9 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
                 String activeDcId = metaCache.getActiveDc(clusterShard.getKey(), clusterShard.getValue());
                 String backupDcId = null;
                 for(TunnelInfo info : entry.getValue()) {
-                    if(!info.getTunnelDcId().equalsIgnoreCase(activeDcId)) {
-                        backupDcId = info.getTunnelDcId();
+                    String tunnelDcId = info.getTunnelDcId();
+                    if(!tunnelDcId.equalsIgnoreCase(activeDcId) && routeService.existsRouteBetweenDc(activeDcId, tunnelDcId)) {
+                        backupDcId = tunnelDcId;
                         break;
                     }
                 }
@@ -220,7 +209,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
                 }
             }
 
-            synchronized (this) {
+            synchronized (DefaultProxyChainAnalyzer.this) {
                 Map<DcClusterShard, ProxyChain> expired = chains;
                 chains = results;
                 reverseMap = tunnelMapping;
@@ -231,7 +220,8 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
 
         private HostPort getActiveDcKeeper(SourceDest sourceDest) {
-            Endpoint endpoint = new DefaultProxyEndpoint(sourceDest.getDest());
+            Endpoint endpoint = new DefaultProxyEndpoint(sourceDest.getValue());
+
             return new HostPort(endpoint.getHost(), endpoint.getPort());
         }
 
@@ -298,53 +288,16 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
     }
 
-    private static class SourceDest {
+    private static class SourceDest extends Pair<String, String> {
 
         private static final String SPLITTER = "-";
 
-        private String source;
-
-        private String dest;
-
-        public SourceDest(String source, String dest) {
-            this.source = source;
-            this.dest = dest;
-        }
-
-        public String getSource() {
-            return source;
-        }
-
-        public String getDest() {
-            return dest;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SourceDest that = (SourceDest) o;
-            return Objects.equals(source, that.source) &&
-                    Objects.equals(dest, that.dest);
-        }
-
-        @Override
-        public int hashCode() {
-
-            return Objects.hash(source, dest);
-        }
-
         private static SourceDest parse(String content) {
             String[] result = StringUtil.splitRemoveEmpty(SPLITTER, content);
-            return new SourceDest(result[0], result[result.length - 1]);
-        }
-
-        @Override
-        public String toString() {
-            return "SourceDest{" +
-                    "source='" + source + '\'' +
-                    ", dest='" + dest + '\'' +
-                    '}';
+            SourceDest sourceDest = new SourceDest();
+            sourceDest.setKey(result[0]);
+            sourceDest.setValue(result[result.length - 1]);
+            return sourceDest;
         }
     }
 }
