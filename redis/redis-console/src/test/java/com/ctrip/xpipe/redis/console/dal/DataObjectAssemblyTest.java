@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.dal;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
@@ -32,19 +33,22 @@ public class DataObjectAssemblyTest extends AbstractConsoleIntegrationTest {
     private static final Logger logger = LoggerFactory.getLogger(DataObjectAssemblyTest.class);
 
     @Autowired
-    DcMetaService service;
+    private DcMetaService service;
 
     @Autowired
-    DcService dcService;
+    private DcService dcService;
 
     @Autowired
-    MetaCache metaCache;
+    private DcMetaService dcMetaService;
 
     @Autowired
-    SentinelService sentinelService;
+    private MetaCache metaCache;
 
     @Autowired
-    KeepercontainerService keepercontainerService;
+    private SentinelService sentinelService;
+
+    @Autowired
+    private KeepercontainerService keepercontainerService;
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executor;
