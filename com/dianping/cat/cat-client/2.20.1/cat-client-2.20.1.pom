@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+			xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<parent>
 		<groupId>com.dianping.cat</groupId>
 		<artifactId>parent</artifactId>
-		<version>1.6.4</version>
+		<version>1.7.3</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>cat-client</artifactId>
@@ -12,13 +12,14 @@
 	<packaging>jar</packaging>
 	<version>2.20.1</version>
 	<dependencies>
-        <dependency>
-            <groupId>com.ctrip.framework</groupId>
-            <artifactId>framework-foundation</artifactId>
-        </dependency>
 		<dependency>
-			<groupId>org.unidal.framework</groupId>
-			<artifactId>foundation-service</artifactId>
+			<groupId>com.ctrip.framework</groupId>
+			<artifactId>framework-foundation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.plexus</groupId>
+			<artifactId>plexus-container-default</artifactId>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
@@ -44,11 +45,6 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
-			<groupId>org.unidal.framework</groupId>
-			<artifactId>test-framework</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 		</dependency>
@@ -72,9 +68,27 @@
 			<artifactId>spring-boot-autoconfigure</artifactId>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.2</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.unidal.maven.plugins</groupId>
 				<artifactId>codegen-maven-plugin</artifactId>
@@ -88,40 +102,12 @@
 						<configuration>
 							<manifest>
 								${basedir}/src/main/resources/META-INF/dal/model/client-manifest.xml,
-								${basedir}/src/main/resources/META-INF/dal/model/status-manifest.xml,</manifest>
+								${basedir}/src/main/resources/META-INF/dal/model/status-manifest.xml,
+								${basedir}/src/main/resources/META-INF/dal/model/thread-dump-manifest.xml</manifest>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.unidal.maven.plugins</groupId>
-				<artifactId>plexus-maven-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>generate plexus component descriptor</id>
-						<phase>process-classes</phase>
-						<goals>
-							<goal>plexus</goal>
-						</goals>
-						<configuration>
-							<className>com.dianping.cat.build.ComponentsConfigurator</className>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-            <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.2</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
