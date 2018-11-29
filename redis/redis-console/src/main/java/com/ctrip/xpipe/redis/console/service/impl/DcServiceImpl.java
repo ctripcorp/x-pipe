@@ -94,16 +94,6 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
-	public List<DcTbl> findAllDetails(final String dcName) {
-		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
-			@Override
-			public List<DcTbl> doQuery() throws DalException {
-				return dao.findDcDetailsByDcName(dcName, DcTblEntity.READSET_FULL_ALL);
-			}
-    	});
-	}
-
-	@Override
 	public DcTbl findByDcName(final String dcName) {
 		return queryHandler.handleQuery(new DalQuery<DcTbl>() {
 			@Override

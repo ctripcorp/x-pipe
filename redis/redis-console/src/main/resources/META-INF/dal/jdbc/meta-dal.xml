@@ -14,14 +14,6 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="redis-info"/>
 			</readset>
-			<readset name="FULL_ALL">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="cluster-info"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-shard-info"/>
-				<readset-ref name="FULL" relation-name="redis-info"/>
-			</readset>
 			<readset name="NAME">
 				<member name='dc-name'/>
 			</readset>
