@@ -557,6 +557,10 @@
             <groupId>com.dianping.cat</groupId>
             <artifactId>cat-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework</groupId>
+            <artifactId>framework-foundation</artifactId>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
