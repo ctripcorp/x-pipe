@@ -135,19 +135,8 @@
 			<readset name="NAME">
 				<member name='cluster-name'/>
 			</readset>
-			<readset name="FULL_RELATED_DC">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="dc-info"/>
-			</readset>
 			<readset name="FULL_WITH_SHARDS">
 				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
-			</readset>
-			<readset name="FULL_ALL">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="dc-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
 				<readset-ref name="FULL" relation-name="shard-info"/>
 			</readset>
 			<readset name="FULL_WITH_ORG">
