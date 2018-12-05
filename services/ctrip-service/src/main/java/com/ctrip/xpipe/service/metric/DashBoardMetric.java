@@ -36,7 +36,7 @@ public class DashBoardMetric implements MetricProxy{
     @Override
     public void writeBinMultiDataPoint(MetricData metricData) throws MetricProxyException {
 
-        aggregator.add(metricData.getValue(),
+        aggregator.add((long)metricData.getValue(),
                 FoundationService.DEFAULT.getDataCenter(),
                 metricData.getDcName(),
                 metricData.getClusterName(),

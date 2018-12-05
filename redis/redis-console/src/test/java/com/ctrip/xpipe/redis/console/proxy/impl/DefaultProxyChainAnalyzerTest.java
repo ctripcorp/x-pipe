@@ -52,7 +52,7 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
 
         when(routeService.existsRouteBetweenDc(anyString(), anyString())).thenReturn(false);
         when(routeService.existsRouteBetweenDc("SHAOY", "FRA-AWS")).thenReturn(true);
-        
+
         analyzer.setRouteService(routeService);
         analyzer.setExecutors(executors);
         analyzer.setMetaCache(metaCache);
