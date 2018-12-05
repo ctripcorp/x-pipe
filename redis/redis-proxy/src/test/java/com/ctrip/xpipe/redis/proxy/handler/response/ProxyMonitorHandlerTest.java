@@ -144,7 +144,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         TunnelStats tunnelStats = mock(TunnelStats.class);
         Tunnel tunnel = tunnelManager.tunnels().get(0);
         TunnelStatsResult tunnelStatsResult = new TunnelStatsResult(tunnel.identity().toString(),
-                new TunnelEstablished(null).name(), System.currentTimeMillis(), System.currentTimeMillis() + 10);
+                new TunnelEstablished(null).name(), System.currentTimeMillis(), System.currentTimeMillis() + 10, frontend, backend);
         when(tunnelStats.getTunnelStatsResult()).thenReturn(tunnelStatsResult);
         when(tunnelMonitor.getTunnelStats()).thenReturn(tunnelStats);
 
