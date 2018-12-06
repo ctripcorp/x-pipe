@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy.endpoint;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -46,8 +47,12 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
         this.scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create("ProxyEndpointManager")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
-        this.healthChecker = new DefaultEndpointHealthChecker(scheduled);
-//        start();
+        this.healthChecker = new EndpointHealthChecker() {
+            @Override
+            public boolean checkConnectivity(Endpoint endpoint) {
+                return true;
+            }
+        };
     }
 
     @Override
