@@ -4,7 +4,6 @@ import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionInit;
@@ -92,7 +91,6 @@ public class Socks5BackEndSession extends DefaultBackendSession {
                         }
                         toAdd.add(new LoggingHandler(LogLevel.DEBUG));
                         toAdd.add(new BackendSessionHandler(tunnel()));
-                        toAdd.add(new TunnelTrafficReporter(trafficReportIntervalMillis, Socks5BackEndSession.this));
 
                         addSocks5Handlers(p, endpoint, cdl, toAdd);
                     }
