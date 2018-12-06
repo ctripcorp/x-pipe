@@ -43,6 +43,10 @@ public class ProxyPingRecorder implements ProxyMonitorCollector.Listener {
     }
 
     private void report(List<PingStatsResult> realTimeResults) {
+        if(realTimeResults == null || realTimeResults.isEmpty()) {
+            logger.warn("[report] null result for PingStatsResult");
+            return;
+        }
         for(PingStatsResult pingStatsResult : realTimeResults) {
             try {
                 getMetricProxy().writeBinMultiDataPoint(getMetricData(pingStatsResult));
