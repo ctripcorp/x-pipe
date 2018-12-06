@@ -1,14 +1,14 @@
-package com.ctrip.xpipe.redis.console.proxy.impl;
+package com.ctrip.xpipe.redis.console.model;
 
 import java.util.Objects;
 
-public class DcClusterShard {
+public final class DcClusterShard {
 
-    private String dcId;
+    private final String dcId;
 
-    private String clusterId;
+    private final String clusterId;
 
-    private String shardId;
+    private final String shardId;
 
     public DcClusterShard(String dcId, String clusterId, String shardId) {
         this.dcId = dcId;
@@ -28,21 +28,6 @@ public class DcClusterShard {
         return shardId;
     }
 
-    public DcClusterShard setDcId(String dcId) {
-        this.dcId = dcId;
-        return this;
-    }
-
-    public DcClusterShard setClusterId(String clusterId) {
-        this.clusterId = clusterId;
-        return this;
-    }
-
-    public DcClusterShard setShardId(String shardId) {
-        this.shardId = shardId;
-        return this;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -57,5 +42,14 @@ public class DcClusterShard {
     public int hashCode() {
 
         return Objects.hash(dcId, clusterId, shardId);
+    }
+
+    @Override
+    public String toString() {
+        return "DcClusterShard{" +
+                "dcId='" + dcId + '\'' +
+                ", clusterId='" + clusterId + '\'' +
+                ", shardId='" + shardId + '\'' +
+                '}';
     }
 }

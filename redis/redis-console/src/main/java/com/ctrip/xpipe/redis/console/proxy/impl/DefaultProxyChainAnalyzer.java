@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
+import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RouteService;
@@ -46,6 +48,8 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     // tunnelId
     private volatile Map<String, DcClusterShard> reverseMap = Maps.newConcurrentMap();
+
+    private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
     @Autowired
     private ProxyMonitorCollectorManager proxyMonitorCollectorManager;
@@ -106,12 +110,28 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         return Lists.newArrayList(chains.values());
     }
 
-
-    private void notifyListeners(Map<DcClusterShard, ProxyChain> expired, Map<DcClusterShard, ProxyChain> current) {
-
+    @Override
+    public void addListener(Listener listener) {
+        listeners.add(listener);
     }
 
-    private void fullUpdate() {
+    @Override
+    public void removeListener(Listener listener) {
+        listeners.remove(listener);
+    }
+
+
+    private void notifyListeners(Map<DcClusterShard, ProxyChain> expired, Map<DcClusterShard, ProxyChain> current) {
+        new SafeLoop<Listener>(executors, listeners) {
+            @Override
+            protected void doRun0(Listener listener) {
+                listener.onChange(expired, current);
+            }
+        }.run();
+    }
+
+    @VisibleForTesting
+    protected void fullUpdate() {
         List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
         List<TunnelInfo> tunnels = Lists.newArrayList();
         for(ProxyMonitorCollector collector : collectors) {
@@ -144,6 +164,12 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     @VisibleForTesting
     public DefaultProxyChainAnalyzer setExecutors(ExecutorService executors) {
         this.executors = executors;
+        return this;
+    }
+
+    @VisibleForTesting
+    public DefaultProxyChainAnalyzer setRouteService(RouteService routeService) {
+        this.routeService = routeService;
         return this;
     }
 
@@ -252,57 +278,6 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
         }
     }
 
-    public final static class DcClusterShard {
-
-        private String dcId;
-
-        private String clusterId;
-
-        private String shardId;
-
-        public DcClusterShard(String dcId, String clusterId, String shardId) {
-            this.dcId = dcId;
-            this.clusterId = clusterId;
-            this.shardId = shardId;
-        }
-
-        public String getDcId() {
-            return dcId;
-        }
-
-        public String getClusterId() {
-            return clusterId;
-        }
-
-        public String getShardId() {
-            return shardId;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DcClusterShard that = (DcClusterShard) o;
-            return Objects.equals(dcId, that.dcId) &&
-                    Objects.equals(clusterId, that.clusterId) &&
-                    Objects.equals(shardId, that.shardId);
-        }
-
-        @Override
-        public int hashCode() {
-
-            return Objects.hash(dcId, clusterId, shardId);
-        }
-
-        @Override
-        public String toString() {
-            return "DcClusterShard{" +
-                    "dcId='" + dcId + '\'' +
-                    ", clusterId='" + clusterId + '\'' +
-                    ", shardId='" + shardId + '\'' +
-                    '}';
-        }
-    }
 
     private static class SourceDest extends Pair<String, String> {
 

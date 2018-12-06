@@ -87,4 +87,6 @@ public interface ConsoleConfig extends CoreConfig {
 	int getPingDownAfterMilliThroughProxy();
 
 	void register(ConsoleConfigListener listener);
+
+	Map<String, String> getSocketStatsAnalyzingKeys();
 }

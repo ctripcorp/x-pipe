@@ -11,6 +11,7 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
@@ -37,6 +38,8 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     private List<TunnelStatsResult> tunnelStatsResults;
 
     private List<TunnelSocketStatsResult> socketStatsResults;
+
+    private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
     @JsonIgnore
     private List<TunnelInfo> tunnelInfos;
@@ -86,6 +89,16 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     @Override
+    public void addListener(Listener listener) {
+        listeners.add(listener);
+    }
+
+    @Override
+    public void removeListener(Listener listener) {
+        listeners.remove(listener);
+    }
+
+    @Override
     protected void doStart() {
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
@@ -102,6 +115,12 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                         logger.error("[doStart]", commandFuture.cause());
                     }
                 });
+                new SafeLoop<Listener>(listeners) {
+                    @Override
+                    protected void doRun0(Listener listener) {
+                        listener.ackPingStatsResult(pingStatsResults);
+                    }
+                }.run();
             }
         }, getStartInterval(), 1000, TimeUnit.MILLISECONDS);
     }
