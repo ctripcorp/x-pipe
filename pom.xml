@@ -52,7 +52,7 @@
 
         <hickwall.client.version>1.8</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
-        <credis.version>2.5.3</credis.version>
+        <credis.version>3.1.7</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.0.9</qunaer.common.version>
         <qconfig.client.version>1.4.4</qconfig.client.version>
