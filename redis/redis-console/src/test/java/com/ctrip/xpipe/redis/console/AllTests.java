@@ -143,7 +143,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DcClusterShardTest.class,
         TestForAbstractMultiValueTunnelSocketStatsAnalyzer.class,
         TestForAbstractNormalKeyValueTunnelSocketStatsAnalyzer.class,
-        DefaultTunnelSocketStatsAnalyzerManagerTest.class
+        DefaultTunnelSocketStatsAnalyzerManagerTest.class,
+        TunnelSocketStatsAnalyzersTest.class
 })
 public class AllTests {
 

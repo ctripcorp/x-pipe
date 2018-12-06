@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
-import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -13,6 +12,7 @@ import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzerManager;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.utils.ServicesUtil;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -27,7 +27,6 @@ import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_SOCKET_STATS_ANALYZERS;
-
 
 @Component
 public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppable implements TunnelSocketStatsAnalyzerManager {
@@ -200,14 +199,47 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
         }
     }
 
-    protected static class SendQueueAnalyzer extends AbstractTunnelSocketStatsAnalyzer {
-
-        protected static final String KEY_SEND_QUEUE = "send.queue";
+    protected static abstract class AbstractKeyWordBaseLineAnalyzer extends AbstractTunnelSocketStatsAnalyzer {
 
         @Override
         protected double analyze(List<String> socketStats) {
-            String firstLine = socketStats.get(0);
-            String[] values = firstLine.split("\\h");
+            for(String line : socketStats) {
+                if(!line.contains(keyWord())) {
+                    continue;
+                }
+                String[] values = StringUtil.splitRemoveEmpty(getSplitter(), line);
+                return getResultFromArray(values);
+            }
+            return 0;
+        }
+
+        protected abstract String getSplitter();
+
+        protected abstract String keyWord();
+
+        protected abstract double getResultFromArray(String[] values);
+    }
+
+    protected static class SendQueueAnalyzer extends AbstractKeyWordBaseLineAnalyzer {
+
+        protected static final String KEY_SEND_QUEUE = "send.queue";
+
+        protected static final String WHITE_SPACE = " ";
+
+        protected static final String KEY_WORD = "ESTAB";
+
+        @Override
+        protected String getSplitter() {
+            return WHITE_SPACE;
+        }
+
+        @Override
+        protected String keyWord() {
+            return KEY_WORD;
+        }
+
+        @Override
+        protected double getResultFromArray(String[] values) {
             return Long.parseLong(values[2]);
         }
 
@@ -217,16 +249,24 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
         }
     }
 
-    protected static class RecvQueueAnalyzer extends AbstractTunnelSocketStatsAnalyzer {
+    protected static class RecvQueueAnalyzer extends AbstractKeyWordBaseLineAnalyzer {
 
         protected static final String KEY_RECV_QUEUE = "recv.queue";
+        @Override
+        protected String getSplitter() {
+            return SendQueueAnalyzer.WHITE_SPACE;
+        }
 
         @Override
-        protected double analyze(List<String> socketStats) {
-            String firstLine = socketStats.get(0);
-            String[] values = firstLine.split("\\h");
+        protected String keyWord() {
+            return SendQueueAnalyzer.KEY_WORD;
+        }
+
+        @Override
+        protected double getResultFromArray(String[] values) {
             return Long.parseLong(values[1]);
         }
+
 
         @Override
         public String getType() {
