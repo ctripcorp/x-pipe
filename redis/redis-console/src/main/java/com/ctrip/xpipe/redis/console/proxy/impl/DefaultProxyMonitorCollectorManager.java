@@ -7,6 +7,7 @@ import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
+import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorder;
 import com.ctrip.xpipe.redis.console.proxy.Ruler;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
@@ -52,6 +53,9 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
     @Autowired
     private ProxyService proxyService;
 
+    @Autowired
+    private ProxyPingRecorder proxyPingRecorder;
+
     private ScheduledFuture future;
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
@@ -91,6 +95,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
             public ProxyMonitorCollector create() {
                 logger.info("[create proxy monitor collector] {}", proxyModel);
                 ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel);
+                result.addListener(proxyPingRecorder);
                 try {
                     result.start();
                 } catch (Exception e) {
@@ -111,6 +116,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         ProxyMonitorCollector result = proxySamples.remove(proxyModel);
         if(result != null) {
             try {
+                result.removeListener(proxyPingRecorder);
                 result.stop();
             } catch (Exception e) {
                 logger.error("[remove]", e);

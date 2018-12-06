@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -113,17 +114,17 @@ public class HickwallMetric implements MetricProxy {
 	
 	private DataPoint convertToHickwallFormat(MetricData md) {
 
-		DataPoint dp = new DataPoint(metricName(md), (double) md.getValue(), md.getTimestampMilli() * 1000000);
+		DataPoint dp = new DataPoint(metricName(md), md.getValue(), md.getTimestampMilli() * 1000000);
 		// cluster.shard.10_2_2_2_6379.10_28_142_142 (cluster.shard.redis+port.console)
 		dp.setEndpoint(getEndpoint(md));
-		dp.getMeta().put("measurement", "fx.xpipe.delay");
+		dp.getMeta().put("measurement", String.format("fx.xpipe.%s", md.getMetricType()));
 		dp.getTag().put("cluster", md.getClusterName());
 		dp.getTag().put("shard", md.getShardName());
 		dp.getTag().put("address", md.getHostPort().toString());
 		dp.getTag().put("srcaddr", getLocalIP());
 		dp.getTag().put("app", "fx");
 		dp.getTag().put("dc", md.getDcName());
-
+		addOtherTags(dp, md);
 		return dp;
 	}
 
@@ -140,6 +141,14 @@ public class HickwallMetric implements MetricProxy {
 
 	private String toMetricNamePrefix(MetricData metricData) {
 		return String.format("fx.xpipe.%s.%s.%s", metricData.getMetricType(), metricData.getClusterName(), metricData.getShardName());
+	}
+
+	private void addOtherTags(DataPoint dp, MetricData md) {
+		if(md.getTags() != null && !md.getTags().isEmpty()) {
+			for(Map.Entry<String, String> entry : md.getTags().entrySet()) {
+				dp.getTag().put(entry.getKey(), entry.getValue());
+			}
+		}
 	}
 
 	private String getLocalIP() {

@@ -21,4 +21,11 @@ public interface ProxyMonitorCollector extends Startable, Stoppable {
 
     List<TunnelInfo> getTunnelInfos();
 
+    void addListener(Listener listener);
+
+    void removeListener(Listener listener);
+
+    interface Listener {
+        void ackPingStatsResult(List<PingStatsResult> realTimeResults);
+    }
 }
