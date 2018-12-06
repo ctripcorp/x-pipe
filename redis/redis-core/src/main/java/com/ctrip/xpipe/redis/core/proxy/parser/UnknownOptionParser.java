@@ -10,6 +10,11 @@ import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 public class UnknownOptionParser extends AbstractProxyOptionParser {
 
     @Override
+    public String output() {
+        return output;
+    }
+
+    @Override
     public ProxyOptionParser read(String option) {
         this.output = option;
         this.originOptionString = option;

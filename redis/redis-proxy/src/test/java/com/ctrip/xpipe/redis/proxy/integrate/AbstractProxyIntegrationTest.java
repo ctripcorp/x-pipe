@@ -3,17 +3,18 @@ package com.ctrip.xpipe.redis.proxy.integrate;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettyClientSslHandlerFactory;
-import com.ctrip.xpipe.redis.core.proxy.handler.NettyServerSslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
+import com.ctrip.xpipe.redis.proxy.ProxyServer;
+import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
-import com.ctrip.xpipe.redis.proxy.controller.ComponentRegistryHolder;
-import com.ctrip.xpipe.redis.proxy.resource.ProxyRelatedResourceManager;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
+import com.ctrip.xpipe.redis.proxy.resource.TestResourceManager;
+import com.ctrip.xpipe.redis.proxy.session.BackendSession;
+import com.ctrip.xpipe.redis.proxy.session.FrontendSession;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
-import com.ctrip.xpipe.utils.OsUtils;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -26,11 +27,12 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.junit.BeforeClass;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.ctrip.xpipe.redis.proxy.spring.Production.*;
+import static com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor.SESSION_MONITOR_SHOULD_START;
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
 import static org.mockito.Mockito.*;
 
@@ -41,6 +43,15 @@ import static org.mockito.Mockito.*;
  */
 public class AbstractProxyIntegrationTest extends AbstractTest {
 
+    public static final int FIRST_PROXY_TCP_PORT = 8992, SEC_PROXY_TCP_PORT = 8993;
+
+    public static final int FIRST_PROXY_TLS_PORT = 1443, SEC_PROXY_TLS_PORT = 2443;
+
+    @BeforeClass
+    public static void beforeAbstractProxyIntegrationTest() {
+        System.setProperty(SESSION_MONITOR_SHOULD_START, "false");
+    }
+
     protected void prepare(DefaultProxyServer server) {
         sameStuff(server);
     }
@@ -49,11 +60,10 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         sameStuff(server);
     }
 
-    private void sameStuff(DefaultProxyServer server) {
+    protected void sameStuff(DefaultProxyServer server) {
         FoundationService service = FoundationService.DEFAULT;
         service = spy(FoundationService.DEFAULT);
         doReturn("127.0.0.1").when(service).getLocalIp();
-        server.setServerSslHandlerFactory(new NettyServerSslHandlerFactory(new TestProxyConfig()));
         DefaultProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()-> 180);
         endpointManager.setHealthChecker(new EndpointHealthChecker() {
             @Override
@@ -61,18 +71,40 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
                 return true;
             }
         });
-        ProxyRelatedResourceManager resourceManager = new ProxyRelatedResourceManager();
+        TestResourceManager resourceManager = new TestResourceManager();
         resourceManager.setEndpointManager(endpointManager);
-        resourceManager.setConfig(new TestProxyConfig());
-        resourceManager.setClientSslHandlerFactory(new NettyClientSslHandlerFactory(new TestProxyConfig()));
         server.setTunnelManager(new DefaultTunnelManager()
-                .setConfig(server.getConfig()).setProxyResourceManager(resourceManager));
+                .setConfig(server.getConfig()).setProxyResourceManager(resourceManager)
+                .setTunnelMonitorManager(new DefaultTunnelMonitorManager(resourceManager)));
+        server.setResourceManager(resourceManager);
+        if(server.getPingStatsManager() != null) {
+            ((DefaultPingStatsManager)server.getPingStatsManager()).setResourceManager(resourceManager)
+                    .setEndpointManager(endpointManager);
+        }
+    }
 
-        ComponentRegistry registry = mock(ComponentRegistry.class);
-        when(registry.getComponent(CLIENT_SSL_HANDLER_FACTORY)).thenReturn(new NettyClientSslHandlerFactory(new TestProxyConfig()));
-        when(registry.getComponent(SERVER_SSL_HANDLER_FACTORY)).thenReturn(new NettyServerSslHandlerFactory(new TestProxyConfig()));
-        when(registry.getComponent(BACKEND_EVENTLOOP_GROUP)).thenReturn(new NioEventLoopGroup(OsUtils.getCpuCount()));
-        ComponentRegistryHolder.initializeRegistry(registry);
+    protected DefaultProxyServer startFirstProxy() throws Exception {
+        // uncomment disable netty bytebuf test
+//        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
+        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
+                .setFrontendTcpPort(FIRST_PROXY_TCP_PORT).setFrontendTlsPort(FIRST_PROXY_TLS_PORT).setStartMonitor(true))
+                .setPingStatsManager(new DefaultPingStatsManager());
+        prepare(server);
+        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true);
+        ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
+        server.start();
+        return server;
+    }
+
+
+    protected void startSecondaryProxy() throws Exception {
+        DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
+                .setFrontendTcpPort(SEC_PROXY_TCP_PORT).setFrontendTlsPort(SEC_PROXY_TLS_PORT).setStartMonitor(true))
+                .setPingStatsManager(new DefaultPingStatsManager());
+        prepare(server);
+        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true).startMonitor();
+        ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
+        server.start();
     }
 
     protected String generateSequncialString(int length) {
@@ -187,5 +219,21 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
                 .option(ChannelOption.TCP_NODELAY, true)
                 .handler(new LoggingHandler(LogLevel.DEBUG));
         return b;
+    }
+
+    protected static Session mockSession() {
+        return mock(Session.class);
+    }
+
+    protected static FrontendSession mockFrontendSession() {
+        return mock(FrontendSession.class);
+    }
+
+    protected static BackendSession mockBackendSession() {
+        return mock(BackendSession.class);
+    }
+
+    protected static Channel mockChannel() {
+        return mock(Channel.class);
     }
 }

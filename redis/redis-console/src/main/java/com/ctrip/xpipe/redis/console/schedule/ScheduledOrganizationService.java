@@ -8,7 +8,9 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +28,7 @@ public class ScheduledOrganizationService implements CrossDcLeaderAware {
     private boolean trigger = false;
 
     @Autowired
-    OrganizationService organizationService;
+    private OrganizationService organizationService;
 
     @Override
     public void isCrossDcLeader() {

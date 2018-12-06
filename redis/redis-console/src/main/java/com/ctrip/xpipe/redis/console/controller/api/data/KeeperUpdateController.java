@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -135,5 +136,28 @@ public class KeeperUpdateController extends AbstractConsoleController {
     } catch (Exception e) {
       return RetMessage.createFailMessage(e.getMessage());
     }
+  }
+
+  @RequestMapping(value = "/keepercontainer/{dcName}", method = RequestMethod.GET)
+  public List<KeeperContainerCreateInfo> getKeeperContainersByDc(@PathVariable String dcName) {
+    try {
+      return keepercontainerService.getDcAllKeeperContainers(dcName);
+    } catch (Exception e) {
+      logger.error("[getKeeperContainersByDc]", e);
+    }
+    return Collections.emptyList();
+  }
+
+  @RequestMapping(value = "/keepercontainer", method = RequestMethod.PUT)
+  public RetMessage updateKeeperContainer(@RequestBody KeeperContainerCreateInfo createInfo) {
+    try {
+      createInfo.check();
+      keepercontainerService.updateKeeperContainer(createInfo);
+      return RetMessage.createSuccessMessage();
+    } catch (Exception e) {
+      logger.error("[updateKeeperContainer]", e);
+      return RetMessage.createFailMessage(e.getMessage());
+    }
+
   }
 }

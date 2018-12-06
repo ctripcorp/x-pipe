@@ -14,11 +14,14 @@ public class TunnelIdentity {
 
     private Channel backend;
 
-    private String destionation;
+    private String destination;
 
-    public TunnelIdentity(Channel frontend, String destionation) {
+    private String source;
+
+    public TunnelIdentity(Channel frontend, String destination, String source) {
         this.frontend = frontend;
-        this.destionation = destionation;
+        this.destination = destination;
+        this.source = source;
     }
 
     public Channel getFrontend() {
@@ -39,17 +42,18 @@ public class TunnelIdentity {
         return this;
     }
 
-    public String getDestionation() {
-        return destionation;
+    public String getDestination() {
+        return destination;
     }
 
-    public TunnelIdentity setDestionation(String destionation) {
-        this.destionation = destionation;
+    public TunnelIdentity setDestination(String destination) {
+        this.destination = destination;
         return this;
     }
 
     @Override
     public String toString() {
-        return ChannelUtil.getRemoteAddr(frontend) + "-" + ChannelUtil.getDesc(backend) + "-" + destionation;
+        return String.format("%s-%s-%s-%s", source, ChannelUtil.getRemoteAddr(frontend),
+                ChannelUtil.getDesc(backend), destination);
     }
 }

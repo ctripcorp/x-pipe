@@ -11,6 +11,8 @@ public class TestProxyConfig implements ProxyConfig {
 
     private int frontendTcpPort = 8992, frontendTlsPort = 443;
 
+    private boolean startMonitor = false;
+
     @Override
     public int frontendTcpPort() {
         return frontendTcpPort;
@@ -47,33 +49,38 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int getCloseChannelAfterReadCloseMilli() {
-        return 1000;
+    public boolean startMonitor() {
+        return startMonitor;
+    }
+
+    @Override
+    public int getResponseTimeout() {
+        return 100;
     }
 
     @Override
     public String getServerCertChainFilePath() {
-        return "/opt/cert/server.crt";
+        return "src/test/resources/cert/server.crt";
     }
 
     @Override
     public String getClientCertChainFilePath() {
-        return "/opt/cert/client.crt";
+        return "src/test/resources/cert/client.crt";
     }
 
     @Override
     public String getServerKeyFilePath() {
-        return "/opt/cert/pkcs8_server.key";
+        return "src/test/resources/cert/pkcs8_server.key";
     }
 
     @Override
     public String getClientKeyFilePath() {
-        return "/opt/cert/pkcs8_client.key";
+        return "src/test/resources/cert/pkcs8_client.key";
     }
 
     @Override
     public String getRootFilePath() {
-        return "/opt/cert/ca.crt";
+        return "src/test/resources/cert/ca.crt";
     }
 
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {
@@ -83,6 +90,11 @@ public class TestProxyConfig implements ProxyConfig {
 
     public TestProxyConfig setFrontendTlsPort(int frontendTlsPort) {
         this.frontendTlsPort = frontendTlsPort;
+        return this;
+    }
+
+    public TestProxyConfig setStartMonitor(boolean startMonitor) {
+        this.startMonitor = startMonitor;
         return this;
     }
 }

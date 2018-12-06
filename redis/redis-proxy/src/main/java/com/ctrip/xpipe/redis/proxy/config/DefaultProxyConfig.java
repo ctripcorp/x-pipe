@@ -47,7 +47,9 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_RECV_BUFFER_SIZE = "proxy.recv.buffer.size";
 
-    private static final String KEY_SESSION_CLOSE_AFTER_READ_CLOSE_MILLI = "proxy.session.close.after.read.close.milli";
+    private static final String KEY_START_PROXY_MONITOR = "proxy.monitor.start";
+
+    private static final String KEY_PROXY_RESPONSE_TIMEOUT = "proxy.response.timeout";
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
@@ -70,7 +72,7 @@ public class DefaultProxyConfig implements ProxyConfig {
         try {
             compositeConfig.addConfig(new DefaultFileConfig(PROXY_PROPERTIES_PATH, PROXY_PROPERTIES_FILE));
         } catch (Exception e) {
-            logger.info("[DefaultProxyConfig]{}", e);
+            logger.warn("", e);
         }
 
         try {
@@ -108,7 +110,7 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     @Override
     public int getFixedRecvBufferSize() {
-        return getIntProperty(KEY_RECV_BUFFER_SIZE, 1536);
+        return getIntProperty(KEY_RECV_BUFFER_SIZE, 4096);
     }
 
     @Override
@@ -118,10 +120,14 @@ public class DefaultProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int getCloseChannelAfterReadCloseMilli() {
-        return getIntProperty(KEY_SESSION_CLOSE_AFTER_READ_CLOSE_MILLI, 30 * 1000);
+    public boolean startMonitor() {
+        return getBooleanProperty(KEY_START_PROXY_MONITOR, false);
     }
 
+    @Override
+    public int getResponseTimeout() {
+        return getIntProperty(KEY_PROXY_RESPONSE_TIMEOUT, 1000);
+    }
 
     @Override
     public String getServerCertChainFilePath() {

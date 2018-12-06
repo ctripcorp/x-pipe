@@ -6,16 +6,12 @@ import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
 import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -62,7 +58,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
 			@Override
 			public List<DcTbl> doQuery() throws DalException {
-				return dao.findAllDcs(DcTblEntity.READSET_FULL);
+				return dao.findAllDcs(DcTblEntity.READSET_BASIC);
 			}
     	});
 	}
@@ -93,26 +89,6 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			@Override
 			public List<DcTbl> doQuery() throws DalException {
 				return dao.findClusterRelatedDc(clusterName, DcTblEntity.READSET_FULL);
-			}
-    	});
-	}
-
-	@Override
-	public List<DcTbl> findAllDetails(final String dcName) {
-		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
-			@Override
-			public List<DcTbl> doQuery() throws DalException {
-				return dao.findDcDetailsByDcName(dcName, DcTblEntity.READSET_FULL_ALL);
-			}
-    	});
-	}
-
-	@Override
-	public List<DcTbl> findAllActiveKeepers() {
-		return queryHandler.handleQuery(new DalQuery<List<DcTbl>>() {
-			@Override
-			public List<DcTbl> doQuery() throws DalException {
-				return dao.findAllActiveKeeper(DcTblEntity.READSET_FULL_ALL);
 			}
     	});
 	}

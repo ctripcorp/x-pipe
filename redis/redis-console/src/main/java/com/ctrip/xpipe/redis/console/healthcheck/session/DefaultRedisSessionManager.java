@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.HashSet;
@@ -54,7 +55,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
-//	@PostConstruct
+	@PostConstruct
 	public void postConstruct(){
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override

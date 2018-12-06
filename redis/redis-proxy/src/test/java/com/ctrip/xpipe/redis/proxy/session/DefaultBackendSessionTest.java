@@ -21,6 +21,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,6 +59,11 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
 
     }
 
+    @After
+    public void afterDefaultBackendSessionTest() {
+        session.release();
+    }
+
     public void testSendImmdiateAfterProtocol() throws Exception {
         session.sendAfterProtocol(testByteBuf());
         session.sendAfterProtocol(testByteBuf());
@@ -78,23 +84,38 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         verify(handler).onEstablished();
     }
 
-    @Test(expected = NoResourceException.class)
+    @Test
     public void doStart() throws Exception {
         when(selector.selectCounts()).thenReturn(1);
         when(selector.getCandidates()).thenReturn(Lists.newArrayList());
         selector.setSelectStrategy(new SelectOneCycle(selector));
         doCallRealMethod().when(selector).nextHop();
-        session.doStart();
+
+        Throwable throwable = null;
+        try {
+            session.doStart();
+        } catch (Exception e) {
+            throwable = e;
+        }
+        Assert.assertNotNull(throwable);
+        Assert.assertTrue(throwable instanceof NoResourceException);
     }
 
-    @Test(expected = NoResourceException.class)
+    @Test
     public void testDoStartWithNoNextAvailable() throws Exception {
         when(selector.selectCounts()).thenReturn(2);
         when(selector.getCandidates()).thenReturn(Lists.newArrayList(newProxyEndpoint(true, true), newProxyEndpoint(true, false)));
         selector.setSelectStrategy(new SelectOneCycle(selector));
         doCallRealMethod().when(selector).nextHop();
 
-        session.doStart();
+        Throwable throwable = null;
+        try {
+            session.doStart();
+        } catch (Exception e) {
+            throwable = e;
+        }
+        Assert.assertNotNull(throwable);
+        Assert.assertTrue(throwable instanceof NoResourceException);
     }
 
     @Test
@@ -108,8 +129,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
         session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
         session.setNioEventLoopGroup(new NioEventLoopGroup(1));
         session.doStart();
-        Thread.sleep(1000);
-        Assert.assertEquals(new SessionClosed(session), session.getSessionState());
+        waitConditionUntilTimeOut(()->session.getSessionState().equals(new SessionClosed(session)), 1200);
     }
 
     @Test

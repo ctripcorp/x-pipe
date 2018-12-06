@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.dal;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
@@ -32,24 +34,15 @@ public class DataObjectAssemblyTest extends AbstractConsoleIntegrationTest {
     private static final Logger logger = LoggerFactory.getLogger(DataObjectAssemblyTest.class);
 
     @Autowired
-    DcMetaService service;
+    private DcService dcService;
 
     @Autowired
-    DcService dcService;
-
-    @Autowired
-    MetaCache metaCache;
-
-    @Autowired
-    SentinelService sentinelService;
-
-    @Autowired
-    KeepercontainerService keepercontainerService;
+    private DcClusterShardService dcClusterShardService;
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     private ExecutorService executor;
 
-    private String dcName;
+    private long dcId;
 
     private int N;
 
@@ -57,7 +50,7 @@ public class DataObjectAssemblyTest extends AbstractConsoleIntegrationTest {
 
     @Before
     public void beforeDataObjectAssemblyTest() throws Exception {
-        dcName = dcService.dcNameMap().values().iterator().next();
+        dcId = dcService.dcNameMap().keySet().iterator().next();
         N = 20;
         startH2Server();
     }
@@ -65,39 +58,35 @@ public class DataObjectAssemblyTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testGetDataNotNull() throws InterruptedException, ExecutionException {
         CyclicBarrier barrier = new CyclicBarrier(N);
-        List<Future<List<DcTbl>>> futures = new LinkedList<>();
+        List<Future<List<DcClusterShardTbl>>> futures = new LinkedList<>();
         for(int i = 0; i < N; i ++) {
             futures.add(getDCDetails(barrier));
         }
 
-        for(Future<List<DcTbl>> future : futures) {
-            List<DcTbl> details = future.get();
-            for(DcTbl dc : details) {
-                Assert.assertNotNull(dc);
-                Assert.assertNotNull(dc.getClusterInfo());
-                Assert.assertNotNull(dc.getClusterInfo().getClusterName());
-                Assert.assertNotNull(dc.getClusterInfo().getStatus());
-                Assert.assertNotNull(dc.getClusterInfo().getDataChangeLastTime());
-                Assert.assertNotNull(dc.getDcClusterShardInfo());
-                Assert.assertNotNull(dc.getDcClusterInfo());
-                Assert.assertNotNull(dc.getDcClusterInfo().getDataChangeLastTime());
-                Assert.assertNotNull(dc.getRedisInfo());
-                Assert.assertNotNull(dc.getRedisInfo().getRunId());
-                Assert.assertNotNull(dc.getRedisInfo().getRedisRole());
-                Assert.assertNotNull(dc.getRedisInfo().getRedisIp());
-                Assert.assertNotNull(dc.getShardInfo());
-                Assert.assertNotNull(dc.getShardInfo().getShardName());
+        for(Future<List<DcClusterShardTbl>> future : futures) {
+            List<DcClusterShardTbl> details = future.get();
+            for(DcClusterShardTbl item : details) {
+                Assert.assertNotNull(item);
+                Assert.assertNotNull(item.getClusterInfo());
+                Assert.assertNotNull(item.getClusterInfo().getClusterName());
+                Assert.assertNotNull(item.getClusterInfo().getStatus());
+                Assert.assertNotNull(item.getRedisInfo());
+                Assert.assertNotNull(item.getRedisInfo().getRunId());
+                Assert.assertNotNull(item.getRedisInfo().getRedisRole());
+                Assert.assertNotNull(item.getRedisInfo().getRedisIp());
+                Assert.assertNotNull(item.getShardInfo());
+                Assert.assertNotNull(item.getShardInfo().getShardName());
             }
         }
     }
 
 
-    private Future<List<DcTbl>> getDCDetails(CyclicBarrier barrier) {
-        Future<List<DcTbl>> future_allDetails = executor.submit(new Callable<List<DcTbl>>() {
+    private Future<List<DcClusterShardTbl>> getDCDetails(CyclicBarrier barrier) {
+        Future<List<DcClusterShardTbl>> future_allDetails = executor.submit(new Callable<List<DcClusterShardTbl>>() {
             @Override
-            public List<DcTbl> call() throws Exception {
+            public List<DcClusterShardTbl> call() throws Exception {
                 barrier.await();
-                return dcService.findAllDetails(dcName);
+                return dcClusterShardService.findAllByDcId(dcId);
             }
         });
         return future_allDetails;

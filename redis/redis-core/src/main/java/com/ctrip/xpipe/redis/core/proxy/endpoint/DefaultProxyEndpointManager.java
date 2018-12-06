@@ -47,7 +47,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create("ProxyEndpointManager")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
         this.healthChecker = new DefaultEndpointHealthChecker(scheduled);
-        start();
+//        start();
     }
 
     @Override
@@ -75,7 +75,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         if(future != null) {
             future.cancel(true);
         }

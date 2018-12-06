@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.handler;
 import com.ctrip.xpipe.netty.AbstractNettyHandler;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -25,7 +26,8 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         logger.info("[channelInactive]");
-        if(session != null) {
+        if(session != null && session.getSessionState() != null &&
+                !session.getSessionState().equals(new SessionClosed(session))) {
             try {
                 session.release();
             } catch (Exception e) {
@@ -41,7 +43,6 @@ public abstract class AbstractSessionNettyHandler extends AbstractNettyHandler {
             logger.warn("[NotSslRecordException]", cause);
             return;
         }
-        logger.error("[exceptionCaught] ", cause);
         super.exceptionCaught(ctx, cause);
     }
 

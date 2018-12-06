@@ -14,14 +14,6 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="redis-info"/>
 			</readset>
-			<readset name="FULL_ALL">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="cluster-info"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-shard-info"/>
-				<readset-ref name="FULL" relation-name="redis-info"/>
-			</readset>
 			<readset name="NAME">
 				<member name='dc-name'/>
 			</readset>
@@ -135,19 +127,8 @@
 			<readset name="NAME">
 				<member name='cluster-name'/>
 			</readset>
-			<readset name="FULL_RELATED_DC">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
-				<readset-ref name="FULL" relation-name="dc-info"/>
-			</readset>
 			<readset name="FULL_WITH_SHARDS">
 				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="shard-info"/>
-			</readset>
-			<readset name="FULL_ALL">
-				<readset-ref name="FULL"/>
-				<readset-ref name="FULL" relation-name="dc-info"/>
-				<readset-ref name="FULL" relation-name="dc-cluster-info"/>
 				<readset-ref name="FULL" relation-name="shard-info"/>
 			</readset>
 			<readset name="FULL_WITH_ORG">
@@ -1039,6 +1020,19 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-by-ip-port" type="SELECT" multiple="false">
+				<param name="keepercontainer-ip"/>
+				<param name="keepercontainer-port"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-ip'/> = ${keepercontainer-ip}
+					AND <FIELD name='keepercontainer-port'/> = ${keepercontainer-port}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
@@ -1446,6 +1440,7 @@
 				<member name='dc_id'/>
 				<member name="uri"/>
 				<member name="active"/>
+				<member name="monitor-active"/>
 			</readset>
 		</readsets>
 		<query-defs>
@@ -1456,6 +1451,16 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
 					AND <FIELD name='active'/> = 1
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-monitor-active" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='monitor-active'/> = 1
 					]]>
 				</statement>
 			</query>

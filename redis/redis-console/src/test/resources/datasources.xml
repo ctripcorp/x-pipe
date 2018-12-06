@@ -7,7 +7,7 @@
       <statement-cache-size>1000</statement-cache-size>
       <properties>
          <driver>org.h2.Driver</driver>
-         <url><![CDATA[jdbc:h2:mem:fxxpipedb;DB_CLOSE_DELAY=-1;MV_STORE=FALSE]]></url>
+         <url><![CDATA[jdbc:h2:mem:fxxpipe;DB_CLOSE_DELAY=-1;MV_STORE=FALSE]]></url>
          <!--
          <url>jdbc:h2:~/fxxpipedb;MV_STORE=FALSE</url>
          -->
