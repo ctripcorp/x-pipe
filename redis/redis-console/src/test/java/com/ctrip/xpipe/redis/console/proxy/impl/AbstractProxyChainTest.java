@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
@@ -10,6 +11,10 @@ import com.google.common.collect.Lists;
 
 public class AbstractProxyChainTest extends AbstractRedisTest {
 
+    private HostPort frontend = HostPort.fromString("10.26.188.107:47862");
+
+    private HostPort backend = HostPort.fromString("10.26.188.107:80");
+
     protected ProxyModel getProxy(String dcId) {
         return new ProxyModel().setDcName(dcId);
     }
@@ -19,7 +24,7 @@ public class AbstractProxyChainTest extends AbstractRedisTest {
     }
 
     protected TunnelStatsResult genTunnelSR(String tunnelId) {
-        return new TunnelStatsResult(tunnelId, "Established", System.currentTimeMillis() - 1000 * 60, System.currentTimeMillis() - 100 * 60 - 10);
+        return new TunnelStatsResult(tunnelId, "Established", System.currentTimeMillis() - 1000 * 60, System.currentTimeMillis() - 100 * 60 - 10, frontend, backend);
     }
 
     private String getSource() {

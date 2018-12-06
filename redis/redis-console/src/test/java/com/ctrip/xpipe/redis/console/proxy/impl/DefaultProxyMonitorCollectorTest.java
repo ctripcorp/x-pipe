@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -51,6 +52,7 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
         sleep(1000 * 60 * 100);
     }
 
+    @Ignore
     @Test
     public void testIntegrate() throws Exception {
         ProxyModel proxyModel1 = new ProxyModel().setUri("PROXYTCP://10.2.131.201:80").setDcName("NTGXH").setId(3L).setActive(true);

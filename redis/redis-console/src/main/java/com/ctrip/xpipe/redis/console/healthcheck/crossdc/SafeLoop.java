@@ -4,6 +4,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -18,11 +19,11 @@ public abstract class SafeLoop<T> {
 
     private Executor executors;
 
-    public SafeLoop(List<T> list) {
+    public SafeLoop(Collection<T> list) {
         this(MoreExecutors.directExecutor(), list);
     }
 
-    public SafeLoop(Executor executors, List<T> src) {
+    public SafeLoop(Executor executors, Collection<T> src) {
         this.executors = executors;
         this.list = Lists.newLinkedList(src);
     }
@@ -43,7 +44,7 @@ public abstract class SafeLoop<T> {
         }
     }
 
-    abstract void doRun0(T t) throws Exception;
+    protected abstract void doRun0(T t) throws Exception;
 
     String getInfo(T t) {
         return t.toString();

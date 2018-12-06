@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
@@ -30,11 +31,11 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
 
     private MetaCache metaCache = mock(MetaCache.class);
 
+    private RouteService routeService = mock(RouteService.class);
+
     @Before
     public void beforeDefaultProxyChainAnalyzerTest() {
-        analyzer.setExecutors(executors);
-        analyzer.setMetaCache(metaCache);
-        analyzer.setProxyMonitorCollectorManager(manager);
+
         ProxyMonitorCollector collector1 = mock(ProxyMonitorCollector.class);
         ProxyMonitorCollector collector2 = mock(ProxyMonitorCollector.class);
         String tunnelId1 = generateTunnelId();
@@ -48,6 +49,17 @@ public class DefaultProxyChainAnalyzerTest extends AbstractProxyChainTest {
         String cluster = "cluster", shard = "shard";
         when(metaCache.findClusterShard(any(HostPort.class))).thenReturn(new Pair<>(cluster, shard));
         when(metaCache.getActiveDc(cluster, shard)).thenReturn("SHAOY");
+
+        when(routeService.existsRouteBetweenDc(anyString(), anyString())).thenReturn(false);
+        when(routeService.existsRouteBetweenDc("SHAOY", "FRA-AWS")).thenReturn(true);
+
+        analyzer.setRouteService(routeService);
+        analyzer.setExecutors(executors);
+        analyzer.setMetaCache(metaCache);
+        analyzer.setProxyMonitorCollectorManager(manager);
+
+        analyzer.fullUpdate();
+        sleep(100);
     }
 
     @Test
