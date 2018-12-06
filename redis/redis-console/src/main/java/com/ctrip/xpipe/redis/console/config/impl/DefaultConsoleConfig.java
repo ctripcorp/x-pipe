@@ -73,6 +73,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_DEFAULT_MARK_DOWN_DELAY_SEC = "console.default.mark.down.delay.sec";
 
+    public static final String KEY_SOCKET_STATS_ANALYZERS = "console.socket.stats.analyzers";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -309,5 +311,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
             listeners.putIfAbsent(key, new LinkedList<>());
             listeners.get(key).add(consoleConfigListener);
         }
+    }
+
+    @Override
+    public Map<String, String> getSocketStatsAnalyzingKeys() {
+        String property = getProperty(KEY_SOCKET_STATS_ANALYZERS, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 }

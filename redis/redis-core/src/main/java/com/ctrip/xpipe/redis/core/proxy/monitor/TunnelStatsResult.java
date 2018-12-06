@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.core.proxy.monitor;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import org.apache.catalina.Host;
+
 import java.util.Objects;
 
 public class TunnelStatsResult {
@@ -11,6 +14,10 @@ public class TunnelStatsResult {
 
     private String tunnelState;
 
+    private HostPort frontend;
+
+    private HostPort backend;
+
     private long protocolRecvTime;
 
     private long protocolSndTime;
@@ -19,14 +26,16 @@ public class TunnelStatsResult {
 
     private String closeFrom;
 
-    public TunnelStatsResult(String tunnelId, String tunnelState, long protocolRecvTime, long protocolSndTime) {
-        this(tunnelId, tunnelState, protocolRecvTime, protocolSndTime, NOT_CLOSE, null);
+    public TunnelStatsResult(String tunnelId, String tunnelState, long protocolRecvTime, long protocolSndTime, HostPort frontend, HostPort backend) {
+        this(tunnelId, tunnelState, frontend, backend, protocolRecvTime, protocolSndTime, NOT_CLOSE, null);
     }
 
-    public TunnelStatsResult(String tunnelId, String tunnelState, long protocolRecvTime, long protocolSndTime,
+    public TunnelStatsResult(String tunnelId, String tunnelState, HostPort frontend, HostPort backend, long protocolRecvTime, long protocolSndTime,
                              long closeTime, String closeFrom) {
         this.tunnelId = tunnelId;
         this.tunnelState = tunnelState;
+        this.frontend = frontend;
+        this.backend = backend;
         this.protocolRecvTime = protocolRecvTime;
         this.protocolSndTime = protocolSndTime;
         this.closeTime = closeTime;
@@ -34,13 +43,15 @@ public class TunnelStatsResult {
     }
 
     public Object toArrayObject() {
-        Object[] result = new Object[6];
+        Object[] result = new Object[8];
         result[0] = tunnelId;
         result[1] = tunnelState;
         result[2] = protocolRecvTime;
         result[3] = protocolSndTime;
         result[4] = closeTime;
         result[5] = closeFrom;
+        result[6] = frontend.toString();
+        result[7] = backend.toString();
         return result;
     }
 
@@ -52,7 +63,9 @@ public class TunnelStatsResult {
         long protocolSndTime = (long) sample[3];
         long closeTime = (long) sample[4];
         String closeFrom = (String) sample[5];
-        return new TunnelStatsResult(tunnelId, tunnelState, protocolRecvTime, protocolSndTime, closeTime, closeFrom);
+        HostPort frontend = HostPort.fromString((String) sample[6]);
+        HostPort backend = HostPort.fromString((String) sample[7]);
+        return new TunnelStatsResult(tunnelId, tunnelState, frontend, backend, protocolRecvTime, protocolSndTime, closeTime, closeFrom);
     }
 
     public String getTunnelId() {
@@ -77,6 +90,14 @@ public class TunnelStatsResult {
 
     public String getCloseFrom() {
         return closeFrom;
+    }
+
+    public HostPort getFrontend() {
+        return frontend;
+    }
+
+    public HostPort getBackend() {
+        return backend;
     }
 
     @Override

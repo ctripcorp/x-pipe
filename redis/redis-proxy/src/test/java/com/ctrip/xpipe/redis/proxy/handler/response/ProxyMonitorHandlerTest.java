@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.handler.response;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
@@ -142,9 +143,13 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
     @Test
     public void testTunnelStatsResponser() throws Exception {
         TunnelStats tunnelStats = mock(TunnelStats.class);
+
+        HostPort frontend = localHostport(randomPort());
+        HostPort backend = localHostport(randomPort());
+
         Tunnel tunnel = tunnelManager.tunnels().get(0);
         TunnelStatsResult tunnelStatsResult = new TunnelStatsResult(tunnel.identity().toString(),
-                new TunnelEstablished(null).name(), System.currentTimeMillis(), System.currentTimeMillis() + 10);
+                new TunnelEstablished(null).name(), System.currentTimeMillis(), System.currentTimeMillis() + 10, frontend, backend);
         when(tunnelStats.getTunnelStatsResult()).thenReturn(tunnelStatsResult);
         when(tunnelMonitor.getTunnelStats()).thenReturn(tunnelStats);
 
@@ -161,6 +166,8 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
             logger.info("{}", other.getTunnelState());
             logger.info("{}", other.getProtocolRecvTime());
             logger.info("{}", other.getProtocolSndTime());
+            logger.info("{}", other.getFrontend());
+            logger.info("{}", other.getBackend());
         }
     }
 

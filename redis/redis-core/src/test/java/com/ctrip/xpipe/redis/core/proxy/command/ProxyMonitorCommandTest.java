@@ -6,11 +6,10 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
-import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
@@ -18,7 +17,6 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
-import io.netty.buffer.*;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -30,6 +28,10 @@ import java.util.List;
 public class ProxyMonitorCommandTest extends AbstractRedisTest {
 
     private Server server;
+
+    private HostPort frontend1 = HostPort.fromString("10.26.188.107:47862"), frontend2 = HostPort.fromString("10.14.13.212:443");
+
+    private HostPort backend1 = HostPort.fromString("10.26.188.107:80"), backend2 = HostPort.fromString("10.14.13.212:47862");
 
     private String template1 = "ESTAB      0      0             10.26.188.107:47862         10.15.206.22:443";
 
@@ -68,8 +70,8 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
     @Test
     public void testProxyMonitorTunnelStats() throws Exception {
         long timestamp = System.currentTimeMillis();
-        TunnelStatsResult sample1 = new TunnelStatsResult(tunnelId("front1", "back1"), "Tunnel-Established", timestamp - 1000, timestamp - 990);
-        TunnelStatsResult sample2 = new TunnelStatsResult(tunnelId("front2", "back2"), "Tunnel-Closed", timestamp - 1000, timestamp - 990, timestamp, "FRONTEND");
+        TunnelStatsResult sample1 = new TunnelStatsResult(tunnelId("front1", "back1"), "Tunnel-Established", timestamp - 1000, timestamp - 990, frontend1, backend1);
+        TunnelStatsResult sample2 = new TunnelStatsResult(tunnelId("front2", "back2"), "Tunnel-Closed", frontend2, backend2, timestamp - 1000, timestamp - 990, timestamp, "FRONTEND");
         server = startServer(new ArrayParser(new Object[]{sample1.toArrayObject(), sample2.toArrayObject()}).format().toString(Charset.defaultCharset()));
         TunnelStatsResult[] results = new AbstractProxyMonitorCommand.ProxyMonitorTunnelStatsCommand(
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(getEndpoint()), scheduled).execute().get();
