@@ -57,12 +57,6 @@
         <dependency>
             <groupId>com.ctrip.infosec</groupId>
             <artifactId>sso-client-qconfig</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>qunar.common</groupId>
-                    <artifactId>common-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.razorvine</groupId>

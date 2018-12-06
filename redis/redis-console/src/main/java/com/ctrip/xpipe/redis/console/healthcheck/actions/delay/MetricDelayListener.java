@@ -24,14 +24,15 @@ public class MetricDelayListener implements DelayActionListener {
 
     private static final String TYPE = "delay";
 
-    private static final int THOUSAND = 1000;
+    private static final double THOUSAND = 1000.0;
+
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
     private MetricData getPoint(DelayActionContext context) {
         RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
 
         MetricData data = new MetricData(TYPE, info.getDcId(), info.getClusterId(), info.getShardId());
-        data.setValue((double) (context.getResult() / THOUSAND));
+        data.setValue(context.getResult() / THOUSAND);
         data.setTimestampMilli(context.getRecvTimeMilli());
         data.setHostPort(info.getHostPort());
         return data;

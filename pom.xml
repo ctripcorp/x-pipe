@@ -244,6 +244,12 @@
                 <groupId>com.ctrip.credis</groupId>
                 <artifactId>credis</artifactId>
                 <version>${credis.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>qunar.common</groupId>
+                        <artifactId>common-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
