@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.proxy.monitor.stats.impl;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
@@ -10,6 +12,7 @@ import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelState;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelStateChangeEvent;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.*;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,11 +71,13 @@ public class DefaultTunnelStats implements TunnelStats {
 
     @Override
     public TunnelStatsResult getTunnelStatsResult() {
+        HostPort frontend = HostPort.fromString(ChannelUtil.getSimpleIpport(tunnel.frontend().getChannel().localAddress()));
+        HostPort backend = HostPort.fromString(ChannelUtil.getSimpleIpport(tunnel.backend().getChannel().localAddress()));
         if(closeFrom != null) {
-            return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), getProtocolRecTime(),
+            return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), frontend, backend, getProtocolRecTime(),
                     getProtocolSendTime(), getCloseTime(), closeFrom.name());
         }
-        return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), getProtocolRecTime(), getProtocolSendTime());
+        return new TunnelStatsResult(tunnel.identity().toString(), tunnel.getState().name(), getProtocolRecTime(), getProtocolSendTime(), frontend, backend);
     }
 
     @Override

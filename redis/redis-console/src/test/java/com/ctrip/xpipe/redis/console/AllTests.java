@@ -40,10 +40,11 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiat
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
-import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChainAnalyzerTest;
-import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollectorManagerTest;
+import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
+import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
@@ -137,7 +138,13 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelHelloCheckActionTest.class,
         VersionCheckActionFactoryTest.class,
         DefaultProxyMonitorCollectorManagerTest.class,
-        DefaultProxyChainAnalyzerTest.class
+        DefaultProxyChainAnalyzerTest.class,
+        ProxyPingRecorderTest.class,
+        DcClusterShardTest.class,
+        TestForAbstractMultiValueTunnelSocketStatsAnalyzer.class,
+        TestForAbstractNormalKeyValueTunnelSocketStatsAnalyzer.class,
+        DefaultTunnelSocketStatsAnalyzerManagerTest.class,
+        TunnelSocketStatsAnalyzersTest.class
 })
 public class AllTests {
 

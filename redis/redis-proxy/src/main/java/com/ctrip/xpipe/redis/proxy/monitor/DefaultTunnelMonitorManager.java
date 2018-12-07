@@ -10,6 +10,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -26,9 +27,13 @@ public class DefaultTunnelMonitorManager implements TunnelMonitorManager {
 
     private Map<Tunnel, TunnelMonitor> tunnelMonitors = new ConcurrentHashMap<>();
 
+    @Autowired
     private ResourceManager resourceManager;
 
     private TunnelRecorder recorder = new DefaultTunnelRecorder();
+
+    public DefaultTunnelMonitorManager() {
+    }
 
     public DefaultTunnelMonitorManager(ResourceManager resourceManager) {
         this.resourceManager = resourceManager;

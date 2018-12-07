@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
@@ -58,6 +59,16 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
     @Override
     public List<ProxyChain> getProxyChains() {
         return Lists.newArrayList(tunnels.values());
+    }
+
+    @Override
+    public void addListener(Listener listener) {
+
+    }
+
+    @Override
+    public void removeListener(Listener listener) {
+
     }
 
 
