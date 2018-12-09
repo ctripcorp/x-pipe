@@ -23,4 +23,8 @@ public abstract class AbstractProxyOptionParser implements ProxyOptionParser {
         return this;
     }
 
+    @Override
+    public boolean isImportant() {
+        return false;
+    }
 }

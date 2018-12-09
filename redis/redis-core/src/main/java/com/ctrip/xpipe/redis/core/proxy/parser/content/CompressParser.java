@@ -32,6 +32,11 @@ public class CompressParser implements ProxyContentParser.SubOptionParser {
         return this;
     }
 
+    @Override
+    public boolean isImportant() {
+        return true;
+    }
+
     public CompressAlgorithm getAlgorithm() {
         return algorithm;
     }

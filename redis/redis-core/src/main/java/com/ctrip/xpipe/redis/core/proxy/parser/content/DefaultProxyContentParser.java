@@ -38,8 +38,18 @@ public class DefaultProxyContentParser implements ProxyOptionParser, ProxyConten
         return CONTENT;
     }
 
+    @Override
+    public boolean isImportant() {
+        return subOptionParser.isImportant();
+    }
+
     public DefaultProxyContentParser setSubOptionParser(SubOptionParser subOptionParser) {
         this.subOptionParser = subOptionParser;
+        return this;
+    }
+
+    public DefaultProxyContentParser setType(ContentType type) {
+        this.type = type;
         return this;
     }
 

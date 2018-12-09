@@ -6,6 +6,9 @@ import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.ProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.content.CompressParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.content.DefaultProxyContentParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.content.ProxyContentParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
@@ -41,6 +44,10 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
     @Override
     public void recordForwardFor(InetSocketAddress address) {
         ProxyForwardForParser forwardForParser = (ProxyForwardForParser) parser.getProxyOptionParser(PROXY_OPTION.FORWARD_FOR);
+        if(forwardForParser == null) {
+            forwardForParser = new ForwardForOptionParser();
+            parser.addProxyOptionParser(forwardForParser);
+        }
         forwardForParser.append(address);
     }
 
@@ -75,6 +82,9 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
     public String getSource() {
         ForwardForOptionParser forwardForOptionParser = (ForwardForOptionParser) parser
                 .getProxyOptionParser(PROXY_OPTION.FORWARD_FOR);
+        if(forwardForOptionParser == null) {
+            return UNKNOWN_SOURCE;
+        }
         String forwardFor = forwardForOptionParser.output();
         if(forwardFor == null || forwardFor.isEmpty()) {
             return UNKNOWN_SOURCE;
@@ -88,12 +98,40 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
 
     @Override
     public boolean isCompressed() {
-        return false;
+        ProxyContentParser contentParser = ((ProxyContentParser)parser.getProxyOptionParser(PROXY_OPTION.CONTENT));
+        if(contentParser == null) {
+            return false;
+        }
+        return contentParser.getContentType().equals(ProxyContentParser.ContentType.COMPRESS);
     }
 
     @Override
-    public CompressAlgorithm compressAlgorithm() {
+    public CompressAlgorithm getCompressAlgorithm() {
+        if(isCompressed()) {
+            CompressParser compressParser = (CompressParser) ((ProxyContentParser)parser.getProxyOptionParser(PROXY_OPTION.CONTENT)).getSubOption();
+            return compressParser.getAlgorithm();
+        }
         return null;
+    }
+
+    @Override
+    public void removeCompressOptionIfExist() {
+        DefaultProxyContentParser contentParser = (DefaultProxyContentParser) getParser().getProxyOptionParser(PROXY_OPTION.CONTENT);
+        if(contentParser == null) {
+            return;
+        }
+        if(ProxyContentParser.ContentType.COMPRESS.equals(contentParser.getContentType())) {
+            getParser().removeProxyOptionParser(contentParser);
+        }
+    }
+
+    @Override
+    public void addCompression(CompressAlgorithm algorithm) {
+        removeCompressOptionIfExist();
+        DefaultProxyContentParser contentParser = new DefaultProxyContentParser();
+        CompressParser compressParser = new CompressParser().setAlgorithm(algorithm);
+        contentParser.setType(ProxyContentParser.ContentType.COMPRESS).setSubOptionParser(compressParser);
+        getParser().addProxyOptionParser(contentParser);
     }
 
     @Override

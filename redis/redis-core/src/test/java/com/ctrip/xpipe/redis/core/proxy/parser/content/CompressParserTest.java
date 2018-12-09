@@ -39,5 +39,19 @@ public class CompressParserTest {
 
     @Test
     public void testSetAlgorithm() {
+        String version = "3.0";
+        parser.setAlgorithm(new CompressAlgorithm() {
+            @Override
+            public String version() {
+                return version;
+            }
+
+            @Override
+            public AlgorithmType getType() {
+                return AlgorithmType.ZSTD;
+            }
+        });
+        Assert.assertNotNull(parser.getAlgorithm());
+        Assert.assertEquals(version, parser.getAlgorithm().version());
     }
 }

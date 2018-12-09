@@ -59,4 +59,10 @@ public class DefaultProxyContentParserTest extends AbstractTest {
         Assert.assertEquals(PROXY_OPTION.CONTENT, parser.option());
     }
 
+    @Test
+    public void testOptionImportant() {
+        parser = (DefaultProxyContentParser) parser.read("CONTENT COMPRESS ZSTD 1.0");
+        Assert.assertTrue(parser.isImportant());
+    }
+
 }
