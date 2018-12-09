@@ -2,14 +2,18 @@ package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
+import com.ctrip.xpipe.redis.core.proxy.exception.ProxyProtocolParseException;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.handler.ZstdDecoder;
+import com.ctrip.xpipe.redis.proxy.handler.ZstdEncoder;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
@@ -254,6 +258,19 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         }
     }
 
+    private void installCompressCodecIfNecessary(ChannelPipeline pipeline) {
+        if(protocol.isCompressed()) {
+            CompressAlgorithm algorithm = protocol.getCompressAlgorithm();
+            if(algorithm.getType().equals(config.getCompressAlgorithm().getType())
+                    && algorithm.version().equalsIgnoreCase(config.getCompressAlgorithm().version())) {
+                pipeline.addLast(config.getCompressDecoder());
+                pipeline.addLast(config.getCompressEncoder());
+            } else {
+                throw new ProxyProtocolParseException(String.format("compress algorithm not matched %s, %s", algorithm.getType(), algorithm.version()));
+            }
+        }
+    }
+
 
     protected Channel frontendChannel() {
         return frontendChannel;
@@ -298,6 +315,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         public void onInit() {
             frontend.markUnReadable();
             ChannelPipeline pipeline = frontend.getChannel().pipeline();
+            installCompressCodecIfNecessary(pipeline);
             pipeline.addLast(new FrontendSessionNettyHandler(DefaultTunnel.this));
             pipeline.addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }
