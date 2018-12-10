@@ -12,8 +12,6 @@ import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.FrontendSessionNettyHandler;
 import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
-import com.ctrip.xpipe.redis.proxy.handler.ZstdDecoder;
-import com.ctrip.xpipe.redis.proxy.handler.ZstdEncoder;
 import com.ctrip.xpipe.redis.proxy.model.TunnelIdentity;
 import com.ctrip.xpipe.redis.proxy.model.TunnelMeta;
 import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitor;
@@ -271,6 +269,12 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         }
     }
 
+    private void addCompressOptionToProtocolIfNeeded() {
+        if(config.isCompressEnabled()) {
+            protocol.addCompression(config.getCompressAlgorithm());
+        }
+    }
+
 
     protected Channel frontendChannel() {
         return frontendChannel;
@@ -289,6 +293,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     class BackendSessionEventHandler implements SessionEventHandler {
         @Override
         public void onInit() {
+            addCompressOptionToProtocolIfNeeded();
         }
 
         @Override

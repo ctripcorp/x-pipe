@@ -2,11 +2,17 @@ package com.ctrip.xpipe.redis.proxy.config;
 
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
+import com.ctrip.xpipe.redis.proxy.handler.ZstdDecoder;
+import com.ctrip.xpipe.redis.proxy.handler.ZstdEncoder;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -50,6 +56,12 @@ public class DefaultProxyConfig implements ProxyConfig {
     private static final String KEY_START_PROXY_MONITOR = "proxy.monitor.start";
 
     private static final String KEY_PROXY_RESPONSE_TIMEOUT = "proxy.response.timeout";
+
+    private static final String KEY_PROXY_COMPRESS_ENABLED = "proxy.compress.enabled";
+
+    private static final String KEY_PROXY_COMPRESS_ALGORITHM = "proxy.compress.algorithm";
+
+    private static final String KEY_PROXY_COMPRESS_ALGORITHM_VERSION = "proxy.compress.algorithm.version";
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
 
@@ -127,6 +139,36 @@ public class DefaultProxyConfig implements ProxyConfig {
     @Override
     public int getResponseTimeout() {
         return getIntProperty(KEY_PROXY_RESPONSE_TIMEOUT, 1000);
+    }
+
+    @Override
+    public boolean isCompressEnabled() {
+        return getBooleanProperty(KEY_PROXY_COMPRESS_ENABLED, Boolean.FALSE);
+    }
+
+    @Override
+    public CompressAlgorithm getCompressAlgorithm() {
+        return new CompressAlgorithm() {
+            @Override
+            public String version() {
+                return getProperty(KEY_PROXY_COMPRESS_ALGORITHM_VERSION, "1.0");
+            }
+
+            @Override
+            public AlgorithmType getType() {
+                return AlgorithmType.valueOf(getProperty(KEY_PROXY_COMPRESS_ALGORITHM, AlgorithmType.ZSTD.name()));
+            }
+        };
+    }
+
+    @Override
+    public ByteToMessageDecoder getCompressDecoder() {
+        return new ZstdDecoder();
+    }
+
+    @Override
+    public MessageToByteEncoder<ByteBuf> getCompressEncoder() {
+        return new ZstdEncoder();
     }
 
     @Override

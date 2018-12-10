@@ -33,7 +33,7 @@ public interface ProxyConfig extends TLSConfig {
 
     int getResponseTimeout();
 
-    boolean isCompressed();
+    boolean isCompressEnabled();
 
     CompressAlgorithm getCompressAlgorithm();
 

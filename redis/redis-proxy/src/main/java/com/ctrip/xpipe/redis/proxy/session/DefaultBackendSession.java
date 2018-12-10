@@ -40,6 +40,12 @@ import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MAR
  */
 public class DefaultBackendSession extends AbstractSession implements BackendSession {
 
+    private static final String BACKEND_SESSION_HANDLER = "backendSessionHandler";
+
+    private static final String BACKEND_COMPRESS_DECODER = "backendCompressDecoder";
+
+    private static final String BACKEND_COMPRESS_ENCODER = "backendCompressEncoder";
+
     private ProxyEndpointSelector selector;
 
     private Queue<ByteBuf> sendAfterProtocol;
@@ -108,7 +114,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                             p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(new BackendSessionHandler(tunnel()));
+                        p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                         p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
                     }
                 });
@@ -130,6 +136,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         if(endpoint.isProxyProtocolSupported()) {
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
+        ProxyConfig config = resourceManager.getProxyConfig();
+        if(config.isCompressEnabled()) {
+            channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_DECODER, config.getCompressDecoder());
+            channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_ENCODER, config.getCompressEncoder());
+        }
         if(sendAfterProtocol != null) {
             while(!sendAfterProtocol.isEmpty()) {
                 getChannel().writeAndFlush(sendAfterProtocol.poll());
@@ -138,6 +149,12 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
         onSessionEstablished();
+    }
+
+    @Override
+    protected void doInitialize() throws Exception {
+        super.doInitialize();
+        onSessionInit();
     }
 
     @Override
