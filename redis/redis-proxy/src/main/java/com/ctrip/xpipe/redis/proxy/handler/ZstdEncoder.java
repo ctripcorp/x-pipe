@@ -20,18 +20,9 @@ import static io.netty.util.internal.ThrowableUtil.unknownStackTrace;
 
 
 /**
- * Compresses a {@link ByteBuf} using the LZ4 format.
- *
- * See original <a href="http://code.google.com/p/lz4/">LZ4 website</a>
- * and <a href="http://fastcompression.blogspot.ru/2011/05/lz4-explained.html">LZ4 block format</a>
- * for full description.
- *
- * Since the original LZ4 block format does not contains size of compressed block and size of original data
- * this encoder uses format like <a href="https://github.com/idelpivnitskiy/lz4-java">LZ4 Java</a> library
- * written by Adrien Grand and approved by Yann Collet (author of original LZ4 library).
  *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * * * * *
- *  * Magic * CompressType *  Compressed *  Decompressed *  Checksum *  +  *  LZ4 compressed *
+ *  * Magic * CompressType *  Compressed *  Decompressed *  Checksum *  +  *  ZSTD compressed *
  *  *       *              *    length   *     length    *           *     *      block      *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * * * * *
  */
