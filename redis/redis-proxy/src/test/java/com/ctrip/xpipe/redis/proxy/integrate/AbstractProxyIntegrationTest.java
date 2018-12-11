@@ -73,6 +73,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         });
         TestResourceManager resourceManager = new TestResourceManager();
         resourceManager.setEndpointManager(endpointManager);
+        resourceManager.setConfig(server.getConfig());
         server.setTunnelManager(new DefaultTunnelManager()
                 .setConfig(server.getConfig()).setProxyResourceManager(resourceManager)
                 .setTunnelMonitorManager(new DefaultTunnelMonitorManager(resourceManager)));

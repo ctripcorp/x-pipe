@@ -41,6 +41,8 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     public void afterTestMassTCPPacketWithOneProxyServer() throws Exception {
         server1.stop();
         server2.stop();
+        System.gc();
+        System.gc();
     }
 
     @Test
@@ -58,6 +60,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         final String total = protocol + message;
         int index = 2;
         String sendout = total.substring(0, index);
+        waitConditionUntilTimeOut(()->clientFuture.channel().isActive(), 100);
         write(clientFuture, sendout);
 
         for(int i = 0; i < 2; i++) {
@@ -83,6 +86,13 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
 
         expected.release();
+    }
+
+    @Test
+    public void testStabilityWithCompressAndSSL() throws TimeoutException, InterruptedException {
+        ((TestProxyConfig)server1.getConfig()).setCompress(true);
+        ((TestProxyConfig)server1.getResourceManager().getProxyConfig()).setCompress(true);
+        testStability();
     }
 
     @Ignore

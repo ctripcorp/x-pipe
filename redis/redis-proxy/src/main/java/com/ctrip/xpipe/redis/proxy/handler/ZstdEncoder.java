@@ -1,175 +1,323 @@
 package com.ctrip.xpipe.redis.proxy.handler;
 
+import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.github.luben.zstd.Zstd;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.handler.codec.compression.CompressionException;
+import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.internal.ObjectUtil;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.Adler32;
-import java.util.zip.Checksum;
+
+import static com.ctrip.xpipe.redis.proxy.handler.ZstdConstants.*;
+import static io.netty.util.internal.ThrowableUtil.unknownStackTrace;
+
+
+/**
+ * Compresses a {@link ByteBuf} using the LZ4 format.
+ *
+ * See original <a href="http://code.google.com/p/lz4/">LZ4 website</a>
+ * and <a href="http://fastcompression.blogspot.ru/2011/05/lz4-explained.html">LZ4 block format</a>
+ * for full description.
+ *
+ * Since the original LZ4 block format does not contains size of compressed block and size of original data
+ * this encoder uses format like <a href="https://github.com/idelpivnitskiy/lz4-java">LZ4 Java</a> library
+ * written by Adrien Grand and approved by Yann Collet (author of original LZ4 library).
+ *
+ *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * * * * *
+ *  * Magic * CompressType *  Compressed *  Decompressed *  Checksum *  +  *  LZ4 compressed *
+ *  *       *              *    length   *     length    *           *     *      block      *
+ *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *     * * * * * * * * * * * * *
+ */
 
 public class ZstdEncoder extends MessageToByteEncoder<ByteBuf> {
 
-    private static final int LEVEL_AUTO = 0;
 
-    private static final int LEVEL_1 = 1;
+    private static final EncoderException ENCODE_FINSHED_EXCEPTION = unknownStackTrace(new EncoderException(
+                    new IllegalStateException("encode finished and not enough space to write remaining data")),
+            ZstdEncoder.class, "encode");
 
-    private static final int LEVEL_2 = 2;
+    private final int blockSize;
 
-    private static final int MAX_CHUNK_LENGTH = 0xFFFF;
+    private final Adler32 checksum = new Adler32();
 
-    private static final int MAX_DISTANCE = 8191;
-    private static final int MAX_FARDISTANCE = 65535 + MAX_DISTANCE - 1;
+    private final int compressionLevel;
 
-    private static final int HASH_LOG = 13;
-    private static final int HASH_SIZE = 1 << HASH_LOG; // 8192
-    private static final int HASH_MASK = HASH_SIZE - 1;
+    private ByteBuf buffer;
 
-    private static final int MAX_COPY = 32;
-    private static final int MAX_LEN = 256 + 8;
+    private final int maxEncodeSize;
 
-    private static final int MIN_RECOMENDED_LENGTH_FOR_LEVEL_2 = 1024 * 64;
+    private volatile boolean finished;
 
-    private static final int MAGIC_NUMBER = 'Z' << 24 | 'S' << 16 | 'T' << 8 | 'D';
-
-    private static final byte BLOCK_TYPE_NON_COMPRESSED = 0x00;
-    private static final byte     BLOCK_TYPE_COMPRESSED = 0x01;
-    private static final byte    BLOCK_WITHOUT_CHECKSUM = 0x00;
-    private static final byte       BLOCK_WITH_CHECKSUM = 0x10;
-
-    private static final int OPTIONS_OFFSET = 3;
-    private static final int CHECKSUM_OFFSET = 4;
-
-    private final int level;
-
-    private final Checksum checksum;
-
-    private static final int MIN_LENGTH_TO_COMPRESSION = 32;
+    private volatile ChannelHandlerContext ctx;
 
 
     public ZstdEncoder() {
-        this(LEVEL_AUTO, null);
+        this(DEFAULT_BLOCK_SIZE, MAX_BLOCK_SIZE);
     }
 
 
-    public ZstdEncoder(int level) {
-        this(level, null);
+    public ZstdEncoder(int blockSize, int maxEncodeSize) {
+        super(true);
+        compressionLevel = compressionLevel(blockSize);
+        this.blockSize = blockSize;
+        this.maxEncodeSize = ObjectUtil.checkPositive(maxEncodeSize, "maxEncodeSize");
+        finished = false;
     }
 
 
-    public ZstdEncoder(boolean validateChecksums) {
-        this(LEVEL_AUTO, validateChecksums ? new Adler32() : null);
-    }
-
-    /**
-     * Creates a FastLZ encoder with specified compression level and checksum calculator.
-     *
-     * @param level supports only these values:
-     *        0 - Encoder will choose level automatically depending on the length of the input buffer.
-     *        1 - Level 1 is the fastest compression and generally useful for short data.
-     *        2 - Level 2 is slightly slower but it gives better compression ratio.
-     * @param checksum
-     *        the {@link Checksum} instance to use to check data for integrity.
-     *        You may set {@code null} if you don't want to validate checksum of each block.
-     */
-    public ZstdEncoder(int level, Checksum checksum) {
-        super(false);
-        if (level != LEVEL_AUTO && level != LEVEL_1 && level != LEVEL_2) {
+    @VisibleForTesting
+    protected static int compressionLevel(int blockSize) {
+        if (blockSize < MIN_BLOCK_SIZE || blockSize > MAX_BLOCK_SIZE) {
             throw new IllegalArgumentException(String.format(
-                    "level: %d (expected: %d or %d or %d)", level, LEVEL_AUTO, LEVEL_1, LEVEL_2));
+                    "blockSize: %d (expected: %d-%d)", blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE));
         }
-        this.level = level;
-        this.checksum = checksum;
+        int compressionLevel = 32 - Integer.numberOfLeadingZeros(blockSize - 1); // ceil of log2
+        compressionLevel = Math.max(0, compressionLevel - COMPRESSION_LEVEL_BASE);
+        return compressionLevel;
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, ByteBuf in, ByteBuf out) throws Exception {
-        final Checksum checksum = this.checksum;
+    protected ByteBuf allocateBuffer(ChannelHandlerContext ctx, ByteBuf msg, boolean preferDirect) {
+        return allocateBuffer(ctx, msg, preferDirect, true);
+    }
 
-        for (;;) {
-            if (!in.isReadable()) {
-                return;
-            }
-            final int idx = in.readerIndex();
-            final int length = Math.min(in.readableBytes(), MAX_CHUNK_LENGTH);
+    private ByteBuf allocateBuffer(ChannelHandlerContext ctx, ByteBuf msg, boolean preferDirect,
+                                   boolean allowEmptyReturn) {
+        int targetBufSize = 0;
+        int remaining = msg.readableBytes() + buffer.readableBytes();
 
-            final int outputIdx = out.writerIndex();
-            out.setMedium(outputIdx, MAGIC_NUMBER);
-            int outputOffset = outputIdx + CHECKSUM_OFFSET + (checksum != null ? 4 : 0);
+        // quick overflow check
+        if (remaining < 0) {
+            throw new EncoderException("too much data to allocate a buffer for compression");
+        }
 
-            final byte blockType;
-            final int chunkLength;
-            if (length < MIN_LENGTH_TO_COMPRESSION) {
-                blockType = BLOCK_TYPE_NON_COMPRESSED;
-
-                out.ensureWritable(outputOffset + 2 + length);
-                final byte[] output = out.array();
-                final int outputPtr = out.arrayOffset() + outputOffset + 2;
-
-                if (checksum != null) {
-                    final byte[] input;
-                    final int inputPtr;
-                    if (in.hasArray()) {
-                        input = in.array();
-                        inputPtr = in.arrayOffset() + idx;
-                    } else {
-                        input = new byte[length];
-                        in.getBytes(idx, input);
-                        inputPtr = 0;
-                    }
-
-                    checksum.reset();
-                    checksum.update(input, inputPtr, length);
-                    out.setInt(outputIdx + CHECKSUM_OFFSET, (int) checksum.getValue());
-
-                    System.arraycopy(input, inputPtr, output, outputPtr, length);
-                } else {
-                    in.getBytes(idx, output, outputPtr, length);
-                }
-                chunkLength = length;
+        while (remaining > 0) {
+            int curSize = Math.min(blockSize, remaining);
+            remaining -= curSize;
+            if(curSize <= MIN_BLOCK_SIZE) {
+                targetBufSize += curSize + HEADER_LENGTH;
             } else {
-                // try to compress
-                final byte[] input;
-                final int inputPtr;
-                if (in.hasArray()) {
-                    input = in.array();
-                    inputPtr = in.arrayOffset() + idx;
-                } else {
-                    input = new byte[length];
-                    in.getBytes(idx, input);
-                    inputPtr = 0;
-                }
-
-                if (checksum != null) {
-                    checksum.reset();
-                    checksum.update(input, inputPtr, length);
-                    out.setInt(outputIdx + CHECKSUM_OFFSET, (int) checksum.getValue());
-                }
-
-//                final int maxOutputLength = calculateOutputBufferLength(length);
-                out.ensureWritable(outputOffset + 4 + maxOutputLength);
-                final byte[] output = out.array();
-                final int outputPtr = out.arrayOffset() + outputOffset + 4;
-//                final int compressedLength = compress(input, inputPtr, length, output, outputPtr, level);
-                if (compressedLength < length) {
-                    blockType = BLOCK_TYPE_COMPRESSED;
-                    chunkLength = compressedLength;
-
-                    out.setShort(outputOffset, chunkLength);
-                    outputOffset += 2;
-                } else {
-                    blockType = BLOCK_TYPE_NON_COMPRESSED;
-                    System.arraycopy(input, inputPtr, output, outputPtr - 2, length);
-                    chunkLength = length;
-                }
+                targetBufSize += Zstd.compressBound(curSize) + HEADER_LENGTH;
             }
-            out.setShort(outputOffset, length);
+        }
 
-            out.setByte(outputIdx + OPTIONS_OFFSET,
-                    blockType | (checksum != null ? BLOCK_WITH_CHECKSUM : BLOCK_WITHOUT_CHECKSUM));
-            out.writerIndex(outputOffset + 2 + chunkLength);
-            in.skipBytes(length);
+        if (targetBufSize > maxEncodeSize || 0 > targetBufSize) {
+            throw new EncoderException(String.format("requested encode buffer size (%d bytes) exceeds the maximum " +
+                    "allowable size (%d bytes)", targetBufSize, maxEncodeSize));
+        }
+
+        if (preferDirect) {
+            return ctx.alloc().ioBuffer(targetBufSize, targetBufSize);
+        } else {
+            return ctx.alloc().heapBuffer(targetBufSize, targetBufSize);
         }
     }
 
-    
+
+    @Override
+    protected void encode(ChannelHandlerContext ctx, ByteBuf in, ByteBuf out) throws Exception {
+        if (finished) {
+            if (!out.isWritable(in.readableBytes())) {
+                // out should be EMPTY_BUFFER because we should have allocated enough space above in allocateBuffer.
+                throw ENCODE_FINSHED_EXCEPTION;
+            }
+            out.writeBytes(in);
+            return;
+        }
+
+        final ByteBuf buffer = this.buffer;
+        int length;
+        while ((length = in.readableBytes()) > 0) {
+            final int nextChunkSize = Math.min(length, buffer.writableBytes());
+            in.readBytes(buffer, nextChunkSize);
+
+            if(nextChunkSize <= MIN_BLOCK_SIZE) {
+                writeUnCompressedData(out);
+                return;
+            }
+
+            if (!buffer.isWritable()) {
+                flushBufferedData(out);
+            }
+        }
+        if(buffer.isReadable()) {
+            flushBufferedData(out);
+        }
+    }
+
+    private void flushBufferedData(ByteBuf out) {
+        final int flushableBytes = buffer.readableBytes();
+        if (flushableBytes == 0) {
+            return;
+        }
+        checksum.reset();
+        checksum.update(buffer.internalNioBuffer(buffer.readerIndex(), flushableBytes));
+        final int check = (int) checksum.getValue();
+
+        final int bufSize = (int) Zstd.compressBound(flushableBytes) + HEADER_LENGTH;
+        out.ensureWritable(bufSize);
+        final int idx = out.writerIndex();
+        int compressedLength;
+        try {
+            ByteBuffer outNioBuffer = out.internalNioBuffer(idx + HEADER_LENGTH, out.writableBytes() - HEADER_LENGTH);
+            compressedLength = Zstd.compress(
+                    outNioBuffer,
+                    buffer.internalNioBuffer(buffer.readerIndex(), flushableBytes),
+                    DEFAULT_COMPRESS_LEVEL);
+        } catch (Exception e) {
+            throw new CompressionException(e);
+        }
+        final int blockType;
+        if (compressedLength >= flushableBytes) {
+            blockType = BLOCK_TYPE_NON_COMPRESSED;
+            compressedLength = flushableBytes;
+            out.setBytes(idx + HEADER_LENGTH, buffer, 0, flushableBytes);
+        } else {
+            blockType = BLOCK_TYPE_COMPRESSED;
+        }
+
+        out.setInt(idx, MAGIC_NUMBER);
+        out.setByte(idx + TOKEN_OFFSET, (byte) (blockType | compressionLevel));
+        out.setIntLE(idx + COMPRESSED_LENGTH_OFFSET, compressedLength);
+        out.setIntLE(idx + DECOMPRESSED_LENGTH_OFFSET, flushableBytes);
+        out.setIntLE(idx + CHECKSUM_OFFSET, check);
+        out.writerIndex(idx + HEADER_LENGTH + compressedLength);
+        buffer.clear();
+    }
+
+    private void writeUnCompressedData(ByteBuf out) {
+        int flushableBytes = buffer.readableBytes();
+        if (flushableBytes == 0) {
+            return;
+        }
+        checksum.reset();
+        checksum.update(buffer.internalNioBuffer(buffer.readerIndex(), flushableBytes));
+        final int check = (int) checksum.getValue();
+
+        out.ensureWritable(flushableBytes + HEADER_LENGTH);
+        final int idx = out.writerIndex();
+        out.setBytes(idx + HEADER_LENGTH, buffer, 0, flushableBytes);
+
+        out.setInt(idx, MAGIC_NUMBER);
+        out.setByte(idx + TOKEN_OFFSET, (byte) BLOCK_TYPE_NON_COMPRESSED);
+        out.setIntLE(idx + COMPRESSED_LENGTH_OFFSET, flushableBytes);
+        out.setIntLE(idx + DECOMPRESSED_LENGTH_OFFSET, flushableBytes);
+        out.setIntLE(idx + CHECKSUM_OFFSET, check);
+        out.writerIndex(idx + HEADER_LENGTH + flushableBytes);
+        buffer.clear();
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
+        if (buffer != null && buffer.isReadable()) {
+            final ByteBuf buf = allocateBuffer(ctx, Unpooled.EMPTY_BUFFER, isPreferDirect(), false);
+            flushBufferedData(buf);
+            ctx.write(buf);
+        }
+        ctx.flush();
+    }
+
+    private ChannelFuture finishEncode(final ChannelHandlerContext ctx, ChannelPromise promise) {
+        if (finished) {
+            promise.setSuccess();
+            return promise;
+        }
+        finished = true;
+
+        final ByteBuf footer = ctx.alloc().ioBuffer(
+                (int) Zstd.compressBound(buffer.readableBytes()) + HEADER_LENGTH);
+        flushBufferedData(footer);
+
+        final int idx = footer.writerIndex();
+        footer.setInt(idx, MAGIC_NUMBER);
+        footer.setByte(idx + TOKEN_OFFSET, (byte) (BLOCK_TYPE_NON_COMPRESSED | compressionLevel));
+        footer.setInt(idx + COMPRESSED_LENGTH_OFFSET, 0);
+        footer.setInt(idx + DECOMPRESSED_LENGTH_OFFSET, 0);
+        footer.setInt(idx + CHECKSUM_OFFSET, 0);
+
+        footer.writerIndex(idx + HEADER_LENGTH);
+
+        return ctx.writeAndFlush(footer, promise);
+    }
+
+
+    public boolean isClosed() {
+        return finished;
+    }
+
+
+    public ChannelFuture close() {
+        return close(ctx().newPromise());
+    }
+
+
+    public ChannelFuture close(final ChannelPromise promise) {
+        ChannelHandlerContext ctx = ctx();
+        EventExecutor executor = ctx.executor();
+        if (executor.inEventLoop()) {
+            return finishEncode(ctx, promise);
+        } else {
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ChannelFuture f = finishEncode(ctx(), promise);
+                    f.addListener(new ChannelPromiseNotifier(promise));
+                }
+            });
+            return promise;
+        }
+    }
+
+    @Override
+    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
+        ChannelFuture f = finishEncode(ctx, ctx.newPromise());
+        f.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture f) throws Exception {
+                ctx.close(promise);
+            }
+        });
+
+        if (!f.isDone()) {
+            // Ensure the channel is closed even if the write operation completes in time.
+            ctx.executor().schedule(new Runnable() {
+                @Override
+                public void run() {
+                    ctx.close(promise);
+                }
+            }, 10, TimeUnit.SECONDS);
+        }
+    }
+
+    private ChannelHandlerContext ctx() {
+        ChannelHandlerContext ctx = this.ctx;
+        if (ctx == null) {
+            throw new IllegalStateException("not added to a pipeline");
+        }
+        return ctx;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+        buffer = ctx.alloc().ioBuffer(blockSize);
+        buffer.clear();
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        super.handlerRemoved(ctx);
+        if (buffer != null) {
+            buffer.release();
+            buffer = null;
+        }
+    }
+
 }
