@@ -58,7 +58,7 @@ public class ZstdDecoder extends ByteToMessageDecoder {
 
                         checkMagic(in);
                         analyzeHeader(in);
-
+                        break;
                         // fall through
                     case DECOMPRESS_DATA:
 
