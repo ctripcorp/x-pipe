@@ -51,6 +51,9 @@ public class DefaultPingStats extends AbstractStats implements PingStats {
     protected void doTask() {
         long start = System.currentTimeMillis();
         new ProxyPingCommand(objectPool, getScheduled()).execute().addListener(commandFuture -> {
+            if(!commandFuture.isSuccess()) {
+                result = new PingStatsResult(start, Integer.MAX_VALUE, target, target);
+            }
             ProxyPongEntity pong = commandFuture.getNow();
             if(pong == null) {
                 return;

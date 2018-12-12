@@ -52,61 +52,15 @@ public class ZstdDecoder extends ByteToMessageDecoder {
             while(in.isReadable()) {
                 switch (currentState) {
                     case INIT_BLOCK:
-                        if (in.readableBytes() < HEADER_LENGTH) {
+                        if (!isHeaderComplete(in)) {
                             return;
                         }
-                        final int magic = in.readInt();
-                        if (magic != MAGIC_NUMBER) {
-                            throw new DecompressionException("unexpected block identifier");
-                        }
 
-                        final int token = in.readByte();
-                        final int compressionLevel = (token & 0x0F) + COMPRESSION_LEVEL_BASE;
-                        int blockType = token & 0xF0;
+                        checkMagic(in);
+                        analyzeHeader(in);
 
-                        int compressedLength = Integer.reverseBytes(in.readInt());
-                        if (compressedLength < 0 || compressedLength > MAX_BLOCK_SIZE) {
-                            throw new DecompressionException(String.format(
-                                    "invalid compressedLength: %d (expected: 0-%d)",
-                                    compressedLength, MAX_BLOCK_SIZE));
-                        }
-
-                        int decompressedLength = Integer.reverseBytes(in.readInt());
-                        final int maxDecompressedLength = 1 << compressionLevel;
-                        if (decompressedLength < 0 || decompressedLength > maxDecompressedLength) {
-                            throw new DecompressionException(String.format(
-                                    "invalid decompressedLength: %d (expected: 0-%d)",
-                                    decompressedLength, maxDecompressedLength));
-                        }
-                        if (decompressedLength == 0 && compressedLength != 0
-                                || decompressedLength != 0 && compressedLength == 0
-                                || blockType == BLOCK_TYPE_NON_COMPRESSED && decompressedLength != compressedLength) {
-                            throw new DecompressionException(String.format(
-                                    "stream corrupted: compressedLength(%d) and decompressedLength(%d) mismatch",
-                                    compressedLength, decompressedLength));
-                        }
-
-                        int currentChecksum = Integer.reverseBytes(in.readInt());
-                        if (decompressedLength == 0 && compressedLength == 0) {
-                            if (currentChecksum != 0) {
-                                throw new DecompressionException("stream corrupted: checksum error");
-                            }
-                            currentState = State.FINISHED;
-                            break;
-                        }
-
-                        this.blockType = blockType;
-                        this.compressedLength = compressedLength;
-                        this.decompressedLength = decompressedLength;
-                        this.currentChecksum = currentChecksum;
-
-                        currentState = State.DECOMPRESS_DATA;
                         // fall through
                     case DECOMPRESS_DATA:
-                        blockType = this.blockType;
-                        compressedLength = this.compressedLength;
-                        decompressedLength = this.decompressedLength;
-                        currentChecksum = this.currentChecksum;
 
                         if (in.readableBytes() < compressedLength) {
                             return;
@@ -138,11 +92,7 @@ public class ZstdDecoder extends ByteToMessageDecoder {
                             // Skip inbound bytes after we processed them.
                             in.skipBytes(compressedLength);
 
-                            if(this.decompressedLength != uncompressed.readableBytes()) {
-                                throw new DecompressionException(String.format(
-                                        "stream decode length error: mismatching decompress length: %d (expected: %d)",
-                                        uncompressed.readableBytes(), decompressedLength));
-                            }
+                            checkDecompressLength(uncompressed);
                             if (validateCheckSum) {
                                 checkChecksum(uncompressed, currentChecksum);
                             }
@@ -191,5 +141,68 @@ public class ZstdDecoder extends ByteToMessageDecoder {
     private ByteBuffer safeNioBuffer(ByteBuf buffer) {
         return buffer.nioBufferCount() == 1 ? buffer.internalNioBuffer(buffer.readerIndex(), this.compressedLength)
                 : buffer.nioBuffer(buffer.readerIndex(), this.compressedLength);
+    }
+
+    private boolean isHeaderComplete(ByteBuf in) {
+        return in.readableBytes() >= HEADER_LENGTH;
+    }
+
+    private void checkMagic(ByteBuf in) {
+        final int magic = in.readInt();
+        if (magic != MAGIC_NUMBER) {
+            throw new DecompressionException("unexpected block identifier");
+        }
+    }
+
+    private void analyzeHeader(ByteBuf in) {
+        final int token = in.readByte();
+        final int compressionLevel = (token & 0x0F) + COMPRESSION_LEVEL_BASE;
+        int blockType = token & 0xF0;
+
+        int compressedLength = Integer.reverseBytes(in.readInt());
+        if (compressedLength < 0 || compressedLength > MAX_BLOCK_SIZE) {
+            throw new DecompressionException(String.format(
+                    "invalid compressedLength: %d (expected: 0-%d)",
+                    compressedLength, MAX_BLOCK_SIZE));
+        }
+
+        int decompressedLength = Integer.reverseBytes(in.readInt());
+        final int maxDecompressedLength = 1 << compressionLevel;
+        if (decompressedLength < 0 || decompressedLength > maxDecompressedLength) {
+            throw new DecompressionException(String.format(
+                    "invalid decompressedLength: %d (expected: 0-%d)",
+                    decompressedLength, maxDecompressedLength));
+        }
+        if (decompressedLength == 0 && compressedLength != 0
+                || decompressedLength != 0 && compressedLength == 0
+                || blockType == BLOCK_TYPE_NON_COMPRESSED && decompressedLength != compressedLength) {
+            throw new DecompressionException(String.format(
+                    "stream corrupted: compressedLength(%d) and decompressedLength(%d) mismatch",
+                    compressedLength, decompressedLength));
+        }
+
+        int currentChecksum = Integer.reverseBytes(in.readInt());
+        if (decompressedLength == 0 && compressedLength == 0) {
+            if (currentChecksum != 0) {
+                throw new DecompressionException("stream corrupted: checksum error");
+            }
+            currentState = State.FINISHED;
+            return;
+        }
+
+        this.blockType = blockType;
+        this.compressedLength = compressedLength;
+        this.decompressedLength = decompressedLength;
+        this.currentChecksum = currentChecksum;
+
+        currentState = State.DECOMPRESS_DATA;
+    }
+
+    private void checkDecompressLength(ByteBuf uncompressed) {
+        if(this.decompressedLength != uncompressed.readableBytes()) {
+            throw new DecompressionException(String.format(
+                    "stream decode length error: mismatching decompress length: %d (expected: %d)",
+                    uncompressed.readableBytes(), decompressedLength));
+        }
     }
 }

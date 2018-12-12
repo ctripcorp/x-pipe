@@ -104,7 +104,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     @Ignore
     @Test
     public void testMultiThreadStabilityWithCompressAndSSL() throws Exception {
-        int N = 10;
+        int N = 20;
 
         ((TestProxyConfig)server1.getConfig()).setCompress(true);
         ((TestProxyConfig)server1.getResourceManager().getProxyConfig()).setCompress(true);
@@ -138,7 +138,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
                     ChannelFuture clientFuture = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1);
                     int index = 2;
                     String sendout = total.substring(0, index);
-                    waitConditionUntilTimeOut(()->clientFuture.channel().isActive(), 100);
+                    waitConditionUntilTimeOut(()->clientFuture.channel().isActive(), 200);
                     write(clientFuture, sendout);
 
                     for(int i = 0; i < 2; i++) {

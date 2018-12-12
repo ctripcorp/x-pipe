@@ -44,7 +44,7 @@ public class AppTest extends AbstractProxyIntegrationTest {
         ((TestProxyConfig)firstServer.getResourceManager().getProxyConfig()).setCompress(true);
         startSecondaryProxy();
         startEchoServerForProxy();
-        int speed = 1024 * 10;
+        int speed = 1024 * 1024;
         String protocol = String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d;",
                 SEC_PROXY_TLS_PORT, ECHO_SERVER_PORT);
         logger.info("[wait for proxy warm up]...");
