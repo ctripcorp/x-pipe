@@ -36,9 +36,6 @@ public class CompositeProxyProtocolParser implements ProxyProtocolParser {
             } else {
                 parser = new DefaultProxyConnectProtocolParser();
             }
-            if(parser != null) {
-                break;
-            }
         }
         if(parser != null) {
             return parser.read(protocol);

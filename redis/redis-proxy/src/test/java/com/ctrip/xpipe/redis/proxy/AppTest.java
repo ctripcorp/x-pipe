@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.dianping.cat.Cat;
+import io.netty.util.ResourceLeakDetector;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -33,15 +34,18 @@ public class AppTest extends AbstractProxyIntegrationTest {
     @BeforeClass
     public static void beforeAppTest(){
         System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
     }
 
     @Test
     public void startTwoProxyWithClientServer() throws Exception {
-        startFirstProxy();
+        DefaultProxyServer firstServer = startFirstProxy();
+        ((TestProxyConfig)firstServer.getConfig()).setCompress(true);
+        ((TestProxyConfig)firstServer.getResourceManager().getProxyConfig()).setCompress(true);
         startSecondaryProxy();
         startEchoServerForProxy();
-        int speed = 1024;
-        String protocol = String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d",
+        int speed = 1024 * 1024;
+        String protocol = String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d;",
                 SEC_PROXY_TLS_PORT, ECHO_SERVER_PORT);
         logger.info("[wait for proxy warm up]...");
         Thread.sleep(1000);

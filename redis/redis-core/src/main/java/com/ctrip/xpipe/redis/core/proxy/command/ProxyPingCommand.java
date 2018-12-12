@@ -26,6 +26,10 @@ public class ProxyPingCommand extends AbstractProxyCommand<ProxyPongEntity> {
 
     private ProxyEndpoint target;
 
+    private static final int ONE_RTT_TIMEOUT = 2000;
+
+    private int timeout = ONE_RTT_TIMEOUT;
+
 
     public ProxyPingCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
         super(clientPool, scheduled);
@@ -75,6 +79,7 @@ public class ProxyPingCommand extends AbstractProxyCommand<ProxyPongEntity> {
         if(elements.length == 3) {
             return new ProxyPongEntity(HostPort.fromString(elements[2]));
         } else if(elements.length == 5) {
+            timeout = 2 * ONE_RTT_TIMEOUT;
             return new ProxyPongEntity(HostPort.fromString(elements[2]), HostPort.fromString(elements[3]), Long.parseLong(elements[4]));
         }
         throw new IllegalArgumentException("Proxy Pong Response not valid as: " + response);
@@ -88,5 +93,10 @@ public class ProxyPingCommand extends AbstractProxyCommand<ProxyPongEntity> {
     @Override
     protected boolean logResponse() {
         return false;
+    }
+
+    @Override
+    public int getCommandTimeoutMilli() {
+        return timeout;
     }
 }

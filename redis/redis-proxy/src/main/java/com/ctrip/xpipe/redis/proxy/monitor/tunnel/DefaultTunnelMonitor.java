@@ -64,7 +64,9 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
 
     @Override
     public void record(Tunnel tunnel) {
-        recorder.record(tunnel);
+        if(resourceManager.getProxyConfig().startMonitor()) {
+            recorder.record(tunnel);
+        }
     }
 
     @Override

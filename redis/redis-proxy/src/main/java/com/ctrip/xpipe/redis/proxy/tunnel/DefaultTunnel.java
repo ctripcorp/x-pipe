@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.proxy.tunnel;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
+import com.ctrip.xpipe.redis.core.proxy.exception.ProxyProtocolParseException;
 import com.ctrip.xpipe.redis.proxy.Session;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
@@ -19,6 +21,7 @@ import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.*;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -254,6 +257,26 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         }
     }
 
+    private void installCompressCodecIfNecessary(ChannelPipeline pipeline) {
+        if(protocol.isCompressed()) {
+            CompressAlgorithm algorithm = protocol.getCompressAlgorithm();
+            if(algorithm.getType().equals(config.getCompressAlgorithm().getType())
+                    && algorithm.version().equalsIgnoreCase(config.getCompressAlgorithm().version())) {
+                logger.info("Frontend compress codec installed: {}", ChannelUtil.getDesc(pipeline.channel()));
+                pipeline.addLast(config.getCompressDecoder());
+                pipeline.addLast(config.getCompressEncoder());
+            } else {
+                throw new ProxyProtocolParseException(String.format("compress algorithm not matched %s, %s", algorithm.getType(), algorithm.version()));
+            }
+        }
+    }
+
+    private void addCompressOptionToProtocolIfNeeded() {
+        if(config.isCompressEnabled()) {
+            protocol.addCompression(config.getCompressAlgorithm());
+        }
+    }
+
 
     protected Channel frontendChannel() {
         return frontendChannel;
@@ -272,6 +295,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
     class BackendSessionEventHandler implements SessionEventHandler {
         @Override
         public void onInit() {
+            addCompressOptionToProtocolIfNeeded();
         }
 
         @Override
@@ -298,6 +322,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         public void onInit() {
             frontend.markUnReadable();
             ChannelPipeline pipeline = frontend.getChannel().pipeline();
+            installCompressCodecIfNecessary(pipeline);
             pipeline.addLast(new FrontendSessionNettyHandler(DefaultTunnel.this));
             pipeline.addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }

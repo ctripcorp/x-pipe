@@ -21,4 +21,13 @@ public class DefaultProxyConnectProtocolParser extends AbstractProxyProtocolPars
         return proxyConnectProtocol;
     }
 
+    @Override
+    public void addProxyOptionParser(ProxyOptionParser parser) {
+        getParsers().add(parser);
+    }
+
+    @Override
+    public void removeProxyOptionParser(ProxyOptionParser parser) {
+        getParsers().remove(parser);
+    }
 }

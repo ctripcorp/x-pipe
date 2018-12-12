@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AdvancedEchoClient {
     private static final Logger logger = LoggerFactory.getLogger(AdvancedEchoClient.class);
     private static final int MEGA_BYTE = 1024 * 1024;
+    private static final int KILO_BYTE = 1024;
 
     private static int MESSAGE_SIZE = 1024;
 
@@ -88,7 +89,13 @@ public class AdvancedEchoClient {
 
         scheduled.scheduleAtFixedRate(()->{
             long now = counter.getAndSet(0);
-            logger.info("[sendout] MB: {}", now / MEGA_BYTE);
+            if(now >= MEGA_BYTE) {
+                logger.info("[sendout] {} MB", now / MEGA_BYTE);
+            } else if(now >= KILO_BYTE) {
+                logger.info("[sendout] {} KB", now / KILO_BYTE);
+            } else {
+                logger.info("[sendout] {}", now);
+            }
         }, 5, 5, TimeUnit.SECONDS);
         logger.info("[connect]send out: {}", message + DELIMIETER_STR);
         return future;

@@ -31,6 +31,10 @@ public interface ProxyConnectProtocol extends ProxyProtocol {
 
     boolean isCompressed();
 
-    CompressAlgorithm compressAlgorithm();
+    CompressAlgorithm getCompressAlgorithm();
+
+    void removeCompressOptionIfExist();
+
+    void addCompression(CompressAlgorithm algorithm);
 
 }

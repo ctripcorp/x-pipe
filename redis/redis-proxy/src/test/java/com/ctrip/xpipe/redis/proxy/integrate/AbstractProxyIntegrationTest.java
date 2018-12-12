@@ -73,6 +73,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         });
         TestResourceManager resourceManager = new TestResourceManager();
         resourceManager.setEndpointManager(endpointManager);
+        resourceManager.setConfig(server.getConfig());
         server.setTunnelManager(new DefaultTunnelManager()
                 .setConfig(server.getConfig()).setProxyResourceManager(resourceManager)
                 .setTunnelMonitorManager(new DefaultTunnelMonitorManager(resourceManager)));
@@ -87,10 +88,10 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         // uncomment disable netty bytebuf test
 //        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
-                .setFrontendTcpPort(FIRST_PROXY_TCP_PORT).setFrontendTlsPort(FIRST_PROXY_TLS_PORT).setStartMonitor(true))
+                .setFrontendTcpPort(FIRST_PROXY_TCP_PORT).setFrontendTlsPort(FIRST_PROXY_TLS_PORT).setStartMonitor(false))
                 .setPingStatsManager(new DefaultPingStatsManager());
         prepare(server);
-        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true);
+        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(false);
         ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
         server.start();
         return server;
@@ -99,10 +100,10 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
 
     protected void startSecondaryProxy() throws Exception {
         DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
-                .setFrontendTcpPort(SEC_PROXY_TCP_PORT).setFrontendTlsPort(SEC_PROXY_TLS_PORT).setStartMonitor(true))
+                .setFrontendTcpPort(SEC_PROXY_TCP_PORT).setFrontendTlsPort(SEC_PROXY_TLS_PORT).setStartMonitor(false))
                 .setPingStatsManager(new DefaultPingStatsManager());
         prepare(server);
-        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(true).startMonitor();
+        ((TestProxyConfig)server.getResourceManager().getProxyConfig()).setStartMonitor(false).startMonitor();
         ((DefaultPingStatsManager)server.getPingStatsManager()).postConstruct();
         server.start();
     }
