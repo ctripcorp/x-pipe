@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.proxy.session.*;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.redis.proxy.tunnel.state.*;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -261,6 +262,7 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
             CompressAlgorithm algorithm = protocol.getCompressAlgorithm();
             if(algorithm.getType().equals(config.getCompressAlgorithm().getType())
                     && algorithm.version().equalsIgnoreCase(config.getCompressAlgorithm().version())) {
+                logger.info("Frontend compress codec installed: {}", ChannelUtil.getDesc(pipeline.channel()));
                 pipeline.addLast(config.getCompressDecoder());
                 pipeline.addLast(config.getCompressEncoder());
             } else {

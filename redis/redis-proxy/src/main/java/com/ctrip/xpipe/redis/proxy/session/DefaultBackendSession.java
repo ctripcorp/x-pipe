@@ -138,6 +138,7 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         }
         ProxyConfig config = resourceManager.getProxyConfig();
         if(config.isCompressEnabled()) {
+            logger.info("Backend compress codec installed: {}", ChannelUtil.getDesc(channel));
             channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_DECODER, config.getCompressDecoder());
             channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_ENCODER, config.getCompressEncoder());
         }

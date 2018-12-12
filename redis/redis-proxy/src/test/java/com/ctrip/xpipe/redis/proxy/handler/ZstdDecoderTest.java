@@ -75,7 +75,6 @@ public class ZstdDecoderTest extends AbstractTest {
             channel.writeInbound(piece);
         }
 
-        ByteBuf output;
         mergeOutput(decompressed);
 
         Assert.assertEquals(sample, decompressed.toString(Charset.defaultCharset()));
@@ -126,6 +125,11 @@ public class ZstdDecoderTest extends AbstractTest {
         mergeOutput(decompressed);
 
         Assert.assertEquals(sample1 + sample2, decompressed.toString(Charset.defaultCharset()));
+
+    }
+
+    @Test
+    public void testMultiThread() {
 
     }
 
