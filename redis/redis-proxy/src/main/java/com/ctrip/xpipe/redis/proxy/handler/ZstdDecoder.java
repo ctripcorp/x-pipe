@@ -173,8 +173,12 @@ public class ZstdDecoder extends ByteToMessageDecoder {
                     "invalid decompressedLength: %d (expected: 0-%d)",
                     decompressedLength, maxDecompressedLength));
         }
-        if (decompressedLength == 0 && compressedLength != 0
-                || decompressedLength != 0 && compressedLength == 0
+        if (decompressedLength == 0 && compressedLength != 0) {
+            throw new DecompressionException(String.format(
+                    "stream corrupted: compressedLength(%d) and decompressedLength(%d) mismatch",
+                    compressedLength, decompressedLength));
+        }
+        if (decompressedLength != 0 && compressedLength == 0
                 || blockType == BLOCK_TYPE_NON_COMPRESSED && decompressedLength != compressedLength) {
             throw new DecompressionException(String.format(
                     "stream corrupted: compressedLength(%d) and decompressedLength(%d) mismatch",
