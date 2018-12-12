@@ -54,6 +54,7 @@ public class DefaultBackendSessionTest extends AbstractRedisProxyServerTest {
     public void beforeDefaultBackendSessionTest() {
         MockitoAnnotations.initMocks(this);
         ResourceManager resourceManager = mock(ResourceManager.class);
+        when(resourceManager.getProxyConfig()).thenReturn(new TestProxyConfig());
         when(resourceManager.createProxyEndpointSelector(any())).thenReturn(selector);
         session = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 300000, resourceManager);
 

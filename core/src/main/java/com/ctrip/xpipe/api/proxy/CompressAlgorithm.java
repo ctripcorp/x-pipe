@@ -6,4 +6,12 @@ package com.ctrip.xpipe.api.proxy;
  * Aug 03, 2018
  */
 public interface CompressAlgorithm {
+
+    String version();
+
+    AlgorithmType getType();
+
+    enum AlgorithmType {
+        ZSTD;
+    }
 }

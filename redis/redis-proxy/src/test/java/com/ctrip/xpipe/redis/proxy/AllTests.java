@@ -35,6 +35,9 @@ import org.junit.runners.Suite;
         SessionInitTest.class,
         SessionEstablishedTest.class,
 
+        ZstdEncoderTest.class,
+        ZstdDecoderTest.class,
+
         AbstractSessionNettyHandlerTest.class,
         FrontendSessionNettyHandlerTest.class,
         BackendSessionHandlerTest.class,
@@ -57,7 +60,7 @@ import org.junit.runners.Suite;
         ProxyMonitorHandlerTest.class,
         DefaultPingStatsTest.class,
         TestTLSWithTwoProxy.class,
-        TestMassTCPPacketWithOneProxyServer.class
+        TestMassTCPPacketWithOneProxyServer.class,
 
 })
 public class AllTests {

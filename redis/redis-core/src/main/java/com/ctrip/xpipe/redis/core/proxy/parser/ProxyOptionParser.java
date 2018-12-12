@@ -16,4 +16,6 @@ public interface ProxyOptionParser {
 
     PROXY_OPTION option();
 
+    boolean isImportant();
+
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.proxy;
 
 import com.ctrip.xpipe.redis.core.proxy.parser.ProxyOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.UnknownOptionParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.content.DefaultProxyContentParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.monitor.MonitorOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.ping.PingOptionParser;
@@ -70,6 +71,17 @@ public enum PROXY_OPTION {
         @Override
         public boolean hasResponse() {
             return true;
+        }
+    },
+    CONTENT {
+        @Override
+        public ProxyOptionParser getProxyOptionParser() {
+            return new DefaultProxyContentParser();
+        }
+
+        @Override
+        public boolean hasResponse() {
+            return false;
         }
     };
 

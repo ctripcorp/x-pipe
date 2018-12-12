@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.ProxyProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.exception.ProxyProtocolParseException;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 
@@ -25,6 +26,8 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
 
     private List<ProxyOptionParser> parsers = Lists.newArrayList();
 
+    private static final char IMPORTANT_OPTION_SIGN = '#';
+
     @Override
     public ProxyOptionParser getProxyOptionParser(PROXY_OPTION proxyOption) {
         for(ProxyOptionParser parser : parsers) {
@@ -32,16 +35,18 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
                 return parser;
             }
         }
-        ProxyOptionParser parser = proxyOption.getProxyOptionParser();
-        addProxyParser(parser);
-        return parser;
+        return null;
     }
 
     @Override
     public ByteBuf format() {
         StringBuilder proxyProtocol = new StringBuilder(ProxyProtocol.KEY_WORD).append(WHITE_SPACE);
         for(ProxyOptionParser parser : parsers) {
-            proxyProtocol.append(parser.output()).append(";");
+            proxyProtocol.append(parser.output());
+            if(parser.isImportant()) {
+                proxyProtocol.append(IMPORTANT_OPTION_SIGN);
+            }
+            proxyProtocol.append(";");
         }
         return new SimpleStringParser(proxyProtocol.toString()).format();
     }
@@ -54,8 +59,16 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
 
         String options = removeKeyWord(protocol);
         String[] allOption = options.split(LINE_SPLITTER);
+        boolean optionImportant = false;
         for(String option : allOption) {
-            addProxyParser(PROXY_OPTION.getOptionParser(option.trim()));
+            if((optionImportant = isOptionImportant(option))) {
+                option = option.substring(0, option.length() - 1);
+            }
+            ProxyOptionParser optionParser = PROXY_OPTION.getOptionParser(option.trim());
+            if(optionImportant && optionParser.option().equals(PROXY_OPTION.UNKOWN)) {
+                throw new ProxyProtocolParseException(String.format("UNKNOWN IMPORTANT PROXY PROTOCOL OPTION: %s", option));
+            }
+            addProxyParser(optionParser);
         }
         validate(parsers);
         return newProxyProtocol(protocol);
@@ -70,6 +83,9 @@ public abstract class AbstractProxyProtocolParser<V extends ProxyProtocol> imple
         return read(redisClientProtocol.getPayload());
     }
 
+    private boolean isOptionImportant(String option) {
+        return option.charAt(option.length() - 1) == IMPORTANT_OPTION_SIGN;
+    }
 
     protected String removeKeyWord(String protocol) {
         return protocol.substring(ProxyProtocol.KEY_WORD.length());
