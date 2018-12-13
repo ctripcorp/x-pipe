@@ -1,18 +1,17 @@
-package com.ctrip.xpipe.netty.commands;
+package com.ctrip.xpipe.redis.core.client;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.pool.BorrowObjectException;
+import com.ctrip.xpipe.netty.commands.AsyncNettyClient;
+import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPoolTest;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.google.common.collect.Lists;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -21,21 +20,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.internal.PendingWrite;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu
@@ -110,14 +99,61 @@ public class AsyncNettyClientTest extends AbstractTest {
 
         StringBuffer sb = new StringBuffer();
 
+        StringBuilder expected = new StringBuilder();
+
         int N = 100;
-        for(int i = 0; i < N; i++) {
-            String message = i + "\r\n";
+        runTheTest(client, sb, expected, N);
+        waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
+        sleep(1000);
+        String str = sb.toString();
+        Assert.assertEquals(str, expected.toString());
+    }
+
+    @Test
+    public void testFutureClosed() {
+        AsyncNettyClient client = new AsyncNettyClient(b.connect("localhost", server.getPort()),
+                new DefaultEndPoint("localhost", server.getPort()));
+        client.channel().attr(NettyClientHandler.KEY_CLIENT).set(client);
+
+        StringBuffer sb = new StringBuffer();
+
+        StringBuilder expected = new StringBuilder();
+
+        int N = 100;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                runTheTest(client, sb, expected, N);
+            }
+        }).start();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    server.stop();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+//        waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
+        sleep(2 * 1000);
+    }
+
+    private void runTheTest(AsyncNettyClient client, StringBuffer sb, StringBuilder expected, int n) {
+        for(int i = 0; i < n; i++) {
+            String message = "+" + i + "\r\n";
             client.sendRequest(Unpooled.copiedBuffer(message.getBytes()), new ByteBufReceiver() {
+
+                private RedisClientProtocol<String> parser = new SimpleStringParser();
                 @Override
                 public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
-                    sb.append(byteBuf.toString(Charset.defaultCharset()));
-                    return RECEIVER_RESULT.SUCCESS;
+                    RedisClientProtocol<String> clientProtocol = parser.read(byteBuf);
+                    if(clientProtocol != null) {
+                        sb.append(clientProtocol.getPayload());
+                        return RECEIVER_RESULT.SUCCESS;
+                    }
+                    return RECEIVER_RESULT.CONTINUE;
                 }
 
                 @Override
@@ -125,15 +161,10 @@ public class AsyncNettyClientTest extends AbstractTest {
 
                 }
             });
+            expected.append(i);
         }
 //        waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
-        sleep(5 * 1000);
-        String str = sb.toString();
-        String[] recipents = StringUtil.splitByLineRemoveEmpty(str);
-        String[] expected = Arrays.copyOf(recipents, recipents.length);
-        for(String receive : recipents) {
-            logger.info("[receive] {}", receive);
-        }
+
     }
 
     protected void doStart() throws Exception {
@@ -152,17 +183,7 @@ public class AsyncNettyClientTest extends AbstractTest {
                         p.addLast(new NettyClientHandler());
                     }
                 });
+
     }
 
-    class ReceiveHandler extends ChannelInboundHandlerAdapter {
-        @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            if(msg instanceof ByteBuf) {
-                String local = ((ByteBuf) msg).toString(Charset.defaultCharset());
-                logger.info("[receive] {}", local);
-                result += local;
-            }
-            super.channelRead(ctx, msg);
-        }
-    }
 }
