@@ -1,6 +1,6 @@
 <div>
     <h3 class="header smaller lighter blue">
-        <span>Proxy-Ping-Stats</span>
+        <span>Proxy-List</span>
     </h3>
     <div>
         <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
@@ -21,17 +21,16 @@
                                 <a class="btn btn-primary btn-sm" ui-sref="proxy_tunnels({proxyIp: proxyCollector.proxyInfo.hostPort.host, dcId: currentDcId})">Proxy-Detail</a>
                             </div>
                         </div>
-                        </header>
+                    </header>
 
                     <table class="table table-bordered table-hover">
                         <thead>
                         <tr>
-                            <th>Direct</th>
+                            <th>chain</th>
                             <th>Real</th>
                             <th>Start</th>
                             <th>End</th>
                             <th>Duration</th>
-                            <th>历史信息打点</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -42,8 +41,7 @@
                             <td>{{pingStatsResult.start | date:'yyyy-MM-dd HH:mm:ss:sss'}}</td>
                             <td>{{pingStatsResult.end | date:'yyyy-MM-dd HH:mm:ss:sss'}}</td>
                             <td>{{pingStatsResult.end - pingStatsResult.start}}</td>
-                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoProxyPingHickwall()"></span></td>
-                           </tr>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
@@ -52,4 +50,3 @@
 
     </div>
 </div>
-

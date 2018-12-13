@@ -155,7 +155,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String getHickwallAddress() {
-        return getProperty(KEY_HICKWALL_ADDRESS, "");
+        return getProperty(KEY_HICKWALL_ADDRESS, "http://hickwall.qa.nt.ctripcorp.com/grafana/dashboard/script/scripted_sole.js?from=now-15m&to=now&target=");
     }
 
     @Override

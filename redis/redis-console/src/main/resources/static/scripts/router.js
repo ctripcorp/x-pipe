@@ -76,7 +76,7 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
 
             },
             templateUrl: 'views/index/proxy_ping.html',
-            controller: 'ProxyCollectorCtl'
+            controller: 'ProxyPingCtl'
         })
         .state('cluster_dc_shard_update', {
         	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',

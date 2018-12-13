@@ -8,7 +8,6 @@
                 <table class="table table-bordered table-hover">
                     <thead>
                     <tr>
-                        <th>tunnel</th>
                         <th>chain</th>
                         <th>socket-stats</th>
                         <th>tunnel-stats</th>
@@ -16,10 +15,25 @@
                     </thead>
                     <tbody>
                         <tr ng-repeat="tunnel in tunnels">
-                            <td ng-bind="tunnel.tunnelId"></td>
                             <td><a ui-sref="cluster_dc_proxy_chains({clusterName: tunnel.clusterId, currentDcName: tunnel.backupDcId})">{{tunnel.backupDcId}}-{{tunnel.clusterId}}-{{tunnel.shardId}}</a></td>
-                            <td>{{prettyJson(tunnel.tunnelInfo.tunnelSocketStatsResult)}}</td>
-                            <td>{{prettyJson(tunnel.tunnelInfo.tunnelStatsResult)}}</td>
+                            <td>
+                                <span>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">Frontend:</p>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">{{prettyPrint(tunnel.socketStatsMetricOverview.frontend)}}</p>
+                                </span>
+                                <span>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">Backend:</p>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">{{prettyPrint(tunnel.socketStatsMetricOverview.backend)}}</p>
+                                </span>
+                            </td>
+                            <td>
+                                <span>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">frontend: {{tunnel.tunnelStatsResult.frontend}}</p>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">backend: {{tunnel.tunnelStatsResult.backend}}</p>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">protocol receive: {{tunnel.tunnelStatsResult.protocolRecvTime | date:'yyyy-MM-dd HH:mm:ss:sss'}}</p>
+                                    <p align="center" style= "margin: 0cm 0cm 0pt; text-align: left">protocol send: {{tunnel.tunnelStatsResult.protocolSndTime | date:'yyyy-MM-dd HH:mm:ss:sss'}}</p>
+                                </span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>

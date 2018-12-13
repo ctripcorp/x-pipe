@@ -8,6 +8,7 @@ index_module.controller('TunnelsCtl',['$rootScope', '$scope', 'toastr', 'AppUtil
         $scope.loadTunnels = loadTunnels;
         $scope.prettyJson = syntaxHighlight;
         $scope.gotoChain = gotoChain;
+        $scope.prettyPrint = prettyPrint;
 
         if ($scope.dcId && $scope.proxyIp) {
             loadTunnels($scope.dcId, $scope.proxyIp);
@@ -20,6 +21,14 @@ index_module.controller('TunnelsCtl',['$rootScope', '$scope', 'toastr', 'AppUtil
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));
                 });
+        }
+
+        function prettyPrint(metrics) {
+            result = "";
+            metrics.forEach(function(metric){
+                result += metric.metricType + ":" + metric.value + ";  ";
+            });
+            return result;
         }
 
         function prettyJson(obj) {
@@ -35,4 +44,5 @@ index_module.controller('TunnelsCtl',['$rootScope', '$scope', 'toastr', 'AppUtil
             var uri = "/#/chain/" + clusterId + "/" + backupDcId;
             $window.open(uri);
         }
+
     }]);

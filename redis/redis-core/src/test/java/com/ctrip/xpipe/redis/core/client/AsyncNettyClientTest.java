@@ -26,6 +26,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
@@ -58,7 +59,8 @@ public class AsyncNettyClientTest extends AbstractTest {
         server = startEchoServer();
     }
 
-//    @Test
+    @Ignore
+    @Test
     public void testFutureSend() {
         ChannelFuture future = b.connect("localhost", server.getPort());
         int N = 1000;
@@ -81,7 +83,8 @@ public class AsyncNettyClientTest extends AbstractTest {
         sleep(1000 * 10);
     }
 
-//    @Test
+    @Ignore
+    @Test
     public void testSendActive() {
         ChannelFuture future = b.connect("10.5.111.145", 6379);
         int N = 1000;
@@ -133,6 +136,7 @@ public class AsyncNettyClientTest extends AbstractTest {
         String[] expected = Arrays.copyOf(recipents, recipents.length);
         for(String receive : recipents) {
             logger.info("[receive] {}", receive);
+            logger.info("[expected] {}", expected);
         }
     }
 
@@ -155,6 +159,8 @@ public class AsyncNettyClientTest extends AbstractTest {
     }
 
     class ReceiveHandler extends ChannelInboundHandlerAdapter {
+
+        private SimpleStringParser
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             if(msg instanceof ByteBuf) {

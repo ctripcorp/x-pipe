@@ -6,11 +6,15 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.DcClusterShard;
+import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
+import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzerManager;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
@@ -119,15 +123,39 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
     @Override
     public List<TunnelSocketStatsAnalyzer.FrontendAndBackendMetrics> analyze(ProxyChain chain) {
-        Queue<TunnelSocketStatsAnalyzer.FrontendAndBackendMetrics> result = Queues.newLinkedBlockingQueue();
-        new SafeLoop<TunnelSocketStatsAnalyzer>(executors, analyzers.values()) {
+        List<TunnelSocketStatsAnalyzer.FrontendAndBackendMetrics> result = Lists.newArrayList();
+        new SafeLoop<TunnelSocketStatsAnalyzer>(analyzers.values()) {
             @Override
             protected void doRun0(TunnelSocketStatsAnalyzer analyzer) {
                 result.addAll(analyzer.analyze(chain));
             }
 
         }.run();
-        return Lists.newArrayList(result);
+        return result;
+    }
+
+    @Override
+    public TunnelSocketStatsMetricOverview analyze(TunnelSocketStatsResult result) {
+        List<Pair<TunnelSocketStatsMetric, TunnelSocketStatsMetric>> metrics = Lists.newArrayList();
+        new SafeLoop<TunnelSocketStatsAnalyzer>(analyzers.values()) {
+            @Override
+            protected void doRun0(TunnelSocketStatsAnalyzer analyzer) {
+                metrics.add(analyzer.analyze(result));
+            }
+
+        }.run();
+        List<TunnelSocketStatsMetric> frontendMetric = Lists.newArrayListWithCapacity(metrics.size());
+        List<TunnelSocketStatsMetric> backendMetric = Lists.newArrayListWithCapacity(metrics.size());
+        for(Pair<TunnelSocketStatsMetric, TunnelSocketStatsMetric> frontAndBackendMetric : metrics) {
+            frontendMetric.add(frontAndBackendMetric.getKey());
+            backendMetric.add(frontAndBackendMetric.getValue());
+        }
+        return new TunnelSocketStatsMetricOverview(frontendMetric, backendMetric);
+    }
+
+    @Override
+    public List<String> getMetricTypes() {
+        return Lists.newArrayList(analyzers.keySet());
     }
 
     private void putAnalyzer(TunnelSocketStatsAnalyzer analyzer) {
