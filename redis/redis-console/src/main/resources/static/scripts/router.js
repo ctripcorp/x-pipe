@@ -65,18 +65,17 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
         .state('proxy_pings', {
             url: '/proxy/pings',
             params: {
-                proxyIp: {
-                    value: '',
-                    squash: false
-                },
-                dcId: {
-                    value: '',
-                    squash: false
-                }
 
             },
             templateUrl: 'views/index/proxy_ping.html',
-            controller: 'ProxyCollectorCtl'
+            controller: 'ProxyPingCtl'
+        })
+        .state('proxy_overview', {
+            url: '/proxy/overview',
+            params: {
+            },
+            templateUrl: 'views/index/proxy_list.html',
+            controller: 'ProxyListCtl'
         })
         .state('cluster_dc_shard_update', {
         	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',

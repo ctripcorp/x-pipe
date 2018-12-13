@@ -30,6 +30,8 @@
                             <th>Real</th>
                             <th>Start</th>
                             <th>End</th>
+                            <th>Duration</th>
+                            <th>历史信息打点</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -39,6 +41,8 @@
                             <td ng-bind="prettyJson(pingStatsResult.real)"></td>
                             <td>{{pingStatsResult.start | date:'yyyy-MM-dd HH:mm:ss:sss'}}</td>
                             <td>{{pingStatsResult.end | date:'yyyy-MM-dd HH:mm:ss:sss'}}</td>
+                            <td>{{pingStatsResult.end - pingStatsResult.start}}</td>
+                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoProxyPingHickwall()"></span></td>
                            </tr>
                         </tbody>
                     </table>
@@ -46,9 +50,6 @@
             </div>
         </div>
 
-        <div ng-if="(!dcs || !dcs.length) && clusterName">
-            无shards
-        </div>
     </div>
 </div>
 
