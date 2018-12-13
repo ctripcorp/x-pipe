@@ -28,29 +28,21 @@
                     <table class="table table-bordered table-hover">
                         <thead>
                         <tr>
-                            <th>
-                                redis-master
-                            </th>
-                            <th>
-                                upstream-keeper
-                            </th>
-                            <th>proxy-1</th>
-                            <th>proxy-2</th>
-                            <th>proxy-3</th>
-                            <th>
-                            	downstream-keeper
-                            </th>
+                            <th>active-dc-proxy</th>
+                            <th>backup-dc-proxy</th>
+                            <th ng-repeat="(key, value) in proxyChain.metrics">{{key}}</th>
                         </tr>
+
                         </thead>
                         <tbody>
                             <tr>
-                                <td ng-bind="proxyChain.redisMaster"></td>
-                                <td ng-bind="proxyChain.activeDcKeeper"></td>
-                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.tunnels[0].proxyModel.hostPort.host, dcId: proxyChain.tunnels[0].proxyModel.dcName})">{{proxyChain.tunnels[0].tunnelId}}</a></td>
-                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.tunnels[1].proxyModel.hostPort.host, dcId: proxyChain.tunnels[1].proxyModel.dcName})">{{proxyChain.tunnels[1].tunnelId}}}</a></td>
-                                <td ng-bind="proxyChain.tunnels[2].tunnelId"></td>
-                                <td ng-bind="proxyChain.backupDcKeeper"></td>
+                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.activeDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.activeDcTunnel.proxyModel.dcName})">{{proxyChain.activeDcTunnel.tunnelStatsResult.backend}}-{{proxyChain.activeDcTunnel.tunnelStatsResult.frontend}}</a></td>
+                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.backupDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.backupDcTunnel.proxyModel.dcName})">{{proxyChain.backupDcTunnel.tunnelStatsResult.backend}}-{{proxyChain.backupDcTunnel.tunnelStatsResult.frontend}}</a></td>
+                                <td ng-repeat="(key, value) in proxyChain.metrics">
+                                    <span class="hickwall" aria-hidden="true" ng-click="gotoHickwallWebSite(value, '_blank')"></span>
+                                </td>
                             </tr>
+
                         </tbody>
                     </table>
                 </div>

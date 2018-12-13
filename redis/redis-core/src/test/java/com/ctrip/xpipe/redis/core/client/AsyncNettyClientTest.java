@@ -22,6 +22,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
@@ -47,7 +48,8 @@ public class AsyncNettyClientTest extends AbstractTest {
         server = startEchoServer();
     }
 
-//    @Test
+    @Ignore
+    @Test
     public void testFutureSend() {
         ChannelFuture future = b.connect("localhost", server.getPort());
         int N = 1000;
@@ -70,7 +72,8 @@ public class AsyncNettyClientTest extends AbstractTest {
         sleep(1000 * 10);
     }
 
-//    @Test
+    @Ignore
+    @Test
     public void testSendActive() {
         ChannelFuture future = b.connect("10.5.111.145", 6379);
         int N = 1000;
@@ -163,8 +166,6 @@ public class AsyncNettyClientTest extends AbstractTest {
             });
             expected.append(i);
         }
-//        waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
-
     }
 
     protected void doStart() throws Exception {
