@@ -2,18 +2,23 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.*;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -130,6 +135,30 @@ public class ProxyServiceImpl implements ProxyService {
         for(ProxyMonitorCollector collector : collectors) {
             if(dcName.equalsIgnoreCase(collector.getProxyInfo().getDcName())) {
                 result.add(new ProxyPingStatsModel(collector.getProxyInfo(), collector.getPingStatsResults()));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<ProxyInfoModel> getAllProxyInfo() {
+        List<ProxyInfoModel> result = Lists.newArrayList();
+        List<ProxyMonitorCollector> proxies = proxyMonitorCollectorManager.getProxyMonitorResults();
+        for(ProxyMonitorCollector proxy : proxies) {
+            ProxyModel model = proxy.getProxyInfo();
+            int chainNum = getChainNumber(proxy);
+            result.add(new ProxyInfoModel(model.getHostPort().getHost(), model.getDcName(), chainNum));
+        }
+        return result;
+    }
+
+
+    private int getChainNumber(ProxyMonitorCollector proxy) {
+        List<TunnelInfo> tunnels = proxy.getTunnelInfos();
+        int result = 0;
+        for(TunnelInfo info : tunnels) {
+            if(analyzer.getProxyChain(info.getTunnelId()) != null) {
+                result ++;
             }
         }
         return result;

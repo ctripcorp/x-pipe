@@ -1,31 +1,45 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.model.ProxyChainModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.TunnelModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
-import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
+import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzerManager;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jmx.support.MetricType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class ProxyChainController extends AbstractConsoleController {
+
+    private static final String PROXY_PING_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.ping,address)";
+
+    private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.%s;cluster=%s;shard=%s,address)";
+
+    private static final String SUFFIX = "&panel.datasource=incluster&panel.db=FX&panelId=1&fullscreen&edit";
+
+    private static final String ENDCODE_TYPE = "UTF-8";
 
     @Autowired
     private ProxyService proxyService;
@@ -34,10 +48,13 @@ public class ProxyChainController extends AbstractConsoleController {
     private ClusterService clusterService;
 
     @Autowired
-    private RedisService redisService;
+    private TunnelSocketStatsAnalyzerManager socketStatsAnalyzerManager;
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
 
     @RequestMapping(value = "/proxy/collectors/{dcName}", method = RequestMethod.GET)
@@ -59,7 +76,9 @@ public class ProxyChainController extends AbstractConsoleController {
                 logger.warn("[tunnelId] {}, no chains", info.getTunnelId());
                 continue;
             }
-            results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDc(), chain.getCluster(), chain.getShard(), info));
+            TunnelSocketStatsMetricOverview overview = socketStatsAnalyzerManager.analyze(info.getTunnelSocketStatsResult());
+            results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDc(), chain.getCluster(), chain.getShard(),
+                    info.getTunnelStatsResult(), overview));
         }
         return results;
     }
@@ -76,29 +95,50 @@ public class ProxyChainController extends AbstractConsoleController {
         long activeDcId = clusterService.find(clusterId).getActivedcId();
         String activeDc = dcService.getDcName(activeDcId);
         for(ProxyChain chain : chains) {
-            String shard = chain.getShard();
-
-            List<RedisTbl> activeDcKeepers = redisService.findKeepersByDcClusterShard(activeDc, clusterId, shard);
-            RedisTbl activeDcKeeper = filterout(activeDcKeepers, RedisTbl::isKeeperActive);
-
-            List<RedisTbl> backupDcKeepers = redisService.findKeepersByDcClusterShard(chain.getBackupDc(), clusterId, shard);
-            RedisTbl backupDcKeeper = filterout(backupDcKeepers, RedisTbl::isKeeperActive);
-
-            List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(activeDc, clusterId, shard);
-            RedisTbl master = filterout(redises, RedisTbl::isMaster);
-
-            result.add(new ProxyChainModel(chain, master, activeDcKeeper, backupDcKeeper));
+            result.add(new ProxyChainModel(chain, activeDc, backupDcId));
         }
         return result;
     }
 
-    private RedisTbl filterout(List<RedisTbl> redisTbls, Function<RedisTbl, Boolean> function) {
-        for(RedisTbl redisTbl : redisTbls) {
-            if(function.apply(redisTbl)) {
-                return redisTbl;
-            }
+    @RequestMapping(value = "/proxy/ping/hickwall", method = RequestMethod.GET)
+    public Map<String, String> getProxyPingHickwall() {
+        String template = null;
+        try {
+            template = URLEncoder.encode(PROXY_PING_HICKWALL_TEMPLATE, ENDCODE_TYPE);
+        } catch (UnsupportedEncodingException e) {
+            logger.error("[getHickwallAddress]", e);
+            return ImmutableMap.of("addr", "");
         }
-        return null;
+        return ImmutableMap.of("addr", getHickwall(template));
     }
 
+    @RequestMapping(value = "/proxy/chain/hickwall/{clusterId}/{shardId}", method = RequestMethod.GET)
+    public Map<String, String> getChainHickwall(@PathVariable String clusterId, @PathVariable String shardId) {
+        List<String> metricTypes = socketStatsAnalyzerManager.getMetricTypes();
+        Map<String, String> result = Maps.newHashMap();
+        String template = null;
+        for(String metricType : metricTypes) {
+            try {
+                template = URLEncoder.encode(String.format(PROXY_CHAIN_HICKWALL_TEMPLATE, metricType, clusterId, shardId), ENDCODE_TYPE);
+                result.put(metricType, getHickwall(template));
+            } catch (UnsupportedEncodingException e) {
+                logger.error("[getHickwallAddress]", e);
+            }
+        }
+        return result;
+    }
+
+    private String getHickwall(String middle) {
+        String prefix = consoleConfig.getHickwallAddress();
+        if (Strings.isEmpty(prefix)) {
+            return "";
+        }
+        return prefix + middle + SUFFIX;
+    }
+
+
+    @RequestMapping(value = "/proxy/status/all", method = RequestMethod.GET)
+    public List<ProxyInfoModel> getAllProxyInfo() {
+        return proxyService.getAllProxyInfo();
+    }
 }
