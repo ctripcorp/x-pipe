@@ -160,7 +160,7 @@ public class AsyncNettyClientTest extends AbstractTest {
 
     class ReceiveHandler extends ChannelInboundHandlerAdapter {
 
-        private SimpleStringParser
+
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             if(msg instanceof ByteBuf) {

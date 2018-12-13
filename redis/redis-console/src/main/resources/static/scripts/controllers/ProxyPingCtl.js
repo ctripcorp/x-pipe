@@ -12,13 +12,6 @@ index_module.controller('ProxyPingCtl',['$rootScope', '$scope', 'toastr', 'AppUt
 
         getAllDcs();
 
-        // if ($scope.currentDcId) {
-        //     loadProxyCollectors($scope.currentDcId);
-        // } else {
-        //     $scope.currentDcId = $scope.dcs[0].dcName;
-        //     loadProxyCollectors($scope.currentDcId);
-        // }
-
         function switchDc(dc) {
             $scope.currentDcId = dc.dcName;
             loadProxyCollectors($scope.currentDcId);

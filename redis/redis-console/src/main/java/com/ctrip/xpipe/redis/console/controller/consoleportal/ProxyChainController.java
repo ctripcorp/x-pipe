@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
@@ -136,4 +137,8 @@ public class ProxyChainController extends AbstractConsoleController {
     }
 
 
+    @RequestMapping(value = "/proxy/status/all", method = RequestMethod.GET)
+    public List<ProxyInfoModel> getAllProxyInfo() {
+        return proxyService.getAllProxyInfo();
+    }
 }

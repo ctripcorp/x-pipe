@@ -19,6 +19,11 @@ services.service('ProxyService', ['$resource', '$q', function ($resource, $q) {
             method: 'GET',
             url: '/console/proxy/chain/hickwall/:clusterId/:shardId',
             isArray: false
+        },
+        get_proxy_status_all: {
+            methos: 'GET',
+            url: '/console/proxy/status/all',
+            isArray: true
         }
     });
 
@@ -64,9 +69,22 @@ services.service('ProxyService', ['$resource', '$q', function ($resource, $q) {
         return d.promise;
     }
 
+    function getAllProxyInfo() {
+        var d = $q.defer();
+        resource.get_proxy_status_all({
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         loadAllProxyChainsForDcCluster : loadAllProxyChainsForDcCluster,
         existsRouteBetween: existsRouteBetween,
-        getProxyChainHickwall: getProxyChainHickwall
+        getProxyChainHickwall: getProxyChainHickwall,
+        getAllProxyInfo: getAllProxyInfo
     }
 }]);
