@@ -2,10 +2,14 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
+import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzer;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +36,14 @@ public abstract class AbstractTunnelSocketStatsAnalyzer implements TunnelSocketS
             result.add(getMetrics(info, clusterId, shardId));
         }
         return result;
+    }
+
+    @Override
+    public Pair<TunnelSocketStatsMetric, TunnelSocketStatsMetric> analyze(TunnelSocketStatsResult result) {
+        Pair<TunnelSocketStatsMetric, TunnelSocketStatsMetric> frontendAndBackend = new Pair<>();
+        frontendAndBackend.setKey(new TunnelSocketStatsMetric(getType(), analyze(result.getFrontendSocketStats().getResult())));
+        frontendAndBackend.setValue(new TunnelSocketStatsMetric(getType(), analyze(result.getBackendSocketStats().getResult())));
+        return frontendAndBackend;
     }
 
     @Override

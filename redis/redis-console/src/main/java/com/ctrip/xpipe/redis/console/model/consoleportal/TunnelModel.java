@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.redis.console.model;
+package com.ctrip.xpipe.redis.console.model.consoleportal;
 
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
 
 import java.util.Objects;
 
@@ -14,14 +15,18 @@ public class TunnelModel {
 
     private String shardId;
 
-    private TunnelInfo tunnelInfo;
+    private TunnelStatsResult tunnelStatsResult;
 
-    public TunnelModel(String tunnelId, String backupDcId, String clusterId, String shardId, TunnelInfo tunnelInfo) {
+    private TunnelSocketStatsMetricOverview socketStatsMetricOverview;
+
+    public TunnelModel(String tunnelId, String backupDcId, String clusterId, String shardId,
+                       TunnelStatsResult tunnelStatsResult, TunnelSocketStatsMetricOverview socketStatsMetricOverview) {
         this.tunnelId = tunnelId;
         this.backupDcId = backupDcId;
         this.clusterId = clusterId;
         this.shardId = shardId;
-        this.tunnelInfo = tunnelInfo;
+        this.tunnelStatsResult = tunnelStatsResult;
+        this.socketStatsMetricOverview = socketStatsMetricOverview;
     }
 
     public String getTunnelId() {
@@ -60,30 +65,22 @@ public class TunnelModel {
         return this;
     }
 
-    public TunnelInfo getTunnelInfo() {
-        return tunnelInfo;
+    public TunnelStatsResult getTunnelStatsResult() {
+        return tunnelStatsResult;
     }
 
-    public TunnelModel setTunnelInfo(TunnelInfo tunnelInfo) {
-        this.tunnelInfo = tunnelInfo;
+    public TunnelModel setTunnelStatsResult(TunnelStatsResult tunnelStatsResult) {
+        this.tunnelStatsResult = tunnelStatsResult;
         return this;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TunnelModel that = (TunnelModel) o;
-        return Objects.equals(tunnelId, that.tunnelId) &&
-                Objects.equals(backupDcId, that.backupDcId) &&
-                Objects.equals(clusterId, that.clusterId) &&
-                Objects.equals(shardId, that.shardId) &&
-                Objects.equals(tunnelInfo, that.tunnelInfo);
+    public TunnelSocketStatsMetricOverview getSocketStatsMetricOverview() {
+        return socketStatsMetricOverview;
     }
 
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(tunnelId, backupDcId, clusterId, shardId, tunnelInfo);
+    public TunnelModel setSocketStatsMetricOverview(TunnelSocketStatsMetricOverview socketStatsMetricOverview) {
+        this.socketStatsMetricOverview = socketStatsMetricOverview;
+        return this;
     }
+
 }

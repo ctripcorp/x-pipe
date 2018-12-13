@@ -3,11 +3,14 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
 
         $scope.dcs, $scope.chains;
         $scope.clusterName = $stateParams.clusterName;
+        $scope.metrics = {};
 
         $scope.switchDc = switchDc;
         $scope.loadChains = loadChains;
         $scope.loadProxyChains = loadProxyChains;
         $scope.gotoProxy = gotoProxy;
+        $scope.getMetricHickwalls = getMetricHickwalls;
+        $scope.gotoHickwallWebSite = gotoHickwallWebSite;
 
         if ($scope.clusterName) {
             loadChains();
@@ -69,6 +72,10 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
             ProxyService.loadAllProxyChainsForDcCluster(dcName, clusterName)
                 .then(function (result) {
                     $scope.chains = result;
+                    result.forEach(function (chain) {
+                        getMetricHickwalls(clusterName, chain.shardId)
+                            .then(function (value) { chain.metrics = value })
+                    });
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));
                 });
@@ -77,6 +84,14 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
         function gotoProxy(proxyDcId, proxyIp) {
             var uri = "/#/proxy/" + proxyIp + "/" + proxyDcId;
             $window.open(uri);
+        }
+
+        function getMetricHickwalls(clusterId, shardId) {
+            return ProxyService.getProxyChainHickwall(clusterId, shardId);
+        }
+
+        function gotoHickwallWebSite(addr) {
+            $window.open(addr, '_blank');
         }
 
 }]);

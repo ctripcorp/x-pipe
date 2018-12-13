@@ -55,6 +55,8 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     private ProxyModel model;
 
+    public static final int CHECK_INTERVAL = 1000;
+
     public DefaultProxyMonitorCollector(ScheduledExecutorService scheduled,
                                         SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool,
                                         ProxyModel model) {
@@ -122,7 +124,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                     }
                 }.run();
             }
-        }, getStartInterval(), 1000, TimeUnit.MILLISECONDS);
+        }, getStartInterval(), CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     @Override
