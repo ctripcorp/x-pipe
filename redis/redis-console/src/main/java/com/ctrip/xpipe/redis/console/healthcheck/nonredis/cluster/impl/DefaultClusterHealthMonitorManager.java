@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.LeveledEmbededSet;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -33,6 +35,7 @@ import java.util.concurrent.Executors;
 
 @Lazy
 @Component
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultClusterHealthMonitorManager.class);

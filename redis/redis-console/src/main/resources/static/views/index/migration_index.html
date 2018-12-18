@@ -25,6 +25,15 @@
 						<md-option ng-repeat="org in organizations" value="{{org.orgName}}">{{org.orgName}}</md-option>
 					</md-select>
 				</div>
+				<div class="col-md-2 text-center">
+					<md-select md-on-close="getMasterUnhealthyClusters()"
+							   chosen="directiveOptions"
+							   allow_single_deselect=true
+							   ng-model="masterUnhealthyClusterState"
+							   class="md-no-underline color-white radius-border-fat no-margin" placeholder="Master有问题的Cluster">
+						<md-option ng-repeat="stateLevel in masterUnhealthyClusterStateLevels" value="{{stateLevel.level}}">{{stateLevel.name}}</md-option>
+					</md-select>
+				</div>
 				<div class="col-md-5 text-right	">
 					<a type="button" ng-click="preMigrate()" class="btn btn-primary radius-border-fat"><strong>迁移</strong></a>
 					&nbsp&nbsp 
