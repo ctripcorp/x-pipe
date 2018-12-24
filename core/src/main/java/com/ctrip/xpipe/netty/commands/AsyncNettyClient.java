@@ -28,7 +28,7 @@ public class AsyncNettyClient extends DefaultNettyClient {
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) {
-                logger.info("[connected] endpint: {}, channel: {}", endpoint, ChannelUtil.getDesc(future.channel()));
+                logger.info("[async][connected] endpint: {}, channel: {}", endpoint, ChannelUtil.getDesc(future.channel()));
                 if(endpoint instanceof ProxyEnabled) {
                     desc.set(String.format("%s, %s:%d", ChannelUtil.getDesc(future.channel()), endpoint.getHost(), endpoint.getPort()));
                 } else {
@@ -39,7 +39,7 @@ public class AsyncNettyClient extends DefaultNettyClient {
         future.channel().closeFuture().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                logger.info("[closed] endpoint: {}, channel: {}", endpoint, ChannelUtil.getDesc(future.channel()));
+                logger.info("[async][closed] endpoint: {}, channel: {}", endpoint, ChannelUtil.getDesc(future.channel()));
             }
         });
     }
@@ -47,14 +47,18 @@ public class AsyncNettyClient extends DefaultNettyClient {
 
     @Override
     public void sendRequest(ByteBuf byteBuf) {
-        if(future.channel().isActive()) {
+        if(future.channel() != null && future.channel().isActive()) {
             super.sendRequest(byteBuf);
         } else {
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    logger.info("[async][send][{}]", desc);
-                    AsyncNettyClient.super.sendRequest(byteBuf);
+                    if(!future.isSuccess()) {
+                        logger.info("[async][send][{}]", desc);
+                        AsyncNettyClient.super.sendRequest(byteBuf);
+                    } else {
+                        logger.warn("[async][wont-send][{}]", desc);
+                    }
                 }
             });
         }
@@ -62,14 +66,18 @@ public class AsyncNettyClient extends DefaultNettyClient {
 
     @Override
     public void sendRequest(ByteBuf byteBuf, ByteBufReceiver byteBufReceiver) {
-        if(future.channel().isActive()) {
+        if(future.channel() != null && future.channel().isActive()) {
             super.sendRequest(byteBuf, byteBufReceiver);
         } else {
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    logger.info("[async][send][{}] {}", desc, byteBufReceiver.getClass().getSimpleName());
-                    AsyncNettyClient.super.sendRequest(byteBuf, byteBufReceiver);
+                    if(future.isSuccess()) {
+                        logger.info("[async][send][{}] {}", desc, byteBufReceiver.getClass().getSimpleName());
+                        AsyncNettyClient.super.sendRequest(byteBuf, byteBufReceiver);
+                    } else {
+                        logger.warn("[async][wont-send][{}] {}", desc, byteBufReceiver.getClass().getSimpleName());
+                    }
                 }
             });
         }
@@ -79,4 +87,5 @@ public class AsyncNettyClient extends DefaultNettyClient {
     public String toString() {
         return super.toString();
     }
+
 }

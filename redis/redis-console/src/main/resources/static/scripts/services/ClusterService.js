@@ -72,6 +72,11 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             method: 'GET',
             url: '/console/clusters/activeDc/:dcName',
             isArray: true
+        },
+        find_master_unhealthy_clusters: {
+            method: 'GET',
+            url: '/console/clusters/master/unhealthy/:level',
+            isArray: true
         }
     });
     function getInvolvedOrgs() {
@@ -273,6 +278,18 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
+    function getMasterUnhealthyClusters(level) {
+        var d = $q.defer();
+        resource.find_master_unhealthy_clusters (
+            {level: level},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -289,6 +306,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getInvolvedOrgs: getInvolvedOrgs,
         getUnhealthyClusters: getUnhealthyClusters,
         findClustersByDcNameBind: findClustersByDcNameBind,
-        findClustersByDcName : findClustersByDcName
+        findClustersByDcName : findClustersByDcName,
+        getMasterUnhealthyClusters : getMasterUnhealthyClusters
     }
 }]);
