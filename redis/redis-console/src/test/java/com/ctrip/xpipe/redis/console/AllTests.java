@@ -29,6 +29,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpo
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -144,7 +148,11 @@ import org.junit.runners.Suite.SuiteClasses;
         TestForAbstractMultiValueTunnelSocketStatsAnalyzer.class,
         TestForAbstractNormalKeyValueTunnelSocketStatsAnalyzer.class,
         DefaultTunnelSocketStatsAnalyzerManagerTest.class,
-        TunnelSocketStatsAnalyzersTest.class
+        TunnelSocketStatsAnalyzersTest.class,
+        ClusterHealthStateTest.class,
+        DefaultLeveledEmbededSetTest.class,
+        DefaultClusterHealthMonitorTest.class,
+        DefaultClusterHealthMonitorManagerTest.class
 })
 public class AllTests {
 

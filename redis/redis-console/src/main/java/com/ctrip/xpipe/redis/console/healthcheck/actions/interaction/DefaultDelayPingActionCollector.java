@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.Abstr
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingActionListener;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Maps;
@@ -54,6 +55,9 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
 
     @Autowired
     private List<HealthEventProcessor> healthEventProcessors;
+
+    @Autowired
+    private ClusterHealthMonitorManager clusterHealthMonitorManager;
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
@@ -118,7 +122,7 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
             public HealthStatus create() {
 
                 HealthStatus healthStatus = new HealthStatus(instance, scheduled);
-
+                healthStatus.addObserver(clusterHealthMonitorManager.createHealthStatusObserver());
                 healthStatus.addObserver(new Observer() {
                     @Override
                     public void update(Object args, Observable observable) {
