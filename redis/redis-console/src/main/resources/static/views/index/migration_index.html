@@ -6,37 +6,40 @@
 	<div class="panel panel-primary">
 		<header class="panel-heading">
 			<div class="row">
-				<div class="col-md-1"></div>
-				<div class="col-md-2">
+				<div class="col-sm-3">
 					<md-checkbox class="border-white" ng-checked="isChecked()" md-indeterminate="isIndeterminate()" ng-click="toggleAll()"></md-checkbox>
 					<span ng-if="isChecked()">取消全选</span> <span ng-if="!isChecked()">全选</span>
 				</div>
-				<div class="col-md-2 text-center">
-					<md-select md-on-close="sourceDcSelected()" ng-model="sourceDc" class="md-no-underline color-white radius-border-fat no-margin" required placeholder="源机房">
-						<md-option ng-repeat="dc in dcs" value="{{dc.dcName}}">{{dc.dcName}}</md-option>
-					</md-select>
+				<div class="col-sm-6">
+					<span class="col-md-4">
+						<md-select md-on-close="sourceDcSelected()" ng-model="sourceDc" class="md-no-underline color-white radius-border-fat no-margin" required placeholder="源机房">
+							<md-option ng-repeat="dc in dcs" value="{{dc.dcName}}">{{dc.dcName}}</md-option>
+						</md-select>
+					</span>
+					<span class="col-md-4">
+						<md-select md-on-close="clusterOrgNameSelected()"
+								   chosen="directiveOptions"
+								   allow_single_deselect=true
+								   ng-model="clusterOrgName"
+								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="组织部门">
+							<md-option ng-repeat="org in organizations" value="{{org.orgName}}">{{org.orgName}}</md-option>
+						</md-select>
+					</span>
+					<span class="col-md-4">
+						<md-select md-on-close="getMasterUnhealthyClusters()"
+								   chosen="directiveOptions"
+								   allow_single_deselect=true
+								   ng-model="masterUnhealthyClusterState"
+								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="Master有问题的Cluster">
+							<md-option ng-repeat="stateLevel in masterUnhealthyClusterStateLevels" value="{{stateLevel.level}}">{{stateLevel.name}}</md-option>
+						</md-select>
+					</span>
 				</div>
-				<div class="col-md-2 text-center">
-					<md-select md-on-close="clusterOrgNameSelected()"
-							   chosen="directiveOptions"
-							   allow_single_deselect=true
-							   ng-model="clusterOrgName"
-							   class="md-no-underline color-white radius-border-fat no-margin" placeholder="组织部门">
-						<md-option ng-repeat="org in organizations" value="{{org.orgName}}">{{org.orgName}}</md-option>
-					</md-select>
-				</div>
-				<div class="col-md-2 text-center">
-					<md-select md-on-close="getMasterUnhealthyClusters()"
-							   chosen="directiveOptions"
-							   allow_single_deselect=true
-							   ng-model="masterUnhealthyClusterState"
-							   class="md-no-underline color-white radius-border-fat no-margin" placeholder="Master有问题的Cluster">
-						<md-option ng-repeat="stateLevel in masterUnhealthyClusterStateLevels" value="{{stateLevel.level}}">{{stateLevel.name}}</md-option>
-					</md-select>
-				</div>
-				<div class="col-md-5 text-right	">
+				<div class="col-md-3 text-right	">
+					<a type="button" ng-click="showWizard()" class="btn btn-primary radius-border-fat"><strong>测试</strong></a>
+					&nbsp&nbsp
 					<a type="button" ng-click="preMigrate()" class="btn btn-primary radius-border-fat"><strong>迁移</strong></a>
-					&nbsp&nbsp 
+					&nbsp&nbsp
 					<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
 				</div>
 				<div class="col-md-1"></div>
