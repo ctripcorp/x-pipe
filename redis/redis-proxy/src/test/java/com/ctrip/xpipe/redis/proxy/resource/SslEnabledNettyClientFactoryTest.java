@@ -79,4 +79,25 @@ public class SslEnabledNettyClientFactoryTest extends AbstractProxyIntegrationTe
                 });
         sleep(1000);
     }
+
+    @Test
+    public void manuallyTestTimeoutLog() throws Exception {
+        PooledObject<NettyClient> clientPooledObject = factory.makeObject(new DefaultProxyEndpoint(ProxyEndpoint.PROXY_SCHEME.PROXYTLS + "://10.0.0.0:443"));
+        clientPooledObject.getObject().sendRequest(
+                Unpooled.copiedBuffer(("+PROXY MONITOR PingStats\r\n+PROXY MONITOR TunnelStats\r\n+PROXY MONITOR SocketStats\r\n").getBytes()),
+                new ByteBufReceiver() {
+                    @Override
+                    public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
+                        logger.info("{}", ByteBufUtils.readToString(byteBuf));
+                        return RECEIVER_RESULT.SUCCESS;
+                    }
+
+                    @Override
+                    public void clientClosed(NettyClient nettyClient) {
+
+                    }
+                });
+
+        sleep(1000);
+    }
 }
