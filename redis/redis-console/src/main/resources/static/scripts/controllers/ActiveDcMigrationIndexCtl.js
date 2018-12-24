@@ -7,6 +7,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		$scope.preMigrate = preMigrate;
 		$scope.doMigrate = doMigrate;
 		$scope.clusterOrgNameSelected = clusterOrgNameSelected;
+		$scope.getMasterUnhealthyClusters = getMasterUnhealthyClusters;
 		
 		init();
 
@@ -22,41 +23,66 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 
 		$scope.clusterOrgName = '';
 		function clusterOrgNameSelected() {
-			var orgName = $scope.clusterOrgName;
             var dcName = $scope.sourceDc;
-            if(dcName && orgName) {
-            	if(orgName === "不选择") {
-            		sourceDcSelected();
-				} else {
-                    ClusterService.findClustersByActiveDcName(dcName).then(function (data) {
-                        $scope.clusters = data.filter(function (localCluster) {
-                            return localCluster.clusterOrgName === orgName;
-                        });
-                        $scope.tableParams.reload();
-                    });
-                }
+            if(dcName) {
+            	sourceDcSelected();
             }
         }
+
+        $scope.masterUnhealthyClusters = [];
+        $scope.masterUnhealthyClusterStateLevels = [
+			{"name": "至少一个Master不可用", "level": "LEAST_ONE_DOWN"},
+            {"name": "25%以上Master不可用", "level": "QUARTER_DOWN"},
+            {"name": "50%以上Master不可用", "level": "HALF_DOWN"},
+            {"name": "75%以上Master不可用",  "level": "THREE_QUARTER_DOWN"},
+            {"name": "100%Master不可用",  "level": "FULL_DOWN"},
+            {"name": "不选",  "level": "NORMAL"}
+		];
+        $scope.masterUnhealthyClusterState = '';
+
+        function getMasterUnhealthyClusters() {
+        	var level = $scope.masterUnhealthyClusterState;
+            if(level && level !== "NORMAL") {
+                ClusterService.getMasterUnhealthyClusters(level)
+                    .then(function (targetClusters) {
+                        $scope.masterUnhealthyClusters = targetClusters;
+                        if($scope.sourceDc) {
+                            sourceDcSelected();
+                        }
+                    });
+            } else if(level === "NORMAL") {
+                $scope.masterUnhealthyClusters = [];
+                if($scope.sourceDc) {
+                    sourceDcSelected();
+                }
+			}
+		}
 
 		function sourceDcSelected() {
 			var dcName = $scope.sourceDc;
             var orgName = $scope.clusterOrgName;
+            var clusterNameFilter = $scope.masterUnhealthyClusters;
+            var level = $scope.masterUnhealthyClusterState;
             $scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
             	return dcInfo.dcName === dcName;
 			})[0];
-			if(dcName && (!orgName || orgName === "不选择")) {
-				ClusterService.findClustersByActiveDcName(dcName).then(function(data) {
-					$scope.clusters = data;
-					$scope.tableParams.reload();
-				});
-			} else {
-                ClusterService.findClustersByActiveDcName(dcName).then(function (data) {
-                    $scope.clusters = data.filter(function (localCluster) {
+
+			ClusterService.findClustersByActiveDcName(dcName).then(function (data) {
+				var result = data;
+				if(orgName && orgName !== "不选择") {
+                    result = result.filter(function (localCluster) {
                         return localCluster.clusterOrgName === orgName;
                     });
-                    $scope.tableParams.reload();
-                });
-			}
+                }
+                if(level && level !== "NORMAL") {
+					result = result.filter(function (localCluster) {
+                        return clusterNameFilter.includes(localCluster.clusterName);
+                    });
+				}
+                $scope.clusters = result;
+				$scope.tableParams.reload();
+			});
+
 		}
 
 		function targetDcSelected(cluster) {
@@ -72,7 +98,6 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			
 			cluster.dcClusterInfo.forEach(function(dcCluster) {
 				if(dcCluster.dcInfo.dcName != $scope.sourceDc && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
-					console.log(dcCluster.dcInfo.zoneId);
 					dcs.push(dcCluster.dcInfo);
 				}
 			});

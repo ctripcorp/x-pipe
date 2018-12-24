@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -39,6 +40,9 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
 
     @Autowired
     private AlertManager alertManager;
+
+    @Autowired
+    private ClusterHealthMonitorManager clusterHealthMonitorManager;
 
     @Override
     protected void doCheck() {
@@ -105,6 +109,9 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
                     alertManager.alert(clusterName, shardName,
                             new HostPort(instance.getIPAddress(), instance.getPort()),
                             ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance is not valid");
+                    if(instance.isMaster()) {
+                        clusterHealthMonitorManager.outterClientMasterDown(clusterName, shardName);
+                    }
                 }
             }
         }

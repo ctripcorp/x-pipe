@@ -36,8 +36,8 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.activeDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.activeDcTunnel.proxyModel.dcName})">{{proxyChain.activeDcTunnel.tunnelStatsResult.backend}}-{{proxyChain.activeDcTunnel.tunnelStatsResult.frontend}}</a></td>
-                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.backupDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.backupDcTunnel.proxyModel.dcName})">{{proxyChain.backupDcTunnel.tunnelStatsResult.backend}}-{{proxyChain.backupDcTunnel.tunnelStatsResult.frontend}}</a></td>
+                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.activeDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.activeDcTunnel.proxyModel.dcName})">{{proxyChain.activeDcTunnel.tunnelStatsResult.backend.host}}:{backend: {{proxyChain.activeDcTunnel.tunnelStatsResult.backend.port}}, frontend: {{proxyChain.activeDcTunnel.tunnelStatsResult.frontend.port}} }</a></td>
+                                <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.backupDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.backupDcTunnel.proxyModel.dcName})">{{proxyChain.backupDcTunnel.tunnelStatsResult.backend.host}}:{backend: {{proxyChain.backupDcTunnel.tunnelStatsResult.backend.port}}, frontend: {{proxyChain.backupDcTunnel.tunnelStatsResult.frontend.port}} }</a></td>
                                 <td ng-repeat="(key, value) in proxyChain.metrics">
                                     <span class="hickwall" aria-hidden="true" ng-click="gotoHickwallWebSite(value, '_blank')"></span>
                                 </td>

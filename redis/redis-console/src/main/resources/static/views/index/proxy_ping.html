@@ -16,7 +16,7 @@
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="proxyCollector in collectors">
                     <header class="panel-heading">
                         <div class="row">
-                            <div class="col-md-6">{{proxyCollector.proxyInfo.hostPort.host}}</div>
+                            <div class="col-md-6">源Proxy: {{proxyCollector.proxyInfo.hostPort.host}}</div>
                             <div class="col-md-6 text-right">
                                 <a class="btn btn-primary btn-sm" ui-sref="proxy_tunnels({proxyIp: proxyCollector.proxyInfo.hostPort.host, dcId: currentDcId})">Proxy-Detail</a>
                             </div>
@@ -26,11 +26,11 @@
                     <table class="table table-bordered table-hover">
                         <thead>
                         <tr>
-                            <th>Direct</th>
-                            <th>Real</th>
-                            <th>Start</th>
-                            <th>End</th>
-                            <th>Duration</th>
+                            <th>直接Ping的地址</th>
+                            <th>目标实际地址(考虑NAT情况下)</th>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                            <th>总耗时(ms)</th>
                             <th>历史信息打点</th>
                         </tr>
                         </thead>
