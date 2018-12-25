@@ -4,8 +4,8 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractIntervalCheck;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderIntervalCheck;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -31,7 +31,9 @@ import java.util.Set;
  */
 @Component
 @ConditionalOnProperty(name = {HealthChecker.ENABLED}, matchIfMissing = true)
-public class ClientConfigMonitor extends AbstractIntervalCheck {
+public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
+
+    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.outerclient.check.interval", "3000"));
 
     private OuterClientService outerClientService = ServicesUtil.getOuterClientService();
 
@@ -60,6 +62,11 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
                 logger.info("[doCheck]" + cluster, e);
             }
         }
+    }
+
+    @Override
+    protected long getIntervalMilli() {
+        return checkIntervalMill;
     }
 
     @Override
@@ -99,6 +106,7 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
                 continue;
 
             shardName = group.getName();
+            boolean shardMasterWarn = false;
             for(OuterClientService.InstanceInfo instance : instances) {
                 if(!instance.isCanRead()) {
                     alertManager.alert(clusterName, shardName,
@@ -110,9 +118,13 @@ public class ClientConfigMonitor extends AbstractIntervalCheck {
                             new HostPort(instance.getIPAddress(), instance.getPort()),
                             ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance is not valid");
                     if(instance.isMaster()) {
-                        clusterHealthMonitorManager.outterClientMasterDown(clusterName, shardName);
+                        clusterHealthMonitorManager.outerClientMasterDown(clusterName, shardName);
+                        shardMasterWarn = true;
                     }
                 }
+            }
+            if(!shardMasterWarn) {
+                clusterHealthMonitorManager.outerClientMasterUp(clusterName, shardName);
             }
         }
     }

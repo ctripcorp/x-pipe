@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
+import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
@@ -115,6 +117,29 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public boolean ignoreMigrationSystemAvailability() {
+        try {
+            ConfigModel configModel = getOrCreate(DefaultConsoleDbConfig.KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY, String.valueOf(false));
+            return Boolean.parseBoolean(configModel.getVal());
+        } catch (Exception e) {
+            logger.error("[ignoreMigrationSystemAvailability]", e);
+            return false;
+        }
+    }
+
+    @Override
+    public void doIgnoreMigrationSystemAvailability(boolean ignore) {
+        try {
+            ConfigModel configModel = getOrCreate(DefaultConsoleDbConfig.KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY, String.valueOf(ignore));
+            configModel.setVal(String.valueOf(ignore));
+            configDao.setConfig(configModel);
+        } catch (Exception e) {
+            logger.error("[ignoreMigrationSystemAvailability]", e);
+            throw new DalUpdateException(e.getMessage());
+        }
+    }
+
+    @Override
     public ConfigModel getConfig(String key) {
         try {
             ConfigTbl configTbl = configDao.getByKey(key);
@@ -131,6 +156,37 @@ public class ConfigServiceImpl implements ConfigService {
             return null;
         }
 
+    }
+
+    private ConfigModel getOrCreate(String key, String defaultValue) {
+        ConfigTbl configTbl = null;
+        try {
+            configTbl = configDao.getByKey(key);
+        } catch (DalException e) {
+            logger.error("[getOrCreate]", e);
+        }
+        if(configTbl == null) {
+            return createConfig(key, defaultValue);
+        }
+        ConfigModel config = new ConfigModel();
+        config.setKey(key);
+        config.setVal(configTbl.getValue());
+        config.setUpdateIP(configTbl.getLatestUpdateIp());
+        config.setUpdateUser(configTbl.getLatestUpdateUser());
+
+        return config;
+    }
+
+    private ConfigModel createConfig(String key, String defaultValue) {
+        ConfigModel config = new ConfigModel();
+        config.setKey(key);
+        config.setVal(defaultValue);
+        try {
+            configDao.setConfig(config);
+        } catch (DalException e) {
+            logger.error("[createConfig]", e);
+        }
+        return config;
     }
 
     private boolean getAndResetTrueIfExpired(String key) {

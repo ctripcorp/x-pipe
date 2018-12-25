@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -7,10 +8,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
 
@@ -39,7 +37,7 @@ public interface MigrationService {
 
     void updateMigrationShardLogById(long id, String log);
 
-    TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException;
+    TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException;
 
     Long createMigrationEvent(MigrationRequest request);
 
@@ -58,4 +56,6 @@ public interface MigrationService {
     void forcePublishMigrationCluster(long eventId, long clusterId);
 
     void forceEndMigrationClsuter(long eventId, long clusterId);
+
+    MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability();
 }

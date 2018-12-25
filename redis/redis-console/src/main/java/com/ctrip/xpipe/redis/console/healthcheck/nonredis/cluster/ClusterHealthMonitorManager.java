@@ -11,9 +11,9 @@ public interface ClusterHealthMonitorManager {
 
     void healthCheckMasterUp(RedisHealthCheckInstance instance);
 
-    void outterClientMasterDown(String clusterId, String shardId);
+    void outerClientMasterDown(String clusterId, String shardId);
 
-    void outterClientMasterUp(String clusterId, String shardId);
+    void outerClientMasterUp(String clusterId, String shardId);
 
     Set<String> getWarningClusters(ClusterHealthState state);
 

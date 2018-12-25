@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -74,6 +75,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_DEFAULT_MARK_DOWN_DELAY_SEC = "console.default.mark.down.delay.sec";
 
     public static final String KEY_SOCKET_STATS_ANALYZERS = "console.socket.stats.analyzers";
+
+    public static final String KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK = "console.cluster.shard.for.migrate.sys.check";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -317,5 +320,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public Map<String, String> getSocketStatsAnalyzingKeys() {
         String property = getProperty(KEY_SOCKET_STATS_ANALYZERS, "{}");
         return JsonCodec.INSTANCE.decode(property, Map.class);
+    }
+
+    @Override
+    public Pair<String, String> getClusterShardForMigrationSysCheck() {
+        String clusterShard = getProperty(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster1, shard1");
+        String[] strs = StringUtil.splitRemoveEmpty("\\s*,\\s*", clusterShard);
+        return Pair.from(strs[0], strs[1]);
     }
 }

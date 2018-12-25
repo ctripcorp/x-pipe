@@ -5,9 +5,13 @@ public interface ClusterHealthMonitor {
 
     String getClusterId();
 
-    void becomeBetter(String shardId);
+    void healthCheckMasterDown(String shardId);
 
-    void becomeWorse(String shardId);
+    void healthCheckMasterUp(String shardId);
+
+    void outerClientMasterDown(String shardId);
+
+    void outerClientMasterUp(String shardId);
 
     void addListener(Listener listener);
 

@@ -17,7 +17,7 @@ import java.util.List;
  * Feb 23, 2018
  */
 @Component
-public class DefaultSentinelMonitorsCheck extends AbstractSentinelMonitorsCheck {
+public class DefaultSentinelMonitorsCheckCrossDc extends AbstractCrossDcSentinelMonitorsCheck {
 
     @Autowired
     private AlertManager alertManager;

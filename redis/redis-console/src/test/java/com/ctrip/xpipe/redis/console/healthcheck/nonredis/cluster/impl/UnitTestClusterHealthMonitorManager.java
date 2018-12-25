@@ -35,12 +35,12 @@ public class UnitTestClusterHealthMonitorManager implements ClusterHealthMonitor
     }
 
     @Override
-    public void outterClientMasterDown(String clusterId, String shardId) {
+    public void outerClientMasterDown(String clusterId, String shardId) {
 
     }
 
     @Override
-    public void outterClientMasterUp(String clusterId, String shardId) {
+    public void outerClientMasterUp(String clusterId, String shardId) {
 
     }
 

@@ -20,6 +20,8 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
 
     public static final String KEY_ALERT_SYSTEM_ON = "alert.system.on";
 
+    public static final String KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY = "ignore.migration.system.avail";
+
     @Autowired
     private DbConfig dbConfig;
 
@@ -40,6 +42,11 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     @Override
     public boolean isAlertSystemOn() {
         return configService.isAlertSystemOn();
+    }
+
+    @Override
+    public boolean ignoreMigrationSystemAvailability() {
+        return configService.ignoreMigrationSystemAvailability();
     }
 
 }

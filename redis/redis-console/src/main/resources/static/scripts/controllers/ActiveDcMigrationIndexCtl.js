@@ -1,5 +1,5 @@
-index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService) {
+index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', '$interval', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService',
+    function ($rootScope, $scope, $window, $stateParams, $interval, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService) {
 		
 		$scope.sourceDcSelected = sourceDcSelected;
 		$scope.targetDcSelected = targetDcSelected;
@@ -8,18 +8,79 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		$scope.doMigrate = doMigrate;
 		$scope.clusterOrgNameSelected = clusterOrgNameSelected;
 		$scope.getMasterUnhealthyClusters = getMasterUnhealthyClusters;
+
+        $scope.migrationSysCheckResp = {};
+        $scope.enableMigrationButton = false;
 		
 		init();
 
+		var SUCCESS_STATE = 0;
+
+		var WARNING_STATE = 1;
+
 		function init() {
+            checkMigrationSystem();
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
                 ClusterService.getInvolvedOrgs().then(function (result) {
-                        $scope.organizations = result;
-                        $scope.organizations.push({"orgName": "不选择"});
-				});
+                    $scope.organizations = result;
+                    $scope.organizations.push({"orgName": "不选择"});
+                });
+                MigrationService.getDefaultMigrationCluster().then(function (value) {
+                    if(value != null) {
+                    	$scope.defaultCluster = value;
+                        $scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
+                            return dcInfo.id === $scope.defaultCluster.activedcId;
+                        })[0];
+                        ClusterService.findClustersByActiveDcName($scope.sourceDcInfo.dcName).then(function (targetClusters) {
+                            var result = targetClusters;
+                            result = result.filter(function (localCluster) {
+								return localCluster.clusterName === $scope.defaultCluster.clusterName;
+                            });
+                            $scope.clusters = result;
+                            $scope.tableParams.reload();
+                        });
+                    }
+                });
 			});
+            intervalRetriveInfo();
 		}
+
+        $scope.$on('$destroy',function(){
+            $interval.cancel($scope.scheduledWork);
+        });
+
+		$scope.scheduledWork;
+        function intervalRetriveInfo(){
+            $scope.scheduledWork = $interval(checkMigrationSystem, 1500);
+        }
+
+        function checkMigrationSystem() {
+            MigrationService.checkMigrationSystem().then(function (value) {
+                $scope.migrationSysCheckResp = value;
+                if(value.state === SUCCESS_STATE) {
+                    $scope.enableMigrationButton = true;
+                    $scope.migrationSysCheckResp.success = true;
+                } else if (value.state === WARNING_STATE) {
+                    $scope.enableMigrationButton = true;
+                    $scope.migrationSysCheckResp.warning = true;
+                } else {
+                    $scope.enableMigrationButton = false;
+                    $scope.migrationSysCheckResp.error = true;
+                }
+            });
+		}
+
+        $scope.showErrorMessage = function() {
+            if($scope.migrationSysCheckResp.message) {
+                $('#errorMessage').modal('show');
+            }
+        };
+
+        $scope.hideErrorMessage = function() {
+            $scope.migrationSysCheckResp.message = '';
+            $('#errorMessage').modal('hide');
+        };
 
 		$scope.clusterOrgName = '';
 		function clusterOrgNameSelected() {
@@ -97,7 +158,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			var dcs = [];
 			
 			cluster.dcClusterInfo.forEach(function(dcCluster) {
-				if(dcCluster.dcInfo.dcName != $scope.sourceDc && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
+				if(dcCluster.dcInfo.dcName !== $scope.sourceDcInfo.dcName && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
 					dcs.push(dcCluster.dcInfo);
 				}
 			});
