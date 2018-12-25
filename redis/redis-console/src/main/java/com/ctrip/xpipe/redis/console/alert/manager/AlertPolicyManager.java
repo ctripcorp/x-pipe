@@ -47,7 +47,9 @@ public class AlertPolicyManager {
         emailReceiver = new DefaultEmailReceiver(consoleConfig, configService);
         groupEmailReceiver = new DefaultGroupEmailReceiver(consoleConfig, configService);
         channelSelector = new DefaultChannelSelector();
-        recoveryTimeController = new RecoveryTimeSlotControl(consoleConfig);
+        if(recoveryTimeController == null) {
+            recoveryTimeController = new RecoveryTimeSlotControl(consoleConfig);
+        }
     }
 
     public List<AlertChannel> queryChannels(AlertEntity alert) {
@@ -67,6 +69,9 @@ public class AlertPolicyManager {
     }
 
     public void markCheckInterval(ALERT_TYPE alertType, LongSupplier checkInterval) {
+        if(recoveryTimeController == null) {
+            recoveryTimeController = new RecoveryTimeSlotControl(consoleConfig);
+        }
         recoveryTimeController.mark(alertType, checkInterval);
     }
 

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis;
 
-import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
@@ -17,29 +16,20 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @author wenchao.meng
- *         <p>
- *         Aug 15, 2017
- */
 public abstract class AbstractIntervalCheck {
-
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
-    private ScheduledExecutorService scheduled;
+    protected ScheduledExecutorService scheduled;
 
     @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
     protected Executor executors;
-
-    @Autowired(required = false)
-    private CrossDcClusterServer clusterServer;
 
     @Autowired
     protected ConsoleConfig consoleConfig;
 
     @Autowired
-    private AlertPolicyManager alertPolicyManager;
+    protected AlertPolicyManager alertPolicyManager;
 
     private long lastStartTime = System.currentTimeMillis();
 
@@ -64,8 +54,7 @@ public abstract class AbstractIntervalCheck {
 
     protected void checkStart(){
 
-        if(clusterServer != null && !clusterServer.amILeader()){
-            logger.debug("[generatePlan][not leader quit]");
+        if(!shouldCheck()){
             return;
         }
 
@@ -92,4 +81,7 @@ public abstract class AbstractIntervalCheck {
 
     protected abstract List<ALERT_TYPE> alertTypes();
 
+    protected boolean shouldCheck() {
+        return true;
+    }
 }

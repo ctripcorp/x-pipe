@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 public class DefaultSentinelMonitorsCheckTest {
 
     @InjectMocks
-    private DefaultSentinelMonitorsCheck checker = new DefaultSentinelMonitorsCheck();
+    private DefaultSentinelMonitorsCheckCrossDc checker = new DefaultSentinelMonitorsCheckCrossDc();
 
     @Mock
     private AlertManager alertManager;
