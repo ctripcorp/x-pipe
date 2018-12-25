@@ -1,18 +1,20 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
-import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,6 +34,15 @@ public class MigrationController extends AbstractConsoleController {
 
 	@Autowired
 	private ConfigService configService;
+
+	@Autowired
+	private ClusterService clusterService;
+
+	@Autowired
+	private ConsoleConfig consoleConfig;
+
+	@Autowired
+	private DcService dcService;
 	
 	@RequestMapping(value = "/migration/events", method = RequestMethod.POST)
 	public Map<String, Long> createEvent(@RequestBody MigrationEventModel event) {
@@ -119,5 +130,17 @@ public class MigrationController extends AbstractConsoleController {
 			logger.error("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
 			return RetMessage.createFailMessage(availability.getMessage());
 		}
+	}
+
+	@RequestMapping(value = "/migration/default/cluster", method = RequestMethod.GET)
+	public ClusterTbl getDefaultMigrationCluster() {
+		String clusterName = consoleConfig.getClusterShardForMigrationSysCheck().getKey();
+		ClusterTbl clusterTbl = clusterService.findClusterAndOrg(clusterName);
+		if(clusterTbl == null || clusterTbl.getClusterName() == null) {
+			logger.warn("[getDefaultMigrationCluster]not found default cluster: {}", clusterName);
+		}
+		List<DcTbl> dcs = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
+
+		return clusterTbl;
 	}
 }

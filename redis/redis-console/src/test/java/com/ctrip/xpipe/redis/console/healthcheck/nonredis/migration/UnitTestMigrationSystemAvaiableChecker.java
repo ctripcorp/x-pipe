@@ -11,6 +11,8 @@ public class UnitTestMigrationSystemAvaiableChecker implements MigrationSystemAv
 
     @Override
     public DefaultMigrationSystemAvailableChecker.MigrationSystemAvailability getResult() {
+//        return MigrationSystemAvailableChecker
+//                .MigrationSystemAvailability.createAvailableResponse();
         MigrationSystemAvailableChecker.MigrationSystemAvailability result =  MigrationSystemAvailableChecker
                 .MigrationSystemAvailability.createUnAvailableResponse();
         result.addErrorMessage("Database", new NoResponseException("database not response"));

@@ -23,9 +23,26 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
                 ClusterService.getInvolvedOrgs().then(function (result) {
-                        $scope.organizations = result;
-                        $scope.organizations.push({"orgName": "不选择"});
-				});
+                    $scope.organizations = result;
+                    $scope.organizations.push({"orgName": "不选择"});
+                });
+                MigrationService.getDefaultMigrationCluster().then(function (value) {
+                    if(value != null) {
+                    	$scope.defaultCluster = value;
+                        $scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
+                            return dcInfo.id === $scope.defaultCluster.activedcId;
+                        })[0];
+                        $scope.sourceDc = $scope.sourceDcInfo.dcName;
+                        ClusterService.findClustersByActiveDcName($scope.sourceDc).then(function (targetClusters) {
+                            var result = targetClusters;
+                            result = result.filter(function (localCluster) {
+								return localCluster.clusterName === $scope.defaultCluster.clusterName;
+                            });
+                            $scope.clusters = result;
+                            $scope.tableParams.reload();
+                        });
+                    }
+                });
 			});
 		}
 

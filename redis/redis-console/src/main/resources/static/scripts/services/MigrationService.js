@@ -37,6 +37,10 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		check_migration_system: {
 			method: 'GET',
 			url: '/console/migration/system/health/status'
+		},
+		get_default_migrate_cluster: {
+			method: 'GET',
+			url: '/console/migration/default/cluster'
 		}
 	});
 
@@ -181,6 +185,18 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
         return d.promise;
     }
 
+    function getDefaultMigrationCluster() {
+        var d = $q.defer();
+        resource.get_default_migrate_cluster({},
+            function(result) {
+                d.resolve(result);
+            },
+            function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
 	return {
 		createEvent : createEvent,
 		findAll : findAll,
@@ -190,6 +206,7 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		rollbackMigrationCluster: rollbackMigrationCluster,
 		forcePublishMigrationCluster : forcePublishMigrationCluster,
 		forceEndMigrationCluster : forceEndMigrationCluster,
-        checkMigrationSystem : checkMigrationSystem
+        checkMigrationSystem : checkMigrationSystem,
+        getDefaultMigrationCluster : getDefaultMigrationCluster
 	}
 }]);
