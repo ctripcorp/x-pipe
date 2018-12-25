@@ -55,7 +55,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     @Override
     public void healthCheckMasterDown(RedisHealthCheckInstance instance) {
         DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
-        monitor.becomeWorse(instance.getRedisInstanceInfo().getShardId());
+        monitor.healthCheckMasterDown(instance.getRedisInstanceInfo().getShardId());
     }
 
     @Override
@@ -65,13 +65,13 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
-        monitor.becomeBetter(instance.getRedisInstanceInfo().getShardId());
+        monitor.healthCheckMasterUp(instance.getRedisInstanceInfo().getShardId());
     }
 
     @Override
     public void outerClientMasterDown(String clusterId, String shardId) {
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);
-        monitor.becomeWorse(shardId);
+        monitor.outerClientMasterDown(shardId);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);
-        monitor.becomeBetter(shardId);
+        monitor.outerClientMasterUp(shardId);
     }
 
     @Override

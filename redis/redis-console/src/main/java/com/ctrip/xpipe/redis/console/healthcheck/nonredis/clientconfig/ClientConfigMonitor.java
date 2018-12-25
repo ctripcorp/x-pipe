@@ -121,6 +121,7 @@ public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
                     }
                 }
             }
+            clusterHealthMonitorManager.outerClientMasterUp(clusterName, shardName);
         }
     }
 
