@@ -5,8 +5,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.command.SequenceCommandChain;
-import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderIntervalCheck;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -37,6 +38,9 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
     @Autowired
     private ClusterService clusterService;
 
+    @Autowired
+    private AlertManager alertManager;
+
     private CheckMigrationCommandBuilder builder;
 
     private AtomicReference<MigrationSystemAvailableChecker.MigrationSystemAvailability> result
@@ -50,7 +54,10 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
 
     @Override
     protected void doCheck() {
-        result.set(MigrationSystemAvailableChecker.MigrationSystemAvailability.createAvailableResponse());
+        MigrationSystemAvailability availability = result.getAndSet(MigrationSystemAvailability.createAvailableResponse());
+        if(!availability.isAvaiable()) {
+            alertManager.alert("", "", new HostPort(), ALERT_TYPE.MIGRATION_SYSTEM_UNAVAILABLE, availability.getMessage());
+        }
         SequenceCommandChain chain = new SequenceCommandChain(true);
         chain.add(checkDatabase());
         chain.add(checkOuterClient());
