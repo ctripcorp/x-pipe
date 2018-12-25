@@ -1,6 +1,21 @@
 <div class="col-md-12">
 	<h3 class="header smaller lighter blue">
 		<span>主机房迁移</span>
+		<button class="btn btn-sm btn-success" ng-if="migrationSysCheckResp.success === true">
+			<i class="ace-icon fa fa-check"></i>可以进行DR切换
+		</button>
+
+		<button class="btn btn-sm btn-warning" ng-click="showErrorMessage()" ng-if="migrationSysCheckResp.warning === true">
+			<i class="ace-icon fa fa-bolt bigger-110"></i>
+			警告
+			<i class="ace-icon fa fa-arrow-right icon-on-right"></i>
+		</button>
+		<button class="btn btn-sm btn-danger" ng-click="showErrorMessage()" ng-if="migrationSysCheckResp.error === true">
+			<i class="ace-icon fa fa-bolt bigger-110"></i>
+			不能进行DR切换
+			<i class="ace-icon fa fa-arrow-right icon-on-right"></i>
+		</button>
+
 	</h3>
 
 	<div class="panel panel-primary">
@@ -36,9 +51,7 @@
 					</span>
 				</div>
 				<div class="col-md-3 text-right	">
-					<a type="button" ng-click="showWizard()" class="btn btn-primary radius-border-fat"><strong>测试</strong></a>
-					&nbsp&nbsp
-					<a type="button" ng-click="preMigrate()" class="btn btn-primary radius-border-fat"><strong>迁移</strong></a>
+					<a type="button" ng-show="enableMigrationButton" ng-click="preMigrate()" class="btn btn-primary radius-border-fat"><strong>迁移</strong></a>
 					&nbsp&nbsp
 					<a type="button" class="btn btn-danger radius-border-fat" href="/#/migration_event_list"><strong>取消</strong></a>
 				</div>
@@ -72,6 +85,10 @@
 	class="btn-scroll-up btn btn-sm btn-inverse"> <i
 	class="icon-double-angle-up icon-only bigger-110"></i>
 </a>
+
+<xpipeconfirmdialog xpipe-dialog-id="'errorMessage'" xpipe-title="'检测错误信息'"
+					xpipe-detail="migrationSysCheckResp.message" xpipe-show-cancel-btn="false"
+					xpipe-confirm="hideErrorMessage"></xpipeconfirmdialog>
 
 <xpipeconfirmdialog xpipe-dialog-id="'createEventWithLostConfirm'" xpipe-title="'创建事件'"
                     xpipe-detail="'仍然有未指定目标机房的Cluster，是否继续（将忽略未指定目标机房的集群）?'"

@@ -55,7 +55,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     @Override
     public void healthCheckMasterDown(RedisHealthCheckInstance instance) {
         DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
-        monitor.becomeWorse(instance.getRedisInstanceInfo().getShardId());
+        monitor.healthCheckMasterDown(instance.getRedisInstanceInfo().getShardId());
     }
 
     @Override
@@ -65,23 +65,23 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
-        monitor.becomeBetter(instance.getRedisInstanceInfo().getShardId());
+        monitor.healthCheckMasterUp(instance.getRedisInstanceInfo().getShardId());
     }
 
     @Override
-    public void outterClientMasterDown(String clusterId, String shardId) {
+    public void outerClientMasterDown(String clusterId, String shardId) {
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);
-        monitor.becomeWorse(shardId);
+        monitor.outerClientMasterDown(shardId);
     }
 
     @Override
-    public void outterClientMasterUp(String clusterId, String shardId) {
+    public void outerClientMasterUp(String clusterId, String shardId) {
         if(!monitors.containsKey(clusterId)) {
-            logger.warn("[outterClientMasterUp] Cluster is not warned before: {}", clusterId);
+            logger.warn("[outerClientMasterUp] Cluster is not warned before: {}", clusterId);
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);
-        monitor.becomeBetter(shardId);
+        monitor.outerClientMasterUp(shardId);
     }
 
     @Override

@@ -62,6 +62,16 @@ public class ChangeConfig extends AbstractConsoleController{
         configService.stopAlertSystem(config, hours);
     }
 
+    @RequestMapping(value = "/config/ignore/migration/system/availability/{ignore}", method = RequestMethod.POST)
+    public void setIgnoreMigrationSystemAvailOrNot(HttpServletRequest request, @PathVariable boolean ignore) throws DalException {
+        String sourceIp = request.getHeader("X-FORWARDED-FOR");
+        if(sourceIp == null) {
+            sourceIp = request.getRemoteAddr();
+        }
+        logger.info("[setIgnoreMigrationSystemAvailOrNot][{}] ignore: {}", sourceIp, ignore);
+        configService.doIgnoreMigrationSystemAvailability(ignore);
+    }
+
     private ConfigModel configModel(HttpServletRequest request, ConfigModel configModel) {
 
         String sourceIp = request.getHeader("X-FORWARDED-FOR");
