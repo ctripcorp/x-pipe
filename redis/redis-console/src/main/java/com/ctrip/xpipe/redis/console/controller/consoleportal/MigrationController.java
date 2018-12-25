@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventModel;
 import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
@@ -26,6 +29,9 @@ public class MigrationController extends AbstractConsoleController {
 	
 	@Autowired
 	private MigrationService migrationService;
+
+	@Autowired
+	private ConfigService configService;
 	
 	@RequestMapping(value = "/migration/events", method = RequestMethod.POST)
 	public Map<String, Long> createEvent(@RequestBody MigrationEventModel event) {
@@ -97,5 +103,21 @@ public class MigrationController extends AbstractConsoleController {
 		logger.info("[forceEndMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.forceEndMigrationClsuter(eventId, clusterId);
 	}
-	
+
+	@RequestMapping(value = "/migration/system/health/status", method = RequestMethod.GET)
+	public RetMessage getMigrationSystemHealthStatus() {
+		logger.info("[getMigrationSystemHealthStatus][begin]");
+		MigrationSystemAvailableChecker.MigrationSystemAvailability availability = migrationService.getMigrationSystemAvailability();
+		if(availability.isAvaiable()) {
+			logger.debug("[getMigrationSystemHealthStatus][good]");
+			return RetMessage.createSuccessMessage();
+		}
+		if(configService.ignoreMigrationSystemAvailability()) {
+			logger.warn("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
+			return RetMessage.createWarningMessage(availability.getMessage());
+		} else {
+			logger.error("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
+			return RetMessage.createFailMessage(availability.getMessage());
+		}
+	}
 }

@@ -33,6 +33,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthS
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -54,6 +55,7 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -152,7 +154,9 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterHealthStateTest.class,
         DefaultLeveledEmbededSetTest.class,
         DefaultClusterHealthMonitorTest.class,
-        DefaultClusterHealthMonitorManagerTest.class
+        DefaultClusterHealthMonitorManagerTest.class,
+        MigrationSystemAvailableCheckTest.class,
+        DefaultCheckMigrationCommandBuilderTest.class
 })
 public class AllTests {
 

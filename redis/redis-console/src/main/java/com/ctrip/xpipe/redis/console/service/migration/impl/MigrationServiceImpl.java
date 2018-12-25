@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -12,6 +13,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
@@ -51,6 +53,12 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Autowired
     private MigrationClusterDao migrationClusterDao;
 
+    @Autowired
+    private MigrationSystemAvailableChecker checker;
+
+    @Autowired
+    private ConfigService configService;
+
     private MigrationShardTblDao migrationShardTblDao;
 
     @PostConstruct
@@ -81,8 +89,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
         });
     }
-
-    ;
 
     @Override
     public MigrationClusterTbl findMigrationCluster(final long eventId, final long clusterId) {
@@ -230,6 +236,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if (isMigrationClusterExist(eventId, clusterId)) {
             migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).forceEnd();
         }
+    }
+
+    @Override
+    public MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability() {
+        return checker.getResult();
     }
 
     private boolean isMigrationClusterExist(long eventId, long clusterId) {

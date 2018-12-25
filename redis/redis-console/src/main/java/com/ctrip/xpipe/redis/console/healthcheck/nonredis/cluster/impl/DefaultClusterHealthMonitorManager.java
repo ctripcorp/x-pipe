@@ -69,15 +69,15 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     }
 
     @Override
-    public void outterClientMasterDown(String clusterId, String shardId) {
+    public void outerClientMasterDown(String clusterId, String shardId) {
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);
         monitor.becomeWorse(shardId);
     }
 
     @Override
-    public void outterClientMasterUp(String clusterId, String shardId) {
+    public void outerClientMasterUp(String clusterId, String shardId) {
         if(!monitors.containsKey(clusterId)) {
-            logger.warn("[outterClientMasterUp] Cluster is not warned before: {}", clusterId);
+            logger.warn("[outerClientMasterUp] Cluster is not warned before: {}", clusterId);
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);

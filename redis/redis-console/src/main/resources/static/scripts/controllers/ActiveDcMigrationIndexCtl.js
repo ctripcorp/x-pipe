@@ -1,5 +1,5 @@
-index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService) {
+index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$window', '$stateParams', '$interval', 'AppUtil', 'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService',
+    function ($rootScope, $scope, $window, $stateParams, $interval, AppUtil, toastr, NgTableParams, ClusterService, DcService, MigrationService) {
 		
 		$scope.sourceDcSelected = sourceDcSelected;
 		$scope.targetDcSelected = targetDcSelected;
@@ -8,10 +8,18 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		$scope.doMigrate = doMigrate;
 		$scope.clusterOrgNameSelected = clusterOrgNameSelected;
 		$scope.getMasterUnhealthyClusters = getMasterUnhealthyClusters;
+
+        $scope.migrationSysCheckResp = {};
+        $scope.enableMigrationButton = false;
 		
 		init();
 
+		var SUCCESS_STATE = 0;
+
+		var WARNING_STATE = 1;
+
 		function init() {
+            intervalRetriveInfo();
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
                 ClusterService.getInvolvedOrgs().then(function (result) {
@@ -20,6 +28,40 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 				});
 			});
 		}
+
+        $scope.$on('$destroy',function(){
+            $interval.cancel($scope.scheduledWork);
+        });
+
+		$scope.scheduledWork;
+        function intervalRetriveInfo(){
+            $scope.scheduledWork = $interval(function() {
+                MigrationService.checkMigrationSystem().then(function (value) {
+                    $scope.migrationSysCheckResp = value;
+                    if(value.state === SUCCESS_STATE) {
+                        $scope.enableMigrationButton = true;
+                        $scope.migrationSysCheckResp.success = true;
+                    } else if (value.state === WARNING_STATE) {
+                        $scope.enableMigrationButton = true;
+                        $scope.migrationSysCheckResp.warning = true;
+                    } else {
+                        $scope.enableMigrationButton = false;
+                        $scope.migrationSysCheckResp.error = true;
+                    }
+                });
+			}, 1500);
+        }
+
+        $scope.showErrorMessage = function() {
+            if($scope.migrationSysCheckResp.message) {
+                $('#errorMessage').modal('show');
+            }
+        };
+
+        $scope.hideErrorMessage = function() {
+            $scope.migrationSysCheckResp.message = '';
+            $('#errorMessage').modal('hide');
+        };
 
 		$scope.clusterOrgName = '';
 		function clusterOrgNameSelected() {

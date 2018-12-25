@@ -12,4 +12,6 @@ public interface ConsoleDbConfig {
 
     boolean isAlertSystemOn();
 
+    boolean ignoreMigrationSystemAvailability();
+
 }

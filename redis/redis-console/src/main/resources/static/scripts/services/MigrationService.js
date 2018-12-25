@@ -33,6 +33,10 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		forceend_migration_cluster: {
 			method: 'POST',
 			url: '/console/migration/events/:eventId/clusters/:clusterId/forceEnd'
+		},
+		check_migration_system: {
+			method: 'GET',
+			url: '/console/migration/system/health/status'
 		}
 	});
 
@@ -165,6 +169,18 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
         return d.promise;
     }
 
+    function checkMigrationSystem() {
+        var d = $q.defer();
+        resource.check_migration_system({},
+            function(result) {
+                d.resolve(result);
+            },
+            function(result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
 	return {
 		createEvent : createEvent,
 		findAll : findAll,
@@ -173,6 +189,7 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		cancelMigrationCluster : cancelMigrationCluster,
 		rollbackMigrationCluster: rollbackMigrationCluster,
 		forcePublishMigrationCluster : forcePublishMigrationCluster,
-		forceEndMigrationCluster : forceEndMigrationCluster
+		forceEndMigrationCluster : forceEndMigrationCluster,
+        checkMigrationSystem : checkMigrationSystem
 	}
 }]);

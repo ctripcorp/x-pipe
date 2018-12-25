@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -58,4 +59,6 @@ public interface MigrationService {
     void forcePublishMigrationCluster(long eventId, long clusterId);
 
     void forceEndMigrationClsuter(long eventId, long clusterId);
+
+    MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability();
 }
