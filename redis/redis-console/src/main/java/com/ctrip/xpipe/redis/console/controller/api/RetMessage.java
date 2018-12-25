@@ -9,6 +9,7 @@ public class RetMessage {
 
     public static final String SUCCESS = "success";
 
+    public static final int WARNING_STATE = 1;
     public static final int SUCCESS_STATE = 0;
     public static final int FAIL_STATE = -1;
 
@@ -27,6 +28,10 @@ public class RetMessage {
 
     public static RetMessage createSuccessMessage(String message){
         return new RetMessage(SUCCESS_STATE, message);
+    }
+
+    public static RetMessage createWarningMessage(String message) {
+        return new RetMessage(WARNING_STATE, message);
     }
 
     public RetMessage(){

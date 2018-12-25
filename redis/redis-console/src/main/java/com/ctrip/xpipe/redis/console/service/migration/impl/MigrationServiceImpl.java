@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -12,12 +13,10 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +50,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Autowired
     private MigrationClusterDao migrationClusterDao;
 
+    @Autowired
+    private MigrationSystemAvailableChecker checker;
+
     private MigrationShardTblDao migrationShardTblDao;
 
     @PostConstruct
@@ -81,8 +83,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
         });
     }
-
-    ;
 
     @Override
     public MigrationClusterTbl findMigrationCluster(final long eventId, final long clusterId) {
@@ -232,6 +232,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
     }
 
+    @Override
+    public MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability() {
+        return checker.getResult();
+    }
+
     private boolean isMigrationClusterExist(long eventId, long clusterId) {
         boolean ret = false;
         if (null != migrationEventManager.getEvent(eventId)) {
@@ -243,8 +248,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException {
+    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException {
 
+        if(!checker.getResult().isAvaiable()) {
+            throw new MigrationSystemNotHealthyException(checker.getResult().getMessage());
+        }
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
             throw new ClusterNotFoundException(clusterName);

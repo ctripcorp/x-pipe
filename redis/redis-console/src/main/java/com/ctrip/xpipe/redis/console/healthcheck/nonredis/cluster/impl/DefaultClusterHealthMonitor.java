@@ -21,6 +21,10 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
 
     private Set<String> warningShards = Sets.newConcurrentHashSet();
 
+    private Set<String> healthStatusWarningShards = Sets.newConcurrentHashSet();
+
+    private Set<String> outerClientWarningShards = Sets.newConcurrentHashSet();
+
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
     public DefaultClusterHealthMonitor(String clusterId, ShardService shardService) {
@@ -34,15 +38,37 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
     }
 
     @Override
-    public void becomeBetter(String shardId) {
-        warningShards.remove(shardId);
-        checkIfStateChange();
+    public void healthCheckMasterDown(String shardId) {
+        healthStatusWarningShards.add(shardId);
+        if(warningShards.add(shardId)) {
+            checkIfStateChange();
+        }
     }
 
     @Override
-    public void becomeWorse(String shardId) {
-        warningShards.add(shardId);
-        checkIfStateChange();
+    public void healthCheckMasterUp(String shardId) {
+        if(healthStatusWarningShards.remove(shardId)
+                && !outerClientWarningShards.contains(shardId)) {
+            warningShards.remove(shardId);
+            checkIfStateChange();
+        }
+    }
+
+    @Override
+    public void outerClientMasterDown(String shardId) {
+        outerClientWarningShards.add(shardId);
+        if(warningShards.add(shardId)) {
+            checkIfStateChange();
+        }
+    }
+
+    @Override
+    public void outerClientMasterUp(String shardId) {
+        if(outerClientWarningShards.remove(shardId)
+                && !healthStatusWarningShards.contains(shardId)) {
+            warningShards.remove(shardId);
+            checkIfStateChange();
+        }
     }
 
     @Override
