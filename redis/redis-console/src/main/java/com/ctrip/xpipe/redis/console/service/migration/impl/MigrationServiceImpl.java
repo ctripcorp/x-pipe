@@ -16,10 +16,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterMigratingNow;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
-import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,9 +52,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private MigrationSystemAvailableChecker checker;
-
-    @Autowired
-    private ConfigService configService;
 
     private MigrationShardTblDao migrationShardTblDao;
 
@@ -254,8 +248,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException {
+    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException {
 
+        if(!checker.getResult().isAvaiable()) {
+            throw new MigrationSystemNotHealthyException(checker.getResult().getMessage());
+        }
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
             throw new ClusterNotFoundException(clusterName);

@@ -2,7 +2,7 @@
 	<h3 class="header smaller lighter blue">
 		<span>主机房迁移</span>
 		<button class="btn btn-sm btn-success" ng-if="migrationSysCheckResp.success === true">
-			<i class="ace-icon fa fa-check"></i>检测通过
+			<i class="ace-icon fa fa-check"></i>可以进行DR切换
 		</button>
 
 		<button class="btn btn-sm btn-warning" ng-click="showErrorMessage()" ng-if="migrationSysCheckResp.warning === true">
@@ -12,7 +12,7 @@
 		</button>
 		<button class="btn btn-sm btn-danger" ng-click="showErrorMessage()" ng-if="migrationSysCheckResp.error === true">
 			<i class="ace-icon fa fa-bolt bigger-110"></i>
-			检测失败
+			不能进行DR切换
 			<i class="ace-icon fa fa-arrow-right icon-on-right"></i>
 		</button>
 

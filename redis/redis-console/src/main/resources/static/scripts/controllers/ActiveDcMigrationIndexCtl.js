@@ -19,7 +19,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		var WARNING_STATE = 1;
 
 		function init() {
-            intervalRetriveInfo();
+            checkMigrationSystem();
 			DcService.loadAllDcs().then(function(data){
 				$scope.dcs = data;
                 ClusterService.getInvolvedOrgs().then(function (result) {
@@ -32,8 +32,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
                         $scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
                             return dcInfo.id === $scope.defaultCluster.activedcId;
                         })[0];
-                        $scope.sourceDc = $scope.sourceDcInfo.dcName;
-                        ClusterService.findClustersByActiveDcName($scope.sourceDc).then(function (targetClusters) {
+                        ClusterService.findClustersByActiveDcName($scope.sourceDcInfo.dcName).then(function (targetClusters) {
                             var result = targetClusters;
                             result = result.filter(function (localCluster) {
 								return localCluster.clusterName === $scope.defaultCluster.clusterName;
@@ -44,6 +43,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
                     }
                 });
 			});
+            intervalRetriveInfo();
 		}
 
         $scope.$on('$destroy',function(){
@@ -52,22 +52,24 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 
 		$scope.scheduledWork;
         function intervalRetriveInfo(){
-            $scope.scheduledWork = $interval(function() {
-                MigrationService.checkMigrationSystem().then(function (value) {
-                    $scope.migrationSysCheckResp = value;
-                    if(value.state === SUCCESS_STATE) {
-                        $scope.enableMigrationButton = true;
-                        $scope.migrationSysCheckResp.success = true;
-                    } else if (value.state === WARNING_STATE) {
-                        $scope.enableMigrationButton = true;
-                        $scope.migrationSysCheckResp.warning = true;
-                    } else {
-                        $scope.enableMigrationButton = false;
-                        $scope.migrationSysCheckResp.error = true;
-                    }
-                });
-			}, 1500);
+            $scope.scheduledWork = $interval(checkMigrationSystem, 1500);
         }
+
+        function checkMigrationSystem() {
+            MigrationService.checkMigrationSystem().then(function (value) {
+                $scope.migrationSysCheckResp = value;
+                if(value.state === SUCCESS_STATE) {
+                    $scope.enableMigrationButton = true;
+                    $scope.migrationSysCheckResp.success = true;
+                } else if (value.state === WARNING_STATE) {
+                    $scope.enableMigrationButton = true;
+                    $scope.migrationSysCheckResp.warning = true;
+                } else {
+                    $scope.enableMigrationButton = false;
+                    $scope.migrationSysCheckResp.error = true;
+                }
+            });
+		}
 
         $scope.showErrorMessage = function() {
             if($scope.migrationSysCheckResp.message) {
@@ -156,7 +158,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			var dcs = [];
 			
 			cluster.dcClusterInfo.forEach(function(dcCluster) {
-				if(dcCluster.dcInfo.dcName != $scope.sourceDc && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
+				if(dcCluster.dcInfo.dcName !== $scope.sourceDcInfo.dcName && dcCluster.dcInfo.zoneId === $scope.sourceDcInfo.zoneId) {
 					dcs.push(dcCluster.dcInfo);
 				}
 			});
