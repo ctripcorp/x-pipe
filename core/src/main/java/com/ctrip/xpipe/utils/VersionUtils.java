@@ -89,7 +89,7 @@ public class VersionUtils {
         @Override
         public int compareTo(Version other) {
 
-            if (this == other) {
+            if (this.equals(other)) {
                 return 0;
             }
             int diff = 0;
