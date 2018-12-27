@@ -93,6 +93,7 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleH2Db
         logger.info("{}", clusterInfo);
     }
 
+
     @Test(expected = ExecutionException.class)
     public void testCheckMetaServer() throws Exception {
         server = startServer(54321, "test");

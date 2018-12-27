@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
@@ -8,11 +7,9 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,11 +78,5 @@ public class MigrationSystemAvailableCheckTest extends AbstractConsoleH2DbTest {
         Assert.assertTrue(check.getResult().isAvaiable());
     }
 
-    @Test
-    @Ignore
-    public void testOverDue() {
-        check.setLastTimeCheckDatabase(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(2));
-        check.doCheck();
-        verify(alertManager, atLeastOnce()).alert("", "", new HostPort(), ALERT_TYPE.MIGRATION_SYSTEM_CHECK_OVER_DUE, anyString());
-    }
+
 }

@@ -195,6 +195,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
             }
             logger.info("[CheckMetaServerCommand][target meta-servers]{}", targetMetaServers);
             Set<String> result = Sets.newHashSet();
+
             for(String metaServerAddress : targetMetaServers) {
                 String activeKeeperPath = META_SERVER_SERVICE.GET_ACTIVE_KEEPER.getRealPath(metaServerAddress);
                 try {
@@ -216,6 +217,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
                 return RetMessage.createSuccessMessage();
             }
             List<String> problemMetaServers = Lists.newArrayList(targetMetaServers);
+
             problemMetaServers.removeAll(response);
             StringBuilder sb = new StringBuilder("Non-Responsed Metaservers: ");
             for(String addr : problemMetaServers) {
