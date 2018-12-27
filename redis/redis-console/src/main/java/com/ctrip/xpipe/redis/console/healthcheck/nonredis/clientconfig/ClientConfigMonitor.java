@@ -119,6 +119,7 @@ public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
                             ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance is not valid");
                     if(instance.isMaster()) {
                         clusterHealthMonitorManager.outerClientMasterDown(clusterName, shardName);
+
                         shardMasterWarn = true;
                     }
                 }
@@ -126,6 +127,7 @@ public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
             if(!shardMasterWarn) {
                 clusterHealthMonitorManager.outerClientMasterUp(clusterName, shardName);
             }
+
         }
     }
 

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.PostConstruct;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
@@ -69,6 +70,7 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
             }
         }
         result.getAndSet(MigrationSystemAvailability.createAvailableResponse());
+
         SequenceCommandChain chain = new SequenceCommandChain(true);
         chain.add(checkDatabase());
         chain.add(checkOuterClient());
@@ -156,10 +158,5 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
     @VisibleForTesting
     protected CheckMigrationCommandBuilder getBuilder() {
         return builder;
-    }
-
-    @VisibleForTesting
-    protected void setLastTimeCheckDatabase(long timestamp) {
-        this.lastTimeCheckDatabase.set(timestamp);
     }
 }
