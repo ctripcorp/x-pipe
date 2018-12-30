@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author chen.zhu
@@ -27,6 +29,20 @@ public class DefaultEmailService implements EmailService {
         logger.info("CCers: {}", email.getCCers());
         logger.info("BCCers: {}", email.getBCCers());
         logger.info("Context:\n{}", email.getBodyContent());
+    }
+
+    private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
+            Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9._%+-]+$", Pattern.CASE_INSENSITIVE);
+
+    @Override
+    public CheckEmailResponse checkEmailAddress(String address) {
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(address);
+        boolean result = matcher.find();
+        if(result) {
+            return new CheckEmailResponse(true);
+        } else {
+            return new CheckEmailResponse(false, "email format not matched");
+        }
     }
 
     @Override

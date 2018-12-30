@@ -23,6 +23,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author chen.zhu
@@ -68,6 +70,20 @@ public class CtripPlatformEmailService implements EmailService {
                 th = th.getCause();
             }
             throw new XpipeRuntimeException(th.getMessage());
+        }
+    }
+
+    private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
+            Pattern.compile("^[A-Z0-9._%+-]+@Ctrip.com$", Pattern.CASE_INSENSITIVE);
+
+    @Override
+    public CheckEmailResponse checkEmailAddress(String address) {
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(address);
+        boolean result = matcher.find();
+        if(result) {
+            return new CheckEmailResponse(true);
+        } else {
+            return new CheckEmailResponse(false, "Emails should be ctrip emails and separated by comma or semicolon");
         }
     }
 

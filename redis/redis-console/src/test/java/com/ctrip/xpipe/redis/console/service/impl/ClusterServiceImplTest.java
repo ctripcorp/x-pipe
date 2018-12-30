@@ -132,8 +132,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertTrue(service.checkEmails(emails));
         emails = "test@ctrip.com,test2@ctrip.com,test3@Ctrip.com";
         Assert.assertTrue(service.checkEmails(emails));
-        emails = "test@gmail.com, test2@ctrip.com";
-        Assert.assertFalse(service.checkEmails(emails));
         emails = "tetsataemail@";
         Assert.assertFalse(service.checkEmails(emails));
     }
