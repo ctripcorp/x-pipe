@@ -15,6 +15,8 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
 import com.ctrip.xpipe.redis.core.proxy.command.ProxyMonitorCommandTest;
 import com.ctrip.xpipe.redis.core.proxy.command.ProxyPingCommandTest;
+import com.ctrip.xpipe.redis.core.proxy.monitor.SessionTrafficResultTest;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResultTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParserTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.TestForAbstractProxyProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.CompressParserTest;
@@ -66,7 +68,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultProxyContentParserTest.class,
 	DefaultProxyConnectProtocolTest.class,
 	DefaultProxyConnectProtocolParserTest.class,
-	TestForAbstractProxyProtocolParser.class
+	TestForAbstractProxyProtocolParser.class,
+	SessionTrafficResultTest.class,
+	TunnelTrafficResultTest.class
 })
 public class AllTests {
 
