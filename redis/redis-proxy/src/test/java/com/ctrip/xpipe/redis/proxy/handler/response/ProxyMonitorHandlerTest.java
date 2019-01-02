@@ -177,8 +177,8 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
     @Test
     public void testTrafficStatsResponser() throws Exception {
 
-        SessionTrafficResult frontend = new SessionTrafficResult(System.currentTimeMillis(), 100, 200, inputRates, outputRates);
-        SessionTrafficResult backend = new SessionTrafficResult(System.currentTimeMillis(), 1000, 2000, inputRates, outputRates);
+        SessionTrafficResult frontend = new SessionTrafficResult(System.currentTimeMillis(), 100, 200, 10, 20);
+        SessionTrafficResult backend = new SessionTrafficResult(System.currentTimeMillis(), 1000, 2000, 100, 200);
 
         Tunnel tunnel = tunnelManager.tunnels().get(0);
         TunnelTrafficResult trafficResult = new TunnelTrafficResult(tunnel.identity().toString(), frontend, backend);

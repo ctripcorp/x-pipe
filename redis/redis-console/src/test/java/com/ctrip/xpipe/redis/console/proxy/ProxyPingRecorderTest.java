@@ -5,12 +5,16 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
+import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ProxyPingRecorderTest extends AbstractTest {
 
@@ -25,7 +29,9 @@ public class ProxyPingRecorderTest extends AbstractTest {
 
     @Test
     public void ackPingStatsResult() {
-        recorder.ackPingStatsResult(getRealTimeResults());
+        ProxyMonitorCollector collector = mock(ProxyMonitorCollector.class);
+        when(collector.getProxyInfo()).thenReturn(new ProxyModel().setHostPort(localHostport(randomPort())));
+        recorder.ackPingStatsResult(collector, getRealTimeResults());
         Assert.assertNotNull(datas);
     }
 
