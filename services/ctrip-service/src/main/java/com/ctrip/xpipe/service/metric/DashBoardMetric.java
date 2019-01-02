@@ -9,10 +9,12 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,7 +48,7 @@ public class DashBoardMetric implements MetricProxy{
                 new ObjectFactory<MetricsAggregator>() {
             @Override
             public MetricsAggregator create() {
-                return createAggregator(metricData.getMetricType());
+                return createAggregator(metricData);
             }
         });
         aggregator.add((long)metricData.getValue(),
@@ -62,6 +64,15 @@ public class DashBoardMetric implements MetricProxy{
     @Override
     public int getOrder() {
         return 0;
+    }
+
+    private MetricsAggregator createAggregator(MetricData metricData) {
+        String mesurement = String.format("fx.xpipe.%s", metricData.getMetricType());
+        List<String> metrics = Lists.newArrayList("console-dc", "dc", "cluster", "shard", "ip", "port");
+        if(metricData.getTags() != null && !metricData.getTags().isEmpty()) {
+            metrics.addAll(metricData.getTags().keySet());
+        }
+        return MetricsAggregatorFactory.createAggregator(mesurement, metrics.toArray(new String[0]));
     }
 
     private MetricsAggregator createAggregator(String metricType) {

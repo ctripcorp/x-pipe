@@ -150,9 +150,9 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
             SessionStats frontendStats = tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats();
             SessionStats backendStats = tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats();
             SessionTrafficResult frontend = new SessionTrafficResult(frontendStats.lastUpdateTime(),
-                    frontendStats.getInputBytes(), frontendStats.getOutputBytes());
+                    frontendStats.getInputBytes(), frontendStats.getOutputBytes(), frontendStats.getInputInstantaneousBPS(), frontendStats.getOutputInstantaneousBPS());
             SessionTrafficResult backend = new SessionTrafficResult(backendStats.lastUpdateTime(),
-                    backendStats.getInputBytes(), backendStats.getOutputBytes());
+                    backendStats.getInputBytes(), backendStats.getOutputBytes(), frontendStats.getInputInstantaneousBPS(), frontendStats.getOutputInstantaneousBPS());
             return new TunnelTrafficResult(tunnelId, frontend, backend).format();
         }
     }

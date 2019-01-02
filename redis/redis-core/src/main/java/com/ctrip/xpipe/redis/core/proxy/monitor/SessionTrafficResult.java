@@ -12,18 +12,26 @@ public class SessionTrafficResult {
 
     private final long outputBytes;
 
+    private final long inputRates;
 
-    public SessionTrafficResult(long timestamp, long inputBytes, long outputBytes) {
+    private final long outputRates;
+
+
+    public SessionTrafficResult(long timestamp, long inputBytes, long outputBytes, long inputRates, long outputRates) {
         this.timestamp = timestamp;
         this.inputBytes = inputBytes;
         this.outputBytes = outputBytes;
+        this.inputRates = inputRates;
+        this.outputRates = outputRates;
     }
 
     public Object[] toArray() {
-        Object[] objects = new Object[3];
+        Object[] objects = new Object[5];
         objects[0] = timestamp;
         objects[1] = inputBytes;
         objects[2] = outputBytes;
+        objects[3] = inputRates;
+        objects[4] = outputRates;
         return objects;
     }
 
@@ -36,7 +44,9 @@ public class SessionTrafficResult {
         long timestamp = (long) objects[0];
         long inputBytes = (long) objects[1];
         long outputBytes = (long) objects[2];
-        return new SessionTrafficResult(timestamp, inputBytes, outputBytes);
+        long inputRates = (long) objects[3];
+        long outputRates = (long) objects[4];
+        return new SessionTrafficResult(timestamp, inputBytes, outputBytes, inputRates, outputRates);
     }
 
     public long getTimestamp() {
@@ -49,6 +59,14 @@ public class SessionTrafficResult {
 
     public long getOutputBytes() {
         return outputBytes;
+    }
+
+    public long getInputRates() {
+        return inputRates;
+    }
+
+    public long getOutputRates() {
+        return outputRates;
     }
 
     @Override

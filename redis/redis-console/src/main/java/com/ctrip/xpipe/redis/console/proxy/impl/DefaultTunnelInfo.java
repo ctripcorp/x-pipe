@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
 
 import java.util.Objects;
 
@@ -18,6 +19,8 @@ public class DefaultTunnelInfo implements TunnelInfo {
     private TunnelStatsResult tunnelStatsResult;
 
     private TunnelSocketStatsResult socketStatsResult;
+
+    private TunnelTrafficResult tunnelTrafficResult;
 
     public DefaultTunnelInfo(ProxyModel proxyModel, String tunnelId) {
         this.proxyModel = proxyModel;
@@ -50,6 +53,11 @@ public class DefaultTunnelInfo implements TunnelInfo {
         return socketStatsResult;
     }
 
+    @Override
+    public TunnelTrafficResult getTunnelTrafficResult() {
+        return tunnelTrafficResult;
+    }
+
     public DefaultTunnelInfo setTunnelStatsResult(TunnelStatsResult tunnelStatsResult) {
         this.tunnelStatsResult = tunnelStatsResult;
         return this;
@@ -57,6 +65,11 @@ public class DefaultTunnelInfo implements TunnelInfo {
 
     public DefaultTunnelInfo setSocketStatsResult(TunnelSocketStatsResult socketStatsResult) {
         this.socketStatsResult = socketStatsResult;
+        return this;
+    }
+
+    public DefaultTunnelInfo setTunnelTrafficResult(TunnelTrafficResult tunnelTrafficResult) {
+        this.tunnelTrafficResult = tunnelTrafficResult;
         return this;
     }
 

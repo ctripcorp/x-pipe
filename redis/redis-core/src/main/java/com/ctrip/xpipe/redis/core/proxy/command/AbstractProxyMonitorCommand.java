@@ -6,10 +6,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.exception.XPipeProxyResultException;
-import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.*;
 import com.ctrip.xpipe.redis.core.proxy.parser.monitor.ProxyMonitorParser;
 import io.netty.buffer.ByteBuf;
 
@@ -147,6 +144,33 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
         @Override
         protected ProxyMonitorParser.Type getType() {
             return ProxyMonitorParser.Type.PingStats;
+        }
+
+    }
+
+    public static class ProxyMonitorTrafficStatsCommand extends AbstractProxyMonitorCommand<TunnelTrafficResult> {
+
+        public ProxyMonitorTrafficStatsCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+            super(clientPool, scheduled);
+        }
+
+        public ProxyMonitorTrafficStatsCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+            super(clientPool, scheduled, commandTimeoutMilli);
+        }
+
+        @Override
+        protected TunnelTrafficResult[] initArray(Object[] objects) {
+            return new TunnelTrafficResult[objects.length];
+        }
+
+        @Override
+        protected TunnelTrafficResult parseObject(Object object) {
+            return TunnelTrafficResult.parse(object);
+        }
+
+        @Override
+        protected ProxyMonitorParser.Type getType() {
+            return ProxyMonitorParser.Type.TrafficStats;
         }
 
     }

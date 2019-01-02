@@ -4,8 +4,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class TunnelTrafficResultTest {
 
     private TunnelTrafficResult result;
@@ -20,9 +18,9 @@ public class TunnelTrafficResultTest {
     public void beforeTunnelTrafficResultTest() {
         tunnelId = "TCP://127.0.0.1:8080-PROXYTCP:127.0.0.1:8080";
         long timestamp = System.currentTimeMillis();
-        long input = 1000, output = 2000;
-        frontend = new SessionTrafficResult(timestamp, input, output);
-        backend = new SessionTrafficResult(timestamp, input + 100, output + 200);
+        long input = 1000, output = 2000, inputRates = 10, outputRates = 20;
+        frontend = new SessionTrafficResult(timestamp, input, output, inputRates, outputRates);
+        backend = new SessionTrafficResult(timestamp, input + 100, output + 200, inputRates, outputRates);
         result = new TunnelTrafficResult(tunnelId, frontend, backend);
     }
 
