@@ -36,14 +36,18 @@ public class SessionTrafficReporter extends ChannelTrafficStatisticsHandler {
     @Override
     protected void doChannelRead(ChannelHandlerContext ctx, Object msg) {
         if(msg instanceof ByteBuf) {
-//            session.getSessionMonitor().getSessionStats().increaseInputBytes(((ByteBuf) msg).readableBytes());
+            if(session != null && session.getSessionMonitor() != null) {
+                session.getSessionMonitor().getSessionStats().increaseInputBytes(((ByteBuf) msg).readableBytes());
+            }
         }
     }
 
     @Override
     protected void doWrite(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if(msg instanceof ByteBuf) {
-//            session.getSessionMonitor().getSessionStats().increaseOutputBytes(((ByteBuf) msg).readableBytes());
+            if(session != null && session.getSessionMonitor() != null) {
+                session.getSessionMonitor().getSessionStats().increaseOutputBytes(((ByteBuf) msg).readableBytes());
+            }
         }
     }
 
