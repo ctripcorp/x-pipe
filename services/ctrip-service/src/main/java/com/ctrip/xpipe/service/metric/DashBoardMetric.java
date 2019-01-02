@@ -51,13 +51,21 @@ public class DashBoardMetric implements MetricProxy{
                 return createAggregator(metricData);
             }
         });
-        aggregator.add((long)metricData.getValue(),
-                FoundationService.DEFAULT.getDataCenter(),
+        List<String> tagVals = Lists.newArrayList(FoundationService.DEFAULT.getDataCenter(),
                 metricData.getDcName(),
                 metricData.getClusterName(),
                 metricData.getShardName(),
                 metricData.getHostPort().getHost(),
                 String.valueOf(metricData.getHostPort().getPort()));
+        Map<String, String> metricDataTags = metricData.getTags();
+        if(metricDataTags != null && !metricDataTags.isEmpty()) {
+            for (String tag : aggregator.getTags()) {
+                if (metricDataTags.containsKey(tag)) {
+                    tagVals.add(metricDataTags.get(tag));
+                }
+            }
+        }
+        aggregator.add((long)metricData.getValue(), tagVals.toArray(new String[0]));
 
     }
 
