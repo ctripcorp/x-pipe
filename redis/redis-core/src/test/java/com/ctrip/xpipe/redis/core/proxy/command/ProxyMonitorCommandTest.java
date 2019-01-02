@@ -11,10 +11,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
-import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
-import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.*;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -60,6 +57,23 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
         server = startServer(new ArrayParser(new Object[]{sample1.format(), sample2.format()}).format().toString(Charset.defaultCharset()));
         Endpoint target = getEndpoint();
         TunnelSocketStatsResult[] result = new AbstractProxyMonitorCommand.ProxyMonitorSocketStatsCommand(
+                getXpipeNettyClientKeyedObjectPool().getKeyPool(target), scheduled).execute().get();
+
+        Assert.assertEquals(2, result.length);
+        Assert.assertEquals(sample1, result[0]);
+        Assert.assertEquals(sample2, result[1]);
+    }
+
+    @Test
+    public void testProxyMonitorTraficStats() throws Exception {
+        TunnelTrafficResult sample1 = new TunnelTrafficResult(tunnelId("front1", "back1"),
+                sessionTrafficResult(), sessionTrafficResult());
+        TunnelTrafficResult sample2 = new TunnelTrafficResult(tunnelId("front1", "back1"),
+                sessionTrafficResult(), sessionTrafficResult());
+        server = startServer(new ArrayParser(new Object[]{sample1.format(), sample2.format()})
+                .format().toString(Charset.defaultCharset()));
+        Endpoint target = getEndpoint();
+        TunnelTrafficResult[] result = new AbstractProxyMonitorCommand.ProxyMonitorTrafficStatsCommand(
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(target), scheduled).execute().get();
 
         Assert.assertEquals(2, result.length);
@@ -207,5 +221,9 @@ public class ProxyMonitorCommandTest extends AbstractRedisTest {
 
     private SocketStatsResult socketStatsResult(List<String> strs) {
         return new SocketStatsResult(strs);
+    }
+
+    private SessionTrafficResult sessionTrafficResult() {
+        return new SessionTrafficResult(System.currentTimeMillis(), randomInt(), randomInt(), randomInt(), randomInt());
     }
 }

@@ -20,6 +20,9 @@
                 <td ng-if="true" data-title="'Proxy Pings'" >
                     <a ui-sref="proxy_pings({})">Ping信息列表</a>
                 </td>
+                <td ng-if="true" data-title="'Proxy 流量打点'" >
+                    <span class="hickwall" aria-hidden="true" ng-click="getToTrafficHickWall(proxy.ip, proxy.port)"></span>
+                </td>
             </tr>
         </table>
 

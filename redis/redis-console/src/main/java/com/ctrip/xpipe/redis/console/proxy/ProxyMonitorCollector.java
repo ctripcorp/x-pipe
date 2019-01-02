@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
 
 import java.util.List;
 
@@ -19,6 +20,8 @@ public interface ProxyMonitorCollector extends Startable, Stoppable {
 
     List<TunnelSocketStatsResult> getTunnelSocketStatsResults();
 
+    List<TunnelTrafficResult> getTunnelTrafficResults();
+
     List<TunnelInfo> getTunnelInfos();
 
     void addListener(Listener listener);
@@ -26,6 +29,9 @@ public interface ProxyMonitorCollector extends Startable, Stoppable {
     void removeListener(Listener listener);
 
     interface Listener {
-        void ackPingStatsResult(List<PingStatsResult> realTimeResults);
+
+        void ackPingStatsResult(ProxyMonitorCollector collector, List<PingStatsResult> realTimeResults);
+
+        void ackTrafficStatsResult(ProxyMonitorCollector collector, List<TunnelTrafficResult> realTimeResults);
     }
 }

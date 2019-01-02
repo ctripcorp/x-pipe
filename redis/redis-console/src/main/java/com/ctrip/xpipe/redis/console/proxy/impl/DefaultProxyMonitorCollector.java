@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -38,6 +39,8 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     private List<TunnelStatsResult> tunnelStatsResults;
 
     private List<TunnelSocketStatsResult> socketStatsResults;
+
+    private List<TunnelTrafficResult> tunnelTrafficResults;
 
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
@@ -86,6 +89,11 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     @Override
+    public List<TunnelTrafficResult> getTunnelTrafficResults() {
+        return tunnelTrafficResults == null ? Collections.emptyList() : tunnelTrafficResults;
+    }
+
+    @Override
     public List<TunnelInfo> getTunnelInfos() {
         return tunnelInfos == null ? Collections.emptyList() : tunnelInfos;
     }
@@ -110,19 +118,22 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                         new PingResultsUpdater().command(),
                         new TunnelStatsResultsUpdater().command(),
                         new SocketStatsResultsUpdater().command(),
+                        new TrafficStatsResultsUpdater().command(),
                         new TunnelAggregator().command());
 
                 serial.execute().addListener(commandFuture -> {
                     if(!commandFuture.isSuccess()) {
                         logger.error("[doStart]", commandFuture.cause());
+                    } else {
+                        new SafeLoop<Listener>(listeners) {
+                            @Override
+                            protected void doRun0(Listener listener) {
+                                listener.ackPingStatsResult(DefaultProxyMonitorCollector.this, pingStatsResults);
+                                listener.ackTrafficStatsResult(DefaultProxyMonitorCollector.this, tunnelTrafficResults);
+                            }
+                        }.run();
                     }
                 });
-                new SafeLoop<Listener>(listeners) {
-                    @Override
-                    protected void doRun0(Listener listener) {
-                        listener.ackPingStatsResult(pingStatsResults);
-                    }
-                }.run();
             }
         }, getStartInterval(), CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     }
@@ -205,6 +216,21 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
         }
     }
 
+    private class TrafficStatsResultsUpdater extends AbstractInfoUpdater<TunnelTrafficResult> {
+
+        @Override
+        protected void updateRelevantField(TunnelTrafficResult[] updates) {
+            synchronized (DefaultProxyMonitorCollector.this) {
+                tunnelTrafficResults = Lists.newArrayList(updates);
+            }
+        }
+
+        @Override
+        protected Command<TunnelTrafficResult[]> getCommand() {
+            return new AbstractProxyMonitorCommand.ProxyMonitorTrafficStatsCommand(objectPool, scheduled);
+        }
+    }
+
     private class TunnelAggregator {
 
         public Command<Void> command() {
@@ -242,6 +268,13 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                     tunnels.put(id, new DefaultTunnelInfo(getProxyInfo(), id));
                 }
                 tunnels.get(id).setSocketStatsResult(socketStats);
+            }
+            for(TunnelTrafficResult trafficResult : getTunnelTrafficResults()) {
+                String id = trafficResult.getTunnelId();
+                if(!tunnels.containsKey(id)) {
+                    tunnels.put(id, new DefaultTunnelInfo(getProxyInfo(), id));
+                }
+                tunnels.get(id).setTunnelTrafficResult(trafficResult);
             }
             tunnelInfos = Lists.newArrayList(tunnels.values());
         }
