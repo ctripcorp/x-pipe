@@ -1,5 +1,5 @@
-index_module.controller('ProxyListCtl',['$rootScope', '$scope', 'ProxyService', 'NgTableParams', '$stateParams',
-    function ($rootScope, $scope, ProxyService,NgTableParams, $stateParams) {
+index_module.controller('ProxyListCtl',['$rootScope', '$scope', '$window', 'ProxyService', 'NgTableParams', '$stateParams',
+    function ($rootScope, $scope, $window, ProxyService,NgTableParams, $stateParams) {
 
         $scope.proxies = {};
         $scope.proxyIp = $stateParams.proxyIp;

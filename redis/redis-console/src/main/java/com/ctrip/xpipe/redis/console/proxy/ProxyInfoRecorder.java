@@ -71,7 +71,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private void reportTraffic(ProxyMonitorCollector collector, List<TunnelTrafficResult> realTimeResults) {
         if(realTimeResults == null || realTimeResults.isEmpty()) {
-            logger.warn("[report] null result for PingStatsResult");
+            logger.warn("[report] null result for TrafficStatsResult");
             return;
         }
         reportTraffics(collector, realTimeResults);
@@ -81,7 +81,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private MetricData getMetricData(ProxyMonitorCollector collector, PingStatsResult pingStatsResult) {
         MetricData metricData = new MetricData(PING_METRIC_TYPE, FAKE_DC, FAKE_CLUSTER, FAKE_SHARD);
-        metricData.addTag("srcproxy", collector.getProxyInfo().getHostPort().toString());
+        metricData.addTag("srcproxy", collector.getProxyInfo().getHostPort().getHost());
         metricData.setHostPort(pingStatsResult.getReal());
         metricData.setTimestampMilli(pingStatsResult.getStart());
         metricData.setValue(pingStatsResult.getEnd() - pingStatsResult.getStart());

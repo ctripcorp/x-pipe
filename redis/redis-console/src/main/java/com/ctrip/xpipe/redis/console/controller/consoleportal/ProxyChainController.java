@@ -38,7 +38,7 @@ public class ProxyChainController extends AbstractConsoleController {
 
     private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.%s;cluster=%s;shard=%s,address)";
 
-    private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.traffic;address=%s:%d,direction)";
+    private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.traffic;address='%s:%d',direction)";
 
     private static final String SUFFIX = "&panel.datasource=incluster&panel.db=FX&panelId=1&fullscreen&edit";
 
