@@ -24,6 +24,10 @@ services.service('ProxyService', ['$resource', '$q', function ($resource, $q) {
             methos: 'GET',
             url: '/console/proxy/status/all',
             isArray: true
+        },
+        get_proxy_traffic_hickwall: {
+            method: 'GET',
+            url: '/console/proxy/traffic/hickwall/:host/:port'
         }
     });
 
@@ -81,10 +85,25 @@ services.service('ProxyService', ['$resource', '$q', function ($resource, $q) {
         return d.promise;
     }
 
+    function getProxyTrafficHickwall(host, port) {
+        var d = $q.defer();
+        resource.get_proxy_traffic_hickwall({
+                host: host,
+                port: port
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         loadAllProxyChainsForDcCluster : loadAllProxyChainsForDcCluster,
         existsRouteBetween: existsRouteBetween,
         getProxyChainHickwall: getProxyChainHickwall,
-        getAllProxyInfo: getAllProxyInfo
+        getAllProxyInfo: getAllProxyInfo,
+        getProxyTrafficHickwall: getProxyTrafficHickwall
     }
 }]);

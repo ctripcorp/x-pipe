@@ -9,17 +9,14 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.PingStatsResult;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.core.annotation.Order;
 
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 public class ProxyPingRecorderTest extends AbstractTest {
 
     private List<MetricData> datas = Lists.newArrayList();
 
-    private ProxyPingRecorder recorder = new ProxyPingRecorder(){
+    private ProxyInfoRecorder recorder = new ProxyInfoRecorder(){
         @Override
         public MetricProxy getMetricProxy() {
             return new FakeMetricProxy();

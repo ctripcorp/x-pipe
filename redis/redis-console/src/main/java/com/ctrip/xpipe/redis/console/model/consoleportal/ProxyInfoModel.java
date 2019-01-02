@@ -4,12 +4,15 @@ public class ProxyInfoModel {
 
     private String ip;
 
+    private int port;
+
     private String dc;
 
     private int chains;
 
-    public ProxyInfoModel(String ip, String dc, int chains) {
+    public ProxyInfoModel(String ip, int port, String dc, int chains) {
         this.ip = ip;
+        this.port = port;
         this.dc = dc;
         this.chains = chains;
     }
@@ -38,6 +41,15 @@ public class ProxyInfoModel {
 
     public ProxyInfoModel setChains(int chains) {
         this.chains = chains;
+        return this;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public ProxyInfoModel setPort(int port) {
+        this.port = port;
         return this;
     }
 }

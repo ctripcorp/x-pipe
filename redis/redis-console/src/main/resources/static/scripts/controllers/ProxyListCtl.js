@@ -3,6 +3,7 @@ index_module.controller('ProxyListCtl',['$rootScope', '$scope', 'ProxyService', 
 
         $scope.proxies = {};
         $scope.proxyIp = $stateParams.proxyIp;
+        $scope.getToTrafficHickWall = getToTrafficHickWall;
 
         var sourceProxies = [], copiedProxies = [];
 
@@ -45,6 +46,15 @@ index_module.controller('ProxyListCtl',['$rootScope', '$scope', 'ProxyService', 
                     }
                 });
             });
+        }
+
+        function getToTrafficHickWall(host, port) {
+            ProxyService.getProxyTrafficHickwall(host, port)
+                .then(function(result) {
+                    if(result.addr) {
+                        $window.open(result.addr, '_blank');
+                    }
+                });
         }
 
 

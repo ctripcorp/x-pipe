@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
@@ -36,6 +37,8 @@ public class ProxyChainController extends AbstractConsoleController {
     private static final String PROXY_PING_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.ping,address)";
 
     private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.%s;cluster=%s;shard=%s,address)";
+
+    private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.traffic;address=%s:%d,direction)";
 
     private static final String SUFFIX = "&panel.datasource=incluster&panel.db=FX&panelId=1&fullscreen&edit";
 
@@ -140,5 +143,17 @@ public class ProxyChainController extends AbstractConsoleController {
     @RequestMapping(value = "/proxy/status/all", method = RequestMethod.GET)
     public List<ProxyInfoModel> getAllProxyInfo() {
         return proxyService.getAllProxyInfo();
+    }
+
+    @RequestMapping(value = "/proxy/traffic/hickwall/{host}/{port}", method = RequestMethod.GET)
+    public Map<String, String> getProxyTrafficHickwall(@PathVariable String host, @PathVariable int port) {
+        String template = null;
+        try {
+            template = URLEncoder.encode(String.format(PROXY_TRAFFIC_HICKWALL_TEMPLATE, host, port), ENDCODE_TYPE);
+        } catch (UnsupportedEncodingException e) {
+            logger.error("[getHickwallAddress]", e);
+            return ImmutableMap.of("addr", "");
+        }
+        return ImmutableMap.of("addr", getHickwall(template));
     }
 }

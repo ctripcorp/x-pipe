@@ -5,9 +5,9 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
+import com.ctrip.xpipe.redis.console.proxy.ProxyInfoRecorder;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
-import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorder;
 import com.ctrip.xpipe.redis.console.proxy.Ruler;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
@@ -18,7 +18,6 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +53,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
     private ProxyService proxyService;
 
     @Autowired
-    private ProxyPingRecorder proxyPingRecorder;
+    private ProxyInfoRecorder proxyInfoRecorder;
 
     private ScheduledFuture future;
 
@@ -95,7 +94,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
             public ProxyMonitorCollector create() {
                 logger.info("[create proxy monitor collector] {}", proxyModel);
                 ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel);
-                result.addListener(proxyPingRecorder);
+                result.addListener(proxyInfoRecorder);
                 try {
                     result.start();
                 } catch (Exception e) {
@@ -116,7 +115,7 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         ProxyMonitorCollector result = proxySamples.remove(proxyModel);
         if(result != null) {
             try {
-                result.removeListener(proxyPingRecorder);
+                result.removeListener(proxyInfoRecorder);
                 result.stop();
             } catch (Exception e) {
                 logger.error("[remove]", e);

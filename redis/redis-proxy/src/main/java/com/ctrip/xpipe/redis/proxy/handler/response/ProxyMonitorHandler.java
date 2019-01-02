@@ -2,11 +2,14 @@ package com.ctrip.xpipe.redis.proxy.handler.response;
 
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
+import com.ctrip.xpipe.redis.core.proxy.monitor.SessionTrafficResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.SocketStatsResult;
 import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelSocketStatsResult;
+import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
 import com.ctrip.xpipe.redis.core.proxy.parser.monitor.ProxyMonitorParser;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.session.SessionStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.PingStatsManager;
 import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
@@ -44,7 +47,7 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
             logger.warn("[doHandle] unknown type: {}", content[0]);
             return;
         }
-        long start = System.currentTimeMillis();
+
         switch (type) {
             case SocketStats:
                 new SocketStatsResponser().response(channel);
@@ -54,6 +57,9 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
                 break;
             case TunnelStats:
                 new TunnelStatsResponser().response(channel);
+                break;
+            case TrafficStats:
+                new TunnelTrafficResponser().response(channel);
                 break;
             default:
                 break;
@@ -128,6 +134,26 @@ public class ProxyMonitorHandler extends AbstractProxyProtocolOptionHandler {
         @Override
         Object format(Tunnel tunnel) {
             return tunnel.getTunnelMonitor().getTunnelStats().getTunnelStatsResult().toArrayObject();
+        }
+    }
+
+    private class TunnelTrafficResponser extends AbstractResponser<Tunnel> {
+
+        @Override
+        protected List<Tunnel> getSamples() {
+            return tunnelManager.tunnels();
+        }
+
+        @Override
+        protected Object format(Tunnel tunnel) {
+            String tunnelId = tunnel.identity().toString();
+            SessionStats frontendStats = tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats();
+            SessionStats backendStats = tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats();
+            SessionTrafficResult frontend = new SessionTrafficResult(frontendStats.lastUpdateTime(),
+                    frontendStats.getInputBytes(), frontendStats.getOutputBytes(), frontendStats.getInputInstantaneousBPS(), frontendStats.getOutputInstantaneousBPS());
+            SessionTrafficResult backend = new SessionTrafficResult(backendStats.lastUpdateTime(),
+                    backendStats.getInputBytes(), backendStats.getOutputBytes(), frontendStats.getInputInstantaneousBPS(), frontendStats.getOutputInstantaneousBPS());
+            return new TunnelTrafficResult(tunnelId, frontend, backend).format();
         }
     }
 }
