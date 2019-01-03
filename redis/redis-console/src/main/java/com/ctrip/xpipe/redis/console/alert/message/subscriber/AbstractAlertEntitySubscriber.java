@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.job.event.EventBus;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,7 +90,12 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
     protected boolean alertRecovered(AlertEntity alert) {
         long recoveryMilli = recoveryMilli(alert);
         long expectedRecoverMilli = recoveryMilli + alert.getDate().getTime();
-        return expectedRecoverMilli <= System.currentTimeMillis();
+        if(expectedRecoverMilli <= System.currentTimeMillis()) {
+            logger.warn("[alertRecovered] alert: {}, expected: {}, now: {}", DateTimeUtils.timeAsString(alert.getDate()),
+                    DateTimeUtils.timeAsString(expectedRecoverMilli), DateTimeUtils.currentTimeAsString());
+            return true;
+        }
+        return false;
     }
 
     protected ConsoleConfig consoleConfig() {
