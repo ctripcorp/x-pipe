@@ -114,8 +114,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                             p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                         p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
+                        p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                     }
                 });
         return b.connect(endpoint.getHost(), endpoint.getPort());
