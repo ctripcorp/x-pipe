@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIntervalCheck implements MigrationSystemAvailableChecker {
 
-    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.migrate.system.check.interval", "3000"));
+    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.migrate.system.check.interval", "30000"));
 
     @Autowired
     private DcService dcService;

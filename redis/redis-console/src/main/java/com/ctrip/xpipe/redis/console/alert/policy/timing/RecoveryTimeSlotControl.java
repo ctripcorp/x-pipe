@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.AlertPolicy;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -16,6 +18,8 @@ import java.util.function.LongSupplier;
  * Apr 19, 2018
  */
 public class RecoveryTimeSlotControl implements TimeSlotControl {
+
+    private static final Logger logger = LoggerFactory.getLogger(RecoveryTimeSlotControl.class);
 
     private ConsoleConfig consoleConfig;
 
@@ -40,6 +44,7 @@ public class RecoveryTimeSlotControl implements TimeSlotControl {
 
     @Override
     public void mark(ALERT_TYPE alertType, LongSupplier checkInterval) {
+        logger.info("[mark]{}, {}ms", alertType, checkInterval.getAsLong());
         checkIntervals.put(alertType, checkInterval);
     }
 
