@@ -322,9 +322,9 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
         public void onInit() {
             frontend.markUnReadable();
             ChannelPipeline pipeline = frontend.getChannel().pipeline();
+            pipeline.addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
             installCompressCodecIfNecessary(pipeline);
             pipeline.addLast(new FrontendSessionNettyHandler(DefaultTunnel.this));
-            pipeline.addLast(new SessionTrafficReporter(config.getTrafficReportIntervalMillis(), frontend));
         }
 
         @Override
