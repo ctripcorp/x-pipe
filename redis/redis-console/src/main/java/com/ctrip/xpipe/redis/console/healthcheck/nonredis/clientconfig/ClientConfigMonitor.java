@@ -33,7 +33,7 @@ import java.util.Set;
 @ConditionalOnProperty(name = {HealthChecker.ENABLED}, matchIfMissing = true)
 public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
 
-    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.outerclient.check.interval", "3000"));
+    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.outerclient.check.interval", "30000"));
 
     private OuterClientService outerClientService = ServicesUtil.getOuterClientService();
 
