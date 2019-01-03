@@ -33,7 +33,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private static final String TRAFFIC_METRIC_TYPE = "proxy.traffic";
 
-    private static final String FAKE_CLUSTER = "cluster", FAKE_SHARD = "shard", FAKE_DC = "dc";
+    private static final String FAKE_CLUSTER = "cluster", FAKE_SHARD = "shard";
 
     @Override
     public void ackPingStatsResult(ProxyMonitorCollector collector, List<PingStatsResult> realTimeResults) {
@@ -80,7 +80,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
     }
 
     private MetricData getMetricData(ProxyMonitorCollector collector, PingStatsResult pingStatsResult) {
-        MetricData metricData = new MetricData(PING_METRIC_TYPE, FAKE_DC, FAKE_CLUSTER, FAKE_SHARD);
+        MetricData metricData = new MetricData(PING_METRIC_TYPE, collector.getProxyInfo().getDcName(), FAKE_CLUSTER, FAKE_SHARD);
         metricData.addTag("srcproxy", collector.getProxyInfo().getHostPort().getHost());
         metricData.setHostPort(pingStatsResult.getReal());
         metricData.setTimestampMilli(pingStatsResult.getStart());
@@ -99,10 +99,10 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
             backendOutput += backend.getOutputRates();
         }
         try {
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector.getProxyInfo().getHostPort(), "frontend.input", frontendInput));
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector.getProxyInfo().getHostPort(), "frontend.output", frontendOutput));
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector.getProxyInfo().getHostPort(), "backend.input", backendInput));
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector.getProxyInfo().getHostPort(), "backend.output", backendOutput));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "frontend.input", frontendInput));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "frontend.output", frontendOutput));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "backend.input", backendInput));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "backend.output", backendOutput));
         } catch (MetricProxyException e) {
             logger.error("[report]", e);
         }
@@ -110,9 +110,9 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private static final String TRAFFIC_DIRECTION_TAG = "direction";
 
-    private MetricData getMetricData(HostPort hostPort, String direction, long val) {
-        MetricData metricData = new MetricData(TRAFFIC_METRIC_TYPE, FAKE_DC, FAKE_CLUSTER, FAKE_SHARD);
-        metricData.setHostPort(hostPort);
+    private MetricData getMetricData(ProxyMonitorCollector collector, String direction, long val) {
+        MetricData metricData = new MetricData(TRAFFIC_METRIC_TYPE, collector.getProxyInfo().getDcName(), FAKE_CLUSTER, FAKE_SHARD);
+        metricData.setHostPort(collector.getProxyInfo().getHostPort());
         metricData.addTag(TRAFFIC_DIRECTION_TAG, direction);
         metricData.setTimestampMilli(System.currentTimeMillis());
         metricData.setValue(val);
