@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +19,10 @@ import java.util.Set;
  * <p>
  * Oct 20, 2017
  */
-public class ScheduledAlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
+public class GroupedAlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    ScheduledAlertMessageDecorator decorator;
+    private GroupedAlertMessageDecorator decorator;
 
     @Test
     public void generateTitle() throws Exception {
@@ -40,6 +41,12 @@ public class ScheduledAlertMessageDecoratorTest extends AbstractConsoleIntegrati
                 Collections.singleton(
                         new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.XREDIS_VERSION_NOT_VALID
                         )));
+        alerts.put(ALERT_TYPE.CLIENT_INSTANCE_NOT_OK,
+                Sets.newHashSet(
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test", "shard-test", "", ALERT_TYPE.CLIENT_INSTANCE_NOT_OK),
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test-1", "shard-test-1", "", ALERT_TYPE.CLIENT_INSTANCE_NOT_OK),
+                        new AlertEntity(hostPort, dcNames[0], "cluster-test-2", "shard-test-2", "", ALERT_TYPE.CLIENT_INSTANCE_NOT_OK)
+                        ));
         String body = decorator.generateBody(alerts);
         logger.info("{}", body);
     }

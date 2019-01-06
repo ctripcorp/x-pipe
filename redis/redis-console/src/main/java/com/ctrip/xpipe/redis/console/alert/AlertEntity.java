@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.alert;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 import java.util.Date;
@@ -66,7 +67,8 @@ public class AlertEntity {
     @Override
     public String toString() {
         return "Alert: " + alertType + ", Cluster: " + clusterId
-                + ", Shard: " + shardId + ", HostPort: " + hostPort + ", Message: " + message;
+                + ", Shard: " + shardId + ", HostPort: " + hostPort + ", Message: " + message
+                + ", date: " + DateTimeUtils.timeAsString(date);
     }
 
     public String getKey() {

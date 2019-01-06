@@ -39,7 +39,6 @@ public class CtripAlertEmailTemplate implements CtripEmailTemplate {
     public void decorateBodyContent(Email email) {
         if(email == null)   return;
         String content = email.getBodyContent();
-        content = "<entry><htmlContent><![CDATA[" + content + "]]></htmlContent></entry>";
         email.setBodyContent(content);
     }
 }
