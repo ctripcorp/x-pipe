@@ -61,7 +61,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     @Override
     public void healthCheckMasterUp(RedisHealthCheckInstance instance) {
         if(!monitors.containsKey(instance.getRedisInstanceInfo().getClusterId())) {
-            logger.warn("[healthCheckMasterUp] Cluster is not warned before: {}", instance.getRedisInstanceInfo().getClusterId());
+            logger.debug("[healthCheckMasterUp] Cluster is not warned before: {}", instance.getRedisInstanceInfo().getClusterId());
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
@@ -77,7 +77,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     @Override
     public void outerClientMasterUp(String clusterId, String shardId) {
         if(!monitors.containsKey(clusterId)) {
-            logger.warn("[outerClientMasterUp] Cluster is not warned before: {}", clusterId);
+            logger.debug("[outerClientMasterUp] Cluster is not warned before: {}", clusterId);
             return;
         }
         DefaultClusterHealthMonitor monitor = getOrCreate(clusterId);

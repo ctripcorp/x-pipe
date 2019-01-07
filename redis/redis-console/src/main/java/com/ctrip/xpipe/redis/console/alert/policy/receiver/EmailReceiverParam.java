@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.console.alert.policy.receiver;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.policy.PolicyParam;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Arrays;
@@ -12,7 +15,7 @@ import java.util.List;
  * <p>
  * Apr 19, 2018
  */
-public abstract class EmailReceiverParam implements PolicyParam<List<String>> {
+public abstract class EmailReceiverParam implements PolicyParam<List<String>, AlertEntity> {
 
     @Override
     public boolean supports(Class<? extends PolicyParam> clazz) {
@@ -27,43 +30,47 @@ public abstract class EmailReceiverParam implements PolicyParam<List<String>> {
 
     public static class DbaReceiver extends EmailReceiverParam {
 
-        private final static DbaReceiver INSTANCE = new DbaReceiver();
-        private DbaReceiver() {}
-
         private ConsoleConfig consoleConfig;
 
-        public static DbaReceiver getInstance(ConsoleConfig consoleConfig) {
-            if(INSTANCE.consoleConfig == null) {
-                INSTANCE.consoleConfig = consoleConfig;
-            }
-            return INSTANCE;
+        public DbaReceiver(ConsoleConfig consoleConfig) {
+            this.consoleConfig = consoleConfig;
         }
 
         @Override
-        public List<String> param() {
+        public List<String> param(AlertEntity alertEntity) {
             String emailsStr = consoleConfig.getDBAEmails();
             return splitCommaString2List(emailsStr);
         }
+
     }
 
 
     public static class XPipeAdminReceiver extends EmailReceiverParam {
 
-        private final static XPipeAdminReceiver INSTANCE = new XPipeAdminReceiver();
-        private XPipeAdminReceiver() {}
-
         private ConsoleConfig consoleConfig;
 
-        public static XPipeAdminReceiver getInstance(ConsoleConfig consoleConfig) {
-            if(INSTANCE.consoleConfig == null) {
-                INSTANCE.consoleConfig = consoleConfig;
-            }
-            return INSTANCE;
+        public XPipeAdminReceiver(ConsoleConfig consoleConfig) {
+            this.consoleConfig = consoleConfig;
         }
 
         @Override
-        public List<String> param() {
+        public List<String> param(AlertEntity alertEntity) {
             String emailsStr = consoleConfig.getXPipeAdminEmails();
+            return splitCommaString2List(emailsStr);
+        }
+    }
+
+    public static class ClusterAdminReceiver extends EmailReceiverParam {
+
+        private ClusterService clusterService;
+
+        public ClusterAdminReceiver(ClusterService clusterService) {
+            this.clusterService = clusterService;
+        }
+
+        @Override
+        public List<String> param(AlertEntity alertEntity) {
+            String emailsStr = clusterService.find(alertEntity.getClusterId()).getClusterAdminEmails();
             return splitCommaString2List(emailsStr);
         }
     }

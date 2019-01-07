@@ -5,9 +5,12 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Set;
 
 /**
  * @author chen.zhu
@@ -40,10 +43,24 @@ public class AlertEntityImmediateSubscriberTest extends AbstractConsoleIntegrati
 
     @Test  // should see from log, send only once
     public void doProcessAlert() {
+
         subscriber.doProcessAlert(alert);
-        subscriber.doProcessAlert(alert);
-        subscriber.doProcessAlert(alert);
-        subscriber.doProcessAlert(alert);
+        sleep(50);
+        subscriber.doProcessAlert(newAlert(alert));
+        sleep(50);
+        subscriber.doProcessAlert(newAlert(alert));
+        sleep(50);
+        subscriber.doProcessAlert(newAlert(alert));
+        Set<AlertEntity> alertEntities = subscriber.getExistingAlerts();
+        Assert.assertEquals(1, alertEntities.size());
+        for(AlertEntity alertEntity : alertEntities) {
+            logger.info("[AlertEntity] {}", alertEntity);
+            Assert.assertTrue(System.currentTimeMillis() - alertEntity.getDate().getTime() < 50);
+        }
+    }
+
+    private AlertEntity newAlert(AlertEntity alert) {
+        return new AlertEntity(alert.getHostPort(), alert.getDc(), alert.getClusterId(), alert.getShardId(), alert.getMessage(), alert.getAlertType());
     }
 
     @Test  // should see from log, send twice

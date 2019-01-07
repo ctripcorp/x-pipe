@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.alert.decorator;
 
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.alert.policy.receiver.GroupEmailReceiver;
 import org.apache.velocity.VelocityContext;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
  * Oct 19, 2017
  */
 @Component(RecoverMessageDecorator.ID)
-public class RecoverMessageDecorator extends Decorator {
+public class RecoverMessageDecorator extends GroupedAlertMessageDecorator {
 
     public static final String ID = "recover.message.email.decorator";
 
@@ -29,14 +30,8 @@ public class RecoverMessageDecorator extends Decorator {
     }
 
     @Override
-    public String getRenderedString(String templateName, VelocityContext context) {
-        return super.getRenderedString(templateName, context);
-    }
-
-    @Override
-    protected VelocityContext fillInContext(AlertEntity alert, VelocityContext context) {
-        context.put("redisAlert", alert);
-        context.put("title", generateTitle(alert));
-        return context;
+    public String generateTitle() {
+        return String.format("[%s][XPipe 恢复]",
+                consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
     }
 }

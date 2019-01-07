@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.alert.message.AlertEntityHolderManager;
+import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.console.alert.policy.timing.NaiveRecoveryTimeAlgorithm;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -30,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
-    AlertEntity alert;
+    private AlertEntity alert;
 
     @Autowired
     private AlertPolicyManager policyManager;
@@ -197,13 +199,13 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
 
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), xpipeAdminMap);
 
-        Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(alerts));
+        Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(convertToHolderManager(alerts)));
 
         configService.stopAlertSystem(new ConfigModel(), 1);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), alerts);
-        Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(alerts));
+        Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(convertToHolderManager(alerts)));
 
     }
 
@@ -212,4 +214,11 @@ public class AlertPolicyManagerTest extends AbstractConsoleIntegrationTest {
         configService.startAlertSystem(new ConfigModel());
     }
 
+    private AlertEntityHolderManager convertToHolderManager(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
+        AlertEntityHolderManager holderManager = new DefaultAlertEntityHolderManager();
+        for(Map.Entry<ALERT_TYPE, Set<AlertEntity>> entry : alerts.entrySet()) {
+            holderManager.bulkInsert(Lists.newArrayList(entry.getValue()));
+        }
+        return holderManager;
+    }
 }

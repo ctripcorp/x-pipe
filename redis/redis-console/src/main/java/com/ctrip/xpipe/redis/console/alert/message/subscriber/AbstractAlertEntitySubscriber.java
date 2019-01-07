@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.alert.message.subscriber;
 
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertChannel;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.console.alert.manager.DecoratorManager;
 import com.ctrip.xpipe.redis.console.alert.manager.SenderManager;
+import com.ctrip.xpipe.redis.console.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.console.alert.message.AlertEntitySubscriber;
 import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.console.alert.sender.AbstractSender;
@@ -19,8 +21,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author chen.zhu
@@ -30,6 +36,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscriber {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractAlertEntitySubscriber.class);
+
+    protected final Lock lock = new ReentrantLock();
 
     @Autowired
     private DecoratorManager decoratorManager;
@@ -79,6 +87,17 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
         return message;
     }
 
+    protected AlertMessageEntity getMessage(EmailReceiverModel receivers, Map<ALERT_TYPE, Set<AlertEntity>> alerts,
+                                            boolean isAlertMessage) {
+
+        Pair<String, String> titleAndContent = decoratorManager().generateTitleAndContent(alerts, isAlertMessage);
+        AlertMessageEntity message = new AlertMessageEntity(titleAndContent.getKey(), titleAndContent.getValue(),
+                receivers.getRecipients());
+        message.addParam(AbstractSender.CC_ER, receivers.getCcers());
+
+        return message;
+    }
+
     protected void emailMessage(AlertMessageEntity message) {
         senderManager.sendAlert(AlertChannel.MAIL, message);
     }
@@ -96,6 +115,17 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
             return true;
         }
         return false;
+    }
+
+    protected void addAlertsToAlertHolders(Set<AlertEntity> alerts, AlertEntityHolderManager holderManager) {
+        try {
+            lock.lock();
+            for(AlertEntity alertEntity : alerts) {
+                holderManager.holdAlert(alertEntity);
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     protected ConsoleConfig consoleConfig() {

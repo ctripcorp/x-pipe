@@ -87,6 +87,7 @@ public class CtripPlatformEmailServiceTest {
         Email email = new Email();
         email.setBodyContent(text);
         email.addRecipient("zhuchen@ctrip.com");
+        email.addRecipient("tt.tu@ctrip.com");
         email.setSender("xpipe@test.com");
         email.setSubject("XPipe Test");
         return email;
