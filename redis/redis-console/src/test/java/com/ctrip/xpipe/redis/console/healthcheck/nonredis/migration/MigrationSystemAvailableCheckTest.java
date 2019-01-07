@@ -70,7 +70,7 @@ public class MigrationSystemAvailableCheckTest extends AbstractConsoleH2DbTest {
 
     @Test
     public void testGetIntervalMilli() {
-        Assert.assertEquals(3000, check.getIntervalMilli());
+        Assert.assertEquals(30000, check.getIntervalMilli());
     }
 
     @Test

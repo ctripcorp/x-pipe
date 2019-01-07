@@ -13,10 +13,10 @@ import java.util.Set;
  * <p>
  * Oct 19, 2017
  */
-@Component(ScheduledAlertMessageDecorator.ID)
-public class ScheduledAlertMessageDecorator extends Decorator {
+@Component(GroupedAlertMessageDecorator.ID)
+public class GroupedAlertMessageDecorator extends Decorator {
 
-    public static final String ID = "scheduled.alert.message.email.decorator";
+    public static final String ID = "grouped.alert.message.email.decorator";
 
     private static final String TEMPLATE_NAME = "ScheduledAlertTemplate.vm";
 
@@ -43,13 +43,10 @@ public class ScheduledAlertMessageDecorator extends Decorator {
     }
 
 
-    public String generateBody(Map<ALERT_TYPE, Set<AlertEntity>> redisAlerts) {
+    public String generateBody(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
         VelocityContext context = generateCommonContext();
-        for(ALERT_TYPE type : redisAlerts.keySet()) {
-            context.put(type + "", type);
-        }
-        context.put("redisAlerts", redisAlerts);
+        context.put("redisAlerts", alerts);
         context.put("title", generateTitle());
-        return getRenderedString(TEMPLATE_NAME, context);
+        return getRenderedString(getTemplateName(), context);
     }
 }

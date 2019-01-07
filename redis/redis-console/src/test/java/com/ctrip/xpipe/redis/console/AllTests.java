@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManagerTest;
+import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
@@ -156,7 +157,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultClusterHealthMonitorTest.class,
         DefaultClusterHealthMonitorManagerTest.class,
         MigrationSystemAvailableCheckTest.class,
-        DefaultCheckMigrationCommandBuilderTest.class
+        DefaultCheckMigrationCommandBuilderTest.class,
+        DefaultAlertEntityHolderTest.class
 })
 public class AllTests {
 

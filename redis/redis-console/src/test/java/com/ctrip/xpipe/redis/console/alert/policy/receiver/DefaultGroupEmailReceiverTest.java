@@ -4,8 +4,11 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
+import com.ctrip.xpipe.redis.console.alert.message.AlertEntityHolderManager;
+import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -33,13 +36,16 @@ public class DefaultGroupEmailReceiverTest extends AbstractConsoleIntegrationTes
     @Autowired
     private ConfigService configService;
 
+    @Autowired
+    private ClusterService clusterService;
+
     private DefaultGroupEmailReceiver groupEmailReceiver;
 
     private AlertEntity alert;
 
     @Before
     public void beforeDefaultGroupEmailReceiverTest() {
-        groupEmailReceiver = new DefaultGroupEmailReceiver(consoleConfig, configService);
+        groupEmailReceiver = new DefaultGroupEmailReceiver(consoleConfig, configService, clusterService);
 
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
@@ -96,13 +102,21 @@ public class DefaultGroupEmailReceiverTest extends AbstractConsoleIntegrationTes
 
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), xpipeAdminMap);
 
-        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(alerts));
+        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
 
         configService.stopAlertSystem(new ConfigModel(), 1);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), alerts);
-        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(alerts));
+        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
+    }
+
+    private AlertEntityHolderManager convertToHolderManager(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {
+        AlertEntityHolderManager holderManager = new DefaultAlertEntityHolderManager();
+        for(Map.Entry<ALERT_TYPE, Set<AlertEntity>> entry : alerts.entrySet()) {
+            holderManager.bulkInsert(Lists.newArrayList(entry.getValue()));
+        }
+        return holderManager;
     }
 
     @Test
@@ -141,13 +155,13 @@ public class DefaultGroupEmailReceiverTest extends AbstractConsoleIntegrationTes
 
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), emptyMap);
 
-        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(alerts));
+        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
 
         configService.stopAlertSystem(new ConfigModel(), 1);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), alerts);
-        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(alerts));
+        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
     }
 
 
@@ -183,13 +197,13 @@ public class DefaultGroupEmailReceiverTest extends AbstractConsoleIntegrationTes
 
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), xpipeAdminMap);
 
-        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(alerts));
+        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
 
         configService.stopAlertSystem(new ConfigModel(), 1);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(consoleConfig.getXPipeAdminEmails()), null), alerts);
-        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(alerts));
+        Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
     }
 
     @Test(expected = UnsupportedOperationException.class)

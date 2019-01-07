@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class AlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    AlertMessageDecorator decorator;
+    private AlertMessageDecorator decorator;
 
     @Test
     public void getTemplateName() throws Exception {

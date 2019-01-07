@@ -6,9 +6,9 @@ package com.ctrip.xpipe.redis.console.alert.policy;
  * <p>
  * Apr 19, 2018
  */
-public interface PolicyParam<T> {
+public interface PolicyParam<T, V> {
 
-    T param();
+    T param(V v);
 
     boolean supports(Class<? extends PolicyParam> clazz);
 }

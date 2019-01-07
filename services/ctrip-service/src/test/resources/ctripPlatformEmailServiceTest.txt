@@ -1,44 +1,139 @@
+<entry>
+    <title><![CDATA[[][XPipe 报警]]]></title>
+    <bodyContent>
+        <![CDATA[
+        <!-- Place this tag in your head or just before your close body tag. -->
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <h5 id="toc_0">[XPipe 周期性异常告警]
+        <!-- Place this tag where you want the button to render. -->
+        <a class="github-button" href="https://github.com/ctripcorp/x-pipe" data-size="large" data-show-count="true" aria-label="Star ctripcorp/x-pipe on GitHub">点击了解详情</a>
+        </h5>
+        <font color="gray">30分钟内的报警信息集合</font></br>
+        环境信息: <font color="red">[]</font><br/>
+        [时间: 2019-01-04T16:05:36.465]<br/>
+        XPipe相关事宜请联系 [XPipeAdmin@email.com]<br/>
+        <hr>
+        <strong>发送自XPipe Console，源 IP 地址： 127.0.0.1</strong>
 
-    <html><head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 
-        <title>XPipe异常告警</title>
-    </head>
-    <body>
-    [XPipe异常告警]<br/>
-    [环境：<span style="color:red"></span>]<br/>
-    [项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
-    [异常名称: Redis 版本|配置 异常][时间: 2017-10-17T10:01:04.049]<br/>
-    XPipe相关事宜请联系
-            <br/>
+            <hr>
+            <h6 id="toc_1">XREDIS_VERSION_NOT_VALID : 从机房Redis版本错误</h6>
+            <blockquote>
+                <p>说明：XPipe从机房Redis应该为XRedis，且版本号大于等于0.0.3</p>
+            </blockquote>
 
-    <div>
-        -------------------
-        <h4>新产生的问题</h4>
-        <p>说明：新的问题出现，会立马引发一次报警</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报警类型</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
+            <table border="1">
+                <thead>
                 <tr>
-                    <td>CLIENT_INCONSIS</td>
-                    <td>cluster</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td>fake message</td>
+                    <th>报错类型</th>
+                    <th>Redis DC</th>
+                    <th>Redis集群</th>
+                    <th>Redis分片</th>
+                    <th>Redis-IP</th>
+                    <th>Redis-Port</th>
+                    <th>错误信息</th>
+                    <th>最近一次报错时间</th>
                 </tr>
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                                        <tr>
+                        <td>XREDIS_VERSION_NOT_VALID</td>
+                        <td>jq</td>
+                        <td><a href=127.0.0.1/#/cluster_dc_shards/cluster-test/jq>cluster-test</a></td>
+                        <td>shard-test</td>
+                        <td>192.168.1.10</td>
+                        <td>6379</td>
+                        <td></td>
+                        <td>2019-01-04T16:05:36.452</td>
+                    </tr>
+                                    </tbody>
+            </table>
 
-    </body>
-    </html>
+            <hr>
+            <h6 id="toc_1">CLIENT_INCONSIS : CRedis | XPipe 数据不一致</h6>
+            <blockquote>
+                <p>说明：发现CRedis和XPipe信息不一致</p>
+            </blockquote>
+
+            <table border="1">
+                <thead>
+                <tr>
+                    <th>报错类型</th>
+                    <th>Redis DC</th>
+                    <th>Redis集群</th>
+                    <th>Redis分片</th>
+                    <th>Redis-IP</th>
+                    <th>Redis-Port</th>
+                    <th>错误信息</th>
+                    <th>最近一次报错时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                                        <tr>
+                        <td>CLIENT_INCONSIS</td>
+                        <td>jq</td>
+                        <td><a href=127.0.0.1/#/cluster_dc_shards/cluster-test/jq>cluster-test</a></td>
+                        <td>shard-test</td>
+                        <td>192.168.1.10</td>
+                        <td>6379</td>
+                        <td></td>
+                        <td>2019-01-04T16:05:36.452</td>
+                    </tr>
+                                    </tbody>
+            </table>
+
+            <hr>
+            <h6 id="toc_1">CLIENT_INSTANCE_NOT_OK : CRedis中实例故障</h6>
+            <blockquote>
+                <p>说明：CRedis中实例不可读或不可用</p>
+            </blockquote>
+
+            <table border="1">
+                <thead>
+                <tr>
+                    <th>报错类型</th>
+                    <th>Redis DC</th>
+                    <th>Redis集群</th>
+                    <th>Redis分片</th>
+                    <th>Redis-IP</th>
+                    <th>Redis-Port</th>
+                    <th>错误信息</th>
+                    <th>最近一次报错时间</th>
+                </tr>
+                </thead>
+                <tbody>
+                                        <tr>
+                        <td>CLIENT_INSTANCE_NOT_OK</td>
+                        <td>jq</td>
+                        <td><a href=127.0.0.1/#/cluster_dc_shards/cluster-test/jq>cluster-test</a></td>
+                        <td>shard-test</td>
+                        <td>192.168.1.10</td>
+                        <td>6379</td>
+                        <td></td>
+                        <td>2019-01-04T16:05:36.452</td>
+                    </tr>
+                                        <tr>
+                        <td>CLIENT_INSTANCE_NOT_OK</td>
+                        <td>jq</td>
+                        <td><a href=127.0.0.1/#/cluster_dc_shards/cluster-test-1/jq>cluster-test-1</a></td>
+                        <td>shard-test-1</td>
+                        <td>192.168.1.10</td>
+                        <td>6379</td>
+                        <td></td>
+                        <td>2019-01-04T16:05:36.452</td>
+                    </tr>
+                                        <tr>
+                        <td>CLIENT_INSTANCE_NOT_OK</td>
+                        <td>jq</td>
+                        <td><a href=127.0.0.1/#/cluster_dc_shards/cluster-test-2/jq>cluster-test-2</a></td>
+                        <td>shard-test-2</td>
+                        <td>192.168.1.10</td>
+                        <td>6379</td>
+                        <td></td>
+                        <td>2019-01-04T16:05:36.452</td>
+                    </tr>
+                                    </tbody>
+            </table>
+                        ]]>
+</bodyContent>
+</entry>

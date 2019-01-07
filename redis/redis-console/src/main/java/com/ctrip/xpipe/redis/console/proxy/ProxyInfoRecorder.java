@@ -57,7 +57,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private void reportPings(ProxyMonitorCollector collector, List<PingStatsResult> realTimeResults) {
         if(realTimeResults == null || realTimeResults.isEmpty()) {
-            logger.warn("[report] null result for PingStatsResult");
+            logger.debug("[report] null result for PingStatsResult");
             return;
         }
         for(PingStatsResult pingStatsResult : realTimeResults) {
@@ -71,7 +71,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private void reportTraffic(ProxyMonitorCollector collector, List<TunnelTrafficResult> realTimeResults) {
         if(realTimeResults == null || realTimeResults.isEmpty()) {
-            logger.warn("[report] null result for TrafficStatsResult");
+            logger.debug("[report] null result for TrafficStatsResult");
             return;
         }
         reportTraffics(collector, realTimeResults);
