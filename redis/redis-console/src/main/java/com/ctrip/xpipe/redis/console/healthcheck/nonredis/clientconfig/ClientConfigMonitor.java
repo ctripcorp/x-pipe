@@ -33,8 +33,6 @@ import java.util.Set;
 @ConditionalOnProperty(name = {HealthChecker.ENABLED}, matchIfMissing = true)
 public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
 
-    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.outerclient.check.interval", "30000"));
-
     private OuterClientService outerClientService = ServicesUtil.getOuterClientService();
 
     @Autowired
@@ -42,9 +40,6 @@ public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
 
     @Autowired
     private AlertManager alertManager;
-
-    @Autowired
-    private ClusterHealthMonitorManager clusterHealthMonitorManager;
 
     @Override
     protected void doCheck() {
@@ -62,11 +57,6 @@ public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
                 logger.info("[doCheck]" + cluster, e);
             }
         }
-    }
-
-    @Override
-    protected long getIntervalMilli() {
-        return checkIntervalMill;
     }
 
     @Override
@@ -98,36 +88,30 @@ public class ClientConfigMonitor extends AbstractSiteLeaderIntervalCheck {
     private void checkClusterInfo(OuterClientService.ClusterInfo clusterInfo) {
         if(clusterInfo.getGroups() == null || clusterInfo.getGroups().isEmpty())
             return;
-        String clusterName = clusterInfo.getName(), shardName;
+        String clusterName = clusterInfo.getName();
 
         for(OuterClientService.GroupInfo group : clusterInfo.getGroups()) {
             List<OuterClientService.InstanceInfo> instances = group.getInstances();
             if(instances == null || instances.isEmpty())
                 continue;
+            checkShard(group, clusterName);
+        }
+    }
 
-            shardName = group.getName();
-            boolean shardMasterWarn = false;
-            for(OuterClientService.InstanceInfo instance : instances) {
-                if(!instance.isCanRead()) {
-                    alertManager.alert(clusterName, shardName,
-                            new HostPort(instance.getIPAddress(), instance.getPort()),
-                            ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance cannot read");
-                }
-                if(!instance.isStatus()) {
-                    alertManager.alert(clusterName, shardName,
-                            new HostPort(instance.getIPAddress(), instance.getPort()),
-                            ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance is not valid");
-                    if(instance.isMaster()) {
-                        clusterHealthMonitorManager.outerClientMasterDown(clusterName, shardName);
-
-                        shardMasterWarn = true;
-                    }
-                }
+    protected void checkShard(OuterClientService.GroupInfo group, String clusterName) {
+        String shardName = group.getName();
+        boolean shardMasterWarn = false;
+        for(OuterClientService.InstanceInfo instance : group.getInstances()) {
+            if(!instance.isCanRead()) {
+                alertManager.alert(clusterName, shardName,
+                        new HostPort(instance.getIPAddress(), instance.getPort()),
+                        ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance cannot read");
             }
-            if(!shardMasterWarn) {
-                clusterHealthMonitorManager.outerClientMasterUp(clusterName, shardName);
+            if(!instance.isStatus()) {
+                alertManager.alert(clusterName, shardName,
+                        new HostPort(instance.getIPAddress(), instance.getPort()),
+                        ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance is not valid");
             }
-
         }
     }
 

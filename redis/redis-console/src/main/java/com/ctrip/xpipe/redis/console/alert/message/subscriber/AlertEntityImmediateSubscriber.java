@@ -42,9 +42,9 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
             protected void doRun() {
                 try {
                     lock.lock();
-                    logger.info("[initCleaner][before]sent alerts: {}", existingAlerts);
+                    logger.debug("[initCleaner][before]sent alerts: {}", existingAlerts);
                     existingAlerts.removeIf(alert -> alertRecovered(alert));
-                    logger.info("[initCleaner][after]send alerts: {}", existingAlerts);
+                    logger.debug("[initCleaner][after]send alerts: {}", existingAlerts);
                 } finally {
                     lock.unlock();
                 }
@@ -56,13 +56,13 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
     @Override
     protected void doProcessAlert(AlertEntity alert) {
         if(hasBeenSentOut(alert)) {
-            logger.info("[doProcessAlert]Alert has been sent out once: {}", alert);
+            logger.debug("[doProcessAlert]Alert has been sent out once: {}", alert);
             return;
         }
-        logger.warn("[sendTaskBegin] {}", sendTaskBegin.get());
+        logger.debug("[sendTaskBegin] {}", sendTaskBegin.get());
         sendingAlerts.add(alert);
         if(sendTaskBegin.compareAndSet(false, true)) {
-            logger.info("send alert @{}, alert: {}", DateTimeUtils.currentTimeAsString(), alert);
+            logger.debug("send alert @{}, alert: {}", DateTimeUtils.currentTimeAsString(), alert);
             scheduleSendTask();
         }
     }
@@ -79,7 +79,7 @@ public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscribe
                 } finally {
                     lock.unlock();
                 }
-                logger.info("[scheduleSendTask][alerts] {}", holderManager);
+                logger.debug("[scheduleSendTask][alerts] {}", holderManager);
                 Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> map = alertPolicyManager().queryGroupedEmailReceivers(holderManager);
 
                 for(Map.Entry<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> mailGroup : map.entrySet()) {

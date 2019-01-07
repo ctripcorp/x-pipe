@@ -32,7 +32,7 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
     public void scheduledRecoverAlertReport() {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
-            protected void doRun() throws Exception {
+            protected void doRun() {
 
                 logger.debug("[scheduledRecoverAlertReport] unRecoveredAlerts: {}", unRecoveredAlerts);
                 try {
@@ -46,7 +46,7 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
                     lock.unlock();
                 }
             }
-        }, 1, 1, TimeUnit.MINUTES);
+        }, 1, 3, TimeUnit.MINUTES);
     }
 
     @VisibleForTesting
