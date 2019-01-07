@@ -117,17 +117,6 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
         return false;
     }
 
-    protected void addAlertsToAlertHolders(Set<AlertEntity> alerts, AlertEntityHolderManager holderManager) {
-        try {
-            lock.lock();
-            for(AlertEntity alertEntity : alerts) {
-                holderManager.holdAlert(alertEntity);
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
     protected ConsoleConfig consoleConfig() {
         return consoleConfig;
     }
