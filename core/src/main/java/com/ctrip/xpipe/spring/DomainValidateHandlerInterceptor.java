@@ -2,6 +2,8 @@ package com.ctrip.xpipe.spring;
 
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -10,6 +12,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.function.Supplier;
 
 public class DomainValidateHandlerInterceptor implements HandlerInterceptor {
+
+    private static final Logger logger = LoggerFactory.getLogger(DomainValidateHandlerInterceptor.class);
 
     public static final String HTTP_REQUEST_HEADER_HOST = "HOST";
 
@@ -34,10 +38,17 @@ public class DomainValidateHandlerInterceptor implements HandlerInterceptor {
         }
 
         // then check if domain name valid
-        String domain = cleanUrl(expectedDomainName.get());
+        String domain = expectedDomainName.get();
+        if(domain == null || domain.isEmpty()) {
+            logger.debug("[preHandle][expected domain name, not found]");
+            return true;
+        }
+        domain = cleanUrl(domain);
         boolean result = domain.equalsIgnoreCase(host);
         if(!result) {
-            httpServletResponse.sendError(BAD_REQUEST_CODE, String.format(BAD_REQUEST_MESSAGE_TEMPLATE, host, domain));
+            String message = String.format(BAD_REQUEST_MESSAGE_TEMPLATE, host, domain);
+            logger.debug("[preHandle][domain not match]{}", message);
+            httpServletResponse.sendError(BAD_REQUEST_CODE, message);
         }
         return result;
     }
