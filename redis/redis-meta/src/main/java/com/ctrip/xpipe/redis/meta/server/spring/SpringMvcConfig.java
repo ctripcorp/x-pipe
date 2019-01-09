@@ -7,13 +7,12 @@ import com.ctrip.xpipe.spring.DomainValidateHandlerInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import java.util.function.Supplier;
 
-@Component
+@Configuration
 @ComponentScan(basePackages = {"com.ctrip.xpipe.redis.meta.server"})
 public class SpringMvcConfig  extends WebMvcConfigurerAdapter {
 
@@ -23,7 +22,8 @@ public class SpringMvcConfig  extends WebMvcConfigurerAdapter {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         Supplier<String> expectedDomainName = () -> {
-            String dcName = FoundationService.DEFAULT.getDataCenter();
+            // toLowerCase() to match metaServerConfig retrieve info
+            String dcName = FoundationService.DEFAULT.getDataCenter().toLowerCase();
             DcInfo dcInfo = metaServerConfig.getDcInofs().get(dcName);
             return dcInfo.getMetaServerAddress();
         };
