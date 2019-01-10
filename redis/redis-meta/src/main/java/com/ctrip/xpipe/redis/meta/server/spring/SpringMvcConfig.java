@@ -13,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import java.util.function.Supplier;
 
 @Configuration
-@ComponentScan(basePackages = {"com.ctrip.xpipe.redis.meta.server"})
+//@ComponentScan(basePackages = {"com.ctrip.xpipe.redis.meta.server"})
 public class SpringMvcConfig  extends WebMvcConfigurerAdapter {
 
     @Autowired
