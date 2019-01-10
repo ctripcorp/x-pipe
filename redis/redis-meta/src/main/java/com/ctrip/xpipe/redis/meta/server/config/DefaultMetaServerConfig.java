@@ -11,6 +11,7 @@ import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.google.common.collect.Maps;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));
 	
 	private Config serverConfig;
+
+	private Map<String, DcInfo> dcInfos = Maps.newConcurrentMap();
 
 	public DefaultMetaServerConfig(){
 
@@ -98,12 +101,19 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	@Override
 	public Map<String, DcInfo> getDcInofs() {
-		
+		if(dcInfos.isEmpty()) {
+			dcInfos = getDcInofMapping();
+		}
+		return dcInfos;
+	}
+
+	private Map<String, DcInfo> getDcInofMapping() {
+
 		String dcInfoStr = getProperty(KEY_DC_INFOS, "{}");
 		Map<String, DcInfo> dcInfos = JsonCodec.INSTANCE.decode(dcInfoStr, new GenericTypeReference<Map<String, DcInfo>>() {
 		});
-		
-		Map<String, DcInfo> result = new HashMap<>();
+
+		Map<String, DcInfo> result = Maps.newConcurrentMap();
 		for(Entry<String, DcInfo> entry : dcInfos.entrySet()){
 			result.put(entry.getKey().toLowerCase(), entry.getValue());
 		}
@@ -136,6 +146,12 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	
 	public void setDefaultServerPort(int defaultServerPort) {
 		this.defaultServerPort = defaultServerPort;
+	}
+
+	@Override
+	public void onChange(String key, String oldValue, String newValue) {
+		super.onChange(key, oldValue, newValue);
+		dcInfos = getDcInofMapping();
 	}
 
 }
