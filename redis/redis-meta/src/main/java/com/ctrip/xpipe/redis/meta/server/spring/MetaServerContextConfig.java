@@ -1,12 +1,20 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.spring.DomainValidateFilter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.function.Supplier;
 
 /**
  * @author marsqing
@@ -16,6 +24,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ComponentScan(basePackages = {"com.ctrip.xpipe.redis.meta.server"})
 public class MetaServerContextConfig extends AbstractRedisConfigContext {
+
+    @Autowired
+    private MetaServerConfig metaServerConfig;
 
     public static final String CLIENT_POOL = "clientPool";
 
@@ -30,5 +41,20 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
     public MetaServerMultiDcServiceManager getMetaServerMultiDcServiceManager() {
 
         return new DefaultMetaServerMultiDcServiceManager();
+    }
+
+    @Bean
+    public FilterRegistrationBean domainValidateFilter() {
+        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+        Supplier<String> expectedDomainName = () -> {
+            // toLowerCase() to match metaServerConfig retrieve info
+            String dcName = FoundationService.DEFAULT.getDataCenter().toLowerCase();
+            DcInfo dcInfo = metaServerConfig.getDcInofs().get(dcName);
+            return dcInfo.getMetaServerAddress();
+        };
+        DomainValidateFilter filter = new DomainValidateFilter(()->metaServerConfig.validateDomain(), expectedDomainName);
+        registrationBean.setFilter(filter);
+        registrationBean.addUrlPatterns("/*");
+        return registrationBean;
     }
 }

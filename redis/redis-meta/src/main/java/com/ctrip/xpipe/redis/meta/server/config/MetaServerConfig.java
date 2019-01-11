@@ -31,4 +31,6 @@ public interface MetaServerConfig extends CoreConfig {
 	Map<String, DcInfo> getDcInofs();
 
 	int getWaitforOffsetMilli();
+
+	boolean validateDomain();
 }
