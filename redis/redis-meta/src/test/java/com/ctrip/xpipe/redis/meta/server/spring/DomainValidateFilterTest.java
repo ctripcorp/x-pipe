@@ -20,15 +20,17 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import static com.ctrip.xpipe.spring.DomainValidateHandlerInterceptor.BAD_REQUEST_CODE;
-import static com.ctrip.xpipe.spring.DomainValidateHandlerInterceptor.BAD_REQUEST_MESSAGE_TEMPLATE;
+
+import static com.ctrip.xpipe.spring.DomainValidateFilter.BAD_REQUEST_CODE;
+import static com.ctrip.xpipe.spring.DomainValidateFilter.BAD_REQUEST_MESSAGE_TEMPLATE;
+import static com.ctrip.xpipe.spring.DomainValidateFilter.STOP_CHECK_URI;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
-@SpringApplicationConfiguration(classes = DomainValidateHandlerTest.MetaServerTestConfig.class)
-public class DomainValidateHandlerTest extends AbstractMetaServerContextTest {
+@SpringApplicationConfiguration(classes = DomainValidateFilterTest.MetaServerTestConfig.class)
+public class DomainValidateFilterTest extends AbstractMetaServerContextTest {
 
-    private Logger logger = LoggerFactory.getLogger(DomainValidateHandlerTest.class);
+    private Logger logger = LoggerFactory.getLogger(DomainValidateFilterTest.class);
 
     @Autowired
     private RequestMappingHandlerAdapter handlerAdapter;
@@ -41,6 +43,7 @@ public class DomainValidateHandlerTest extends AbstractMetaServerContextTest {
 
     @Test
     public void testInterceptor() throws Exception{
+
         MockHttpServletRequest request = getMockedRequest("localhost:9747");
         logger.info("[dc name] {}", FoundationService.DEFAULT.getDataCenter());
         Assert.assertEquals("http://localhost:9747", config.getDcInofs()
@@ -72,6 +75,22 @@ public class DomainValidateHandlerTest extends AbstractMetaServerContextTest {
         Assert.assertEquals(200, response.getStatus());
     }
 
+    @Test
+    public void testShutDownValidationProcess() throws Exception {
+        MockHttpServletRequest request = getMockedRequest("error.domain");
+
+        MockHttpServletResponse response = execute(request);
+        Assert.assertEquals(BAD_REQUEST_CODE, response.getStatus());
+
+        request = getMockedRequest("127.0.0.1:8080");
+        request.setRequestURI(STOP_CHECK_URI);
+        execute(request);
+
+        request = getMockedRequest("error.domain");
+        response = execute(request);
+        Assert.assertEquals(200, response.getStatus());
+    }
+
     private MockHttpServletRequest getMockedRequest(String host) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/meta/getactivekeeper/cluster1/shard1");
@@ -90,6 +109,8 @@ public class DomainValidateHandlerTest extends AbstractMetaServerContextTest {
         Assert.assertNotNull(handlerExecutionChain);
 
         HandlerInterceptor[] interceptors = handlerExecutionChain.getInterceptors();
+
+
 
         for(HandlerInterceptor interceptor : interceptors){
             interceptor.preHandle(request, response, handlerExecutionChain.getHandler());

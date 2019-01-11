@@ -122,6 +122,11 @@ public class UnitTestServerConfig implements MetaServerConfig{
 		return waitforOffsetMilli;
 	}
 
+	@Override
+	public boolean validateDomain() {
+		return true;
+	}
+
 	public UnitTestServerConfig setWaitforOffsetMilli(int waitforOffsetMilli) {
 		this.waitforOffsetMilli = waitforOffsetMilli;
 		return this;
