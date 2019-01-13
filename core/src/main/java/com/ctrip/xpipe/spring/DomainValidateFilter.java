@@ -17,6 +17,8 @@ public class DomainValidateFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(DomainValidateFilter.class);
 
+    private static final String LOCAL_HOST = "localhost";
+
     public static final String STOP_CHECK_URI = "/stop/domain/check";
 
     public static final String START_CHECK_URI = "/start/domain/check";
@@ -61,7 +63,7 @@ public class DomainValidateFilter implements Filter {
 
         String host = cleanUrl(httpServletRequest.getHeader(HTTP_REQUEST_HEADER_HOST)).trim();
         // if ip, then return true directly
-        if(IpUtils.isValidIpFormat(host)) {
+        if(IpUtils.isValidIpFormat(host) || isLocal(host)) {
             chain.doFilter(httpServletRequest, httpServletResponse);
             return;
         }
@@ -77,6 +79,10 @@ public class DomainValidateFilter implements Filter {
     @Override
     public void destroy() {
 
+    }
+
+    private boolean isLocal(String host) {
+        return LOCAL_HOST.equalsIgnoreCase(host);
     }
 
     private boolean validateDomain(HttpServletResponse response, String host) {

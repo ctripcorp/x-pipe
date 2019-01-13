@@ -128,4 +128,15 @@ public class DomainValidateFilterTest {
         logger.info("[content] {}", content);
         Assert.assertTrue(filter.getShouldCheckSetting());
     }
+
+    @Test
+    public void testLocalHostCall() throws Exception {
+        domain = "xpipe.meta.ctripcorp.com";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        request.addHeader(HTTP_REQUEST_HEADER_HOST, "localhost:8080");
+        filter.doFilter(request, response, filterChain);
+
+        Assert.assertEquals(200, response.getStatus());
+    }
 }
