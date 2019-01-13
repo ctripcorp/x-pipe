@@ -25,4 +25,20 @@
 			</shard>
 		</cluster>
 	</dc>
+	<dc id="fra">
+		<zkServer address="127.0.0.1:2181"/>
+		<metaServer ip="127.0.0.1" port="9847" master="true"/>
+		<cluster id="cluster1" active-dc="jq">
+			<shard id="shard1" active-dc="jq">
+				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6000" active="false" />
+				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6001" active="false" />
+				<redis ip="127.0.0.1" port="8000" master="false" />
+				<redis ip="127.0.0.1" port="8001" master="false" />
+			</shard>
+		</cluster>
+		<routes>
+			<route id="1" org-id="0" tag="meta" src-dc="fra" dst-dc="jq" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.8:443,PROXYTLS://127.0.0.11:443"/>
+			<route id="2" org-id="0" tag="meta" src-dc="fra" dst-dc="fq" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.7:443,PROXYTLS://127.0.0.7:443"/>
+		</routes>
+	</dc>
 </xpipe>

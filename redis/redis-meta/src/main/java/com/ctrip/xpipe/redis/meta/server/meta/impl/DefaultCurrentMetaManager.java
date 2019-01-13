@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -24,6 +25,8 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -254,13 +257,17 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		if(args instanceof DcMetaComparator){
 			
 			dcMetaChange((DcMetaComparator)args);
-		}else{
+		} else if(args instanceof DcRouteMetaComparator) {
+
+			routeChanges();
+		} else{
 			
 			throw new IllegalArgumentException(String.format("unknown args(%s):%s", args.getClass(), args));
 		}
 	}
 
-	private void dcMetaChange(DcMetaComparator comparator) {
+	@VisibleForTesting
+	protected void dcMetaChange(DcMetaComparator comparator) {
 		
 		for(ClusterMeta clusterMeta : comparator.getAdded()){
 			if(currentClusterServer.hasKey(clusterMeta.getId())){
@@ -287,6 +294,25 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			}else{
 				logger.info("[dcMetaChange][change][not interested]{}", clusterId);
 			}
+		}
+	}
+
+	@VisibleForTesting
+	protected void routeChanges() {
+		for(String clusterId : allClusters()) {
+			if(randomRoute(clusterId) != null) {
+				ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+				refreshKeeperMaster(clusterMeta);
+			}
+		}
+	}
+
+	@VisibleForTesting
+	protected void refreshKeeperMaster(ClusterMeta clusterMeta) {
+		Set<String> shards = clusterMeta.getShards().keySet();
+		String clusterId = clusterMeta.getId();
+		for (String shardId : shards) {
+			notifyKeeperMasterChanged(clusterId, shardId, getKeeperMaster(clusterId, shardId));
 		}
 	}
 
@@ -425,4 +451,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		this.dcMetaCache = dcMetaCache;
 	}
 
+	@VisibleForTesting
+	protected void addMetaServerStateChangeHandler(MetaServerStateChangeHandler handler) {
+		if(stateHandlers == null) {
+			stateHandlers = Lists.newArrayList();
+		}
+		stateHandlers.add(handler);
+	}
 }

@@ -81,6 +81,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 
 		if(activeKeeper == null){
 			future().setFailure(new Exception("can not find active keeper:" + keepers));
+			return;
 		}
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 
