@@ -17,7 +17,7 @@ import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPoolTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientPoolTest;
-import com.ctrip.xpipe.spring.DomainValidateHandlerInterceptorTest;
+import com.ctrip.xpipe.spring.DomainValidateFilterTest;
 import com.ctrip.xpipe.spring.RestTemplateFactoryTest;
 import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
@@ -74,7 +74,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	UrlUtilsTest.class,
 	DefaultExecutorFactoryTest.class,
 	PairTest.class,
-	DomainValidateHandlerInterceptorTest.class
+	DomainValidateFilterTest.class
 })
 public class AllTests {
 

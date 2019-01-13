@@ -31,6 +31,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_CLUSTER_SERVERS_CHACK_MILLI = "cluster.servers.check.milli";
 	public static String KEY_WAITFOR_OFFSET_MILLI = "dcchange.waitfor.offset.milli";
 	public static String KEY_DC_INFOS = "dcinfos";
+	public static String KEY_VALIDATE_DOMAIN = "metaserver.validate.domain";
 	
 	
 	public static String META_SRRVER_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
@@ -125,6 +126,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public int getWaitforOffsetMilli() {
 		return getIntProperty(KEY_WAITFOR_OFFSET_MILLI, 2000);
+	}
+
+	@Override
+	public boolean validateDomain() {
+		return getBooleanProperty(KEY_VALIDATE_DOMAIN, true);
 	}
 
 
