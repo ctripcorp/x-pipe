@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.proxy;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
@@ -27,6 +28,7 @@ public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, P
     }
 
     @Override
+    @JSONField(serialize=false)
     public ProxyConnectProtocol getProxyProtocol() {
         return protocol;
     }

@@ -35,8 +35,6 @@ public class CurrentMeta implements Releasable {
 
 	private Map<String, CurrentClusterMeta> currentMetas = new ConcurrentHashMap<>();
 
-	private Map<Long, CurrentRouteMeta> routeInfos = new ConcurrentHashMap<>();
-
 	public Set<String> allClusters() {
 		return new HashSet<>(currentMetas.keySet());
 	}
@@ -176,24 +174,6 @@ public class CurrentMeta implements Releasable {
 				currentClusterMeta.addShard(added);
 			}
 		});
-	}
-
-	public static class CurrentRouteMeta implements Releasable {
-
-		private Long orgid;
-
-		private List<RouteMeta> routes;
-
-		private AtomicInteger index;
-
-		private void refresh() {
-
-		}
-
-		@Override
-		public void release() throws Exception {
-
-		}
 	}
 
 	public static class CurrentClusterMeta implements Releasable {

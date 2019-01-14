@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -84,8 +85,18 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	public void setMasterAddress(Endpoint masterAddress) {
 		
 		if(ObjectUtils.equals(this.masterAddress, masterAddress)){
-			logger.info("[setMasterAddress][master address unchanged]{},{}", this.masterAddress, masterAddress);
-			return;
+
+			if(this.masterAddress instanceof ProxyEnabled) {
+				ProxyEnabled current = (ProxyEnabled) this.masterAddress;
+				ProxyEnabled future = (ProxyEnabled) masterAddress;
+				if(current.isSameWith(future)) {
+					logger.info("[setMasterAddress][proxied][master address unchanged]{},{}", this.masterAddress, masterAddress);
+					return;
+				}
+			} else {
+				logger.info("[setMasterAddress][master address unchanged]{},{}", this.masterAddress, masterAddress);
+				return;
+			}
 		}
 		logger.info("[setMasterAddress]{}, {}", this.masterAddress, masterAddress);
 		this.masterAddress = masterAddress;

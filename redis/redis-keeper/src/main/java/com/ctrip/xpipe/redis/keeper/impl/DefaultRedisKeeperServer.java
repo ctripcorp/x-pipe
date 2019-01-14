@@ -11,6 +11,7 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.concurrent.LongTimeAlertTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -39,6 +40,7 @@ import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -258,7 +260,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(keeperRedisMaster != null && target != null && keeperRedisMaster.getLifecycleState().isStarted()){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
-			if(current != null && current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
+			if(current != null && isMasterSame(current, target)) {
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
 				return;
 			}
@@ -270,6 +272,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			return;
 		}
 		initAndStartMaster(target);
+	}
+
+	private boolean isMasterSame(Endpoint current, Endpoint target) {
+		boolean result = ObjectUtils.equals(current, target);
+		if(!result) {
+			return false;
+		}
+		if(current instanceof ProxyEnabled && target instanceof ProxyEnabled) {
+			result = ((ProxyEnabled) current).isSameWith((ProxyEnabled) target);
+		}
+		return result;
 	}
 
 	private void initAndStartMaster(Endpoint target) {
