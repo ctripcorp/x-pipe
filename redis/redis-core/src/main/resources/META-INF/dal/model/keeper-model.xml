@@ -46,6 +46,7 @@
 		</snippet>
 	</entity>
 	<entity name="route" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Route">
+		<attribute name="id" key="true" />
 	</entity>
 </model>
 

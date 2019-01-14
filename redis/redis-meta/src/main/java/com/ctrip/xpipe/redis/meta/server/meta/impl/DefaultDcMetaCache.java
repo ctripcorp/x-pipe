@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -121,6 +122,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 				DcMeta current = dcMetaManager.get().getDcMeta();
 
 				changeDcMeta(current, future);
+				checkRouteChange(current, future);
 			}
 		} catch (Throwable th) {
 			logger.error("[run]" + th.getMessage());
@@ -150,6 +152,17 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 					StringUtil.join(",", (comparator) -> comparator.idDesc(), dcMetaComparator.getMofified()))
 			);
 			notifyObservers(dcMetaComparator);
+		}
+	}
+
+	@VisibleForTesting
+	protected void checkRouteChange(DcMeta current, DcMeta future) {
+		DcRouteMetaComparator comparator = new DcRouteMetaComparator(current, future, Route.TAG_META);
+		comparator.compare();
+
+		if(!comparator.getRemoved().isEmpty()
+				|| !comparator.getMofified().isEmpty()) {
+			notifyObservers(comparator);
 		}
 	}
 
