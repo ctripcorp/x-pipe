@@ -40,7 +40,7 @@
                     <tr>
                         <td>$!redisAlert.getAlertType()</td>
                         <td>$!redisAlert.getDc()</td>
-                        <td><a href=$xpipeurl/#/cluster_dc_shards/$!redisAlert.getClusterId()/$!redisAlert.getDc()>$!redisAlert.getClusterId()</a></td>
+                        <td><a href=http://${xpipeurl}/#/cluster_dc_shards/$!redisAlert.getClusterId()/$!redisAlert.getDc()>$!redisAlert.getClusterId()</a></td>
                         <td>$!redisAlert.getShardId()</td>
                         <td>$!redisAlert.getHostPort().getHost()</td>
                         <td>$!redisAlert.getHostPort().getPort()</td>
