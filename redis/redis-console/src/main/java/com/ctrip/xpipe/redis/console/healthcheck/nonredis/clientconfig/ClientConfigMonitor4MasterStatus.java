@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.google.common.collect.Lists;
@@ -15,9 +16,21 @@ import java.util.Set;
 
 @Component
 @ConditionalOnProperty(name = {HealthChecker.ENABLED}, matchIfMissing = true)
-public class ClientConfigMonitor4MasterStatus extends ClientConfigMonitor {
+public class ClientConfigMonitor4MasterStatus extends AbstractClientConfigMonitor {
 
     private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.outerclient.check.interval", "30000"));
+
+    @Autowired(required = false)
+    private ConsoleLeaderElector consoleSiteLeader;
+
+    @Override
+    protected boolean shouldCheck() {
+        if(consoleSiteLeader != null && !consoleSiteLeader.amILeader()) {
+            logger.debug("[shouldCheck][not local dc leader, quit]");
+            return false;
+        }
+        return true;
+    }
 
     @Autowired
     private ClusterHealthMonitorManager clusterHealthMonitorManager;
