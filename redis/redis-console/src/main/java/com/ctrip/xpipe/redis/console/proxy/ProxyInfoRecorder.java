@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.proxy;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
@@ -74,9 +76,9 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
             logger.debug("[report] null result for TrafficStatsResult");
             return;
         }
-        reportTraffics(collector, realTimeResults);
-
-
+        DataFlowCounter counter = getDataFlowCount(realTimeResults);
+        reportTraffics(collector, counter);
+        logDcTraffics(collector, counter);
     }
 
     private MetricData getMetricData(ProxyMonitorCollector collector, PingStatsResult pingStatsResult) {
@@ -88,7 +90,29 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
         return metricData;
     }
 
-    private void reportTraffics(ProxyMonitorCollector collector, List<TunnelTrafficResult> trafficResults) {
+    private void logDcTraffics(ProxyMonitorCollector collector, DataFlowCounter counter) {
+        EventMonitor.DEFAULT.logEvent(String.format("%s.%s", TRAFFIC_METRIC_TYPE, collector.getProxyInfo().getDcName()),
+                "frontend.input", counter.getFrontendInput());
+        EventMonitor.DEFAULT.logEvent(String.format("%s.%s", TRAFFIC_METRIC_TYPE, collector.getProxyInfo().getDcName()),
+                "frontend.output", counter.getFrontendOutput());
+        EventMonitor.DEFAULT.logEvent(String.format("%s.%s", TRAFFIC_METRIC_TYPE, collector.getProxyInfo().getDcName()),
+                "backend.input", counter.getBackendInput());
+        EventMonitor.DEFAULT.logEvent(String.format("%s.%s", TRAFFIC_METRIC_TYPE, collector.getProxyInfo().getDcName()),
+                "backend.output", counter.getBackendOutput());
+    }
+
+    private void reportTraffics(ProxyMonitorCollector collector, DataFlowCounter counter) {
+        try {
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "frontend.input", counter.getFrontendInput()));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "frontend.output", counter.getFrontendOutput()));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "backend.input", counter.getBackendInput()));
+            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "backend.output", counter.getBackendOutput()));
+        } catch (MetricProxyException e) {
+            logger.error("[report]", e);
+        }
+    }
+
+    private DataFlowCounter getDataFlowCount(List<TunnelTrafficResult> trafficResults) {
         long frontendInput = 0, frontendOutput = 0, backendInput = 0, backendOutput = 0;
         for(TunnelTrafficResult tunnelTrafficResult : trafficResults) {
             SessionTrafficResult frontend = tunnelTrafficResult.getFrontend();
@@ -98,14 +122,7 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
             backendInput += backend.getInputRates();
             backendOutput += backend.getOutputRates();
         }
-        try {
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "frontend.input", frontendInput));
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "frontend.output", frontendOutput));
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "backend.input", backendInput));
-            getMetricProxy().writeBinMultiDataPoint(getMetricData(collector, "backend.output", backendOutput));
-        } catch (MetricProxyException e) {
-            logger.error("[report]", e);
-        }
+        return new DataFlowCounter(frontendInput, frontendOutput, backendInput, backendOutput);
     }
 
     private static final String TRAFFIC_DIRECTION_TAG = "direction";
@@ -121,5 +138,33 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     protected MetricProxy getMetricProxy() {
         return this.metricProxy;
+    }
+
+    private class DataFlowCounter {
+
+        private final long frontendInput, frontendOutput, backendInput, backendOutput;
+
+        public DataFlowCounter(long frontendInput, long frontendOutput, long backendInput, long backendOutput) {
+            this.frontendInput = frontendInput;
+            this.frontendOutput = frontendOutput;
+            this.backendInput = backendInput;
+            this.backendOutput = backendOutput;
+        }
+
+        public long getFrontendInput() {
+            return frontendInput;
+        }
+
+        public long getFrontendOutput() {
+            return frontendOutput;
+        }
+
+        public long getBackendInput() {
+            return backendInput;
+        }
+
+        public long getBackendOutput() {
+            return backendOutput;
+        }
     }
 }
