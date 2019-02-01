@@ -30,6 +30,8 @@ public class DefaultAlertEntityHolder implements AlertEntityHolder {
             throw new IllegalArgumentException(String.format("need alert type: %s, but receive: %s",
                     alertType.name(), alertEntity.getAlertType().name()));
         }
+        // refresh to remove first
+        alerts.remove(alertEntity);
         alerts.add(alertEntity);
     }
 
