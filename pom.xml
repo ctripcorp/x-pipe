@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ctrip.framework.xpipe</groupId>
     <artifactId>xpipe-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.1</version>
     <packaging>pom</packaging>
 
 
@@ -52,7 +52,7 @@
 
         <hickwall.client.version>1.8</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
-        <credis.version>2.5.3</credis.version>
+        <credis.version>3.1.7</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.0.9</qunaer.common.version>
         <qconfig.client.version>1.4.4</qconfig.client.version>
@@ -60,6 +60,7 @@
         <netty3.version>3.10.5.Final</netty3.version>
         <netty.boringssl.version>2.0.12.Final</netty.boringssl.version>
         <netty4.version>4.1.28.Final</netty4.version>
+        <zstd.version>1.3.6-1</zstd.version>
     </properties>
 
     <modules>
@@ -244,6 +245,12 @@
                 <groupId>com.ctrip.credis</groupId>
                 <artifactId>credis</artifactId>
                 <version>${credis.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>qunar.common</groupId>
+                        <artifactId>common-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -375,6 +382,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
                 <version>${netty.boringssl.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd.version}</version>
             </dependency>
 
             <!-- ctrip related -->
