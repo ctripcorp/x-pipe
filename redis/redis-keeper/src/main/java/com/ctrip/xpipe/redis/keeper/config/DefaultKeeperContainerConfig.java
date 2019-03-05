@@ -21,11 +21,6 @@ public class DefaultKeeperContainerConfig implements KeeperContainerConfig {
         return config.get(REPLICATION_STORE_DIR, getDefaultRdsDir());
     }
 
-    @Override
-    public String getMetaServerUrl() {
-        return config.get(META_SERVER_URL, "http://127.0.0.1:9747");
-    }
-
     private String getDefaultRdsDir() {
         return System.getProperty("user.dir");
     }
