@@ -3,11 +3,8 @@ package com.ctrip.xpipe.redis.integratedtest;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.config.MetaServerAddressAware;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
-import com.ctrip.xpipe.redis.core.metaserver.DefaultMetaServerLocator;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
@@ -16,7 +13,6 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.meta.DefaultMetaService;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
@@ -119,31 +115,31 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		startZk(zkPort);
 	}
 
-	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, MetaServerKeeperService metaService,
+	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta,
 			LeaderElectorManager leaderElectorManager) throws Exception {
 
-		return startKeeper(keeperMeta, getKeeperConfig(), metaService, leaderElectorManager);
+		return startKeeper(keeperMeta, getKeeperConfig(), leaderElectorManager);
 	}
 
 	protected KeeperConfig getKeeperConfig() {
 		return new DefaultKeeperConfig();
 	}
 
-	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig, MetaServerKeeperService metaService,
+	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig,
 			LeaderElectorManager leaderElectorManager) throws Exception {
 
 		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
-		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, metaService, leaderElectorManager, new NoneKeepersMonitorManager());
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager, new NoneKeepersMonitorManager());
 		add(redisKeeperServer);
 		return redisKeeperServer;
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
-			MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
+			 LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
-		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService,
+		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir,
 				leaderElectorManager, keeperMonitorManager, proxyResourceManager);
 	}
 
@@ -160,23 +156,6 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		leaderElectorManager.start();
 		add(leaderElectorManager);
 		return leaderElectorManager;
-	}
-
-	protected MetaServerKeeperService createMetaService(final List<MetaServerMeta> metaServerMetas) {
-
-		DefaultMetaServerLocator metaServerLocator = new DefaultMetaServerLocator(new MetaServerAddressAware() {
-
-			@Override
-			public String getMetaServerUrl() {
-				return String.format("http://%s:%d", "localhost", metaServerMetas.get(0).getPort());
-			}
-		});
-
-		DefaultMetaService metaService = new DefaultMetaService();
-		metaService.setConfig(new DefaultKeeperConfig());
-		metaService.setMetaServerLocator(metaServerLocator);
-
-		return metaService;
 	}
 
 	protected void startRedis(RedisMeta redisMeta, RedisMeta redisMaster) throws IOException {

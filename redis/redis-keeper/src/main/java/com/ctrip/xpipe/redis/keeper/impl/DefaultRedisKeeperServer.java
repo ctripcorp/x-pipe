@@ -23,7 +23,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
@@ -114,10 +113,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private LeaderElector leaderElector;
 
 	private LeaderElectorManager leaderElectorManager;
-	
-	@SuppressWarnings("unused")
-	private MetaServerKeeperService metaService;
-	
+
 	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
 	private long lastDumpTime = -1;
 	//for test
@@ -129,7 +125,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private ProxyResourceManager proxyResourceManager;
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
-									MetaServerKeeperService metaService,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, ProxyResourceManager proxyResourceManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
@@ -140,7 +135,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
 		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
-		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		this.proxyResourceManager = proxyResourceManager;
 	}

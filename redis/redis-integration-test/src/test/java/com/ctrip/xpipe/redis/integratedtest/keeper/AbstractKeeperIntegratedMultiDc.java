@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.tuple.Pair;
 import org.apache.commons.exec.ExecuteException;
@@ -107,10 +106,9 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		
 		for(DcMeta dcMeta : getDcMetas()){
 			
-			MetaServerKeeperService metaService = createMetaService(dcMeta.getMetaServers());
 			LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 			for(KeeperMeta keeperMeta : getDcKeepers(dcMeta.getId(), getClusterId(), getShardId())){
-				startKeeper(keeperMeta, metaService, leaderElectorManager);
+				startKeeper(keeperMeta, leaderElectorManager);
 			}
 		}
 		
