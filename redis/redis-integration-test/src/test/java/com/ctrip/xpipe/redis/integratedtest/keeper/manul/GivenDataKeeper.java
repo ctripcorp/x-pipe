@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.integratedtest.keeper.manul;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.integratedtest.keeper.AbstractKeeperIntegratedSingleDc;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -48,9 +47,9 @@ public class GivenDataKeeper extends AbstractKeeperIntegratedSingleDc {
 
     @Override
     protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
-                                                        MetaServerKeeperService metaService, LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
+                                                        LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
-        return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, metaService, leaderElectorManager,
+        return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir, leaderElectorManager,
                 keeperMonitorManager, proxyResourceManager) {
             @Override
             public void endWriteRdb() {
