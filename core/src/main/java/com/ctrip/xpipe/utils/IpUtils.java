@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
@@ -9,7 +10,6 @@ import java.net.*;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * @author wenchao.meng
@@ -17,8 +17,6 @@ import java.util.regex.Pattern;
  * 2016年4月26日 下午5:32:48
  */
 public class IpUtils {
-	
-	private static Pattern IP_PATTERN = Pattern.compile("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$");
 
 	private static Logger logger = LoggerFactory.getLogger(IpUtils.class);
 	
@@ -35,7 +33,7 @@ public class IpUtils {
 	}
 	
 	public static boolean isValidIpFormat(String ip) {
-		return ip != null && IP_PATTERN.matcher(ip).matches();
+		return ip != null && com.google.common.net.InetAddresses.isInetAddress(ip);
 	}
 	
 	public static boolean isPort(String str){
@@ -51,6 +49,7 @@ public class IpUtils {
 	}
 
 	public static InetAddress getFistNonLocalIpv4ServerAddress() {
+		FoundationService.DEFAULT.getLocalIp();
 		return getFistNonLocalIpv4ServerAddress("10");
 	}
 

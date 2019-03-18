@@ -77,5 +77,17 @@ public class IpUtilsTest extends AbstractTest{
 		Assert.assertEquals("26", IpUtils.splitIpAddr(ip)[1]);
 	}
 
+	@Test
+	public void testIsValidIp() {
+		String ipv4 = "192.168.0.1";
+		Assert.assertTrue(IpUtils.isValidIpFormat(ipv4));
+
+		String ipv6 = "fe80::1ff:fe23:4567:890a";
+		Assert.assertTrue(IpUtils.isValidIpFormat(ipv6));
+
+		ipv6 = "fe80::1ff:fe23:4567:890a";
+		Assert.assertTrue(IpUtils.isValidIpFormat(ipv6));
+	}
+
 
 }
