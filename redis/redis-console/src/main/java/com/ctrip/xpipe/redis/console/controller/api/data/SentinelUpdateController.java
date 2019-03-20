@@ -95,6 +95,18 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/sentinel/address", method = RequestMethod.PUT)
+    public RetMessage updateSentinelAddr(@RequestBody SentinelModel model) {
+        logger.info("[updateSentinelAddr][begin]");
+        try {
+            SentinelModel updated = sentinelService.updateSentinelTblAddr(model);
+            return RetMessage.createSuccessMessage(jsonTool.encode(updated));
+        } catch (Exception e) {
+            logger.error("[updateSentinelAddr]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
     @VisibleForTesting
     protected SetinelTbl convert2SentinelTbl(SentinelModel sentinelModel) {
         StringBuilder sb = new StringBuilder();
