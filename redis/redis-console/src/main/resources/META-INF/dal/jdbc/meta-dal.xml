@@ -883,6 +883,13 @@
 			</readset>
 		</readsets>
 
+		<updatesets>
+			<updateset name="ADDRESS">
+				<member name="setinel-id"/>
+				<member name="setinel-address"/>
+			</updateset>
+		</updatesets>
+
 		<query-defs>
 			<query name="find-by-dc-id" type="SELECT" multiple="true">
 				<param name="dc-id"/>
@@ -928,6 +935,16 @@
 					AND dt.id = <FIELD name='dc-id'/>
 					GROUP BY <FIELD name='setinel-id'/>
 					]]>
+				</statement>
+			</query>
+
+			<query name="update-sentinel-addr" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='setinel-address'/> = ${setinel-address}
+						WHERE <FIELD name='setinel-id'/> = ${setinel-id}
+						]]>
 				</statement>
 			</query>
 		</query-defs>
