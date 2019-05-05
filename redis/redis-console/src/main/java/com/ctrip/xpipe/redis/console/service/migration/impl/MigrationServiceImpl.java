@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
@@ -12,10 +13,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -43,6 +41,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private DcClusterService dcClusterService;
 
     @Autowired
     private AlertManager alertManager;
@@ -143,9 +144,33 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Override
     public Long createMigrationEvent(MigrationRequest request) {
+        preCheck(request);
         MigrationEvent event = migrationEventDao.createMigrationEvent(request);
         migrationEventManager.addEvent(event);
         return event.getEvent().getId();
+    }
+
+    private void preCheck(MigrationRequest request) {
+        List<MigrationRequest.ClusterInfo> clusterinfos = request.getRequestClusters();
+        for(MigrationRequest.ClusterInfo clusterInfo : clusterinfos) {
+            if(clusterInfo.getToDcId() < 0 || !isDestDcIdValid(clusterInfo.getClusterId(), clusterInfo.getToDcId())) {
+                throw new BadRequestException("Target DC Id Illegal for cluster: " + clusterInfo.getClusterId());
+            }
+
+        }
+    }
+
+    private boolean isDestDcIdValid(long clusterId, long dcId) {
+        try {
+            DcClusterTbl dcClusterTbl = dcClusterService.find(dcId, clusterId);
+            if(dcClusterTbl == null) {
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("[isDestDcIdValid]", e);
+            return false;
+        }
+        return true;
     }
 
     @Override
