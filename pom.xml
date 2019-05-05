@@ -81,6 +81,14 @@
                         <groupId>com.ctrip.framework</groupId>
                         <artifactId>vi</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc</groupId>
+                        <artifactId>common-zookeeper</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc.qclient</groupId>
+                        <artifactId>qclient-redis</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
