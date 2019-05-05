@@ -171,9 +171,9 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 				return cluster.selected;
 			});
 			var targetedClusters = $scope.clusters.filter(function(cluster){
-				return cluster.selected && (cluster.targetDc != "-");
+				return cluster.selected && (cluster.targetDc !== "-");
 			});
-			if(! (selectedClusters.length == targetedClusters.length)) {
+			if(! (selectedClusters.length === targetedClusters.length)) {
 				$('#createEventWithLostConfirm').modal('show');
 			} else {
 				doMigrate();
@@ -183,7 +183,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 
 		function doMigrate() {
 			var selectedClusters = $scope.clusters.filter(function(cluster){
-				return cluster.selected && (cluster.targetDc != "-");
+				return cluster.selected && (cluster.targetDc !== "-");
 			});
 
 			var migrationClusters = [];
@@ -205,9 +205,9 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 		}
 
 		function getDcId(destinationDc) {
-			var res;
+			var res = -1;
 			$scope.dcs.forEach(function(dc) {
-				if(dc.dcName == destinationDc) {
+				if(dc.dcName === destinationDc) {
 					res = dc.id;
 				}
 			});
@@ -236,7 +236,7 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 			var selectedClusters = $scope.clusters.filter(function(cluster){
 				return cluster.selected;
 			});
-			return (selectedClusters.length == $scope.clusters.length) &&
+			return (selectedClusters.length === $scope.clusters.length) &&
 					(selectedClusters.length !== 0);
 		};
 

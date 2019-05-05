@@ -76,12 +76,14 @@ public class MigrationController extends AbstractConsoleController {
 	
 	@RequestMapping(value = "/migration/events/{eventId}", method = RequestMethod.GET) 
 	public List<MigrationClusterModel> getEventDetailsWithEventId(@PathVariable Long eventId) {
+		logger.info("[getEventDetailsWithEventId][begin] eventId: {}", eventId);
 		List<MigrationClusterModel> res = new LinkedList<>();
 		if (null != eventId) {
 			res = migrationService.getMigrationClusterModel(eventId);
 		} else {
 			logger.error("[GetEvent][fail]Cannot findRedisHealthCheckInstance with null event id.");
 		}
+		logger.info("[getEventDetailsWithEventId][end] eventId: {}", eventId);
 		return res;
 	}
 	
