@@ -18,5 +18,5 @@ public interface DcService {
 	Map<Long, String> dcNameMap();
 	List<DcListDcModel> findAllDcsRichInfo();
 
-	void insertWithPartField(long zone_id, String dc_name, String description);
+	void insertWithPartField(long zoneId, String dcName, String description);
 }

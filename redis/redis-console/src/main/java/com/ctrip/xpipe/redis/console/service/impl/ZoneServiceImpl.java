@@ -21,8 +21,8 @@ public class ZoneServiceImpl extends AbstractConsoleService<ZoneTblDao> implemen
     @Autowired
     private ZoneDao zoneDao;
 
-    private ZoneTbl createZoneTbl(String zone_name){
-        return dao.createLocal().setZoneName(zone_name);
+    private ZoneTbl createZoneTbl(String zoneName){
+        return dao.createLocal().setZoneName(zoneName);
     }
 
     @Override
@@ -36,8 +36,8 @@ public class ZoneServiceImpl extends AbstractConsoleService<ZoneTblDao> implemen
     }
 
     @Override
-    public synchronized void insertRecord(String zone_name) {
+    public synchronized void insertRecord(String zoneName) {
 
-        zoneDao.insertRecord(createZoneTbl(zone_name));
+        zoneDao.insertRecord(createZoneTbl(zoneName));
     }
 }
