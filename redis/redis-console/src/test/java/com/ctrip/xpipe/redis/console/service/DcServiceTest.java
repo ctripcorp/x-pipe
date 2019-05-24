@@ -54,7 +54,7 @@ public class DcServiceTest extends AbstractConsoleIntegrationTest {
 		String dc_name = "test_dc";
 		String description = "DC:test_dc";
 		long zone_id = 1;
-		dcService.insert(zone_id, dc_name, description);
+		dcService.insertWithPartField(zone_id, dc_name, description);
 
 		DcTbl dcTbl = dcService.find(dc_name);
 
