@@ -23,9 +23,9 @@ public class ZoneController extends AbstractConsoleController {
     @Autowired
     private ZoneService zoneService;
 
-    @RequestMapping(value = "/zone/{zone_id}", method = RequestMethod.GET)
-    public ZoneTbl findZoneById(@PathVariable long zone_id){
-        return valueOrDefault(ZoneTbl.class, zoneService.findById(zone_id));
+    @RequestMapping(value = "/zone/{zoneId}", method = RequestMethod.GET)
+    public ZoneTbl findZoneById(@PathVariable long zoneId){
+        return valueOrDefault(ZoneTbl.class, zoneService.findById(zoneId));
     }
 
     @RequestMapping(value = "/zone/all", method = RequestMethod.GET)
@@ -35,7 +35,7 @@ public class ZoneController extends AbstractConsoleController {
 
     @RequestMapping(value = "/zone", method = RequestMethod.POST)
     public RetMessage addZone(HttpServletRequest request, @RequestBody ZoneModel zoneModel){
-        logger.info("[ZoneController][addZone]remote ip:{}, zone_name: {}", request.getRemoteHost(), zoneModel.getName());
+        logger.info("[ZoneController][addZone]remote ip:{}, zoneName: {}", request.getRemoteHost(), zoneModel.getName());
 
         try{
             zoneService.insertRecord(zoneModel.getName());
