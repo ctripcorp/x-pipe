@@ -428,9 +428,18 @@
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
-        <param name="key-id" />
+        <param name="key-id"/>
         <statement><![CDATA[DELETE FROM <TABLE/>
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="find-all-zones" type="SELECT" multiple="true">
+        <statement>
+          <![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+        </statement>
       </query>
     </query-defs>
   </entity>
