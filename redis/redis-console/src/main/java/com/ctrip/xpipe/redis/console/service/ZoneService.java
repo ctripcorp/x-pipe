@@ -14,6 +14,6 @@ public interface ZoneService {
 
     List<ZoneTbl> findAllZones();
 
-    void insertRecord(String zone_name);
+    void insertRecord(String zoneName);
 
 }

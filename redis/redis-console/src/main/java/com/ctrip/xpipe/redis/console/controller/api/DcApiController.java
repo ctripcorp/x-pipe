@@ -38,10 +38,10 @@ public class DcApiController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
-    @RequestMapping(value = "/dc/{dc_name}", method = RequestMethod.GET)
-    public DcTbl queryDcInformationByName(@PathVariable String dc_name){
+    @RequestMapping(value = "/dc/{dcName}", method = RequestMethod.GET)
+    public DcTbl queryDcInformationByName(@PathVariable String dcName){
 
-        return valueOrDefault(DcTbl.class, dcService.find(dc_name));
+        return valueOrDefault(DcTbl.class, dcService.find(dcName));
     }
 
 
