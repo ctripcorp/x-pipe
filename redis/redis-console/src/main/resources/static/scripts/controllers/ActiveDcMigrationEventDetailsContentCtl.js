@@ -59,7 +59,7 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                 function(result) {
                     $scope.$parent.eventDetails = result;
                     $scope.$parent.eventDetails.forEach(function(migrationCluster) {
-                        if(migrationCluster.migrationCluster.id == $scope.migrationCluster.migrationCluster.id) {
+                        if(migrationCluster.migrationCluster.id === $scope.migrationCluster.migrationCluster.id) {
                             $scope.migrationCluster = migrationCluster;
                             initStatus();
                             if(migrationCluster.migrationCluster.end){

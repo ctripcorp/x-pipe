@@ -40,13 +40,7 @@ public interface MigrationSystemAvailableChecker {
 
         public synchronized void addErrorMessage(String title, Throwable th) {
             setUnavailable();
-            if(message == null || message.isEmpty()) {
-                message = String.format("%s\n%s", title, getMessageFromException(th));
-            } else {
-                StringBuilder sb = new StringBuilder(message);
-                sb.append("\n").append(title).append("\n").append(getMessageFromException(th));
-                message = sb.toString();
-            }
+            addThrowableMessage(title, th);
         }
 
         public synchronized void addErrorMessage(String title, String log) {
@@ -54,9 +48,7 @@ public interface MigrationSystemAvailableChecker {
             if(message == null || message.isEmpty()) {
                 message = String.format("%s\n%s", title, log);
             } else {
-                StringBuilder sb = new StringBuilder(message);
-                sb.append("\n").append(title).append("\n").append(log);
-                message = sb.toString();
+                message = message + "\n" + title + "\n" + log;
             }
         }
 
@@ -68,6 +60,21 @@ public interface MigrationSystemAvailableChecker {
                 message = log;
             } else {
                 message = message + "\n" + log;
+            }
+        }
+
+        public synchronized void addWarningMessage(String title, Throwable th) {
+            if(isAvaiable()) {
+                this.warning = true;
+            }
+            addThrowableMessage(title, th);
+        }
+
+        private void addThrowableMessage(String title, Throwable th) {
+            if(message == null || message.isEmpty()) {
+                message = String.format("%s\n%s", title, getMessageFromException(th));
+            } else {
+                message = message + "\n" + title + "\n" + getMessageFromException(th);
             }
         }
 
