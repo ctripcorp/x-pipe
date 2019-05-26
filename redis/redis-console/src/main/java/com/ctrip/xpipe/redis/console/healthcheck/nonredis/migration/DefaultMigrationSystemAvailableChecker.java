@@ -100,37 +100,54 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
 
     private Command<RetMessage> checkDatabase() {
         Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_DATA_BASE);
-        checkCommandFuture("Database:", command, lastTimeCheckDatabase);
+        checkCommandFuture("Database:", command, lastTimeCheckDatabase, false);
         return command;
     }
 
     private Command<RetMessage> checkOuterClient() {
         Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_OUTER_CLIENT);
-        checkCommandFuture("OuterClient:", command, lastTimeCheckOuterClient);
+        checkCommandFuture("OuterClient:", command, lastTimeCheckOuterClient, false);
         return command;
     }
 
     private Command<RetMessage> checkMetaServer() {
         Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER);
-        checkCommandFuture("MetaServer:", command, lastTimeCheckMetaServer);
+        checkCommandFuture("MetaServer:", command, lastTimeCheckMetaServer, true);
         return command;
     }
 
-    private void checkCommandFuture(final String title, final Command<RetMessage> command, AtomicLong timestamp) {
+    private void checkCommandFuture(final String title, final Command<RetMessage> command,
+                                    AtomicLong timestamp, boolean warnInsteadError) {
         command.future().addListener(new CommandFutureListener<RetMessage>() {
             @Override
             public void operationComplete(CommandFuture<RetMessage> commandFuture) {
                 timestamp.set(System.currentTimeMillis());
                 if(!commandFuture.isSuccess()) {
-                    getResult().addErrorMessage(title, commandFuture.cause());
+                    warnOrError(title, commandFuture.cause(), warnInsteadError);
                 } else {
                     RetMessage retMessage = commandFuture.getNow();
                     if(retMessage.getState() != RetMessage.SUCCESS_STATE) {
-                        getResult().addErrorMessage(title, retMessage.getMessage());
+                        warnOrError(title, retMessage.getMessage(), warnInsteadError);
                     }
                 }
             }
         });
+    }
+
+    private void warnOrError(final String title, final String message, boolean warnInsteadError) {
+        if(!warnInsteadError) {
+            getResult().addErrorMessage(title, message);
+        } else {
+            getResult().addWarningMessage(title + message);
+        }
+    }
+
+    private void warnOrError(final String title, final Throwable throwable, boolean warnInsteadError) {
+        if(!warnInsteadError) {
+            getResult().addErrorMessage(title, throwable);
+        } else {
+            getResult().addWarningMessage(title, throwable);
+        }
     }
 
     private void checkIfCheckCommandDelay() {

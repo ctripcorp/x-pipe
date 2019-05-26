@@ -205,7 +205,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
                     }
                 } catch (Exception e) {
                     logger.error("[CheckMetaServerCommand][{}][{}]", clusterName, metaServerAddress, e);
-                    throw new NoResponseException(String.format("MetaServer: %s", metaServerAddress), e);
+//                    throw new NoResponseException(String.format("MetaServer: %s", metaServerAddress), e);
                 }
             }
             return Lists.newArrayList(result);
@@ -223,7 +223,7 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
             for(String addr : problemMetaServers) {
                 sb.append(addr).append(",");
             }
-            return RetMessage.createFailMessage(sb.toString());
+            return RetMessage.createWarningMessage(sb.toString());
         }
 
     }

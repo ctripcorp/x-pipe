@@ -94,14 +94,14 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleH2Db
     }
 
 
-    @Test(expected = ExecutionException.class)
+    @Test
     public void testCheckMetaServer() throws Exception {
         server = startServer(54321, "test");
         when(dcService.findClusterRelatedDc(clusterId)).thenReturn(Lists.newArrayList(new DcTbl().setDcName("localmeta")));
         RetMessage message = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER).execute().get();
         logger.info("");
         logger.info("{}", message.getMessage());
-        Assert.assertEquals(RetMessage.FAIL_STATE, message.getState());
+        Assert.assertEquals(RetMessage.WARNING_STATE, message.getState());
     }
 
     @Test
