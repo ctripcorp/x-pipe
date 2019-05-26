@@ -17,5 +17,6 @@ public interface DcService {
 	DcTbl findByDcName(String activeDcName);
 	Map<Long, String> dcNameMap();
 	List<DcListDcModel> findAllDcsRichInfo();
-	
+
+	void insertWithPartField(long zoneId, String dcName, String description);
 }
