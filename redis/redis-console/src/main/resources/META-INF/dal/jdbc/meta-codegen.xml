@@ -175,6 +175,11 @@
         <statement><![CDATA[DELETE FROM <TABLE/>
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
+      <query name="insert-with-part-field" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELD name='id'/>,<FIELD name='zone-id'/>,
+        <FIELD name='dc-name'/>, <FIELD name='dc-description'/>) VALUES(<VALUE name='id'/>,
+        <VALUE name='zone-id'/>, <VALUE name='dc-name'/>, <VALUE name='dc-description'/>)]]></statement>
+      </query>
     </query-defs>
   </entity>
   <entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
@@ -428,9 +433,18 @@
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
-        <param name="key-id" />
+        <param name="key-id"/>
         <statement><![CDATA[DELETE FROM <TABLE/>
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="find-all-zones" type="SELECT" multiple="true">
+        <statement>
+          <![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+        </statement>
       </query>
     </query-defs>
   </entity>
