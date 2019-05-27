@@ -93,7 +93,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(true);
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        sleep(20);
+        waitConditionUntilTimeOut(()->instance.getRedisInstanceInfo().isMaster(), 50);
         Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, never()).updateBatchMaster(anyList());
         verify(redisService, never()).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
@@ -110,7 +110,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(false);
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        sleep(20);
+        waitConditionUntilTimeOut(()->!instance.getRedisInstanceInfo().isMaster(), 50);
         Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, never()).updateBatchMaster(anyList());
         verify(redisService, never()).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
@@ -127,7 +127,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(true);
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        sleep(100);
+        waitConditionUntilTimeOut(()->!instance.getRedisInstanceInfo().isMaster(), 200);
         Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, times(1)).updateBatchMaster(anyList());
         verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
@@ -144,7 +144,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(false);
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        sleep(100);
+        waitConditionUntilTimeOut(()->instance.getRedisInstanceInfo().isMaster(), 200);
         Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, times(1)).updateBatchMaster(anyList());
         verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());

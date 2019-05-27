@@ -33,7 +33,7 @@ public class SentinelCollector4KeeperTest {
     @Mock
     private SentinelManager sentinelManager;
 
-    @Spy
+    @Mock
     private AlertManager alertManager;
 
     private HostPort sentinel = new HostPort("127.0.0.1", 5002);
@@ -48,6 +48,7 @@ public class SentinelCollector4KeeperTest {
     public void beforeSentinelCollector4KeeperTest() {
         MockitoAnnotations.initMocks(this);
         doNothing().when(sentinelManager).removeSentinelMonitor(any(), any());
+        when(alertManager.shouldAlert(any())).thenReturn(true);
     }
 
     @Test
@@ -93,10 +94,9 @@ public class SentinelCollector4KeeperTest {
         SentinelCollector4Keeper.SentinelCollectorAction action = SentinelCollector4Keeper
                 .SentinelCollectorAction.getAction(masterGood, monitorGood);
 
-        Assert.assertEquals("monitor master correct, monitor name incorrect. monitor removed already", action.getMessage());
         action.doAction(collector, hello, info);
 
-        verify(alertManager).alert(any(), any(), any(), any(), any());
+        verify(alertManager).alert(any(RedisInstanceInfo.class), any(), any());
     }
 
     @Test
@@ -106,9 +106,8 @@ public class SentinelCollector4KeeperTest {
         SentinelCollector4Keeper.SentinelCollectorAction action = SentinelCollector4Keeper
                 .SentinelCollectorAction.getAction(masterGood, monitorGood);
 
-        Assert.assertEquals("monitor master and name both incorrect for backup site redis", action.getMessage());
         action.doAction(collector, hello, info);
 
-        verify(alertManager).alert(any(), any(), any(), any(), any());
+        verify(alertManager).alert(any(RedisInstanceInfo.class), any(), any());
     }
 }

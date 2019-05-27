@@ -19,18 +19,11 @@ public abstract class RedisConfigCheckAction extends AbstractCDLAHealthCheckActi
 
     protected AlertManager alertManager;
 
-    private static final int START_TIME_INTERVAL_MILLI = 5 * 60 * 1000;
-
     public RedisConfigCheckAction(ScheduledExecutorService scheduled,
                                   RedisHealthCheckInstance instance,
                                   ExecutorService executors, AlertManager alertManager) {
         super(scheduled, instance, executors);
         this.alertManager = alertManager;
-    }
-
-    @Override
-    protected int getCheckTimeInterval(int baseInterval) {
-        return Math.abs(random.nextInt() % START_TIME_INTERVAL_MILLI);
     }
 
     protected void checkPassed() {

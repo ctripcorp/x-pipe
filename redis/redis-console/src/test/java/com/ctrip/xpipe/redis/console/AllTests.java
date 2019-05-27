@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManagerTest;
+import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
@@ -29,6 +30,11 @@ import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpo
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -40,13 +46,17 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiat
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
+import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
+import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -67,6 +77,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisServiceImplTest.class,
         KeepercontainerServiceImplTest.class,
         ShardServiceImplTest.class,
+        ShardServiceImplTest2.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
         DcServiceImplTest.class,
@@ -132,7 +143,22 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelHelloCheckActionFactoryTest.class,
         RedisMasterCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
-        VersionCheckActionFactoryTest.class
+        VersionCheckActionFactoryTest.class,
+        DefaultProxyMonitorCollectorManagerTest.class,
+        DefaultProxyChainAnalyzerTest.class,
+        ProxyPingRecorderTest.class,
+        DcClusterShardTest.class,
+        TestForAbstractMultiValueTunnelSocketStatsAnalyzer.class,
+        TestForAbstractNormalKeyValueTunnelSocketStatsAnalyzer.class,
+        DefaultTunnelSocketStatsAnalyzerManagerTest.class,
+        TunnelSocketStatsAnalyzersTest.class,
+        ClusterHealthStateTest.class,
+        DefaultLeveledEmbededSetTest.class,
+        DefaultClusterHealthMonitorTest.class,
+        DefaultClusterHealthMonitorManagerTest.class,
+        MigrationSystemAvailableCheckTest.class,
+        DefaultCheckMigrationCommandBuilderTest.class,
+        DefaultAlertEntityHolderTest.class
 })
 public class AllTests {
 

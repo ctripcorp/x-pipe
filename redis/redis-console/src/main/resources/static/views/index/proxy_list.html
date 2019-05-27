@@ -1,0 +1,34 @@
+
+<div class="col-md-12">
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="col-sm-2"> Proxies </span>
+                </div>
+
+            </div>
+        </header>
+
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
+            <tr ng-repeat="proxy in $data">
+                <td data-title="'proxy'" filter="{ proxyIp : 'text' }" ng-bind="proxy.ip | limitTo:50"></td>
+                <td ng-if="true" data-title="'DC Name'" ng-bind="proxy.dc | limitTo:50"></td>
+                <td ng-if="true" data-title="'Chains'" >
+                    <a ui-sref="proxy_tunnels({proxyIp: proxy.ip,dcId: proxy.dc})">{{ proxy.chains }}</a>
+                </td>
+                <td ng-if="true" data-title="'Proxy Pings'" >
+                    <a ui-sref="proxy_pings({})">Ping信息列表</a>
+                </td>
+                <td ng-if="true" data-title="'Proxy 流量打点'" >
+                    <span class="hickwall" aria-hidden="true" ng-click="getToTrafficHickWall(proxy.ip, proxy.port)"></span>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+</div>
+
+<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+    <i class="icon-double-angle-up icon-only bigger-110"></i>
+</a>

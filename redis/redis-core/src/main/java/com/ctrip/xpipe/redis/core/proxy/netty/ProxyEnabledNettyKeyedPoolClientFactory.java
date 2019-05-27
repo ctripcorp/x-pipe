@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.core.proxy.netty;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.netty.commands.AsyncNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
@@ -37,7 +37,7 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
         if(!isProxyEnabled(key)) {
             return super.makeObject(key);
         }
-        ProxyProtocol protocol = ((ProxyEnabled) key).getProxyProtocol();
+        ProxyConnectProtocol protocol = ((ProxyEnabled) key).getProxyProtocol();
         ChannelFuture f = proxyedConnectionFactory.getProxyedConnectionChannelFuture(protocol, b);
         f.addListener(new ChannelFutureListener() {
             @Override

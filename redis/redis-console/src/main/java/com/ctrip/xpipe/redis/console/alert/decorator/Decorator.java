@@ -29,6 +29,8 @@ public abstract class Decorator {
     @Autowired
     protected ConsoleConfig consoleConfig;
 
+    private DateTimeUtils dateTimeUtils = new DateTimeUtils();
+
     private FoundationService foundationService = FoundationService.DEFAULT;
 
     private static final int MAX_LENGTH = 128;
@@ -47,6 +49,8 @@ public abstract class Decorator {
         context.put("environment", consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
         context.put("xpipeAdminEmails", consoleConfig.getXPipeAdminEmails());
         context.put("localIpAddr", foundationService.getLocalIp());
+        context.put("dateTimeUtils", dateTimeUtils);
+        context.put("xpipeurl", consoleConfig.getConsoleDomain());
         return context;
     }
 

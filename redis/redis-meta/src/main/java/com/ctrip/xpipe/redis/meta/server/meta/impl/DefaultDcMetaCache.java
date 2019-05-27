@@ -9,7 +9,11 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
+import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -121,6 +125,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 				DcMeta current = dcMetaManager.get().getDcMeta();
 
 				changeDcMeta(current, future);
+				checkRouteChange(current, future);
 			}
 		} catch (Throwable th) {
 			logger.error("[run]" + th.getMessage());
@@ -133,7 +138,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
 		dcMetaComparator.compare();
 
-		if (dcMetaComparator.totalChangedCount() > META_MODIFY_PROTECT_COUNT) {
+		if (dcMetaComparator.totalChangedCount() - drClusterNums(dcMetaComparator) > META_MODIFY_PROTECT_COUNT) {
 			logger.error("[run][modify count size too big]{}, {}, {}", META_MODIFY_PROTECT_COUNT,
 					dcMetaComparator.totalChangedCount(), dcMetaComparator);
 			EventMonitor.DEFAULT.logAlertEvent("remove too many:" + dcMetaComparator.totalChangedCount());
@@ -150,6 +155,31 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 					StringUtil.join(",", (comparator) -> comparator.idDesc(), dcMetaComparator.getMofified()))
 			);
 			notifyObservers(dcMetaComparator);
+		}
+	}
+
+	private int drClusterNums(DcMetaComparator comparator) {
+		int result = 0;
+		for(MetaComparator metaComparator : comparator.getMofified()) {
+			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) metaComparator;
+			DrMigrationChecker checker = new DrMigrationChecker(clusterMetaComparator);
+			if(checker.isDrMigrationChange()) {
+				EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("[migrate: %s]", clusterMetaComparator.getCurrent().getId()));
+				result ++;
+			}
+		}
+		logger.info("[DR Switched][cluster num] {}", result);
+		return result;
+	}
+
+	@VisibleForTesting
+	protected void checkRouteChange(DcMeta current, DcMeta future) {
+		DcRouteMetaComparator comparator = new DcRouteMetaComparator(current, future, Route.TAG_META);
+		comparator.compare();
+
+		if(!comparator.getRemoved().isEmpty()
+				|| !comparator.getMofified().isEmpty()) {
+			notifyObservers(comparator);
 		}
 	}
 
@@ -267,4 +297,33 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 
+	/** we believe a cluster meta change comes from DR migration under these circumstances:
+	 * 1. cluster meta comparator contains no shard add/delete
+	 * 2. shard meta comparator contains no redis/keeper add/delete
+	 * */
+	private class DrMigrationChecker {
+
+		private ClusterMetaComparator comparator;
+
+		public DrMigrationChecker(ClusterMetaComparator comparator) {
+			this.comparator = comparator;
+		}
+
+		public boolean isDrMigrationChange() {
+			if(!comparator.getAdded().isEmpty() || !comparator.getRemoved().isEmpty()) {
+				return false;
+			}
+			for(MetaComparator metaComparator : comparator.getMofified()) {
+				ShardMetaComparator shardMetaComparator = (ShardMetaComparator) metaComparator;
+				if(!isShardChangedByDrOnly(shardMetaComparator)) {
+					return false;
+				}
+ 			}
+ 			return true;
+		}
+
+		private boolean isShardChangedByDrOnly(ShardMetaComparator shardMetaComparator) {
+			return shardMetaComparator.getAdded().isEmpty() && shardMetaComparator.getRemoved().isEmpty();
+		}
+	}
 }

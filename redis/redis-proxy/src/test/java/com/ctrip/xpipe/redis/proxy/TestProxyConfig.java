@@ -1,6 +1,12 @@
 package com.ctrip.xpipe.redis.proxy;
 
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.handler.ZstdDecoder;
+import com.ctrip.xpipe.redis.proxy.handler.ZstdEncoder;
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
  * @author chen.zhu
@@ -10,6 +16,10 @@ import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 public class TestProxyConfig implements ProxyConfig {
 
     private int frontendTcpPort = 8992, frontendTlsPort = 443;
+
+    private boolean startMonitor = false;
+
+    private boolean compress = false;
 
     @Override
     public int frontendTcpPort() {
@@ -47,33 +57,68 @@ public class TestProxyConfig implements ProxyConfig {
     }
 
     @Override
-    public int getCloseChannelAfterReadCloseMilli() {
-        return 1000;
+    public boolean startMonitor() {
+        return startMonitor;
+    }
+
+    @Override
+    public int getResponseTimeout() {
+        return 100;
+    }
+
+    @Override
+    public boolean isCompressEnabled() {
+        return compress;
+    }
+
+    @Override
+    public CompressAlgorithm getCompressAlgorithm() {
+        return new CompressAlgorithm() {
+            @Override
+            public String version() {
+                return "1.0";
+            }
+
+            @Override
+            public AlgorithmType getType() {
+                return AlgorithmType.ZSTD;
+            }
+        };
+    }
+
+    @Override
+    public ByteToMessageDecoder getCompressDecoder() {
+        return new ZstdDecoder();
+    }
+
+    @Override
+    public MessageToByteEncoder<ByteBuf> getCompressEncoder() {
+        return new ZstdEncoder();
     }
 
     @Override
     public String getServerCertChainFilePath() {
-        return "/opt/cert/server.crt";
+        return "src/test/resources/cert/server.crt";
     }
 
     @Override
     public String getClientCertChainFilePath() {
-        return "/opt/cert/client.crt";
+        return "src/test/resources/cert/client.crt";
     }
 
     @Override
     public String getServerKeyFilePath() {
-        return "/opt/cert/pkcs8_server.key";
+        return "src/test/resources/cert/pkcs8_server.key";
     }
 
     @Override
     public String getClientKeyFilePath() {
-        return "/opt/cert/pkcs8_client.key";
+        return "src/test/resources/cert/pkcs8_client.key";
     }
 
     @Override
     public String getRootFilePath() {
-        return "/opt/cert/ca.crt";
+        return "src/test/resources/cert/ca.crt";
     }
 
     public TestProxyConfig setFrontendTcpPort(int frontendTcpPort) {
@@ -84,5 +129,14 @@ public class TestProxyConfig implements ProxyConfig {
     public TestProxyConfig setFrontendTlsPort(int frontendTlsPort) {
         this.frontendTlsPort = frontendTlsPort;
         return this;
+    }
+
+    public TestProxyConfig setStartMonitor(boolean startMonitor) {
+        this.startMonitor = startMonitor;
+        return this;
+    }
+
+    public void setCompress(boolean compress) {
+        this.compress = compress;
     }
 }

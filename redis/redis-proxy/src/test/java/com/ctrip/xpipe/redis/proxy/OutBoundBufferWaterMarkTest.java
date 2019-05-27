@@ -95,7 +95,7 @@ public class OutBoundBufferWaterMarkTest extends AbstractProxyIntegrationTest {
         }
     }
 
-    private void startSecondaryProxy() throws Exception {
+    protected void startSecondaryProxy() throws Exception {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         DefaultProxyServer server = new DefaultProxyServer().setConfig(new TestProxyConfig()
                 .setFrontendTcpPort(SEC_PROXY_TCP_PORT).setFrontendTlsPort(SEC_PROXY_TLS_PORT));

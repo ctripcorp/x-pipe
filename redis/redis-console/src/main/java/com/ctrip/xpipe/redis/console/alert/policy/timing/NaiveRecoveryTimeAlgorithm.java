@@ -7,8 +7,10 @@ package com.ctrip.xpipe.redis.console.alert.policy.timing;
  */
 public class NaiveRecoveryTimeAlgorithm implements RecoveryTimeAlgorithm {
 
+    private static final long delta = 1000 * 10;
+
     @Override
     public long calculate(long checkInterval) {
-        return checkInterval * 2;
+        return checkInterval * 2 + delta;
     }
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.config;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Map;
 import java.util.Set;
@@ -87,4 +88,8 @@ public interface ConsoleConfig extends CoreConfig {
 	int getPingDownAfterMilliThroughProxy();
 
 	void register(ConsoleConfigListener listener);
+
+	Map<String, String> getSocketStatsAnalyzingKeys();
+
+	Pair<String, String> getClusterShardForMigrationSysCheck();
 }

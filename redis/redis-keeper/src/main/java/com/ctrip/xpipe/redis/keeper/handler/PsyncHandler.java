@@ -102,6 +102,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 				}
 			}
 		}else{
+			logger.info("current repl info: {}", keeperRepl);
 			redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSyncError();
 			doFullSync(redisSlave);
 		}

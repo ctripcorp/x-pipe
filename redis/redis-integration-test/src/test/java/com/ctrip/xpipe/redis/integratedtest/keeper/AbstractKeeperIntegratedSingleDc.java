@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.tuple.Pair;
@@ -23,7 +22,6 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	
 	protected String dc = "jq";
 	
-	private MetaServerKeeperService metaService;
 	private LeaderElectorManager leaderElectorManager;
 	
 	
@@ -70,7 +68,6 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	private void initResource() throws Exception {
 		
 		DcMeta dcMeta = getDcMeta();
-		metaService = createMetaService(dcMeta.getMetaServers());
 		leaderElectorManager = createLeaderElectorManager(dcMeta);
 	}
 
@@ -111,12 +108,12 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 	protected void startKeepers() throws Exception{
 		
 		for(KeeperMeta keeperMeta : getDcKeepers(dc, getClusterId(), getShardId())){
-			startKeeper(keeperMeta, metaService, leaderElectorManager);
+			startKeeper(keeperMeta, leaderElectorManager);
 		}
 	}
 	
 	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta) throws Exception{
-		return startKeeper(keeperMeta, metaService, leaderElectorManager);
+		return startKeeper(keeperMeta, leaderElectorManager);
 	}
 	
 	@Override

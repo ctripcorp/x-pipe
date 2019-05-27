@@ -2,13 +2,18 @@ package com.ctrip.xpipe.redis.console.alert.message.subscriber;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.console.alert.message.AlertEntityHolderManager;
+import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderManager;
+import com.ctrip.xpipe.redis.console.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -27,16 +32,21 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
     public void scheduledRecoverAlertReport() {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
-            protected void doRun() throws Exception {
+            protected void doRun() {
 
                 logger.debug("[scheduledRecoverAlertReport] unRecoveredAlerts: {}", unRecoveredAlerts);
-                if(unRecoveredAlerts.isEmpty()) {
-                    return;
-                }
+                try {
+                    lock.lock();
+                    if (unRecoveredAlerts.isEmpty()) {
+                        return;
+                    }
 
-                reportRecovered();
+                    reportRecovered();
+                } finally {
+                    lock.unlock();
+                }
             }
-        }, 1, 1, TimeUnit.MINUTES);
+        }, 1, 3, TimeUnit.MINUTES);
     }
 
     @VisibleForTesting
@@ -46,6 +56,8 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
             if(commandFuture.isSuccess()) {
                 Set<AlertEntity> recovered = commandFuture.getNow();
                 new ReportRecoveredAlertTask(recovered).execute(executors);
+            } else {
+                logger.warn("[reportRecovered]", commandFuture.cause());
             }
         });
         cleaner.execute(executors);
@@ -79,6 +91,8 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
                 }
             }
             unRecoveredAlerts.removeAll(recovered);
+            logger.info("[RecoveredAlertCleaner][recovered] {}", recovered);
+            logger.info("[RecoveredAlertCleaner][un-recovered] {}", unRecoveredAlerts);
             future().setSuccess(recovered);
         }
 
@@ -106,12 +120,21 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
             if(alerts == null || alerts.isEmpty()) {
                 return;
             }
-            for(AlertEntity alert : alerts) {
-                AlertMessageEntity message = getMessage(alert, false);
+            AlertEntityHolderManager holderManager = new DefaultAlertEntityHolderManager();
+            addAlertsToAlertHolders(alerts, holderManager);
+            Map<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> map = alertPolicyManager().queryGroupedEmailReceivers(holderManager);
+
+            for(Map.Entry<EmailReceiverModel, Map<ALERT_TYPE, Set<AlertEntity>>> mailGroup : map.entrySet()) {
+                if(mailGroup.getValue() == null || mailGroup.getValue().isEmpty()) {
+                    continue;
+                }
+                AlertMessageEntity message = getMessage(mailGroup.getKey(), mailGroup.getValue(), false);
                 emailMessage(message);
             }
             future().setSuccess();
         }
+
+
 
         @Override
         protected void doReset() {
@@ -123,4 +146,5 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
             return ReportRecoveredAlertTask.class.getSimpleName();
         }
     }
+
 }

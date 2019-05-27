@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import org.junit.Test;
 
 import static com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser.WHITE_SPACE;
@@ -17,7 +17,7 @@ public class KeeperCommandHandlerTest {
     @Test
     public void testGetProxyProtocol() {
         final String command = "setstate ACTIVE 127.0.0.1 6379 PROXY ROUTE PROXYTCP://127.0.0.1:80,PROXYTCP://10.2.1.1:80 TCP";
-        ProxyProtocol protocol = handler.getProxyProtocol(command.split(WHITE_SPACE));
+        ProxyConnectProtocol protocol = handler.getProxyProtocol(command.split(WHITE_SPACE));
         System.out.println(protocol.getContent());
     }
 }

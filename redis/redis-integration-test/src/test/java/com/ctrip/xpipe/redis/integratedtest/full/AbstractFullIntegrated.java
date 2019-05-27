@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.integratedtest.full;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import com.ctrip.xpipe.redis.integratedtest.ConsoleStart;
 import com.ctrip.xpipe.redis.integratedtest.DcInfo;
@@ -145,9 +144,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 		
 		startMetaServers(dcMeta);
 
-		
-		MetaServerKeeperService metaService = createMetaService(dcMeta.getMetaServers());
-		
+
 		LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
 
 		logger.info("[startDc]{}\n\n", dc);
@@ -157,7 +154,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 				logger.info(remarkableMessage("[startShard]{}"), shardMeta.getId());
 				for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-					startKeeper(keeperMeta, metaService, leaderElectorManager);
+					startKeeper(keeperMeta, leaderElectorManager);
 				}
 				for (RedisMeta redisMeta : shardMeta.getRedises()) {
 					startRedis(redisMeta);

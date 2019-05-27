@@ -14,10 +14,9 @@ public interface DcService {
 	List<DcTbl> findAllDcNames();
 	List<DcTbl> findAllDcBasic();
 	List<DcTbl> findClusterRelatedDc(String clusterName);
-	List<DcTbl> findAllDetails(String dcName);
-	List<DcTbl> findAllActiveKeepers();
 	DcTbl findByDcName(String activeDcName);
 	Map<Long, String> dcNameMap();
 	List<DcListDcModel> findAllDcsRichInfo();
-	
+
+	void insertWithPartField(long zoneId, String dcName, String description);
 }

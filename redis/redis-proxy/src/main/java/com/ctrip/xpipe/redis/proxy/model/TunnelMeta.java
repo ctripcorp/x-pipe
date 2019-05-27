@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.model;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnel;
 
 import java.io.Serializable;
@@ -22,7 +22,7 @@ public class TunnelMeta implements Serializable {
 
     private SessionMeta backend;
 
-    public TunnelMeta(DefaultTunnel tunnel, ProxyProtocol protocol) {
+    public TunnelMeta(DefaultTunnel tunnel, ProxyConnectProtocol protocol) {
         this.identity = tunnel.identity();
         this.state = tunnel.getState().name();
         this.protocol = protocol.getContent();

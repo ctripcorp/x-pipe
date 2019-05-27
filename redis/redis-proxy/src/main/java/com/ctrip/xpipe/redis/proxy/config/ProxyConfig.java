@@ -1,7 +1,11 @@
 package com.ctrip.xpipe.redis.proxy.config;
 
 
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.redis.core.config.TLSConfig;
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
  * @author chen.zhu
@@ -25,5 +29,16 @@ public interface ProxyConfig extends TLSConfig {
     // to avoid any connect outside internal network
     String[] getInternalNetworkPrefix();
 
-    int getCloseChannelAfterReadCloseMilli();
+    boolean startMonitor();
+
+    int getResponseTimeout();
+
+    boolean isCompressEnabled();
+
+    CompressAlgorithm getCompressAlgorithm();
+
+    ByteToMessageDecoder getCompressDecoder();
+
+    MessageToByteEncoder<ByteBuf> getCompressEncoder();
+
 }

@@ -102,7 +102,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(metaCache.inBackupDc(hostPort)).thenReturn(true);
         when(checker.isSiteHealthy(any())).thenReturn(true);
         processor.onEvent(new InstanceSick(instance));
-        verify(alertManager, atLeastOnce()).alert(cluster, shard, hostPort, ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
+        verify(alertManager, atLeastOnce()).alert(instance.getRedisInstanceInfo(), ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
     }
 
     @Test

@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.config;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.ZkConfig;
+import com.google.common.collect.Maps;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -110,13 +112,19 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	@Override
 	public Map<String, DcInfo> getDcInofs() {
-		
-		return new HashMap<>();
+		Map<String, DcInfo> result = Maps.newHashMap();
+		result.put(FoundationService.DEFAULT.getDataCenter(), new DcInfo("http://localhost:" + metaServerPort));
+		return result;
 	}
 
 	@Override
 	public int getWaitforOffsetMilli() {
 		return waitforOffsetMilli;
+	}
+
+	@Override
+	public boolean validateDomain() {
+		return true;
 	}
 
 	public UnitTestServerConfig setWaitforOffsetMilli(int waitforOffsetMilli) {

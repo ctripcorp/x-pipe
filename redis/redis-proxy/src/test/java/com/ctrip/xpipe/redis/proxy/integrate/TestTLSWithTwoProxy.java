@@ -1,16 +1,19 @@
 package com.ctrip.xpipe.redis.proxy.integrate;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
+import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,6 +47,8 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     public void afterTestMassTCPPacketWithOneProxyServer() throws Exception {
         server1.stop();
         server2.stop();
+        System.gc();
+        System.gc();
     }
 
     @Test
@@ -54,13 +59,14 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
 
         ChannelFuture clientFuture = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1);
 
-        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(1024);
+        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(message.getBytes().length);
         AtomicReference<ByteBuf> byteBufAtomicReference = new AtomicReference<>(byteBuf);
         ChannelFuture receiveServer = startReceiveServer(port, byteBufAtomicReference);
 
-        String total = protocol + message;
+        final String total = protocol + message;
         int index = 2;
         String sendout = total.substring(0, index);
+        waitConditionUntilTimeOut(()->clientFuture.channel().isActive(), 100);
         write(clientFuture, sendout);
 
         for(int i = 0; i < 2; i++) {
@@ -81,12 +87,90 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
 
         receiveServer.channel().close();
 
-        ByteBuf expected = UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(message.getBytes());
+        ByteBuf expected = Unpooled.wrappedBuffer(message.getBytes());
 
         Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
+
+        expected.release();
     }
 
-//    @Test
+    @Test
+    public void testStabilityWithCompressAndSSL() throws TimeoutException, InterruptedException {
+        ((TestProxyConfig)server1.getConfig()).setCompress(true);
+        ((TestProxyConfig)server1.getResourceManager().getProxyConfig()).setCompress(true);
+        testStability();
+    }
+
+    @Ignore
+    @Test
+    public void testMultiThreadStabilityWithCompressAndSSL() throws Exception {
+        int N = 20;
+
+        ((TestProxyConfig)server1.getConfig()).setCompress(true);
+        ((TestProxyConfig)server1.getResourceManager().getProxyConfig()).setCompress(true);
+
+        List<String> samples = Lists.newArrayList();
+        List<AtomicReference<ByteBuf>> result = Lists.newArrayList();
+        List<String> protocols = Lists.newArrayList();
+
+        for(int i = 0; i < N; i++) {
+
+            String message = randomString(1024 * 10);
+            samples.add(message);
+            ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.ioBuffer(1024 * 10);
+            result.add(new AtomicReference<>(byteBuf));
+        }
+
+        for(int i = 0; i < N; i++) {
+            int port = randomPort();
+            String protocol = generateProxyProtocol(port);
+            protocols.add(protocol);
+            startReceiveServer(port, result.get(i));
+        }
+
+        CountDownLatch latch = new CountDownLatch(N);
+        for(int i = 0; i < N; i++) {
+            final String total = protocols.get(i) + samples.get(i);
+
+            new Thread(new AbstractExceptionLogTask() {
+                @Override
+                public void doRun() throws Exception{
+                    ChannelFuture clientFuture = clientBootstrap().connect(PROXY_HOST, PROXY_PORT1);
+                    int index = 2;
+                    String sendout = total.substring(0, index);
+                    waitConditionUntilTimeOut(()->clientFuture.channel().isActive(), 200);
+                    write(clientFuture, sendout);
+
+                    for(int i = 0; i < 2; i++) {
+                        write(clientFuture, total.substring(index, ++index));
+                    }
+
+                    while(index < total.length()) {
+                        int pivot = 0;
+                        do {
+                            pivot = randomInt(index + 1, total.length() + 1);
+                        } while(pivot > total.length());
+                        sendout = total.substring(index, pivot);
+                        write(clientFuture, sendout);
+                        index = pivot;
+                        Thread.sleep(5);
+                    }
+                    latch.countDown();
+                }
+            }).start();
+        }
+
+        latch.await();
+        sleep(10 * 1000);
+
+        for(int i = 0; i < N; i++) {
+            Assert.assertEquals(samples.get(i), result.get(i).get().toString(Charset.defaultCharset()));
+            result.get(i).get().release();
+        }
+    }
+
+    @Ignore
+    @Test
     //Manullay test
     public void testStabilityWithN() throws TimeoutException, InterruptedException {
         int N = 50;
@@ -154,6 +238,6 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     }
 
     private String generateProxyProtocol(int port) {
-        return String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d\r\n", PROXY_PORT2, port);
+        return String.format("+PROXY ROUTE PROXYTLS://127.0.0.1:%d TCP://127.0.0.1:%d;FORWARD_FOR 127.0.0.1:80\r\n", PROXY_PORT2, port);
     }
 }

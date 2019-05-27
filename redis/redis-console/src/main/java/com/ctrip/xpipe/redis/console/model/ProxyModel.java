@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.console.model;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 
 import java.util.Objects;
 
@@ -20,6 +21,10 @@ public class ProxyModel {
     private long id;
 
     private boolean active;
+
+    private boolean monitorActive;
+
+    private HostPort hostPort;
 
     public String getUri() {
         return uri;
@@ -57,25 +62,33 @@ public class ProxyModel {
         return this;
     }
 
-    public static ProxyModel fromProxyTbl(ProxyTbl proxyTbl, DcService dcService) {
+    public ProxyModel setHostPort(HostPort hostPort) {
+        this.hostPort = hostPort;
+        return this;
+    }
+
+    public static ProxyModel fromProxyTbl(ProxyTbl proxyTbl, DcIdNameMapper mapper) {
         ProxyModel model = new ProxyModel();
-        model = model.setActive(proxyTbl.isActive()).setUri(proxyTbl.getUri()).setId(proxyTbl.getId());
-        String dcName = dcService.find(proxyTbl.getDcId()).getDcName();
-        model.setDcName(dcName);
+        model = model.setActive(proxyTbl.isActive()).setUri(proxyTbl.getUri()).setId(proxyTbl.getId())
+                .setMonitorActive(proxyTbl.isMonitorActive());
+        model.setDcName(mapper.getName(proxyTbl.getDcId()));
         return model;
     }
 
-    public ProxyTbl toProxyTbl(DcService dcService) {
+    public ProxyTbl toProxyTbl(DcIdNameMapper mapper) {
         ProxyTbl proto = new ProxyTbl();
-        proto.setActive(active).setId(id).setUri(uri);
-        DcTbl dc = dcService.find(dcName);
-        if(dc == null) {
-            throw new XpipeRuntimeException("dc name not found");
-        }
-        proto.setDcId(dc.getId());
+        proto.setActive(active).setId(id).setUri(uri).setMonitorActive(monitorActive);
+        proto.setDcId(mapper.getId(dcName));
         return proto;
     }
 
+    public HostPort getHostPort() {
+        if(hostPort == null) {
+            Endpoint endpoint = new DefaultProxyEndpoint(uri);
+            hostPort = new HostPort(endpoint.getHost(), endpoint.getPort());
+        }
+        return hostPort;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -95,5 +108,14 @@ public class ProxyModel {
     @Override
     public String toString() {
         return String.format("ProxyModel[uri: %s, active: %b, dc-name: %s, id: %d]", uri, active, dcName, id);
+    }
+
+    public boolean isMonitorActive() {
+        return monitorActive;
+    }
+
+    public ProxyModel setMonitorActive(boolean monitorActive) {
+        this.monitorActive = monitorActive;
+        return this;
     }
 }

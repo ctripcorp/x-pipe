@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.proxy.session;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
+import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.Channel;
@@ -24,7 +25,7 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
         this.channel = channel;
         this.sessionState = new AtomicReference<>(new SessionEstablished(this));
         try {
-            if(channel.remoteAddress() instanceof InetSocketAddress) {
+            if(channel.isActive() && channel.remoteAddress() instanceof InetSocketAddress) {
                 this.endpoint = new DefaultProxyEndpoint((InetSocketAddress) channel.remoteAddress());
             } else {
                 this.endpoint = new DefaultProxyEndpoint("0.0.0.0", -1);
@@ -62,5 +63,10 @@ public class DefaultFrontendSession extends AbstractSession implements FrontendS
     @Override
     public SessionState getSessionState() {
         return sessionState.get();
+    }
+
+    @Override
+    public SessionMonitor getSessionMonitor() {
+        return tunnel().getTunnelMonitor().getFrontendSessionMonitor();
     }
 }

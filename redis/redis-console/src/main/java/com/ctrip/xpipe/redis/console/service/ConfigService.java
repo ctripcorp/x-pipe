@@ -28,5 +28,9 @@ public interface ConfigService {
 
     Date getSentinelAutoProcessRecoverTime();
 
+    boolean ignoreMigrationSystemAvailability();
+
+    void doIgnoreMigrationSystemAvailability(boolean ignore) throws DalException;
+
     ConfigModel getConfig(String key);
 }

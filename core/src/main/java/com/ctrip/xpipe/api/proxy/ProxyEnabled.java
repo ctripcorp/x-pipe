@@ -7,5 +7,9 @@ package com.ctrip.xpipe.api.proxy;
  */
 public interface ProxyEnabled {
 
-    ProxyProtocol getProxyProtocol();
+    ProxyConnectProtocol getProxyProtocol();
+
+    default boolean isSameWith(ProxyEnabled other) {
+        return this.getProxyProtocol().getRouteInfo().equalsIgnoreCase(other.getProxyProtocol().getRouteInfo());
+    }
 }

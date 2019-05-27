@@ -11,6 +11,7 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.concurrent.LongTimeAlertTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -22,7 +23,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
@@ -39,6 +39,7 @@ import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -112,10 +113,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private LeaderElector leaderElector;
 
 	private LeaderElectorManager leaderElectorManager;
-	
-	@SuppressWarnings("unused")
-	private MetaServerKeeperService metaService;
-	
+
 	private volatile AtomicReference<RdbDumper> rdbDumper = new AtomicReference<RdbDumper>(null);
 	private long lastDumpTime = -1;
 	//for test
@@ -127,7 +125,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private ProxyResourceManager proxyResourceManager;
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
-									MetaServerKeeperService metaService,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, ProxyResourceManager proxyResourceManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
@@ -138,7 +135,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
 		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
-		this.metaService = metaService;
 		this.leaderElectorManager = leaderElectorManager;
 		this.proxyResourceManager = proxyResourceManager;
 	}
@@ -216,6 +212,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
+		keeperMonitor.getKeeperStats().start();
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
@@ -226,7 +223,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	protected void doStop() throws Exception {
-		
+		keeperMonitor.getKeeperStats().stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		this.leaderElector.stop();
 		stopServer();
@@ -257,7 +254,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(keeperRedisMaster != null && target != null && keeperRedisMaster.getLifecycleState().isStarted()){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
-			if(current != null && current.getHost().equals(target.getHost()) && current.getPort() == target.getPort()){
+			if(current != null && isMasterSame(current, target)) {
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
 				return;
 			}
@@ -269,6 +266,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			return;
 		}
 		initAndStartMaster(target);
+	}
+
+	private boolean isMasterSame(Endpoint current, Endpoint target) {
+		boolean result = ObjectUtils.equals(current, target);
+		if(!result) {
+			return false;
+		}
+		if(current instanceof ProxyEnabled && target instanceof ProxyEnabled) {
+			result = ((ProxyEnabled) current).isSameWith((ProxyEnabled) target);
+		}
+		return result;
 	}
 
 	private void initAndStartMaster(Endpoint target) {
@@ -452,7 +460,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			try {
 				logger.info("[{}][close slave]{}", reason, redisSlave);
 				redisSlave.close();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				logger.error("[beginWriteRdb][close slaves]", e);
 			}
 		}

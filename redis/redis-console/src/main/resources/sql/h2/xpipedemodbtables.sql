@@ -249,6 +249,7 @@ CREATE TABLE `proxy_tbl` (
   `dc_id` bigint(20) unsigned not null default 0,
   `uri` varchar(128) not null default '',
   `active` tinyint(1) not null default 1,
+  `monitor_active` tinyint(1) not null default 0,
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
 );

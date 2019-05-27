@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
@@ -354,10 +355,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     	});
 	}
 
-	public static final Pattern VALID_EMAIL_ADDRESS_REGEX =
-			Pattern.compile("^[A-Z0-9._%+-]+@Ctrip.com$", Pattern.CASE_INSENSITIVE);
-
-
 	public boolean checkEmails(String emails) {
 		if(emails == null || emails.trim().isEmpty()) {
 			return false;
@@ -365,16 +362,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		String splitter = "\\s*(,|;)\\s*";
 		String[] emailStrs = StringUtil.splitRemoveEmpty(splitter, emails);
 		for(String email : emailStrs) {
-			if(!checkEmail(email))
+			EmailService.CheckEmailResponse response = EmailService.DEFAULT.checkEmailAddress(email);
+			if(!response.isOk())
 				return false;
 		}
 		return true;
 	}
 
-	private boolean checkEmail(String email) {
-		Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
-		return matcher.find();
-	}
+
 
 	/**
 	 * Randomly re-balance sentinel assignment for clusters among dcs

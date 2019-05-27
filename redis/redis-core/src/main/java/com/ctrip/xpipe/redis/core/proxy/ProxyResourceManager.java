@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.proxy;
 
-import com.ctrip.xpipe.api.proxy.ProxyProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 
 /**
@@ -10,5 +10,5 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
  */
 public interface ProxyResourceManager {
 
-    ProxyEndpointSelector createProxyEndpointSelector(ProxyProtocol protocol);
+    ProxyEndpointSelector createProxyEndpointSelector(ProxyConnectProtocol protocol);
 }

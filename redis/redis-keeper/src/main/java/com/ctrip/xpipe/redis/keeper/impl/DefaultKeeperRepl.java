@@ -41,4 +41,11 @@ public class DefaultKeeperRepl implements KeeperRepl {
 	public Long secondReplIdOffset() {
 		return replicationStore.getMetaStore().getSecondReplIdOffset();
 	}
+
+
+	@Override
+	public String toString() {
+		return String.format("beginOffset:%d, endOffset:%d, replId:%s, replId2:%s, secondReplIdOffset:%d",
+				getBeginOffset(), getEndOffset(), replId(), replId2(), secondReplIdOffset());
+	}
 }

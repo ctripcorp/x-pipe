@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -32,8 +31,6 @@ public class KeeperContainerServiceTest {
 	@Mock
     private LeaderElectorManager leaderElectorManager;
     @Mock
-    private MetaServerKeeperService metaService;
-    @Mock
     private KeeperContainerConfig keeperContainerConfig;
     @Mock
     private ComponentRegistry componentRegistry;
@@ -52,7 +49,6 @@ public class KeeperContainerServiceTest {
         keeperContainerService = new KeeperContainerService();
 
         ReflectionTestUtils.setField(keeperContainerService, "leaderElectorManager", leaderElectorManager);
-        ReflectionTestUtils.setField(keeperContainerService, "metaService", metaService);
         ReflectionTestUtils.setField(keeperContainerService, "leaderElectorManager", leaderElectorManager);
         ReflectionTestUtils.setField(keeperContainerService, "keeperContainerConfig", keeperContainerConfig);
         ReflectionTestUtils.setField(keeperContainerService, "keeperConfig", keeperConfig);

@@ -1,390 +1,56 @@
-<html><head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<entry>
+    <title><![CDATA[${title}]]></title>
+    <bodyContent>
+        <![CDATA[
+        <!-- Place this tag in your head or just before your close body tag. -->
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+        <h5 id="toc_0">[XPipe 异常告警]
+            <!-- Place this tag where you want the button to render. -->
+            <a class="github-button" href="https://github.com/ctripcorp/x-pipe" data-size="large" data-show-count="true" aria-label="Star ctripcorp/x-pipe on GitHub">点赞XPipe</a>
+        </h5>
+        环境信息: <font color="red">[${environment}]</font><br/>
+        [时间: ${time}]<br/>
+        XPipe相关事宜请联系 [$xpipeAdminEmails]<br/>
+        <hr>
+        <strong>发送自XPipe Console，源 IP 地址： ${localIpAddr}</strong>
 
-    <title>${title}</title>
-</head>
-<body>
-[XPipe 周期性异常告警]<br/>
-[环境：<span style="color:red">${environment}</span>]<br/>
-[项目: <span style="color:red">100004374 xpipe管理控制台</span>]<br/>
-[时间: ${time}]<br/>
-XPipe相关事宜请联系 [$xpipeAdminEmails]
-<br/>
+        #foreach($entity in $redisAlerts.entrySet())
 
+            <hr>
+            <h6 id="toc_1">$entity.key.name() : $!entity.key.detailDesc().title</h6>
+            <blockquote>
+                <p>$!entity.key.detailDesc().desc</p>
+            </blockquote>
 
-<div>
-    <h4>发送自XPipe Console，源 IP 地址： ${localIpAddr}</h4>
-    #if(${XREDIS_VERSION_NOT_VALID})
-        -------------------
-        <h4>从机房Redis版本错误</h4>
-        <p>说明：XPipe从机房Redis应该为XRedis，且版本号大于等于0.0.3</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-            #foreach($redisAlert in $redisAlerts.get(${XREDIS_VERSION_NOT_VALID}))
-            <tr>
-                <td>$!redisAlert.getAlertType()</td>
-                <td>$!redisAlert.getDc()</td>
-                <td>$!redisAlert.getClusterId()</td>
-                <td>$!redisAlert.getShardId()</td>
-                <td>$!redisAlert.getHostPort().getHost()</td>
-                <td>$!redisAlert.getHostPort().getPort()</td>
-                <td>$!redisAlert.getMessage()</td>
-            </tr>
-            #end
-            </tbody>
-        </table>
-    #end
-    #if(${REDIS_REPL_DISKLESS_SYNC_ERROR})
-        -------------------
-        <h4>Redis配置错误</h4>
-        <p>说明：Redis配置项repl-diskless-sync在Redis版本2.8.22以下，应该为NO</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${REDIS_REPL_DISKLESS_SYNC_ERROR}))
+            <table border="1">
+                <thead>
                 <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
+                    <th>报错类型</th>
+                    <th>Redis DC</th>
+                    <th>Redis集群</th>
+                    <th>Redis分片</th>
+                    <th>Redis-IP</th>
+                    <th>Redis-Port</th>
+                    <th>错误信息</th>
+                    <th>最近一次报错时间</th>
                 </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${CLIENT_INCONSIS})
-        -------------------
-        <h4>CRedis | XPipe 数据不一致</h4>
-        <p>说明：发现CRedis和XPipe信息不一致</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${CLIENT_INCONSIS}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${CLIENT_INSTANCE_NOT_OK})
-        -------------------
-        <h4>CRedis中实例故障或连接故障</h4>
-        <p>说明：CRedis中实例不可读或不可用</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${CLIENT_INSTANCE_NOT_OK}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${REDIS_CONF_REWRITE_FAILURE})
-        -------------------
-        <h4>Redis CONF REWRITE 错误</h4>
-        <p>说明：Redis CONF REWRITE 错误</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${REDIS_CONF_REWRITE_FAILURE}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${QUORUM_DOWN_FAIL})
-        -------------------
-        <h4>Quorum Down Fail 错误</h4>
-        <p>说明：Console会从多个点判断一个redis节点是否挂掉，如果没有达到大多数一致(一部分监测点认为Redis节点挂，另一部分认为OK，可能是网络抖动引起)，则报此错误</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${QUORUM_DOWN_FAIL}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${MIGRATION_MANY_UNFINISHED})
-        -------------------
-        <h4>多数迁移失败 错误</h4>
-        <p>说明：请查看迁移历史</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${MIGRATION_MANY_UNFINISHED}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${REPL_BACKLOG_NOT_ACTIVE})
-        -------------------
-        <h4>Redis Replication Backlog Non-Active</h4>
-        <p>说明：Redis repl_backlog_active 参数为0，表示Redis用于PSync的backlog未开启或被删除，切换时可能引起全量同步</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${REPL_BACKLOG_NOT_ACTIVE}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${SENTINEL_MONITOR_REDUNDANT_REDIS})
-        -------------------
-        <h4>Sentinel Monitor Redundant Redis</h4>
-        <p>说明：Redis哨兵监控到了冗余的Redis(在XPipe上对应的shard中没有相关Redis存在)</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${SENTINEL_MONITOR_REDUNDANT_REDIS}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${SENTINEL_MONITOR_INCONSIS})
-        -------------------
-        <h4>Sentinel Monitor InConsis</h4>
-        <p>说明：Redis哨兵监控名称和XPipe Shard上的不一致</p>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${SENTINEL_MONITOR_INCONSIS}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-    #if(${MIGRATION_MANY_UNFINISHED})
-    -------------------
-    <h4>其他类型错误</h4>
-    <table border="1">
-        <thead>
-        <tr>
-            <th>报错类型</th>
-            <th>Redis DC</th>
-            <th>Redis集群</th>
-            <th>Redis分片</th>
-            <th>机器IP</th>
-            <th>Redis端口</th>
-            <th>错误信息</th>
-        </tr>
-        </thead>
-        <tbody>
-            #foreach($redisAlert in $redisAlerts.get(${MIGRATION_MANY_UNFINISHED}))
-            <tr>
-                <td>$!redisAlert.getAlertType()</td>
-                <td>$!redisAlert.getDc()</td>
-                <td>$!redisAlert.getClusterId()</td>
-                <td>$!redisAlert.getShardId()</td>
-                <td>$!redisAlert.getHostPort().getHost()</td>
-                <td>$!redisAlert.getHostPort().getPort()</td>
-                <td>$!redisAlert.getMessage()</td>
-            </tr>
-            #end
-        </tbody>
-    </table>
-    #end
-    #if(${INSTANCE_SICK_BUT_NOT_MARK_DOWN})
-        -------------------
-        <h4>其他类型错误</h4>
-        <table border="1">
-            <thead>
-            <tr>
-                <th>报错类型</th>
-                <th>Redis DC</th>
-                <th>Redis集群</th>
-                <th>Redis分片</th>
-                <th>机器IP</th>
-                <th>Redis端口</th>
-                <th>错误信息</th>
-            </tr>
-            </thead>
-            <tbody>
-                #foreach($redisAlert in $redisAlerts.get(${INSTANCE_SICK_BUT_NOT_MARK_DOWN}))
-                <tr>
-                    <td>$!redisAlert.getAlertType()</td>
-                    <td>$!redisAlert.getDc()</td>
-                    <td>$!redisAlert.getClusterId()</td>
-                    <td>$!redisAlert.getShardId()</td>
-                    <td>$!redisAlert.getHostPort().getHost()</td>
-                    <td>$!redisAlert.getHostPort().getPort()</td>
-                    <td>$!redisAlert.getMessage()</td>
-                </tr>
-                #end
-            </tbody>
-        </table>
-    #end
-</div>
-
-</body>
-</html>
+                </thead>
+                <tbody>
+                    #foreach($redisAlert in $entity.value)
+                    <tr>
+                        <td>$!redisAlert.getAlertType()</td>
+                        <td>$!redisAlert.getDc()</td>
+                        <td><a href=http://${xpipeurl}/#/cluster_dc_shards/$!redisAlert.getClusterId()/$!redisAlert.getDc()>$!redisAlert.getClusterId()</a></td>
+                        <td>$!redisAlert.getShardId()</td>
+                        <td>$!redisAlert.getHostPort().getHost()</td>
+                        <td>$!redisAlert.getHostPort().getPort()</td>
+                        <td>$!redisAlert.getMessage()</td>
+                        <td>$dateTimeUtils.timeAsString($redisAlert.getDate())</td>
+                    </tr>
+                    #end
+                </tbody>
+            </table>
+        #end
+        ]]>
+    </bodyContent>
+</entry>

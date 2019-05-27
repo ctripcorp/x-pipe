@@ -33,7 +33,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
 
     private Set<ProxyEndpoint> availableEndpoints = Sets.newConcurrentHashSet();
 
-    private EndpointHealthChecker healthChecker = new DefaultEndpointHealthChecker();
+    private EndpointHealthChecker healthChecker;
 
     private Future future;
 
@@ -46,6 +46,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
         this.scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create("ProxyEndpointManager")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
+        this.healthChecker = new DefaultEndpointHealthChecker(scheduled);
         start();
     }
 
@@ -74,7 +75,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
     }
 
     @Override
-    public void stop() throws Exception {
+    public void stop() {
         if(future != null) {
             future.cancel(true);
         }
@@ -91,12 +92,9 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
         @Override
         protected void doRun() throws Exception {
             for(ProxyEndpoint endpoint : allEndpoints) {
-                DefaultProxyEndpointManager.logger.debug("[HealthCheckTask] checking endpoint: {}", endpoint.getUri());
                 if(healthChecker.checkConnectivity(endpoint)) {
-                    DefaultProxyEndpointManager.logger.debug("[HealthCheckTask] endpoint ok: {}", endpoint.getUri());
                     availableEndpoints.add(endpoint);
                 } else {
-                    DefaultProxyEndpointManager.logger.warn("[HealthCheckTask] endpoint not healthy: {}", endpoint.getUri());
                     availableEndpoints.remove(endpoint);
                 }
             }

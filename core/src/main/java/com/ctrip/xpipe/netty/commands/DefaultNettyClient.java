@@ -25,7 +25,7 @@ public class DefaultNettyClient implements NettyClient{
 	
 	protected Channel channel;
 	protected final AtomicReference<String> desc = new AtomicReference<>();
-	private Queue<ByteBufReceiver> receivers = new ConcurrentLinkedQueue<>();
+	protected Queue<ByteBufReceiver> receivers = new ConcurrentLinkedQueue<>();
 	
 	public DefaultNettyClient(Channel channel) {
 		this.channel = channel;
@@ -105,7 +105,7 @@ public class DefaultNettyClient implements NettyClient{
 	protected void channelClosed(Channel channel) {
 		
 		logger.info("[channelClosed]{}", channel);
-		while(true){
+		while(!receivers.isEmpty()){
 			ByteBufReceiver byteBufReceiver = receivers.poll();
 			if(byteBufReceiver == null){
 				break;

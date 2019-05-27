@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
@@ -52,9 +51,9 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	
 	
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
-			MetaServerKeeperService metaService, File baseDir, LeaderElectorManager leaderElectorManager) {
+			File baseDir, LeaderElectorManager leaderElectorManager) {
 		
-		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, metaService, leaderElectorManager,
+		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, leaderElectorManager,
 				createkeepersMonitorManager(), mock(ProxyResourceManager.class)){
 		
 			@Override

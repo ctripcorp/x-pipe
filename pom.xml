@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ctrip.framework.xpipe</groupId>
     <artifactId>xpipe-parent</artifactId>
-    <version>0.2.2-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 
@@ -39,9 +39,9 @@
         <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
         <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
-        <ctrip-framework-foundation.version>1.8.2</ctrip-framework-foundation.version>
-        <ctrip-apollo.version>0.6.6</ctrip-apollo.version>
-        <cat.version>2.20.1</cat.version>
+        <ctrip-framework-foundation.version>1.8.3</ctrip-framework-foundation.version>
+        <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
+        <cat.version>2.21.4</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.0</git-commit-id-plugin.version>
@@ -52,7 +52,7 @@
 
         <hickwall.client.version>1.8</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
-        <credis.version>2.5.3</credis.version>
+        <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.0.9</qunaer.common.version>
         <qconfig.client.version>1.4.4</qconfig.client.version>
@@ -60,6 +60,7 @@
         <netty3.version>3.10.5.Final</netty3.version>
         <netty.boringssl.version>2.0.12.Final</netty.boringssl.version>
         <netty4.version>4.1.28.Final</netty4.version>
+        <zstd.version>1.3.6-1</zstd.version>
     </properties>
 
     <modules>
@@ -79,6 +80,14 @@
                     <exclusion>
                         <groupId>com.ctrip.framework</groupId>
                         <artifactId>vi</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc</groupId>
+                        <artifactId>common-zookeeper</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc.qclient</groupId>
+                        <artifactId>qclient-redis</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -244,6 +253,12 @@
                 <groupId>com.ctrip.credis</groupId>
                 <artifactId>credis</artifactId>
                 <version>${credis.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>qunar.common</groupId>
+                        <artifactId>common-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -375,6 +390,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
                 <version>${netty.boringssl.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd.version}</version>
             </dependency>
 
             <!-- ctrip related -->
@@ -556,6 +577,10 @@
         <dependency>
             <groupId>com.dianping.cat</groupId>
             <artifactId>cat-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework</groupId>
+            <artifactId>framework-foundation</artifactId>
         </dependency>
         <!-- test -->
         <dependency>

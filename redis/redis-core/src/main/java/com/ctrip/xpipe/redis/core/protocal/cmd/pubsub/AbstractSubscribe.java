@@ -7,7 +7,9 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -26,6 +28,10 @@ import java.util.concurrent.ScheduledExecutorService;
  * Apr 04, 2018
  */
 public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> implements Subscribe {
+
+    private static final int bulkStringInitSize = 1 << 5;
+
+    private RedisClientProtocol<?> redisClientProtocol;
 
     private volatile SUBSCRIBE_STATE subscribeState = SUBSCRIBE_STATE.WAITING_RESPONSE;
 
@@ -69,13 +75,37 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     @Override
     protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
 
-        Object response = super.doReceiveResponse(channel, byteBuf);
-        if(response == null) {
-            return null;
+        switch(commandResponseState){
+            case READING_SIGN:
+                if(!hasDataRead(byteBuf)){
+                    return null;
+                }
+                int readIndex = byteBuf.readerIndex();
+                byte sign = byteBuf.getByte(readIndex);
+                if(sign == RedisClientProtocol.ASTERISK_BYTE){
+                    commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
+                    redisClientProtocol = new ArrayParser(bulkStringInitSize);
+                } else {
+                    throw new IllegalArgumentException("subscribe should response with redis array format");
+                }
+            case READING_CONTENT:
+                RedisClientProtocol<?> resultParser = redisClientProtocol.read(byteBuf);
+                if(resultParser == null){
+                    return null;
+                }
+
+                Object result = resultParser.getPayload();
+                if(result == null){
+                    return new String[0];
+                }
+                return processResponse(channel, result);
+            default:
+                throw new IllegalStateException("unkonwn state:" + commandResponseState);
         }
 
-        logger.debug("[response] {}", response);
+    }
 
+    private Object processResponse(Channel channel, Object response) {
         switch (subscribeState) {
             case SUBSCRIBING:
                 // [message]-subscribeChannel-message  | [pmessage]-pchannel-subscribeChannel-message
@@ -92,6 +122,10 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         }
         super.doReset();
         return null;
+    }
+
+    private boolean hasDataRead(ByteBuf byteBuf) {
+        return byteBuf.readableBytes() > 0;
     }
 
     protected void afterCommandExecute(NettyClient nettyClient) {

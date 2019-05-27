@@ -7,7 +7,8 @@ import com.ctrip.xpipe.redis.core.proxy.handler.NettySslHandlerFactory;
 import com.ctrip.xpipe.redis.proxy.Tunnel;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.BackendSessionHandler;
-import com.ctrip.xpipe.redis.proxy.handler.TunnelTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.handler.SessionTrafficReporter;
+import com.ctrip.xpipe.redis.proxy.monitor.SessionMonitor;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionClosed;
 import com.ctrip.xpipe.redis.proxy.session.state.SessionEstablished;
@@ -38,6 +39,12 @@ import static com.ctrip.xpipe.redis.proxy.DefaultProxyServer.WRITE_LOW_WATER_MAR
  * May 24, 2018
  */
 public class DefaultBackendSession extends AbstractSession implements BackendSession {
+
+    private static final String BACKEND_SESSION_HANDLER = "backendSessionHandler";
+
+    private static final String BACKEND_COMPRESS_DECODER = "backendCompressDecoder";
+
+    private static final String BACKEND_COMPRESS_ENCODER = "backendCompressEncoder";
 
     private ProxyEndpointSelector selector;
 
@@ -107,8 +114,8 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
                             p.addLast(sslHandlerFactory.createSslHandler(ch));
                         }
                         p.addLast(new LoggingHandler(LogLevel.DEBUG));
-                        p.addLast(new BackendSessionHandler(tunnel()));
-                        p.addLast(new TunnelTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
+                        p.addLast(new SessionTrafficReporter(trafficReportIntervalMillis, DefaultBackendSession.this));
+                        p.addLast(BACKEND_SESSION_HANDLER, new BackendSessionHandler(tunnel()));
                     }
                 });
         return b.connect(endpoint.getHost(), endpoint.getPort());
@@ -129,6 +136,12 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         if(endpoint.isProxyProtocolSupported()) {
             getChannel().writeAndFlush(tunnel().getProxyProtocol().output());
         }
+        ProxyConfig config = resourceManager.getProxyConfig();
+        if(config.isCompressEnabled()) {
+            logger.info("Backend compress codec installed: {}", ChannelUtil.getDesc(channel));
+            channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_DECODER, config.getCompressDecoder());
+            channel.pipeline().addBefore(BACKEND_SESSION_HANDLER, BACKEND_COMPRESS_ENCODER, config.getCompressEncoder());
+        }
         if(sendAfterProtocol != null) {
             while(!sendAfterProtocol.isEmpty()) {
                 getChannel().writeAndFlush(sendAfterProtocol.poll());
@@ -137,6 +150,12 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
         }
         setSessionState(new SessionEstablished(DefaultBackendSession.this));
         onSessionEstablished();
+    }
+
+    @Override
+    protected void doInitialize() throws Exception {
+        super.doInitialize();
+        onSessionInit();
     }
 
     @Override
@@ -165,6 +184,11 @@ public class DefaultBackendSession extends AbstractSession implements BackendSes
 
     public SessionState getSessionState() {
         return sessionState.get();
+    }
+
+    @Override
+    public SessionMonitor getSessionMonitor() {
+        return tunnel().getTunnelMonitor().getBackendSessionMonitor();
     }
 
     @VisibleForTesting

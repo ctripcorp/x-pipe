@@ -42,6 +42,15 @@ public class ProxyDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public List<ProxyTbl> getMonitorActiveProxyTbls() {
+        return queryHandler.handleQuery(new DalQuery<List<ProxyTbl>>() {
+            @Override
+            public List<ProxyTbl> doQuery() throws DalException {
+                return dao.findAllMonitorActive(ProxyTblEntity.READSET_ID_DC_URI);
+            }
+        });
+    }
+
     public void insert(ProxyTbl proto) {
         queryHandler.handleInsert(new DalQuery<Integer>() {
             @Override
@@ -63,7 +72,7 @@ public class ProxyDao extends AbstractXpipeConsoleDAO {
 
     public void update(ProxyTbl proto) {
         ProxyTbl target = new ProxyTbl().setId(proto.getId()).setActive(proto.isActive())
-                .setDcId(proto.getDcId()).setUri(proto.getUri());
+                .setDcId(proto.getDcId()).setUri(proto.getUri()).setMonitorActive(proto.isMonitorActive());
         queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {

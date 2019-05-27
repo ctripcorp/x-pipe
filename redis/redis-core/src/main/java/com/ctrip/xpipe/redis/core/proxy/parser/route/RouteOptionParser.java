@@ -76,8 +76,13 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
     }
 
     @Override
-    public String getPayload() {
+    public String output() {
         removeNextNodes();
         return option().name() + " " + StringUtil.join(WHITE_SPACE, nodes);
     }
+//
+//    @Override
+//    public boolean isImportant() {
+//        return true;
+//    }
 }

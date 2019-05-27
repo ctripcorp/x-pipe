@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -37,6 +38,8 @@ import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NE
 public class DefaultSentinelManager implements SentinelManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final int LONG_SENTINEL_COMMAND_TIMEOUT = 2000;
 
     @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
@@ -116,6 +119,7 @@ public class DefaultSentinelManager implements SentinelManager {
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 
         InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SENTINEL, scheduled);
+        infoCommand.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
         silentCommand(infoCommand);
         try {
             return infoCommand.execute().get();
@@ -146,12 +150,13 @@ public class DefaultSentinelManager implements SentinelManager {
         try {
             AbstractSentinelCommand.SentinelSlaves command = new AbstractSentinelCommand.SentinelSlaves(clientPool,
                     scheduled, sentinelMonitorName);
+            command.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
             silentCommand(command);
             return command.execute().get();
         } catch (Exception e) {
             logger.error("[slaves] sentinel: {}", sentinel, e);
         }
-        return null;
+        return Lists.newArrayList();
     }
 
     @Override

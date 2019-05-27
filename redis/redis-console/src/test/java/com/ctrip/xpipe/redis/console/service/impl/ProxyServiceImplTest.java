@@ -94,4 +94,9 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
             Assert.assertTrue(proto.isActive());
         }
     }
+
+    @Test
+    public void testGetProxyAll() {
+        Assert.assertNotNull(service.getAllProxies());
+    }
 }
