@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -8,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
@@ -101,7 +103,7 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleH2Db
         RetMessage message = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER).execute().get();
         logger.info("");
         logger.info("{}", message.getMessage());
-        Assert.assertEquals(RetMessage.WARNING_STATE, message.getState());
+        Assert.assertEquals(RetMessage.FAIL_STATE, message.getState());
     }
 
     @Test
