@@ -79,6 +79,10 @@
         <logger name="io.netty" level="INFO" additivity="false">
             <appender-ref ref="rollingNetty"/>
         </logger>
+
+        <logger name="com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder" additivity="false">
+            <appender-ref ref="rollingNetty"/>
+        </logger>
     </loggers>
 
 </configuration>
