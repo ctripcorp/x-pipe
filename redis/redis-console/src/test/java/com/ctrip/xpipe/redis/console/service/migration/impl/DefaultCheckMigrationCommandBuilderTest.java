@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -9,7 +8,6 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
