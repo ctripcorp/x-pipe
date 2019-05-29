@@ -215,6 +215,8 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
         protected RetMessage validate(List<String> response) {
             if(response.size() == targetMetaServers.size()) {
                 return RetMessage.createSuccessMessage();
+            } else if(response.isEmpty()) {
+                return RetMessage.createFailMessage("All MetaServers Down");
             }
             List<String> problemMetaServers = Lists.newArrayList(targetMetaServers);
 
