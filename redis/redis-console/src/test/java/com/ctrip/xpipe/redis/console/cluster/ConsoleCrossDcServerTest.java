@@ -91,7 +91,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
         crossDcClusterServer.notLeader();
 
-        sleep(300);
+        waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader(), 300);
         Assert.assertFalse(crossDcClusterServer.amILeader());
 
     }

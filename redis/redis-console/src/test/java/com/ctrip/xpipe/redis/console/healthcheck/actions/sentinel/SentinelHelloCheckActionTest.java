@@ -61,7 +61,11 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         server = startServerWithFlexibleResult(new Callable<String>() {
             @Override
             public String call() {
-                return result.get();
+                if(result != null) {
+                    return result.get();
+                } else {
+                    return "";
+                }
             }
         });
         instance = newRandomRedisHealthCheckInstance("dc2", server.getPort());

@@ -75,7 +75,7 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 	@Test
 	public void testNotifyClusterUpdate() throws InterruptedException {
 		notifier.notifyClusterUpdate(dcName, clusterName);
-		TimeUnit.SECONDS.sleep(3);
+		TimeUnit.SECONDS.sleep(1);
 		verify(metaServerConsoleServiceManagerWrapper, times(retryTimes)).get(dcName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterModified(clusterName, mockedClusterMeta);
 		verify(notifier, times(1)).submitNotifyTask((MetaNotifyTask<?>) anyObject());
@@ -87,7 +87,7 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 	@Test
 	public void testNotifyClusterDelete() throws InterruptedException {
 		notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[] { mockedDcTbl }));
-		TimeUnit.SECONDS.sleep(3);
+		TimeUnit.SECONDS.sleep(1);
 		verify(metaServerConsoleServiceManagerWrapper, times(retryTimes)).get(dcName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterDeleted(clusterName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterDeleted(anyString());

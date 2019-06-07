@@ -91,7 +91,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         ClusterTbl newCluster = clusterService.find(clusterName);
 
-        Assert.assertEquals(newStatus.toString(), newCluster.getStatus().toString());
+        Assert.assertEquals(newStatus.toString(), newCluster.getStatus());
 
         newCluster.setStatus(oldStatus.toString());
         Assert.assertEquals(clusterTbl.toString(), newCluster.toString());

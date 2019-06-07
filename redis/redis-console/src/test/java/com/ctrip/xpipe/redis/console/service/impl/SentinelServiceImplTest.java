@@ -57,7 +57,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
     @Test
     public void testRandom() {
 
-        int testCount = 1 << 20;
+        int testCount = 1 << 10;
 
 
         Set<Long> all = new HashSet<>();

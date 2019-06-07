@@ -4,10 +4,12 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -22,6 +24,7 @@ import java.util.concurrent.Executors;
  *         Sep 6, 2016
  */
 @Component
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNotifier {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
