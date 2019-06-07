@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.ds;
+package com.ctrip.xpipe.service.datasource;
 
 import com.ctrip.platform.dal.dao.configure.AbstractDataSourceConfigure;
 import com.ctrip.platform.dal.dao.configure.IDataSourceConfigure;
