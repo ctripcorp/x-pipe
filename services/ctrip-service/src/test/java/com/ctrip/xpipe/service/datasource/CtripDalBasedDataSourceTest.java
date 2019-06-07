@@ -1,28 +1,21 @@
 package com.ctrip.xpipe.service.datasource;
 
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
+import org.springframework.util.ClassUtils;
 
 public class CtripDalBasedDataSourceTest {
 
-    @Test
-    public void init() {
-    }
 
     @Test
-    public void getCtripDataSource() {
-    }
+    public void testConstruction() {
+       final String ctripDalDataSource =
+               "com.ctrip.xpipe.service.datasource.CtripDalBasedDataSource";
 
-    @Test
-    public void getConnection() {
-    }
+       boolean ctripDataSourceEnabled =
+               ClassUtils.isPresent(ctripDalDataSource, Thread.currentThread().getContextClassLoader());
 
-    @Test
-    public void getDescriptor() {
-    }
+        Assert.assertTrue(ctripDataSourceEnabled);
 
-    @Test
-    public void initialize() {
-    }
+   }
 }

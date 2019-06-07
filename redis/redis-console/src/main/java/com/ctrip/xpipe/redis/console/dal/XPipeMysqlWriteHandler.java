@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.ds;
+package com.ctrip.xpipe.redis.console.dal;
 
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Transaction;
