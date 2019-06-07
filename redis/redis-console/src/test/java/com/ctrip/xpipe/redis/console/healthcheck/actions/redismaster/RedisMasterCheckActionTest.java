@@ -10,10 +10,7 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -134,6 +131,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
     }
 
     @Test
+    @Ignore //manually
     public void testRedisSlaveRoleInCorrect() throws Exception {
         result = new Supplier<String>() {
             @Override
@@ -144,7 +142,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(false);
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        waitConditionUntilTimeOut(()->instance.getRedisInstanceInfo().isMaster(), 200);
+        waitConditionUntilTimeOut(()->instance.getRedisInstanceInfo().isMaster(), 500);
         Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, times(1)).updateBatchMaster(anyList());
         verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());

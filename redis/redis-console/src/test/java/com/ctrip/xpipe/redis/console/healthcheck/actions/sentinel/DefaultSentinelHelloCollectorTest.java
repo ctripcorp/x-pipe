@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -109,6 +110,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
 
     @Test
     public void testIsKeeperOrDead() {
+        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
         boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
         logger.info("{}", result);
         Assert.assertTrue(result);
