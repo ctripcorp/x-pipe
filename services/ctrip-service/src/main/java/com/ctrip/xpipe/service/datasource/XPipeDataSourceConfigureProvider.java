@@ -56,21 +56,6 @@ public class XPipeDataSourceConfigureProvider implements IDataSourceConfigurePro
             return descriptor.getProperty("driver", "mysql");
         }
 
-        @Override
-        public String getHostName() {
-            return descriptor.getProperty("host", "localhost");
-        }
-
-        @Override
-        public Integer getPort() {
-            return descriptor.getIntProperty("port", 3306);
-        }
-
-        @Override
-        public String getDBName() {
-            return descriptor.getId();
-        }
-
 
         // lao wu's tricky decode for password, even if I got the password from Apollo insteadof unidal itself
         private String decode(String src) {
