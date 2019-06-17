@@ -14,6 +14,12 @@ import org.unidal.lookup.annotation.Named;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+/**
+ * @author chen.zhu
+ * <p>
+ * May 30, 2019
+ */
+
 @Named(type = DataSource.class, value = "xpipe", instantiationStrategy = Named.PER_LOOKUP)
 public class XPipeDataSource extends ContainerHolder implements DataSource, LogEnabled {
 
