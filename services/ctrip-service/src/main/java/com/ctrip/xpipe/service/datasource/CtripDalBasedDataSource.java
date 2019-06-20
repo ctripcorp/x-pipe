@@ -15,7 +15,9 @@ import java.sql.SQLException;
 public class CtripDalBasedDataSource implements DataSource {
     private static final Logger logger = LoggerFactory.getLogger(CtripDalBasedDataSource.class);
 
-    private ForceSwitchableDataSource dataSource;
+    //todo: make it no-static after not using fireman
+    //ugly implement here, inorder to support fireman
+    private static ForceSwitchableDataSource dataSource;
 
     private DataSourceDescriptor descriptor;
 
@@ -49,7 +51,7 @@ public class CtripDalBasedDataSource implements DataSource {
 
     }
 
-    public ForceSwitchableDataSource getCtripDataSource() {
+    public static ForceSwitchableDataSource getCtripDataSource() {
         return dataSource;
     }
 
