@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.service.migration;
 
-import com.ctrip.xpipe.AbstractServiceTest;
+import com.ctrip.xpipe.service.AbstractServiceTest;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.migration.OuterClientService.MigrationPublishResult;
 import com.ctrip.xpipe.codec.JsonCodec;

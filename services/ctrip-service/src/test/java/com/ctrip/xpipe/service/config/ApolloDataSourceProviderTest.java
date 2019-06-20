@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.service.config;
 
 import com.ctrip.framework.apollo.ds.ApolloDataSourceProvider;
-import com.ctrip.xpipe.AbstractServiceTest;
+import com.ctrip.xpipe.service.AbstractServiceTest;
 import org.codehaus.plexus.logging.Logger;
 import org.junit.Test;
 import org.unidal.dal.jdbc.datasource.model.entity.DataSourcesDef;

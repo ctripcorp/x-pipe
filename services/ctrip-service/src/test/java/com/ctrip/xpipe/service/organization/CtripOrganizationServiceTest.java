@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.service.organization;
 
-import com.ctrip.xpipe.AbstractServiceTest;
+import com.ctrip.xpipe.service.AbstractServiceTest;
 import com.ctrip.xpipe.api.organization.OrganizationModel;
 import org.junit.Assert;
 import org.junit.Before;
