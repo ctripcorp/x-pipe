@@ -4,6 +4,7 @@ import com.ctrip.platform.dal.dao.configure.SwitchableDataSourceStatus;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSource;
 import com.ctrip.platform.dal.dao.datasource.IForceSwitchableDataSource;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.service.fireman.ForceSwitchableDataSourceHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.dal.jdbc.datasource.DataSource;
@@ -15,14 +16,13 @@ import java.sql.SQLException;
 public class CtripDalBasedDataSource implements DataSource {
     private static final Logger logger = LoggerFactory.getLogger(CtripDalBasedDataSource.class);
 
-    //todo: make it no-static after not using fireman
-    //ugly implement here, inorder to support fireman
-    private static ForceSwitchableDataSource dataSource;
+    private ForceSwitchableDataSource dataSource;
 
     private DataSourceDescriptor descriptor;
 
     private void init() throws SQLException {
         dataSource = new ForceSwitchableDataSource(new XPipeDataSourceConfigureProvider(descriptor));
+        ForceSwitchableDataSourceHolder.getInstance().setDataSource(dataSource);
         dataSource.addListener(new IForceSwitchableDataSource.SwitchListener() {
             @Override
             public void onForceSwitchSuccess(SwitchableDataSourceStatus currentStatus) {
@@ -49,10 +49,6 @@ public class CtripDalBasedDataSource implements DataSource {
             }
         });
 
-    }
-
-    public static ForceSwitchableDataSource getCtripDataSource() {
-        return dataSource;
     }
 
     @Override
