@@ -3,7 +3,7 @@ package com.ctrip.xpipe.service.metric;
 import com.ctrip.framework.clogging.agent.MessageManager;
 import com.ctrip.framework.clogging.agent.metrics.aggregator.MetricsAggregator;
 import com.ctrip.framework.clogging.agent.metrics.aggregator.MetricsAggregatorFactory;
-import com.ctrip.xpipe.AbstractServiceTest;
+import com.ctrip.xpipe.service.AbstractServiceTest;
 import org.junit.Test;
 
 import java.util.Random;
