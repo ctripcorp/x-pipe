@@ -5,6 +5,7 @@ import com.ctrip.framework.fireman.container.manager.MhaManagerNode;
 import com.ctrip.framework.fireman.spi.FiremanDependency;
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSource;
+import com.ctrip.xpipe.service.config.ApolloConfig;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
             final String MASTER_LOCATE_SHORT = "SHAFQ";
             final int MASTER_PORT = 55944;
 
-            final String MHA_MANAGER_IP = "10.9.72.42";
+            final String MHA_MANAGER_IP = ApolloConfig.DEFAULT.get("xpipe.mha.manager.ip", "10.0.0.0");
             final String MHA_MANAGER_LOCATE = "SHAFQ";
 
             @Override
