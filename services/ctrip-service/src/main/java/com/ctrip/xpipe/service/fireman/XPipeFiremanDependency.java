@@ -3,7 +3,6 @@ package com.ctrip.xpipe.service.fireman;
 import com.ctrip.framework.fireman.spi.FiremanDependency;
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSource;
-import com.ctrip.xpipe.service.datasource.CtripDalBasedDataSource;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
 
     @Override
     public ForceSwitchableDataSource getDataSource() {
-        return CtripDalBasedDataSource.getCtripDataSource();
+        return ForceSwitchableDataSourceHolder.getInstance().getDataSource();
     }
 
     @Override
