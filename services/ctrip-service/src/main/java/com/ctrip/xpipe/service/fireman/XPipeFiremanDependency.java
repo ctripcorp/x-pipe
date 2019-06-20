@@ -66,7 +66,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
         UAT {
 
             final String DB_DOMAIN = "fxxpipe.mysql.db.uat.qa.nt.ctripcorp.com";
-            final String MASTER_IP = "10.5.165.240";
+            final String MASTER_IP = ApolloConfig.DEFAULT.get("xpipe.mysql.master.ip", "10.5.165.240");
             final String MASTER_LOCATE_SHORT = "NTGXH";
             final int MASTER_PORT = 55777;
 
