@@ -44,8 +44,8 @@ public class XPipeFiremanDependency implements FiremanDependency {
             final String MASTER_LOCATE_SHORT = "SHAFQ";
             final int MASTER_PORT = 55944;
 
-            final String MHA_MANAGER_IP = "";
-            final String MHA_MANAGER_LOCATE = "";
+            final String MHA_MANAGER_IP = "10.9.72.42";
+            final String MHA_MANAGER_LOCATE = "SHAFQ";
 
             @Override
             String getDatabaseDomainName() {
