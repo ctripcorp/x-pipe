@@ -18,4 +18,9 @@ public class CtripDalBasedDataSourceTest {
         Assert.assertTrue(ctripDataSourceEnabled);
 
    }
+
+   @Test
+   public void testDataSource() {
+        CtripDalBasedDataSource dataSource = new CtripDalBasedDataSource();
+   }
 }
