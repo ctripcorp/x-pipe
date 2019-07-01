@@ -1,12 +1,17 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.service.AbstractService;
+import com.ctrip.xpipe.utils.ExceptionUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +27,7 @@ import java.util.stream.Collectors;
  * Jun 19, 2018
  */
 @Service
-public class ProxyServiceImpl implements ProxyService {
+public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Autowired
     private ProxyDao proxyDao;
@@ -145,6 +150,32 @@ public class ProxyServiceImpl implements ProxyService {
             result.add(new ProxyInfoModel(model.getHostPort().getHost(), model.getHostPort().getPort(), model.getDcName(), chainNum));
         }
         return result;
+    }
+
+    @Override
+    public RetMessage deleteProxyChain(ProxyChainModel model) {
+        HostPort activeDcTunnel = model.getActiveDcTunnel().getTunnelStatsResult().getBackend();
+        HostPort backupDcTunnel = model.getBackupDcTunnel().getTunnelStatsResult().getBackend();
+        int failReason = 0;
+        String message = "";
+        failReason = getFailReason(activeDcTunnel, failReason);
+        failReason = getFailReason(backupDcTunnel, failReason);
+        if(failReason >= 2) {
+            return RetMessage.createFailMessage(message);
+        }
+        return RetMessage.createSuccessMessage();
+    }
+
+    private int getFailReason(HostPort activeDcTunnel, int failReason) {
+        String message;
+        try {
+            restTemplate.delete(String.format("http://%s:8080/api/tunnel/local/port/%d", activeDcTunnel.getHost(), activeDcTunnel.getPort()));
+        } catch (Exception e) {
+            failReason ++;
+            message = ExceptionUtils.getCause(e).getMessage();
+            logger.error("[deleteProxyChain]", e);
+        }
+        return failReason;
     }
 
 

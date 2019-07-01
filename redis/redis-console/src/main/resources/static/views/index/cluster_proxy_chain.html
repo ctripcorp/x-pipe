@@ -30,6 +30,7 @@
                         <tr>
                             <th>active-dc-proxy</th>
                             <th>backup-dc-proxy</th>
+                            <th>delete chain</th>
                             <th ng-repeat="(key, value) in proxyChain.metrics">{{key}}</th>
                         </tr>
 
@@ -38,6 +39,9 @@
                             <tr>
                                 <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.activeDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.activeDcTunnel.proxyModel.dcName})">{{proxyChain.activeDcTunnel.tunnelStatsResult.backend.host}}:{backend: {{proxyChain.activeDcTunnel.tunnelStatsResult.backend.port}}, frontend: {{proxyChain.activeDcTunnel.tunnelStatsResult.frontend.port}} }</a></td>
                                 <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.backupDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.backupDcTunnel.proxyModel.dcName})">{{proxyChain.backupDcTunnel.tunnelStatsResult.backend.host}}:{backend: {{proxyChain.backupDcTunnel.tunnelStatsResult.backend.port}}, frontend: {{proxyChain.backupDcTunnel.tunnelStatsResult.frontend.port}} }</a></td>
+                                <td>
+                                    <span class="hickwall" aria-hidden="true" ng-click="gotoHickwallWebSite(value, '_blank')"></span>
+                                </td>
                                 <td ng-repeat="(key, value) in proxyChain.metrics">
                                     <span class="hickwall" aria-hidden="true" ng-click="gotoHickwallWebSite(value, '_blank')"></span>
                                 </td>
@@ -55,3 +59,6 @@
     </div>
 </div>
 
+<xpipeconfirmdialog xpipe-dialog-id="'deleteProxyChain'" xpipe-title="'确认删除Proxy链路'"
+                    xpipe-detail="'删除之后会自动重建, 但是请避免频繁删除, 是否确定删除?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="closeChain"></xpipeconfirmdialog>
