@@ -25,10 +25,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                     getData : function(params) {
                         var filter_text = params.filter().clusterName;
                         if(filter_text) {
+                            filter_text = filter_text.toLowerCase();
                             var filtered_data = [];
                             for(var i = 0 ; i < sourceClusters.length ; i++) {
                                 var cluster = sourceClusters[i];
-                                if(cluster.clusterName.search(filter_text) !== -1) {
+                                if(cluster.clusterName.toLowerCase().search(filter_text) !== -1) {
                                     filtered_data.push(cluster);
                                 }
                             }
@@ -117,10 +118,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                             $rootScope.historyPage = params.page();
                             var filter_text = params.filter().clusterName;
                             if (filter_text) {
+                                filter_text = filter_text.toLowerCase();
                                 var filtered_data = [];
                                 for (var i = 0; i < sourceClusters.length; i++) {
                                     var cluster = sourceClusters[i];
-                                    if (cluster.clusterName.search(filter_text) !== -1) {
+                                    if (cluster.clusterName.toLowerCase().search(filter_text) !== -1) {
                                         filtered_data.push(cluster);
                                     }
                                 }
@@ -150,10 +152,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                             $rootScope.historyPage = params.page();
                             var filter_text = params.filter().clusterName;
                             if (filter_text) {
+                                filter_text = filter_text.toLowerCase();
                                 var filtered_data = [];
                                 for (var i = 0; i < sourceClusters.length; i++) {
                                     var cluster = sourceClusters[i];
-                                    if (cluster.clusterName.search(filter_text) !== -1) {
+                                    if (cluster.clusterName.toLowerCase().search(filter_text) !== -1) {
                                         filtered_data.push(cluster);
                                     }
                                 }
@@ -183,10 +186,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                             var filter_text = params.filter().clusterName;
 
                             if(filter_text) {
+                                filter_text = filter_text.toLowerCase();
                                 var filtered_data = [];
                                 for(var i = 0 ; i < sourceClusters.length ; i++) {
                                     var cluster = sourceClusters[i];
-                                    if(cluster.clusterName.search(filter_text) !== -1) {
+                                    if(cluster.clusterName.toLowerCase().search(filter_text) !== -1) {
                                         filtered_data.push(cluster);
                                     }
                                 }
@@ -215,12 +219,12 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
                         filterDelay:100,
                         getData : function(params) {
                             var filter_text = params.filter().clusterName;
-
                             if(filter_text) {
+                                filter_text = filter_text.toLowerCase();
                                 var filtered_data = [];
                                 for(var i = 0 ; i < sourceClusters.length ; i++) {
                                     var cluster = sourceClusters[i];
-                                    if(cluster.clusterName.search(filter_text) !== -1) {
+                                    if(cluster.clusterName.toLowerCase().search(filter_text) !== -1) {
                                         filtered_data.push(cluster);
                                     }
                                 }
