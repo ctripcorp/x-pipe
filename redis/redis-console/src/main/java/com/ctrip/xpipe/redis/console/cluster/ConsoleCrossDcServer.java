@@ -108,8 +108,10 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         command.execute().addListener((CommandFutureListener) future -> {
             try {
                 if (future.isSuccess()) {
-                    pingStats.set(System.nanoTime() - startTime);
-                    triggerElection();
+                    if(pingStats.get() > System.nanoTime() - startTime) {
+                        pingStats.set(System.nanoTime() - startTime);
+                        triggerElection();
+                    }
                 } else {
                     scheduled.schedule(new Runnable() {
                         @Override
