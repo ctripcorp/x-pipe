@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
@@ -32,6 +34,12 @@ public class HealthController extends AbstractConsoleController{
     @Autowired
     private HealthCheckInstanceManager instanceManager;
 
+    @Autowired
+    private ConsoleCrossDcServer dcServer;
+
+    @Autowired
+    private ConsoleLeaderElector consoleLeaderElector;
+
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
 
@@ -53,6 +61,16 @@ public class HealthController extends AbstractConsoleController{
             model.addAction(actionModel);
         }
         return Codec.DEFAULT.encode(model);
+    }
+
+    @RequestMapping(value = "/db/affinity", method = RequestMethod.GET)
+    public Long getDatabaseAffinity() {
+        logger.debug("[getDatabaseAffinity]");
+        if(consoleLeaderElector.amILeader()) {
+            return dcServer.getDatabasePingStats();
+        } else {
+            return Long.MAX_VALUE;
+        }
     }
 
     private class RedisHealthCheckInstanceModel {

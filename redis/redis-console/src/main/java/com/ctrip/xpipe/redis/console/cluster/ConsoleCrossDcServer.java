@@ -3,20 +3,30 @@ package com.ctrip.xpipe.redis.console.cluster;
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
-import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.netty.TcpPortCheckCommand;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.xbill.DNS.*;
+import org.unidal.dal.jdbc.datasource.DataSource;
+import org.unidal.lookup.ContainerLoader;
+import org.unidal.lookup.annotation.Inject;
 
+import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +34,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author wenchao.meng
@@ -35,7 +48,15 @@ import java.util.concurrent.TimeUnit;
 public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, LeaderAware, ApplicationContextAware{
 
     @Autowired
-    private ConsoleConfig consoleConfig;
+    private ConsoleServiceManager consoleServiceManager;
+
+    @Autowired
+    private ConsoleLeaderElector consoleLeaderElector;
+
+    @Inject
+    private XPipeDataSource dataSource;
+
+    private final AtomicLong pingStats = new AtomicLong(Integer.MAX_VALUE);
 
     private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
 
@@ -47,9 +68,23 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
     private ApplicationContext applicationContext;
 
+    private static final Pattern ipPortPatternInMySQLURL = Pattern.compile("(jdbc:mysql://)([\\S:]+):([^/]+)");
+
+    private static final int DEFAULT_PING_TIMES = 3;
+
+    @PostConstruct
+    public void postConstruct() {
+        try {
+            if (dataSource == null) {
+                dataSource = (XPipeDataSource) ContainerLoader.getDefaultContainer().lookup(DataSource.class, "xpipe");
+            }
+        } catch (ComponentLookupException e) {
+            logger.error("[postConstruct]", e);
+        }
+    }
+
     @Override
     public boolean amILeader() {
-
         return crossDcLeader;
     }
 
@@ -62,73 +97,71 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             @Override
             protected void doRun() throws Exception {
 
-                checkDnsCurrentDc();
+                checkDataBaseCurrentDc();
 
             }
 
         }, checkIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-    private void checkDnsCurrentDc() {
-
-        String domain = consoleConfig.getConsoleDomain();
-
-        List<String> cnames = null;
+    private void checkDataBaseCurrentDc() {
+        String connectionUrl = dataSource.getDescriptor().getProperty("url", "");
         try {
-            cnames = lookUpCname(domain);
-        } catch (TextParseException e) {
-            logger.error("[checkDnsCurrentDc]" + domain, e);
+            HostPort hostPort = parseHostPortFromURL(connectionUrl);
+            check(hostPort.getHost(), hostPort.getPort());
+        } catch (Exception e) {
+            logger.error("[checkDataBaseCurrentDc]", e);
         }
-
-        if (cnames == null) {
-            return;
-        }
-
-        if (cnames.size() == 0) {
-            //only one dc
-            setCrossDcLeader(true, "cnames size == 0");
-            return;
-        }
-
-        String currentDc = FoundationService.DEFAULT.getDataCenter();
-        Map<String, String> consoleCnameToDc = consoleConfig.getConsoleCnameToDc();
-
-        for (String cname : cnames) {
-
-            String dc = consoleCnameToDc.get(cname);
-            if (currentDc.equalsIgnoreCase(dc)) {
-                //is dc leader
-                setCrossDcLeader(true, String.format("[good]current dc %s, cname:%s, cnametodc:%s", currentDc, cname, consoleCnameToDc));
-                return;
-            }
-        }
-
-        setCrossDcLeader(false, String.format("[bad]current dc %s, cname:%s, cnametodc:%s", currentDc, cnames, consoleCnameToDc));
     }
 
-    protected List<String> lookUpCname(String domain) throws TextParseException {
+    protected Command getPingCommand(String host, int port) {
+        SequenceCommandChain commandChain = new SequenceCommandChain();
+        for(int i = 0; i < DEFAULT_PING_TIMES; i++){
+            commandChain.add(new TcpPortCheckCommand(host, port));
+        }
+        return commandChain;
+    }
 
-        List<String> cnameRecords = new LinkedList<>();
-
-        Record[] records = new Lookup(domain, Type.CNAME).run();
-
-        if (records != null) {
-
-            for (int i = 0; i < records.length; i++) {
-
-                CNAMERecord cnameRecord = (CNAMERecord) records[i];
-                Name target = cnameRecord.getTarget();
-                String cname = target.toString();
-                if (cname.endsWith(".")) {
-                    cname = cname.substring(0, cname.length() - 1);
+    private void check(String host, int port) {
+        Command command = getPingCommand(host, port);
+        final long startTime = System.nanoTime();
+        command.execute().addListener((CommandFutureListener) future -> {
+            try {
+                if (future.isSuccess()) {
+                    pingStats.set(System.nanoTime() - startTime);
+                    triggerElection();
+                } else {
+                    scheduled.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            check(host, port);
+                        }
+                    }, 1000, TimeUnit.MILLISECONDS);
                 }
-                cnameRecords.add(cname);
+            } catch (Exception e) {
+                logger.error("[check][operationComplete]", e);
             }
-        }
-        logger.debug("[lookUpCname]{}", cnameRecords);
-        return cnameRecords;
+        });
     }
 
+    private void triggerElection() {
+        if(!consoleLeaderElector.amILeader()) {
+            setCrossDcLeader(false, "[triggerElection]not site leader, quit for cross-site leader election");
+            return;
+        }
+        List<Long> otherNodeDbAffinities = consoleServiceManager.getAllDatabaseAffinity();
+        boolean crossDcLeader = true;
+        if(otherNodeDbAffinities != null && !otherNodeDbAffinities.isEmpty()) {
+            for (long dbPingStats : otherNodeDbAffinities) {
+                crossDcLeader &= pingStats.get() <= dbPingStats;
+            }
+        }
+        setCrossDcLeader(crossDcLeader, String.format("[result] my ping: %d", pingStats.get()));
+    }
+
+    public long getDatabasePingStats() {
+        return pingStats.get();
+    }
 
     @Override
     protected void doStop() throws Exception {
@@ -222,12 +255,36 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }
     }
 
-    public void setConsoleConfig(ConsoleConfig consoleConfig) {
-        this.consoleConfig = consoleConfig;
+    @VisibleForTesting
+    protected HostPort parseHostPortFromURL(String url) {
+        Matcher matcher = ipPortPatternInMySQLURL.matcher(url);
+        if (matcher.find())
+            return new HostPort(matcher.group(2),Integer.parseInt(matcher.group(3)));
+
+        return new HostPort();
     }
+
 
     public void setCheckIntervalMilli(int checkIntervalMilli) {
         this.checkIntervalMilli = checkIntervalMilli;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setConsoleServiceManager(ConsoleServiceManager consoleServiceManager) {
+        this.consoleServiceManager = consoleServiceManager;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setConsoleLeaderElector(ConsoleLeaderElector consoleLeaderElector) {
+        this.consoleLeaderElector = consoleLeaderElector;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setDataSource(XPipeDataSource dataSource) {
+        this.dataSource = dataSource;
+        return this;
     }
 
     @Override
