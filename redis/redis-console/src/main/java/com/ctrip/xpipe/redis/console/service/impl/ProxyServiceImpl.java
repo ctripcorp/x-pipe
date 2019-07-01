@@ -156,26 +156,24 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     public RetMessage deleteProxyChain(ProxyChainModel model) {
         HostPort activeDcTunnel = model.getActiveDcTunnel().getTunnelStatsResult().getBackend();
         HostPort backupDcTunnel = model.getBackupDcTunnel().getTunnelStatsResult().getBackend();
-        int failReason = 0;
-        String message = "";
-        failReason = getFailReason(activeDcTunnel, failReason);
-        failReason = getFailReason(backupDcTunnel, failReason);
-        if(failReason >= 2) {
-            return RetMessage.createFailMessage(message);
+        RetMessage first = notifyProxyNode(activeDcTunnel);
+        RetMessage second  = notifyProxyNode(backupDcTunnel);
+        if(first.getState() != RetMessage.SUCCESS_STATE && second.getState() != RetMessage.SUCCESS_STATE) {
+            return RetMessage.createFailMessage(first.getMessage());
         }
         return RetMessage.createSuccessMessage();
     }
 
-    private int getFailReason(HostPort activeDcTunnel, int failReason) {
-        String message;
+    private RetMessage notifyProxyNode(HostPort activeDcTunnel) {
+        String message = null;
         try {
             restTemplate.delete(String.format("http://%s:8080/api/tunnel/local/port/%d", activeDcTunnel.getHost(), activeDcTunnel.getPort()));
         } catch (Exception e) {
-            failReason ++;
             message = ExceptionUtils.getCause(e).getMessage();
             logger.error("[deleteProxyChain]", e);
+            return RetMessage.createFailMessage(message);
         }
-        return failReason;
+        return RetMessage.createSuccessMessage();
     }
 
 
