@@ -11,6 +11,7 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
         $scope.gotoProxy = gotoProxy;
         $scope.getMetricHickwalls = getMetricHickwalls;
         $scope.gotoHickwallWebSite = gotoHickwallWebSite;
+        $scope.closeChain = closeChain;
 
         if ($scope.clusterName) {
             loadChains();
@@ -31,7 +32,7 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
                     }
                     $scope.dcs = result;
 
-                    // TODO [marsqing] do not re-get dc data when switch dc
+                    // TODO [nick] do not re-get dc data when switch dc
                     if($scope.dcs && $scope.dcs.length > 0) {
                         $scope.dcs.forEach(function(dc){
                             if(dc.dcName === $stateParams.currentDcName) {
@@ -92,6 +93,10 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
 
         function gotoHickwallWebSite(addr) {
             $window.open(addr, '_blank');
+        }
+
+        function closeChain(chain) {
+            ProxyService.closeProxyChain(chain);
         }
 
 }]);
