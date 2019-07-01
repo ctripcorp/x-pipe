@@ -24,11 +24,6 @@ public class XPipeTemporaryDependencyTest {
     }
 
     @Test
-    public void getMhaManagerNode() {
-        Assert.assertEquals(XPipeFiremanDependency.Environment.getInstance().getMhaManagerNode(), dependency.getMhaManagerNode());
-    }
-
-    @Test
     public void getMaster() {
         Assert.assertEquals(XPipeFiremanDependency.Environment.getInstance().getMasterNode(), dependency.getMaster());
     }
