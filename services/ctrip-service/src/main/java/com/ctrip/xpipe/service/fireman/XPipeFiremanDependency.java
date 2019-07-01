@@ -33,6 +33,11 @@ public class XPipeFiremanDependency implements FiremanDependency {
     }
 
     @Override
+    public int mhaSwitchMaxExecuteTimeoutS() {
+        return Integer.parseInt(ApolloConfig.DEFAULT.get("xpipe.mha.switch.timeout", "10"));
+    }
+
+    @Override
     public int getOrder() {
         return HIGHEST_PRECEDENCE;
     }
@@ -41,7 +46,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
         PRO {
 
             final String DB_DOMAIN = "fxxpipe.mysql.db.ctripcorp.com";
-            final String MASTER_IP = "10.9.72.48";
+            final String MASTER_IP = ApolloConfig.DEFAULT.get("xpipe.mysql.master.ip", "10.9.72.48");
             final String MASTER_LOCATE_SHORT = "SHAFQ";
             final int MASTER_PORT = 55944;
 
@@ -97,7 +102,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
             final String MASTER_LOCATE_SHORT = "NTGXH";
             final int MASTER_PORT = 55111;
 
-            final String MHA_MANAGER_IP = "10.2.61.104";
+            final String MHA_MANAGER_IP = "10.0.0.0";//"10.2.61.104";
             final String MHA_MANAGER_LOCATE = "NTGXH";
 
             @Override
