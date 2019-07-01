@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.console.cluster;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
+import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -19,6 +21,9 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.JdbcDataSourceDescriptor;
+import org.unidal.dal.jdbc.datasource.model.entity.DataSourceDef;
+import org.unidal.dal.jdbc.datasource.model.entity.DataSourcesDef;
+import org.unidal.dal.jdbc.datasource.model.entity.PropertiesDef;
 import org.xbill.DNS.TextParseException;
 
 import java.util.HashMap;
@@ -62,8 +67,6 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
     private ConsoleServiceManager consoleServiceManager;
 
-    private XPipeDataSource dataSource;
-
     @Before
     public void beforeConsoleCrossDcServerTest(){
 
@@ -99,18 +102,9 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         when(consoleServiceManager.getAllDatabaseAffinity()).thenReturn(pingStats.get());
         crossDcClusterServer.setConsoleServiceManager(consoleServiceManager);
 
-        dataSource = mock(XPipeDataSource.class);
-        url.set("jdbc:mysql://fxxpipe.mysql.db.ctripcorp.com:55944/fxxpipeDB");
-        when(dataSource.getDescriptor()).thenReturn(new JdbcDataSourceDescriptor() {
-            @Override
-            public String getProperty(String name, String defaultValue) {
-                if(name.equalsIgnoreCase("url")) {
-                    return url.get();
-                }
-                return "";
-            }
-        });
-        crossDcClusterServer.setDataSource(dataSource);
+        when(consoleConfig.getCrossDcLeaderPingAddress()).thenReturn(new HostPort());
+        crossDcClusterServer.setConsoleConfig(consoleConfig);
+
     }
 
     @Test
@@ -186,11 +180,6 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         when(consoleServiceManager.getAllDatabaseAffinity()).thenReturn(pings);
 
         waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader());
-    }
-
-    @Test
-    public void testParseJdbcUrl() {
-        crossDcClusterServer.parseHostPortFromURL(url.get());
     }
 
     @Test

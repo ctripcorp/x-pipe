@@ -10,23 +10,18 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
-import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.unidal.dal.jdbc.datasource.DataSource;
-import org.unidal.lookup.ContainerLoader;
-import org.unidal.lookup.annotation.Inject;
 
-import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +30,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author wenchao.meng
@@ -48,13 +41,13 @@ import java.util.regex.Pattern;
 public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, LeaderAware, ApplicationContextAware{
 
     @Autowired
+    private ConsoleConfig consoleConfig;
+
+    @Autowired
     private ConsoleServiceManager consoleServiceManager;
 
     @Autowired
     private ConsoleLeaderElector consoleLeaderElector;
-
-    @Inject
-    private XPipeDataSource dataSource;
 
     private final AtomicLong pingStats = new AtomicLong(Integer.MAX_VALUE);
 
@@ -68,20 +61,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
     private ApplicationContext applicationContext;
 
-    private static final Pattern ipPortPatternInMySQLURL = Pattern.compile("(jdbc:mysql://)([\\S:]+):([^/]+)");
-
     private static final int DEFAULT_PING_TIMES = 3;
-
-    @PostConstruct
-    public void postConstruct() {
-        try {
-            if (dataSource == null) {
-                dataSource = (XPipeDataSource) ContainerLoader.getDefaultContainer().lookup(DataSource.class, "xpipe");
-            }
-        } catch (ComponentLookupException e) {
-            logger.error("[postConstruct]", e);
-        }
-    }
 
     @Override
     public boolean amILeader() {
@@ -105,9 +85,8 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     }
 
     private void checkDataBaseCurrentDc() {
-        String connectionUrl = dataSource.getDescriptor().getProperty("url", "");
         try {
-            HostPort hostPort = parseHostPortFromURL(connectionUrl);
+            HostPort hostPort = consoleConfig.getCrossDcLeaderPingAddress();
             check(hostPort.getHost(), hostPort.getPort());
         } catch (Exception e) {
             logger.error("[checkDataBaseCurrentDc]", e);
@@ -255,15 +234,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }
     }
 
-    @VisibleForTesting
-    protected HostPort parseHostPortFromURL(String url) {
-        Matcher matcher = ipPortPatternInMySQLURL.matcher(url);
-        if (matcher.find())
-            return new HostPort(matcher.group(2),Integer.parseInt(matcher.group(3)));
-
-        return new HostPort();
-    }
-
 
     public void setCheckIntervalMilli(int checkIntervalMilli) {
         this.checkIntervalMilli = checkIntervalMilli;
@@ -282,8 +252,8 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     }
 
     @VisibleForTesting
-    protected ConsoleCrossDcServer setDataSource(XPipeDataSource dataSource) {
-        this.dataSource = dataSource;
+    protected ConsoleCrossDcServer setConsoleConfig(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
         return this;
     }
 
