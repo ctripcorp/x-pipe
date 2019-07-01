@@ -335,7 +335,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public HostPort getCrossDcLeaderPingAddress() {
         String addr = getProperty(KEY_CROSS_DC_LEADER_PING_ADDRESS, "localhost:8080");
-        String[] strs = StringUtil.splitRemoveEmpty("\\s*,\\s*", addr);
+        String[] strs = StringUtil.splitRemoveEmpty("\\s*:\\s*", addr);
         return new HostPort(strs[0], Integer.parseInt(strs[1]));
     }
 }
