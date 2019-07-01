@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
@@ -77,6 +78,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_SOCKET_STATS_ANALYZERS = "console.socket.stats.analyzers";
 
     public static final String KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK = "console.cluster.shard.for.migrate.sys.check";
+
+    private static final String KEY_CROSS_DC_LEADER_PING_ADDRESS = "console.cross.dc.leader.ping.address";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -327,5 +330,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String clusterShard = getProperty(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster1, shard1");
         String[] strs = StringUtil.splitRemoveEmpty("\\s*,\\s*", clusterShard);
         return Pair.from(strs[0], strs[1]);
+    }
+
+    @Override
+    public HostPort getCrossDcLeaderPingAddress() {
+        String addr = getProperty(KEY_CROSS_DC_LEADER_PING_ADDRESS, "localhost:8080");
+        String[] strs = StringUtil.splitRemoveEmpty("\\s*,\\s*", addr);
+        return new HostPort(strs[0], Integer.parseInt(strs[1]));
     }
 }
