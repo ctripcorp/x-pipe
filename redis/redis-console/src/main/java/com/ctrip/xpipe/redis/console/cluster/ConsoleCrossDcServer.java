@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -191,9 +192,11 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
         if(!previous && crossDcLeader){
             logger.info("[becomeLeader]{}", reason);
+            EventMonitor.DEFAULT.logEvent("XPIPE.LEADER.CHANGE", "BECOME.LEADER");
             becomeLeader();
         }else if(previous && !crossDcLeader){
             logger.info("[loseLeader]{}", reason);
+            EventMonitor.DEFAULT.logEvent("XPIPE.LEADER.CHANGE", "LOSE.LEADER");
             loseLeader();
         }
     }
