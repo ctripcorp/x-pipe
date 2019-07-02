@@ -153,20 +153,22 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public RetMessage deleteProxyChain(ProxyChainModel model) {
-        HostPort activeDcTunnel = model.getActiveDcTunnel().getTunnelStatsResult().getBackend();
-        HostPort backupDcTunnel = model.getBackupDcTunnel().getTunnelStatsResult().getBackend();
-        RetMessage message = notifyProxyNode(activeDcTunnel);
-        if(message.getState() != RetMessage.SUCCESS_STATE) {
-            message = notifyProxyNode(backupDcTunnel);
+    public RetMessage deleteProxyChain(List<HostPort> proxies) {
+        RetMessage message = null;
+        for(HostPort hostPort : proxies) {
+            message = notifyProxyNode(hostPort);
+            if(message.getState() == RetMessage.SUCCESS_STATE) {
+                return message;
+            }
         }
+        message = message == null ? RetMessage.createFailMessage("no host port received") : message;
         return message;
     }
 
-    private RetMessage notifyProxyNode(HostPort activeDcTunnel) {
+    private RetMessage notifyProxyNode(HostPort hostPort) {
         String message = null;
         try {
-            restTemplate.delete(String.format("http://%s:8080/api/tunnel/local/port/%d", activeDcTunnel.getHost(), activeDcTunnel.getPort()));
+            restTemplate.delete(String.format("http://%s:8080/api/tunnel/local/port/%d", hostPort.getHost(), hostPort.getPort()));
         } catch (Exception e) {
             message = ExceptionUtils.getCause(e).getMessage();
             logger.error("[deleteProxyChain]", e);

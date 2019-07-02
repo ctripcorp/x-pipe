@@ -1,5 +1,5 @@
-index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
-    function ($rootScope, $scope, $window, ProxyService, ClusterService, NgTableParams, $stateParams) {
+index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'AppUtil', 'toastr', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
+    function ($rootScope, $scope, $window, AppUtil, toastr, ProxyService, ClusterService, NgTableParams, $stateParams) {
 
         $scope.dcs, $scope.chains;
         $scope.clusterName = $stateParams.clusterName;
@@ -12,6 +12,7 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
         $scope.getMetricHickwalls = getMetricHickwalls;
         $scope.gotoHickwallWebSite = gotoHickwallWebSite;
         $scope.closeChain = closeChain;
+        $scope.preCloseChain = preCloseChain;
 
         if ($scope.clusterName) {
             loadChains();
@@ -95,8 +96,28 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
             $window.open(addr, '_blank');
         }
 
-        function closeChain(chain) {
-            return ProxyService.closeProxyChain(chain);
+        function preCloseChain(chain) {
+            $scope.chainToClose = chain;
+            $('#deleteChainConfirm').modal('show');
         }
+
+        function closeChain() {
+            ProxyService.closeProxyChain($scope.chainToClose)
+                .then(function (result) {
+                    $('#deleteChainConfirm').modal('hide');
+                    if(result.state === 0) {
+                        toastr.success('删除成功');
+                    } else {
+                        toastr.error(AppUtil.errorMsg(result), '删除失败');
+                    }
+                    setTimeout(function () {
+                        // TODO [nick] reload ng-table instead of reload window
+                        $window.location.reload();
+                    },1000);
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), '删除失败');
+                })
+        }
+
 
 }]);

@@ -156,8 +156,8 @@ public class ProxyChainController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/proxy/chain", method = RequestMethod.DELETE)
-    public RetMessage closeProxyChain(@RequestBody ProxyChainModel model) {
-        return proxyService.deleteProxyChain(model);
+    public RetMessage closeProxyChain(@RequestBody List<HostPort> proxies) {
+        return proxyService.deleteProxyChain(proxies);
     }
 
 }
