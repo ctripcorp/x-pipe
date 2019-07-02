@@ -148,7 +148,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     		throw new BadRequestException("No active dc assigned.");
     	}
     	ClusterTbl proto = dao.createLocal();
-    	proto.setClusterName(cluster.getClusterName());
+    	proto.setClusterName(cluster.getClusterName().trim());
     	proto.setActivedcId(cluster.getActivedcId());
     	proto.setClusterDescription(cluster.getClusterDescription());
     	proto.setStatus(ClusterStatus.Normal.toString());
