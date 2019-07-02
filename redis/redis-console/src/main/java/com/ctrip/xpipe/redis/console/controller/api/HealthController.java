@@ -34,10 +34,10 @@ public class HealthController extends AbstractConsoleController{
     @Autowired
     private HealthCheckInstanceManager instanceManager;
 
-    @Autowired
+    @Autowired(required = false)
     private ConsoleCrossDcServer dcServer;
 
-    @Autowired
+    @Autowired(required = false)
     private ConsoleLeaderElector consoleLeaderElector;
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)

@@ -156,12 +156,11 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     public RetMessage deleteProxyChain(ProxyChainModel model) {
         HostPort activeDcTunnel = model.getActiveDcTunnel().getTunnelStatsResult().getBackend();
         HostPort backupDcTunnel = model.getBackupDcTunnel().getTunnelStatsResult().getBackend();
-        RetMessage first = notifyProxyNode(activeDcTunnel);
-        RetMessage second  = notifyProxyNode(backupDcTunnel);
-        if(first.getState() != RetMessage.SUCCESS_STATE && second.getState() != RetMessage.SUCCESS_STATE) {
-            return RetMessage.createFailMessage(first.getMessage());
+        RetMessage message = notifyProxyNode(activeDcTunnel);
+        if(message.getState() != RetMessage.SUCCESS_STATE) {
+            message = notifyProxyNode(backupDcTunnel);
         }
-        return RetMessage.createSuccessMessage();
+        return message;
     }
 
     private RetMessage notifyProxyNode(HostPort activeDcTunnel) {

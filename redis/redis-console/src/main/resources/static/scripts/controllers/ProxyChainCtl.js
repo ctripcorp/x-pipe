@@ -96,7 +96,7 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
         }
 
         function closeChain(chain) {
-            ProxyService.closeProxyChain(chain);
+            return ProxyService.closeProxyChain(chain);
         }
 
 }]);
