@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
 import com.ctrip.xpipe.redis.console.model.ProxyTbl;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
@@ -46,5 +46,5 @@ public interface ProxyService {
 
     List<ProxyInfoModel> getAllProxyInfo();
 
-    RetMessage deleteProxyChain(ProxyChainModel model);
+    RetMessage deleteProxyChain(List<HostPort> proxies);
 }

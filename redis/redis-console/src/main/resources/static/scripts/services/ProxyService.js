@@ -1,4 +1,4 @@
-services.service('ProxyService', ['$resource', '$q', function ($resource, $q) {
+services.service('ProxyService', ['$resource', '$q', '$http', function ($resource, $q, $http) {
 
     var resource = $resource('', {}, {
         get_proxy_chain:{
@@ -105,11 +105,17 @@ services.service('ProxyService', ['$resource', '$q', function ($resource, $q) {
 
     function closeProxyChain(chain) {
         var d = $q.defer();
-        resource.close_proxy_chain({}, chain,
-            function (result) {
-                d.resolve(result);
-            }, function (result) {
-                d.reject(result);
+        $http({
+            method: 'DELETE',
+            url: '/console/proxy/chain',
+            data: [chain.activeDcTunnel.tunnelStatsResult.backend, chain.activeDcTunnel.tunnelStatsResult.backend],
+            headers: {'Content-Type': 'application/json;charset=utf-8'}
+        }).then(
+            function successCallback(response) {
+                d.resolve(response);
+            },
+            function errorCallback(reason) {
+                d.reject(reason);
             });
         return d.promise;
     }
