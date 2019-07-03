@@ -50,7 +50,7 @@
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <hickwall.client.version>1.8</hickwall.client.version>
+        <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
         <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
