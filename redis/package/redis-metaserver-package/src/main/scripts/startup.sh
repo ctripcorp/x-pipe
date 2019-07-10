@@ -109,7 +109,10 @@ PATH_TO_JAR=$SERVICE_NAME".jar"
 SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
 
-if [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
+#set the jdk to 1.8 version
+if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8/ ]]; then
+    export JAVA_HOME=/usr/java/jdk1.8
+elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
     export JAVA_HOME=/usr/java/latest/
 fi
 
