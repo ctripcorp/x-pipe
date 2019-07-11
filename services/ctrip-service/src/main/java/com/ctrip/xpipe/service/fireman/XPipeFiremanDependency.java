@@ -34,7 +34,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
 
     @Override
     public int mhaSwitchMaxExecuteTimeoutS() {
-        return Integer.parseInt(ApolloConfig.DEFAULT.get("xpipe.mha.switch.timeout", "10"));
+        return Integer.parseInt(ApolloConfig.DEFAULT.get("xpipe.mha.switch.timeout", "30"));
     }
 
     @Override
