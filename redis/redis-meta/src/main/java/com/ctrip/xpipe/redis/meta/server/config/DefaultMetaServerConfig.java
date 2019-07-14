@@ -40,6 +40,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SERVER_ID = "metaserver.id";
 	public static String KEY_SERVER_IP = "server.ip";
 	public static String KEY_SERVER_PORT = "server.port";
+
+	private static final String KEY_KEEPER_INFO_CHECK_INTERVAL = "meta.keeper.info.check.interval";
 	
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 	
@@ -131,6 +133,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public boolean validateDomain() {
 		return getBooleanProperty(KEY_VALIDATE_DOMAIN, true);
+	}
+
+	@Override
+	public int getKeeperInfoCheckInterval() {
+		return getIntProperty(KEY_KEEPER_INFO_CHECK_INTERVAL, 30 * 1000);
 	}
 
 
