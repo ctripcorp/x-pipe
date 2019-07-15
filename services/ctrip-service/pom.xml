@@ -21,6 +21,19 @@
         </dependencies>
     </dependencyManagement>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- bom -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-bom</artifactId>
+                <version>3.22.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>com.ctrip.framework.clogging</groupId>
@@ -159,6 +172,12 @@
                     <artifactId>baiji-rpc-client</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ctrip.soa.caravan</groupId>
+            <artifactId>caravan-web</artifactId>
+            <version>1.15.3</version>
         </dependency>
     </dependencies>
 
