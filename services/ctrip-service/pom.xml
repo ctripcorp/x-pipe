@@ -8,18 +8,6 @@
     </parent>
     <!-- ctrip related infrastructure -->
     <artifactId>ctrip-service</artifactId>
-    <dependencyManagement>
-        <dependencies>
-            <!-- bom -->
-            <dependency>
-                <groupId>com.ctrip.framework</groupId>
-                <artifactId>framework-bom</artifactId>
-                <version>3.22.2</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -102,10 +90,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>com.ctrip.framework.fireman</groupId>
             <artifactId>fireman</artifactId>
-            <version>0.0.200</version>
+            <version>1.0.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
@@ -119,25 +108,7 @@
                     <groupId>com.ctrip.platform</groupId>
                     <artifactId>ctrip-datasource</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>com.ctrip.framework</groupId>
-                    <artifactId>vi</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-beanutils</groupId>
-                    <artifactId>commons-beanutils-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.ctrip.soa.caravan</groupId>
-                    <artifactId>caravan-util</artifactId>
-                </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>com.ctrip.soa.caravan</groupId>
-            <artifactId>caravan-util</artifactId>
-            <version>1.15.3</version>
         </dependency>
 
         <!--Email Service-->
@@ -154,18 +125,9 @@
                     <groupId>com.ctrip.framework</groupId>
                     <artifactId>vi</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>com.ctriposs.baiji</groupId>
-                    <artifactId>baiji-rpc-client</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>com.ctrip.soa.caravan</groupId>
-            <artifactId>caravan-web</artifactId>
-            <version>1.15.3</version>
-        </dependency>
     </dependencies>
 
 
