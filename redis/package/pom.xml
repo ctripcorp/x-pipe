@@ -20,18 +20,6 @@
 	<profiles>
 		<profile>
 			<id>ctrip</id>
-			<dependencyManagement>
-				<dependencies>
-					<!-- bom -->
-					<dependency>
-						<groupId>com.ctrip.framework</groupId>
-						<artifactId>framework-bom</artifactId>
-						<version>3.22.2</version>
-						<type>pom</type>
-						<scope>import</scope>
-					</dependency>
-				</dependencies>
-			</dependencyManagement>
 			<dependencies>
 				<dependency>
 					<groupId>com.ctrip.framework.xpipe</groupId>
