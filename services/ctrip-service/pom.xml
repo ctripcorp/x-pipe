@@ -121,13 +121,8 @@
                     <groupId>javax.servlet</groupId>
                     <artifactId>javax.servlet-api</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>com.ctrip.framework</groupId>
-                    <artifactId>vi</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
-
     </dependencies>
 
 

@@ -13,6 +13,8 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -26,10 +28,7 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -50,8 +49,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Autowired
     private ConsoleLeaderElector consoleLeaderElector;
 
-    private final AtomicLong pingStats = new AtomicLong(Integer.MAX_VALUE);
-
     private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
 
     private volatile boolean crossDcLeader = false;
@@ -61,6 +58,8 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     private ScheduledFuture future;
 
     private ApplicationContext applicationContext;
+
+    private InstantaneousMetric pingStats = new BaseInstantaneousMetric();
 
     private static final int DEFAULT_PING_TIMES = 3;
 
@@ -72,6 +71,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
     @Override
     protected void doStart() throws Exception {
+
 
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
@@ -108,10 +108,11 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         command.execute().addListener((CommandFutureListener) future -> {
             try {
                 if (future.isSuccess()) {
-                    if(pingStats.get() > System.nanoTime() - startTime) {
-                        pingStats.set(System.nanoTime() - startTime);
-                        triggerElection();
+                    long duration = System.nanoTime() - startTime;
+                    if(duration < TimeUnit.MILLISECONDS.toNanos(3)) {
+                        pingStats.trackInstantaneousMetric(duration);
                     }
+                    triggerElection();
                 } else {
                     scheduled.schedule(new Runnable() {
                         @Override
@@ -135,14 +136,14 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         boolean crossDcLeader = true;
         if(otherNodeDbAffinities != null && !otherNodeDbAffinities.isEmpty()) {
             for (long dbPingStats : otherNodeDbAffinities) {
-                crossDcLeader &= pingStats.get() <= dbPingStats;
+                crossDcLeader &= pingStats.getInstantaneousMetric() <= dbPingStats;
             }
         }
-        setCrossDcLeader(crossDcLeader, String.format("[result] my ping: %d", pingStats.get()));
+        setCrossDcLeader(crossDcLeader, String.format("[result] my ping: %d", pingStats.getInstantaneousMetric()));
     }
 
     public long getDatabasePingStats() {
-        return pingStats.get();
+        return pingStats.getInstantaneousMetric();
     }
 
     @Override
