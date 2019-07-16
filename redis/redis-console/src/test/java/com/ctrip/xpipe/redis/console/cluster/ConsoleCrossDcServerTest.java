@@ -186,7 +186,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         int port = server.getPort();
         Command command = crossDcClusterServer.getPingCommand("localhost", port);
         CommandFuture future = command.execute();
-        waitConditionUntilTimeOut(()->future.isDone() && future.isSuccess());
+        waitConditionUntilTimeOut(()->(future.isDone() && future.isSuccess()));
 
         server.stop();
         command = crossDcClusterServer.getPingCommand("localhost", port);

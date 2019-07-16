@@ -14,6 +14,7 @@ import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousCounterMetric;
 import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -59,7 +60,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
     private ApplicationContext applicationContext;
 
-    private InstantaneousMetric pingStats = new BaseInstantaneousMetric();
+    private InstantaneousMetric pingStats = new InstantaneousCounterMetric();
 
     private static final int DEFAULT_PING_TIMES = 3;
 
