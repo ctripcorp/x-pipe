@@ -12,10 +12,7 @@ import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
 import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -196,6 +193,61 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         CommandFuture future2 = command.execute();
         waitConditionUntilTimeOut(()->future2.isDone() && !future2.isSuccess());
     }
+
+    @Test
+    public void testInitValue() {
+        Assert.assertEquals(Long.MAX_VALUE, crossDcClusterServer.getDatabasePingStats());
+    }
+
+//    @Ignore
+    @Test
+    public void testDynamicChange() {
+        pingDelayMilli.set(1);
+        ConsoleCrossDcServer crossDcClusterServer2 = new ConsoleCrossDcServer(){
+            @Override
+            protected Command<Boolean> getPingCommand(String host, int port) {
+                return new AbstractCommand<Boolean>() {
+                    @Override
+                    protected void doExecute() throws Exception {
+                        TimeUnit.MILLISECONDS.sleep(10);
+                        future().setSuccess(true);
+                    }
+
+                    @Override
+                    protected void doReset() {
+
+                    }
+
+                    @Override
+                    public String getName() {
+                        return "Fake-Ping-Command";
+                    }
+                };
+            }
+        };
+
+        crossDcClusterServer2.setCheckIntervalMilli(checkIntervalMilli);
+        consoleLeaderElector = mock(ConsoleLeaderElector.class);
+        when(consoleLeaderElector.amILeader()).thenReturn(true);
+        crossDcClusterServer2.setConsoleLeaderElector(consoleLeaderElector);
+
+        consoleServiceManager = mock(ConsoleServiceManager.class);
+        when(consoleServiceManager.getAllDatabaseAffinity()).thenReturn(Lists.newArrayList(crossDcClusterServer.getDatabasePingStats()));
+        crossDcClusterServer2.setConsoleServiceManager(consoleServiceManager);
+
+        when(consoleConfig.getCrossDcLeaderPingAddress()).thenReturn(new HostPort());
+        crossDcClusterServer2.setConsoleConfig(consoleConfig);
+
+        crossDcClusterServer2.checkDataBaseCurrentDc();
+        Assert.assertTrue(crossDcClusterServer2.amILeader());
+
+        crossDcClusterServer.checkDataBaseCurrentDc();
+        crossDcClusterServer2.checkDataBaseCurrentDc();
+        Assert.assertTrue(crossDcClusterServer.amILeader());
+        Assert.assertFalse(crossDcClusterServer2.amILeader());
+    }
+
+
 
     @After
     public void afterConsoleCrossDcServerTest() throws Exception {

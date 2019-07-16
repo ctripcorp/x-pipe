@@ -72,7 +72,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Override
     protected void doStart() throws Exception {
 
-
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
@@ -85,7 +84,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }, checkIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-    private void checkDataBaseCurrentDc() {
+    protected void checkDataBaseCurrentDc() {
         try {
             HostPort hostPort = consoleConfig.getCrossDcLeaderPingAddress();
             check(hostPort.getHost(), hostPort.getPort());
@@ -109,7 +108,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             try {
                 if (future.isSuccess()) {
                     long duration = System.nanoTime() - startTime;
-                    if(duration < TimeUnit.MILLISECONDS.toNanos(3)) {
+                    if(duration < TimeUnit.MILLISECONDS.toNanos(5)) {
                         pingStats.trackInstantaneousMetric(duration);
                     }
                     triggerElection();
@@ -143,6 +142,9 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     }
 
     public long getDatabasePingStats() {
+        if(pingStats.getInstantaneousMetric() == 0) {
+            return Long.MAX_VALUE;
+        }
         return pingStats.getInstantaneousMetric();
     }
 
