@@ -5,6 +5,10 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.command.CausalChain;
+import com.ctrip.xpipe.command.CausalCommand;
+import com.ctrip.xpipe.command.CausalException;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -17,6 +21,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.exception.KeeperStateInCorrectException;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
@@ -289,6 +294,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected void doCheckShard(String clusterId, ShardMeta shardMeta) {
 			String shardId = shardMeta.getId();
 			List<KeeperMeta> keeperMetas = currentMetaManager.getSurviveKeepers(clusterId, shardId);
+			SequenceCommandChain sequenceCommandChain = new SequenceCommandChain();
 			for (KeeperMeta keeperMeta : keeperMetas) {
 				InfoCommand infoCommand = new InfoCommand(
 						clientPool.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort())),
@@ -297,27 +303,74 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				);
 				infoCommand.logRequest(false);
 				infoCommand.logResponse(false);
-				infoCommand.execute().addListener(new CommandFutureListener<String>() {
-					@Override
-					public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
-						if (commandFuture.isSuccess()) {
-							InfoResultExtractor extractor = new InfoResultExtractor(commandFuture.getNow());
-							AbstractKeeperInfoChecker infoChecker = createKeeperInfoChecker(keeperMeta, keeperMetas,
-									clusterId, shardId, extractor);
-							infoChecker.check();
-						}
-					}
-				});
+				CausalChain causalChain = new CausalChain();
+				causalChain.add(infoCommand);
+				causalChain.add(new KeeperInfoCheckCommand(keeperMeta, clusterId, shardId));
+				sequenceCommandChain.add(causalChain);
 			}
+			sequenceCommandChain.execute(executors).addListener(new CommandFutureListener<Object>() {
+				@Override
+				public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+					if(!commandFuture.isSuccess()) {
+						doCorrect(clusterId, shardId, keeperMetas);
+					}
+				}
+			});
+		}
+
+		private void doCorrect(String clusterId, String shardId, List<KeeperMeta> survivedKeepers) {
+			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterId, survivedKeepers,
+					currentMetaManager.getKeeperMaster(clusterId, shardId));
+			job.execute(executors).addListener(new CommandFutureListener<Void>() {
+				@Override
+				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
+					logger.info("[{}][KeeperInfoCorrect]cluster: {}, shard: {}, result: {}",
+							getClass(), clusterId, shardId, commandFuture.isSuccess());
+				}
+			});
 		}
 	}
 
-	private AbstractKeeperInfoChecker createKeeperInfoChecker(KeeperMeta keeper, List<KeeperMeta> keepers,
-															  String clusterId, String shardId, InfoResultExtractor extractor) {
+	protected class KeeperInfoCheckCommand extends CausalCommand<String, Boolean> {
+
+		private KeeperMeta keeperMeta;
+
+		private String clusterId, shardId;
+
+		private AbstractKeeperInfoChecker infoChecker;
+
+		public KeeperInfoCheckCommand(KeeperMeta keeperMeta, String clusterId, String shardId) {
+			this.keeperMeta = keeperMeta;
+			this.clusterId = clusterId;
+			this.shardId = shardId;
+		}
+
+		@Override
+		protected void onSuccess(String info) {
+			InfoResultExtractor extractor = new InfoResultExtractor(info);
+			infoChecker = createKeeperInfoChecker(keeperMeta, clusterId, shardId, extractor);
+			if(infoChecker.isValid()) {
+				future().setSuccess(true);
+			} else {
+				future().setFailure(new KeeperStateInCorrectException("Keeper Role not correct"));
+			}
+
+		}
+
+		@Override
+		protected void onFailure(Throwable throwable) {
+			future().setFailure(throwable);
+		}
+	}
+
+
+
+	private AbstractKeeperInfoChecker createKeeperInfoChecker(KeeperMeta keeper, String clusterId, String shardId,
+															  InfoResultExtractor extractor) {
 		if(keeper.isActive()) {
-			return new ActiveKeeperInfoChecker(extractor, clusterId, shardId, keepers);
+			return new ActiveKeeperInfoChecker(extractor, clusterId, shardId);
 		} else {
-			return new BackupKeeperInfoChecker(extractor, clusterId, shardId, keepers);
+			return new BackupKeeperInfoChecker(extractor, clusterId, shardId);
 		}
 	}
 
@@ -331,36 +384,20 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	protected abstract class AbstractKeeperInfoChecker {
 		protected InfoResultExtractor extractor;
 		protected String clusterId, shardId;
-		protected List<KeeperMeta> keepers;
 
-		public AbstractKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId, List<KeeperMeta> keepers) {
+		public AbstractKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
 			this.extractor = extractor;
 			this.clusterId = clusterId;
 			this.shardId = shardId;
-			this.keepers = keepers;
 		}
 
-		protected void check() {
-			if(!isKeeperStateOk() || !isMasterMatched()) {
-				doCorrect();
-			}
+		protected boolean isValid() {
+			return isKeeperStateOk() && isMasterMatched();
 		}
 
 		protected boolean isMasterMatched() {
 			return getMasterHost().equals(extractor.extract(MASTER_HOST))
 					&& getMasterPort() == Integer.parseInt(extractor.extract(MASTER_PORT));
-		}
-
-		protected void doCorrect() {
-			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterId, keepers,
-					currentMetaManager.getKeeperMaster(clusterId, shardId));
-			job.execute(executors).addListener(new CommandFutureListener<Void>() {
-				@Override
-				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
-					logger.info("[{}][KeeperInfoCorrect]cluster: {}, shard: {}, result: {}",
-							getClass(), clusterId, shardId, commandFuture.isSuccess());
-				}
-			});
 		}
 
 		protected abstract boolean isKeeperStateOk();
@@ -374,8 +411,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private Pair<String, Integer> master;
 
-		public ActiveKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId, List<KeeperMeta> keepers) {
-			super(extractor, clusterId, shardId, keepers);
+		public ActiveKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
+			super(extractor, clusterId, shardId);
 			master = currentMetaManager.getKeeperMaster(clusterId, shardId);
 		}
 
@@ -401,8 +438,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private KeeperMeta activeKeeper;
 
-		public BackupKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId, List<KeeperMeta> keepers) {
-			super(extractor, clusterId, shardId, keepers);
+		public BackupKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
+			super(extractor, clusterId, shardId);
 			activeKeeper = currentMetaManager.getKeeperActive(clusterId, shardId);
 		}
 
