@@ -61,9 +61,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("master_host")).thenReturn("localhost");
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperMaster.getValue()));
         when(currentMetaManager.getKeeperMaster("cluster", "shard")).thenReturn(keeperMaster);
-        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, "cluster", "shard", Lists.newArrayList()));
-        checker.check();
-        verify(checker, never()).doCorrect();
+        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, "cluster", "shard"));
+        Assert.assertTrue(checker.isValid());
     }
 
     @Test
@@ -74,9 +73,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
         when(currentMetaManager.getKeeperActive("cluster", "shard")).thenReturn(keeperActive);
-        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, "cluster", "shard", Lists.newArrayList()));
-        checker.check();
-        verify(checker, never()).doCorrect();
+        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, "cluster", "shard"));
+        Assert.assertTrue(checker.isValid());
     }
 
     @Test
@@ -87,14 +85,11 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("master_host")).thenReturn("localhost");
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperMaster.getValue()));
         when(currentMetaManager.getKeeperMaster("cluster", "shard")).thenReturn(keeperMaster);
-        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, "cluster", "shard", Lists.newArrayList()));
-        doNothing().when(checker).doCorrect();
-        checker.check();
-        verify(checker, times(1)).doCorrect();
+        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, "cluster", "shard"));
+        Assert.assertFalse(checker.isValid());
         when(extractor.extract("master_host")).thenReturn("localhost");
         when(extractor.extract("master_port")).thenReturn(String.valueOf(randomInt()));
-        checker.check();
-        verify(checker, times(2)).doCorrect();
+        Assert.assertFalse(checker.isValid());
     }
 
     @Test
@@ -105,15 +100,13 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
         when(currentMetaManager.getKeeperActive("cluster", "shard")).thenReturn(keeperActive);
-        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, "cluster", "shard", Lists.newArrayList()));
-        doNothing().when(checker).doCorrect();
-        checker.check();
-        verify(checker, times(1)).doCorrect();
+        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, "cluster", "shard"));
+        Assert.assertFalse(checker.isValid());
     }
 
 
     //manually integration test
-    @Ignore
+
     @Test
     public void integrateTest() throws Exception {
         String clusterId = "clsuter", shardId = "shard";
@@ -169,7 +162,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         backupKeeper.stop();
     }
 
-    @Ignore
+
     @Test
     public void integrateTestDoCorrect() throws Exception {
         String clusterId = "clsuter", shardId = "shard";
@@ -218,14 +211,13 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
         checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
         sleep(1500);
-        Assert.assertEquals(2, infoCount.get());
+        Assert.assertEquals(1, infoCount.get());
         Assert.assertEquals(2, keeperCommandCounter.get());
 
         activeKeeper.stop();
         backupKeeper.stop();
     }
 
-    @Ignore
     @Test
     public void integrateTestDoCorrect2() throws Exception {
         String clusterId = "clsuter", shardId = "shard";
@@ -274,7 +266,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
         checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
         sleep(1500);
-        Assert.assertEquals(2, infoCount.get());
+        Assert.assertEquals(1, infoCount.get());
         Assert.assertEquals(2, keeperCommandCounter.get());
 
         activeKeeper.stop();
