@@ -79,7 +79,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK = "console.cluster.shard.for.migrate.sys.check";
 
-    private static final String KEY_CROSS_DC_LEADER_PING_ADDRESS = "console.cross.dc.leader.ping.address";
+    private static final String KEY_DATABASE_DOMAIN_NAME = "console.database.domain.name";
+
+    private static final String KEY_DATABASE_IP_ADDRESSES = "console.database.ip.address";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -333,9 +335,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public HostPort getCrossDcLeaderPingAddress() {
-        String addr = getProperty(KEY_CROSS_DC_LEADER_PING_ADDRESS, "localhost:8080");
-        String[] strs = StringUtil.splitRemoveEmpty("\\s*:\\s*", addr);
-        return new HostPort(strs[0], Integer.parseInt(strs[1]));
+    public String getDatabaseDomainName() {
+        return getProperty(KEY_DATABASE_DOMAIN_NAME, "localhost");
+    }
+
+    @Override
+    public Map<String, String> getDatabaseIpAddresses() {
+        String property = getProperty(KEY_DATABASE_IP_ADDRESSES, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 }
