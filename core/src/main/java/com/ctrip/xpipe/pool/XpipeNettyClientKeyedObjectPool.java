@@ -48,6 +48,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
     private static GenericObjectPoolConfig createDefaultConfig(int maxPerKey) {
         GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+        config.setJmxEnabled(false);
         config.setMaxTotal(maxPerKey);
         config.setBlockWhenExhausted(false);
         return config;
@@ -73,6 +74,7 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
         config.setTestOnBorrow(true);
         config.setTestOnReturn(false);
+        config.setJmxEnabled(false);
         config.setSoftMinEvictableIdleTimeMillis(DEFAULT_SOFT_MIN_EVICTABLE_IDLE_TIME_MILLIS);
         config.setMinEvictableIdleTimeMillis(DEFAULT_MIN_EVICTABLE_IDLE_TIME_MILLIS);
         config.setTimeBetweenEvictionRunsMillis(DEFAULT_TIME_BETWEEN_EVICTION_RUNS_MILLIS);
