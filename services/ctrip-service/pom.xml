@@ -94,7 +94,7 @@
         <dependency>
             <groupId>com.ctrip.framework.fireman</groupId>
             <artifactId>fireman</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.3</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
