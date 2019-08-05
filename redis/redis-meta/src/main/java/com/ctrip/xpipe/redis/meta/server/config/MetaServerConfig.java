@@ -33,4 +33,6 @@ public interface MetaServerConfig extends CoreConfig {
 	int getWaitforOffsetMilli();
 
 	boolean validateDomain();
+
+	int getKeeperInfoCheckInterval();
 }

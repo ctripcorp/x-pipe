@@ -94,5 +94,7 @@ public interface ConsoleConfig extends CoreConfig {
 
 	Pair<String, String> getClusterShardForMigrationSysCheck();
 
-	HostPort getCrossDcLeaderPingAddress();
+	String getDatabaseDomainName();
+
+	Map<String, String> getDatabaseIpAddresses();
 }

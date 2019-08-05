@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -13,6 +14,9 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousCounterMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -23,13 +27,13 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -45,14 +49,11 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     private ConsoleConfig consoleConfig;
 
     @Autowired
-    private ConsoleServiceManager consoleServiceManager;
-
-    @Autowired
     private ConsoleLeaderElector consoleLeaderElector;
 
-    private final AtomicLong pingStats = new AtomicLong(Integer.MAX_VALUE);
+    private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "600000"));
 
-    private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
+    private int startIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
 
     private volatile boolean crossDcLeader = false;
 
@@ -61,8 +62,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     private ScheduledFuture future;
 
     private ApplicationContext applicationContext;
-
-    private static final int DEFAULT_PING_TIMES = 3;
 
     @Override
     public boolean amILeader() {
@@ -82,67 +81,37 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
             }
 
-        }, checkIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
+        }, startIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-    private void checkDataBaseCurrentDc() {
+    protected void checkDataBaseCurrentDc() {
         try {
-            HostPort hostPort = consoleConfig.getCrossDcLeaderPingAddress();
-            check(hostPort.getHost(), hostPort.getPort());
+            String domainName = consoleConfig.getDatabaseDomainName();
+            check(domainName);
         } catch (Exception e) {
             logger.error("[checkDataBaseCurrentDc]", e);
         }
     }
 
-    protected Command getPingCommand(String host, int port) {
-        SequenceCommandChain commandChain = new SequenceCommandChain();
-        for(int i = 0; i < DEFAULT_PING_TIMES; i++){
-            commandChain.add(new TcpPortCheckCommand(host, port));
+    private void check(String domainName) {
+        try {
+            InetAddress ipAddress = InetAddress.getByName(domainName);
+            Map<String, String> ipDcMapping = consoleConfig.getDatabaseIpAddresses();
+            String dcName = ipDcMapping.get(ipAddress.getHostAddress());
+            triggerElection(dcName);
+        } catch (Exception e) {
+            logger.error("[check]Invalid database domain name", e);
         }
-        return commandChain;
+
     }
 
-    private void check(String host, int port) {
-        Command command = getPingCommand(host, port);
-        final long startTime = System.nanoTime();
-        command.execute().addListener((CommandFutureListener) future -> {
-            try {
-                if (future.isSuccess()) {
-                    if(pingStats.get() > System.nanoTime() - startTime) {
-                        pingStats.set(System.nanoTime() - startTime);
-                        triggerElection();
-                    }
-                } else {
-                    scheduled.schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            check(host, port);
-                        }
-                    }, 1000, TimeUnit.MILLISECONDS);
-                }
-            } catch (Exception e) {
-                logger.error("[check][operationComplete]", e);
-            }
-        });
-    }
-
-    private void triggerElection() {
+    private void triggerElection(String dcName) {
         if(!consoleLeaderElector.amILeader()) {
             setCrossDcLeader(false, "[triggerElection]not site leader, quit for cross-site leader election");
             return;
         }
-        List<Long> otherNodeDbAffinities = consoleServiceManager.getAllDatabaseAffinity();
-        boolean crossDcLeader = true;
-        if(otherNodeDbAffinities != null && !otherNodeDbAffinities.isEmpty()) {
-            for (long dbPingStats : otherNodeDbAffinities) {
-                crossDcLeader &= pingStats.get() <= dbPingStats;
-            }
-        }
-        setCrossDcLeader(crossDcLeader, String.format("[result] my ping: %d", pingStats.get()));
-    }
-
-    public long getDatabasePingStats() {
-        return pingStats.get();
+        boolean crossDcLeader = FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcName);
+        setCrossDcLeader(crossDcLeader, String.format("[result] Database domain name: %s", dcName));
     }
 
     @Override
@@ -245,12 +214,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     }
 
     @VisibleForTesting
-    protected ConsoleCrossDcServer setConsoleServiceManager(ConsoleServiceManager consoleServiceManager) {
-        this.consoleServiceManager = consoleServiceManager;
-        return this;
-    }
-
-    @VisibleForTesting
     protected ConsoleCrossDcServer setConsoleLeaderElector(ConsoleLeaderElector consoleLeaderElector) {
         this.consoleLeaderElector = consoleLeaderElector;
         return this;
@@ -265,5 +228,11 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setStartIntervalMilli(int startIntervalMilli) {
+        this.startIntervalMilli = startIntervalMilli;
+        return this;
     }
 }
