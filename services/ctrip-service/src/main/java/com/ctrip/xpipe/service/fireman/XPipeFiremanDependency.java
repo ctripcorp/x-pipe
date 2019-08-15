@@ -36,6 +36,11 @@ public class XPipeFiremanDependency implements FiremanDependency {
     }
 
     @Override
+    public boolean openAvailableCheckTask() {
+        return true;
+    }
+
+    @Override
     public int getOrder() {
         return HIGHEST_PRECEDENCE;
     }
