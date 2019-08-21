@@ -146,7 +146,7 @@ public class DefaultTunnelManager implements TunnelManager {
     @Override
     public Tunnel getById(String id) {
         for(Tunnel tunnel : tunnels()) {
-            if(tunnel.identity().equals(id)) {
+            if(tunnel.identity().toString().equals(id)) {
                 return tunnel;
             }
         }
