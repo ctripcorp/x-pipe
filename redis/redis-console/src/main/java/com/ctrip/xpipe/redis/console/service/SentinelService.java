@@ -26,4 +26,6 @@ public interface SentinelService {
 	SentinelModel updateSentinelTblAddr(SentinelModel sentinel);
 
 	void delete(long id);
+
+	void reheal(long id);
 }
