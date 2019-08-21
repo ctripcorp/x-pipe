@@ -1,6 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
 
+import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.config.CompositeConfig;
+import com.ctrip.xpipe.config.DefaultFileConfig;
+import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 
 /**
@@ -19,6 +24,22 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
 	public static final String KEY_DELAY_LOG_LIMIT_MICRO = "monitor.delay.log.limit.micro";
     private static final String KEY_TRAFFIC_REPORT_INTERVAL = "monitor.traffic.report.interval";
+
+	private static String KEEPER_CONTAINER_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
+	private static String KEEPER_CONTAINER_PROPERTIES_FILE = "keeper-container.properties";
+
+	public DefaultKeeperConfig(){
+
+		CompositeConfig compositeConfig = new CompositeConfig();
+		compositeConfig.addConfig(Config.DEFAULT);
+		try{
+			compositeConfig.addConfig(new DefaultFileConfig(KEEPER_CONTAINER_PROPERTIES_PATH, KEEPER_CONTAINER_PROPERTIES_FILE));
+		}catch (Exception e){
+			logger.info("[DefaultKeeperConfig]{}", e);
+		}
+		compositeConfig.addConfig(new DefaultPropertyConfig());
+		setConfig(compositeConfig);
+	}
 
 	@Override
 	public int getMetaServerConnectTimeout() {
