@@ -205,7 +205,7 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return dao.updateByPK(setinelTbl, SetinelTblEntity.UPDATESET_FULL);
+				return dao.deleteSentinel(setinelTbl, SetinelTblEntity.UPDATESET_FULL);
 			}
 		});
 	}
