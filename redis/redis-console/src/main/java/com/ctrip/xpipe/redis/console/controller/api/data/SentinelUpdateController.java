@@ -68,6 +68,20 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.DELETE)
+    public RetMessage deleteSentinel(@RequestBody Long sentinelId) {
+        try {
+            SetinelTbl setinelTbl = sentinelService.find(sentinelId);
+            if (setinelTbl == null) {
+                return RetMessage.createSuccessMessage("Sentinel already deleted");
+            }
+            sentinelService.delete(sentinelId);
+            return RetMessage.createSuccessMessage("Successfully create Sentinel");
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
     @RequestMapping(value = "/rebalance/sentinels", method = RequestMethod.POST)
     public RetMessage reBalanceSentinels(@RequestBody(required = false) List<String> clusterNames) {
         if(clusterNames == null || clusterNames.isEmpty())

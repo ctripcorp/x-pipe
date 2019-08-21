@@ -947,6 +947,16 @@
 						]]>
 				</statement>
 			</query>
+
+			<query name="delete-sentinel" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='deleted'/> = 1
+						WHERE <FIELD name='setinel-id'/> = ${setinel-id}
+						]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
