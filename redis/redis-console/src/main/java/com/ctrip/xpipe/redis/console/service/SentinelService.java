@@ -24,4 +24,6 @@ public interface SentinelService {
 	Map<String, SentinelUsageModel> getAllSentinelsUsage();
 
 	SentinelModel updateSentinelTblAddr(SentinelModel sentinel);
+
+	void delete(long id);
 }
