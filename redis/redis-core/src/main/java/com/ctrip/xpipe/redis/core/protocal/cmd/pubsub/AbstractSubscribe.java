@@ -37,26 +37,26 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
 
     private MESSAGE_TYPE messageType;
 
-    private String subscribeChannel;
+    private String[] subscribeChannel;
 
     private List<SubscribeListener> listeners = Lists.newCopyOnWriteArrayList();
 
-    protected AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled, String subscribeChannel,
-                                Subscribe.MESSAGE_TYPE messageType) {
+    protected AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled,
+                                Subscribe.MESSAGE_TYPE messageType, String... subscribeChannel) {
         super(host, port, scheduled);
         this.subscribeChannel = subscribeChannel;
         this.messageType = messageType;
     }
 
     public AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled, int commandTimeoutMilli,
-                             MESSAGE_TYPE messageType, String subscribeChannel) {
+                             MESSAGE_TYPE messageType, String... subscribeChannel) {
         super(host, port, scheduled, commandTimeoutMilli);
         this.messageType = messageType;
         this.subscribeChannel = subscribeChannel;
     }
 
     public AbstractSubscribe(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
-                             MESSAGE_TYPE messageType, String subscribeChannel) {
+                             MESSAGE_TYPE messageType, String... subscribeChannel) {
         super(clientPool, scheduled);
         this.messageType = messageType;
         this.subscribeChannel = subscribeChannel;
@@ -164,13 +164,16 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         }
 
         String monitorChannel = payloadToString(objects[1]);
-        if(!ObjectUtils.equals(monitorChannel, getSubscribeChannel())) {
-            String message = String.format("Subscribe channel: %s not as expected: %s", monitorChannel, getSubscribeChannel());
-            logger.error("[handleResponse]{}", message);
-            throw new RedisRuntimeException(message);
+        for(String channelName : getSubscribeChannel()) {
+            if (!ObjectUtils.equals(monitorChannel, channelName)) {
+                String message = String.format("Subscribe channel: %s not as expected: %s", monitorChannel, channelName);
+                logger.error("[handleResponse]{}", message);
+                throw new RedisRuntimeException(message);
+            }
         }
-        logger.info("[handleResponse][subscribe success], {}", channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
-
+        if(logRequest()) {
+            logger.info("[handleResponse][subscribe success], {}", channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
+        }
     }
 
 
@@ -208,7 +211,10 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
 
     @Override
     public ByteBuf getRequest() {
-        return new RequestStringParser(getName(), subscribeChannel).format();
+        String[] request = new String[subscribeChannel.length + 1];
+        request[0] = getName();
+        System.arraycopy(subscribeChannel, 0, request, 1, subscribeChannel.length);
+        return new RequestStringParser(request).format();
     }
 
     @Override
@@ -216,7 +222,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         return 0;
     }
 
-    protected String getSubscribeChannel() {
+    protected String[] getSubscribeChannel() {
         return subscribeChannel;
     }
 

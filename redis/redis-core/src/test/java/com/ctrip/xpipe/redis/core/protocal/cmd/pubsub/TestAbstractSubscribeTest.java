@@ -39,8 +39,7 @@ public class TestAbstractSubscribeTest extends AbstractRedisTest {
     public void beforeAbstractSubscribeTest() throws Exception {
         port = randomPort();
         channel = "Hello";
-        subscribe = new AbstractSubscribe("127.0.0.1", port, scheduled, channel,
-                Subscribe.MESSAGE_TYPE.MESSAGE) {
+        subscribe = new AbstractSubscribe("127.0.0.1", port, scheduled, Subscribe.MESSAGE_TYPE.MESSAGE, channel) {
             @Override
             protected void doUnsubscribe() {
 
