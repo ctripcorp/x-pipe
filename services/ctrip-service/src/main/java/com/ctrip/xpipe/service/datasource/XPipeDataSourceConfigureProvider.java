@@ -48,7 +48,7 @@ public class XPipeDataSourceConfigureProvider implements IDataSourceConfigurePro
             throw new XPipeDataSourceDescNotFoundException("database password is null");
         }
         if(descriptor.getProperty("url", "").isEmpty()) {
-            throw new XPipeDataSourceDescNotFoundException("database password is null");
+            throw new XPipeDataSourceDescNotFoundException("database url is null");
         }
     }
 
