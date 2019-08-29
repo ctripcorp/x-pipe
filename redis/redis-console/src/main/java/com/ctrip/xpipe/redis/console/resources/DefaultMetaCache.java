@@ -16,6 +16,7 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -184,6 +185,10 @@ public class DefaultMetaCache implements MetaCache {
     public RouteMeta getRouteIfPossible(HostPort hostPort) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
+        if (metaDesc == null) {
+            logger.warn("[getRouteIfPossible]HostPort corresponding meta not found: {}", hostPort);
+            return null;
+        }
         return xpipeMetaManager
                 .consoleRandomRoute(CONSOLE_IDC, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, metaDesc.getDcId());
     }
@@ -307,5 +312,11 @@ public class DefaultMetaCache implements MetaCache {
     public String getActiveDc(String clusterId, String shardId){
         XpipeMetaManager xpipeMetaManager  =  meta.getValue();
         return xpipeMetaManager.getActiveDc(clusterId, shardId);
+    }
+
+    @VisibleForTesting
+    protected DefaultMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
+        this.meta = meta;
+        return this;
     }
 }
