@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class ConsoleController extends AbstractConsoleController {
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format) {
+
 		DcMeta result = dcMetaService.getDcMeta(dcId);
 		return (format != null && format.equals("xml"))? result.toString() : coder.encode(result);
 	}
