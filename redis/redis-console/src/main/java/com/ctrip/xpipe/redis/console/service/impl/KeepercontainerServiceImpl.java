@@ -32,7 +32,7 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
   @Autowired
   private OrganizationService organizationService;
 
-  private static final String urlFormat = "http://%s:%d/health";
+  private RestTemplate restTemplate;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -226,20 +226,30 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     return false;
   }
 
+  protected RestTemplate getOrCreateRestTemplate() {
+    if (restTemplate == null) {
+      synchronized (this) {
+        if (restTemplate == null) {
+          restTemplate = RestTemplateFactory.createRestTemplate();
+        }
+      }
+    }
+    return restTemplate;
+  }
+
+
   protected boolean checkIpAndPort(String host, int port) {
-    boolean result;
 
-    RestTemplate restTemplate = RestTemplateFactory.createRestTemplate();
-
+    getOrCreateRestTemplate();
+    String url = "http://%s:%d/health";
     try {
-      result = restTemplate.getForObject(String.format(urlFormat, host, port), Boolean.class);
+      return restTemplate.getForObject(String.format(url, host, port), Boolean.class);
 
     } catch (RestClientException e) {
       logger.error("[healthCheck]Http connect occur exception. {}", e);
-      throw e;
     }
 
-    return result;
+    return false;
   }
 
   private class OrgInfoTranslator {
