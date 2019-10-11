@@ -24,6 +24,14 @@
 				<member name='dc-description'/>
 			</readset>
 		</readsets>
+
+		<updatesets>
+			<readset name="MAIN">
+				<member name="zone-id"/>
+				<member name='dc-name'/>
+				<member name='dc-description'/>
+			</readset>
+		</updatesets>
 		
 		<query-defs>
 			<query name="find-all-dcs" type="SELECT" multiple="true">
@@ -104,6 +112,14 @@
 					AND rt.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
+				</statement>
+			</query>
+			<query name='insert-with-part-field' type='INSERT' batch='false'>
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+        			VALUES(<VALUES/>)
+        			]]>
 				</statement>
 			</query>
 		</query-defs>
@@ -1568,6 +1584,19 @@
 					SET <FIELD name='deleted'/> = 1
 					WHERE <FIELD name='id'/> = ${id}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+	<entity name="zone-tbl" table="zone_tbl" alias="zonetbl">
+		<query-defs>
+			<query name="find-all-zones" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

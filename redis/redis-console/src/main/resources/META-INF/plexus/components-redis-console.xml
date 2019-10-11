@@ -87,7 +87,7 @@
 			<role-hint>zone-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
-				<physical-table-name>ZONE_TBL</physical-table-name>
+				<physical-table-name>zone_tbl</physical-table-name>
 				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
