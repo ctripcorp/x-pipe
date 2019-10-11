@@ -175,11 +175,6 @@
         <statement><![CDATA[DELETE FROM <TABLE/>
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
-      <query name="insert-with-part-field" type="INSERT">
-        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELD name='id'/>,<FIELD name='zone-id'/>,
-        <FIELD name='dc-name'/>, <FIELD name='dc-description'/>) VALUES(<VALUE name='id'/>,
-        <VALUE name='zone-id'/>, <VALUE name='dc-name'/>, <VALUE name='dc-description'/>)]]></statement>
-      </query>
     </query-defs>
   </entity>
   <entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
@@ -433,18 +428,9 @@
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
       </query>
       <query name="delete-by-PK" type="DELETE">
-        <param name="key-id"/>
+        <param name="key-id" />
         <statement><![CDATA[DELETE FROM <TABLE/>
         WHERE <FIELD name='id'/> = ${key-id}]]></statement>
-      </query>
-      <query name="find-all-zones" type="SELECT" multiple="true">
-        <statement>
-          <![CDATA[
-					SELECT <FIELDS/>
-					FROM <TABLE/>
-					WHERE <FIELD name='deleted'/> = 0
-					]]>
-        </statement>
       </query>
     </query-defs>
   </entity>
@@ -704,7 +690,7 @@
   <entity name="proxy-tbl" table="proxy_tbl" alias="pt">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
-    <member name="uri" field="uri" value-type="String" length="20" nullable="false" />
+    <member name="uri" field="uri" value-type="String" length="256" nullable="false" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
     <member name="monitor-active" field="monitor_active" value-type="boolean" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
