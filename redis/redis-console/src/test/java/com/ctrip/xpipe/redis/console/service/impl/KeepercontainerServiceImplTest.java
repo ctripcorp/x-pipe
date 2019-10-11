@@ -190,4 +190,10 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
     }
+
+    @Test
+    public void testCheckHostAndPort() {
+        boolean result = keepercontainerService.checkIpAndPort("10.2.73.161", 8080);
+        Assert.assertTrue(result);
+    }
 }
