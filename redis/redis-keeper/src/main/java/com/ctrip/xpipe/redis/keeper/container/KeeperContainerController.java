@@ -73,8 +73,4 @@ public class KeeperContainerController extends AbstractController {
         keeperContainerService.stop(clusterName, shardName);
     }
 
-    @RequestMapping(value = "/health", method = RequestMethod.GET)
-    public boolean getHealthState(HttpServletRequest request, HttpServletResponse response) {
-        return true;
-    }
 }
