@@ -16,6 +16,9 @@ public class NaiveNextHopAlgorithm implements NextHopAlgorithm {
 
     @Override
     public ProxyEndpoint nextHop(List<ProxyEndpoint> endpoints) {
+        if (endpoints == null || endpoints.isEmpty()) {
+            return null;
+        }
         int index = random.nextInt(endpoints.size());
         return endpoints.get(index);
     }
