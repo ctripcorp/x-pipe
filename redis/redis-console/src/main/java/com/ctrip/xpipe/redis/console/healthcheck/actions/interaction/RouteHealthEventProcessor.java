@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
+import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceHalfSick;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
@@ -53,16 +55,23 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
+    @Autowired(required = false)
+    private CrossDcClusterServer crossDcClusterServer;
+
     @Override
-    public void onEvent(AbstractInstanceEvent event) throws HealthEventProcessorException {
+    public void onEvent(AbstractInstanceEvent event) {
+        // make sure only one execute the disturb
+        if (crossDcClusterServer != null && !crossDcClusterServer.amILeader()) {
+            return;
+        }
         //only deal with sick instance
-        if (event instanceof InstanceSick) {
-            doOnEvent((InstanceSick) event);
+        if (event instanceof InstanceHalfSick) {
+            doOnEvent((InstanceHalfSick) event);
         }
     }
 
     @VisibleForTesting
-    protected void doOnEvent(InstanceSick instanceSick) {
+    protected void doOnEvent(InstanceHalfSick instanceSick) {
         RedisInstanceInfo instanceInfo = instanceSick.getInstance().getRedisInstanceInfo();
         ProxyChain proxyChain = proxyService.getProxyChain(instanceInfo.getDcId(),
                 instanceInfo.getClusterId(), instanceInfo.getShardId());
@@ -127,7 +136,7 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
                 InfoResultExtractor masterInfo = redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE);
                 long rdbSize = masterInfo.extractAsLong("rdb_last_cow_size");
                 long rdbExpectedRemainTime = getDelaySeconds(rdbSize)
-                        - TimeUnit.MILLISECONDS.toSeconds(instance.getHealthCheckConfig().delayDownAfterMilli());
+                        - TimeUnit.MILLISECONDS.toSeconds(instance.getHealthCheckConfig().delayDownAfterMilli())/2;
 
                 if (rdbExpectedRemainTime > 0) {
                     scheduled.schedule(new DelayedCloseTask(proxyChain, instance),
