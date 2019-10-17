@@ -5,7 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceHalfSick;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisInstanceInfo;
@@ -89,7 +89,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         doNothing().when(processor).closeProxyChain(any(), any());
         when(proxyService.getProxyChain(anyString(), anyString(), anyString())).thenReturn(null);
 
-        processor.onEvent(new InstanceSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance));
 
         verify(processor, never()).closeProxyChain(any(), any());
     }
@@ -101,7 +101,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
-        processor.onEvent(new InstanceSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance));
         verify(processor, times(1)).closeProxyChain(any(), any());
     }
 
@@ -119,7 +119,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         when(instance.getHealthCheckConfig()).thenReturn(config);
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(-1L);
-        processor.onEvent(new InstanceSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance));
         verify(processor, times(1)).closeProxyChain(any(), any());
     }
 
@@ -138,7 +138,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
 
-        processor.onEvent(new InstanceSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance));
 
         Thread.sleep(1000);
         verify(processor, atLeast(2)).isRedisInFullSync(any());
@@ -160,7 +160,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
 
-        processor.onEvent(new InstanceSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance));
 
         Thread.sleep(1000);
         verify(processor, atLeast(2)).isRedisInFullSync(any());
