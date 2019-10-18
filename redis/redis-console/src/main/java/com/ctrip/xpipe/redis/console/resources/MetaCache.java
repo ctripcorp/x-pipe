@@ -37,6 +37,8 @@ public interface MetaCache {
 
     RouteMeta getRouteIfPossible(HostPort hostPort);
 
+    boolean isReplThroughProxy(String activeDc, String backupDc);
+
     List<HostPort> getAllRedisOfDc(String dcId);
 
     String getActiveDc(String clusterId, String shardId);

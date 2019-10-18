@@ -29,4 +29,6 @@ public interface RedisInstanceInfo {
     void setActiveDc(String activeDc);
 
     boolean isInActiveDc();
+
+    boolean isReplThroughProxy();
 }
