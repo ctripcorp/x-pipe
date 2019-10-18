@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.migration.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -315,6 +316,27 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
         DcTbl toDc = findToDc(fromIdc, toIdc, clusterRelatedDc);
         return new TryMigrateResult(clusterTbl, activeDc, toDc);
+    }
+
+    @Override
+    public RetMessage getMigrationSystemHealth() {
+        MigrationSystemAvailableChecker.MigrationSystemAvailability availability = this.getMigrationSystemAvailability();
+        if(availability.isAvaiable()) {
+            if(!availability.isWarning()) {
+                logger.debug("[getMigrationSystemHealthStatus][good]");
+                return RetMessage.createSuccessMessage();
+            } else {
+                logger.debug("[getMigrationSystemHealthStatus][warned]");
+                return RetMessage.createWarningMessage(availability.getMessage());
+            }
+        }
+        if(configService.ignoreMigrationSystemAvailability()) {
+            logger.warn("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
+            return RetMessage.createWarningMessage(availability.getMessage());
+        } else {
+            logger.error("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
+            return RetMessage.createFailMessage(availability.getMessage());
+        }
     }
 
     protected DcTbl findToDc(String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
