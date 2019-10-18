@@ -120,22 +120,11 @@ public class MigrationController extends AbstractConsoleController {
 	@RequestMapping(value = "/migration/system/health/status", method = RequestMethod.GET)
 	public RetMessage getMigrationSystemHealthStatus() {
 		logger.info("[getMigrationSystemHealthStatus][begin]");
-		MigrationSystemAvailableChecker.MigrationSystemAvailability availability = migrationService.getMigrationSystemAvailability();
-		if(availability.isAvaiable()) {
-			if(!availability.isWarning()) {
-				logger.debug("[getMigrationSystemHealthStatus][good]");
-				return RetMessage.createSuccessMessage();
-			} else {
-				logger.debug("[getMigrationSystemHealthStatus][warned]");
-				return RetMessage.createWarningMessage(availability.getMessage());
-			}
-		}
-		if(configService.ignoreMigrationSystemAvailability()) {
-			logger.warn("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
-			return RetMessage.createWarningMessage(availability.getMessage());
-		} else {
-			logger.error("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
-			return RetMessage.createFailMessage(availability.getMessage());
+		try {
+			return migrationService.getMigrationSystemHealth();
+		} catch (Exception e) {
+			logger.error("[getMigrationSystemHealthStatus]", e);
+			return RetMessage.createFailMessage(e.getMessage());
 		}
 	}
 
