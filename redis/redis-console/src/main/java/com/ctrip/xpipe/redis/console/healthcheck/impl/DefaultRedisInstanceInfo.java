@@ -24,6 +24,8 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
     private String activeDc;
 
+    private boolean replThroughProxy;
+
     public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc) {
         this.dcId = dcId;
         this.clusterId = clusterId;
@@ -82,7 +84,18 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
     }
 
     @Override
+    public boolean isReplThroughProxy() {
+        return replThroughProxy;
+    }
+
+    @Override
     public String toString() {
         return StringUtil.join(", ", dcId, clusterId, shardId, hostPort);
+    }
+
+
+    public DefaultRedisInstanceInfo setReplThroughProxy(boolean replThroughProxy) {
+        this.replThroughProxy = replThroughProxy;
+        return this;
     }
 }

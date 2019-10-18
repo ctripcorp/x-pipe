@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.config;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 
 /**
  * @author chen.zhu
@@ -13,8 +12,8 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
 
     private HealthCheckConfig config;
 
-    public CompositeHealthCheckConfig(Endpoint endpoint, ConsoleConfig consoleConfig) {
-        if(endpoint instanceof ProxyEnabled) {
+    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, ConsoleConfig consoleConfig) {
+        if(instanceInfo.isReplThroughProxy()) {
             config = new ProxyEnabledHealthCheckConfig(consoleConfig);
         } else {
             config = new DefaultHealthCheckConfig(consoleConfig);
