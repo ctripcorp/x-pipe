@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  */
 public class SsoConfig {
 
-    public static final String excludeRegex = "/api/.*|/health";
+    public static final String excludeRegex = "/api/.*|/health|/fireman/.*";
 
     public static boolean stopsso = false;
 

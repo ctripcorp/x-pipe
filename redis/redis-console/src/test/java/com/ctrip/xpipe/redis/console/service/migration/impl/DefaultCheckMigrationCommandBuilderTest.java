@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -94,11 +95,12 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleH2Db
     }
 
 
-    @Test(expected = ExecutionException.class)
+    @Test
     public void testCheckMetaServer() throws Exception {
         server = startServer(54321, "test");
         when(dcService.findClusterRelatedDc(clusterId)).thenReturn(Lists.newArrayList(new DcTbl().setDcName("localmeta")));
-        RetMessage message = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER).execute().get();
+        Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER);
+        RetMessage message = command.execute().get();
         logger.info("");
         logger.info("{}", message.getMessage());
         Assert.assertEquals(RetMessage.FAIL_STATE, message.getState());

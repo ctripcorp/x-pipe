@@ -64,7 +64,8 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 		REPLICATION,
 		SERVER,
 		SENTINEL,
-		STATS;
+		STATS,
+		PERSISTENCE;
 
 		public String cmd(){
 			return toString().toLowerCase();

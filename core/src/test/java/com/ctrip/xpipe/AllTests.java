@@ -74,7 +74,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	UrlUtilsTest.class,
 	DefaultExecutorFactoryTest.class,
 	PairTest.class,
-	DomainValidateFilterTest.class
+	DomainValidateFilterTest.class,
+	CausalCommandTest.class,
+	CausalChainTest.class
 })
 public class AllTests {
 

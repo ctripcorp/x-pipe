@@ -39,6 +39,10 @@ public class InfoResultExtractor {
         return extract(key, (value) -> value == null ? null : Integer.parseInt(value));
     }
 
+    public Long extractAsLong(String key) {
+        return extract(key, (value) -> value == null ? null : Long.parseLong(value));
+    }
+
     public Map<String, String> extract(String[] keys) {
 
         genKeyValues();

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.model.SentinelModel;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import org.junit.Assert;
 import org.junit.Before;
@@ -55,7 +57,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
     @Test
     public void testRandom() {
 
-        int testCount = 1 << 20;
+        int testCount = 1 << 10;
 
 
         Set<Long> all = new HashSet<>();
@@ -74,5 +76,54 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
     public void testGetSentinelUsage() {
         logger.info("{}", sentinelService.allSentinelsByDc());
         logger.info("{}", sentinelService.getAllSentinelsUsage());
+    }
+
+    @Test
+    public void testUpdateSentinel() {
+        List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dcNames[0]);
+        Assert.assertFalse(sentinels.isEmpty());
+        SetinelTbl target = sentinels.get(0);
+        Assert.assertNotNull(target);
+
+        String prevAddr = target.getSetinelAddress();
+
+        SentinelModel model = new SentinelModel(target);
+        model.getSentinels().remove(model.getSentinels().size() - 1);
+        model.getSentinels().add(HostPort.fromString(String.join(":", "192.168.0.1", "" + randomPort())));
+
+        SentinelModel updatedModel = sentinelService.updateSentinelTblAddr(model);
+
+        SetinelTbl updated = sentinelService.find(target.getSetinelId());
+
+        Assert.assertNotEquals(prevAddr, updated.getSetinelAddress());
+
+        Assert.assertEquals(updatedModel, new SentinelModel(updated));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdateSentinelNotExist() {
+        List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dcNames[0]);
+        Assert.assertFalse(sentinels.isEmpty());
+        SetinelTbl target = sentinels.get(0);
+        Assert.assertNotNull(target);
+
+        SentinelModel model = new SentinelModel(target);
+        model.getSentinels().remove(model.getSentinels().size() - 1);
+        model.getSentinels().add(HostPort.fromString(String.join(":", "192.168.0.1", "" + randomPort())));
+
+        long unSelectedBitSentinelId = 0;
+        for(SetinelTbl setinelTbl : sentinels) {
+            unSelectedBitSentinelId |= setinelTbl.getSetinelId();
+        }
+
+        long targetId = Math.abs(Long.MAX_VALUE ^ unSelectedBitSentinelId);
+        model.setId(targetId);
+
+        try {
+            sentinelService.updateSentinelTblAddr(model);
+        } catch (Exception e) {
+            logger.error("", e);
+            throw e;
+        }
     }
 }

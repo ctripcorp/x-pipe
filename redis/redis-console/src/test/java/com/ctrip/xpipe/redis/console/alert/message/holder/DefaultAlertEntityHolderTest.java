@@ -4,6 +4,7 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -12,7 +13,12 @@ public class DefaultAlertEntityHolderTest extends AbstractTest {
 
     private ALERT_TYPE type = ALERT_TYPE.CLIENT_INCONSIS;
 
-    private DefaultAlertEntityHolder holder = new DefaultAlertEntityHolder(type);
+    private DefaultAlertEntityHolder holder;
+
+    @Before
+    public void beforeDefaultAlertEntityHolderTest() {
+        holder = new DefaultAlertEntityHolder(type);
+    }
 
     private AlertEntity alertEntity() {
         return new AlertEntity(localHostport(randomPort()), randomString(),
@@ -39,8 +45,9 @@ public class DefaultAlertEntityHolderTest extends AbstractTest {
 
     @Test
     public void removeIf() {
+        final int nearlyTheSameTime = 50;
         holder.hold(alertEntity());
-        holder.removeIf(alertEntity -> System.currentTimeMillis() != alertEntity.getDate().getTime());
+        holder.removeIf(alertEntity -> System.currentTimeMillis() - alertEntity.getDate().getTime() <= nearlyTheSameTime);
         Assert.assertFalse(holder.hasAlerts());
     }
 

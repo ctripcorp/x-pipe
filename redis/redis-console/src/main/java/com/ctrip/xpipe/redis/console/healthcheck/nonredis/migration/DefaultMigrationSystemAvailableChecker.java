@@ -116,21 +116,34 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
         return command;
     }
 
-    private void checkCommandFuture(final String title, final Command<RetMessage> command, AtomicLong timestamp) {
+    private void checkCommandFuture(final String title, final Command<RetMessage> command,
+                                    AtomicLong timestamp) {
         command.future().addListener(new CommandFutureListener<RetMessage>() {
             @Override
             public void operationComplete(CommandFuture<RetMessage> commandFuture) {
                 timestamp.set(System.currentTimeMillis());
                 if(!commandFuture.isSuccess()) {
-                    getResult().addErrorMessage(title, commandFuture.cause());
+                    warnOrError(title, commandFuture.cause());
                 } else {
                     RetMessage retMessage = commandFuture.getNow();
                     if(retMessage.getState() != RetMessage.SUCCESS_STATE) {
-                        getResult().addErrorMessage(title, retMessage.getMessage());
+                        warnOrError(title, retMessage);
                     }
                 }
             }
         });
+    }
+
+    private void warnOrError(final String title, final RetMessage message) {
+        if(message.getState() == RetMessage.FAIL_STATE) {
+            getResult().addErrorMessage(title, message.getMessage());
+        } else {
+            getResult().addWarningMessage(title + message.getMessage());
+        }
+    }
+
+    private void warnOrError(final String title, final Throwable throwable) {
+        getResult().addErrorMessage(title, throwable);
     }
 
     private void checkIfCheckCommandDelay() {

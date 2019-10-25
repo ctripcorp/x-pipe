@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.config.CompositeHealthCheckConf
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.crossdc.CrossDcLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -46,6 +47,9 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     @Autowired(required = false)
     private CrossDcClusterServer clusterServer;
 
+    @Autowired
+    private MetaCache metaCache;
+
 
     @Override
     public RedisHealthCheckInstance create(RedisMeta redisMeta) {
@@ -54,7 +58,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
-        HealthCheckConfig config = new CompositeHealthCheckConfig(endpoint, consoleConfig);
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, consoleConfig);
 
         instance.setEndpoint(endpoint)
                 .setHealthCheckConfig(config)
@@ -73,13 +77,14 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
-        RedisInstanceInfo info =  new DefaultRedisInstanceInfo(
+        DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
                 redisMeta.parent().parent().parent().getId(),
                 redisMeta.parent().parent().getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc());
         info.isMaster(redisMeta.isMaster());
+        info.setReplThroughProxy(metaCache.isReplThroughProxy(info.getActiveDc(), info.getDcId()));
         return info;
     }
 

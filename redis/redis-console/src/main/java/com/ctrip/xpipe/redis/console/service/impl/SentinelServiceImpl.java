@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
@@ -16,6 +17,7 @@ import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.function.Function;
 
 @Service
 public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> implements SentinelService {
@@ -162,5 +164,66 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 			usage.addSentinelUsage(sentinelTbl.getSetinelAddress(), sentinelTbl.getCount());
 		}
 		return result;
+	}
+
+	@Override
+	public SentinelModel updateSentinelTblAddr(SentinelModel sentinel) {
+		SetinelTbl target = queryHandler.handleQuery(new DalQuery<SetinelTbl>() {
+			@Override
+			public SetinelTbl doQuery() throws DalException {
+				return dao.findByPK(sentinel.getId(), SetinelTblEntity.READSET_FULL);
+			}
+		});
+		if(target == null) {
+			throw new IllegalArgumentException("no sentinel found due to id: " + sentinel.getId());
+		}
+		target.setSetinelAddress(StringUtil.join(",", new Function<HostPort, String>() {
+			@Override
+			public String apply(HostPort hostPort) {
+				return hostPort.toString();
+			}
+		}, sentinel.getSentinels()));
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateSentinelAddr(target, SetinelTblEntity.UPDATESET_ADDRESS);
+			}
+		});
+
+		return queryHandler.handleQuery(new DalQuery<SentinelModel>() {
+			@Override
+			public SentinelModel doQuery() throws DalException {
+				return new SentinelModel(dao.findByPK(target.getSetinelId(), SetinelTblEntity.READSET_FULL));
+			}
+		});
+	}
+
+	@Override
+	public void delete(long id) {
+		SetinelTbl setinelTbl = dao.createLocal();
+		setinelTbl.setSetinelId(id);
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.deleteSentinel(setinelTbl, SetinelTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
+	@Override
+	public void reheal(long id) {
+		SetinelTbl setinelTbl = queryHandler.handleQuery(new DalQuery<SetinelTbl>() {
+			@Override
+			public SetinelTbl doQuery() throws DalException {
+				return dao.findByPK(id, SetinelTblEntity.READSET_FULL);
+			}
+		});
+		setinelTbl.setDeleted(false);
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(setinelTbl, SetinelTblEntity.UPDATESET_FULL);
+			}
+		});
 	}
 }

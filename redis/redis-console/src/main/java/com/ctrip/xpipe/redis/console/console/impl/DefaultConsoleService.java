@@ -17,6 +17,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String pingStatusUrl;
 
+    private final String dbPingStatsUrl;
+
     public DefaultConsoleService(String address){
 
         this.address = address;
@@ -25,6 +27,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
         pingStatusUrl = String.format("%s/api/ping/{ip}/{port}", this.address);
+        dbPingStatsUrl = String.format("%s/api/db/affinity", this.address);
     }
 
     @Override
@@ -35,6 +38,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public Boolean getInstancePingStatus(String ip, int port) {
         return restTemplate.getForObject(pingStatusUrl, Boolean.class, ip, port);
+    }
+
+    @Override
+    public Long getConsoleDatabaseAffinity() {
+        return restTemplate.getForObject(dbPingStatsUrl, Long.class);
     }
 
     @Override

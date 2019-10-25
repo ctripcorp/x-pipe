@@ -106,7 +106,7 @@ public class CtripPlatformEmailService implements EmailService {
             GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
                     new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList));
 
-            logger.info("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
+            logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
         }catch (Exception e) {
             logger.error("check email send response error: {}", e);

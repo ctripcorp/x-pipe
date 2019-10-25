@@ -4,12 +4,17 @@ import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.spring.AbstractController;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -67,4 +72,5 @@ public class KeeperContainerController extends AbstractController {
         logger.info("[stop]{},{}", clusterName, shardName);
         keeperContainerService.stop(clusterName, shardName);
     }
+
 }

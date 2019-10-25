@@ -220,9 +220,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
     private RedisTbl createRedisTbl(Pair<String, Integer> addr, String role) {
         return dao.createLocal()
-                .setRedisIp(addr.getKey())
+                .setRedisIp(addr.getKey().trim())
                 .setRedisPort(addr.getValue())
-                .setRedisRole(role)
+                .setRedisRole(role.trim())
                 .setRunId("unknown");
     }
 

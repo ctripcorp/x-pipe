@@ -16,8 +16,14 @@ import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MasterNotFoundException;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -28,11 +34,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -61,6 +67,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @Autowired
     private SentinelManager sentinelManager;
+
+    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    private ScheduledExecutorService scheduled;
 
 
     @Override
@@ -257,6 +266,19 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private boolean checkMasterConsistent(HostPort masterAddr, Set<SentinelHello> hellos) {
 
+        if (hellos.isEmpty()) {
+            RoleCommand roleCommand = new RoleCommand(masterAddr.getHost(), masterAddr.getPort(), false, scheduled);
+            try {
+                Role role = roleCommand.execute().get(2, TimeUnit.SECONDS);
+                if (!(role instanceof MasterRole)) {
+                    return false;
+                }
+            } catch (Exception e) {
+                logger.error("[checkMasterConsistent] check redis role err", e);
+                return false;
+           }
+        }
+
         for (SentinelHello hello : hellos) {
 
             if (!hello.getMasterAddr().equals(masterAddr)) {
@@ -307,6 +329,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return toDelete;
     }
 
+    @VisibleForTesting
     protected Set<SentinelHello> checkToAdd(String clusterId, String shardId, String sentinelMonitorName, Set<HostPort> masterDcSentinels, Set<SentinelHello> hellos, HostPort masterAddr, QuorumConfig quorumConfig) {
 
         if(masterAddr == null){

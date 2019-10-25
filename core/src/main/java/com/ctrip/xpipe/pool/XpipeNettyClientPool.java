@@ -24,7 +24,7 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	private Endpoint target;
 
 	public XpipeNettyClientPool(Endpoint target) {
-		this(target, new GenericObjectPoolConfig());
+		this(target, createDefaultPoolConfig());
 	}
 
 	public XpipeNettyClientPool(Endpoint target, GenericObjectPoolConfig  config) {
@@ -97,5 +97,11 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	@VisibleForTesting
 	public ObjectPool getObjectPool() {
 		return objectPool;
+	}
+
+	private static GenericObjectPoolConfig createDefaultPoolConfig() {
+		GenericObjectPoolConfig config = new GenericObjectPoolConfig();
+		config.setJmxEnabled(false);
+		return config;
 	}
 }

@@ -5,12 +5,15 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCre
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
@@ -28,6 +31,8 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private OrganizationService organizationService;
+
+  private RestTemplate restTemplate;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -119,6 +124,11 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     if(keeperContainerAlreadyExists(createInfo)) {
       throw new IllegalArgumentException("Keeper Container with IP: "
               + createInfo.getKeepercontainerIp() + " already exists");
+    }
+
+    if (!checkIpAndPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort())) {
+      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
+              createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort()));
     }
 
     DcTbl dcTbl = dcService.find(createInfo.getDcName());
@@ -213,6 +223,32 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
         return true;
       }
     }
+    return false;
+  }
+
+  protected RestTemplate getOrCreateRestTemplate() {
+    if (restTemplate == null) {
+      synchronized (this) {
+        if (restTemplate == null) {
+          restTemplate = RestTemplateFactory.createRestTemplate();
+        }
+      }
+    }
+    return restTemplate;
+  }
+
+
+  protected boolean checkIpAndPort(String host, int port) {
+
+    getOrCreateRestTemplate();
+    String url = "http://%s:%d/health";
+    try {
+      return restTemplate.getForObject(String.format(url, host, port), Boolean.class);
+
+    } catch (RestClientException e) {
+      logger.error("[healthCheck]Http connect occur exception. {}", e);
+    }
+
     return false;
   }
 

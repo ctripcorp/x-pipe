@@ -10,7 +10,12 @@ import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
+import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +38,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
     private QuorumConfig quorumConfig = new QuorumConfig(5, 3);
     private String monitorName = "shard1";
     private Set<HostPort> masterSentinels;
-    private HostPort master = new HostPort("127.00.1", 6379);
+    private HostPort master = new HostPort("127.0.0.1", randomPort());
+
+    private Server server;
 
 
     @Before
@@ -58,6 +65,13 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
                 new HostPort("127.0.0.1", 5004)
         );
 
+    }
+
+    @After
+    public void afterDefaultSentinelHelloCollectorTest() throws Exception {
+        if (server != null) {
+            server.stop();
+        }
     }
 
     @Test
@@ -109,6 +123,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
 
     @Test
     public void testIsKeeperOrDead() {
+        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
         boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
         logger.info("{}", result);
         Assert.assertTrue(result);
@@ -133,5 +148,59 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
         }
         sentinelCollector.onAction(new SentinelActionContext(instance, hellos));
         verify(sentinelCollector, never()).checkAndDelete(anyString(), any(), any(), any());
+    }
+
+    // for whom reading this code, here's how and why all this happens:
+    // 1. if the sentinel has already failover a master-slave, yet, we didn't do the RedisMasterCheck, we will keep an invalid data(incorrect master-slave info)
+    // 2. the collector would get an empty set of Sentinel Hellos, as now the keeper were still in touch with the previous master
+    // And so on so forth, backup(DR) site redises receive message from keeper, which, apparently will be nothing
+    // 3. A protection collection will be triggered if an empty Sentinel Hello set is received
+    @Test
+    public void testEmptySentinelLogDueToDoubleMasterInOneShard() throws Exception {
+        String clusterId = "clusterId", shardId = "shardId";
+        monitorName = shardId;
+        masterSentinels = Sets.newHashSet(
+                new HostPort("127.0.0.1", 5000),
+                new HostPort("127.0.0.1", 5001),
+                new HostPort("127.0.0.1", 5002),
+                new HostPort("127.0.0.1", 5003),
+                new HostPort("127.0.0.1", 5004)
+        );
+        sentinelCollector = spy(sentinelCollector);
+        server = startServer(master.getPort(), "*5\r\n"
+                + "$6\r\nkeeper\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":6379\r\n"
+                + "$9\r\nconnected\r\n"
+                + ":477\r\n");
+        Set<SentinelHello> hellos = sentinelCollector.checkToAdd(clusterId, shardId, monitorName, masterSentinels,
+                Sets.newHashSet(), master, quorumConfig);
+
+        Assert.assertTrue(hellos.isEmpty());
+    }
+
+    @Test
+    public void testEmptySentinelLogDueToDoubleMasterInOneShard2() throws Exception {
+        String clusterId = "clusterId", shardId = "shardId";
+        monitorName = shardId;
+        masterSentinels = Sets.newHashSet(
+                new HostPort("127.0.0.1", 5000),
+                new HostPort("127.0.0.1", 5001),
+                new HostPort("127.0.0.1", 5002),
+                new HostPort("127.0.0.1", 5003),
+                new HostPort("127.0.0.1", 5004)
+        );
+        sentinelCollector = spy(sentinelCollector);
+        server = startServer(master.getPort(), "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + ":43\r\n"
+                + "*3\r\n"
+                + "$9\r\n127.0.0.1\r\n"
+                + "$4\r\n6479\r\n"
+                + "$1\r\n0\r\n");
+        Set<SentinelHello> hellos = sentinelCollector.checkToAdd(clusterId, shardId, monitorName, masterSentinels,
+                Sets.newHashSet(), master, quorumConfig);
+
+        Assert.assertEquals(masterSentinels.size(), hellos.size());
     }
 }

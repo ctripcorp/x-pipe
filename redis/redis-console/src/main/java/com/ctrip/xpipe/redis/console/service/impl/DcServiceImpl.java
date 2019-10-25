@@ -159,4 +159,16 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 		}
 	}
 
+	@Override
+	public synchronized void insertWithPartField(long zoneId, String dcName, String description) {
+		queryHandler.handleInsert(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.insertWithPartField(dao.createLocal().setZoneId(zoneId)
+						.setDcName(dcName).setDcDescription(description)
+				);
+			}
+		});
+	}
+
 }
