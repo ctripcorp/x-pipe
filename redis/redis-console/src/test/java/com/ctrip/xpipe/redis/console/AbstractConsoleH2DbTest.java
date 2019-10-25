@@ -53,11 +53,16 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
 
     @Before
     public void before() throws ComponentLookupException, SQLException, IOException {
+//        ContainerLoader.getDefaultContainer().lookup(TransactionManager.class, "xpipe");
+//        ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class, "xpipe");
         setUpTestDataSource();
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws ComponentLookupException {
+//        Assert.assertFalse(ContainerLoader.getDefaultContainer().lookup(TransactionManager.class) instanceof DefaultTransactionManager);
+//        Assert.assertTrue(ContainerLoader.getDefaultContainer().lookup(TransactionManager.class) instanceof XpipeDalTransactionManager);
+//        Assert.assertTrue(ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class) instanceof XPipeDataSourceManager);
         ContainerLoader.destroy();
     }
 

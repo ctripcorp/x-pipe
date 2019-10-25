@@ -1,5 +1,5 @@
-index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
-    function ($rootScope, $scope, $window, ProxyService, ClusterService, NgTableParams, $stateParams) {
+index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'AppUtil', 'toastr', 'ProxyService', 'ClusterService', 'NgTableParams', '$stateParams',
+    function ($rootScope, $scope, $window, AppUtil, toastr, ProxyService, ClusterService, NgTableParams, $stateParams) {
 
         $scope.dcs, $scope.chains;
         $scope.clusterName = $stateParams.clusterName;
@@ -11,6 +11,8 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
         $scope.gotoProxy = gotoProxy;
         $scope.getMetricHickwalls = getMetricHickwalls;
         $scope.gotoHickwallWebSite = gotoHickwallWebSite;
+        $scope.closeChain = closeChain;
+        $scope.preCloseChain = preCloseChain;
 
         if ($scope.clusterName) {
             loadChains();
@@ -31,7 +33,7 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
                     }
                     $scope.dcs = result;
 
-                    // TODO [marsqing] do not re-get dc data when switch dc
+                    // TODO [nick] do not re-get dc data when switch dc
                     if($scope.dcs && $scope.dcs.length > 0) {
                         $scope.dcs.forEach(function(dc){
                             if(dc.dcName === $stateParams.currentDcName) {
@@ -93,5 +95,29 @@ index_module.controller('ProxyChainCtl',['$rootScope', '$scope', '$window', 'Pro
         function gotoHickwallWebSite(addr) {
             $window.open(addr, '_blank');
         }
+
+        function preCloseChain(chain) {
+            $scope.chainToClose = chain;
+            $('#deleteChainConfirm').modal('show');
+        }
+
+        function closeChain() {
+            ProxyService.closeProxyChain($scope.chainToClose)
+                .then(function (result) {
+                    $('#deleteChainConfirm').modal('hide');
+                    if(result.state === 0) {
+                        toastr.success('删除成功');
+                    } else {
+                        toastr.error(AppUtil.errorMsg(result), '删除失败');
+                    }
+                    setTimeout(function () {
+                        // TODO [nick] reload ng-table instead of reload window
+                        $window.location.reload();
+                    },1000);
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), '删除失败');
+                })
+        }
+
 
 }]);

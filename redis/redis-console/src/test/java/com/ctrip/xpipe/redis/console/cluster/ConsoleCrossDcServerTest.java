@@ -1,21 +1,21 @@
 package com.ctrip.xpipe.redis.console.cluster;
 
-import com.ctrip.xpipe.foundation.DefaultFoundationService;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.google.common.collect.Maps;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.xbill.DNS.TextParseException;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -33,40 +33,72 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
     private int checkIntervalMilli = 10;
 
-    private List<String> cnames = new LinkedList<>();
+    private AtomicBoolean siteLeader = new AtomicBoolean(true);
+
+    private ConsoleLeaderElector consoleLeaderElector;
 
     @Before
     public void beforeConsoleCrossDcServerTest(){
+        crossDcClusterServer = new ConsoleCrossDcServer();
+        crossDcClusterServer.setStartIntervalMilli(10);
 
-
-        crossDcClusterServer = new ConsoleCrossDcServer(){
-
-            @Override
-            protected List<String> lookUpCname(String domain) throws TextParseException {
-
-                return cnames;
-            }
-        };
+        crossDcClusterServer.setCheckIntervalMilli(checkIntervalMilli);
+        consoleLeaderElector = mock(ConsoleLeaderElector.class);
+        when(consoleLeaderElector.amILeader()).thenReturn(siteLeader.get());
+        crossDcClusterServer.setConsoleLeaderElector(consoleLeaderElector);
 
         crossDcClusterServer.setConsoleConfig(consoleConfig);
-        crossDcClusterServer.setCheckIntervalMilli(checkIntervalMilli);
 
-        cnames.add("cname1");
-        HashMap<String, String> cnameToDc = new HashMap<>();
-        cnameToDc.put("cname1", "jq");
-        cnameToDc.put("cname2", "oy");
-        DefaultFoundationService.setDataCenter("jq");
+    }
 
-        when(consoleConfig.getConsoleDomain()).thenReturn("xpipe");
-        when(consoleConfig.getConsoleCnameToDc()).thenReturn(cnameToDc);
+    @Test
+    public void testNonSiteLeader() throws Exception {
+        crossDcClusterServer.setCheckIntervalMilli(1);
+        when(consoleLeaderElector.amILeader()).thenReturn(false);
+        crossDcClusterServer.start();
+        Assert.assertFalse(consoleLeaderElector.amILeader());
+        Thread.sleep(2);
+        Assert.assertFalse(crossDcClusterServer.amILeader());
+    }
 
+    @Test
+    public void testValidLeader() throws Exception {
+        crossDcClusterServer.setCheckIntervalMilli(1);
+        when(consoleLeaderElector.amILeader()).thenReturn(true);
+        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
+        Map<String, String> ipDcMap = Maps.newHashMap();
+        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
+        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
+        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
+        crossDcClusterServer.start();
+        Assert.assertTrue(consoleLeaderElector.amILeader());
+        waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
+    }
+
+    @Test
+    public void testNotLeader() throws Exception {
+        crossDcClusterServer.setCheckIntervalMilli(1);
+        when(consoleLeaderElector.amILeader()).thenReturn(true);
+        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
+        Map<String, String> ipDcMap = Maps.newHashMap();
+        ipDcMap.put("127.0.0.1", "non-exists");
+        ipDcMap.put("localhost", "non-exists");
+        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
+        crossDcClusterServer.start();
+        Assert.assertTrue(consoleLeaderElector.amILeader());
+        sleep(10);
+        waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader());
     }
 
 
     @Test
-    public void testNoCnameLeader() throws TimeoutException {
-
-        cnames.clear();
+    public void testLeaderBecomeCrossDcLeader() throws Exception {
+        when(consoleLeaderElector.amILeader()).thenReturn(true);
+        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
+        Map<String, String> ipDcMap = Maps.newHashMap();
+        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
+        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
+        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
         crossDcClusterServer.isleader();
 
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
@@ -74,50 +106,49 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
     }
 
     @Test
-    public void testLeaderBecomeCrossDcLeader() throws TimeoutException {
-
-        crossDcClusterServer.isleader();
-
-        waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
-
-    }
-
-    @Test
-    public void testNotLeader() throws TimeoutException {
-
+    public void testNotLeaderTwo() throws Exception {
+        when(consoleLeaderElector.amILeader()).thenReturn(true);
+        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
+        Map<String, String> ipDcMap = Maps.newHashMap();
+        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
+        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
+        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
         crossDcClusterServer.isleader();
 
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
 
         crossDcClusterServer.notLeader();
 
-        sleep(300);
+        waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader(), 300);
         Assert.assertFalse(crossDcClusterServer.amILeader());
 
     }
 
 
     @Test
-    public void testLeaderBecomeCrossDcLeaderThenFallback() throws TimeoutException {
+    public void testLeaderBecomeCrossDcLeaderThenFallback() throws Exception {
 
+        when(consoleLeaderElector.amILeader()).thenReturn(true);
+        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
+        Map<String, String> ipDcMap = Maps.newHashMap();
+        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
+        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
+        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
         crossDcClusterServer.isleader();
 
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
-
-        DefaultFoundationService.setDataCenter("oy");
+        ipDcMap = Maps.newHashMap();
+        ipDcMap.put("127.0.0.1", "not-exist");
+        ipDcMap.put("localhost", "not-exist");
+        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
 
         waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader());
     }
 
 
-    @Test
-    public void test() throws TextParseException {
-
-        try {
-            List<String> cnames = crossDcClusterServer.lookUpCname("xpipe1.ctripcorp.com");
-            logger.info("[test]{}", cnames);
-        } catch (TextParseException e) {
-            logger.error("[test]", e);
-        }
+    @After
+    public void afterConsoleCrossDcServerTest() throws Exception {
+        crossDcClusterServer.stop();
     }
+
 }

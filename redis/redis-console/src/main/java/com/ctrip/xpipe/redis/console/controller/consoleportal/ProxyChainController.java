@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
@@ -19,10 +20,7 @@ import com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jmx.support.MetricType;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -156,4 +154,10 @@ public class ProxyChainController extends AbstractConsoleController {
         }
         return ImmutableMap.of("addr", getHickwall(template));
     }
+
+    @RequestMapping(value = "/proxy/chain", method = RequestMethod.DELETE)
+    public RetMessage closeProxyChain(@RequestBody List<HostPort> proxies) {
+        return proxyService.deleteProxyChain(proxies);
+    }
+
 }

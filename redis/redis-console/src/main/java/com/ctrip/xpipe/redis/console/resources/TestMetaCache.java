@@ -83,6 +83,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public boolean isReplThroughProxy(String activeDc, String backupDc) {
+        return false;
+    }
+
+    @Override
     public List<HostPort> getAllRedisOfDc(String dcId) {
         return null;
     }

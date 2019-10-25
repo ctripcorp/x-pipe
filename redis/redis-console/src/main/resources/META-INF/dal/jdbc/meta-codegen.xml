@@ -690,7 +690,7 @@
   <entity name="proxy-tbl" table="proxy_tbl" alias="pt">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
-    <member name="uri" field="uri" value-type="String" length="20" nullable="false" />
+    <member name="uri" field="uri" value-type="String" length="256" nullable="false" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
     <member name="monitor-active" field="monitor_active" value-type="boolean" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />

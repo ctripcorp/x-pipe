@@ -118,7 +118,7 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
         keepercontainerService.addKeeperContainer(createInfo);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testAddKeeperContainer2() {
         KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo()
                 .setDcName(dcNames[0]).setKeepercontainerIp("192.168.0.1")
@@ -158,7 +158,6 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void testGetDcAllKeeperContainers() {
-        testAddKeeperContainer2();
         List<KeeperContainerCreateInfo> keepers = keepercontainerService.getDcAllKeeperContainers(dcNames[0]);
         keepers.forEach(kc -> logger.info("[keeper] {}", kc));
     }
@@ -189,5 +188,11 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/keeper-container-service-impl-test.sql");
+    }
+
+    @Test
+    public void testCheckHostAndPort() {
+        boolean result = keepercontainerService.checkIpAndPort("10.2.73.161", 8080);
+        Assert.assertTrue(result);
     }
 }

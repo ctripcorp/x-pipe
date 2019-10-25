@@ -3,11 +3,22 @@ package com.ctrip.xpipe.redis.console.cluster;
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousCounterMetric;
+import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +26,15 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.xbill.DNS.*;
 
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng
@@ -37,7 +48,12 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Autowired
     private ConsoleConfig consoleConfig;
 
-    private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
+    @Autowired
+    private ConsoleLeaderElector consoleLeaderElector;
+
+    private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "600000"));
+
+    private int startIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
 
     private volatile boolean crossDcLeader = false;
 
@@ -49,7 +65,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
     @Override
     public boolean amILeader() {
-
         return crossDcLeader;
     }
 
@@ -62,73 +77,42 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             @Override
             protected void doRun() throws Exception {
 
-                checkDnsCurrentDc();
+                checkDataBaseCurrentDc();
 
             }
 
-        }, checkIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
+        }, startIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
-    private void checkDnsCurrentDc() {
-
-        String domain = consoleConfig.getConsoleDomain();
-
-        List<String> cnames = null;
+    protected void checkDataBaseCurrentDc() {
         try {
-            cnames = lookUpCname(domain);
-        } catch (TextParseException e) {
-            logger.error("[checkDnsCurrentDc]" + domain, e);
+            String domainName = consoleConfig.getDatabaseDomainName();
+            check(domainName);
+        } catch (Exception e) {
+            logger.error("[checkDataBaseCurrentDc]", e);
         }
-
-        if (cnames == null) {
-            return;
-        }
-
-        if (cnames.size() == 0) {
-            //only one dc
-            setCrossDcLeader(true, "cnames size == 0");
-            return;
-        }
-
-        String currentDc = FoundationService.DEFAULT.getDataCenter();
-        Map<String, String> consoleCnameToDc = consoleConfig.getConsoleCnameToDc();
-
-        for (String cname : cnames) {
-
-            String dc = consoleCnameToDc.get(cname);
-            if (currentDc.equalsIgnoreCase(dc)) {
-                //is dc leader
-                setCrossDcLeader(true, String.format("[good]current dc %s, cname:%s, cnametodc:%s", currentDc, cname, consoleCnameToDc));
-                return;
-            }
-        }
-
-        setCrossDcLeader(false, String.format("[bad]current dc %s, cname:%s, cnametodc:%s", currentDc, cnames, consoleCnameToDc));
     }
 
-    protected List<String> lookUpCname(String domain) throws TextParseException {
-
-        List<String> cnameRecords = new LinkedList<>();
-
-        Record[] records = new Lookup(domain, Type.CNAME).run();
-
-        if (records != null) {
-
-            for (int i = 0; i < records.length; i++) {
-
-                CNAMERecord cnameRecord = (CNAMERecord) records[i];
-                Name target = cnameRecord.getTarget();
-                String cname = target.toString();
-                if (cname.endsWith(".")) {
-                    cname = cname.substring(0, cname.length() - 1);
-                }
-                cnameRecords.add(cname);
-            }
+    private void check(String domainName) {
+        try {
+            InetAddress ipAddress = InetAddress.getByName(domainName);
+            Map<String, String> ipDcMapping = consoleConfig.getDatabaseIpAddresses();
+            String dcName = ipDcMapping.get(ipAddress.getHostAddress());
+            triggerElection(dcName);
+        } catch (Exception e) {
+            logger.error("[check]Invalid database domain name", e);
         }
-        logger.debug("[lookUpCname]{}", cnameRecords);
-        return cnameRecords;
+
     }
 
+    private void triggerElection(String dcName) {
+        if(!consoleLeaderElector.amILeader()) {
+            setCrossDcLeader(false, "[triggerElection]not site leader, quit for cross-site leader election");
+            return;
+        }
+        boolean crossDcLeader = FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcName);
+        setCrossDcLeader(crossDcLeader, String.format("[result] Database domain name: %s", dcName));
+    }
 
     @Override
     protected void doStop() throws Exception {
@@ -179,9 +163,11 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
         if(!previous && crossDcLeader){
             logger.info("[becomeLeader]{}", reason);
+            EventMonitor.DEFAULT.logEvent("XPIPE.LEADER.CHANGE", "BECOME.LEADER");
             becomeLeader();
         }else if(previous && !crossDcLeader){
             logger.info("[loseLeader]{}", reason);
+            EventMonitor.DEFAULT.logEvent("XPIPE.LEADER.CHANGE", "LOSE.LEADER");
             loseLeader();
         }
     }
@@ -222,16 +208,31 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }
     }
 
-    public void setConsoleConfig(ConsoleConfig consoleConfig) {
-        this.consoleConfig = consoleConfig;
-    }
 
     public void setCheckIntervalMilli(int checkIntervalMilli) {
         this.checkIntervalMilli = checkIntervalMilli;
     }
 
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setConsoleLeaderElector(ConsoleLeaderElector consoleLeaderElector) {
+        this.consoleLeaderElector = consoleLeaderElector;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setConsoleConfig(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
+        return this;
+    }
+
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setStartIntervalMilli(int startIntervalMilli) {
+        this.startIntervalMilli = startIntervalMilli;
+        return this;
     }
 }

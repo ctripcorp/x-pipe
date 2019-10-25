@@ -22,15 +22,15 @@ public class SubscribeCommand extends AbstractSubscribe {
 
     private NettyClient nettyClient;
 
-    public SubscribeCommand(String host, int port, ScheduledExecutorService scheduled, String channel) {
-        super(host, port, scheduled, channel, MESSAGE_TYPE.MESSAGE);
+    public SubscribeCommand(String host, int port, ScheduledExecutorService scheduled, String... channel) {
+        super(host, port, scheduled, MESSAGE_TYPE.MESSAGE, channel);
     }
 
-    public SubscribeCommand(Endpoint endpoint, ScheduledExecutorService scheduled, String channel) {
-        super(endpoint.getHost(), endpoint.getPort(), scheduled, channel, MESSAGE_TYPE.MESSAGE);
+    public SubscribeCommand(Endpoint endpoint, ScheduledExecutorService scheduled, String... channel) {
+        super(endpoint.getHost(), endpoint.getPort(), scheduled, MESSAGE_TYPE.MESSAGE, channel);
     }
 
-    public SubscribeCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, String channel) {
+    public SubscribeCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, String... channel) {
         super(clientPool, scheduled, MESSAGE_TYPE.MESSAGE, channel);
     }
 

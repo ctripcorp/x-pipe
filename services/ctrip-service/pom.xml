@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.ctrip.framework.xpipe</groupId>
         <artifactId>services</artifactId>
-        <version>1.1.0-SNAPSHOT</version>
+        <version>1.1.0</version>
     </parent>
     <!-- ctrip related infrastructure -->
     <artifactId>ctrip-service</artifactId>
@@ -57,11 +57,61 @@
         <dependency>
             <groupId>com.ctrip.infosec</groupId>
             <artifactId>sso-client-qconfig</artifactId>
+            <version>1.0.7</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>qunar.common</groupId>
+                    <artifactId>common-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-collections</groupId>
+                    <artifactId>commons-collections</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.razorvine</groupId>
             <artifactId>pyrolite</artifactId>
         </dependency>
+
+        <!--DB Migration Project-->
+        <dependency>
+            <groupId>com.ctrip.platform</groupId>
+            <artifactId>ctrip-datasource</artifactId>
+            <version>1.17.8</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tomcat</groupId>
+                    <artifactId>tomcat-juli</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.persistence</groupId>
+                    <artifactId>persistence-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ctrip.framework.fireman</groupId>
+            <artifactId>fireman</artifactId>
+            <version>1.0.10</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.aspectj</groupId>
+                    <artifactId>aspectjrt</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.ctrip.platform</groupId>
+                    <artifactId>ctrip-datasource</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--Email Service-->
         <dependency>
             <groupId>com.ctrip.basebiz</groupId>
             <artifactId>EmailServiceClient</artifactId>

@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -163,6 +165,17 @@ public class MigrationApi extends AbstractConsoleController {
 
         mapResponseIdc(rollbackResponse.getResults());
         return rollbackResponse;
+    }
+
+    @RequestMapping(value = "/migration/system/health/status", method = RequestMethod.GET)
+    public RetMessage getMigrationSystemHealthStatus() {
+        logger.info("[getMigrationSystemHealthStatus]");
+        try {
+            return migrationService.getMigrationSystemHealth();
+        } catch (Exception e) {
+            logger.error("[getMigrationSystemHealthStatus]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
 

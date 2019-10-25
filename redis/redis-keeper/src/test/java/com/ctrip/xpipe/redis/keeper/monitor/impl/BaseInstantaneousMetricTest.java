@@ -19,6 +19,8 @@ public class BaseInstantaneousMetricTest extends AbstractTest {
 
     @Test
     public void testGetInstantaneousMetric() {
+        metric.trackInstantaneousMetric(FIXED_INPUT);
+        Assert.assertEquals(FIXED_INPUT, metric.getInstantaneousMetric());
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -76,4 +77,17 @@ public class MigrationServiceTest extends AbstractConsoleIntegrationTest {
 		}
 	}
 
+	@Test(expected = BadRequestException.class)
+	public void createMigrationEventWithIncorrectDestDcId() {
+		ClusterTbl clusterTbl = clusterService.find(1);
+		logger.info("{}", clusterTbl);
+		migrationService.createMigrationEvent(createEventDemo(1, -1));
+	}
+
+	@Test(expected = BadRequestException.class)
+	public void createMigrationEventWithIncorrectDestDcId2() {
+		ClusterTbl clusterTbl = clusterService.find(1);
+		logger.info("{}", clusterTbl);
+		migrationService.createMigrationEvent(createEventDemo(1, 3));
+	}
 }

@@ -18,13 +18,14 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 
 /**
@@ -33,6 +34,8 @@ import static org.mockito.Mockito.when;
  * Dec 27, 2017
  */
 public class SentinelUpdateControllerTest {
+
+    private Logger logger = LoggerFactory.getLogger(SentinelUpdateControllerTest.class);
 
     @Mock
     private ClusterService clusterService;
@@ -107,5 +110,11 @@ public class SentinelUpdateControllerTest {
         map.put("SHAOY", usageModel2);
         JsonCodec jsonTool = new JsonCodec(true, true);
         System.out.println(jsonTool.encode(map));
+    }
+
+    @Test
+    public void testSentinelUpdate() {
+        RetMessage message = controller.updateSentinelAddr(new SentinelModel());
+        logger.info("{}", message.getState());
     }
 }

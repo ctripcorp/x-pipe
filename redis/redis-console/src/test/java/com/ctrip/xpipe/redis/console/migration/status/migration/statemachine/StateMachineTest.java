@@ -9,6 +9,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeoutException;
+
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,14 +62,14 @@ public class StateMachineTest extends AbstractMigrationStateTest{
     }
 
     @Test
-    public void testTimeout(){
+    public void testTimeout() throws TimeoutException {
 
         int timeoutMilli = 100;
         migrationCheckingState.setMigrationWaitTimeMilli(timeoutMilli);
 
         migrationCheckingState.getStateActionState().tryAction();
 
-        sleep(timeoutMilli * 2);
+        waitConditionUntilTimeOut(()->migrationCheckingState.getStateActionState() instanceof Done, timeoutMilli * 2);
         Assert.assertTrue(migrationCheckingState.getStateActionState() instanceof Done);
     }
 

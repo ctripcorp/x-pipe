@@ -23,6 +23,7 @@ x-pipe
         - [Redis 自身高可用](#redis-自身高可用)
     - [测试数据](#测试数据)
         - [延时测试](#延时测试)
+    - [跨公网部署及架构](#跨公网部署及架构)
 - [深入了解](#深入了解)
 - [技术交流](#技术交流)
 - [License](#license)
@@ -101,6 +102,10 @@ Redis 也可能会挂，Redis 本身提供哨兵 (Sentinel) 机制保证集群�
 首先我们测试 Redis master 直接复制到 slave 的延时，为 0.2ms。然后在 master 和 slave 之间增加一层 keeper，整体延时增加 0.1ms，到 0.3ms。
 
 在携程生产环境进行了测试，生产环境两个机房之间的 ping RTT 约为 0.61ms，经过跨数据中心的两层 keeper 后，测试得到的平均延时约为 0.8ms，延时 99.9 线为 2ms。
+
+<a name="跨公网部署及架构"></a>
+## 跨公网部署及架构
+[详情参考 -- 跨公网部署及架构](https://raw.github.com/ctripcorp/x-pipe/master/doc/Proxy.md)
 
 <a name="深入了解"></a>
 # 深入了解

@@ -17,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
@@ -70,6 +71,7 @@ public class AsyncSendEmailCommandTest extends AbstractTest {
 
         CommandFuture future = command.execute();
 
+        future.await(10000, TimeUnit.MILLISECONDS);
         Assert.assertTrue(future.isSuccess());
     }
 

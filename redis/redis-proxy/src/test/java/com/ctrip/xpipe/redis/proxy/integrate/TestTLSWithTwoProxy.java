@@ -49,6 +49,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
         server2.stop();
         System.gc();
         System.gc();
+        Thread.sleep(2000);
     }
 
     @Test

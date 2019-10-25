@@ -492,7 +492,46 @@ public class  CtripSSOFilter implements Filter {
 
 
     protected final String constructServiceUrl(final HttpServletRequest request, final HttpServletResponse response) {
-        return CommonUtils.constructServiceUrl(request, response, this.service, this.serverName, this.artifactParameterName, this.encodeServiceUrl);
+        return constructServiceUrl(request, response, this.service, this.serverName, this.artifactParameterName, this.encodeServiceUrl);
+    }
+
+    public String constructServiceUrl(final HttpServletRequest request,
+                                             final HttpServletResponse response, final String service, final String serverName, final String artifactParameterName, final boolean encode) {
+        if (CommonUtils.isNotBlank(service)) {
+            return encode ? response.encodeURL(service) : service;
+        }
+
+        final StringBuffer buffer = request.getRequestURL();
+
+        if (CommonUtils.isNotBlank(request.getQueryString())) {
+            final int location = request.getQueryString().indexOf(artifactParameterName + "=");
+
+            if (location == 0) {
+                final String returnValue = encode ? response.encodeURL(buffer.toString()): buffer.toString();
+                return returnValue;
+            }
+
+            buffer.append("?");
+
+            if (location == -1) {
+                buffer.append(request.getQueryString());
+            } else if (location > 0) {
+                final int actualLocation = request.getQueryString()
+                        .indexOf("&" + artifactParameterName + "=");
+
+                if (actualLocation == -1) {
+                    buffer.append(request.getQueryString());
+                } else if (actualLocation > 0) {
+                    buffer.append(request.getQueryString().substring(0,
+                            actualLocation));
+                }
+            }
+        }
+
+
+        final String returnValue = encode ? response.encodeURL(buffer.toString()) : buffer.toString();
+
+        return returnValue;
     }
 
 

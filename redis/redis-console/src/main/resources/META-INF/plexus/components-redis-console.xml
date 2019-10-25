@@ -87,7 +87,7 @@
 			<role-hint>zone-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
-				<physical-table-name>ZONE_TBL</physical-table-name>
+				<physical-table-name>zone_tbl</physical-table-name>
 				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
@@ -334,12 +334,55 @@
 			</configuration>
 		</component>
 		<component>
+			<role>org.unidal.dal.jdbc.datasource.DataSource</role>
+			<role-hint>xpipe</role-hint>
+			<implementation>com.ctrip.xpipe.redis.console.ds.XPipeDataSource</implementation>
+			<instantiation-strategy>per-lookup</instantiation-strategy>
+		</component>
+		<component>
 			<role>org.unidal.dal.jdbc.transaction.TransactionManager</role>
 			<role-hint>xpipe</role-hint>
 			<implementation>com.ctrip.xpipe.redis.console.dal.XpipeDalTransactionManager</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.mapping.TableProviderManager</role>
+				</requirement>
+				<requirement>
+					<role>org.unidal.dal.jdbc.datasource.DataSourceManager</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.query.WriteHandler</role>
+			<role-hint>mysql</role-hint>
+			<implementation>com.ctrip.xpipe.redis.console.dal.XPipeMysqlWriteHandler</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.transaction.TransactionManager</role>
+					<role-hint>xpipe</role-hint>
+				</requirement>
+				<requirement>
+					<role>org.unidal.dal.jdbc.entity.DataObjectAccessor</role>
+				</requirement>
+				<requirement>
+					<role>org.unidal.dal.jdbc.datasource.DataSourceManager</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.query.ReadHandler</role>
+			<role-hint>mysql</role-hint>
+			<implementation>com.ctrip.xpipe.redis.console.dal.XPipeMysqlReadHandler</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.transaction.TransactionManager</role>
+					<role-hint>xpipe</role-hint>
+				</requirement>
+				<requirement>
+					<role>org.unidal.dal.jdbc.entity.DataObjectAssembly</role>
+				</requirement>
+				<requirement>
+					<role>org.unidal.dal.jdbc.entity.DataObjectAccessor</role>
 				</requirement>
 				<requirement>
 					<role>org.unidal.dal.jdbc.datasource.DataSourceManager</role>

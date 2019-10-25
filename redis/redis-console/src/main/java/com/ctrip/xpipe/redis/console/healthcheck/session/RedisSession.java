@@ -226,6 +226,13 @@ public class RedisSession {
         });
     }
 
+    public InfoResultExtractor syncInfo(InfoCommand.INFO_TYPE infoType)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        InfoCommand infoCommand = new InfoCommand(clientPool, infoType, scheduled);
+        String info = infoCommand.execute().get(2000, TimeUnit.MILLISECONDS);
+        return new InfoResultExtractor(info);
+    }
+
 
     public CommandFuture<RedisInfo> getRedisReplInfo() {
         InfoReplicationCommand command = new InfoReplicationCommand(clientPool, scheduled, commandTimeOut);

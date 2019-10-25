@@ -2,7 +2,11 @@ package com.ctrip.xpipe.redis.console.service.vo;
 
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.ClusterModel;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -11,6 +15,8 @@ import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,6 +51,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private ClusterMetaService clusterMetaService;
+
+    @Autowired
+    private ClusterService clusterService;
 
     private List<DcClusterShardTbl> dcClusterShards;
 
@@ -86,6 +95,28 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
         Assert.assertNotNull(shardMeta);
         logger.info("{}", shardMeta);
+    }
+
+
+    @Test
+    public void testClusterBondToOnlyOneIDC() throws Exception {
+
+        ClusterModel clusterModel = new ClusterModel();
+        ClusterTbl clusterTbl = new ClusterTbl();
+        clusterTbl.setActivedcId(1).setClusterAdminEmails("test@test.com").setClusterName("test-one-dc-cluster")
+                .setClusterOrgId(1).setClusterDescription("not null").setStatus("Normal");
+        clusterModel.setClusterTbl(clusterTbl);
+        clusterModel.setShards(Lists.newArrayList());
+        //empty slave idc
+        clusterModel.setSlaveDcs(Lists.newArrayList());
+        clusterTbl = clusterService.createCluster(clusterModel);
+
+        dcClusterService.addDcCluster(dcService.getDcName(1), "test-one-dc-cluster");
+
+        Map<Long, List<DcClusterTbl>> map = Maps.newHashMap();
+        map.put(clusterTbl.getId(), Lists.newArrayList(new DcClusterTbl().setClusterId(clusterTbl.getId()).setDcId(1)));
+        builder.setCluster2DcClusterMap(map);
+        builder.getBackupDcs(clusterTbl, 1);
     }
 
     @Override

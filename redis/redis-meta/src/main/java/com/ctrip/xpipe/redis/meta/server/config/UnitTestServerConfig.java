@@ -127,6 +127,11 @@ public class UnitTestServerConfig implements MetaServerConfig{
 		return true;
 	}
 
+	@Override
+	public int getKeeperInfoCheckInterval() {
+		return 1;
+	}
+
 	public UnitTestServerConfig setWaitforOffsetMilli(int waitforOffsetMilli) {
 		this.waitforOffsetMilli = waitforOffsetMilli;
 		return this;

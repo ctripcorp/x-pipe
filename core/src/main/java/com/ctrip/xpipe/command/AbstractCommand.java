@@ -41,8 +41,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	public CommandFuture<V> execute(Executor executors) {
 
 		if(future().isDone()){
-			logger.info("[execute][already done, reset]{}, {}", this, future().getNow());
-			reset();
+			doExecuteWhenCommandDone();
 		}
 		
 		future().addListener(new CommandFutureListener<V>() {
@@ -71,6 +70,11 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			}
 		});
 		return future();
+	}
+
+	protected void doExecuteWhenCommandDone() {
+		logger.info("[execute][already done, reset]{}, {}", this, future().getNow());
+		reset();
 	}
 	
 	

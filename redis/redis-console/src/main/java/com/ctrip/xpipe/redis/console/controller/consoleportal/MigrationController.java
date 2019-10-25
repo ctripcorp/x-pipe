@@ -76,12 +76,14 @@ public class MigrationController extends AbstractConsoleController {
 	
 	@RequestMapping(value = "/migration/events/{eventId}", method = RequestMethod.GET) 
 	public List<MigrationClusterModel> getEventDetailsWithEventId(@PathVariable Long eventId) {
+		logger.info("[getEventDetailsWithEventId][begin] eventId: {}", eventId);
 		List<MigrationClusterModel> res = new LinkedList<>();
 		if (null != eventId) {
 			res = migrationService.getMigrationClusterModel(eventId);
 		} else {
 			logger.error("[GetEvent][fail]Cannot findRedisHealthCheckInstance with null event id.");
 		}
+		logger.info("[getEventDetailsWithEventId][end] eventId: {}", eventId);
 		return res;
 	}
 	
@@ -118,22 +120,11 @@ public class MigrationController extends AbstractConsoleController {
 	@RequestMapping(value = "/migration/system/health/status", method = RequestMethod.GET)
 	public RetMessage getMigrationSystemHealthStatus() {
 		logger.info("[getMigrationSystemHealthStatus][begin]");
-		MigrationSystemAvailableChecker.MigrationSystemAvailability availability = migrationService.getMigrationSystemAvailability();
-		if(availability.isAvaiable()) {
-			if(!availability.isWarning()) {
-				logger.debug("[getMigrationSystemHealthStatus][good]");
-				return RetMessage.createSuccessMessage();
-			} else {
-				logger.debug("[getMigrationSystemHealthStatus][warned]");
-				return RetMessage.createWarningMessage(availability.getMessage());
-			}
-		}
-		if(configService.ignoreMigrationSystemAvailability()) {
-			logger.warn("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
-			return RetMessage.createWarningMessage(availability.getMessage());
-		} else {
-			logger.error("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
-			return RetMessage.createFailMessage(availability.getMessage());
+		try {
+			return migrationService.getMigrationSystemHealth();
+		} catch (Exception e) {
+			logger.error("[getMigrationSystemHealthStatus]", e);
+			return RetMessage.createFailMessage(e.getMessage());
 		}
 	}
 

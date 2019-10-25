@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ctrip.framework.xpipe</groupId>
     <artifactId>xpipe-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.0</version>
     <packaging>pom</packaging>
 
 
@@ -23,7 +23,7 @@
         <maven-source-plugin.version>3.0.0</maven-source-plugin.version>
         <coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
-        <fastjson.version>1.2.28</fastjson.version>
+        <fastjson.version>1.2.60</fastjson.version>
         <jersey.version>2.19</jersey.version>
         <commons-exec.version>1.3</commons-exec.version>
         <unidal.version>2.5.0</unidal.version>
@@ -39,9 +39,9 @@
         <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
         <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
-        <ctrip-framework-foundation.version>1.8.2</ctrip-framework-foundation.version>
-        <ctrip-apollo.version>0.6.6</ctrip-apollo.version>
-        <cat.version>2.20.1</cat.version>
+        <ctrip-framework-foundation.version>1.8.3</ctrip-framework-foundation.version>
+        <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
+        <cat.version>2.21.1</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.0</git-commit-id-plugin.version>
@@ -50,11 +50,11 @@
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <hickwall.client.version>1.8</hickwall.client.version>
+        <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
-        <credis.version>3.1.7</credis.version>
+        <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
-        <qunaer.common.version>9.0.9</qunaer.common.version>
+        <qunaer.common.version>9.2.21</qunaer.common.version>
         <qconfig.client.version>1.4.4</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
         <netty3.version>3.10.5.Final</netty3.version>
@@ -80,6 +80,14 @@
                     <exclusion>
                         <groupId>com.ctrip.framework</groupId>
                         <artifactId>vi</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc</groupId>
+                        <artifactId>common-zookeeper</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>qunar.tc.qclient</groupId>
+                        <artifactId>qclient-redis</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -686,4 +694,19 @@
             </pluginRepositories>
         </profile>
     </profiles>
+
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>
+                http://maven.release.ctripcorp.com/nexus/content/repositories/fxrelease
+            </url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>
+                http://maven.release.ctripcorp.com/nexus/content/repositories/fxsnapshot
+            </url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

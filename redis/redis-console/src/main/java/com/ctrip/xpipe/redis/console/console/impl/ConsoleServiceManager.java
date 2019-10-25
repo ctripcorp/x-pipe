@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,21 @@ public class ConsoleServiceManager {
                 logger.info("[allPingStatus]{}, {}:{}, {}", consoleService, host, port, instancePingStatus);
             }catch (Exception e){
                 logger.error("[allPingStatus]" + consoleService + "," + host + ":" + port, e);
+            }
+        }
+        return result;
+    }
+
+    public List<Long> getAllDatabaseAffinity() {
+        Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
+        List<Long> result = Lists.newArrayListWithCapacity(consoleServiceMap.size());
+        for(ConsoleService consoleService : consoleServiceMap.values()){
+            try{
+                Long dbAffinity = consoleService.getConsoleDatabaseAffinity();
+                result.add(dbAffinity);
+                logger.info("[getAllDatabaseAffinity]{}, {}", consoleService, dbAffinity);
+            }catch (Exception e){
+                logger.error("[getAllDatabaseAffinity]" + consoleService, e);
             }
         }
         return result;

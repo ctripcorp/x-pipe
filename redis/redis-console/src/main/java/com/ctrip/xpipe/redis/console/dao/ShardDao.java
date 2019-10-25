@@ -144,10 +144,10 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		if(null == shards) return;
 		
 		for(ShardTbl shardTbl : shards) {
-			if(shardTbl.getShardName().equals(shard.getShardName())) {
+			if(shardTbl.getShardName().trim().equals(shard.getShardName().trim())) {
 				throw new BadRequestException("Duplicated shard name under same cluster.");
 			}
-			if(shardTbl.getSetinelMonitorName().equals(shard.getSetinelMonitorName())) {
+			if(shardTbl.getSetinelMonitorName().trim().equals(shard.getSetinelMonitorName().trim())) {
 				throw new BadRequestException("Duplicated sentinel monitor name under same cluster.");
 			}
 		}
@@ -158,6 +158,8 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 
 		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 		shard.setClusterId(cluster.getId());
+		shard.setShardName(shard.getShardName().trim());
+		shard.setSetinelMonitorName(shard.getSetinelMonitorName().trim());
 		queryHandler.handleInsert(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {

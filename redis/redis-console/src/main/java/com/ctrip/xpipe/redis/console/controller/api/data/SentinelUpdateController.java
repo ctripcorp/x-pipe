@@ -68,6 +68,30 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.DELETE)
+    public RetMessage deleteSentinel(@PathVariable Long sentinelId) {
+        try {
+            SetinelTbl setinelTbl = sentinelService.find(sentinelId);
+            if (setinelTbl == null) {
+                return RetMessage.createSuccessMessage("Sentinel already deleted");
+            }
+            sentinelService.delete(sentinelId);
+            return RetMessage.createSuccessMessage("Successfully deleted Sentinel");
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.PATCH)
+    public RetMessage rehealSentinel(@PathVariable Long sentinelId) {
+        try {
+            sentinelService.reheal(sentinelId);
+            return RetMessage.createSuccessMessage("Successfully reheal Sentinel");
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
     @RequestMapping(value = "/rebalance/sentinels", method = RequestMethod.POST)
     public RetMessage reBalanceSentinels(@RequestBody(required = false) List<String> clusterNames) {
         if(clusterNames == null || clusterNames.isEmpty())
@@ -91,6 +115,18 @@ public class SentinelUpdateController {
             return GenericRetMessage.createGenericRetMessage(sentienlUsage);
         } catch (Exception e) {
             logger.error("[reBalanceSentinels] {}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/sentinel/address", method = RequestMethod.PUT)
+    public RetMessage updateSentinelAddr(@RequestBody SentinelModel model) {
+        logger.info("[updateSentinelAddr][begin]");
+        try {
+            SentinelModel updated = sentinelService.updateSentinelTblAddr(model);
+            return RetMessage.createSuccessMessage(jsonTool.encode(updated));
+        } catch (Exception e) {
+            logger.error("[updateSentinelAddr]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

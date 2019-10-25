@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import java.util.LinkedList;
@@ -125,7 +126,8 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         });
     }
 
-    private String getBackupDcs(ClusterTbl cluster, long activeDcId) {
+    @VisibleForTesting
+    protected String getBackupDcs(ClusterTbl cluster, long activeDcId) {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
         StringBuilder sb = new StringBuilder();
         relatedDcClusters.forEach(dcClusterTbl -> {
@@ -133,7 +135,9 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 sb.append(dcNameMap.get(dcClusterTbl.getDcId())).append(",");
             }
         });
-        sb.deleteCharAt(sb.length() - 1);
+        if (sb.length() > 1) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
         return sb.toString();
     }
 

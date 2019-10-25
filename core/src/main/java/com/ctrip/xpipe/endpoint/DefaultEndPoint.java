@@ -13,6 +13,8 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 	
 	private String rawUrl;
 	private URI    uri;
+	private String ip;
+	private int port = 0;
 	
 	public DefaultEndPoint() {
 	}
@@ -23,6 +25,8 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 
 	public DefaultEndPoint(String ip, int port){
 		this("redis://" + ip + ":" + port);
+		this.ip = ip;
+		this.port = port;
 	}
 	public DefaultEndPoint(String url) {
 		
@@ -43,13 +47,13 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 	@Override
 	@JSONField(serialize=false)
 	public String getHost() {
-		return uri.getHost();
+		return ip != null ? ip : uri.getHost();
 	}
 
 	@Override
 	@JSONField(serialize=false)
 	public int getPort() {
-		return uri.getPort();
+		return port != 0 ? port : uri.getPort();
 	}
 
 	@Override

@@ -24,6 +24,14 @@
 				<member name='dc-description'/>
 			</readset>
 		</readsets>
+
+		<updatesets>
+			<readset name="MAIN">
+				<member name="zone-id"/>
+				<member name='dc-name'/>
+				<member name='dc-description'/>
+			</readset>
+		</updatesets>
 		
 		<query-defs>
 			<query name="find-all-dcs" type="SELECT" multiple="true">
@@ -104,6 +112,14 @@
 					AND rt.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
+				</statement>
+			</query>
+			<query name='insert-with-part-field' type='INSERT' batch='false'>
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+        			VALUES(<VALUES/>)
+        			]]>
 				</statement>
 			</query>
 		</query-defs>
@@ -883,6 +899,13 @@
 			</readset>
 		</readsets>
 
+		<updatesets>
+			<updateset name="ADDRESS">
+				<member name="setinel-id"/>
+				<member name="setinel-address"/>
+			</updateset>
+		</updatesets>
+
 		<query-defs>
 			<query name="find-by-dc-id" type="SELECT" multiple="true">
 				<param name="dc-id"/>
@@ -928,6 +951,26 @@
 					AND dt.id = <FIELD name='dc-id'/>
 					GROUP BY <FIELD name='setinel-id'/>
 					]]>
+				</statement>
+			</query>
+
+			<query name="update-sentinel-addr" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='setinel-address'/> = ${setinel-address}
+						WHERE <FIELD name='setinel-id'/> = ${setinel-id}
+						]]>
+				</statement>
+			</query>
+
+			<query name="delete-sentinel" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='deleted'/> = 1
+						WHERE <FIELD name='setinel-id'/> = ${setinel-id}
+						]]>
 				</statement>
 			</query>
 		</query-defs>
@@ -1541,6 +1584,19 @@
 					SET <FIELD name='deleted'/> = 1
 					WHERE <FIELD name='id'/> = ${id}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+	<entity name="zone-tbl" table="zone_tbl" alias="zonetbl">
+		<query-defs>
+			<query name="find-all-zones" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
