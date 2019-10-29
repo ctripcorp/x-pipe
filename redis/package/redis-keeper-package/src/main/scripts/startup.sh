@@ -20,6 +20,31 @@ function getPortFromPathOrDefault(){
 function toUpper(){
     echo $(echo $1 | tr [a-z] [A-Z])    
 }
+
+function getTotalMem() {
+
+    echo `free -g | egrep "^Mem" | awk -F " " '{print $2}'`
+}
+
+function getSafeXmx() {
+    total=`getTotalMem`
+    SAFE_PERCENT=70
+    MAX_MEM=16
+    result=`expr $total \* $SAFE_PERCENT / 100`
+    if [ "$result" -gt "$MAX_MEM" ]
+    then
+        echo "$MAX_MEM"
+    else
+        echo "$result"
+    fi
+}
+
+function getSafeXmn() {
+    xmx=$1
+    XMN_PERCENT=65
+    echo `expr $xmx \* $XMN_PERCENT / 100`
+}
+
 function getEnv(){
     ENV=local
     if [ -f /opt/settings/server.properties ];then
@@ -86,8 +111,8 @@ echo "current env:"$ENV
 if [ $ENV = "PRO" ]
 then
     #GB
-    USED_MEM=13
-    XMN=10
+    USED_MEM=`getSafeXmx`
+    XMN=`getSafeXmn $USED_MEM`
     MAX_DIRECT=2
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}g"
 elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
