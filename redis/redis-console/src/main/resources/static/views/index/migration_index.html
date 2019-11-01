@@ -60,7 +60,7 @@
 		</header>
 
 		<table ng-table="tableParams" class="table table-striped table-hover">
-			<tr ng-repeat="cluster in $data" ng-if="availableTargetDcs(cluster).length > 0">
+			<tr ng-repeat="cluster in $data">
 				<td data-title="'确认框'">
 					<md-checkbox ng-checked="cluster.selected" ng-click="cluster.selected = !cluster.selected"></md-checkbox>
 				</td>
