@@ -7,6 +7,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.simpleserver.Server;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,15 +23,25 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	private int maxPerKey = 4;
 
 	private XpipeNettyClientKeyedObjectPool pool;
+
+	private Server echoServer;
 	
 	@Before
-	public void beforeXpipeNettyClientKeyedObjectPoolTest() throws Exception{
+	public void beforeXpipeNettyClientKeyedObjectPoolTest() throws Exception {
 		
 		pool = new XpipeNettyClientKeyedObjectPool(maxPerKey);
 		LifecycleHelper.initializeIfPossible(pool);
 		LifecycleHelper.startIfPossible(pool);
 		add(pool);
+		echoServer = startEchoServer();
 		
+	}
+
+	@After
+	public void afterXpipeNettyClientKeyedObjectPoolTest() throws Exception {
+		if (echoServer != null) {
+			echoServer.stop();
+		}
 	}
 
 //		@Test
@@ -50,8 +61,6 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
 	@Test
 	public void testIdleClose() throws Exception {
-
-		Server  echoServer = startEchoServer();
 		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 
 		pool.setKeyPooConfig(0, 200, 500, 100);
@@ -74,8 +83,6 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
 	@Test
 	public void testKeyPoolReuse() throws Exception{
-		
-		Server echoServer = startEchoServer();
 		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 
 		Assert.assertEquals(0, echoServer.getConnected());
@@ -93,8 +100,6 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 
 	@Test
 	public void testSingleReuse() throws Exception {
-
-		Server echoServer = startEchoServer();
 
 		Assert.assertEquals(0, echoServer.getTotalConnected());
 
@@ -116,8 +121,6 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	
 	@Test
 	public void testDispose() throws Exception{
-
-		Server echoServer = startEchoServer();
 		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 		
 		Assert.assertEquals(0, echoServer.getConnected());
@@ -136,8 +139,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	
 	@Test
 	public void testMax() throws Exception{
-		
-		Server echoServer = startEchoServer();
+
 		Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 		
 		Assert.assertEquals(0, echoServer.getConnected());
@@ -159,10 +161,10 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 	// testOnBorrow = true, testOnReturn = false
 	@Test
 	public void testReturnWithConnectClose() throws Exception {
-		Server server = startEchoServer();
-		Endpoint key = localhostEndpoint(server.getPort());
 
-		Assert.assertEquals(0, server.getConnected());
+		Endpoint key = localhostEndpoint(echoServer.getPort());
+
+		Assert.assertEquals(0, echoServer.getConnected());
 		NettyClient client1 = pool.borrowObject(key);
 
 		Assert.assertEquals(1, pool.getObjectPool(key).getNumActive());
@@ -176,8 +178,21 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		Assert.assertEquals(1, pool.getObjectPool(key).getNumIdle());
 		NettyClient client2 = pool.borrowObject(key);
 		Assert.assertNotEquals(client1.channel(), client2.channel());
+
 	}
 
+	@Test
+	public void testMapMemLeak() throws Exception {
+		Endpoint key = localhostEndpoint(echoServer.getPort());
+
+		NettyClient client = pool.borrowObject(key);
+		pool.returnObject(key, client);
+
+		Assert.assertNotNull(pool.getClientPool(key));
+		pool.clear(key);
+
+		Assert.assertNull(pool.getClientPool(key));
+	}
 	
 	
 	@Override
