@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.proxy.ProxyEndpoint;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyInfoRecorder;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
@@ -55,6 +56,9 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
     @Autowired
     private ProxyInfoRecorder proxyInfoRecorder;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     private ScheduledFuture future;
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
@@ -93,7 +97,10 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
             @Override
             public ProxyMonitorCollector create() {
                 logger.info("[create proxy monitor collector] {}", proxyModel);
-                ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel);
+                ProxyMonitorCollector result = new DefaultProxyMonitorCollector(
+                        scheduled, keyedObjectPool, proxyModel,
+                        ()->consoleConfig.getProxyInfoCollectInterval()
+                );
                 result.addListener(proxyInfoRecorder);
                 try {
                     result.start();

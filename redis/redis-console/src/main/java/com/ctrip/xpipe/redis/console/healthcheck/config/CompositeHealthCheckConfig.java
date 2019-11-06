@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.config;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author chen.zhu
@@ -10,11 +12,14 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
  */
 public class CompositeHealthCheckConfig implements HealthCheckConfig {
 
+    private Logger logger = LoggerFactory.getLogger(CompositeHealthCheckConfig.class);
+
     private HealthCheckConfig config;
 
     public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, ConsoleConfig consoleConfig) {
         if(instanceInfo.isReplThroughProxy()) {
             config = new ProxyEnabledHealthCheckConfig(consoleConfig);
+            logger.info("[CompositeHealthCheckConfig][proxied] ping down time: {}", config.pingDownAfterMilli());
         } else {
             config = new DefaultHealthCheckConfig(consoleConfig);
         }
