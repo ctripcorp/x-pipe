@@ -17,13 +17,14 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     private HealthCheckConfig config;
 
     public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, ConsoleConfig consoleConfig) {
+        logger.info("[CompositeHealthCheckConfig] {}", instanceInfo);
         if(instanceInfo.isReplThroughProxy()) {
             config = new ProxyEnabledHealthCheckConfig(consoleConfig);
             logger.info("[CompositeHealthCheckConfig][proxied] ping down time: {}", config.pingDownAfterMilli());
         } else {
             config = new DefaultHealthCheckConfig(consoleConfig);
         }
-        logger.info("[{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
+        logger.info("[CompositeHealthCheckConfig][{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
     }
 
     @Override
