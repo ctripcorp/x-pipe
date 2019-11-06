@@ -90,7 +90,7 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
     @Override
     public String toString() {
-        return StringUtil.join(", ", dcId, clusterId, shardId, hostPort);
+        return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, replThroughProxy ? "proxied" : "normal");
     }
 
 
