@@ -23,6 +23,7 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
         } else {
             config = new DefaultHealthCheckConfig(consoleConfig);
         }
+        logger.info("[{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
     }
 
     @Override
