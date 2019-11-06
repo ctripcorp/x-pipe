@@ -612,11 +612,12 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc) {
 
+		logger.info("[randomRoute]currentDc: {}, tag: {}, orgId: {}, dstDc: {}", currentDc, tag, orgId, dstDc);
 		List<RouteMeta> routes = routes(currentDc, tag);
 		if(routes == null || routes.isEmpty()){
 			return null;
 		}
-
+		logger.info("[randomRoute]routes: {}", routes);
 		//for Same dstdc
 		List<RouteMeta> dstDcRoutes = new LinkedList<>();
 		routes.forEach(routeMeta -> {
@@ -625,6 +626,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			}
 		});
 		if(dstDcRoutes.isEmpty()){
+			logger.info("[randomRoute]dst dc empty: {}", routes);
 			return null;
 		}
 
@@ -673,8 +675,8 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(resultsCandidates.isEmpty()){
 			return null;
 		}
-
 		int random = new Random().nextInt(resultsCandidates.size());
+		logger.info("[randomRoute]random: {}, size: {}", random, resultsCandidates.size());
 		return resultsCandidates.get(random);
 
 	}
