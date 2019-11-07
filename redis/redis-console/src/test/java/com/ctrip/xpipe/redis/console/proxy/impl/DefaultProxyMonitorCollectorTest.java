@@ -29,7 +29,7 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
         ProxyModel proxyModel = new ProxyModel().setUri("PROXYTCP://10.2.131.200:80").setDcName("FAT-AWS")
                 .setId(1L).setActive(true).setMonitorActive(true);
         XpipeNettyClientKeyedObjectPool keyedObjectPool = getXpipeNettyClientKeyedObjectPool();
-        ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel) {
+        ProxyMonitorCollector result = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel, ()->10000) {
             @Override
             protected int getStartInterval() {
                 return 0;
@@ -57,11 +57,11 @@ public class DefaultProxyMonitorCollectorTest extends AbstractRedisTest {
     public void testIntegrate() throws Exception {
         ProxyModel proxyModel1 = new ProxyModel().setUri("PROXYTCP://10.2.131.201:80").setDcName("NTGXH").setId(3L).setActive(true);
         XpipeNettyClientKeyedObjectPool keyedObjectPool = getXpipeNettyClientKeyedObjectPool();
-        ProxyMonitorCollector result1 = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel1);
+        ProxyMonitorCollector result1 = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel1, ()->10000);
         result1.start();
 
         ProxyModel proxyModel2 = new ProxyModel().setUri("PROXYTCP://10.2.131.200:80").setDcName("FAT-AWS").setId(1L).setActive(true);
-        ProxyMonitorCollector result2 = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel2);
+        ProxyMonitorCollector result2 = new DefaultProxyMonitorCollector(scheduled, keyedObjectPool, proxyModel2, ()->10000);
         result2.start();
 
         DefaultProxyChainAnalyzer analyzer = new DefaultProxyChainAnalyzer();

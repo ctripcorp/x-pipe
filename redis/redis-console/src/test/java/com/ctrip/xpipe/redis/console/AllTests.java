@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHold
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
-import com.ctrip.xpipe.redis.console.controller.api.data.KeeperUpdateControllerTest;
-import com.ctrip.xpipe.redis.console.controller.api.data.MetaUpdateTest;
-import com.ctrip.xpipe.redis.console.controller.api.data.MetaUpdateTest2;
-import com.ctrip.xpipe.redis.console.controller.api.data.MetaUpdateTest3;
+import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
@@ -158,7 +155,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultClusterHealthMonitorManagerTest.class,
         MigrationSystemAvailableCheckTest.class,
         DefaultCheckMigrationCommandBuilderTest.class,
-        DefaultAlertEntityHolderTest.class
+        DefaultAlertEntityHolderTest.class,
+        SentinelUpdateControllerTest.class
 })
 public class AllTests {
 

@@ -58,6 +58,9 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
+        if (info.isReplThroughProxy()) {
+            logger.info("[create]{}", info);
+        }
         HealthCheckConfig config = new CompositeHealthCheckConfig(info, consoleConfig);
 
         instance.setEndpoint(endpoint)
