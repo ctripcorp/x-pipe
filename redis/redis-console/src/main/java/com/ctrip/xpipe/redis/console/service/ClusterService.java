@@ -34,5 +34,4 @@ public interface ClusterService {
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
 
-	List<String> findAllClustersNameByDcName(String dcName);
 }

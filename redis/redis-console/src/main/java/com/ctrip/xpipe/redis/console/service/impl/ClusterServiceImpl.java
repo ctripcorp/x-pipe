@@ -568,8 +568,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
 	}
 
-	@Override
-	public List<String> findAllClustersNameByDcName(String dcName) {
+	private List<String> findAllClustersNameByDcName(String dcName) {
 		List<ClusterTbl> clusterTbls = findAllClustersByDcName(dcName);
 		List<String> clustersName = new ArrayList<>(clusterTbls.size());
 
