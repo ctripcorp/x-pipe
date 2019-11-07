@@ -7,10 +7,9 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Maps;
-import org.junit.*;
-import org.mockito.MockitoAnnotations;
+import org.junit.Assert;
+import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -139,14 +138,14 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void testReBalanceSentinels() {
-        List<String> clusters = clusterService.reBalanceSentinels(1);
+        List<String> clusters = clusterService.reBalanceSentinels("jq",1);
         Assert.assertEquals(1, clusters.size());
         logger.info("Changed clusters: {}", clusters);
     }
 
     @Test
     public void testReBalanceSentinels2() {
-        List<String> clusters = clusterService.reBalanceSentinels(10);
+        List<String> clusters = clusterService.reBalanceSentinels("jq", 10);
         Assert.assertEquals(clusterService.findAllClusterNames().size(), clusters.size());
         logger.info("Changed clusters: {}", clusters);
     }
@@ -189,7 +188,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         int checkTimes = 10;
         while(checkTimes -- > 0) {
-            clusterService.reBalanceSentinels(10);
+            clusterService.reBalanceSentinels("jq", 10);
             DcClusterShardTbl dcClusterShardTbl1 = dcClusterShardService.find(dcNames[0], clusterName, shard1.getShardName());
             DcClusterShardTbl dcClusterShardTbl2 = dcClusterShardService.find(dcNames[0], clusterName, shard2.getShardName());
             Assert.assertEquals(dcClusterShardTbl1.getSetinelId(), dcClusterShardTbl2.getSetinelId());
