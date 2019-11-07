@@ -4,6 +4,7 @@ insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,deleted
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,deleted,cluster_org_id,cluster_admin_emails) values (4,'cluster4',2,'four',0,2,'four@ctrip.com');
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,deleted,cluster_org_id,cluster_admin_emails) values (5,'cluster5',3,'five',0,3,'five@ctrip.com');
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,deleted,cluster_org_id,cluster_admin_emails) values (6,'cluster6',2,'six',1,2,'six@ctrip.com');
+insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,deleted,cluster_org_id,cluster_admin_emails) values (7,'cluster7',1,'seven',0,1,'seven@ctrip.com');
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,deleted) values (1,1,1,1,0,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,deleted) values (2,1,2,1,0,0);
@@ -17,4 +18,6 @@ insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,meta
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,deleted) values (10,2,4,1,0,0);
 
 insert into organization_tbl(org_id, org_name,deleted) values (1, 'org-1',0), (2, 'org-2',1), (3, 'org-3',0);
+
+insert into SHARD_TBL(id, shard_name, cluster_id, setinel_monitor_name) values (1,'shard1',7,'shard1'), (2,'shard2',2,'shard2');
 
