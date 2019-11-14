@@ -53,11 +53,12 @@ public class AsyncNettyClient extends DefaultNettyClient {
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
-                    if(!future.isSuccess()) {
+                    if(future.isSuccess()) {
                         logger.info("[async][send][{}]", desc);
                         AsyncNettyClient.super.sendRequest(byteBuf);
                     } else {
                         logger.warn("[async][wont-send][{}]", desc);
+                        AsyncNettyClient.super.channelClosed(future.channel());
                     }
                 }
             });
