@@ -44,13 +44,13 @@ public class SentinelUpdateController {
 
     private static final JsonCodec jsonTool = new JsonCodec(true, true);
 
-    @RequestMapping(value = "/rebalance/sentinels/{numOfClusters}", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@PathVariable int numOfClusters) {
+    @RequestMapping(value = "/rebalance/sentinels/{dcName}/{numOfClusters}", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinels(@PathVariable String dcName, @PathVariable int numOfClusters) {
         logger.info("[reBalanceSentinels] Start re-balance sentinels for {} clusters", numOfClusters);
         try {
-            List<String> modifiedClusters = clusterService.reBalanceSentinels(numOfClusters);
+            List<String> modifiedClusters = clusterService.reBalanceSentinels(dcName, numOfClusters);
             logger.info("[reBalanceSentinels] Successfully balanced {} clusters", numOfClusters);
-            return GenericRetMessage.createGenericRetMessage(modifiedClusters);
+            return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(modifiedClusters));
         } catch (Exception e) {
             logger.error("[reBalanceSentinels] {}", e);
             return RetMessage.createFailMessage(e.getMessage());
@@ -92,13 +92,13 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/rebalance/sentinels", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@RequestBody(required = false) List<String> clusterNames) {
+    @RequestMapping(value = "/rebalance/sentinels/{dcName}", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinels(@PathVariable String dcName, @RequestBody(required = false) List<String> clusterNames) {
         if(clusterNames == null || clusterNames.isEmpty())
-            return reBalanceSentinels(DEFAULT_NUM_OF_CLUSTERS);
+            return reBalanceSentinels(dcName, DEFAULT_NUM_OF_CLUSTERS);
         logger.info("[reBalanceSentinels] Start re-balance clusters: {}", clusterNames);
         try {
-            clusterService.reBalanceClusterSentinels(clusterNames);
+            clusterService.reBalanceClusterSentinels(dcName, clusterNames);
             logger.info("[reBalanceSentinels] Successfully balanced clusters: {}", clusterNames);
             return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(clusterNames));
         } catch (Exception e) {
