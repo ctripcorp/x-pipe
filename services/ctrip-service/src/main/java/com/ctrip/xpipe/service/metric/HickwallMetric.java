@@ -108,7 +108,7 @@ public class HickwallMetric implements MetricProxy {
 		DataPoint bmp = convertToHickwallFormat(rawData);
 
 		if (!datas.offer(bmp)) {
-			logger.error("Hickwall queue overflow, will drop data");
+			logger.warn("Hickwall queue overflow, will drop data");
 		}
 	}
 	
