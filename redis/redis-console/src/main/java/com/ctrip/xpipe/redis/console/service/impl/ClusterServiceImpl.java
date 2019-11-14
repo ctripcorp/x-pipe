@@ -35,9 +35,6 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
@@ -83,8 +80,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public ClusterTbl doQuery() throws DalException {
 				return dao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 			}
-    		
-    	});
+
+		});
 	}
 
 	@Override
@@ -104,8 +101,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public ClusterTbl doQuery() throws DalException {
 				return dao.findByPK(clusterId, ClusterTblEntity.READSET_FULL);
 			}
-    		
-    	});
+
+		});
 	}
 
 
@@ -133,54 +130,54 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public Long doQuery() throws DalException {
 				return dao.totalCount(ClusterTblEntity.READSET_COUNT).getCount();
 			}
-    	});
+		});
 	}
 
 	@Override
 	@DalTransaction
 	public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
-    	List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
-    	List<ShardModel> shards = clusterModel.getShards();
+		List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
+		List<ShardModel> shards = clusterModel.getShards();
 
-    	// ensure active dc assigned
-    	if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
-    		throw new BadRequestException("No active dc assigned.");
-    	}
-    	ClusterTbl proto = dao.createLocal();
-    	proto.setClusterName(cluster.getClusterName().trim());
-    	proto.setActivedcId(cluster.getActivedcId());
-    	proto.setClusterDescription(cluster.getClusterDescription());
-    	proto.setStatus(ClusterStatus.Normal.toString());
-			proto.setIsXpipeInterested(true);
-    	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		// ensure active dc assigned
+		if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
+			throw new BadRequestException("No active dc assigned.");
+		}
+		ClusterTbl proto = dao.createLocal();
+		proto.setClusterName(cluster.getClusterName().trim());
+		proto.setActivedcId(cluster.getActivedcId());
+		proto.setClusterDescription(cluster.getClusterDescription());
+		proto.setStatus(ClusterStatus.Normal.toString());
+		proto.setIsXpipeInterested(true);
+		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		if(!checkEmails(cluster.getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
-    	proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
+		proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
 		proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
 
-    	final ClusterTbl queryProto = proto;
-    	ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
+		final ClusterTbl queryProto = proto;
+		ClusterTbl result =  queryHandler.handleQuery(new DalQuery<ClusterTbl>(){
 			@Override
 			public ClusterTbl doQuery() throws DalException {
 				return clusterDao.createCluster(queryProto);
 			}
-    	});
+		});
 
-    	if(slaveDcs != null){
+		if(slaveDcs != null){
 			for(DcTbl dc : slaveDcs) {
 				bindDc(cluster.getClusterName(), dc.getDcName());
 			}
 		}
 
-    	if(shards != null){
+		if(shards != null){
 			for (ShardModel shard : shards) {
 				shardService.createShard(cluster.getClusterName(), shard.getShardTbl(), shard.getSentinels());
 			}
 		}
 
-    	return result;
+		return result;
 	}
 
 	public long getOrgIdFromClusterOrgName(ClusterTbl cluster) {
@@ -239,7 +236,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public void updateCluster(String clusterName, ClusterTbl cluster) {
 		ClusterTbl proto = find(clusterName);
-    	if(null == proto) throw new BadRequestException("Cannot find cluster");
+		if(null == proto) throw new BadRequestException("Cannot find cluster");
 
 		if(proto.getId() != cluster.getId()) {
 			throw new BadRequestException("Cluster not match.");
@@ -254,9 +251,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		// organization info should not be updated by cluster,
 		// it's automatically updated by scheduled task
 		proto.setOrganizationInfo(null);
-		
+
 		final ClusterTbl queryProto = proto;
-    	clusterDao.updateCluster(queryProto);
+		clusterDao.updateCluster(queryProto);
 	}
 
 	@Override
@@ -292,13 +289,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public void deleteCluster(String clusterName) {
 		ClusterTbl proto = find(clusterName);
-    	if(null == proto) throw new BadRequestException("Cannot find cluster");
-    	proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
-    	List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
-    	
-    	final ClusterTbl queryProto = proto;
+		if(null == proto) throw new BadRequestException("Cannot find cluster");
+		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
 
-    	// Call cluster delete event
+		final ClusterTbl queryProto = proto;
+
+		// Call cluster delete event
 		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName);
 
 		try {
@@ -307,42 +304,49 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new ServerException(e.getMessage());
 		}
 
-    	clusterEvent.onEvent();
+		clusterEvent.onEvent();
 
-    	/** Notify meta server **/
-    	notifier.notifyClusterDelete(clusterName, relatedDcs);
+		/** Notify meta server **/
+		notifier.notifyClusterDelete(clusterName, relatedDcs);
 	}
 
 	@Override
 	public void bindDc(String clusterName, String dcName) {
 		final ClusterTbl cluster = find(clusterName);
-    	final DcTbl dc = dcService.find(dcName);
-    	if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
-    	
-    	queryHandler.handleQuery(new DalQuery<Integer>() {
+		final DcTbl dc = dcService.find(dcName);
+		if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
+
+		Map<Long, SetinelTbl> dcMapSentinel = sentinelService.eachRandomSentinelByDc();
+		if (dcMapSentinel == null) {
+			throw new BadRequestException(String.format("Cannot bind dc due to the map of sentinel in dc is null, dcName: %s, clusterName: %s",
+					dcName, clusterName));
+		}
+
+		final SetinelTbl sentinel = dcMapSentinel.get(dc.getId());
+		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterDao.bindDc(cluster, dc);
+				return clusterDao.bindDc(cluster, dc, sentinel);
 			}
-    	});
+		});
 	}
 
 	@Override
 	public void unbindDc(String clusterName, String dcName) {
 		final ClusterTbl cluster = find(clusterName);
-    	final DcTbl dc = dcService.find(dcName);
-    	if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
-    	
-    	queryHandler.handleQuery(new DalQuery<Integer>() {
+		final DcTbl dc = dcService.find(dcName);
+		if(null == dc || null == cluster) throw new BadRequestException("Cannot unbind dc due to unknown dc or cluster");
+
+		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				return clusterDao.unbindDc(cluster, dc);
 			}
-    	});
-    	
-    	/** Notify meta server **/
-    	notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
-    	
+		});
+
+		/** Notify meta server **/
+		notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
+
 	}
 
 	@Override
@@ -352,7 +356,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public Integer doQuery() throws DalException {
 				return dao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);
 			}
-    	});
+		});
 	}
 
 	public boolean checkEmails(String emails) {
@@ -373,17 +377,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	/**
 	 * Randomly re-balance sentinel assignment for clusters among dcs
-     * */
+	 * */
 	@Override
-	public List<String> reBalanceSentinels(final int numOfClusters) {
-		List<String> clusters = randomlyChosenClusters(findAllClusterNames(), numOfClusters);
-		logger.info("[reBalanceSentinels] pick up clusters: {}", clusters);
+	public List<String> reBalanceSentinels(String dcName, final int numOfClusters) {
+		List<String> clusters = randomlyChosenClusters(findAllClustersNameByDcName(dcName), numOfClusters);
+		logger.info("[reBalanceSentinels] pick up clusters: {}, dc: {}", clusters, dcName);
 
-		reBalanceClusterSentinels(clusters);
+		reBalanceClusterSentinels(dcName, clusters);
 		return clusters;
 	}
 
-    // randomly findRedisHealthCheckInstance 'numOfClusters' cluster names
+	// randomly findRedisHealthCheckInstance 'numOfClusters' cluster names
 	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
 		if(clusters == null || clusters.isEmpty() || num >= clusters.size()) return clusters;
 		if(random == null) {
@@ -399,58 +403,54 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return new LinkedList<>(result);
 	}
 
-	public void reBalanceClusterSentinels(final List<String> clusters) {
-        List<String> dcNames = dcService.findAllDcNames().stream()
-                .map(dcTbl -> dcTbl.getDcName()).collect(Collectors.toList());
-        Map<String, List<SetinelTbl>> dcToSentinels = getDcNameMappedSentinels(dcNames);
+	@Override
+	public void reBalanceClusterSentinels(String dcName, final List<String> clusters) {
+		List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dcName);
 
 		// maxChangeOnce must be smaller than DefaultDcMetaCache.META_MODIFY_PROTECT_COUNT
 		int maxChangeOnce = consoleConfig.getRebalanceSentinelMaxNumOnce(),
 				changingPeriod = consoleConfig.getRebalanceSentinelInterval();
 		if(clusters.size() < maxChangeOnce) {
 			for (String cluster : clusters) {
-				balanceCluster(dcToSentinels, cluster);
+				balanceCluster(dcName, sentinels, cluster);
 			}
 		} else {
 			List<String> nextExecutionClusters = clusters.subList(maxChangeOnce, clusters.size());
 			for(int i = 0; i < maxChangeOnce; i++) {
-				balanceCluster(dcToSentinels, clusters.get(i));
+				balanceCluster(dcName, sentinels, clusters.get(i));
 			}
-			scheduled.schedule(() -> reBalanceClusterSentinels(nextExecutionClusters), changingPeriod, TimeUnit.SECONDS);
+			scheduled.schedule(() -> reBalanceClusterSentinels(dcName, nextExecutionClusters), changingPeriod, TimeUnit.SECONDS);
 		}
 	}
 
 	// Cache {dc name} -> List {SentinelTbl}
 	private Map<String, List<SetinelTbl>> getDcNameMappedSentinels(final List<String> dcNames) {
-	    Map<String, List<SetinelTbl>> map = Maps.newHashMap();
-	    for(String dc : dcNames) {
-            List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dc);
-            map.put(dc, sentinels);
-        }
-        return map;
-    }
+		Map<String, List<SetinelTbl>> map = Maps.newHashMap();
+		for(String dc : dcNames) {
+			List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dc);
+			map.put(dc, sentinels);
+		}
+		return map;
+	}
 
-    // Add transaction for one cluster update, rollback if one 'DcClusterShard' update fails
+	// Add transaction for one cluster update, rollback if one 'DcClusterShard' update fails
 	@VisibleForTesting
 	@DalTransaction
-	protected void balanceCluster(Map<String, List<SetinelTbl>> dcToSentinels, final String cluster) {
+	protected void balanceCluster(String dcName, List<SetinelTbl> sentinels, final String cluster) {
 
-		for(String dcName : dcToSentinels.keySet()) {
-			List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
-			List<SetinelTbl> sentinels = dcToSentinels.get(dcName);
-			if(dcClusterShards == null || sentinels == null || sentinels.isEmpty()) {
-				throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
-			}
-            long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
-			dcClusterShards.forEach(dcClusterShard -> {
-				dcClusterShard.setSetinelId(randomlySelectedSentinelId);
-				try {
-					dcClusterShardService.updateDcClusterShard(dcClusterShard);
-				} catch (DalException e) {
-					throw new XpipeRuntimeException(e.getMessage());
-				}
-			});
+		List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
+		if(dcClusterShards == null || sentinels == null || sentinels.isEmpty()) {
+			throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
 		}
+		long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
+		dcClusterShards.forEach(dcClusterShard -> {
+			dcClusterShard.setSetinelId(randomlySelectedSentinelId);
+			try {
+				dcClusterShardService.updateDcClusterShard(dcClusterShard);
+			} catch (DalException e) {
+				throw new XpipeRuntimeException(e.getMessage());
+			}
+		});
 	}
 
 	@VisibleForTesting
@@ -481,7 +481,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 							long delay = delayService.getDelay(hostPort);
 							if(delay == TimeUnit.NANOSECONDS.toMillis(DelayAction.SAMPLE_LOST_AND_NO_PONG)
 									|| delay == TimeUnit.NANOSECONDS.toMillis(DelayAction.SAMPLE_LOST_BUT_PONG)
-									) {
+							) {
 
 								String clusterName = clusterMeta.getId();
 								unhealthyClusters.putIfAbsent(clusterName,
@@ -566,5 +566,15 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	private List<String> findAllClustersNameByDcName(String dcName) {
+		List<ClusterTbl> clusterTbls = findAllClustersByDcName(dcName);
+		List<String> clustersName = new ArrayList<>(clusterTbls.size());
+
+		for (ClusterTbl clusterTbl : clusterTbls) {
+			clustersName.add(clusterTbl.getClusterName());
+		}
+		return clustersName;
 	}
 }
