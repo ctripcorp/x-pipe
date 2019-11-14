@@ -132,8 +132,8 @@ public class DefaultRedisHealthCheckInstance extends AbstractLifecycle implement
 
     @Override
     public String toString() {
-        return String.format("HealthCheckInstance{endpoint=%s, lastPongTime=%d, lastDelayTime=%d, lastDelayNano=%d}",
-                endpoint, lastPongTime, lastDelayTime, lastDelayNano);
+        return String.format("HealthCheckInstance[lastPongTime=%d, lastDelayTime=%d, lastDelayNano=%d], InstanceInfo: [%s]",
+                lastPongTime, lastDelayTime, lastDelayNano, getRedisInstanceInfo().toString());
     }
 
     public HealthCheckActionListener createPingListener() {

@@ -144,12 +144,13 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
 
     @Override
     public void clear(Endpoint key) throws ObjectPoolException {
-        if(!objectPools.containsKey(key)) {
+        XpipeNettyClientPool pool = objectPools.remove(key);
+        if(pool == null) {
             logger.warn("[clear] clear an non-existing object pool");
             return;
         }
         try {
-            getOrCreate(key).clear();
+            pool.clear();
         } catch (Exception e) {
             throw new ObjectPoolException("object pool:" + getOrCreate(key) + ",key:" + key, e);
         }
@@ -179,6 +180,11 @@ public class XpipeNettyClientKeyedObjectPool extends AbstractLifecycle
     @VisibleForTesting
     public ObjectPool getObjectPool(Endpoint endpoint) {
         return getOrCreate(endpoint).getObjectPool();
+    }
+
+    @VisibleForTesting
+    protected XpipeNettyClientPool getClientPool(Endpoint endpoint) {
+        return objectPools.get(endpoint);
     }
 
 }

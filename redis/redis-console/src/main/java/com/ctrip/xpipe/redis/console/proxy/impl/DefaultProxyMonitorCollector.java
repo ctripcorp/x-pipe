@@ -28,9 +28,11 @@ import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
 
 public class DefaultProxyMonitorCollector extends AbstractStartStoppable implements ProxyMonitorCollector {
 
@@ -58,14 +60,17 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
     private ProxyModel model;
 
-    public static final int CHECK_INTERVAL = 1000;
+    private IntSupplier checkInterval;
+
+    private Random random = new Random();
 
     public DefaultProxyMonitorCollector(ScheduledExecutorService scheduled,
                                         SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool,
-                                        ProxyModel model) {
+                                        ProxyModel model, IntSupplier checkInterval) {
         this.scheduled = scheduled;
         this.model = model;
         this.objectPool = keyedObjectPool.getKeyPool(new DefaultProxyEndpoint(model.getUri()));
+        this.checkInterval = checkInterval;
     }
 
     @Override
@@ -135,7 +140,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
                     }
                 });
             }
-        }, getStartInterval(), CHECK_INTERVAL, TimeUnit.MILLISECONDS);
+        }, getStartInterval(), checkInterval.getAsInt(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -146,7 +151,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     }
 
     protected int getStartInterval() {
-        return 2000;
+        return 2000 + Math.abs(random.nextInt(3000));
     }
 
     private abstract class AbstractInfoUpdater<T> {
