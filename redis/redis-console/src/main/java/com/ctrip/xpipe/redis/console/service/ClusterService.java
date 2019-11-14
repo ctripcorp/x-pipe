@@ -27,10 +27,11 @@ public interface ClusterService {
 	void bindDc(String clusterName, String dcName);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
-	List<String> reBalanceSentinels(int numOfClusters);
-	void reBalanceClusterSentinels(List<String> clusterNames);
+	List<String> reBalanceSentinels(String dcName, int numOfClusters);
+	void reBalanceClusterSentinels(String dcName, List<String> clusterNames);
 
 	List<ClusterListClusterModel> findUnhealthyClusters();
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
+
 }

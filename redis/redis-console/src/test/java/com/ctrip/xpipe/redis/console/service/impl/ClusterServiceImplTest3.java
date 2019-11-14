@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,10 +21,12 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
     @Autowired
     private ClusterService clusterService;
 
+    @Autowired
+    private DcClusterShardService dcClusterShardService;
+
     @Before
     public void beforeStart(){
         MockitoAnnotations.initMocks(this);
-
     }
 
     @Override
@@ -51,6 +55,16 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
                 Assert.assertEquals(0, result.size());
             }
         });
+
+    }
+
+    @Test
+    public void testBindDC() {
+        clusterService.bindDc("cluster7", "jq");
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find("jq", "cluster7", "shard1");
+
+        Assert.assertNotNull(dcClusterShardTbl);
+        Assert.assertEquals(1, dcClusterShardTbl.getSetinelId());
 
     }
 
