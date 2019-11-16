@@ -2,8 +2,8 @@
 SERVICE_NAME=redis-meta
 
 #set the jdk to 1.8 version
-if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8/ ]]; then
-    export JAVA_HOME=/usr/java/jdk1.8
+if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8.0_121/ ]]; then
+    export JAVA_HOME=/usr/java/jdk1.8.0_121
 elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
     export JAVA_HOME=/usr/java/latest/
 fi
