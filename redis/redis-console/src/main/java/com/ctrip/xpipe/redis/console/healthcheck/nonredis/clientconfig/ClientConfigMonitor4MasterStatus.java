@@ -18,8 +18,6 @@ import java.util.Set;
 @ConditionalOnProperty(name = {HealthChecker.ENABLED}, matchIfMissing = true)
 public class ClientConfigMonitor4MasterStatus extends AbstractClientConfigMonitor {
 
-    private static final long checkIntervalMill = Long.parseLong(System.getProperty("console.outerclient.check.interval", "30000"));
-
     @Autowired(required = false)
     private ConsoleLeaderElector consoleSiteLeader;
 
@@ -44,7 +42,7 @@ public class ClientConfigMonitor4MasterStatus extends AbstractClientConfigMonito
 
     @Override
     protected long getIntervalMilli() {
-        return checkIntervalMill;
+        return consoleConfig.getOutterClientCheckInterval();
     }
 
     @Override
