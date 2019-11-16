@@ -58,7 +58,7 @@ public interface ConsoleConfig extends CoreConfig {
 
 	String getXRedisMinimumRequestVersion();
 
-	String getXpipeRuntimeEnvironmentEnvironment();
+	String getXpipeRuntimeEnvironment();
 
 	String getDBAEmails();
 
@@ -97,4 +97,6 @@ public interface ConsoleConfig extends CoreConfig {
 	Map<String, String> getDatabaseIpAddresses();
 
 	int getProxyInfoCollectInterval();
+
+	int getOutterClientCheckInterval();
 }

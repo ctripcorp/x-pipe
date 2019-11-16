@@ -24,7 +24,7 @@ public class AlertMessageDecorator extends Decorator {
     @Override
     public String doGenerateTitle(AlertEntity alert) {
         return String.format("[%s][XPipe 报警]%s",
-                consoleConfig.getXpipeRuntimeEnvironmentEnvironment(),
+                consoleConfig.getXpipeRuntimeEnvironment(),
                 alert.getKey());
     }
 
