@@ -23,8 +23,7 @@ import org.mockito.MockitoAnnotations;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class MigrationStatusConcurrentIssue extends AbstractTest {
 
@@ -67,10 +66,11 @@ public class MigrationStatusConcurrentIssue extends AbstractTest {
             }
         };
 
+        cluster = spy(cluster);
         cluster.setCurrentCluster(new ClusterTbl().setClusterName("test-cluster"));
-
         cluster.setCurrentState(new MigrationPartialSuccessState(cluster));
 
+        when(cluster.getMigrationShards()).thenReturn(Lists.newArrayList());
         cluster.update(
                 new DefaultMigrationShard.ShardObserverEvent("test-cluster-shard", ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC),
                 null);
