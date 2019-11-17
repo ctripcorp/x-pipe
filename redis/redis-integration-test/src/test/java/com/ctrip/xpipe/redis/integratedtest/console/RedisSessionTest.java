@@ -226,8 +226,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
     }
 
 
-    private ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
-            new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
+    private ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(new NaiveNextHopAlgorithm());
 
     @Test
     public void testPingThroughProxy() throws Exception {
