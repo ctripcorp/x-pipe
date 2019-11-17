@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class DefaultLifecycleState extends DefaultLifecycleController implements LifecycleState{
 	
-	private static final Logger logger = LoggerFactory.getLogger(DefaultLifecycleState.class);
+	private final Logger logger;
 	
 	private AtomicReference<String> phaseName = new AtomicReference<>();
 
@@ -26,6 +26,7 @@ public class DefaultLifecycleState extends DefaultLifecycleController implements
 	public DefaultLifecycleState(Lifecycle lifecycle, LifecycleController lifecycleController) {
 		this.lifecycle = lifecycle;
 		this.lifecycleController = lifecycleController;
+		logger = LoggerFactory.getLogger(lifecycle.getClass());
 	}
 
 	@Override
