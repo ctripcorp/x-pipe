@@ -209,6 +209,46 @@ public class AbstractMigrationTest extends AbstractConsoleIntegrationTest {
 				});
 	}
 
+	protected void mockFailThenSuccessNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
+														  String shard, String newPrimaryDc, Throwable ex) {
+		when(migrationCommandBuilder.buildNewPrimaryDcCommand(eq(cluster), eq(shard), eq(newPrimaryDc), anyObject()))
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+
+					@Override
+					public String getName() {
+						return String.format("Mocked-NewFail-%s-%s-%s", cluster, shard, newPrimaryDc);
+					}
+
+					@Override
+					protected void doExecute() throws Exception {
+						future().setFailure(ex);
+					}
+
+					@Override
+					protected void doReset() {
+					}
+				})
+				.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+
+					@Override
+					public String getName() {
+						return String.format("Mocked-NewSuccess-%s-%s-%s", cluster, shard, newPrimaryDc);
+					}
+
+					@Override
+					protected void doExecute() throws Exception {
+						future().setSuccess(
+								new PrimaryDcChangeMessage("New success", "127.0.0.1", randomPort()));
+					}
+
+					@Override
+					protected void doReset() {
+					}
+				});
+
+	}
+
+
 	protected void mockSuccessOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder, String cluster,
 			String shard, String newPrimaryDc, String otherDc) {
 		when(migrationCommandBuilder.buildOtherDcCommand(cluster, shard, newPrimaryDc, otherDc))

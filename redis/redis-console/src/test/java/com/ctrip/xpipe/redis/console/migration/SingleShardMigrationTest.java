@@ -78,8 +78,8 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 	public void testBugConcurrentModifyMigrationState() {
 		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
 		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
-		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, new TimeoutException("metaserver 500"));
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder, "cluster1", "shard1", dcB);
+		mockFailThenSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, new TimeoutException("metaserver 500"));
+
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 
 
