@@ -371,13 +371,15 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         return migrationService;
     }
 
-    private void setStatus() {
+    @VisibleForTesting
+    protected void setStatus() {
 
         MigrationStatus status = MigrationStatus.valueOf(migrationCluster.getStatus());
         currentState = status.createMigrationState(this);
     }
 
-    private void loadMetaInfo() {
+    @VisibleForTesting
+    protected void loadMetaInfo() {
         this.currentCluster = getClusterService().find(migrationCluster.getClusterId());
         this.shards = generateShardMap(getShardService().findAllByClusterName(currentCluster.getClusterName()));
         this.dcs = generateDcMap(getDcService().findClusterRelatedDc(currentCluster.getClusterName()));
@@ -407,5 +409,18 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @Override
     public String toString() {
         return String.format("[cluster:%s, state:%s]", clusterName(), currentState);
+    }
+
+    @VisibleForTesting
+    protected DefaultMigrationCluster setCurrentCluster(ClusterTbl currentCluster) {
+        this.currentCluster = currentCluster;
+        return this;
+    }
+
+
+    @VisibleForTesting
+    protected DefaultMigrationCluster setCurrentState(MigrationState currentState) {
+        this.currentState = currentState;
+        return this;
     }
 }
