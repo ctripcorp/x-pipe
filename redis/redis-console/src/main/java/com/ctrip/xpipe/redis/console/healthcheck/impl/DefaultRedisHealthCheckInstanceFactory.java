@@ -106,6 +106,10 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     private void installActionIfNeeded(CrossDcLeaderAwareHealthCheckActionFactory factory,
                                        DefaultRedisHealthCheckInstance instance) {
         logger.debug("[try install action] {}", factory.support());
+        // todo: temporary ignore cross region health checks
+        if (instance.getRedisInstanceInfo().isReplThroughProxy()) {
+            return;
+        }
         if(clusterServer != null && clusterServer.amILeader()) {
             logger.debug("[cluster server not null][installed]");
             instance.register(factory.create(instance));
