@@ -259,7 +259,6 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
 				}
 
-				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 			}
 		});
 		return migrateResult;
