@@ -104,10 +104,6 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
 		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
 
-		logger.info("{}", ((DefaultMigrationCluster)migrationCluster).getCurrentState());
-
-
-
 	}
 
 
