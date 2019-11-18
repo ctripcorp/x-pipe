@@ -258,7 +258,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					logger.error("[doNewPrimaryDcMigrate][fail]", e);
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
 				}
-				
+
 				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 			}
 		});
