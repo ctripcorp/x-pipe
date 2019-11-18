@@ -29,8 +29,7 @@ public class ProxyEnabledNettyKeyedPoolClientFactoryTest extends AbstractRedisTe
 
     @Before
     public void beforeProxyEnabledNettyKeyedPoolClientFactoryTest() throws Exception {
-        ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
-                new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
+        ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(new NaiveNextHopAlgorithm());
         factory = new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
         factory.start();
     }
