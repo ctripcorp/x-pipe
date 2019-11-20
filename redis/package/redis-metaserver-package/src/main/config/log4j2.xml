@@ -59,7 +59,14 @@
             <appender-ref ref="zkLogFile"/>
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
-
+        <logger name="com.ctrip.xpipe.redis.meta.server.impl.RemoteMetaServer" level="WARN" additivity="false">
+            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+        <logger name="com.ctrip.xpipe.redis.meta.server.rest.impl.DispatcherMetaServerController" level="WARN" additivity="false">
+            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
         <root level="INFO">
             <appender-ref ref="rollingFileInfo"/>
             <appender-ref ref="catAppender4Log4j2"/>
