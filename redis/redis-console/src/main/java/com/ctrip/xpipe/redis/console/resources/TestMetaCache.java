@@ -94,4 +94,9 @@ public class TestMetaCache implements MetaCache {
 
     public String getActiveDc(String clusterId, String shardId){return null;}
 
+    @Override
+    public String getActiveDc(HostPort hostPort) {
+        return null;
+    }
+
 }

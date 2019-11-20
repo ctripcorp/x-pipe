@@ -182,6 +182,19 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
+    public String getActiveDc(HostPort hostPort) {
+
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+
+        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
+        if (metaDesc == null) {
+            return null;
+        }
+
+        return metaDesc.getActiveDc();
+    }
+
+    @Override
     public RouteMeta getRouteIfPossible(HostPort hostPort) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);

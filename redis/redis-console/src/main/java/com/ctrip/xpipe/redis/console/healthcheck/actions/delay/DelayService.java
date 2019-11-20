@@ -10,4 +10,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 public interface DelayService {
 
     long getDelay(HostPort hostPort);
+
+    long getLocalCachedDelay(HostPort hostPort);
 }

@@ -109,6 +109,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
+                // console monitors only cluster with active idc in current idc
                 if (!isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
                 }
@@ -122,7 +123,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
-        return cluster.getActiveDc().equals(FoundationService.DEFAULT.getDataCenter());
+        return cluster.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter());
     }
 
 }
