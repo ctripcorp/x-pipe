@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -63,17 +65,38 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     }
 
     private void updateActiveDc(ClusterMetaComparator comparator) {
-        ClusterMeta clusterMeta = comparator.getFuture();
-        for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
-            for(RedisMeta redisMeta : shardMeta.getRedises()) {
-                RedisHealthCheckInstance instance = instanceManager
-                        .findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
-                if(instance != null) {
-                    instance.getRedisInstanceInfo().setActiveDc(clusterMeta.getActiveDc());
-                }
+        ClusterMeta current = comparator.getCurrent(), future = comparator.getFuture();
+        if (current.getActiveDc().equals(future.getActiveDc())) {
+            logger.warn("[updateActiveDc][{}][previous-dc {}][future-dc {}]", current.getId(),
+                    current.getActiveDc(), future.getActiveDc());
+            return;
+        }
+        installIfClusterActiveIdcCurrentIdc(comparator);
+        uninstallIfClusterActiveIdcWasCurrentIdc(comparator);
+    }
+
+    private void installIfClusterActiveIdcCurrentIdc(ClusterMetaComparator comparator) {
+        ClusterMeta future = comparator.getFuture();
+        if (!FoundationService.DEFAULT.getDataCenter().equals(future.getActiveDc())) {
+            return;
+        }
+        for (ShardMeta shardMeta : future.getShards().values()) {
+            for (RedisMeta redisMeta : shardMeta.getRedises()) {
+                instanceManager.getOrCreate(redisMeta);
             }
         }
+    }
 
+    private void uninstallIfClusterActiveIdcWasCurrentIdc(ClusterMetaComparator comparator) {
+        ClusterMeta current = comparator.getCurrent();
+        if (!FoundationService.DEFAULT.getDataCenter().equals(current.getActiveDc())) {
+            return;
+        }
+        for (ShardMeta shardMeta : current.getShards().values()) {
+            for (RedisMeta redisMeta : shardMeta.getRedises()) {
+                instanceManager.remove(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
+            }
+        }
     }
 
     @Override

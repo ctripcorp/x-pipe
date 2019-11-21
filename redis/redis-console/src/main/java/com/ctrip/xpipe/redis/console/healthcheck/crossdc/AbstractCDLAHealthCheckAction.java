@@ -12,7 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Oct 06, 2018
  */
-public abstract class AbstractCDLAHealthCheckAction extends AbstractHealthCheckAction implements CrossDcLeaderAwareHealthCheckAction {
+public abstract class AbstractCDLAHealthCheckAction extends AbstractHealthCheckAction implements SiteLeaderAwareHealthCheckAction {
 
     private static final int START_TIME_INTERVAL_MILLI = 5 * 60 * 1000;
 
