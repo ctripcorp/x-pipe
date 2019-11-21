@@ -66,7 +66,7 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
     protected abstract List<ALERT_TYPE> alertTypes();
 
     @Override
-    public void isleader() {
+    public void isCrossDcLeader() {
         new SafeLoop<RedisHealthCheckInstance>(executors, healthCheckInstanceManager.getAllRedisInstance()) {
             @Override
             public void doRun0(RedisHealthCheckInstance instance) {
@@ -76,7 +76,7 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
     }
 
     @Override
-    public void notLeader() {
+    public void notCrossDcLeader() {
         new SafeLoop<RedisHealthCheckInstance>(executors, healthCheckInstanceManager.getAllRedisInstance()) {
             @Override
             public void doRun0(RedisHealthCheckInstance instance) {
