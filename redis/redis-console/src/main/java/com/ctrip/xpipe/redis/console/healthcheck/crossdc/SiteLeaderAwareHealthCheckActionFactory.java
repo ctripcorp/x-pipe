@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.crossdc;
 
+import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
@@ -10,7 +11,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
  * Sep 30, 2018
  */
 public interface SiteLeaderAwareHealthCheckActionFactory extends
-        HealthCheckActionFactory<SiteLeaderAwareHealthCheckAction>, LeaderAware {
+        HealthCheckActionFactory<SiteLeaderAwareHealthCheckAction>, CrossDcLeaderAware {
 
     SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance);
 
