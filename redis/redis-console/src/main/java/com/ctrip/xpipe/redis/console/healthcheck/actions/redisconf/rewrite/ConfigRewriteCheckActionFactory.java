@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.rewrite;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.AbstractCDLAHealthCheckActionFactory;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.CrossDcLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.crossdc.AbstractLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SiteLeaderAwareHealthCheckAction;
 import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
 
@@ -16,15 +16,15 @@ import java.util.List;
  */
 
 @Component
-public class ConfigRewriteCheckActionFactory extends AbstractCDLAHealthCheckActionFactory {
+public class ConfigRewriteCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory {
 
     @Override
-    public CrossDcLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
+    public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         return new ConfigRewriteCheckAction(scheduled, instance, executors, alertManager);
     }
 
     @Override
-    public Class<? extends CrossDcLeaderAwareHealthCheckAction> support() {
+    public Class<? extends SiteLeaderAwareHealthCheckAction> support() {
         return ConfigRewriteCheckAction.class;
     }
 

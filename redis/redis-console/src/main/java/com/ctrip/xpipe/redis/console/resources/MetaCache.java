@@ -42,4 +42,6 @@ public interface MetaCache {
     List<HostPort> getAllRedisOfDc(String dcId);
 
     String getActiveDc(String clusterId, String shardId);
+
+    String getActiveDc(HostPort hostPort);
 }

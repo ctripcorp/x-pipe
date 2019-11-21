@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import com.ctrip.xpipe.tuple.Pair;
 
 /**
  * @author wenchao.meng
@@ -17,7 +20,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String pingStatusUrl;
 
-    private final String dbPingStatsUrl;
+    private final String delayStatusUrl;
 
     public DefaultConsoleService(String address){
 
@@ -26,8 +29,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             this.address = "http://" + this.address;
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
-        pingStatusUrl = String.format("%s/api/ping/{ip}/{port}", this.address);
-        dbPingStatsUrl = String.format("%s/api/db/affinity", this.address);
+        pingStatusUrl = String.format("%s/api/redis/ping/{ip}/{port}", this.address);
+        delayStatusUrl = String.format("%s/api/redis/inner/delay/{ip}/{port}", this.address);
     }
 
     @Override
@@ -41,8 +44,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public Long getConsoleDatabaseAffinity() {
-        return restTemplate.getForObject(dbPingStatsUrl, Long.class);
+    public Long getInstanceDelayStatus(String ip, int port) {
+        return restTemplate.getForObject(delayStatusUrl, Long.class, ip, port);
     }
 
     @Override

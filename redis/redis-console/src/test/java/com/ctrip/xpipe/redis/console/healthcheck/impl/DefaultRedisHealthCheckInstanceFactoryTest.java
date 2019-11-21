@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
+import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.controller.api.HealthController;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -28,7 +30,7 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
     private HealthCheckInstanceManager instanceManager;
 
     @Autowired
-    private ConsoleCrossDcServer crossDcServer;
+    private ConsoleLeaderElector crossDcServer;
 
     @Autowired
     private HealthController controller;
@@ -46,7 +48,7 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
             }
         }
         logger.info("=====================splitter=======================================");
-        crossDcServer.setCrossDcLeader(true, "leader");
+
         sleep(100);
         for(HealthCheckAction action : instance.getHealthCheckActions()) {
             logger.info("[action] {}", action);

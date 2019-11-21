@@ -99,4 +99,6 @@ public interface ConsoleConfig extends CoreConfig {
 	int getProxyInfoCollectInterval();
 
 	int getOutterClientCheckInterval();
+
+	Map<String, String> getConsoleDomains();
 }

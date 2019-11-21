@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +25,10 @@ public class ConsoleServiceManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
+    private Map<String, ConsoleService> services = Maps.newConcurrentMap();
+
     @Autowired
     private ConsoleConfig consoleConfig;
-
-    @PostConstruct
-    public void postConstruct(){
-
-    }
 
     public List<HEALTH_STATE> allHealthStatus(String ip, int port){
 
@@ -49,6 +47,20 @@ public class ConsoleServiceManager {
         return result;
     }
 
+    public long getDelay(String ip, int port, String activeIdc) {
+        ConsoleService service = services.get(activeIdc);
+        if (service == null) {
+            synchronized (this) {
+                service = services.get(activeIdc);
+                if (service == null) {
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(activeIdc.toUpperCase()));
+                    services.put(activeIdc, service);
+                }
+            }
+        }
+        return service.getInstanceDelayStatus(ip, port);
+    }
+
     public List<Boolean> allPingStatus(String host, int port) {
         Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
         List<Boolean> result = new LinkedList<>();
@@ -60,21 +72,6 @@ public class ConsoleServiceManager {
                 logger.info("[allPingStatus]{}, {}:{}, {}", consoleService, host, port, instancePingStatus);
             }catch (Exception e){
                 logger.error("[allPingStatus]" + consoleService + "," + host + ":" + port, e);
-            }
-        }
-        return result;
-    }
-
-    public List<Long> getAllDatabaseAffinity() {
-        Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
-        List<Long> result = Lists.newArrayListWithCapacity(consoleServiceMap.size());
-        for(ConsoleService consoleService : consoleServiceMap.values()){
-            try{
-                Long dbAffinity = consoleService.getConsoleDatabaseAffinity();
-                result.add(dbAffinity);
-                logger.info("[getAllDatabaseAffinity]{}, {}", consoleService, dbAffinity);
-            }catch (Exception e){
-                logger.error("[getAllDatabaseAffinity]" + consoleService, e);
             }
         }
         return result;
@@ -104,7 +101,12 @@ public class ConsoleServiceManager {
         Map<String, ConsoleService> result = new HashMap<>();
 
         for(String url : getConsoleUrls()){
-            result.put(url, new DefaultConsoleService(url));
+            ConsoleService service = services.get(url);
+            if (service == null) {
+                service = new DefaultConsoleService(url);
+                services.put(url, service);
+            }
+            result.put(url, service);
         }
         return result;
     }
