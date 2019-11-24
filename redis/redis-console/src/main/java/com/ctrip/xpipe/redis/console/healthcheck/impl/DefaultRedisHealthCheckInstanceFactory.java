@@ -48,7 +48,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     private List<HealthCheckActionFactory> factories;
 
     @Autowired(required = false)
-    private ClusterServer clusterServer;
+    private ConsoleLeaderElector clusterServer;
 
     @Autowired
     private MetaCache metaCache;
@@ -120,7 +120,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
     }
 
     @VisibleForTesting
-    protected DefaultRedisHealthCheckInstanceFactory setClusterServer(ClusterServer clusterServer) {
+    protected DefaultRedisHealthCheckInstanceFactory setClusterServer(ConsoleLeaderElector clusterServer) {
         this.clusterServer = clusterServer;
         return this;
     }
