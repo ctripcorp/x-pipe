@@ -70,7 +70,9 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
         new SafeLoop<RedisHealthCheckInstance>(executors, healthCheckInstanceManager.getAllRedisInstance()) {
             @Override
             public void doRun0(RedisHealthCheckInstance instance) {
-                registerTo(instance);
+                if (!instance.getRedisInstanceInfo().isReplThroughProxy()) {
+                    registerTo(instance);
+                }
             }
         }.run();
     }
