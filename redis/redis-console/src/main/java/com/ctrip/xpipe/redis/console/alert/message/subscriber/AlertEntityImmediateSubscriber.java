@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 public class AlertEntityImmediateSubscriber extends AbstractAlertEntitySubscriber {
 
-    private final static long reportInterval = 30 * 1000;
+    private final static long reportInterval = 3 * 60 * 1000;
 
     private Set<AlertEntity> existingAlerts = Sets.newConcurrentHashSet();
 
