@@ -35,6 +35,9 @@ public class LogInterceptor extends HandlerInterceptorAdapter{
     private void logApiRequest(HttpServletRequest request, String desc) {
 
         String uri = request.getRequestURI();
+        if (uri.startsWith(String.format("%s/%s", AbstractConsoleController.API_PREFIX, "keepers/check"))) {
+            return;
+        }
         if(uri.startsWith(AbstractConsoleController.API_PREFIX)){
             String ipAddress = getAddresses(request);
             logger.info("[logApiRequest][{}]{}, {}", desc, ipAddress, request.getRequestURI());
