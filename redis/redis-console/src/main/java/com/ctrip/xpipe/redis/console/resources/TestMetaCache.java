@@ -88,7 +88,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public List<HostPort> getAllRedisOfDc(String dcId) {
+    public List<HostPort> getAllRedisOfDc(String activeDc, String dcId) {
         return null;
     }
 
