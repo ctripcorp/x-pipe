@@ -214,10 +214,13 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public List<HostPort> getAllRedisOfDc(String dcId) {
+    public List<HostPort> getAllRedisOfDc(String activeDc, String dcId) {
         List<HostPort> result = Lists.newLinkedList();
         try {
             for(ClusterMeta clusterMeta : meta.getKey().findDc(dcId).getClusters().values()) {
+                if (!clusterMeta.getActiveDc().equalsIgnoreCase(activeDc)) {
+                    continue;
+                }
                 for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                     for(RedisMeta redis : shardMeta.getRedises()) {
                         result.add(new HostPort(redis.getIp(), redis.getPort()));

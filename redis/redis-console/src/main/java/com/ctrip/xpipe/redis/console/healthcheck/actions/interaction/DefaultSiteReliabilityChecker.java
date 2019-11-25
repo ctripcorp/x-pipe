@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
@@ -27,7 +28,7 @@ public class DefaultSiteReliabilityChecker implements SiteReliabilityChecker {
     @Override
     public boolean isSiteHealthy(AbstractInstanceEvent event) {
         RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
-        List<HostPort> totalRedis = metaCache.getAllRedisOfDc(info.getDcId());
+        List<HostPort> totalRedis = metaCache.getAllRedisOfDc(FoundationService.DEFAULT.getDataCenter(), info.getDcId());
         int errorRedis = getErrorRedis(totalRedis);
         return errorRedis < totalRedis.size()/2;
     }

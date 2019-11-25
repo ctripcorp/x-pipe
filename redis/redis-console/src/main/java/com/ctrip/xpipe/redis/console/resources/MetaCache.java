@@ -39,7 +39,7 @@ public interface MetaCache {
 
     boolean isReplThroughProxy(String activeDc, String backupDc);
 
-    List<HostPort> getAllRedisOfDc(String dcId);
+    List<HostPort> getAllRedisOfDc(String activeDc, String dcId);
 
     String getActiveDc(String clusterId, String shardId);
 
