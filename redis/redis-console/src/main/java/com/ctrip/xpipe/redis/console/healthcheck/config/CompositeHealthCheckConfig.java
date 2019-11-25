@@ -18,7 +18,7 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
 
     public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, ConsoleConfig consoleConfig) {
         logger.info("[CompositeHealthCheckConfig] {}", instanceInfo);
-        if(instanceInfo.isReplThroughProxy()) {
+        if(instanceInfo.isCrossRegion()) {
             config = new ProxyEnabledHealthCheckConfig(consoleConfig);
             logger.info("[CompositeHealthCheckConfig][proxied] ping down time: {}", config.pingDownAfterMilli());
         } else {

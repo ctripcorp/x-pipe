@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
-import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
-import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -61,7 +58,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
-        if (info.isReplThroughProxy()) {
+        if (info.isCrossRegion()) {
             logger.info("[create]{}", info);
         }
         HealthCheckConfig config = new CompositeHealthCheckConfig(info, consoleConfig);
@@ -90,7 +87,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc());
         info.isMaster(redisMeta.isMaster());
-        info.setReplThroughProxy(metaCache.isReplThroughProxy(info.getActiveDc(), info.getDcId()));
+        info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
         return info;
     }
 
@@ -110,7 +107,7 @@ public class DefaultRedisHealthCheckInstanceFactory implements RedisHealthCheckI
                                        DefaultRedisHealthCheckInstance instance) {
         logger.debug("[try install action] {}", factory.support());
         // todo: temporary ignore cross region health checks
-        if (instance.getRedisInstanceInfo().isReplThroughProxy()) {
+        if (instance.getRedisInstanceInfo().isCrossRegion()) {
             return;
         }
         if(clusterServer != null && clusterServer.amILeader()) {
