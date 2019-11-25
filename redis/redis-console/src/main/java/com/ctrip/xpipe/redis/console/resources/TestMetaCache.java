@@ -83,7 +83,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public boolean isReplThroughProxy(String activeDc, String backupDc) {
+    public boolean isCrossRegion(String activeDc, String backupDc) {
         return false;
     }
 
