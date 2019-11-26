@@ -41,7 +41,7 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
     @Override
     public long getDelay(HostPort hostPort) {
         String dcId = metaCache.getActiveDc(hostPort);
-        long result = DelayAction.SAMPLE_LOST_AND_NO_PONG;
+        long result;
         if (!FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcId)) {
             result = consoleServiceManager.getDelay(hostPort.getHost(), hostPort.getPort(), dcId);
         } else {
@@ -52,8 +52,7 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
 
     @Override
     public long getLocalCachedDelay(HostPort hostPort) {
-        long result = hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
-        return TimeUnit.NANOSECONDS.toMillis(result);
+        return hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
     }
 
     @Override
