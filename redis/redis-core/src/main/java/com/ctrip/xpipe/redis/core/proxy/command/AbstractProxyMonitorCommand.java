@@ -21,6 +21,8 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
 
     private static final String MONITOR_PREFIX = String.format("%s %s", ProxyProtocol.KEY_WORD, PROXY_OPTION.MONITOR.name());
 
+    private static final int PROXY_CONNECTION_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("proxy.connection.timeout.milli", "5000"));
+
     public AbstractProxyMonitorCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
         super(clientPool, scheduled);
     }
@@ -47,6 +49,11 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
             result[index ++] = parseObject(object);
         }
         return result;
+    }
+
+    @Override
+    public int getCommandTimeoutMilli() {
+        return PROXY_CONNECTION_TIMEOUT_MILLI;
     }
 
     @Override
@@ -117,7 +124,6 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
         protected ProxyMonitorParser.Type getType() {
             return ProxyMonitorParser.Type.TunnelStats;
         }
-
 
     }
 

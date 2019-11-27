@@ -21,6 +21,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -71,7 +72,41 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		migrationCluster.addNewMigrationShard(migrationShard);
 		
 	}
-	
+
+	@Test
+	@DirtiesContext
+	public void testBugConcurrentModifyMigrationState() {
+		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
+		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
+		mockFailThenSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, new TimeoutException("metaserver 500"));
+
+		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
+
+
+		ClusterTbl originalCluster = clusterService.find(1);
+
+		migrationCluster.process();
+		sleep(2000);
+
+		ClusterTbl currentCluster = clusterService.find(1);
+		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
+		Assert.assertEquals(2, currentCluster.getActivedcId());
+		Assert.assertEquals(ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
+		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
+		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
+
+		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
+		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
+
+		ClusterMeta prevPrimaryDcMeta = clusterMetaService.getClusterMeta(dcA, "cluster1");
+		Assert.assertEquals(dcB, prevPrimaryDcMeta.getActiveDc());
+		ClusterMeta newPrimaryDcMeta = clusterMetaService.getClusterMeta(dcB, "cluster1");
+		Assert.assertEquals(dcB, newPrimaryDcMeta.getActiveDc());
+
+	}
+
+
 	@Test
 	@DirtiesContext
 	public void testSuccess() {

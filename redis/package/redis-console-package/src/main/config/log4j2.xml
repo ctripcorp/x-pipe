@@ -107,8 +107,12 @@
             <appender-ref ref="rollingNettyClient"/>
         </logger>
 
-        <logger name="com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus.delay" level="DEBUG" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus.delay" level="INFO" additivity="false">
             <appender-ref ref="rollingRedisDelay"/>
+        </logger>
+
+        <logger name="com.ctrip.xpipe.service.metric.HickwallMetric" level="ERROR" additivity="false">
+            <appender-ref ref="rollingFileInfo"/>
         </logger>
 
         <logger name="org.apache.zookeeper" level="INFO" additivity="false">

@@ -84,6 +84,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_PROXY_INFO_CHECK_INTERVAL = "console.proxy.info.collector.check.interval";
 
+    private static final String KEY_OUTTER_CLIENT_CHECK_INTERVAL = "console.outter.client.check.interval";
+
+    private static final String KEY_CONSOLE_DOMAINS = "console.domains";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -107,7 +111,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getXpipeRuntimeEnvironmentEnvironment() {
+    public String getXpipeRuntimeEnvironment() {
         return getProperty(KEY_XPIPE_RUNTIME_ENVIRONMENT, "");
     }
 
@@ -336,6 +340,17 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getProxyInfoCollectInterval() {
         return getIntProperty(KEY_PROXY_INFO_CHECK_INTERVAL, 10 * 1000);
+    }
+
+    @Override
+    public int getOutterClientCheckInterval() {
+        return getIntProperty(KEY_OUTTER_CLIENT_CHECK_INTERVAL, 120 * 1000);
+    }
+
+    @Override
+    public Map<String, String> getConsoleDomains() {
+        String property = getProperty(KEY_CONSOLE_DOMAINS, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 
     @Override

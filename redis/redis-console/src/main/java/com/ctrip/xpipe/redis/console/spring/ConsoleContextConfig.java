@@ -71,8 +71,7 @@ public class ConsoleContextConfig extends AbstractRedisConfigContext {
 	}
 
 	private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory() {
-		ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(
-				new DefaultProxyEndpointManager(()->1), new NaiveNextHopAlgorithm());
+		ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(new NaiveNextHopAlgorithm());
 		return new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
 	}
 

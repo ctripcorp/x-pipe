@@ -46,7 +46,7 @@ public abstract class Decorator {
     protected VelocityContext generateCommonContext() {
         VelocityContext context = new VelocityContext();
         context.put("time", DateTimeUtils.currentTimeAsString());
-        context.put("environment", consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
+        context.put("environment", consoleConfig.getXpipeRuntimeEnvironment());
         context.put("xpipeAdminEmails", consoleConfig.getXPipeAdminEmails());
         context.put("localIpAddr", foundationService.getLocalIp());
         context.put("dateTimeUtils", dateTimeUtils);

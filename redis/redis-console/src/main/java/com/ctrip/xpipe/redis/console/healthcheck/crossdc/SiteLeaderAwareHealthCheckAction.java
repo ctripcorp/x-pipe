@@ -7,5 +7,5 @@ import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
  * <p>
  * Sep 30, 2018
  */
-public interface CrossDcLeaderAwareHealthCheckAction extends HealthCheckAction {
+public interface SiteLeaderAwareHealthCheckAction extends HealthCheckAction {
 }
