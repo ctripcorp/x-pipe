@@ -33,6 +33,6 @@ public class DefaultDelayServiceTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testDelayNotZero() {
         long nano = DelayAction.SAMPLE_LOST_AND_NO_PONG;
-        logger.info("{}", TimeUnit.NANOSECONDS.toMillis(TimeUnit.NANOSECONDS.toMillis(nano)));
+        logger.info("{}", TimeUnit.NANOSECONDS.toMillis(nano));
     }
 }
