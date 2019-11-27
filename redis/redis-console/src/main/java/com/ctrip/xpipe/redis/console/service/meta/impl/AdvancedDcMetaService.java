@@ -46,6 +46,9 @@ public class AdvancedDcMetaService implements DcMetaService {
     private DcService dcService;
 
     @Autowired
+    private ZoneService zoneService;
+
+    @Autowired
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
@@ -93,8 +96,9 @@ public class AdvancedDcMetaService implements DcMetaService {
     @Override
     public DcMeta getDcMeta(String dcName) {
         DcTbl dcTbl = dcService.find(dcName);
+        ZoneTbl zoneTbl = zoneService.findById(dcTbl.getZoneId());
 
-        DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime());
+        DcMeta dcMeta = new DcMeta().setId(dcName).setLastModifiedTime(dcTbl.getDcLastModifiedTime()).setZone(zoneTbl.getZoneName());
 
         ParallelCommandChain chain = new ParallelCommandChain(executors, false);
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));

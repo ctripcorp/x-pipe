@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
-	<dc id="jq">
+	<dc id="jq" zone="SHA">
 		<sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171"/>
 		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>
 		<zkServer address="127.0.0.1:2181"/>
@@ -15,7 +15,7 @@
 			</shard>
 		</cluster>
 	</dc>
-	<dc id="oy">
+	<dc id="oy" zone="SHA">
 		<zkServer address="127.0.0.1:2281"/>
 		<metaServer ip="127.0.0.1" port="9847" master="true"/>
 		<cluster id="cluster1" active-dc="jq" phase = "1">
@@ -34,5 +34,8 @@
                 <redis ip="127.0.0.2" port="8101" master="127.0.0.1:6100" />
             </shard>
         </cluster>
+	</dc>
+	<dc id="fra-aws" zone="FRA">
+
 	</dc>
 </xpipe>
