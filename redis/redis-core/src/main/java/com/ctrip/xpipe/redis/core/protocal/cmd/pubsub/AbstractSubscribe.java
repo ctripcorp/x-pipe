@@ -21,6 +21,7 @@ import io.netty.channel.Channel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author chen.zhu
@@ -38,6 +39,8 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     private MESSAGE_TYPE messageType;
 
     private String[] subscribeChannel;
+
+    private AtomicInteger channelResponsed = new AtomicInteger(0);
 
     private List<SubscribeListener> listeners = Lists.newCopyOnWriteArrayList();
 
@@ -147,8 +150,9 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     protected void handleResponse(Channel channel, Object response) {
 
         validateResponse(channel, response);
-
-        setSubscribeState(SUBSCRIBE_STATE.SUBSCRIBING);
+        if (channelResponsed.incrementAndGet() == subscribeChannel.length) {
+            setSubscribeState(SUBSCRIBE_STATE.SUBSCRIBING);
+        }
     }
 
     private void validateResponse(Channel channel, Object response) {
@@ -163,16 +167,8 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
             throw new RedisRuntimeException(message);
         }
 
-        String monitorChannel = payloadToString(objects[1]);
-        for(String channelName : getSubscribeChannel()) {
-            if (!ObjectUtils.equals(monitorChannel, channelName)) {
-                String message = String.format("Subscribe channel: %s not as expected: %s", monitorChannel, channelName);
-                logger.error("[handleResponse]{}", message);
-                throw new RedisRuntimeException(message);
-            }
-        }
         if(logRequest()) {
-            logger.info("[handleResponse][subscribe success], {}", channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
+            logger.info("[handleResponse][subscribe success]channel[{}]{}", channel, channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
         }
     }
 

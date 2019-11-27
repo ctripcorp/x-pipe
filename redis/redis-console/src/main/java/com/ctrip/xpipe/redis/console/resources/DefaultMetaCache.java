@@ -182,6 +182,19 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
+    public String getActiveDc(HostPort hostPort) {
+
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+
+        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
+        if (metaDesc == null) {
+            return null;
+        }
+
+        return metaDesc.getActiveDc();
+    }
+
+    @Override
     public RouteMeta getRouteIfPossible(HostPort hostPort) {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
@@ -194,17 +207,21 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public boolean isReplThroughProxy(String activeDc, String backupDc) {
+    public boolean isCrossRegion(String activeDc, String backupDc) {
+
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         return xpipeMetaManager
                 .metaRandomRoutes(backupDc, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, activeDc) != null;
     }
 
     @Override
-    public List<HostPort> getAllRedisOfDc(String dcId) {
+    public List<HostPort> getAllRedisOfDc(String activeDc, String dcId) {
         List<HostPort> result = Lists.newLinkedList();
         try {
             for(ClusterMeta clusterMeta : meta.getKey().findDc(dcId).getClusters().values()) {
+                if (!clusterMeta.getActiveDc().equalsIgnoreCase(activeDc)) {
+                    continue;
+                }
                 for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                     for(RedisMeta redis : shardMeta.getRedises()) {
                         result.add(new HostPort(redis.getIp(), redis.getPort()));

@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.alert.decorator;
 
 import com.ctrip.xpipe.redis.console.alert.AlertEntity;
-import com.ctrip.xpipe.redis.console.alert.policy.receiver.GroupEmailReceiver;
-import org.apache.velocity.VelocityContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,13 +23,13 @@ public class RecoverMessageDecorator extends GroupedAlertMessageDecorator {
     @Override
     public String doGenerateTitle(AlertEntity alert) {
         return String.format("[%s][XPipe 恢复]%s",
-                consoleConfig.getXpipeRuntimeEnvironmentEnvironment(),
+                consoleConfig.getXpipeRuntimeEnvironment(),
                 alert.getKey());
     }
 
     @Override
     public String generateTitle() {
         return String.format("[%s][XPipe 恢复]",
-                consoleConfig.getXpipeRuntimeEnvironmentEnvironment());
+                consoleConfig.getXpipeRuntimeEnvironment());
     }
 }

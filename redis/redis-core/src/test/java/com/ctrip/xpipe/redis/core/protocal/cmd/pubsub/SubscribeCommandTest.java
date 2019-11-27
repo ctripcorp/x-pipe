@@ -41,6 +41,23 @@ public class SubscribeCommandTest extends AbstractRedisTest {
         command.execute().sync();
     }
 
+    @Test
+    public void testSubscribeMultiChannel() throws Exception {
+        String[] channel = new String[]{"+sdown", "-sdown", "+odown", "-odown", "+reboot", "+switch-master"};
+        SubscribeCommand command = new SubscribeCommand("10.3.2.23", 6399, scheduled, channel);
+
+        command.addChannelListener(new SubscribeListener() {
+            @Override
+            public void message(String channel, String message) {
+                logger.info("[message] channel: {}, message: {}", channel, message);
+            }
+        });
+
+        command.execute().sync();
+        logger.info("{}", "sleep");
+        sleep(1000000);
+    }
+
 
     @Test
     public void testUnSubscribe() throws Exception {

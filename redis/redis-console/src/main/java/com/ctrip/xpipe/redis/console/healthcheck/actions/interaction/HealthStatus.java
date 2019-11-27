@@ -154,6 +154,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setDelayHalfDown() {
         HEALTH_STATE preState = state.get();
+        if (preState.equals(preState.afterDelayHalfFail())) {
+            return;
+        }
         if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
             logStateChange(preState, state.get());
             notifyObservers(new InstanceHalfSick(instance));
@@ -162,6 +165,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setDelayDown() {
         HEALTH_STATE preState = state.get();
+        if (preState.equals(preState.afterDelayFail())) {
+            return;
+        }
         if(state.compareAndSet(preState, preState.afterDelayFail())) {
             logStateChange(preState, state.get());
         }
@@ -173,6 +179,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setPingHalfDown() {
         HEALTH_STATE preState = state.get();
+        if(preState.equals(preState.afterPingHalfFail())) {
+            return;
+        }
         if(state.compareAndSet(preState, preState.afterPingHalfFail())) {
             logStateChange(preState, state.get());
         }
@@ -180,6 +189,9 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private void setPingDown() {
         HEALTH_STATE preState = state.get();
+        if(preState.equals(preState.afterPingFail())) {
+            return;
+        }
         if(state.compareAndSet(preState, preState.afterPingFail())) {
             logStateChange(preState, state.get());
         }

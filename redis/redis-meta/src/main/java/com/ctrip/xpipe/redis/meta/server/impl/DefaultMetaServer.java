@@ -102,7 +102,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo) {
 
-		logger.info("[getActiveKeeper]{}, {}", clusterId, shardId);
+		logger.debug("[getActiveKeeper]{}, {}", clusterId, shardId);
 		return currentMetaManager.getKeeperActive(clusterId, shardId);
 	}
 

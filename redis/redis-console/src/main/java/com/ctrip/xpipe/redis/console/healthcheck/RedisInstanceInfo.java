@@ -30,5 +30,5 @@ public interface RedisInstanceInfo {
 
     boolean isInActiveDc();
 
-    boolean isReplThroughProxy();
+    boolean isCrossRegion();
 }

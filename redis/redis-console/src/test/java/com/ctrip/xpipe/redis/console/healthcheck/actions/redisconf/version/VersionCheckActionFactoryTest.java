@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.version;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.CrossDcLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SiteLeaderAwareHealthCheckAction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class VersionCheckActionFactoryTest extends AbstractConsoleIntegrationTes
         for(HealthCheckAction action : instance.getHealthCheckActions()) {
             if(action.getClass().isAssignableFrom(factory.support())) {
                 target = action;
-                factory.destroy((CrossDcLeaderAwareHealthCheckAction) target);
+                factory.destroy((SiteLeaderAwareHealthCheckAction) target);
             }
         }
 

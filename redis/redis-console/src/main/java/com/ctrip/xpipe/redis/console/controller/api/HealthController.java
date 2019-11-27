@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.google.common.collect.Lists;
@@ -34,10 +35,18 @@ public class HealthController extends AbstractConsoleController{
     @Autowired
     private HealthCheckInstanceManager instanceManager;
 
+    @Autowired
+    private DelayService delayService;
+
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
 
         return defaultDelayPingActionCollector.getState(new HostPort(ip, port));
+    }
+
+    @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Long getInnerReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
+        return delayService.getLocalCachedDelay(new HostPort(redisIp, redisPort));
     }
 
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)
