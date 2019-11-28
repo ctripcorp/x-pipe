@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
@@ -27,5 +28,11 @@ public class DefaultDelayServiceTest extends AbstractConsoleIntegrationTest {
     public void testOnActionWithPing() {
         PingAction action = new PingAction(scheduled, null, executors);
 //        interaction.
+    }
+
+    @Test
+    public void testDelayNotZero() {
+        long nano = DelayAction.SAMPLE_LOST_AND_NO_PONG;
+        logger.info("{}", TimeUnit.NANOSECONDS.toMillis(nano));
     }
 }

@@ -210,8 +210,8 @@ public class DefaultMetaCache implements MetaCache {
     public boolean isCrossRegion(String activeDc, String backupDc) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
-        return xpipeMetaManager
-                .metaRandomRoutes(backupDc, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, activeDc) != null;
+        return !xpipeMetaManager.getDcMeta(activeDc).getZone()
+                .equalsIgnoreCase(xpipeMetaManager.getDcMeta(backupDc).getZone());
     }
 
     @Override

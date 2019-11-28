@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
+import com.ctrip.xpipe.redis.console.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultSiteReliabilityCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatusTest;
@@ -156,7 +157,8 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationSystemAvailableCheckTest.class,
         DefaultCheckMigrationCommandBuilderTest.class,
         DefaultAlertEntityHolderTest.class,
-        SentinelUpdateControllerTest.class
+        SentinelUpdateControllerTest.class,
+        DefaultDcMetaChangeManagerTest.class
 })
 public class AllTests {
 
