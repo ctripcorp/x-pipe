@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
@@ -18,6 +19,9 @@ public class ShardMetaVisitor implements MetaVisitor<ShardMeta> {
 
     @Override
     public void accept(ShardMeta shardMeta) {
+        if (!shardMeta.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
+            return;
+        }
         for(RedisMeta redisMeta : shardMeta.getRedises()) {
             redisMetaVisitor.accept(redisMeta);
         }

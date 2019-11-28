@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
  * Sep 30, 2018
  */
 public interface SiteLeaderAwareHealthCheckActionFactory extends
-        HealthCheckActionFactory<SiteLeaderAwareHealthCheckAction>, CrossDcLeaderAware {
+        HealthCheckActionFactory<SiteLeaderAwareHealthCheckAction>, LeaderAware {
 
     SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance);
 

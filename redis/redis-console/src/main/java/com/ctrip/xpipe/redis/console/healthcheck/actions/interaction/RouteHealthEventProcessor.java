@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
@@ -56,12 +57,12 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
     private ScheduledExecutorService scheduled;
 
     @Autowired(required = false)
-    private CrossDcClusterServer crossDcClusterServer;
+    private ConsoleLeaderElector clusterServer;
 
     @Override
     public void onEvent(AbstractInstanceEvent event) {
         // make sure only one execute the disturb
-        if (crossDcClusterServer != null && !crossDcClusterServer.amILeader()) {
+        if (clusterServer != null && !clusterServer.amILeader()) {
             return;
         }
         //only deal with sick instance
