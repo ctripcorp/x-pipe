@@ -23,4 +23,17 @@ public class DefaultMetaServerConsoleServiceTest extends AbstractRedisTest{
         }
 
     }
+
+    @Test
+    public void testTimeout(){
+
+        try {
+            logger.info("[begin]");
+            MetaServerConsoleService consoleService = new DefaultMetaServerConsoleService("http://10.0.0.1:1234");
+            consoleService.doChangePrimaryDc("cluster1", "shard-0", "oy", null);
+        }catch (Exception e){
+            logger.error("[Exception]", e);
+        }
+
+    }
 }
