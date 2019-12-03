@@ -29,7 +29,7 @@ public class RedisUpdateController extends AbstractConsoleController{
     @Autowired
     private RedisService redisService;
 
-    @RequestMapping(value = "/redises/{dcId}/{clusterId}/{shardId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
 
         logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
@@ -51,7 +51,7 @@ public class RedisUpdateController extends AbstractConsoleController{
     }
 
 
-    @RequestMapping(value = "/redises/{dcId}/{clusterId}/{shardId}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage addRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<String> redises) {
 
         logger.info("[addRedises]{},{},{}, {}", dcId, clusterId, shardId, redises);
@@ -68,7 +68,7 @@ public class RedisUpdateController extends AbstractConsoleController{
 
     }
 
-    @RequestMapping(value = "/redises/{dcId}/{clusterId}/{shardId}", method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.DELETE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage deleteRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<String> redises) {
 
         logger.info("[deleteRedises]{},{},{}, {}", dcId, clusterId, shardId, redises);
