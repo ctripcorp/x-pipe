@@ -84,12 +84,12 @@ public class TestProxyMonitorCollectorManager extends AbstractProxyChainTest imp
     }
 
     @Override
-    public void isCrossDcLeader() {
+    public void isleader() {
 
     }
 
     @Override
-    public void notCrossDcLeader() {
+    public void notLeader() {
 
     }
 }
