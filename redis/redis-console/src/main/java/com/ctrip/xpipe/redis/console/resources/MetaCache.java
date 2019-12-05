@@ -44,4 +44,6 @@ public interface MetaCache {
     String getActiveDc(String clusterId, String shardId);
 
     String getActiveDc(HostPort hostPort);
+
+    long getLastUpdateTime();
 }

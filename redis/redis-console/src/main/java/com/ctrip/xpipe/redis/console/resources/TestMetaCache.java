@@ -99,4 +99,9 @@ public class TestMetaCache implements MetaCache {
         return null;
     }
 
+    @Override
+    public long getLastUpdateTime() {
+        return 0;
+    }
+
 }

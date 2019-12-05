@@ -151,4 +151,10 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/apptest.sql");
     }
+
+    @Test
+    public void testHangForever() {
+//        proxyService.deleteProxy();
+        dcMetaService.getDcMeta("jq");
+    }
 }
