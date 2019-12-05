@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,10 +89,20 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         }
     }
 
-    private void onMessage(String message) {
+    @VisibleForTesting
+    protected void onMessage(String message) {
+        if (!getLifecycleState().isStarted()) {
+            return;
+        }
         long currentTime = System.nanoTime();
         long lastDelayPubTimeNano = Long.parseLong(message, 16);
         this.context.set(new DelayActionContext(instance, currentTime - lastDelayPubTimeNano));
+    }
+
+    @Override
+    public void doStop() {
+        instance.getRedisSession().closeSubscribedChannel(CHECK_CHANNEL);
+        super.doStop();
     }
 
     private boolean isExpired() {
