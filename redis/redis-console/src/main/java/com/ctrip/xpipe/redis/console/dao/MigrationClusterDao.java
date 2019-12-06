@@ -31,6 +31,16 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         migrationClusterTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
     }
 
+    public List<MigrationClusterTbl> findEventAndCluster(long size, long offset) {
+        return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+            @Override
+            public List<MigrationClusterTbl> doQuery() throws DalException {
+                return migrationClusterTblDao.findEventAndCluster(
+                        size, offset, MigrationClusterTblEntity.READSET_EVENT_WITH_CLUSTER);
+            }
+        });
+    }
+
     public List<MigrationClusterTbl> findUnfinishedByClusterId(final long clusterId){
 
         return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {

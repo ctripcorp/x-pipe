@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
@@ -14,11 +13,7 @@ import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author shyin
@@ -68,6 +63,13 @@ public class MigrationController extends AbstractConsoleController {
 		return sb.toString();
 	}
 
+	@RequestMapping(value = "/migration/events", method = RequestMethod.GET)
+	public PageModal<MigrationModel> getEventAndCluster(@RequestParam Long size, @RequestParam Long page) {
+		if (null == size || size <=0) size = 10L;
+		if (null == page || page < 0) page = 0L;
+
+		return new PageModal<>(migrationService.findEventAndCluster(size, size * page), size, page);
+	}
 
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 
 	public List<MigrationEventTbl> getAllEvents() {
