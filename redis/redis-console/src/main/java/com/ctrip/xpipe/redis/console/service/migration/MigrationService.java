@@ -18,6 +18,8 @@ import java.util.List;
 
 public interface MigrationService {
 
+    List<MigrationModel> findEventAndCluster(long size, long offset);
+
     MigrationEventTbl find(long id);
 
     List<MigrationEventTbl> findAll();

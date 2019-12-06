@@ -27,8 +27,7 @@ import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
 import java.rmi.ServerException;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -80,6 +79,43 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
                 return dao.findByPK(id, MigrationEventTblEntity.READSET_FULL);
             }
         });
+    }
+
+    @Override
+    public long count() {
+        return queryHandler.handleQuery(new DalQuery<Long>() {
+            @Override
+            public Long doQuery() throws DalException {
+                List<MigrationEventTbl> result = dao.findAll(MigrationEventTblEntity.READSET_COUNT);
+                return (null != result && result.size() > 0) ? result.get(0).getCount() : 0;
+            }
+        });
+    }
+
+    @Override
+    public List<MigrationModel> findEventAndCluster(long size, long offset) {
+        List<MigrationClusterTbl> migrationClusterTblList = migrationClusterDao.findEventAndCluster(size, offset);
+        Map<Long, List<MigrationClusterTbl> > clusterMap = new LinkedHashMap<>();
+
+        for (MigrationClusterTbl migrationCluster: migrationClusterTblList) {
+            MigrationEventTbl event = migrationCluster.getMigrationEvent();
+
+            if (!clusterMap.containsKey(event.getId())) {
+                clusterMap.put(event.getId(), new LinkedList<>());
+            }
+
+            clusterMap.get(event.getId()).add(migrationCluster);
+        }
+
+        Iterator<Map.Entry<Long, List<MigrationClusterTbl> > > iterator = clusterMap.entrySet().iterator();
+        List<MigrationModel> modals = new LinkedList<>();
+
+        while (iterator.hasNext()) {
+            List<MigrationClusterTbl> clusters = iterator.next().getValue();
+            modals.add(MigrationModel.createFromMigrationClusters(clusters));
+        }
+
+        return modals;
     }
 
     @Override
