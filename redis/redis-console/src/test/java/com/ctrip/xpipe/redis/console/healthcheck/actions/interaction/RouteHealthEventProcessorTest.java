@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceDown;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceHalfSick;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisInstanceInfo;
@@ -35,7 +36,12 @@ import static org.mockito.Mockito.*;
 
 public class RouteHealthEventProcessorTest extends AbstractTest {
 
-    private RouteHealthEventProcessor processor = new RouteHealthEventProcessor();
+    private RouteHealthEventProcessor processor = new RouteHealthEventProcessor() {
+        @Override
+        protected long getHoldingMillis() {
+            return 100;
+        }
+    };
 
     @Mock
     private MetaCache metaCache;
@@ -140,7 +146,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         processor.onEvent(new InstanceHalfSick(instance));
 
-        Thread.sleep(1000);
+        Thread.sleep(2500);
         verify(processor, atLeast(2)).isRedisInFullSync(any());
         verify(processor, times(1)).closeProxyChain(any(), any());
     }
@@ -162,7 +168,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         processor.onEvent(new InstanceHalfSick(instance));
 
-        Thread.sleep(1000);
+        Thread.sleep(2500);
         verify(processor, atLeast(2)).isRedisInFullSync(any());
         verify(processor, never()).closeProxyChain(any(), any());
     }
@@ -186,5 +192,30 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         doCallRealMethod().when(processor).closeProxyChain(any(), any());
         processor.closeProxyChain(instance, proxyChain);
         verify(proxyService, times(1)).deleteProxyChain(anyList());
+    }
+
+    @Test
+    public void testCloseProxyChainLimiting() throws InterruptedException, ExecutionException, TimeoutException {
+        doNothing().when(processor).closeProxyChain(any(), any());
+        when(proxyService.getProxyChain(anyString(), anyString(), anyString())).thenReturn(proxyChain);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
+
+        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance));
+        verify(processor, times(1)).closeProxyChain(any(), any());
+    }
+
+    @Test
+    public void testCloseProxyChainLimitingRelease() throws InterruptedException, ExecutionException, TimeoutException {
+        doNothing().when(processor).closeProxyChain(any(), any());
+        when(proxyService.getProxyChain(anyString(), anyString(), anyString())).thenReturn(proxyChain);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
+
+        processor.onEvent(new InstanceHalfSick(instance));
+        sleep(200);
+        processor.onEvent(new InstanceHalfSick(instance));
+        verify(processor, times(2)).closeProxyChain(any(), any());
     }
 }

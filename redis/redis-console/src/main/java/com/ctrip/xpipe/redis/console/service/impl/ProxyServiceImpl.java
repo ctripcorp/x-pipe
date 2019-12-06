@@ -168,6 +168,7 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     private RetMessage notifyProxyNode(HostPort hostPort) {
         String message = null;
         try {
+            logger.info("[notifyProxyNode]{} to close port {}", hostPort.getHost(), hostPort.getPort());
             restTemplate.delete(String.format("http://%s:8080/api/tunnel/local/port/%d", hostPort.getHost(), hostPort.getPort()));
         } catch (Exception e) {
             message = ExceptionUtils.getCause(e).getMessage();
