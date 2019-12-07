@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -63,7 +64,7 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
     @Autowired(required = false)
     private ConsoleLeaderElector clusterServer;
 
-    private Set<InstanceHalfSick> events = Sets.newConcurrentHashSet();
+    private Set<Pair<String, String>> events = Sets.newConcurrentHashSet();
 
     @Override
     public void onEvent(AbstractInstanceEvent event) {
@@ -73,16 +74,17 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         }
         //only deal with sick instance
         if (event instanceof InstanceHalfSick) {
-            InstanceHalfSick instanceHalfSickEvent = (InstanceHalfSick) event;
+            RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+            Pair<String, String> pair = Pair.from(info.getDcId(), info.getShardId());
             // duplicate reduction
-            if (events.add(instanceHalfSickEvent)) {
+            if (events.add(pair)) {
                 scheduled.schedule(new Runnable() {
                     @Override
                     public void run() {
-                        events.remove(instanceHalfSickEvent);
+                        events.remove(pair);
                     }
                 }, getHoldingMillis(), TimeUnit.MILLISECONDS);
-                doOnEvent(instanceHalfSickEvent);
+                doOnEvent((InstanceHalfSick) event);
             }
 
         }

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceDown;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceHalfSick;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
@@ -217,5 +218,21 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         sleep(200);
         processor.onEvent(new InstanceHalfSick(instance));
         verify(processor, times(2)).closeProxyChain(any(), any());
+    }
+
+    @Test
+    public void testCloseProxyChainOnSameShardOnlyOnce() throws InterruptedException, ExecutionException, TimeoutException {
+        doNothing().when(processor).closeProxyChain(any(), any());
+        when(proxyService.getProxyChain(anyString(), anyString(), anyString())).thenReturn(proxyChain);
+        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
+        when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
+
+        RedisHealthCheckInstance instance2 = mock(RedisHealthCheckInstance.class);
+        when(instance2.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard",
+                new HostPort("127.0.0.4", 6380), "SHAJQ"));
+        when(instance2.getRedisSession()).thenReturn(redisSession);
+        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceHalfSick(instance2));
+        verify(processor, times(1)).closeProxyChain(any(), any());
     }
 }
