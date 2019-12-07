@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.version;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SiteLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

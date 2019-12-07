@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.AbstractCDLAHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Oct 08, 2018
  */
-public class RedisMasterCheckAction extends AbstractCDLAHealthCheckAction {
+public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisMasterCheckAction.class);
 
