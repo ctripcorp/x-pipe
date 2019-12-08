@@ -311,7 +311,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         //add check for master not in primary dc
         hellos.forEach((hello) -> {
             HostPort hostPort = hello.getMasterAddr();
-            if (!hostPort.equals(masterAddr)) {
+            if (metaCache.inBackupDc(hostPort)) {
                 toDelete.add(hello);
             }
         });
