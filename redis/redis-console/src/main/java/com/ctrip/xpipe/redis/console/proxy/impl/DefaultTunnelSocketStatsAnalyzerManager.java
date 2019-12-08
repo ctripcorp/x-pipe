@@ -4,7 +4,7 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetric;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
@@ -19,7 +19,6 @@ import com.ctrip.xpipe.utils.ServicesUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +26,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_SOCKET_STATS_ANALYZERS;
