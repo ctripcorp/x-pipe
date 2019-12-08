@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.service.ShardService;

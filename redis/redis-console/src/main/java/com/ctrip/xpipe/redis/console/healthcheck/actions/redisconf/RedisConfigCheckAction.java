@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf;
 
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.AbstractCDLAHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * Oct 06, 2018
  */
-public abstract class RedisConfigCheckAction extends AbstractCDLAHealthCheckAction {
+public abstract class RedisConfigCheckAction extends AbstractLeaderAwareHealthCheckAction {
 
     private AtomicBoolean pass = new AtomicBoolean(false);
 

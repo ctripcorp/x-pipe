@@ -11,7 +11,7 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;

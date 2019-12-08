@@ -1,6 +1,5 @@
-package com.ctrip.xpipe.redis.console.healthcheck.crossdc;
+package com.ctrip.xpipe.redis.console.healthcheck.leader;
 
-import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;

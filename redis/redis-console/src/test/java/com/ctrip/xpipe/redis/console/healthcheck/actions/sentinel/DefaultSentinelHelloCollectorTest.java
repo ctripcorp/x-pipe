@@ -104,17 +104,17 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
 
         );
 
-        Set<SentinelHello> toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig);
+        Set<SentinelHello> toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, master);
 
         Assert.assertEquals(0, toDelete.size());
 
         hellos.add(new SentinelHello(new HostPort("127.0.0.1", 5000), master, monitorName + "_1"));
-        toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig);
+        toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, master);
         Assert.assertEquals(1, toDelete.size());
         Assert.assertEquals(5, hellos.size());
 
         hellos.add(new SentinelHello(new HostPort("127.0.0.1", 6000), master, monitorName));
-        toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig);
+        toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, master);
         Assert.assertEquals(1, toDelete.size());
         Assert.assertEquals(5, hellos.size());
 
@@ -137,7 +137,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
         sentinelCollector.setConsoleConfig(mock(ConsoleConfig.class));
         sentinelCollector = spy(sentinelCollector);
         doCallRealMethod().when(sentinelCollector).onAction(any(SentinelActionContext.class));
-        doReturn(null).when(sentinelCollector).checkAndDelete(anyString(), any(), any(), any());
+        doReturn(null).when(sentinelCollector).checkAndDelete(anyString(), any(), any(), any(), any());
         doNothing().when(sentinelCollector).checkReset(anyString(), any(), any(), any());
         doReturn(null).when(sentinelCollector).checkToAdd(anyString(), any(), any(), any(), any(), any(), any());
 //        doNothing().when(sentinelCollector).doAction(any(), any(), any());
@@ -147,7 +147,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
             hellos.add(SentinelHello.fromString(String.format("127.0.0.1,%d,d156c06308a5e5c6edba1f8786b32e22cfceafcc,8410,shard,127.0.0.1,16379,0", 500 + i)));
         }
         sentinelCollector.onAction(new SentinelActionContext(instance, hellos));
-        verify(sentinelCollector, never()).checkAndDelete(anyString(), any(), any(), any());
+        verify(sentinelCollector, never()).checkAndDelete(anyString(), any(), any(), any(), any());
     }
 
     // for whom reading this code, here's how and why all this happens:
@@ -202,5 +202,25 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
                 Sets.newHashSet(), master, quorumConfig);
 
         Assert.assertEquals(masterSentinels.size(), hellos.size());
+    }
+
+    @Test
+    public void testMasterNotInPrimaryDc() {
+        String shardId = "shardId";
+        MetaCache metaCache = mock(MetaCache.class);
+        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
+        sentinelCollector.setMetaCache(metaCache);
+
+        monitorName = shardId;
+        sentinelCollector = spy(sentinelCollector);
+        Set<SentinelHello> hellos = Sets.newHashSet(
+                new SentinelHello(new HostPort("127.0.0.1", 5000), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5001), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5002), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5003), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5004), new HostPort("127.0.0.3", 6379), monitorName)
+        );
+        Set<SentinelHello> toDeleted = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, new HostPort("127.0.0.2", 6379));
+        Assert.assertEquals(5, toDeleted.size());
     }
 }
