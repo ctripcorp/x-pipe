@@ -36,6 +36,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLe
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
+import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
@@ -162,7 +163,8 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelUpdateControllerTest.class,
         DefaultDcMetaChangeManagerTest.class,
         MetaCacheCheckTest.class,
-        RouteHealthEventProcessorTest.class
+        RouteHealthEventProcessorTest.class,
+        DefaultMigrationEventManagerTest.class
 })
 public class AllTests {
 
