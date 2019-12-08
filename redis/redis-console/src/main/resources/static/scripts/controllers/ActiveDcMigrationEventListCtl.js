@@ -27,4 +27,11 @@ index_module.controller('ActiveDcMigrationEventListCtl', [
                 return deferred.promise
             },
         });
+
+        $scope.clusterBlock = {
+            "max-width": "200px",
+            "text-overflow": "ellipsis",
+            "white-space": "nowrap",
+            "overflow": "hidden"
+        }
     }]);
