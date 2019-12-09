@@ -68,7 +68,9 @@ public class MigrationController extends AbstractConsoleController {
 		if (null == size || size <=0) size = 10L;
 		if (null == page || page < 0) page = 0L;
 
-		return new PageModal<>(migrationService.findEventAndCluster(size, size * page), size, page);
+		long totalSize = migrationService.countAll();
+		if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+		return new PageModal<>(migrationService.findEventAndCluster(size, size * page), size, page, totalSize);
 	}
 
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 
