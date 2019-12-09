@@ -82,12 +82,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public long count() {
+    public long countAll() {
         return queryHandler.handleQuery(new DalQuery<Long>() {
             @Override
             public Long doQuery() throws DalException {
-                List<MigrationEventTbl> result = dao.findAll(MigrationEventTblEntity.READSET_COUNT);
-                return (null != result && result.size() > 0) ? result.get(0).getCount() : 0;
+                return dao.countAll(MigrationEventTblEntity.READSET_COUNT).getCount();
             }
         });
     }

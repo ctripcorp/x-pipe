@@ -1084,8 +1084,13 @@
 		
 		<relation name="redundant-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
 		<relation name="redundant-shards" entity-name="migration-shard-tbl" entity-alias="mst"/>
-		
+
+		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+
 		<readsets>
+			<readset name="COUNT">
+				<member name="count" />
+			</readset>
 			<readset name="FULL_ALL">
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="redundant-clusters"/>
@@ -1102,6 +1107,15 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='event-tag'/> = ${event-tag}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="count-all" type="SELECT">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -1194,6 +1208,7 @@
 						ORDER BY id DESC LIMIT ${size} OFFSET ${offset}
 					) met on mct.migration_event_id=met.id)
 					JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
+					order by met.id DESC
 					]]>
 				</statement>
 			</query>
