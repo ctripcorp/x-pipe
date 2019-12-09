@@ -1175,11 +1175,16 @@
 		<var name="size" value-type="long" />
 		<var name="offset" value-type="long" />
 
+		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+
 		<relation name="cluster" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-shards" entity-name="migration-shard-tbl" entity-alias="mst" multiple="true"/>
 		
 		<readsets>
+			<readset name="COUNT" >
+				<member name="count" />
+			</readset>
 			<readset name="STATUS" >
 				<member name="status" />
 			</readset>
@@ -1196,7 +1201,7 @@
 		</readsets>
 		
 		<query-defs>
-			<query name="find-event-and-cluster" type="SELECT" multiple="true">
+			<query name="find-migration-clusters" type="SELECT" multiple="true">
 				<param name="size"/>
 				<param name="offset"/>
 				<statement>
@@ -1209,6 +1214,35 @@
 					) met on mct.migration_event_id=met.id)
 					JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
 					order by met.id DESC
+					]]>
+				</statement>
+			</query>
+			<query name="find-migration-clusters-by-cluster" type="SELECT" multiple="true">
+				<param name="cluster-id" />
+				<param name="size"/>
+				<param name="offset"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM (<TABLE/>
+						JOIN (SELECT * FROM <TABLE name='migration-event' /> WHERE id in (
+							SELECT migration_event_id FROM (
+								SELECT migration_event_id from <TABLE />
+									WHERE <FIELD name='cluster-id' /> = ${cluster-id} AND deleted=0
+									ORDER BY <FIELD name='migration-event-id'/> DESC LIMIT ${size} OFFSET ${offset}) event
+							)
+						) met on <FIELD name='migration-event-id' />=met.id)
+						JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
+						ORDER BY met.id DESC
+					]]>
+				</statement>
+			</query>
+			<query name="count-all-by-cluster" type="SELECT">
+				<param name="cluster-id" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>
+					WHERE <FIELD name='cluster-id'/> = ${cluster-id}
+					AND <FIELD name='deleted' /> = 0
 					]]>
 				</statement>
 			</query>

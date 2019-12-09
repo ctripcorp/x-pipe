@@ -17,7 +17,11 @@ public interface MigrationService {
 
     long countAll();
 
-    List<MigrationModel> findEventAndCluster(long size, long offset);
+    long countAllByCluster(long clusterId);
+
+    List<MigrationModel> find(long size, long offset);
+
+    List<MigrationModel> findByCluster(long clusterId, long size, long offset);
 
     MigrationEventTbl find(long id);
 

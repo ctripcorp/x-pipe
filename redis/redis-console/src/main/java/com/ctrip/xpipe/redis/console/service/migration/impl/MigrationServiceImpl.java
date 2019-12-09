@@ -92,8 +92,23 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public List<MigrationModel> findEventAndCluster(long size, long offset) {
-        List<MigrationClusterTbl> migrationClusterTblList = migrationClusterDao.findEventAndCluster(size, offset);
+    public long countAllByCluster(long clusterId) {
+        return migrationClusterDao.countAllByCluster(clusterId);
+    }
+
+    @Override
+    public List<MigrationModel> find(long size, long offset) {
+        List<MigrationClusterTbl> migrationClusterList = migrationClusterDao.find(size, offset);
+        return aggregateClusterByMigration(migrationClusterList);
+    }
+    @Override
+    public List<MigrationModel> findByCluster(long clusterId, long size, long offset) {
+        List<MigrationClusterTbl> migrationClusterList =
+                migrationClusterDao.findByCluster(clusterId, size, offset);
+        return aggregateClusterByMigration(migrationClusterList);
+    }
+
+    private List<MigrationModel> aggregateClusterByMigration(List<MigrationClusterTbl> migrationClusterTblList) {
         Map<Long, List<MigrationClusterTbl> > clusterMap = new LinkedHashMap<>();
 
         for (MigrationClusterTbl migrationCluster: migrationClusterTblList) {
