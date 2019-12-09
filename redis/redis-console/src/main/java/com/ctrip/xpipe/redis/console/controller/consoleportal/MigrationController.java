@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,13 +65,26 @@ public class MigrationController extends AbstractConsoleController {
 	}
 
 	@RequestMapping(value = "/migration/events", method = RequestMethod.GET)
-	public PageModal<MigrationModel> getEventAndCluster(@RequestParam Long size, @RequestParam Long page) {
+	public PageModal<MigrationModel> getEventAndCluster(@RequestParam(required = false) String clusterName,
+														@RequestParam Long size, @RequestParam Long page) {
 		if (null == size || size <=0) size = 10L;
 		if (null == page || page < 0) page = 0L;
 
-		long totalSize = migrationService.countAll();
-		if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
-		return new PageModal<>(migrationService.findEventAndCluster(size, size * page), size, page, totalSize);
+		if (StringUtil.isEmpty(clusterName)) {
+			long totalSize = migrationService.countAll();
+			if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+			return new PageModal<>(migrationService.find(size, size * page), size, page, totalSize);
+		} else {
+			ClusterTbl clusterTbl = clusterService.find(clusterName);
+			if (null == clusterTbl) return new PageModal<>(Collections.emptyList(), size, page, 0);
+
+			long totalSize = migrationService.countAllByCluster(clusterTbl.getId());
+			if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+
+			return new PageModal<>(
+					migrationService.findByCluster(clusterTbl.getId(), size, size * page),
+					size, page, totalSize);
+		}
 	}
 
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 
