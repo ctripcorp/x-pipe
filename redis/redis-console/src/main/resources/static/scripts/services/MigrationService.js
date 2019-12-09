@@ -77,9 +77,9 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		return d.promise;
 	}
 
-	function find(page, size) {
+	function find(page, size, clusterName = null) {
 		let d = $q.defer();
-		resource.find({ page, size },
+		resource.find({ page, size, clusterName},
 			function(result) {
 				d.resolve(result);
 			},

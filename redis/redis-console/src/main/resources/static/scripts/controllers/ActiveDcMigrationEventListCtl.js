@@ -15,7 +15,7 @@ index_module.controller('ActiveDcMigrationEventListCtl', [
                 $scope.size = params.count()
 
                 var deferred = $q.defer()
-                MigrationService.find($scope.page - 1, $scope.size)
+                MigrationService.find($scope.page - 1, $scope.size, $scope.clusterName)
                     .then(function (response) {
                         if (response.totalSize >= 0) params.total(response.totalSize)
                         deferred.resolve(response.data)
@@ -27,6 +27,11 @@ index_module.controller('ActiveDcMigrationEventListCtl', [
                 return deferred.promise
             },
         });
+
+        $scope.refresh = function() {
+            $scope.page = 1
+            $scope.tableParams.reload()
+        }
 
         $scope.clusterBlock = {
             "max-width": "200px",
