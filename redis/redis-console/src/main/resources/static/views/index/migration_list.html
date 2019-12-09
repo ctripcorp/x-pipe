@@ -5,7 +5,20 @@
 				<div class="col-md-12"><span>主机房迁移事件记录</span></div>
 			</div>
 		</header>
-	
+
+		<div class="row well-sm">
+			<div class="col-md-3">
+				<div class="input-group">
+					<input type="text" class="form-control" ng-model="clusterName" placeholder="search by cluster name" />
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-default no-border btn-sm" ng-click="refresh()">
+							<i class="ace-icon fa fa-search icon-on-right bigger-110"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<table ng-table="tableParams" class="table table-striped table-hover">
 			<tr ng-repeat-start="item in $data">
 				<td data-title="'id'">{{item.event.id}}</td>
