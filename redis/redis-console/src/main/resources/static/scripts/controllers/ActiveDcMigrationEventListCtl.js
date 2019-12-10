@@ -30,7 +30,7 @@ index_module.controller('ActiveDcMigrationEventListCtl', [
         });
 
         $scope.refresh = function() {
-            $scope.page = 1
+            $scope.tableParams.page(1)
             $scope.tableParams.reload()
         }
 
