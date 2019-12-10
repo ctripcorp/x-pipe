@@ -1084,8 +1084,13 @@
 		
 		<relation name="redundant-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
 		<relation name="redundant-shards" entity-name="migration-shard-tbl" entity-alias="mst"/>
-		
+
+		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+
 		<readsets>
+			<readset name="COUNT">
+				<member name="count" />
+			</readset>
 			<readset name="FULL_ALL">
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="redundant-clusters"/>
@@ -1102,6 +1107,15 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='event-tag'/> = ${event-tag}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="count-all" type="SELECT">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -1158,19 +1172,81 @@
 	
 	<entity name="migration-cluster-tbl" table="migration_cluster_tbl" alias="mct">
 		<var name="event-id" value-type="long"/>
+		<var name="size" value-type="long" />
+		<var name="offset" value-type="long" />
+
+		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
 		<relation name="cluster" entity-name="cluster-tbl" entity-alias="ct"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-shards" entity-name="migration-shard-tbl" entity-alias="mst" multiple="true"/>
 		
 		<readsets>
+			<readset name="COUNT" >
+				<member name="count" />
+			</readset>
+			<readset name="STATUS" >
+				<member name="status" />
+			</readset>
 			<readset name="FULL_ALL">
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="cluster"/>
+				<readset-ref name="FULL" relation-name="migration-event" />
+			</readset>
+			<readset name="EVENT_WITH_CLUSTER">
+				<readset-ref name="STATUS"/>
+				<readset-ref name="FULL" relation-name="migration-event" />
+				<readset-ref name="NAME" relation-name="cluster" />
 			</readset>
 		</readsets>
 		
 		<query-defs>
+			<query name="find-migration-clusters" type="SELECT" multiple="true">
+				<param name="size"/>
+				<param name="offset"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM (<TABLE/> JOIN (
+						SELECT * FROM <TABLE name='migration-event' />
+						WHERE deleted = 0
+						ORDER BY id DESC LIMIT ${size} OFFSET ${offset}
+					) met on mct.migration_event_id=met.id)
+					JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
+					order by met.id DESC
+					]]>
+				</statement>
+			</query>
+			<query name="find-migration-clusters-by-cluster" type="SELECT" multiple="true">
+				<param name="cluster-id" />
+				<param name="size"/>
+				<param name="offset"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM (<TABLE/>
+						JOIN (SELECT * FROM <TABLE name='migration-event' /> WHERE id in (
+							SELECT migration_event_id FROM (
+								SELECT migration_event_id from <TABLE />
+									WHERE <FIELD name='cluster-id' /> = ${cluster-id} AND deleted=0
+									ORDER BY <FIELD name='migration-event-id'/> DESC LIMIT ${size} OFFSET ${offset}) event
+							)
+						) met on <FIELD name='migration-event-id' />=met.id)
+						JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
+						ORDER BY met.id DESC
+					]]>
+				</statement>
+			</query>
+			<query name="count-all-by-cluster" type="SELECT">
+				<param name="cluster-id" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>
+					WHERE <FIELD name='cluster-id'/> = ${cluster-id}
+					AND <FIELD name='deleted' /> = 0
+					]]>
+				</statement>
+			</query>
+
 			<query name="find-by-event-id" type="SELECT" multiple="true">
 				<param name="event-id"/>
 				<statement>
