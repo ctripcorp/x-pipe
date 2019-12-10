@@ -31,6 +31,36 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         migrationClusterTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
     }
 
+    public List<MigrationClusterTbl> find(long size, long offset) {
+        return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+            @Override
+            public List<MigrationClusterTbl> doQuery() throws DalException {
+                return migrationClusterTblDao.findMigrationClusters(
+                        size, offset, MigrationClusterTblEntity.READSET_EVENT_WITH_CLUSTER);
+            }
+        });
+    }
+
+    public List<MigrationClusterTbl> findByCluster(long clusterId, long size, long offset) {
+        return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+            @Override
+            public List<MigrationClusterTbl> doQuery() throws DalException {
+                return migrationClusterTblDao.findMigrationClustersByCluster(
+                        clusterId, size, offset, MigrationClusterTblEntity.READSET_EVENT_WITH_CLUSTER);
+            }
+        });
+    }
+
+    public long countAllByCluster(long clusterId) {
+        return queryHandler.handleQuery(new DalQuery<Long>() {
+            @Override
+            public Long doQuery() throws DalException {
+                return migrationClusterTblDao.countAllByCluster(
+                        clusterId, MigrationClusterTblEntity.READSET_COUNT).getCount();
+            }
+        });
+    }
+
     public List<MigrationClusterTbl> findUnfinishedByClusterId(final long clusterId){
 
         return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
