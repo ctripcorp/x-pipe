@@ -104,7 +104,7 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
         	controller: 'ActiveDcMigrationIndexCtl'
         })
         .state('migration_event_list', {
-        	url: '/migration_event_list',
+        	url: '/migration_event_list?clusterName',
         	templateUrl: 'views/index/migration_list.html',
         	controller: 'ActiveDcMigrationEventListCtl'
         })
