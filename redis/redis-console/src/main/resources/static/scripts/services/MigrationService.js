@@ -9,6 +9,10 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 			url : '/console/migration/events/all',
 			isArray : true
 		},
+		find: {
+			method : 'GET',
+			url : '/console/migration/events',
+		},
 		find_event_details: {
 			method : 'GET',
 			url : '/console/migration/events/:eventId',
@@ -64,6 +68,18 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 	function findAll() {
 		var d = $q.defer();
 		resource.find_all({},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
+	function find(page, size, clusterName = null) {
+		let d = $q.defer();
+		resource.find({ page, size, clusterName},
 			function(result) {
 				d.resolve(result);
 			},
@@ -200,6 +216,7 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 	return {
 		createEvent : createEvent,
 		findAll : findAll,
+		find: find,
 		findEventDetails : findEventDetails,
 		continueMigrationCluster : continueMigrationCluster,
 		cancelMigrationCluster : cancelMigrationCluster,

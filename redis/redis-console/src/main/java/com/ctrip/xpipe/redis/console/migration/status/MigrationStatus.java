@@ -30,6 +30,7 @@ public enum MigrationStatus {
 	public static final String TYPE_PROCESSING = "Processing";
 	public static final String TYPE_SUCCESS = "Success";
 	public static final String TYPE_FAIL = "Fail";
+	public static final String TYPE_WARNING = "Warning";
 
 	private final  Class<MigrationState> classMigrationState;
 	private final ClusterStatus clusterStatus;
