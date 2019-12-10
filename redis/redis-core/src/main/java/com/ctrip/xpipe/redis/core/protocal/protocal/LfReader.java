@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 
@@ -11,6 +13,8 @@ import java.io.ByteArrayOutputStream;
  *         Dec 25, 2016
  */
 public class LfReader extends AbstractRedisClientProtocol<byte[]> {
+
+	private static final Logger logger = LoggerFactory.getLogger(LfReader.class);
 
 	private ByteArrayOutputStream baous = new ByteArrayOutputStream();
 
@@ -43,5 +47,10 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 	@Override
 	public byte[] getPayload() {
 		return baous.toByteArray();
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return logger;
 	}
 }

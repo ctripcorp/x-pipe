@@ -4,6 +4,8 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author wenchao.meng
@@ -11,6 +13,8 @@ import io.netty.buffer.Unpooled;
  * 2016年3月30日 上午11:03:38
  */
 public class RequestStringParser extends AbstractRedisClientProtocol<String[]>{
+
+	private static final Logger logger = LoggerFactory.getLogger(RequestStringParser.class);
 	
 	public RequestStringParser(String ...payload) {
 		super(payload, true, true);
@@ -34,6 +38,11 @@ public class RequestStringParser extends AbstractRedisClientProtocol<String[]>{
 	protected ByteBuf getWriteByteBuf() {
 		
 		return Unpooled.wrappedBuffer(getRequestBytes(payload));
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return logger;
 	}
 
 	@Override

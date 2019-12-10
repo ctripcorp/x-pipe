@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -12,6 +14,8 @@ import io.netty.buffer.Unpooled;
  * 2016年3月28日 下午2:17:45
  */
 public class RedisErrorParser extends AbstractRedisClientProtocol<RedisError>{
+
+	private static final Logger logger = LoggerFactory.getLogger(RedisErrorParser.class);
 	
 	public RedisErrorParser(){
 	}
@@ -37,6 +41,11 @@ public class RedisErrorParser extends AbstractRedisClientProtocol<RedisError>{
 	protected ByteBuf getWriteByteBuf() {
 		
 		return Unpooled.wrappedBuffer(getRequestBytes(MINUS_BYTE, payload.errorMessage()));
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return logger;
 	}
 
 	@Override
