@@ -37,7 +37,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   @Autowired
   private KeepercontainerService keepercontainerService;
 
-  @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.GET)
+  @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
   public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
 
@@ -62,7 +62,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     return result;
   }
 
-  @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.POST)
+  @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST)
   public RetMessage addKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
 
@@ -91,7 +91,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     }
   }
 
-  @RequestMapping(value = "/keepers/{dcId}/{clusterId}/{shardId}", method = RequestMethod.DELETE)
+  @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.DELETE)
   public RetMessage deleteKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
 

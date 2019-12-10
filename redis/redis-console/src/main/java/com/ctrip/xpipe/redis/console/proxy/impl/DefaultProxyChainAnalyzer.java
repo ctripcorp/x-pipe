@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SafeLoop;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -30,7 +30,6 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -174,12 +173,12 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     }
 
     @Override
-    public void isCrossDcLeader() {
+    public void isleader() {
         taskTrigger.set(true);
     }
 
     @Override
-    public void notCrossDcLeader() {
+    public void notLeader() {
         taskTrigger.set(false);
     }
 

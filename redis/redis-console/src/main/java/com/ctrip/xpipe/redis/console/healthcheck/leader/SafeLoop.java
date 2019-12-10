@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.healthcheck.crossdc;
+package com.ctrip.xpipe.redis.console.healthcheck.leader;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.google.common.collect.Lists;

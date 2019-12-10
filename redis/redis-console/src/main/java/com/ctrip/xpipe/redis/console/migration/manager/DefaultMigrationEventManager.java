@@ -4,8 +4,12 @@ import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +61,13 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 				finished.forEach((id) -> removeEvent(id));
 			}
 		}, 60, 60, TimeUnit.SECONDS);
+
+		scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+			@Override
+			protected void doRun() throws Exception {
+				refresh();
+			}
+		}, 5, 10, TimeUnit.SECONDS);
 	}
 
 	@PreDestroy
@@ -64,6 +75,40 @@ public class DefaultMigrationEventManager implements MigrationEventManager, Cros
 		if(scheduled != null) {
 			scheduled.shutdownNow();
 		}
+	}
+
+	private void refresh() {
+		List<MigrationEvent> events = Lists.newArrayList(currentWorkingEvents.values());
+		for (MigrationEvent migrationEvent : events) {
+			if (migrationEvent.isDone()) {
+				continue;
+			}
+			try {
+				MigrationEvent other = migrationEventDao.buildMigrationEvent(migrationEvent.getMigrationEventId());
+				if (other.isDone()) {
+					currentWorkingEvents.put(other.getMigrationEventId(), other);
+				} else if (diff(migrationEvent, other)) {
+					currentWorkingEvents.put(other.getMigrationEventId(), other);
+				}
+			} catch (Exception e) {
+				logger.error("[refresh]", e);
+			}
+		}
+	}
+
+	@VisibleForTesting
+	protected boolean diff(MigrationEvent prev, MigrationEvent future) {
+		for (MigrationCluster migrationCluster : prev.getMigrationClusters()) {
+			for (MigrationCluster newMigrationCluster : future.getMigrationClusters()) {
+				if (!migrationCluster.clusterName().equals(newMigrationCluster.clusterName())) {
+					continue;
+				}
+				if (migrationCluster.getStatus().getPercent() < newMigrationCluster.getStatus().getPercent()) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	@Override

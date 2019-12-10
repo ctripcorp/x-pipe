@@ -53,6 +53,26 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void visitRemoved() {
+        manager = spy(manager);
+        manager.compare(getDcMeta("oy"));
+        verify(manager, never()).visitModified(any());
+        verify(manager, never()).visitAdded(any());
+        verify(manager, never()).visitRemoved(any());
+
+        DcMeta dcMeta = MetaClone.clone(getDcMeta("oy"));
+
+        ClusterMeta clusterMeta = dcMeta.getClusters().remove("cluster1");
+        clusterMeta.setId("cluster3").getShards().values().forEach(shardMeta -> {
+            shardMeta.setParent(clusterMeta);
+            for (RedisMeta redis : shardMeta.getRedises()) {
+                redis.setParent(shardMeta);
+            }
+        });
+        dcMeta.addCluster(clusterMeta);
+        manager.compare(dcMeta);
+        verify(manager, atLeastOnce()).visitRemoved(any());
+        verify(manager, atLeastOnce()).visitAdded(any());
+        verify(manager, never()).visitModified(any());
     }
 
 
