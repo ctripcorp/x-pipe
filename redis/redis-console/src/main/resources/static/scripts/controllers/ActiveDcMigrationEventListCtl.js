@@ -4,6 +4,7 @@ index_module.controller('ActiveDcMigrationEventListCtl', [
     function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, NgTableParams, MigrationService, $q) {
         $scope.page = 1
         $scope.size = 10
+        $scope.clusterName = $stateParams.clusterName
 
 		$scope.tableParams = new NgTableParams({
             page : $scope.page,
