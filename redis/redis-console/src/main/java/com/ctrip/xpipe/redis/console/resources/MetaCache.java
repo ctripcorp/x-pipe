@@ -21,7 +21,7 @@ public interface MetaCache {
 
     HostPort findMasterInSameShard(HostPort hostPort);
 
-    Set<HostPort> allKeepers();
+    Set<HostPort> getAllKeepers();
 
     Pair<String, String> findClusterShard(HostPort hostPort);
 

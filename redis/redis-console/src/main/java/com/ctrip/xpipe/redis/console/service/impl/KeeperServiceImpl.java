@@ -50,7 +50,7 @@ public class KeeperServiceImpl implements KeeperService {
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                keepers = metaCache.allKeepers();
+                keepers = metaCache.getAllKeepers();
             }
         }, refreshIntervalMilli, refreshIntervalMilli, TimeUnit.SECONDS);
     }
@@ -58,7 +58,7 @@ public class KeeperServiceImpl implements KeeperService {
     @Override
     public boolean isKeeper(HostPort hostPort) {
         if(keepers == null) {
-            keepers = metaCache.allKeepers();
+            keepers = metaCache.getAllKeepers();
         }
         return keepers.contains(hostPort);
     }

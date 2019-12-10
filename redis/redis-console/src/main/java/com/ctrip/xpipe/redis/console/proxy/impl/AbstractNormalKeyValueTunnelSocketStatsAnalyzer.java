@@ -10,6 +10,9 @@ public abstract class AbstractNormalKeyValueTunnelSocketStatsAnalyzer extends Ab
 
     private final int fixedSkipLen;
 
+    protected Pattern floatPattern = Pattern.compile("^([+-]?\\d*\\.?\\d*)$");
+    protected Pattern longPattern = Pattern.compile("-?\\d+");
+
     public AbstractNormalKeyValueTunnelSocketStatsAnalyzer(String key) {
         this.key = key;
         this.fixedSkipLen = key.length() + 1;
@@ -34,8 +37,7 @@ public abstract class AbstractNormalKeyValueTunnelSocketStatsAnalyzer extends Ab
     }
 
     protected double parseDouble(String str) {
-        Pattern floatPattern = Pattern.compile("^([+-]?\\d*\\.?\\d*)$");
-        Pattern longPattern = Pattern.compile("-?\\d+");
+
         Matcher matcher = floatPattern.matcher(str);
         if(!matcher.find()) {
             matcher = longPattern.matcher(str);

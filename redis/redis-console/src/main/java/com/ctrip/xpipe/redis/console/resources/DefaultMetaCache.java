@@ -19,6 +19,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultMetaCache implements MetaCache {
 
-    private int refreshIntervalMilli = 2000;
+    private int refreshIntervalMilli = 2000, DEFAULT_KEEPER_NUMBERS = 3 * 10000;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -63,6 +64,10 @@ public class DefaultMetaCache implements MetaCache {
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
 
     private Map<String, Pair<String, String>> monitor2ClusterShard;
+
+    private Set<HostPort> allKeepers;
+
+    private int allKeeperSize = DEFAULT_KEEPER_NUMBERS;
 
     private volatile long lastUpdateTime;
 
@@ -110,7 +115,8 @@ public class DefaultMetaCache implements MetaCache {
                 Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
                 DefaultMetaCache.this.meta = meta;
                 monitor2ClusterShard = Maps.newHashMap();
-
+                allKeeperSize = allKeepers.size();
+                allKeepers = null;
                 lastUpdateTime = System.currentTimeMillis();
             }
         });
@@ -244,22 +250,26 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> allKeepers(){
-
-        Set<HostPort> result = new HashSet<>();
+    public Set<HostPort> getAllKeepers(){
         XpipeMeta xpipeMeta = getXpipeMeta();
-
-        xpipeMeta.getDcs().forEach((dcName, dcMeta) -> {
-            dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
-                clusterMeta.getShards().forEach((shardName, shardMeta) -> {
-                    shardMeta.getKeepers().forEach(keeperMeta -> {
-                        result.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+        if (allKeepers == null) {
+            synchronized (this) {
+                if (allKeepers == null) {
+                    allKeepers = Sets.newHashSetWithExpectedSize(allKeeperSize);
+                    xpipeMeta.getDcs().forEach((dcName, dcMeta) -> {
+                        dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
+                            clusterMeta.getShards().forEach((shardName, shardMeta) -> {
+                                shardMeta.getKeepers().forEach(keeperMeta -> {
+                                    allKeepers.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+                                });
+                            });
+                        });
                     });
-                });
-            });
-        });
+                }
+            }
+        }
 
-        return result;
+        return allKeepers;
     }
 
 
