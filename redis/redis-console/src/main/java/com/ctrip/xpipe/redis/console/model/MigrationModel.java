@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.model;
 
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import org.apache.logging.log4j.util.Strings;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.io.Serializable;
 import java.util.List;
@@ -40,7 +40,7 @@ public class MigrationModel implements Serializable {
         String curStatus;
         String targetStatus = null;
         for (String statusStr: statusList) {
-            if (Strings.isBlank(statusStr)) continue;
+            if (StringUtil.isEmpty(statusStr)) continue;
             try {
                 MigrationStatus status = MigrationStatus.valueOf(statusStr);
                 curStatus = status.getType();
