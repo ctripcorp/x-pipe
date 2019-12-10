@@ -8,4 +8,6 @@ spring:
 
 server:
   port: 8080
-  
+  tomcat:
+    uri-encoding: UTF-8
+    max-threads: 1000

@@ -170,12 +170,12 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
     }
 
     @Override
-    public void isCrossDcLeader() {
+    public void isleader() {
         taskTrigger.set(true);
     }
 
     @Override
-    public void notCrossDcLeader() {
+    public void notLeader() {
         taskTrigger.set(false);
     }
 

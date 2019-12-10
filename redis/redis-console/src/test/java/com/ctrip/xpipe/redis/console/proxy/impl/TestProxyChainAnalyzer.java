@@ -84,12 +84,12 @@ public class TestProxyChainAnalyzer extends AbstractProxyChainTest implements Pr
     }
 
     @Override
-    public void isCrossDcLeader() {
+    public void isleader() {
 
     }
 
     @Override
-    public void notCrossDcLeader() {
+    public void notLeader() {
 
     }
 }

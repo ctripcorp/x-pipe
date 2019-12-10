@@ -52,7 +52,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo){
 	
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
-		logger.info("[getActiveKeeper][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+		logger.debug("[getActiveKeeper][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
 
 		HttpEntity<Void> entity = new HttpEntity<>(headers);
 		ResponseEntity<KeeperMeta> response = restTemplate.exchange(getActiveKeeperPath, HttpMethod.GET, entity, KeeperMeta.class, clusterId, shardId);

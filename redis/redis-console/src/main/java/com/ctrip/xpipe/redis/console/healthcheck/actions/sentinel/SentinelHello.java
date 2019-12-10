@@ -13,8 +13,6 @@ import com.ctrip.xpipe.utils.ObjectUtils;
  */
 public class SentinelHello {
 
-    private String helloStr;
-
     private HostPort sentinelAddr;
     private HostPort masterAddr;
     private String monitorName;
@@ -43,7 +41,6 @@ public class SentinelHello {
         }
 
         SentinelHello hello = new SentinelHello();
-        hello.helloStr = helloStr;
         hello.sentinelAddr = new HostPort(split[0], Integer.parseInt(split[1]));
         hello.masterAddr = new HostPort(split[5], Integer.parseInt(split[6]));
         hello.monitorName = split[4];
