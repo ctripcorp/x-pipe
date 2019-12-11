@@ -115,7 +115,7 @@ public class DefaultMetaCache implements MetaCache {
                 Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
                 DefaultMetaCache.this.meta = meta;
                 monitor2ClusterShard = Maps.newHashMap();
-                allKeeperSize = allKeepers.size();
+                allKeeperSize = allKeepers == null ? DEFAULT_KEEPER_NUMBERS : allKeepers.size();
                 allKeepers = null;
                 lastUpdateTime = System.currentTimeMillis();
             }
