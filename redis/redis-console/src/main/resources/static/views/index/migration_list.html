@@ -34,7 +34,10 @@
 				<td data-title="'开始时间'">{{item.event.startTime | date:'yyyy-MM-dd HH:mm:ss'}}</td>
 				<td data-title="'操作人'">{{item.event.operator}}</td>
 				<td data-title="'涉及集群'" ng-style="clusterBlock">
-					<span ng-repeat="cluster in item.clusters">{{cluster}}&nbsp;|&nbsp;</span>
+					<span ng-repeat="cluster in item.clusters">
+						<span ng-if="$index != 0">&nbsp;|&nbsp;</span>
+						{{cluster}}
+					</span>
 				</td>
 				<td data-title="'状态'">{{item.status}}</td>
 				<td data-title="'操作入口'">
