@@ -55,13 +55,13 @@ public class HostPort {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		HostPort hostPort = (HostPort) o;
-		return Objects.equals(m_port, hostPort.m_port) &&
+		return m_port == hostPort.m_port &&
 				  Objects.equals(m_host, hostPort.m_host);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(m_host, m_port);
+		return Objects.hash(m_host) + m_port;
 	}
 
 	@Override

@@ -33,7 +33,7 @@ public class KeeperServiceImplTest {
 
     @Test
     public void testIsKeeper() throws Exception {
-        when(metaCache.allKeepers()).thenReturn(Collections.singleton(new HostPort("127.0.0.1", 6379)));
+        when(metaCache.getAllKeepers()).thenReturn(Collections.singleton(new HostPort("127.0.0.1", 6379)));
         HostPort hostPort = new HostPort("127.0.0.1", 6379);
         Assert.assertTrue(keeperService.isKeeper(hostPort));
         Assert.assertFalse(keeperService.isKeeper(new HostPort("128.0.0.1", 6380)));

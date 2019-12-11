@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -44,9 +45,9 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		
 		ByteBuf byteBuf = getWriteByteBuf();
 		
-		if(logWrite && logger.isDebugEnabled()){
+		if(logWrite && getLogger().isDebugEnabled()){
 			
-			logger.info("[getWriteBytes]" + getPayloadAsString());
+			getLogger().info("[getWriteBytes]" + getPayloadAsString());
 		}
 		return byteBuf;
 	}
@@ -121,8 +122,8 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 			return null;
 		}
 		String ret = new String(bytes, charset);
-		if(logger.isDebugEnabled() && logRead){
-			logger.info("[readTilCRLFAsString]" + ret.trim());
+		if(getLogger().isDebugEnabled() && logRead){
+			getLogger().info("[readTilCRLFAsString]" + ret.trim());
 		}
 		return ret;
 		
@@ -172,7 +173,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		return payload;
 	}
 
-
+	protected abstract Logger getLogger();
 
 	public enum CRLF_STATE{
 		CR,
