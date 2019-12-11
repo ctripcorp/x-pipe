@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.model;
 
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.List;
@@ -9,6 +11,8 @@ import java.util.stream.Collectors;
 
 public class MigrationModel implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    private static transient Logger logger = LoggerFactory.getLogger(MigrationModel.class);
 
     private MigrationEventTbl event;
 
@@ -47,7 +51,7 @@ public class MigrationModel implements Serializable {
                 targetStatus = null == targetStatus ? curStatus : mergeStatus(targetStatus, curStatus);
                 if (targetStatus.equals(MigrationStatus.TYPE_WARNING)) break;
             } catch (Exception e) {
-                // skip, do nothing
+                logger.warn("console - collect migration status error {}, status {}", e.getMessage(), statusStr);
             }
         }
 
