@@ -17,7 +17,7 @@ import java.util.concurrent.*;
  */
 public class DefaultCommandFuture<V> implements CommandFuture<V>{
 	
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandFuture.class);
 	
 	private volatile Object result = null;
 	

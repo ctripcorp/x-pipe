@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudger.JudgeResult;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -17,7 +19,9 @@ import java.io.IOException;
  *
  * 2016年3月28日 下午2:35:36
  */
-public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
+public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> {
+
+	private static final Logger logger = LoggerFactory.getLogger(BulkStringParser.class);
 	
 	private BulkStringEofJudger eofJudger;
 	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
@@ -172,6 +176,11 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload>{
 			}
 		}
 		throw new UnsupportedOperationException();		
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return logger;
 	}
 
 	public static interface BulkStringParserListener{
