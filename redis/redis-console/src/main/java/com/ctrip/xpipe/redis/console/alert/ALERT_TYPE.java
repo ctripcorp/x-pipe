@@ -281,6 +281,22 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("DR迁移检测系统停止工作", "针对DR迁移系统的检测工作长时间停止, 则会报出此信息");
         }
+    },
+    META_CACHE_BLOCKED("MetaCache_Not_Updated", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("MetaCache not working", "Not working for a long time");
+        }
     };
 
     private String simpleDesc;

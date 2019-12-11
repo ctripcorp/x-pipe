@@ -104,7 +104,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
         //check delete
-        Set<SentinelHello> toDelete = checkAndDelete(sentinelMonitorName, masterDcSentinels, hellos, quorumConfig);
+        Set<SentinelHello> toDelete = checkAndDelete(sentinelMonitorName, masterDcSentinels, hellos, quorumConfig, masterAddr);
         //checkReset
         checkReset(clusterId, shardId, sentinelMonitorName, hellos);
         //check add
@@ -136,7 +136,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     if (clusterShard == null) {
                         if (isKeeperOrDead(currentSlave)) {
                             shoudReset = true;
-                            reason = String.format("[%s]keeper or dead, current:%s,%s, but no clustershard", currentSlave, clusterId, shardId);
+                            reason = String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId);
                         } else {
                             String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
                             alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
@@ -288,7 +288,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return true;
     }
 
-    protected Set<SentinelHello> checkAndDelete(String sentinelMonitorName, Set<HostPort> masterDcSentinels, Set<SentinelHello> hellos, QuorumConfig quorumConfig) {
+    protected Set<SentinelHello> checkAndDelete(String sentinelMonitorName, Set<HostPort> masterDcSentinels,
+                                                Set<SentinelHello> hellos, QuorumConfig quorumConfig, HostPort masterAddr) {
 
         Set<SentinelHello> toDelete = new HashSet<>();
 
@@ -305,6 +306,14 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 toDelete.add(hello);
             }
 
+        });
+
+        //add check for master not in primary dc
+        hellos.forEach((hello) -> {
+            HostPort hostPort = hello.getMasterAddr();
+            if (metaCache.inBackupDc(hostPort)) {
+                toDelete.add(hello);
+            }
         });
 
         toDelete.forEach((delete) -> {

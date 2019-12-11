@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.config.CompositeHealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.SiteLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
