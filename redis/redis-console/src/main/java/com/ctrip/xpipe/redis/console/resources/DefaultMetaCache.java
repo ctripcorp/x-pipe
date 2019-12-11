@@ -64,6 +64,8 @@ public class DefaultMetaCache implements MetaCache {
 
     private Map<String, Pair<String, String>> monitor2ClusterShard;
 
+    private volatile long lastUpdateTime;
+
     public DefaultMetaCache() {
 
     }
@@ -108,6 +110,8 @@ public class DefaultMetaCache implements MetaCache {
                 Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
                 DefaultMetaCache.this.meta = meta;
                 monitor2ClusterShard = Maps.newHashMap();
+
+                lastUpdateTime = System.currentTimeMillis();
             }
         });
     }
@@ -192,6 +196,11 @@ public class DefaultMetaCache implements MetaCache {
         }
 
         return metaDesc.getActiveDc();
+    }
+
+    @Override
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
     }
 
     @Override

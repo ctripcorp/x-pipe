@@ -12,6 +12,7 @@ public class DecodeTest {
     @Test
     public void testDecode() {
         logger.info("[result] {}", decode("~{b270ef4ce0e3e4a5a5fcf53348b22bc5621664e3f3207252712b3070703db33fb74e8}"));
+        logger.info("{}", decode("~{c394f41eb64a7ed42a3c3c76beda3c568a96d64a7e0090a29858f090901cf70de45f9}"));
     }
     private String decode(String src) {
         if (src == null) {

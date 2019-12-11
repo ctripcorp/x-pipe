@@ -5,10 +5,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSys
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterModel;
-import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationEventTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
@@ -17,6 +14,14 @@ import java.util.Date;
 import java.util.List;
 
 public interface MigrationService {
+
+    long countAll();
+
+    long countAllByCluster(long clusterId);
+
+    List<MigrationModel> find(long size, long offset);
+
+    List<MigrationModel> findByCluster(long clusterId, long size, long offset);
 
     MigrationEventTbl find(long id);
 

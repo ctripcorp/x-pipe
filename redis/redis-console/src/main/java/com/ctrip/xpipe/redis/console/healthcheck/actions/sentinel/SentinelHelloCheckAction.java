@@ -3,9 +3,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.crossdc.AbstractCDLAHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -21,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Oct 09, 2018
  */
-public class SentinelHelloCheckAction extends AbstractCDLAHealthCheckAction {
+public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckAction {
 
     private static final Logger logger = LoggerFactory.getLogger(SentinelHelloCheckAction.class);
 
@@ -29,7 +28,7 @@ public class SentinelHelloCheckAction extends AbstractCDLAHealthCheckAction {
 
     public static final String HELLO_CHANNEL = "__sentinel__:hello";
 
-    private Set<SentinelHello> hellos = Sets.newCopyOnWriteArraySet();
+    private Set<SentinelHello> hellos = Sets.newConcurrentHashSet();
 
     private ConsoleDbConfig consoleDbConfig;
 
@@ -68,7 +67,7 @@ public class SentinelHelloCheckAction extends AbstractCDLAHealthCheckAction {
     protected void processSentinelHellos() {
         getActionInstance().getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
         notifyListeners(new SentinelActionContext(getActionInstance(), hellos));
-        hellos = Sets.newCopyOnWriteArraySet();
+        hellos = Sets.newConcurrentHashSet();
     }
 
     private boolean shouldStart() {

@@ -19,8 +19,10 @@ import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -37,7 +40,9 @@ import java.util.concurrent.TimeUnit;
  * Check if the instance is through proxy connected, and if it is sick
  *
  * up: we don't care
- * down: ping not response, is not about the proxy chain, is about the redis, that it's not working or networking is not working*/
+ * down: ping not response, is not about the proxy chain, is about the redis, that it's not working or networking is not working
+ * sick: this should not be expected
+ * half-sick: we take over at this step, to prevent a predictable data lack*/
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class RouteHealthEventProcessor implements HealthEventProcessor {
@@ -59,6 +64,8 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
     @Autowired(required = false)
     private ConsoleLeaderElector clusterServer;
 
+    private Set<Pair<String, String>> events = Sets.newConcurrentHashSet();
+
     @Override
     public void onEvent(AbstractInstanceEvent event) {
         // make sure only one execute the disturb
@@ -67,8 +74,24 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         }
         //only deal with sick instance
         if (event instanceof InstanceHalfSick) {
-            doOnEvent((InstanceHalfSick) event);
+            RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+            Pair<String, String> pair = Pair.from(info.getDcId(), info.getShardId());
+            // duplicate reduction
+            if (events.add(pair)) {
+                scheduled.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        events.remove(pair);
+                    }
+                }, getHoldingMillis(), TimeUnit.MILLISECONDS);
+                doOnEvent((InstanceHalfSick) event);
+            }
+
         }
+    }
+
+    protected long getHoldingMillis() {
+        return 60 * 1000;
     }
 
     @VisibleForTesting
@@ -77,14 +100,17 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         ProxyChain proxyChain = proxyService.getProxyChain(instanceInfo.getDcId(),
                 instanceInfo.getClusterId(), instanceInfo.getShardId());
         if (proxyChain == null) {
+            logger.warn("[doOnEvent]proxy chain not found for {}", instanceInfo);
             return;
         }
         try {
             InfoResultExtractor info = instanceSick.getInstance().getRedisSession()
                     .syncInfo(InfoCommand.INFO_TYPE.REPLICATION);
             if (isRedisInFullSync(info)) {
+                logger.warn("[doOnEvent]in full sync {}", instanceInfo);
                 new FullSyncHandler(info, instanceSick.getInstance(), proxyChain).handle();
             } else {
+                logger.info("[doOnEvent]in partial sync {}", instanceInfo);
                 new PartialSyncHandler(info, instanceSick.getInstance(), proxyChain).handle();
             }
         } catch (Exception e) {
