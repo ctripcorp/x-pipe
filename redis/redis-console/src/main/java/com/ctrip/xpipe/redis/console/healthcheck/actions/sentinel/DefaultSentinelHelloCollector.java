@@ -22,8 +22,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
-import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -115,7 +113,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
 
-        Set<HostPort> allKeepers = metaCache.allKeepers();
+        Set<HostPort> allKeepers = metaCache.getAllKeepers();
 
         hellos.forEach((hello) -> {
             HostPort sentinelAddr = hello.getSentinelAddr();

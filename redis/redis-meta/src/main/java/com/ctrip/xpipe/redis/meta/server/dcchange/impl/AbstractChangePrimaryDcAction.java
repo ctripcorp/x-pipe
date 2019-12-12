@@ -83,7 +83,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
 		executionLog.info("[makeKeepersOk]" + keepers);
 		
-		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers, 
+		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers,
 				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()),
 				currentMetaManager.randomRoute(clusterId),
 				keyedObjectPool, 1000, 1, scheduled, executors);

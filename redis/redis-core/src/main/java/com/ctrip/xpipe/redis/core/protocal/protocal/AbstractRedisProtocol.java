@@ -10,8 +10,5 @@ import org.slf4j.LoggerFactory;
  * 2016年3月24日 下午6:29:33
  */
 public abstract class AbstractRedisProtocol implements RedisProtocol{
-
-	protected Logger logger = LoggerFactory.getLogger(getClass());
-	
 	
 }
