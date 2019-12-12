@@ -43,7 +43,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> allKeepers() {
+    public Set<HostPort> getAllKeepers() {
         return null;
     }
 

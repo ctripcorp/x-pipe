@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -11,6 +13,8 @@ import io.netty.buffer.Unpooled;
  * 2016年3月24日 下午6:31:56
  */
 public class LongParser extends AbstractRedisClientProtocol<Long>{
+
+	private static final Logger logger = LoggerFactory.getLogger(LongParser.class);
 
 	public LongParser() {
 	}
@@ -46,6 +50,11 @@ public class LongParser extends AbstractRedisClientProtocol<Long>{
 	protected ByteBuf getWriteByteBuf() {
 		
 		return Unpooled.wrappedBuffer(getRequestBytes(COLON_BYTE, payload));
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return logger;
 	}
 
 	@Override

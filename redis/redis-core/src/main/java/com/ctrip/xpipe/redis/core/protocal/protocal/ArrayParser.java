@@ -8,12 +8,17 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author wenchao.meng
  *
  * 2016年4月22日 下午6:05:05
  */
 public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
+
+	private static final Logger logger = LoggerFactory.getLogger(ArrayParser.class);
 	
 	public enum ARRAY_STATE{
 		READ_SIZE,
@@ -139,6 +144,11 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 		}
 		result.setIndex(0, result.capacity());
 		return result;
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return logger;
 	}
 
 	@Override
