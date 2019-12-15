@@ -443,8 +443,50 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @VisibleForTesting
-    protected MigrationServiceImpl setChecker(MigrationSystemAvailableChecker checker) {
+    public MigrationServiceImpl setChecker(MigrationSystemAvailableChecker checker) {
         this.checker = checker;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setMigrationEventManager(MigrationEventManager migrationEventManager) {
+        this.migrationEventManager = migrationEventManager;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setClusterService(ClusterService clusterService) {
+        this.clusterService = clusterService;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setDcClusterService(DcClusterService dcClusterService) {
+        this.dcClusterService = dcClusterService;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setDcService(DcService dcService) {
+        this.dcService = dcService;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setMigrationClusterDao(MigrationClusterDao migrationClusterDao) {
+        this.migrationClusterDao = migrationClusterDao;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setConfigService(ConfigService configService) {
+        this.configService = configService;
+        return this;
+    }
+
+    @VisibleForTesting
+    public MigrationServiceImpl setMigrationShardTblDao(MigrationShardTblDao migrationShardTblDao) {
+        this.migrationShardTblDao = migrationShardTblDao;
         return this;
     }
 }
