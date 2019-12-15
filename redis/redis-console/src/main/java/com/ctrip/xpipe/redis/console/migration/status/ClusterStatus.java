@@ -13,8 +13,7 @@ public enum ClusterStatus {
 	Rollback;
 	
 	public static boolean isSameClusterStatus(String source, ClusterStatus target) {
-		return true;
-//		return source.toLowerCase().equals(target.toString().toLowerCase());
+		return source.toLowerCase().equals(target.toString().toLowerCase());
 	}
 
 	public static ClusterStatus different(ClusterStatus clusterStatus){

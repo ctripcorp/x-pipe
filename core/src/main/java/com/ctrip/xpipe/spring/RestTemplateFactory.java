@@ -5,18 +5,12 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.retry.RetryNTimes;
 import com.ctrip.xpipe.retry.RetryPolicyFactories;
 import com.ctrip.xpipe.retry.RetryPolicyFactory;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
@@ -29,7 +23,7 @@ import java.lang.reflect.Proxy;
  *         <p>
  *         Aug 5, 2016
  */
-public class RestTemplateFactory {
+public class RestTemplateFactory extends AbstractRestTemplateFactory {
 
     public static RestTemplate createRestTemplate() {
 
@@ -76,27 +70,11 @@ public class RestTemplateFactory {
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         RestTemplate restTemplate = new RestTemplate(factory);
         //set jackson mapper
-        for (HttpMessageConverter<?> hmc : restTemplate.getMessageConverters()) {
-            if (hmc instanceof MappingJackson2HttpMessageConverter) {
-                ObjectMapper objectMapper = createObjectMapper();
-                MappingJackson2HttpMessageConverter mj2hmc = (MappingJackson2HttpMessageConverter) hmc;
-                mj2hmc.setObjectMapper(objectMapper);
-            }
-        }
+        setXPipeSafeJacksonMapper(restTemplate.getMessageConverters());
 
         return (RestOperations) Proxy.newProxyInstance(RestOperations.class.getClassLoader(),
                 new Class[]{RestOperations.class},
                 new RetryableRestOperationsHandler(restTemplate, retryTimes, retryPolicyFactory));
-    }
-
-    private static ObjectMapper createObjectMapper() {
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-        return objectMapper;
-
     }
 
     private static class RetryableRestOperationsHandler implements InvocationHandler {
