@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
@@ -11,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +32,9 @@ public class RedisUpdateController extends AbstractConsoleController{
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private MetaCache metaCache;
 
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
@@ -82,6 +89,22 @@ public class RedisUpdateController extends AbstractConsoleController{
             logger.error("[deleteRedises]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @RequestMapping(value = "/redis/info/" + IP_ADDRESS_VARIABLE + "/{port}")
+    public DcClusterShard getDcClusterShardByRedis(@PathVariable String ipAddress, @PathVariable int port) {
+        try {
+            HostPort hostPort = new HostPort(ipAddress, port);
+            Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
+            String dcId = metaCache.getDc(hostPort);
+            if (clusterShard == null) {
+                return new DcClusterShard("", "", "");
+            }
+            return new DcClusterShard(dcId, clusterShard.getKey(), clusterShard.getValue());
+        } catch (Exception e) {
+            logger.error("[getClusterShardByRedis][{}:{}]", ipAddress, port, e);
+        }
+        return new DcClusterShard("", "", "");
     }
 
     private List<Pair<String,Integer>> getRedisAddresses(List<String> redises) {
