@@ -12,8 +12,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.Socket;
 
-import static org.junit.Assert.*;
-
 public class RemoteMetaServerTest extends AbstractTest {
 
     private RemoteMetaServer remoteMetaServer;
@@ -46,7 +44,7 @@ public class RemoteMetaServerTest extends AbstractTest {
                 };
             }
         });
-        remoteMetaServer = new RemoteMetaServer(1, 2, new ClusterServerInfo("127.0.0.1", server.getPort()));
+        remoteMetaServer = new RemoteMetaServer(1, 2, new ClusterServerInfo("127.0.0.1", server.getPort()), executors);
         remoteMetaServer.makeMasterReadOnly("cluster", "shard", false, new ForwardInfo(META_SERVER_SERVICE.MAKE_MASTER_READONLY.getForwardType()));
         Thread.sleep(10000);
     }

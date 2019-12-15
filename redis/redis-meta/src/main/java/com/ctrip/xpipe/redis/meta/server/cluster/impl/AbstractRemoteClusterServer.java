@@ -47,7 +47,7 @@ public class AbstractRemoteClusterServer extends AbstractClusterServer implement
 		this.currentServerId = currentServerId;
 		
 		if(clusterServerInfo != null){
-			
+
 			restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(maxConnPerRoute, maxConnTotal, connectTimeout, soTimeout);
 			httpHost = String.format("http://%s:%d", clusterServerInfo.getIp(), clusterServerInfo.getPort());
 			exportSlotPath = String.format("%s/%s/%s", httpHost, ClusterApi.PATH_PREFIX, ClusterApi.PATH_EXPORT_SLOT);

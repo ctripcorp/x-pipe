@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -100,10 +103,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	// no ClusterMovingMethod
 	@Override
-	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo) {
+	public CommandFuture<KeeperMeta> getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo) {
 
 		logger.debug("[getActiveKeeper]{}, {}", clusterId, shardId);
-		return currentMetaManager.getKeeperActive(clusterId, shardId);
+		CommandFuture<KeeperMeta> response = new DefaultCommandFuture<>();
+		response.setSuccess(currentMetaManager.getKeeperActive(clusterId, shardId));
+		return response;
 	}
 
 	@Override
@@ -171,16 +176,18 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
-	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
+	public CommandFuture<PrimaryDcCheckMessage> changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
 			ForwardInfo forwardInfo) {
 		
 		logger.info("[changePrimaryDcCheck]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, forwardInfo);
 		String currentPrimaryDc = dcMetaCache.getPrimaryDc(clusterId, shardId);
 		String currentDc = dcMetaCache.getCurrentDc();
+		CommandFuture<PrimaryDcCheckMessage> response = new DefaultCommandFuture<>();
 		
 		if(newPrimaryDc.equalsIgnoreCase(currentPrimaryDc)){
-			
-			return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.PRIMARY_DC_ALREADY_IS_NEW, String.format("%s already primary dc", newPrimaryDc)); 
+			response.setSuccess(new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.PRIMARY_DC_ALREADY_IS_NEW,
+					String.format("%s already primary dc", newPrimaryDc)));
+			return response;
 		}
 		
 		if(currentDc.equalsIgnoreCase(newPrimaryDc)){
@@ -188,15 +195,19 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 			List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
 			SimpleErrorMessage result = new AtLeastOneChecker(redises, keyedObjectPool, scheduled).check();
 			if(result.getErrorType() == SIMPLE_RETURN_CODE.SUCCESS){
-				return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS);
+				response.setSuccess(new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS));
+				return response;
 			}
-			return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.FAIL, "all redises dead:" + result.getErrorMessage());
+			response.setSuccess(new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.FAIL, "all redises dead:" + result.getErrorMessage()));
+			return response;
 		}
-		return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS, String.format("current dc :%s is not new primary: %s ", currentDc, newPrimaryDc));
+		response.setSuccess(new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS,
+				String.format("current dc :%s is not new primary: %s ", currentDc, newPrimaryDc)));
+		return response;
 	}
 
 	@Override
-	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
+	public CommandFuture<MetaServerConsoleService.PreviousPrimaryDcMessage> makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
 		
 		logger.info("[makeMasterReadOnly]{},{},{}", clusterId, shardId, readOnly);
 		
@@ -205,27 +216,29 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 			return null;
 		}
 
-
+		CommandFuture<MetaServerConsoleService.PreviousPrimaryDcMessage> response = new DefaultCommandFuture<>();
 		MetaServerConsoleService.PreviousPrimaryDcMessage message = null;
 		if(readOnly){
-			message = primaryDcPrepareToChange.prepare(clusterId, shardId);
+			response.setSuccess(primaryDcPrepareToChange.prepare(clusterId, shardId));
 		}else {
-			message = primaryDcPrepareToChange.deprepare(clusterId, shardId);
+			response.setSuccess(primaryDcPrepareToChange.deprepare(clusterId, shardId));
 		}
-		return message;
+		return response;
 	}
 
 	@Override
-	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MetaServerConsoleService.PrimaryDcChangeRequest request,
+	public CommandFuture<PrimaryDcChangeMessage> doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MetaServerConsoleService.PrimaryDcChangeRequest request,
 			ForwardInfo forwardInfo) {
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
 		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);
 
+		CommandFuture<PrimaryDcChangeMessage> response = new DefaultCommandFuture<>();
 		MasterInfo masterInfo = null;
 		if(request != null){
 			masterInfo = request.getMasterInfo();
 		}
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
+		response.setSuccess(changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo));
+		return response;
 	}
 }

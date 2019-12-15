@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -17,13 +19,16 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException
 import com.ctrip.xpipe.rest.ForwardType;
 import org.springframework.http.*;
 
+import java.util.concurrent.ExecutorService;
+
 /**
  * @author wenchao.meng
  *
  * Aug 3, 2016
  */
 public class RemoteMetaServer extends AbstractRemoteClusterServer implements MetaServer{
-	
+
+	private ExecutorService executors;
 	private String changeClusterPath;
 	private String upstreamChangePath;
 	private String getActiveKeeperPath;
@@ -31,13 +36,15 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	private String makeMasterReadonlyPath;
 	private String changePrimaryDcPath;
 	
-	public RemoteMetaServer(int currentServerId, int serverId) {
+	public RemoteMetaServer(int currentServerId, int serverId, ExecutorService executors) {
 		super(currentServerId, serverId);
+		this.executors = executors;
 	}
 	
-	public RemoteMetaServer(int currentServerId, int serverId, ClusterServerInfo clusterServerInfo) {
+	public RemoteMetaServer(int currentServerId, int serverId, ClusterServerInfo clusterServerInfo, ExecutorService executors) {
 		super(currentServerId, serverId, clusterServerInfo);
-				
+		this.executors = executors;
+
 		if(getHttpHost() != null){
 			changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(getHttpHost());
 			upstreamChangePath = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(getHttpHost());
@@ -49,14 +56,30 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo){
+	public CommandFuture<KeeperMeta> getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo){
 	
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
 		logger.debug("[getActiveKeeper][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+		return new AbstractCommand<KeeperMeta>() {
 
-		HttpEntity<Void> entity = new HttpEntity<>(headers);
-		ResponseEntity<KeeperMeta> response = restTemplate.exchange(getActiveKeeperPath, HttpMethod.GET, entity, KeeperMeta.class, clusterId, shardId);
-		return response.getBody();
+			@Override
+			public String getName() {
+				return getClass().getSimpleName() + "-getActiveKeeper";
+			}
+
+			@Override
+			protected void doExecute() throws Exception {
+				HttpEntity<Void> entity = new HttpEntity<>(headers);
+				ResponseEntity<KeeperMeta> response = restTemplate
+						.exchange(getActiveKeeperPath, HttpMethod.GET, entity, KeeperMeta.class, clusterId, shardId);
+				future().setSuccess(response.getBody());
+			}
+
+			@Override
+			protected void doReset() {
+
+			}
+		}.execute(executors);
 	}
 
 	@Override
@@ -108,39 +131,90 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 	
 	@Override
-	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
-			ForwardInfo forwardInfo) {
+	public CommandFuture<PrimaryDcCheckMessage> changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
+																	ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getForwardType());
 		logger.info("[changePrimaryDcCheck][forward]{},{},{}, {}--> {}", clusterId, shardId, newPrimaryDc, forwardInfo, this);
-		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
-		ResponseEntity<PrimaryDcCheckMessage> result = restTemplate.exchange(changePrimaryDcCheckPath, HttpMethod.GET, entity, PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc);
-		return result.getBody();
+		return new AbstractCommand<PrimaryDcCheckMessage>() {
+
+			@Override
+			public String getName() {
+				return getClass().getSimpleName() + "-changePrimaryDcCheck";
+			}
+
+			@Override
+			protected void doExecute() throws Exception {
+				HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+				ResponseEntity<PrimaryDcCheckMessage> response = restTemplate
+						.exchange(changePrimaryDcCheckPath, HttpMethod.GET, entity,
+								PrimaryDcCheckMessage.class, clusterId, shardId, newPrimaryDc);
+				future().setSuccess(response.getBody());
+			}
+
+			@Override
+			protected void doReset() {
+
+			}
+		}.execute(executors);
 	}
 
 	@Override
-	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
+	public CommandFuture<MetaServerConsoleService.PreviousPrimaryDcMessage> makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
 
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.MAKE_MASTER_READONLY.getForwardType());
 		logger.info("[makeMasterReadOnly][forward]{},{},{}, {}--> {}", clusterId, shardId, readOnly, forwardInfo, this);
+		return new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
 
-		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
-		ResponseEntity<MetaServerConsoleService.PreviousPrimaryDcMessage> result = restTemplate.exchange(makeMasterReadonlyPath, HttpMethod.PUT, entity, MetaServerConsoleService.PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly);
-		return result.getBody();
+			@Override
+			public String getName() {
+				return getClass().getSimpleName() + "-makeMasterReadOnly";
+			}
+
+			@Override
+			protected void doExecute() throws Exception {
+				HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+				ResponseEntity<MetaServerConsoleService.PreviousPrimaryDcMessage> response = restTemplate
+						.exchange(makeMasterReadonlyPath, HttpMethod.PUT, entity,
+								MetaServerConsoleService.PreviousPrimaryDcMessage.class, clusterId, shardId, readOnly);
+				future().setSuccess(response.getBody());
+			}
+
+			@Override
+			protected void doReset() {
+
+			}
+		}.execute(executors);
     }
 
 	@Override
-	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc
+	public CommandFuture<PrimaryDcChangeMessage> doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc
 			, MetaServerConsoleService.PrimaryDcChangeRequest request, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getForwardType());
 		logger.info("[doChangePrimaryDc][forward]{},{},{}, {}--> {}", clusterId, shardId, newPrimaryDc, forwardInfo, this);
-		headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+		return new AbstractCommand<PrimaryDcChangeMessage>() {
 
-		HttpEntity<MetaServerConsoleService.PrimaryDcChangeRequest> entity = new HttpEntity<>(request, headers);
-		ResponseEntity<PrimaryDcChangeMessage> resposne = restTemplate.exchange(changePrimaryDcPath, HttpMethod.PUT, 
-				entity, PrimaryDcChangeMessage.class, clusterId, shardId, newPrimaryDc);
-		return resposne.getBody();
+			@Override
+			public String getName() {
+				return getClass().getSimpleName() + "-doChangePrimaryDc";
+			}
+
+			@Override
+			protected void doExecute() throws Exception {
+				headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
+
+				HttpEntity<MetaServerConsoleService.PrimaryDcChangeRequest> entity = new HttpEntity<>(request, headers);
+				ResponseEntity<PrimaryDcChangeMessage> response = restTemplate.exchange(changePrimaryDcPath, HttpMethod.PUT,
+						entity, PrimaryDcChangeMessage.class, clusterId, shardId, newPrimaryDc);
+				future().setSuccess(response.getBody());
+			}
+
+			@Override
+			protected void doReset() {
+
+			}
+		}.execute(executors);
 	}
 
 
