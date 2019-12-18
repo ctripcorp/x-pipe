@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
+import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,12 +12,12 @@ import org.springframework.stereotype.Component;
 public class DefaultClientConfigMonitor extends AbstractClientConfigMonitor {
 
     @Autowired(required = false)
-    private CrossDcClusterServer clusterServer;
+    private ConsoleLeaderElector clusterServer;
 
     @Override
     protected boolean shouldCheck() {
         if(clusterServer != null && !clusterServer.amILeader()) {
-            logger.debug("[shouldCheck][not cross dc leader, quit]");
+            logger.debug("[shouldCheck][not site leader, quit]");
             return false;
         }
         return true;
