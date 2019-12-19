@@ -10,8 +10,6 @@ import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.impl.RemoteMetaServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import oracle.jvm.hotspot.jfr.Producer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
