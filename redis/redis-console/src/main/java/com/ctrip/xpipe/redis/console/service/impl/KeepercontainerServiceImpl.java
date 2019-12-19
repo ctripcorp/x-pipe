@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -16,8 +17,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class KeepercontainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
@@ -31,6 +31,9 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private OrganizationService organizationService;
+
+  @Autowired
+  private RedisService redisService;
 
   private RestTemplate restTemplate;
 
@@ -203,6 +206,42 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
       @Override
       public Integer doQuery() throws DalException {
         return dao.updateByPK(kc, KeepercontainerTblEntity.UPDATESET_FULL);
+      }
+    });
+  }
+
+  @Override
+  public List<KeepercontainerInfoModel> findAllInfos() {
+    List<KeepercontainerTbl> baseInfos = findContainerBaseInfos();
+
+    HashMap<Long, KeepercontainerInfoModel> containerInfoMap = new HashMap<>();
+    baseInfos.forEach(baseInfo -> {
+      KeepercontainerInfoModel model = new KeepercontainerInfoModel();
+      model.setId(baseInfo.getKeepercontainerId());
+      model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
+      model.setDcName(baseInfo.getDcInfo().getDcName());
+      model.setOrgName(baseInfo.getOrgInfo().getOrgName());
+
+      containerInfoMap.put(model.getId(), model);
+    });
+
+    List<RedisTbl> containerLoad = redisService.countContainerKeeperAndClusterAndShard();
+    containerLoad.forEach(load -> {
+      if (!containerInfoMap.containsKey(load.getKeepercontainerId())) return;
+      KeepercontainerInfoModel model = containerInfoMap.get(load.getKeepercontainerId());
+      model.setKeeperCount(load.getCount());
+      model.setClusterCount(load.getDcClusterShardInfo().getClusterCount());
+      model.setShardCount(load.getDcClusterShardInfo().getShardCount());
+    });
+
+    return new ArrayList<>(containerInfoMap.values());
+  }
+
+  private List<KeepercontainerTbl> findContainerBaseInfos() {
+    return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+      @Override
+      public List<KeepercontainerTbl> doQuery() throws DalException {
+        return dao.findActiveContainerBaseInfo(KeepercontainerTblEntity.READSET_BASE_INFO);
       }
     });
   }

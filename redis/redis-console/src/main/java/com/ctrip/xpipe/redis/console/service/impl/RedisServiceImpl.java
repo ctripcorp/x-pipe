@@ -277,6 +277,16 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         notifier.notifyClusterUpdate(dcName, clusterName);
     }
 
+    @Override
+    public List<RedisTbl> countContainerKeeperAndClusterAndShard() {
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.countContainerKeeperAndClusterAndShard(RedisTblEntity.READSET_CONTAINER_LOAD);
+            }
+        });
+    }
+
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
 
         validateKeepers(RedisDao.findWithRole(target, XPipeConsoleConstant.ROLE_KEEPER));

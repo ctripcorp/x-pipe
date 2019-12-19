@@ -495,6 +495,9 @@
 	</entity>
 
 	<entity name="dc-cluster-shard-tbl" table="DC_CLUSTER_SHARD_TBL" alias="dcst">
+		<member name="cluster-count" value-type="long" select-expr="COUNT(distinct dcst.dc_cluster_id) `cluster-count`" all="false"/>
+		<member name="shard-count" value-type="long" select-expr="COUNT(distinct dcst.shard_id) `cluster-count`" all="false"/>
+
 		<var name="dc-id" value-type="Long"/>
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
@@ -509,6 +512,10 @@
 		<readsets>
 			<readset name="SENTINEL_ID">
 				<member name="setinel-id"/>
+			</readset>
+			<readset name="CLUSTER_COUNT_AND_SHARD_COUNT">
+				<member name="cluster-count" />
+				<member name="shard-count" />
 			</readset>
 			<readset name="DC_CLUSTER_SHARD_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
@@ -642,6 +649,7 @@
 		<!-- Add two constant below to fix bug, that when use h2 db in unit/integration test -->
 		<!-- RedisService.updateRedis() will fail, due to h2 db not recognize sequential insert with id of 0 -->
 		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
+		<member name="count" value-type="long" select-expr="COUNT(rt.id) count" all="false"/>
 		<var name="key-id" value-type="Long" key-member="id" />
 
 		<var name="dc-name" value-type="String"/>
@@ -667,9 +675,33 @@
 				<member name="redis-master"/>
 				<member name="keepercontainer-id"/>
 			</readset>
+			<readset name="CONTAINER_ID">
+				<member name="keepercontainer-id" />
+			</readset>
+			<readset name="CONTAINER_KEEPER_COUNT">
+				<member name="count" />
+			</readset>
+			<readset name="CONTAINER_LOAD" >
+				<readset-ref name="CONTAINER_ID" />
+				<readset-ref name="CONTAINER_KEEPER_COUNT" />
+				<readset-ref name="CLUSTER_COUNT_AND_SHARD_COUNT" relation-name="dc-cluster-shard-info" />
+			</readset>
 		</readsets>
 
 		<query-defs>
+			<query name='count-container-keeper-and-cluster-and-shard' type='SELECT' multiple='true'>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS />
+					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />
+					WHERE <FIELD name='dc-cluster-shard-id' /> = dcst.dc_cluster_shard_id
+					AND <FIELD name='redis-role' /> = 'keeper'
+					AND <FIELD name='deleted' /> = 0
+					AND dcst.deleted = 0
+					GROUP BY <FIELD name='keepercontainer-id' />
+        			]]>
+				</statement>
+			</query>
 
 			<query name="find-all-by-dc-cluster-name" type="SELECT" multiple="true">
 				<param name="dc-name"/>
@@ -984,6 +1016,7 @@
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="keeper-info" entity-name="redis-tbl" entity-alias="kit"/>
+		<relation name="org-info" entity-name="organization-tbl" entity-alias="ot" />
 
 		<readsets>
 			<readset name="KEEPER_COUNT">
@@ -1000,6 +1033,18 @@
 				<member name="keepercontainer-dc"/>
 				<member name="count"/>
 				<member name="keepercontainer-org-id" />
+			</readset>
+
+			<readset name="CONTAINER_ADDRESS">
+				<member name='keepercontainer-id'/>
+				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-port'/>
+			</readset>
+
+			<readset name="BASE_INFO">
+				<readset-ref name="CONTAINER_ADDRESS" />
+				<readset-ref name="NAME" relation-name="org-info" />
+				<readset-ref name="NAME" relation-name="dc-info" />
 			</readset>
 		</readsets>
 		<query-defs>
@@ -1073,6 +1118,17 @@
 					WHERE <FIELD name='keepercontainer-ip'/> = ${keepercontainer-ip}
 					AND <FIELD name='keepercontainer-port'/> = ${keepercontainer-port}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-active-container-base-info" type="SELECT" multiple="true" >
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS />
+					FROM <TABLE />, <TABLE name='dc-info' />, <TABLE name='org-info' />
+					where <FIELD name='deleted' /> = 0
+					and <FIELD name='keepercontainer-dc' /> = dt.id
+					and <FIELD name='keepercontainer-org-id' /> = ot.org_id
 					]]>
 				</statement>
 			</query>
@@ -1451,6 +1507,9 @@
 			<readset name="id-and-name">
 				<member name='id'/>
 				<member name='org-name'/>
+			</readset>
+			<readset name="NAME">
+				<member name="org-name"/>
 			</readset>
 		</readsets>
 

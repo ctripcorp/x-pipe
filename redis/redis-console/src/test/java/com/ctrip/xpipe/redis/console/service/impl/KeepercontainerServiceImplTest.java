@@ -4,7 +4,9 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -194,5 +196,22 @@ public class KeepercontainerServiceImplTest extends AbstractServiceImplTest{
     public void testCheckHostAndPort() {
         boolean result = keepercontainerService.checkIpAndPort("10.2.73.161", 8080);
         Assert.assertTrue(result);
+    }
+
+    @Test
+    public void testFindAllInfos() {
+        List<KeepercontainerInfoModel> infos = keepercontainerService.findAllInfos();
+        
+        Assert.assertTrue(infos.size() > 0);
+        for (KeepercontainerInfoModel info: infos) {
+            Assert.assertTrue(info.getId() > 0);
+            Assert.assertNotNull(info.getAddr());
+            Assert.assertFalse(StringUtil.isEmpty(info.getDcName()));
+            Assert.assertNotNull(info.getOrgName());
+        }
+
+        Assert.assertEquals(2, infos.get(0).getClusterCount());
+        Assert.assertEquals(2, infos.get(0).getShardCount());
+        Assert.assertEquals(2, infos.get(0).getKeeperCount());
     }
 }
