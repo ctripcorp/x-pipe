@@ -130,6 +130,7 @@
 		<var name="cluster-org-name" value-type="String"/>
 		<var name="cluster-names" value-type="java.util.List&lt;String&gt;" />
 		<var name="dc-id" value-type="long"/>
+		<var name="ids" value-type="java.util.List&lt;Long&gt;" />
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
@@ -161,6 +162,16 @@
 		</readsets>
 		
 		<query-defs>
+			<query name="find-clusters-with-org-info-by-id" type="SELECT" multiple="true">
+				<param name="ids" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.org_id
+					WHERE <FIELD name='id'/> IN <IN>${ids}</IN>
+					]]>
+				</statement>
+			</query>
 			<query name="total-count" type="SELECT" multiple="false">
 				<statement>
 				<![CDATA[
@@ -308,6 +319,9 @@
 			<readset name="FULL_WITH_DC">
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="dc-info"/>
+			</readset>
+			<readset name="CLUSTER_ID">
+				<member name="cluster-id" />
 			</readset>
 		</readsets>
 
@@ -654,6 +668,7 @@
 
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
+		<var name="keeper-container-id" value-type="long" />
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
@@ -686,9 +701,26 @@
 				<readset-ref name="CONTAINER_KEEPER_COUNT" />
 				<readset-ref name="CLUSTER_COUNT_AND_SHARD_COUNT" relation-name="dc-cluster-shard-info" />
 			</readset>
+			<readset name="CLUSTER_ID">
+				<readset-ref name="CLUSTER_ID" relation-name="dc-cluster-info" />
+			</readset>
 		</readsets>
 
 		<query-defs>
+			<query name='find-dc-cluster-by-keeper-container' type='SELECT' multiple='true'>
+				<param name="keeper-container-id" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS />
+					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />, <TABLE name='dc-cluster-info' />
+					WHERE <FIELD name='keepercontainer-id' /> = ${keeper-container-id}
+					AND <FIELD name='deleted' /> = 0
+					AND <FIELD name='keeper-active' /> = 1
+					AND <FIELD name='dc-cluster-shard-id' /> = dcst.dc_cluster_shard_id
+					AND dcst.dc_cluster_id=dct.dc_cluster_id
+        			]]>
+				</statement>
+			</query>
 			<query name='count-container-keeper-and-cluster-and-shard' type='SELECT' multiple='true'>
 				<statement>
 					<![CDATA[

@@ -18,10 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -285,6 +284,21 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 return dao.countContainerKeeperAndClusterAndShard(RedisTblEntity.READSET_CONTAINER_LOAD);
             }
         });
+    }
+
+    @Override
+    public List<Long> findClusterIdsByKeeperContainer(long keeperContainerId) {
+        List<RedisTbl> keepers = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.findDcClusterByKeeperContainer(keeperContainerId, RedisTblEntity.READSET_CLUSTER_ID);
+            }
+        });
+
+        Set<Long> clusterIdSet = new HashSet<>();
+        keepers.forEach(keeper -> clusterIdSet.add(keeper.getDcClusterInfo().getClusterId()));
+
+        return new ArrayList<>(clusterIdSet);
     }
 
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {

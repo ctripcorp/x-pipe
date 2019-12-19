@@ -34,4 +34,6 @@ public interface ClusterService {
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
 
+	List<ClusterTbl> findAllClusterByKeeperContainer(long keeperContainerId);
+
 }
