@@ -129,6 +129,11 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             },
         	templateUrl: 'views/index/migration_details_content.html',
         	controller : 'ActiveDcMigrationEventDetailsContentCtl'
+        })
+        .state('keepercontainer_list', {
+            url: '/keepercontainers',
+            templateUrl: 'views/index/keepercontainer_list.html',
+            controller : 'KeeperContainerListCtl',
         });
 
 });
