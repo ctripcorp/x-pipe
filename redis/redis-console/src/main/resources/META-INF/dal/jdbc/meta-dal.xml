@@ -715,7 +715,6 @@
 					FROM <TABLE />, <TABLE name='dc-cluster-shard-info' />, <TABLE name='dc-cluster-info' />
 					WHERE <FIELD name='keepercontainer-id' /> = ${keeper-container-id}
 					AND <FIELD name='deleted' /> = 0
-					AND <FIELD name='keeper-active' /> = 1
 					AND <FIELD name='dc-cluster-shard-id' /> = dcst.dc_cluster_shard_id
 					AND dcst.dc_cluster_id=dct.dc_cluster_id
         			]]>
