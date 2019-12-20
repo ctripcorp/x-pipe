@@ -73,6 +73,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private DcClusterService dcClusterService;
 
+	@Autowired
+	private RedisService redisService;
+
 	@Override
 	public ClusterTbl find(final String clusterName) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
@@ -566,6 +569,18 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	@Override
+	public List<ClusterTbl> findAllClusterByKeeperContainer(long keeperContainerId) {
+		List<Long> clusterIds = redisService.findClusterIdsByKeeperContainer(keeperContainerId);
+		if (clusterIds.isEmpty()) return Collections.emptyList();
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findClustersWithOrgInfoById(clusterIds, ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
 	}
 
 	private List<String> findAllClustersNameByDcName(String dcName) {

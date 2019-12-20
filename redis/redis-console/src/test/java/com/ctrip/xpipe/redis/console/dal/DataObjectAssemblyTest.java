@@ -2,13 +2,8 @@ package com.ctrip.xpipe.redis.console.dal;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
-import com.ctrip.xpipe.redis.console.service.SentinelService;
-import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.junit.After;
 import org.junit.Assert;
