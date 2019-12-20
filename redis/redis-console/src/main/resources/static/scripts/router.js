@@ -88,7 +88,7 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
-            url: '/cluster_list?clusterName&dcName&type',
+            url: '/cluster_list?clusterName&dcName&type?keepercontainer',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })
