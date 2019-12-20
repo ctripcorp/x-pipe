@@ -283,4 +283,16 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
             logger.error("", e);
         }
     }
+
+    @Test
+    public void testCountContainerKeeperAndClusterAndShard() {
+        List<RedisTbl> redisTbls = redisService.findAllKeeperContainerCountInfo();
+        Assert.assertEquals(4, redisTbls.size());
+
+        RedisTbl redis = redisTbls.get(0);
+        Assert.assertTrue(redis.getKeepercontainerId() > 0);
+        Assert.assertEquals(2, redis.getCount());
+        Assert.assertEquals(1, redis.getDcClusterShardInfo().getClusterCount());
+        Assert.assertEquals(2, redis.getDcClusterShardInfo().getShardCount());
+    }
 }

@@ -18,9 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 
@@ -34,7 +32,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     @Autowired
     private DcClusterShardService dcClusterShardService;
     @Autowired
-    private KeepercontainerService keepercontainerService;
+    private KeeperContainerService keeperContainerService;
     @Autowired
     private ClusterMetaModifiedNotifier notifier;
 
@@ -277,6 +275,31 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         notifier.notifyClusterUpdate(dcName, clusterName);
     }
 
+    @Override
+    public List<RedisTbl> findAllKeeperContainerCountInfo() {
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.countContainerKeeperAndClusterAndShard(RedisTblEntity.READSET_CONTAINER_LOAD);
+            }
+        });
+    }
+
+    @Override
+    public List<Long> findClusterIdsByKeeperContainer(long keeperContainerId) {
+        List<RedisTbl> keepers = queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.findDcClusterByKeeperContainer(keeperContainerId, RedisTblEntity.READSET_CLUSTER_ID);
+            }
+        });
+
+        Set<Long> clusterIdSet = new HashSet<>();
+        keepers.forEach(keeper -> clusterIdSet.add(keeper.getDcClusterInfo().getClusterId()));
+
+        return new ArrayList<>(clusterIdSet);
+    }
+
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
 
         validateKeepers(RedisDao.findWithRole(target, XPipeConsoleConstant.ROLE_KEEPER));
@@ -357,7 +380,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XPipeConsoleConstant.ROLE_KEEPER);
         for (int cnt = 0; cnt != 2; ++cnt) {
             final RedisTbl keeper = keepers.get(cnt);
-            KeepercontainerTbl keepercontainer = keepercontainerService.find(keeper.getKeepercontainerId());
+            KeepercontainerTbl keepercontainer = keeperContainerService.find(keeper.getKeepercontainerId());
             if (null == keepercontainer) {
                 throw new BadRequestException("Cannot find related keepercontainer");
             }

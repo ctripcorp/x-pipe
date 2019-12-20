@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +27,7 @@ import java.util.List;
 public class KeepercontainerDcController extends AbstractConsoleController {
 
   @Autowired
-  private KeepercontainerService keepercontainerService;
+  private KeeperContainerService keeperContainerService;
 
   @Autowired
   private KeeperAdvancedService keeperAdvancedService;
@@ -40,7 +40,7 @@ public class KeepercontainerDcController extends AbstractConsoleController {
       @PathVariable String clusterName) {
 
     List<KeepercontainerTbl> keepercontainerTbls =
-         keepercontainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
+         keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
     return keepercontainerTbls;
   }
 
