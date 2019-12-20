@@ -10,6 +10,11 @@ services.service('KeeperContainerService', ['$resource', '$q', function ($resour
             method: 'GET',
             url: '/console/dcs/:dcName/cluster/:clusterName/activekeepercontainers',
             isArray : true
+        },
+        get_all_infos: {
+            method: 'GET',
+            url: '/console/keepercontainer/infos/all',
+            isArray : true
         }
     });
 
@@ -53,8 +58,20 @@ services.service('KeeperContainerService', ['$resource', '$q', function ($resour
             return d.promise;
     }
 
+    function getAllInfos() {
+        var d = $q.defer();
+        resource.get_all_infos({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         findAvailableKeepersByDc : findAvailableKeepersByDc,
-        findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster
+        findAvailableKeepersByDcAndCluster : findAvailableKeepersByDcAndCluster,
+        getAllInfos: getAllInfos,
     }
 }]);

@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -214,6 +215,18 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(10, iCounter);
         Assert.assertEquals(10, jCounter);
         Assert.assertEquals(20, kCounter);
+    }
+
+    @Test
+    public void testFindAllClusterByKeeperContainer() {
+        List<ClusterTbl> clusterTbls = clusterService.findAllClusterByKeeperContainer(4);
+        Assert.assertTrue(clusterTbls.size() > 0);
+        Assert.assertNotNull(clusterTbls.get(0).getOrganizationInfo());
+    }
+
+    @Override
+    protected String prepareDatas() throws IOException {
+        return prepareDatasFromFile("src/test/resources/cluster-service-impl-test2.sql");
     }
 
 }

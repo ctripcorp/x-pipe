@@ -141,7 +141,7 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
         }
 
         if (successCnt == migrationClusters.size()) {
-            logger.info("[isDone][true]{}, success:{}", getMigrationEventId(), successCnt);
+//            logger.info("[isDone][true]{}, success:{}", getMigrationEventId(), successCnt);
             return true;
         }
         return false;

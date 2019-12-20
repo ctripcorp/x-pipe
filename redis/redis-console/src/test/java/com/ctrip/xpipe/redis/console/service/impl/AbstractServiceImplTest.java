@@ -26,7 +26,7 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
     private DcClusterService dcClusterService;
 
     @Autowired
-    private KeepercontainerService keepercontainerService;
+    private KeeperContainerService keeperContainerService;
 
     @Autowired
     private ShardService shardService;
@@ -73,7 +73,7 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
 
         for(String dcName : dcNames){
 
-            List<KeepercontainerTbl> keepercontainerTbls = keepercontainerService.findAllActiveByDcName(dcName);
+            List<KeepercontainerTbl> keepercontainerTbls = keeperContainerService.findAllActiveByDcName(dcName);
 
             Assert.assertTrue(keepercontainerTbls.size() >= 2);
             long keepercontainerId1 = keepercontainerTbls.get(0).getKeepercontainerId();

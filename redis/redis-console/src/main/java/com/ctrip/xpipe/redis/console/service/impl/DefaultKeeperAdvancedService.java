@@ -27,7 +27,7 @@ import java.util.function.BiPredicate;
 public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTblDao> implements KeeperAdvancedService {
 
   @Autowired
-  private KeepercontainerService keepercontainerService;
+  private KeeperContainerService keeperContainerService;
 
   @Autowired
   private RedisService redisService;
@@ -52,7 +52,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     List<KeeperBasicInfo> result = new LinkedList<>();
 
     List<KeepercontainerTbl> keepercontainerTbls =
-        keepercontainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
+        keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
     if (keepercontainerTbls.size() < returnCount) {
       throw new IllegalStateException(
           "Organization keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
