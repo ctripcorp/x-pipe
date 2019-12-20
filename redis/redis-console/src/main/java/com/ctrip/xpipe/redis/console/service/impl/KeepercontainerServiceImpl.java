@@ -241,7 +241,7 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
-        return dao.findActiveContainerBaseInfo(KeepercontainerTblEntity.READSET_BASE_INFO);
+        return dao.findContainerBaseInfo(KeepercontainerTblEntity.READSET_BASE_INFO);
       }
     });
   }

@@ -167,7 +167,7 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.org_id
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='id'/> IN <IN>${ids}</IN>
 					]]>
 				</statement>
@@ -1152,14 +1152,14 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-active-container-base-info" type="SELECT" multiple="true" >
+			<query name="find-container-base-info" type="SELECT" multiple="true" >
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS />
-					FROM <TABLE />, <TABLE name='dc-info' />, <TABLE name='org-info' />
+					FROM <TABLE /> LEFT JOIN <TABLE name='org-info' /> on <FIELD name='keepercontainer-org-id' /> = ot.id,
+						<TABLE name='dc-info' />
 					where <FIELD name='deleted' /> = 0
 					and <FIELD name='keepercontainer-dc' /> = dt.id
-					and <FIELD name='keepercontainer-org-id' /> = ot.org_id
 					]]>
 				</statement>
 			</query>
