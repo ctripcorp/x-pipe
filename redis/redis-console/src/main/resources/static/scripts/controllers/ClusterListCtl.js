@@ -111,12 +111,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
             sourceClusters = data;
             copedClusters = _.clone(sourceClusters);
             $scope.tableParams = new NgTableParams({
-                page : $rootScope.historyPage,
+                page : 1,
                 count : 10
             }, {
                 filterDelay:100,
                 getData : function(params) {
-                    $rootScope.historyPage = params.page();
                     var filter_text = params.filter().clusterName;
                     if(filter_text) {
                         filter_text = filter_text.toLowerCase();
