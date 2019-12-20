@@ -5,7 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 
 import java.io.Serializable;
 
-public class KeepercontainerInfoModel implements Serializable {
+public class KeeperContainerInfoModel implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private long id;

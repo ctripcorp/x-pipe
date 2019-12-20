@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.model.KeepercontainerInfoModel;
-import com.ctrip.xpipe.redis.console.service.KeepercontainerService;
+import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -15,11 +15,11 @@ import java.util.List;
 public class KeeperContainerInfoController extends AbstractConsoleController {
 
     @Autowired
-    KeepercontainerService keepercontainerService;
+    KeeperContainerService keeperContainerService;
 
     @RequestMapping(value = "/keepercontainer/infos/all", method = RequestMethod.GET)
-    public List<KeepercontainerInfoModel> getAllKeeperContainerInfos() {
-        return keepercontainerService.findAllInfos();
+    public List<KeeperContainerInfoModel> getAllKeeperContainerInfos() {
+        return keeperContainerService.findAllInfos();
     }
 
 }

@@ -20,7 +20,6 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -33,7 +32,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     @Autowired
     private DcClusterShardService dcClusterShardService;
     @Autowired
-    private KeepercontainerService keepercontainerService;
+    private KeeperContainerService keeperContainerService;
     @Autowired
     private ClusterMetaModifiedNotifier notifier;
 
@@ -277,7 +276,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
-    public List<RedisTbl> countContainerKeeperAndClusterAndShard() {
+    public List<RedisTbl> findAllKeeperContainerCountInfo() {
         return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
             @Override
             public List<RedisTbl> doQuery() throws DalException {
@@ -381,7 +380,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XPipeConsoleConstant.ROLE_KEEPER);
         for (int cnt = 0; cnt != 2; ++cnt) {
             final RedisTbl keeper = keepers.get(cnt);
-            KeepercontainerTbl keepercontainer = keepercontainerService.find(keeper.getKeepercontainerId());
+            KeepercontainerTbl keepercontainer = keeperContainerService.find(keeper.getKeepercontainerId());
             if (null == keepercontainer) {
                 throw new BadRequestException("Cannot find related keepercontainer");
             }

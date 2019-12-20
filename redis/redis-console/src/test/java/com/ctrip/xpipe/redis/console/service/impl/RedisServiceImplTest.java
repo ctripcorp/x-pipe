@@ -286,7 +286,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
     @Test
     public void testCountContainerKeeperAndClusterAndShard() {
-        List<RedisTbl> redisTbls = redisService.countContainerKeeperAndClusterAndShard();
+        List<RedisTbl> redisTbls = redisService.findAllKeeperContainerCountInfo();
         Assert.assertEquals(4, redisTbls.size());
 
         RedisTbl redis = redisTbls.get(0);

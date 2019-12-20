@@ -20,8 +20,8 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.*;
 
 @Service
-public class KeepercontainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
-    implements KeepercontainerService {
+public class KeeperContainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
+    implements KeeperContainerService {
 
   @Autowired
   private ClusterService clusterService;
@@ -211,12 +211,12 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public List<KeepercontainerInfoModel> findAllInfos() {
+  public List<KeeperContainerInfoModel> findAllInfos() {
     List<KeepercontainerTbl> baseInfos = findContainerBaseInfos();
 
-    HashMap<Long, KeepercontainerInfoModel> containerInfoMap = new HashMap<>();
+    HashMap<Long, KeeperContainerInfoModel> containerInfoMap = new HashMap<>();
     baseInfos.forEach(baseInfo -> {
-      KeepercontainerInfoModel model = new KeepercontainerInfoModel();
+      KeeperContainerInfoModel model = new KeeperContainerInfoModel();
       model.setId(baseInfo.getKeepercontainerId());
       model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
       model.setDcName(baseInfo.getDcInfo().getDcName());
@@ -225,10 +225,10 @@ public class KeepercontainerServiceImpl extends AbstractConsoleService<Keepercon
       containerInfoMap.put(model.getId(), model);
     });
 
-    List<RedisTbl> containerLoad = redisService.countContainerKeeperAndClusterAndShard();
+    List<RedisTbl> containerLoad = redisService.findAllKeeperContainerCountInfo();
     containerLoad.forEach(load -> {
       if (!containerInfoMap.containsKey(load.getKeepercontainerId())) return;
-      KeepercontainerInfoModel model = containerInfoMap.get(load.getKeepercontainerId());
+      KeeperContainerInfoModel model = containerInfoMap.get(load.getKeepercontainerId());
       model.setKeeperCount(load.getCount());
       model.setClusterCount(load.getDcClusterShardInfo().getClusterCount());
       model.setShardCount(load.getDcClusterShardInfo().getShardCount());
