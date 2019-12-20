@@ -58,6 +58,7 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -164,7 +165,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultDcMetaChangeManagerTest.class,
         MetaCacheCheckTest.class,
         RouteHealthEventProcessorTest.class,
-        DefaultMigrationEventManagerTest.class
+        DefaultMigrationEventManagerTest.class,
+        MigrationServiceImplPaginationTest.class
 })
 public class AllTests {
 
