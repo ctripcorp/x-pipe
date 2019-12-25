@@ -60,7 +60,11 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
     private void fixSentinelMissing(String dc, List<DcClusterShard> clusterShards) {
         Set<String> clusterSet = new HashSet<>();
         clusterShards.forEach(clusterShard -> clusterSet.add(clusterShard.getClusterId()));
-        clusterService.reBalanceClusterSentinels(dc, new ArrayList<>(clusterSet));
+        try {
+            clusterService.reBalanceClusterSentinels(dc, new ArrayList<>(clusterSet));
+        } catch (Exception e) {
+            logger.error("[RebalanceSentinel]fail for dc {}, clusters {}, msg: {}", dc, clusterShards, e.getMessage());
+        }
     }
 
     private void alertForSentinelMissing(String dc, List<DcClusterShard> clusterShards) {
