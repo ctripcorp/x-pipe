@@ -311,7 +311,7 @@ public enum ALERT_TYPE {
 
         @Override
         public DetailDesc detailDesc() {
-            return new DetailDesc("集群未设置哨兵", "发现有集群未设置哨兵，系统自动设置");
+            return new DetailDesc("sentinels not set", "Console set sentinels for these clusters");
         }
     };
 

@@ -63,21 +63,6 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> getSentinels(String dc, String clusterId, String shardId) {
-        return null;
-    }
-
-    @Override
-    public Set<String> getDcs() {
-        return null;
-    }
-
-    @Override
-    public List<Pair<String, String> > getDcClusterShard(String dc) {
-        return null;
-    }
-
-    @Override
     public HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException {
         return null;
     }

@@ -102,5 +102,4 @@ public interface ConsoleConfig extends CoreConfig {
 
 	Map<String, String> getConsoleDomains();
 
-	int getSentinelConfigCheckIntervalMilli();
 }

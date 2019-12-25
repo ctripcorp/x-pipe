@@ -300,34 +300,6 @@ public class DefaultMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> getSentinels(String dc, String clusterId, String shardId) {
-        XpipeMetaManager xpipeMetaManager = meta.getValue();
-        SentinelMeta sentinel = xpipeMetaManager.getSentinel(dc, clusterId, shardId);
-        return new HashSet<>(IpUtils.parseAsHostPorts(sentinel.getAddress()));
-    }
-
-    @Override
-    public Set<String> getDcs() {
-        XpipeMetaManager xpipeMetaManager = meta.getValue();
-        return xpipeMetaManager.getDcs();
-    }
-
-    @Override
-    public List<Pair<String, String> > getDcClusterShard(String dcName) {
-        XpipeMetaManager xpipeMetaManager = meta.getValue();
-        DcMeta dcMeta = xpipeMetaManager.getDcMeta(dcName);
-        List<Pair<String, String> > clusterShardList = new ArrayList<>();
-
-        for (Map.Entry<String, ClusterMeta> clusterEntity: dcMeta.getClusters().entrySet()) {
-            for (Map.Entry<String, ShardMeta> shardEntity: clusterEntity.getValue().getShards().entrySet()) {
-                clusterShardList.add(new Pair<>(clusterEntity.getKey(), shardEntity.getKey()));
-            }
-        }
-
-        return clusterShardList;
-    }
-
-    @Override
     public HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,20 +53,9 @@ public class SentinelConfigCheckTest {
         put("fra", Sets.newHashSet("cluster2"));
     }};
 
-    private List<Pair<String, String> > mockClusterShards = new ArrayList<Pair<String, String> >() {{
-        for (String cluster: mockClusters) {
-            mockShards.forEach(shard -> add(new Pair<>(cluster, shard)));
-        }
-    }};
-
     @Before
     public void beforeSentinelConfigCheckTest() {
-        Mockito.when(metaCache.getDcs()).thenReturn(new HashSet<>(mockDcs));
-        Mockito.when(metaCache.getDcClusterShard(Mockito.anyString())).thenReturn(mockClusterShards);
-
-        Mockito.when(metaCache.getSentinels(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(Collections.emptySet());
-
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
         Mockito.when(metaCache.getActiveDc(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
             String cluster = invocationOnMock.getArgumentAt(0, String.class);
             return activeDcMap.get(cluster);
@@ -108,6 +97,51 @@ public class SentinelConfigCheckTest {
                 Mockito.any(), Mockito.any(), Mockito.any());
 
         sentinelConfigCheck.doCheck();
+
+        Mockito.verify(clusterService, Mockito.times(3))
+                .reBalanceClusterSentinels(Mockito.anyString(), Mockito.anyList());
+        Mockito.verify(alertManager, Mockito.times(6))
+                .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+                        Mockito.any(), Mockito.any(), Mockito.anyString());
+    }
+
+    private XpipeMeta mockXpipeMeta() {
+        XpipeMeta meta = new XpipeMeta();
+
+        for (String dc: mockDcs) {
+            meta.addDc(mockDcMeta(dc));
+        }
+
+        return meta;
+    }
+
+    private DcMeta mockDcMeta(String dc) {
+        DcMeta dcMeta = new DcMeta();
+        dcMeta.setId(dc);
+
+        for (String cluster: mockClusters) {
+            dcMeta.addCluster(mockClusterMeta(cluster));
+        }
+
+        return dcMeta;
+    }
+
+    private ClusterMeta mockClusterMeta(String cluster) {
+        ClusterMeta clusterMeta = new ClusterMeta();
+        clusterMeta.setId(cluster);
+
+        for (String shard: mockShards) {
+            clusterMeta.addShard(mockShardMeta(shard));
+        }
+
+        return clusterMeta;
+    }
+
+    private ShardMeta mockShardMeta(String shard) {
+        ShardMeta shardMeta = new ShardMeta();
+        shardMeta.setId(shard);
+        shardMeta.setSentinelId(0L);
+        return shardMeta;
     }
 
 }
