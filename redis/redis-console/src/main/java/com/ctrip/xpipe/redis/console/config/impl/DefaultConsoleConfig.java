@@ -88,6 +88,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CONSOLE_DOMAINS = "console.domains";
 
+    private static final String KEY_SENTINEL_CONFIG_CHECK_INTERVAL = "console.sentinel.config.check.interval";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -357,5 +359,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public Map<String, String> getDatabaseIpAddresses() {
         String property = getProperty(KEY_DATABASE_IP_ADDRESSES, "{}");
         return JsonCodec.INSTANCE.decode(property, Map.class);
+    }
+
+    @Override
+    public int getSentinelConfigCheckIntervalMilli() {
+        return getIntProperty(KEY_SENTINEL_CONFIG_CHECK_INTERVAL, 5 * 60 * 1000);
     }
 }

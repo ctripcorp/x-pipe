@@ -297,6 +297,22 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("MetaCache not working", "Not working for a long time");
         }
+    },
+    SENTINEL_CONFIG_MISSING("sentinel config missing", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("集群未设置哨兵", "发现有集群未设置哨兵，系统自动设置");
+        }
     };
 
     private String simpleDesc;
