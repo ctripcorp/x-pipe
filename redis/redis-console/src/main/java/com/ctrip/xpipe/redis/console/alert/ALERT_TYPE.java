@@ -312,7 +312,7 @@ public enum ALERT_TYPE {
         @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("sentinel config missing",
-                    "Sentinels config is not found in db, console will try to re-assign sentinels for these clusters");
+                    "Sentinels config is not found in db");
         }
     };
 
