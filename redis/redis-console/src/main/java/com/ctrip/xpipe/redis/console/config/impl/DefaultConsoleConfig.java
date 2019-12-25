@@ -358,5 +358,4 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String property = getProperty(KEY_DATABASE_IP_ADDRESSES, "{}");
         return JsonCodec.INSTANCE.decode(property, Map.class);
     }
-
 }

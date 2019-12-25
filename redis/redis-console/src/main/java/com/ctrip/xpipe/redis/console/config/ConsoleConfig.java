@@ -101,5 +101,4 @@ public interface ConsoleConfig extends CoreConfig {
 	int getOutterClientCheckInterval();
 
 	Map<String, String> getConsoleDomains();
-
 }

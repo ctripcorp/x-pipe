@@ -311,7 +311,8 @@ public enum ALERT_TYPE {
 
         @Override
         public DetailDesc detailDesc() {
-            return new DetailDesc("sentinels not set", "Console set sentinels for these clusters");
+            return new DetailDesc("sentinel config missing",
+                    "Sentinels config is not found in db, console will try to re-assign sentinels for these clusters");
         }
     };
 
