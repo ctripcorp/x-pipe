@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -25,9 +24,6 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
     @Autowired
     private AlertManager alertManager;
 
-    @Autowired
-    private ClusterService clusterService;
-
     private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.SENTINEL_CONFIG_MISSING);
 
     protected void doCheck() {
@@ -36,7 +32,6 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
         for (DcMeta dc: xpipeMeta.getDcs().values()) {
             List<DcClusterShard> clusterShards = findUnsafeClusterShardInDc(dc);
-            fixSentinelMissing(dc.getId(), clusterShards);
             alertForSentinelMissing(dc.getId(), clusterShards);
         }
     }
@@ -55,16 +50,6 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
         }
 
         return clusterShards;
-    }
-
-    private void fixSentinelMissing(String dc, List<DcClusterShard> clusterShards) {
-        Set<String> clusterSet = new HashSet<>();
-        clusterShards.forEach(clusterShard -> clusterSet.add(clusterShard.getClusterId()));
-        try {
-            clusterService.reBalanceClusterSentinels(dc, new ArrayList<>(clusterSet));
-        } catch (Exception e) {
-            logger.error("[RebalanceSentinel]fail for dc {}, clusters {}, msg: {}", dc, clusterShards, e.getMessage());
-        }
     }
 
     private void alertForSentinelMissing(String dc, List<DcClusterShard> clusterShards) {
