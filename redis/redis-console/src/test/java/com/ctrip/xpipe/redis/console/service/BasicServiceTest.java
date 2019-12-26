@@ -9,7 +9,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DcServiceTest.class,
 	ClusterServiceTest.class,
 	ShardServiceTest.class,
-	KeepercontainerServiceTest.class,
+	KeeperContainerServiceTest.class,
 	SetinelServiceTest.class
 })
 public class BasicServiceTest {	

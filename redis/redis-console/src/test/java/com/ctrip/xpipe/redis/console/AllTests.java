@@ -35,6 +35,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultCl
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -58,6 +59,7 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -76,7 +78,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         ClusterServiceImplTest.class,
         RedisServiceImplTest.class,
-        KeepercontainerServiceImplTest.class,
+        KeeperContainerServiceImplTest.class,
         ShardServiceImplTest.class,
         ShardServiceImplTest2.class,
         SentinelServiceImplTest.class,
@@ -164,7 +166,9 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultDcMetaChangeManagerTest.class,
         MetaCacheCheckTest.class,
         RouteHealthEventProcessorTest.class,
-        DefaultMigrationEventManagerTest.class
+        DefaultMigrationEventManagerTest.class,
+        MigrationServiceImplPaginationTest.class,
+        SentinelConfigCheckTest.class
 })
 public class AllTests {
 

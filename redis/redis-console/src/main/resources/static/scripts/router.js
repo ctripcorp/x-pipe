@@ -88,7 +88,7 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
-            url: '/cluster_list?clusterName&dcName&type',
+            url: '/cluster_list?clusterName&dcName&type?keepercontainer',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })
@@ -129,6 +129,11 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             },
         	templateUrl: 'views/index/migration_details_content.html',
         	controller : 'ActiveDcMigrationEventDetailsContentCtl'
+        })
+        .state('keepercontainer_list', {
+            url: '/keepercontainers',
+            templateUrl: 'views/index/keepercontainer_list.html',
+            controller : 'KeeperContainerListCtl',
         });
 
 });

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
-import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
@@ -8,7 +7,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceHalfSick;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
