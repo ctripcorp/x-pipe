@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblDao;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTblEntity;
-import com.ctrip.xpipe.redis.console.service.impl.KeepercontainerServiceImpl;
+import com.ctrip.xpipe.redis.console.service.impl.KeeperContainerServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,17 +23,17 @@ import static org.mockito.Mockito.when;
  *         Sep 26, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class KeepercontainerServiceTest extends AbstractConsoleTest {
+public class KeeperContainerServiceTest extends AbstractConsoleTest {
 	@Mock
 	private KeepercontainerTblDao mockedKeepercontainerTblDao;
 	@InjectMocks
-	private KeepercontainerServiceImpl keepercontainerService;
+	private KeeperContainerServiceImpl keeperContainerService;
 
 	@Test
 	public void testMetasService() {
 		KeepercontainerTbl target_keepercontainer = new KeepercontainerTbl().setKeepercontainerId(1);
 
-		assertEquals(keepercontainerService.findAllByDcName("NTGXH").get(0).getKeepercontainerId(),
+		assertEquals(keeperContainerService.findAllByDcName("NTGXH").get(0).getKeepercontainerId(),
 				target_keepercontainer.getKeepercontainerId());
 	}
 

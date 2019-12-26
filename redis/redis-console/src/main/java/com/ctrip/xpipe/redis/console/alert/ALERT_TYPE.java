@@ -297,6 +297,23 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("MetaCache not working", "Not working for a long time");
         }
+    },
+    SENTINEL_CONFIG_MISSING("sentinel config missing", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("sentinel config missing",
+                    "Sentinels config is not found in db, console will try to re-assign sentinels for these clusters");
+        }
     };
 
     private String simpleDesc;
