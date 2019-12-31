@@ -33,7 +33,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
 
     private Set<ProxyEndpoint> availableEndpoints = Sets.newConcurrentHashSet();
 
-    private EndpointHealthChecker healthChecker;
+    private ProxyEndpointHealthChecker healthChecker;
 
     private Future future;
 
@@ -46,7 +46,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
         this.scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create("ProxyEndpointManager")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
-        this.healthChecker = new DefaultEndpointHealthChecker(scheduled);
+        this.healthChecker = new DefaultProxyEndpointHealthChecker(scheduled);
         start();
     }
 
@@ -82,7 +82,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
     }
 
     @VisibleForTesting
-    public DefaultProxyEndpointManager setHealthChecker(EndpointHealthChecker healthChecker) {
+    public DefaultProxyEndpointManager setHealthChecker(ProxyEndpointHealthChecker healthChecker) {
         this.healthChecker = healthChecker;
         return this;
     }
