@@ -1,33 +1,47 @@
 package com.ctrip.xpipe.testutils;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.sun.javafx.collections.UnmodifiableObservableMap;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertySource;
 import org.springframework.web.context.support.StandardServletEnvironment;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author wenchao.meng
- *         <p>
- *         Sep 07, 2017
+ * <p>
+ * Sep 07, 2017
  */
-public class SpringApplicationStarter extends AbstractStartStoppable{
+public class SpringApplicationStarter extends AbstractStartStoppable {
 
 
     private SpringApplication application;
     private ConfigurableApplicationContext context;
     private int port;
+    private int maxThreads = 200;
 
-    public SpringApplicationStarter(Object resource, int port){
-        application = new SpringApplication(resource);
-        application.setBannerMode(Banner.Mode.OFF);
-        application.setEnvironment(createEnvironment());
-        this.port = port;
+    public SpringApplicationStarter(Object resource, int port) {
+        this(resource, port, 200);
     }
 
+    public SpringApplicationStarter(Object resource, int port, int maxThreads) {
+        application = new SpringApplication(resource);
+        application.setBannerMode(Banner.Mode.OFF);
+        this.port = port;
+        this.maxThreads = maxThreads;
+        application.setEnvironment(createEnvironment());
+    }
+
+    public int getPort() {
+        return port;
+    }
 
     @Override
     protected void doStart() throws Exception {
@@ -36,7 +50,7 @@ public class SpringApplicationStarter extends AbstractStartStoppable{
 
     @Override
     protected void doStop() throws Exception {
-        if(context != null){
+        if (context != null) {
             context.close();
         }
     }
@@ -51,18 +65,12 @@ public class SpringApplicationStarter extends AbstractStartStoppable{
         @Override
         protected void customizePropertySources(MutablePropertySources propertySources) {
             super.customizePropertySources(propertySources);
-            propertySources.addFirst(new PropertySource<Object>("TestAppServerProperty"){
 
-                @Override
-                public Object getProperty(String name) {
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("server.port", String.valueOf(port));
+            properties.put("server.tomcat.max-threads", String.valueOf(123));
+            propertySources.addFirst(new MapPropertySource("TestAppServerProperty", properties));
 
-                    if(name.equals("server.port")){
-                        return String.valueOf(port);
-                    }
-                    return null;
-                }
-
-            });
         }
     }
 

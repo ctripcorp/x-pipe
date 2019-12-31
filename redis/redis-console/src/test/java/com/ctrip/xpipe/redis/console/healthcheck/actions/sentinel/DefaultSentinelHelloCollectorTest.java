@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -93,6 +94,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
 
     @Test
     public void testDelete(){
+        MetaCache metaCache = mock(MetaCache.class);
+        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
+        sentinelCollector.setMetaCache(metaCache);
 
         Set<SentinelHello> hellos = Sets.newHashSet(
 

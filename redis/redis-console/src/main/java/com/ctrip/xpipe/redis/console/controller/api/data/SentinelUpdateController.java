@@ -48,11 +48,24 @@ public class SentinelUpdateController {
     public RetMessage reBalanceSentinels(@PathVariable String dcName, @PathVariable int numOfClusters) {
         logger.info("[reBalanceSentinels] Start re-balance sentinels for {} clusters", numOfClusters);
         try {
-            List<String> modifiedClusters = clusterService.reBalanceSentinels(dcName, numOfClusters);
+            List<String> modifiedClusters = clusterService.reBalanceSentinels(dcName, numOfClusters, true);
             logger.info("[reBalanceSentinels] Successfully balanced {} clusters", numOfClusters);
             return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(modifiedClusters));
         } catch (Exception e) {
             logger.error("[reBalanceSentinels] {}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/rebalance/sentinels/force/{dcName}/{numOfClusters}", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinelsForce(@PathVariable String dcName, @PathVariable int numOfClusters) {
+        logger.info("[reBalanceSentinelsForce] Start re-balance sentinels for {} clusters", numOfClusters);
+        try {
+            List<String> modifiedClusters = clusterService.reBalanceSentinels(dcName, numOfClusters, false);
+            logger.info("[reBalanceSentinelsForce] Successfully balanced {} clusters", numOfClusters);
+            return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(modifiedClusters));
+        } catch (Exception e) {
+            logger.error("[reBalanceSentinelsForce] {}", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

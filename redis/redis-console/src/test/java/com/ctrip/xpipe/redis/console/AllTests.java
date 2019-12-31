@@ -168,7 +168,8 @@ import org.junit.runners.Suite.SuiteClasses;
         RouteHealthEventProcessorTest.class,
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
-        SentinelConfigCheckTest.class
+        SentinelConfigCheckTest.class,
+        ClusterServiceImplTest4.class
 })
 public class AllTests {
 
