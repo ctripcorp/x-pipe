@@ -67,9 +67,4 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
         return alertType;
     }
 
-    @Override
-    protected boolean shouldCheck() {
-        return false;
-    }
-
 }
