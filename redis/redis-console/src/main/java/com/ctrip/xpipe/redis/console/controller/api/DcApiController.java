@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcModel;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.spring.AbstractController;
@@ -51,7 +50,7 @@ public class DcApiController extends AbstractConsoleController {
         logger.info("[resetDcClusters][addDc]request ip:{}", request.getRemoteHost());
 
         try {
-            List<ClusterTbl> clusters = clusterService.findAllClustersByDcName(dcName);
+            List<ClusterTbl> clusters = clusterService.findActiveClustersByDcName(dcName);
             for (ClusterTbl cluster : clusters) {
                 if (ClusterStatus.isSameClusterStatus(cluster.getStatus(), ClusterStatus.Normal)) {
                     continue;

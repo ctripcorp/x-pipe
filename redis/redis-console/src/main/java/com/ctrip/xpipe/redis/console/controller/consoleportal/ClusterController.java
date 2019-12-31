@@ -133,7 +133,7 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/activeDc/{dcName}", method = RequestMethod.GET)
     public List<ClusterTbl> findClustersByActiveDcName(@PathVariable String dcName){
         logger.info("[findClustersByActiveDcName]dcName: {}", dcName);
-        return clusterService.findAllClustersByDcName(dcName);
+        return clusterService.findActiveClustersByDcName(dcName);
     }
 
     @RequestMapping(value = "/clusters/master/unhealthy/{level}", method = RequestMethod.GET)

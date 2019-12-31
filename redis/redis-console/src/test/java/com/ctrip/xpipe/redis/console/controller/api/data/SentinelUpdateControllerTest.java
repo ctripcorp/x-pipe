@@ -24,8 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 
 /**
@@ -56,14 +55,14 @@ public class SentinelUpdateControllerTest {
     @Before
     public void before() {
         MockitoAnnotations.initMocks(this);
-        when(clusterService.reBalanceSentinels(anyString(), anyInt())).thenReturn(Arrays.asList(clusters));
-        when(clusterService.reBalanceSentinels("jq",0)).thenReturn(Collections.emptyList());
+        when(clusterService.reBalanceSentinels(anyString(), anyInt(), anyBoolean())).thenReturn(Arrays.asList(clusters));
+        when(clusterService.reBalanceSentinels("jq",0, true)).thenReturn(Collections.emptyList());
     }
 
     @Test
     public void validateMock() {
-        Assert.assertEquals(Collections.emptyList(), clusterService.reBalanceSentinels("jq", 0));
-        Assert.assertEquals(Arrays.asList(clusters), clusterService.reBalanceSentinels("test", 2));
+        Assert.assertEquals(Collections.emptyList(), clusterService.reBalanceSentinels("jq", 0, true));
+        Assert.assertEquals(Arrays.asList(clusters), clusterService.reBalanceSentinels("test", 2, true));
     }
 
     @Test
@@ -81,7 +80,7 @@ public class SentinelUpdateControllerTest {
     @Test
     public void reBalanceSentinels2() throws Exception {
         String expectedMessage = "Expected Message";
-        when(clusterService.reBalanceSentinels("fra", -1)).thenThrow(new RuntimeException(expectedMessage));
+        when(clusterService.reBalanceSentinels("fra", -1, true)).thenThrow(new RuntimeException(expectedMessage));
         RetMessage message = controller.reBalanceSentinels("fra", -1);
         Assert.assertEquals(-1, message.getState());
         Assert.assertEquals(expectedMessage, message.getMessage());
