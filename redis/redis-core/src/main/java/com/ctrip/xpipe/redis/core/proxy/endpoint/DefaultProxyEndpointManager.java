@@ -46,7 +46,7 @@ public class DefaultProxyEndpointManager implements ProxyEndpointManager {
         this.scheduled = MoreExecutors.getExitingScheduledExecutorService(
                 new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create("ProxyEndpointManager")),
                 THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
-        this.healthChecker = new DefaultEndpointHealthChecker(scheduled);
+        this.healthChecker = new DefaultProxyEndpointHealthChecker(scheduled);
         start();
     }
 
