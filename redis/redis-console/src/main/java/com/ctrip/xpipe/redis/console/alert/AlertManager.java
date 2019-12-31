@@ -99,6 +99,10 @@ public class AlertManager {
         return date;
     }
 
+    public void alert(String dc, String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message) {
+        doAlert(dc, cluster, shard, hostPort, type, message, false);
+    }
+
     public void alert(RedisInstanceInfo info, ALERT_TYPE type, String message) {
         doAlert(info.getDcId(), info.getClusterId(), info.getShardId(), info.getHostPort(), type, message, false);
     }

@@ -151,4 +151,10 @@ public class ClusterController extends AbstractConsoleController {
         return Sets.newHashSet();
     }
 
+    @RequestMapping(value = "/clusters/keepercontainer/{containerId}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClusterByKeeperContainer(@PathVariable Long containerId) {
+        if (null == containerId || containerId <= 0) return Collections.emptyList();
+        return clusterService.findAllClusterByKeeperContainer(containerId);
+    }
+
 }

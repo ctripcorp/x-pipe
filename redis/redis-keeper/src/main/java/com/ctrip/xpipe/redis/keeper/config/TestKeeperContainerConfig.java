@@ -18,12 +18,6 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	public String getReplicationStoreDir() {
 		return replicationStoreDir;
 	}
-
-	@Override
-	public String getMetaServerUrl() {
-		
-		return metaServerUrl;
-	}
 	
 	public void setMetaServerUrl(String metaServerUrl) {
 		this.metaServerUrl = metaServerUrl;

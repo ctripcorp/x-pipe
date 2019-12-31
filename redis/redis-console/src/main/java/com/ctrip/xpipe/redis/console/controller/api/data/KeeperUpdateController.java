@@ -35,7 +35,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   private KeeperService keeperService;
 
   @Autowired
-  private KeepercontainerService keepercontainerService;
+  private KeeperContainerService keeperContainerService;
 
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
   public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId,
@@ -131,7 +131,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   public RetMessage addKeeperContainer(@RequestBody KeeperContainerCreateInfo createInfo) {
     try {
       createInfo.check();
-      keepercontainerService.addKeeperContainer(createInfo);
+      keeperContainerService.addKeeperContainer(createInfo);
       return RetMessage.createSuccessMessage("Add KeeperContainer successfully");
     } catch (Exception e) {
       return RetMessage.createFailMessage(e.getMessage());
@@ -141,7 +141,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   @RequestMapping(value = "/keepercontainer/{dcName}", method = RequestMethod.GET)
   public List<KeeperContainerCreateInfo> getKeeperContainersByDc(@PathVariable String dcName) {
     try {
-      return keepercontainerService.getDcAllKeeperContainers(dcName);
+      return keeperContainerService.getDcAllKeeperContainers(dcName);
     } catch (Exception e) {
       logger.error("[getKeeperContainersByDc]", e);
     }
@@ -152,7 +152,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   public RetMessage updateKeeperContainer(@RequestBody KeeperContainerCreateInfo createInfo) {
     try {
       createInfo.check();
-      keepercontainerService.updateKeeperContainer(createInfo);
+      keeperContainerService.updateKeeperContainer(createInfo);
       return RetMessage.createSuccessMessage();
     } catch (Exception e) {
       logger.error("[updateKeeperContainer]", e);
