@@ -41,6 +41,9 @@ public class AlertEntity {
     @Override
     public int hashCode() {
         int hashCode = alertType.hashCode();
+        if(dc != null) {
+            hashCode = hashCode * 31 + dc.hashCode();
+        }
         if(clusterId != null) {
             hashCode = hashCode * 31 + clusterId.hashCode();
         }
@@ -59,6 +62,7 @@ public class AlertEntity {
         if(obj == this) return true;
         AlertEntity other = (AlertEntity) obj;
         return ObjectUtils.equals(other.getAlertType(), this.alertType) &&
+                ObjectUtils.equals(other.getDc(), this.dc) &&
                 ObjectUtils.equals(other.getClusterId(), this.clusterId) &&
                 ObjectUtils.equals(other.getShardId(), this.shardId) &&
                 ObjectUtils.equals(other.getHostPort(), this.hostPort);
@@ -66,13 +70,16 @@ public class AlertEntity {
 
     @Override
     public String toString() {
-        return "Alert: " + alertType + ", Cluster: " + clusterId
+        return "Alert: " + alertType + ", DC: " + dc + ", Cluster: " + clusterId
                 + ", Shard: " + shardId + ", HostPort: " + hostPort + ", Message: " + message
                 + ", date: " + DateTimeUtils.timeAsString(date);
     }
 
     public String getKey() {
         StringBuffer sb = new StringBuffer(alertType + "");
+        if (dc != null && !dc.isEmpty()) {
+            sb.append(":").append(dc);
+        }
         if(clusterId != null && !clusterId.isEmpty()) {
             sb.append(":").append(clusterId);
         }
