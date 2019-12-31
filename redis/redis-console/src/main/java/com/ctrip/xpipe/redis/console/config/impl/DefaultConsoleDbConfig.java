@@ -22,6 +22,8 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
 
     public static final String KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY = "ignore.migration.system.avail";
 
+    public static final String KEY_SENTINEL_CHECK_EXCLUDE = "sentinel.check.exclude";
+
     @Autowired
     private DbConfig dbConfig;
 
