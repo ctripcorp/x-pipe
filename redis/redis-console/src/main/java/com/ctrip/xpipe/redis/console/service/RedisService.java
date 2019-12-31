@@ -35,5 +35,7 @@ public interface RedisService {
 
 	void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
 
+	List<RedisTbl> findAllKeeperContainerCountInfo();
 
+	List<Long> findClusterIdsByKeeperContainer(long keeperContainerId);
 }

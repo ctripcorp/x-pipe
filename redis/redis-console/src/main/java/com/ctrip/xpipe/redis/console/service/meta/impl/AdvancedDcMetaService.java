@@ -55,7 +55,7 @@ public class AdvancedDcMetaService implements DcMetaService {
     private SentinelService sentinelService;
 
     @Autowired
-    private KeepercontainerService keepercontainerService;
+    private KeeperContainerService keeperContainerService;
 
     @Autowired
     private SentinelMetaService sentinelMetaService;
@@ -166,7 +166,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doExecute() throws Exception {
             try {
-                List<KeepercontainerTbl> keepercontainers = keepercontainerService.findAllByDcName(dcMeta.getId());
+                List<KeepercontainerTbl> keepercontainers = keeperContainerService.findAllByDcName(dcMeta.getId());
                 keepercontainers.forEach(keeperContainer -> dcMeta.addKeeperContainer(
                         keepercontainerMetaService.encodeKeepercontainerMeta(keeperContainer, dcMeta)));
                 future().setSuccess();
