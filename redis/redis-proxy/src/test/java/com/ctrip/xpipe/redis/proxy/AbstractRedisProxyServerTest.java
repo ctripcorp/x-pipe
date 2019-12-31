@@ -94,9 +94,9 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     @Before
     public void beforeAbstractRedisProxyTest() {
         MockitoAnnotations.initMocks(this);
-        ((DefaultProxyEndpointManager)endpointManager).setHealthChecker(new EndpointHealthChecker() {
+        ((DefaultProxyEndpointManager)endpointManager).setHealthChecker(new ProxyEndpointHealthChecker() {
             @Override
-            public boolean checkConnectivity(Endpoint endpoint) {
+            public boolean checkConnectivity(ProxyEndpoint endpoint) {
                 return true;
             }
         });

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * May 15, 2018
  */
-public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
+public class DefaultProxyEndpointHealthChecker implements ProxyEndpointHealthChecker {
 
     protected static long DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI = Long.parseLong(System.getProperty("endpoint.health.check.drop.interval", "600000"));
 
@@ -29,7 +30,7 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
 
     private static final String MONITOR_TYPE = "Endpoint.Health.State.Change";
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultEndpointHealthChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyEndpointHealthChecker.class);
 
     private ScheduledExecutorService scheduled;
 
@@ -37,13 +38,17 @@ public class DefaultEndpointHealthChecker implements EndpointHealthChecker {
 
     private Map<Endpoint, EndpointHealthStatus> allHealthStatus = Maps.newConcurrentMap();
 
-    public DefaultEndpointHealthChecker(ScheduledExecutorService scheduled) {
+    public DefaultProxyEndpointHealthChecker(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
     }
 
     @Override
-    public boolean checkConnectivity(Endpoint endpoint) {
+    public boolean checkConnectivity(ProxyEndpoint endpoint) {
         try {
+            // will not check non-proxy endpoints
+            if (!endpoint.isProxyProtocolSupported()) {
+                return true;
+            }
             if(!allHealthStatus.containsKey(endpoint)) {
                 allHealthStatus.put(endpoint, new EndpointHealthStatus(endpoint));
             }
