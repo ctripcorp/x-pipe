@@ -4,7 +4,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
@@ -12,6 +11,7 @@ import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.*;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Callable;
@@ -70,6 +70,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         });
         instance = newRandomRedisHealthCheckInstance("dc2", server.getPort());
         when(config.isSentinelAutoProcess()).thenReturn(true);
+        when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(true);
         action = new SentinelHelloCheckAction(scheduled, instance, executors, config);
     }
 
@@ -84,6 +85,15 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
     public void testDoScheduledTaskWithProcessOff() {
         action = spy(action);
         when(config.isSentinelAutoProcess()).thenReturn(false);
+        action.doTask();
+        verify(action, never()).processSentinelHellos();
+    }
+
+    @Test
+    public void testDoScheduledTaskWithInSentinelCheckWhitelist() {
+        action = spy(action);
+        when(config.isSentinelAutoProcess()).thenReturn(true);
+        when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(false);
         action.doTask();
         verify(action, never()).processSentinelHellos();
     }

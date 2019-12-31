@@ -134,6 +134,16 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public boolean shouldSentinelCheck(String cluster) {
+        try {
+            ConfigTbl config = configDao.getByKeyAndSubId(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, cluster);
+            return null == config || !Boolean.parseBoolean(config.getValue()) || (new Date()).after(config.getUntil());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    @Override
     public Date getAlertSystemRecoverTime() {
         try {
             return configDao.getByKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).getUntil();

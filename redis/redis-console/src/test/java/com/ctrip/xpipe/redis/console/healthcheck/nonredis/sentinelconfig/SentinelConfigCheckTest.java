@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.google.common.collect.Sets;
@@ -27,6 +28,9 @@ public class SentinelConfigCheckTest {
     @Mock
     private AlertManager alertManager;
 
+    @Mock
+    private ConsoleDbConfig consoleDbConfig;
+
     private List<String> mockDcs = Arrays.asList("jq", "oy", "fra");
 
     private List<String> mockClusters = Arrays.asList("cluster1", "cluster2");
@@ -52,6 +56,7 @@ public class SentinelConfigCheckTest {
     @Before
     public void beforeSentinelConfigCheckTest() {
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
+        Mockito.when(consoleDbConfig.sentinelCheckWhiteList()).thenReturn(Collections.emptySet());
         Mockito.when(metaCache.getActiveDc(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
             String cluster = invocationOnMock.getArgumentAt(0, String.class);
             return activeDcMap.get(cluster);
@@ -85,6 +90,15 @@ public class SentinelConfigCheckTest {
         sentinelConfigCheck.doCheck();
 
         Mockito.verify(alertManager, Mockito.times(6))
+                .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+                        Mockito.any(), Mockito.any(), Mockito.anyString());
+    }
+
+    @Test
+    public void testCheckWithSentinelCheckWhitelist() {
+        Mockito.when(consoleDbConfig.sentinelCheckWhiteList()).thenReturn(new HashSet<>(mockClusters));
+        sentinelConfigCheck.doCheck();
+        Mockito.verify(alertManager, Mockito.never())
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());
     }

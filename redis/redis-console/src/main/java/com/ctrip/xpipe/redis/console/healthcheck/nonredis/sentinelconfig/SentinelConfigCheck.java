@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -24,6 +25,9 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
     @Autowired
     private AlertManager alertManager;
 
+    @Autowired
+    private ConsoleDbConfig consoleDbConfig;
+
     private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.SENTINEL_CONFIG_MISSING);
 
     protected void doCheck() {
@@ -38,9 +42,11 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
     private List<DcClusterShard> findUnsafeClusterShardInDc(DcMeta dcMeta) {
         List<DcClusterShard> clusterShards = new ArrayList<>();
+        Set<String> whitelist = consoleDbConfig.sentinelCheckWhiteList();
 
         for (ClusterMeta cluster: dcMeta.getClusters().values()) {
             for (ShardMeta shard: cluster.getShards().values()) {
+                if (whitelist.contains(cluster.getId())) continue;
                 String activeDc = metaCache.getActiveDc(cluster.getId(), shard.getId());
                 // sentinel is unnecessary for cross-region dc
                 if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) continue;
@@ -65,11 +71,6 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
     protected List<ALERT_TYPE> alertTypes() {
         return alertType;
-    }
-
-    @Override
-    protected boolean shouldCheck() {
-        return false;
     }
 
 }

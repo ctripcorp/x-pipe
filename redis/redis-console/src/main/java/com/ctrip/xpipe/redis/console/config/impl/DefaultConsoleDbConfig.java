@@ -2,11 +2,16 @@ package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
@@ -49,6 +54,17 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     @Override
     public boolean ignoreMigrationSystemAvailability() {
         return configService.ignoreMigrationSystemAvailability();
+    }
+
+    @Override
+    public boolean shouldSentinelCheck(String cluster) {
+        return configService.shouldSentinelCheck(cluster);
+    }
+
+    @Override
+    public Set<String> sentinelCheckWhiteList() {
+        List<ConfigModel> configModels = configService.getActiveSentinelCheckExcludeConfig();
+        return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toSet());
     }
 
 }
