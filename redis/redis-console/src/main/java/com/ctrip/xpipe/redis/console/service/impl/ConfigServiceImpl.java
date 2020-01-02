@@ -34,10 +34,10 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigDao configDao;
 
     @Autowired
-    AlertSystemOffChecker alertSystemOffChecker;
+    private AlertSystemOffChecker alertSystemOffChecker;
 
     @Autowired
-    SentinelAutoProcessChecker sentinelAutoProcessChecker;
+    private SentinelAutoProcessChecker sentinelAutoProcessChecker;
 
     private Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
 
@@ -111,7 +111,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public List<ConfigModel> getActiveSentinelCheckExcludeConfig() {
-        List<ConfigTbl> configTbls = configDao.findAllWithClusterNameByKeyAndValueAndUntilAfter(
+        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(
                 DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
         if (configTbls.isEmpty()) return Collections.emptyList();
         List<ConfigModel> models = new ArrayList<>();

@@ -4,11 +4,11 @@ import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,6 +28,10 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     public static final String KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY = "ignore.migration.system.avail";
 
     public static final String KEY_SENTINEL_CHECK_EXCLUDE = "sentinel.check.exclude";
+
+    private Pair<Set<String>, Long> sentinelCheckWhitelistCache = null;
+
+    private static final long DEFAULT_CACHE_EXPIRED = 10 * 1000L;
 
     @Autowired
     private DbConfig dbConfig;
@@ -57,14 +61,22 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     }
 
     @Override
-    public boolean shouldSentinelCheck(String cluster) {
-        return configService.shouldSentinelCheck(cluster);
+    public boolean shouldSentinelCheck(String cluster, boolean disableCache) {
+        return !sentinelCheckWhiteList(disableCache).contains(cluster);
     }
 
     @Override
-    public Set<String> sentinelCheckWhiteList() {
+    public Set<String> sentinelCheckWhiteList(boolean disableCache) {
+        if (!disableCache &&
+                null != sentinelCheckWhitelistCache
+                && sentinelCheckWhitelistCache.getValue().compareTo(System.currentTimeMillis()) > 0) {
+            return sentinelCheckWhitelistCache.getKey();
+        }
+
         List<ConfigModel> configModels = configService.getActiveSentinelCheckExcludeConfig();
-        return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toSet());
+        Set<String> whitelist = configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toSet());
+        sentinelCheckWhitelistCache = new Pair<>(whitelist, System.currentTimeMillis() + DEFAULT_CACHE_EXPIRED);
+        return whitelist;
     }
 
 }

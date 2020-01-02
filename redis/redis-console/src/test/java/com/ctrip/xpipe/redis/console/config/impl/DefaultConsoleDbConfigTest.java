@@ -69,13 +69,27 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
         service.stopSentinelCheck(configModel, 0);
         sleep(1000);
-        Assert.assertTrue(consoleDbConfig.shouldSentinelCheck(mockCluster));
+        Assert.assertTrue(consoleDbConfig.shouldSentinelCheck(mockCluster, true));
 
         service.stopSentinelCheck(configModel, 1);
-        Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster));
+        Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster, true));
 
         service.startSentinelCheck(configModel);
-        Assert.assertTrue(consoleDbConfig.shouldSentinelCheck(mockCluster));
+        Assert.assertTrue(consoleDbConfig.shouldSentinelCheck(mockCluster, true));
+    }
+
+    @Test
+    public void testShouldSentinelCheckWithCache() throws DalException {
+        String key = DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE;
+        String mockCluster = "test-cluster";
+        configModel.setKey(key).setSubKey(mockCluster);
+        configModel.setVal("true");
+
+        service.stopSentinelCheck(configModel, 1);
+        Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster, false));
+
+        service.startSentinelCheck(configModel);
+        Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster, false));
     }
 
     @Test
@@ -95,7 +109,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         configModel.setSubKey(mockCluster3);
         service.startSentinelCheck(configModel);
 
-        Set<String> whitelist = consoleDbConfig.sentinelCheckWhiteList();
+        Set<String> whitelist = consoleDbConfig.sentinelCheckWhiteList(true);
         Assert.assertTrue(whitelist.contains(mockCluster1));
         Assert.assertTrue(whitelist.contains(mockCluster2));
         Assert.assertFalse(whitelist.contains(mockCluster3));

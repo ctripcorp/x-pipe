@@ -76,7 +76,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return false;
         }
         String cluster = getActionInstance().getRedisInstanceInfo().getClusterId();
-        if (!consoleDbConfig.shouldSentinelCheck(cluster)) {
+        if (!consoleDbConfig.shouldSentinelCheck(cluster, false)) {
             logger.debug("[doTask][BackupDc] cluster is in sentinel check whitelist, quit");
             return false;
         }

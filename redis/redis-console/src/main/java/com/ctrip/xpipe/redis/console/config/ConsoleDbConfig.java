@@ -16,8 +16,8 @@ public interface ConsoleDbConfig {
 
     boolean ignoreMigrationSystemAvailability();
 
-    boolean shouldSentinelCheck(String cluster);
+    boolean shouldSentinelCheck(String cluster, boolean disableCache);
 
-    Set<String> sentinelCheckWhiteList();
+    Set<String> sentinelCheckWhiteList(boolean disableCache);
 
 }

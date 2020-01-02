@@ -70,7 +70,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         });
         instance = newRandomRedisHealthCheckInstance("dc2", server.getPort());
         when(config.isSentinelAutoProcess()).thenReturn(true);
-        when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(true);
+        when(config.shouldSentinelCheck(Mockito.anyString(), Mockito.anyBoolean())).thenReturn(true);
         action = new SentinelHelloCheckAction(scheduled, instance, executors, config);
     }
 
@@ -93,7 +93,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
     public void testDoScheduledTaskWithInSentinelCheckWhitelist() {
         action = spy(action);
         when(config.isSentinelAutoProcess()).thenReturn(true);
-        when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(false);
+        when(config.shouldSentinelCheck(Mockito.anyString(), Mockito.anyBoolean())).thenReturn(false);
         action.doTask();
         verify(action, never()).processSentinelHellos();
     }

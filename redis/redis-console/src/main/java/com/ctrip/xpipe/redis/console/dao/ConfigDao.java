@@ -117,7 +117,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
     }
 
-    public List<ConfigTbl> findAllWithClusterNameByKeyAndValueAndUntilAfter(String key, String value, Date until) {
+    public List<ConfigTbl> findAllByKeyAndValueAndUntilAfter(String key, String value, Date until) {
         return queryHandler.handleQuery(new DalQuery<List<ConfigTbl>>() {
             @Override
             public List<ConfigTbl> doQuery() throws DalException {

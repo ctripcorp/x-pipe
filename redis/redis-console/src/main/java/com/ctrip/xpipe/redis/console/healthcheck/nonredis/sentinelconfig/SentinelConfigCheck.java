@@ -42,7 +42,7 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
     private List<DcClusterShard> findUnsafeClusterShardInDc(DcMeta dcMeta) {
         List<DcClusterShard> clusterShards = new ArrayList<>();
-        Set<String> whitelist = consoleDbConfig.sentinelCheckWhiteList();
+        Set<String> whitelist = consoleDbConfig.sentinelCheckWhiteList(false);
 
         for (ClusterMeta cluster: dcMeta.getClusters().values()) {
             for (ShardMeta shard: cluster.getShards().values()) {
