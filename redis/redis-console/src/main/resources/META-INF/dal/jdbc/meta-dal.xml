@@ -303,6 +303,19 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-by-dc-id" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS />
+					FROM <TABLE />, <TABLE name='dc-cluster-info' />
+					WHERE <FIELD name='id' /> = dct.cluster_id
+					AND <FIELD name='deleted' /> = 0
+					AND dct.deleted = 0
+					group by <FIELD name='id' />
+					]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 
