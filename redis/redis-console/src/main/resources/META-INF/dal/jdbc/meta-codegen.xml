@@ -437,6 +437,7 @@
   <entity name="config-tbl" table="config_tbl" alias="ct2">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="key" field="key" value-type="String" length="128" nullable="false" />
+    <member name="sub-key" field="sub_key" value-type="String" length="128" nullable="false" />
     <member name="value" field="value" value-type="String" length="1024" />
     <member name="until" field="until" value-type="Date" nullable="false" />
     <member name="latest-update-user" field="latest_update_user" value-type="String" length="512" />
@@ -446,7 +447,7 @@
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
-    <index name="key" unique="true" members="key ASC" />
+    <index name="key_sub_key" unique="true" members="key ASC, sub_key ASC" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />

@@ -235,6 +235,7 @@ drop table if exists config_tbl;
 CREATE TABLE `config_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `key` varchar(128) NOT NULL DEFAULT '' COMMENT 'key',
+  `sub_key` varchar(128) NOT NULL DEFAULT '' COMMENT 'sub_key',
   `value` varchar(1024) DEFAULT '' COMMENT 'value',
   `until` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'for potential use',
   `latest_update_user` varchar(512) DEFAULT '' COMMENT 'latest person who update the config',
@@ -244,7 +245,7 @@ CREATE TABLE `config_tbl` (
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
-  UNIQUE KEY `key` (`key`)
+  UNIQUE KEY `key_sub_key` (`key`,`sub_key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='xpipe config';
 
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
