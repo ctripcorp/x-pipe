@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletResponse;
  *         <p>
  *         Jul 24, 2017
  */
-public class RestTemplateFactoryTest extends AbstractTest {
+public class TestMaxThreads extends AbstractTest {
 
     private RestOperations restOperations;
     private SpringApplicationStarter springApplicationStarter;
