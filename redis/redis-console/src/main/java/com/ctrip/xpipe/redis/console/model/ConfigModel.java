@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * @author chen.zhu
  * <p>
  * Dec 04, 2017
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ConfigModel {
 
     private String key;

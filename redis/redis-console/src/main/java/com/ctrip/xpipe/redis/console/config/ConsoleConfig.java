@@ -76,7 +76,7 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getRebalanceSentinelMaxNumOnce();
 
-	int getNoAlarmMinutesForNewCluster();
+	int getNoAlarmMinutesForClusterUpdate();
 
 	Set<String> getIgnoredHealthCheckDc();
 

@@ -31,8 +31,6 @@ public interface ConfigService {
 
     boolean isSentinelAutoProcess();
 
-    boolean shouldSentinelCheck(String cluster);
-
     Date getAlertSystemRecoverTime();
 
     Date getSentinelAutoProcessRecoverTime();
