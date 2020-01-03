@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -27,9 +26,6 @@ public class SentinelConfigCheckTest {
 
     @Mock
     private AlertManager alertManager;
-
-    @Mock
-    private ClusterService clusterService;
 
     private List<String> mockDcs = Arrays.asList("jq", "oy", "fra");
 
@@ -75,16 +71,6 @@ public class SentinelConfigCheckTest {
     @Test
     public void testDoCheck() {
         Mockito.doAnswer(invocationOnMock -> {
-            String dc = invocationOnMock.getArgumentAt(0, String.class);
-            List<String> clusterList = invocationOnMock.getArgumentAt(1, List.class);
-
-            for (String cluster: clusterList) {
-                Assert.assertTrue(expectedUnsafeClusters.get(dc).contains(cluster));
-            }
-            return null;
-        }).when(clusterService).reBalanceClusterSentinels(Mockito.anyString(), Mockito.anyList());
-
-        Mockito.doAnswer(invocationOnMock -> {
            String dc = invocationOnMock.getArgumentAt(0, String.class);
            String cluster = invocationOnMock.getArgumentAt(1, String.class);
            String shard = invocationOnMock.getArgumentAt(2, String.class);
@@ -98,8 +84,6 @@ public class SentinelConfigCheckTest {
 
         sentinelConfigCheck.doCheck();
 
-        Mockito.verify(clusterService, Mockito.times(3))
-                .reBalanceClusterSentinels(Mockito.anyString(), Mockito.anyList());
         Mockito.verify(alertManager, Mockito.times(6))
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());

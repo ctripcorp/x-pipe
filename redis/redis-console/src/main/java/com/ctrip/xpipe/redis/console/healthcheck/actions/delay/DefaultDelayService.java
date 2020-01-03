@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,10 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
     @Override
     public long getDelay(HostPort hostPort) {
         String dcId = metaCache.getActiveDc(hostPort);
+        if (StringUtil.isEmpty(dcId)) {
+            return -1L;
+        }
+
         long result;
         if (!FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcId)) {
             result = consoleServiceManager.getDelay(hostPort.getHost(), hostPort.getPort(), dcId);

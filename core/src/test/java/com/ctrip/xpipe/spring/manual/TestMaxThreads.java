@@ -94,8 +94,8 @@ public class TestMaxThreads extends AbstractTest {
     }
 
 
-    @SpringBootApplication
-    @RestController
+//    @SpringBootApplication
+//    @RestController
     public static class TestServer {
 
         @RequestMapping("/person")

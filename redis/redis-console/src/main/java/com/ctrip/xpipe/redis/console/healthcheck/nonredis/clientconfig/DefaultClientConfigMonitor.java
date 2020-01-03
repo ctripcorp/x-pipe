@@ -17,7 +17,7 @@ public class DefaultClientConfigMonitor extends AbstractClientConfigMonitor {
     @Override
     protected boolean shouldCheck() {
         if(clusterServer != null && !clusterServer.amILeader()) {
-            logger.debug("[shouldCheck][not cross dc leader, quit]");
+            logger.debug("[shouldCheck][not site leader, quit]");
             return false;
         }
         return true;
