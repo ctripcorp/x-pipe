@@ -207,7 +207,6 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
             Assert.assertTrue(info.getId() > 0);
             Assert.assertNotNull(info.getAddr());
             Assert.assertFalse(StringUtil.isEmpty(info.getDcName()));
-            Assert.assertNotNull(info.getOrgName());
         }
 
         Assert.assertEquals(2, infos.get(0).getClusterCount());
