@@ -132,7 +132,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
             }
         };
         AtomicInteger counter = new AtomicInteger(0);
-        SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 50;
+        SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 100;
         action.addListener(new SentinelHelloCollector() {
 
             @Override
@@ -149,7 +149,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         Assert.assertEquals(1, action.getListeners().size());
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() > 0, 500);
-        sleep(100);
+        sleep(SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 100);
         Assert.assertEquals(1, counter.get());
     }
 
