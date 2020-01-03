@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ClusterConfigModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -103,8 +102,8 @@ public class ChangeConfig extends AbstractConsoleController{
 
     @RequestMapping(value = "/config/sentinel/check/exclude", method = RequestMethod.GET)
     public ClusterConfigModel getSentinelCheckExcludeConfig(@RequestParam String clusterName) {
-        ConfigModel model = configService.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, clusterName);
-        return new ClusterConfigModel(model.getSubKey(), Boolean.valueOf(model.getVal()));
+        if (StringUtil.isEmpty(clusterName)) throw new IllegalArgumentException("cluster can not be empty");
+        return new ClusterConfigModel(clusterName, !configService.shouldSentinelCheck(clusterName));
     }
 
     @RequestMapping(value = "/config/sentinel/check/exclude/all", method = RequestMethod.GET)
