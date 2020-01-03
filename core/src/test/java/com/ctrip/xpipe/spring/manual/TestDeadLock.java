@@ -14,10 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,7 +56,7 @@ public class TestDeadLock extends AbstractTest {
 
         int concurrent = 1000;
         CountDownLatch latch = new CountDownLatch(concurrent);
-
+        long start = System.nanoTime();
         for (int i = 0; i < concurrent; i++) {
 
             executors.execute(new Runnable() {
@@ -70,32 +73,42 @@ public class TestDeadLock extends AbstractTest {
         }
 
         latch.await();
+        logger.info("[testConcurrentCall] finished: {}", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
 
-    @SpringBootApplication
-    @RestController
+//    @SpringBootApplication
+//    @RestController
     public static class TestServer {
 
         private Logger logger = LoggerFactory.getLogger(getClass());
         private AtomicInteger concurrentCount = new AtomicInteger(0);
 
+        private ExecutorService executors = Executors.newCachedThreadPool();
+
         @RequestMapping("/person")
         @ResponseBody
-        public String person() {
+        public DeferredResult<String> person() {
+            DeferredResult<String> result = new DeferredResult<String>();
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        int concurrent = concurrentCount.incrementAndGet();
+                        logger.info("[person][begin] concurrent:{}", concurrent);
+                        TimeUnit.SECONDS.sleep(1);
+                    } catch (InterruptedException e) {
+                        //ignore
+                    } finally {
+                        concurrentCount.decrementAndGet();
+                    }
 
-            try {
-                int concurrent = concurrentCount.incrementAndGet();
-                logger.info("[person][begin] concurrent:{}", concurrent);
-                TimeUnit.SECONDS.sleep(1000);
-            } catch (InterruptedException e) {
-                //ignore
-            } finally {
-                concurrentCount.decrementAndGet();
-            }
+                    logger.info("[person][ end ]");
+                    result.setResult("{\"sex\":\"FEMALE\",\"age\":1010, \"other\":11}");
+                }
+            });
+            return result;
 
-            logger.info("[person][ end ]");
-            return "{\"sex\":\"FEMALE\",\"age\":1010, \"other\":11}";
         }
 
         @RequestMapping("/502")

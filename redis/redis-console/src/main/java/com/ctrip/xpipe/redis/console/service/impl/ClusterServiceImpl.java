@@ -35,6 +35,7 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
@@ -382,8 +383,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	 * Randomly re-balance sentinel assignment for clusters among dcs
 	 * */
 	@Override
-	public List<String> reBalanceSentinels(String dcName, final int numOfClusters) {
-		List<String> clusters = randomlyChosenClusters(findAllClustersNameByDcName(dcName), numOfClusters);
+	public List<String> reBalanceSentinels(String dcName, final int numOfClusters, final boolean activeOnly) {
+		List<String> optionalClusters = activeOnly ? findActiveClustersNameByDcName(dcName) : findAllClustersNameByDcName(dcName);
+		List<String> clusters = randomlyChosenClusters(optionalClusters, numOfClusters);
 		logger.info("[reBalanceSentinels] pick up clusters: {}, dc: {}", clusters, dcName);
 
 		reBalanceClusterSentinels(dcName, clusters);
@@ -564,11 +566,19 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public List<ClusterTbl> findAllClustersByDcName(String dcName){
+	public List<ClusterTbl> findActiveClustersByDcName(String dcName){
 		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	@Override
+	public List<ClusterTbl> findAllClustersByDcName(String dcName) {
+		if (StringUtil.isEmpty(dcName))
+			return Collections.emptyList();
+
+		return clusterDao.findAllByDcId(dcService.find(dcName).getId());
 	}
 
 	@Override
@@ -583,8 +593,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 	}
 
-	private List<String> findAllClustersNameByDcName(String dcName) {
-		List<ClusterTbl> clusterTbls = findAllClustersByDcName(dcName);
+	private List<String> findActiveClustersNameByDcName(String dcName) {
+		List<ClusterTbl> clusterTbls = findActiveClustersByDcName(dcName);
 		List<String> clustersName = new ArrayList<>(clusterTbls.size());
 
 		for (ClusterTbl clusterTbl : clusterTbls) {
@@ -592,4 +602,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 		return clustersName;
 	}
+
+	private List<String> findAllClustersNameByDcName(String dcName) {
+		List<ClusterTbl> clusterTbls = findAllClustersByDcName(dcName);
+		return clusterTbls.stream().map(ClusterTbl::getClusterName).collect(Collectors.toList());
+	}
+
 }

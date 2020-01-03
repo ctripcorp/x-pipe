@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.proxy.endpoint;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.*;
@@ -10,20 +11,23 @@ import org.junit.*;
  * <p>
  * Oct 15, 2018
  */
-public class DefaultEndpointHealthCheckerTest extends AbstractRedisTest {
+public class DefaultProxyEndpointHealthCheckerTest extends AbstractRedisTest {
 
-    private DefaultEndpointHealthChecker checker;
+    private DefaultProxyEndpointHealthChecker checker;
 
     private Server server;
 
-    private Endpoint endpoint;
+    private ProxyEndpoint endpoint;
+
+    private ProxyEndpoint normalEndpoint;
 
     @Before
     public void beforeDefaultEndpointHealthCheckerTest() throws Exception {
-        checker = new DefaultEndpointHealthChecker(scheduled);
+        checker = new DefaultProxyEndpointHealthChecker(scheduled);
         server = startEmptyServer();
-        endpoint = localhostEndpoint(server.getPort());
-        DefaultEndpointHealthChecker.DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI = 1000 * 10;
+        endpoint = new DefaultProxyEndpoint("PROXYTCP://127.0.0.1:" + server.getPort());
+        normalEndpoint = new DefaultProxyEndpoint("127.0.0.1", server.getPort());
+        DefaultProxyEndpointHealthChecker.DEFAULT_DROP_ENDPOINT_INTERVAL_MILLI = 1000 * 10;
     }
 
     @After
@@ -38,6 +42,13 @@ public class DefaultEndpointHealthCheckerTest extends AbstractRedisTest {
         boolean status = checker.checkConnectivity(endpoint);
         Assert.assertTrue(status);
         Assert.assertTrue(checker.getAllHealthStatus().containsKey(endpoint));
+    }
+
+    @Test
+    public void testNormalEndpointCheckConnectivity() {
+        boolean status = checker.checkConnectivity(normalEndpoint);
+        Assert.assertTrue(status);
+        Assert.assertFalse(checker.getAllHealthStatus().containsKey(normalEndpoint));
     }
 
     @Ignore
@@ -70,30 +81,30 @@ public class DefaultEndpointHealthCheckerTest extends AbstractRedisTest {
     @Test
     public void testHealthStateChange() throws Exception {
         checker.checkConnectivity(endpoint);
-        DefaultEndpointHealthChecker.EndpointHealthState state = checker.getAllHealthStatus().get(endpoint).getHealthState();
-        Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.UNKNOWN, state);
+        DefaultProxyEndpointHealthChecker.EndpointHealthState state = checker.getAllHealthStatus().get(endpoint).getHealthState();
+        Assert.assertEquals(DefaultProxyEndpointHealthChecker.EndpointHealthState.UNKNOWN, state);
 
         sleep(10 * 2000);
         state = checker.getAllHealthStatus().get(endpoint).getHealthState();
-        Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.HEALTHY, state);
+        Assert.assertEquals(DefaultProxyEndpointHealthChecker.EndpointHealthState.HEALTHY, state);
         Assert.assertTrue(checker.checkConnectivity(endpoint));
         logger.info("[jump out of]");
 
         server.stop();
         sleep(1000);
         state = checker.getAllHealthStatus().get(endpoint).getHealthState();
-        Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.FAIL_ONCE, state);
+        Assert.assertEquals(DefaultProxyEndpointHealthChecker.EndpointHealthState.FAIL_ONCE, state);
         Assert.assertTrue(checker.checkConnectivity(endpoint));
 
 
         sleep(1000);
         state = checker.getAllHealthStatus().get(endpoint).getHealthState();
-        Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.FAIL_TWICE, state);
+        Assert.assertEquals(DefaultProxyEndpointHealthChecker.EndpointHealthState.FAIL_TWICE, state);
         Assert.assertTrue(checker.checkConnectivity(endpoint));
 
         sleep(1100);
         state = checker.getAllHealthStatus().get(endpoint).getHealthState();
-        Assert.assertEquals(DefaultEndpointHealthChecker.EndpointHealthState.UNHEALTHY, state);
+        Assert.assertEquals(DefaultProxyEndpointHealthChecker.EndpointHealthState.UNHEALTHY, state);
         Assert.assertFalse(checker.checkConnectivity(endpoint));
     }
 
