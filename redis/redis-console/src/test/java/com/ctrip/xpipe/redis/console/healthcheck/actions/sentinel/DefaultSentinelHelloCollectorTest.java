@@ -212,7 +212,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
     public void testMasterNotInPrimaryDc() {
         String shardId = "shardId";
         MetaCache metaCache = mock(MetaCache.class);
-        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
+        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
         sentinelCollector.setMetaCache(metaCache);
 
         monitorName = shardId;

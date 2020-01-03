@@ -130,7 +130,7 @@ public class AlertManager {
     public boolean shouldAlert(String cluster) {
         try {
             Date createTime = getClusterCreateTime(cluster);
-            int minutes = consoleConfig.getNoAlarmMinutesForNewCluster();
+            int minutes = consoleConfig.getNoAlarmMinutesForClusterUpdate();
             Date current = new Date();
             if (createTime != null && current.before(DateTimeUtils.getMinutesLaterThan(createTime, minutes))) {
                 return false;

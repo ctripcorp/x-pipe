@@ -13,6 +13,7 @@ import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -34,8 +35,11 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
     }
 
     public String getKey(String key) throws DalException {
+        return getKey(key, "");
+    }
 
-        ConfigTbl byKey = configTblDao.findByKey(key, ConfigTblEntity.READSET_VALUE);
+    public String getKey(String key, String subId) throws DalException {
+        ConfigTbl byKey = configTblDao.findByKeyAndSubKey(key, null == subId ? "" : subId, ConfigTblEntity.READSET_VALUE);
         return byKey.getValue();
     }
 
@@ -63,7 +67,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         boolean insert = false;
 
         try{
-            getKey(config.getKey());
+            getKey(config.getKey(), config.getSubKey());
         } catch (DalException e){
             logger.info("[setKey][not exist, create]{}", e.getMessage());
             insert = true;
@@ -72,6 +76,10 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         ConfigTbl configTbl = new ConfigTbl();
         configTbl.setKey(config.getKey());
         configTbl.setValue(config.getVal());
+        configTbl.setSubKey(config.getSubKey());
+        if (null == configTbl.getSubKey()) {
+            configTbl.setSubKey("");
+        }
         if(config.getUpdateIP() != null) {
             configTbl.setLatestUpdateIp(config.getUpdateIP());
         }
@@ -86,7 +94,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
             queryHandler.handleUpdate(new DalQuery<Integer>() {
                 @Override
                 public Integer doQuery() throws DalException {
-                    return configTblDao.updateValAndUntilByKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
+                    return configTblDao.updateValAndUntilByKeyAndSubKey(configTbl, ConfigTblEntity.UPDATESET_FULL);
                 }
             });
         }else{
@@ -102,7 +110,20 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
     }
 
     public ConfigTbl getByKey(String key) throws DalException {
-        return configTblDao.findByKey(key, ConfigTblEntity.READSET_FULL);
+        return getByKeyAndSubId(key, "");
+    }
+
+    public ConfigTbl getByKeyAndSubId(String key, String subId) throws DalException {
+        return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
+    }
+
+    public List<ConfigTbl> findAllByKeyAndValueAndUntilAfter(String key, String value, Date until) {
+        return queryHandler.handleQuery(new DalQuery<List<ConfigTbl>>() {
+            @Override
+            public List<ConfigTbl> doQuery() throws DalException {
+                return configTblDao.findAllByKeyAndValueAndUntilAfter(key, value, until, ConfigTblEntity.READSET_FULL);
+            }
+        });
     }
 
 }

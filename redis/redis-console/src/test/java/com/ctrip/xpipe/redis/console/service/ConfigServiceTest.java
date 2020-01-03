@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -18,6 +21,8 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
     ConfigService service;
 
     ConfigModel configModel;
+
+    private String mockClusterName = "test-cluster";
 
     @Before
     public void beforeConfigServiceTest() {
@@ -66,6 +71,36 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
     public void isSentinelAutoProcess() throws Exception {
         service.stopSentinelAutoProcess(configModel, -7);
         Assert.assertTrue(service.isSentinelAutoProcess());
+    }
+
+    @Test
+    public void testStartSentinelCheck() throws Exception {
+        configModel.setSubKey(mockClusterName);
+        service.startSentinelCheck(configModel);
+        ConfigModel configModel = service.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
+        Assert.assertEquals(configModel.getVal(), String.valueOf(false));
+    }
+
+    @Test
+    public void testStopSentinelCheck() throws Exception {
+        configModel.setSubKey(mockClusterName);
+        service.stopSentinelCheck(configModel, 1);
+        ConfigModel configModel = service.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
+        Assert.assertEquals(configModel.getVal(), String.valueOf(true));
+    }
+
+    @Test
+    public void testGetActiveSentinelCheckExcludeConfig() throws Exception  {
+        configModel.setSubKey(mockClusterName);
+        service.stopSentinelCheck(configModel, 0);
+        sleep(1000);
+        List<ConfigModel> configModels = service.getActiveSentinelCheckExcludeConfig();
+        Assert.assertEquals(configModels.size(), 0);
+        service.stopSentinelCheck(configModel, 1);
+        configModels = service.getActiveSentinelCheckExcludeConfig();
+        Assert.assertEquals(configModels.size(), 1);
+        Assert.assertEquals(configModels.get(0).getSubKey(), mockClusterName);
+        Assert.assertEquals(configModels.get(0).getVal(), String.valueOf(true));
     }
 
 }
