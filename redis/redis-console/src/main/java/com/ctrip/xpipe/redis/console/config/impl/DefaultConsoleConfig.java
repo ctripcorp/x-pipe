@@ -58,7 +58,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_REBALANCE_SENTINEL_MAX_NUM_ONCE = "rebalance.sentinel.max.num.once";
 
-    private static final String KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER = "no.alarm.minute.for.new.cluster";
+    private static final String KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE = "no.alarm.minute.for.cluster.update";
 
     public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
@@ -264,8 +264,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public int getNoAlarmMinutesForNewCluster() {
-        return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_NEW_CLUSTER, 15);
+    public int getNoAlarmMinutesForClusterUpdate() {
+        return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE, 15);
     }
 
     @Override

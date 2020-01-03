@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.proxy.integrate;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.EndpointHealthChecker;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointHealthChecker;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.ProxyServer;
 import com.ctrip.xpipe.redis.proxy.Session;
@@ -65,9 +67,9 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         service = spy(FoundationService.DEFAULT);
         doReturn("127.0.0.1").when(service).getLocalIp();
         DefaultProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()-> 180);
-        endpointManager.setHealthChecker(new EndpointHealthChecker() {
+        endpointManager.setHealthChecker(new ProxyEndpointHealthChecker() {
             @Override
-            public boolean checkConnectivity(Endpoint endpoint) {
+            public boolean checkConnectivity(ProxyEndpoint endpoint) {
                 return true;
             }
         });

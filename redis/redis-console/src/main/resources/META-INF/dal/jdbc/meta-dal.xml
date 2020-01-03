@@ -1512,7 +1512,7 @@
 				</statement>
 			</query>
 
-			<query name="update-val-and-until-by-key" type="UPDATE" batch="false">
+			<query name="update-val-and-until-by-key-and-sub-key" type="UPDATE" batch="false">
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
@@ -1521,18 +1521,36 @@
 					<FIELD name='latest-update-user' /> = ${latest-update-user},
 					<FIELD name='latest-update-ip' /> = ${latest-update-ip}
 					WHERE <FIELD name='key'/> = ${key}
+					AND <FIELD name='sub-key'/> = ${sub-key}
 					]]>
 				</statement>
 			</query>
 
-
-			<query name="find-by-key" type="SELECT" multiple="false">
+			<query name="find-all-by-key-and-value-and-until-after" type="SELECT" multiple="true">
 				<param name="key"/>
+				<param name="value"/>
+				<param name="until"/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='key'/> = ${key}
+					AND <FIELD name='value'/> = ${value}
+					AND <FIELD name='until'/> > ${until}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-by-key-and-sub-key" type="SELECT" multiple="false">
+				<param name="key"/>
+				<param name="sub-key"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='key'/> = ${key}
+					AND <FIELD name='sub-key'/> = ${sub-key}
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>

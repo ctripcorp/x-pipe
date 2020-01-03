@@ -44,7 +44,7 @@ public class AlertManagerTest {
 
     @Test
     public void testShouldAlert() {
-        when(consoleConfig.getNoAlarmMinutesForNewCluster()).thenReturn(15);
+        when(consoleConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
         Map<String, Date> map = Maps.newHashMapWithExpectedSize(1);
         map.put("cluster", new Date());
         alertManager.setClusterCreateTime(map);
