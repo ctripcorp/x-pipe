@@ -123,7 +123,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
     @Test(expected = IllegalArgumentException.class)
     public void testAddKeeperContainer2() {
         KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo()
-                .setDcName(dcNames[0]).setKeepercontainerIp("192.168.0.1")
+                .setDcName(dcNames[0]).setKeepercontainerIp("127.0.0.1")
                 .setKeepercontainerPort(9090).setKeepercontainerOrgId(3L)
                 .setActive(true);
 
@@ -133,7 +133,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
 
         KeepercontainerTbl target = null;
         for(KeepercontainerTbl kc : result) {
-            if(kc.getKeepercontainerIp().equals("192.168.0.1") && kc.getKeepercontainerPort()==9090) {
+            if(kc.getKeepercontainerIp().equals("127.0.0.1") && kc.getKeepercontainerPort()==9090) {
                 target = kc;
                 break;
             }
@@ -145,7 +145,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
     public void testAddKeeperContainer3() {
 
         KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo()
-                .setDcName(dcNames[0]).setKeepercontainerIp("192.168.0.1")
+                .setDcName(dcNames[0]).setKeepercontainerIp("127.0.0.1")
                 .setKeepercontainerPort(9090).setKeepercontainerOrgId(3L);
 
         keeperContainerService.addKeeperContainer(createInfo);
@@ -207,7 +207,6 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
             Assert.assertTrue(info.getId() > 0);
             Assert.assertNotNull(info.getAddr());
             Assert.assertFalse(StringUtil.isEmpty(info.getDcName()));
-            Assert.assertNotNull(info.getOrgName());
         }
 
         Assert.assertEquals(2, infos.get(0).getClusterCount());

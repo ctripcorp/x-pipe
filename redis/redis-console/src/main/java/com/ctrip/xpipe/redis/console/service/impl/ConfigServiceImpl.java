@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
@@ -8,15 +8,20 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOff
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -31,12 +36,14 @@ public class ConfigServiceImpl implements ConfigService {
     private ConfigDao configDao;
 
     @Autowired
-    AlertSystemOffChecker alertSystemOffChecker;
+    private AlertSystemOffChecker alertSystemOffChecker;
 
     @Autowired
-    SentinelAutoProcessChecker sentinelAutoProcessChecker;
+    private SentinelAutoProcessChecker sentinelAutoProcessChecker;
 
     private Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
+
+    private static final String EVENT_CONFIG_CHANGE = "event_config_change";
 
     @Override
     public void startAlertSystem(ConfigModel config) throws DalException {
@@ -84,6 +91,42 @@ public class ConfigServiceImpl implements ConfigService {
             sentinelAutoProcessChecker.startAlert();
         }
 
+    }
+
+    @Override
+    public void startSentinelCheck(ConfigModel config) throws DalException {
+        logger.info("[startSentinelCheck] : turn off sentinel check exclude config {} for cluster {}", config, config.getSubKey());
+
+        config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE)
+                .setVal(String.valueOf(false));
+        logChangeEvent(config, null);
+        configDao.setConfig(config);
+    }
+
+    @Override
+    public void stopSentinelCheck(ConfigModel config, int minutes) throws DalException {
+        logger.info("[stopSentinelCheck] : turn on sentinel check exclude config {} for cluster {} till {} hours later",
+                config, config.getSubKey(), minutes);
+
+        Date date = DateTimeUtils.getMinutesLaterThan(new Date(), minutes);
+        config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE)
+                .setVal(String.valueOf(true));
+        logChangeEvent(config, date);
+        configDao.setConfigAndUntil(config, date);
+    }
+
+    @Override
+    public List<ConfigModel> getActiveSentinelCheckExcludeConfig() {
+        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(
+                DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
+        if (configTbls.isEmpty()) return Collections.emptyList();
+        List<ConfigModel> models = new ArrayList<>();
+
+        configTbls.forEach(configTbl -> {
+            models.add(new ConfigModel(configTbl));
+        });
+
+        return models;
     }
 
     @Override
@@ -141,21 +184,18 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public ConfigModel getConfig(String key) {
+        return getConfig(key, "");
+    }
+
+    @Override
+    public ConfigModel getConfig(String key, String subId) {
         try {
-            ConfigTbl configTbl = configDao.getByKey(key);
-
-            ConfigModel config = new ConfigModel();
-            config.setKey(key);
-            config.setVal(configTbl.getValue());
-            config.setUpdateIP(configTbl.getLatestUpdateIp());
-            config.setUpdateUser(configTbl.getLatestUpdateUser());
-
-            return config;
+            ConfigTbl configTbl = configDao.getByKeyAndSubId(key, subId);
+            return new ConfigModel(configTbl);
         } catch (DalException e) {
             logger.error("[getConfig] {}", e);
             return null;
         }
-
     }
 
     private ConfigModel getOrCreate(String key, String defaultValue) {
@@ -208,5 +248,17 @@ public class ConfigServiceImpl implements ConfigService {
         } catch (Exception e) {
             return true;
         }
+    }
+
+    private void logChangeEvent(ConfigModel configModel, Date recoveryDate) {
+        StringBuilder sb = new StringBuilder();
+        if (!StringUtil.isEmpty(configModel.getKey())) sb.append(configModel.getKey());
+        if (!StringUtil.isEmpty(configModel.getSubKey())) sb.append(":").append(configModel.getSubKey());
+        sb.append(" is set");
+        if (!StringUtil.isEmpty(configModel.getVal())) sb.append(" to ").append(configModel.getVal());
+        if (!StringUtil.isEmpty(configModel.getUpdateUser())) sb.append(" by ").append(configModel.getUpdateUser());
+        if (!StringUtil.isEmpty(configModel.getUpdateIP())) sb.append(" ip ").append(configModel.getUpdateIP());
+        if (null != recoveryDate) sb.append(" until ").append(DateTimeUtils.timeAsString(recoveryDate));
+        EventMonitor.DEFAULT.logEvent(EVENT_CONFIG_CHANGE, sb.toString());
     }
 }
