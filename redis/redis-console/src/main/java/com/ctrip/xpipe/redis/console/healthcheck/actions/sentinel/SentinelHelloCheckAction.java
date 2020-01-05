@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -32,10 +34,13 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ConsoleDbConfig consoleDbConfig;
 
+    private ClusterService clusterService;
+
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig) {
+                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
         super(scheduled, instance, executors);
         this.consoleDbConfig = consoleDbConfig;
+        this.clusterService = clusterService;
     }
 
     @Override
@@ -75,10 +80,17 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             logger.debug("[doTask][BackupDc] do in backup dc only, quit");
             return false;
         }
+
         String cluster = getActionInstance().getRedisInstanceInfo().getClusterId();
         if (!consoleDbConfig.shouldSentinelCheck(cluster, false)) {
             logger.warn("[doTask][BackupDc] cluster is in sentinel check whitelist, quit");
+
             return false;
+        }
+
+        String clusterStatus = clusterService.find(getActionInstance().getRedisInstanceInfo().getClusterId()).getStatus();
+        if (!ClusterStatus.isSameClusterStatus(clusterStatus, ClusterStatus.Normal)) {
+            logger.warn("[shouldStart][{}] in migration, stop check", getActionInstance().getRedisInstanceInfo().getClusterId());
         }
         return consoleDbConfig.isSentinelAutoProcess();
     }
