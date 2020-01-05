@@ -4,11 +4,13 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.*;
 import org.mockito.Mock;
@@ -48,11 +50,16 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
     @Mock
     private ConsoleDbConfig config;
 
+    @Mock
+    private ClusterService clusterService;
+
     private RedisHealthCheckInstance instance;
 
     private Server server;
 
     private Supplier<String> result;
+
+    private ClusterTbl clusterTbl = new ClusterTbl().setStatus(ClusterStatus.Normal.toString());
 
     @SuppressWarnings("unchecked")
     @Before
@@ -70,7 +77,8 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         });
         instance = newRandomRedisHealthCheckInstance("dc2", server.getPort());
         when(config.isSentinelAutoProcess()).thenReturn(true);
-        action = new SentinelHelloCheckAction(scheduled, instance, executors, config);
+        when(clusterService.find(anyString())).thenReturn(clusterTbl);
+        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, clusterService);
     }
 
     @After

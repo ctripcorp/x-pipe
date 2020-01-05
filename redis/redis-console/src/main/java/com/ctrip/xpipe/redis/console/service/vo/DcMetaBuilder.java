@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -151,7 +152,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             public ShardMeta create() {
                 ShardMeta shardMeta = new ShardMeta(shard.getShardName());
                 shardMeta.setParent(clusterMeta);
-                shardMeta.setSentinelMonitorName(shard.getSetinelMonitorName());
+                shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(shard.getSetinelMonitorName(), dcMeta.getId()));
                 shardMeta.setSentinelId(sentinelId);
                 return shardMeta;
             }
