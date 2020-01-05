@@ -4,9 +4,11 @@ import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEventListener;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +41,9 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
     @Autowired
     private List<ClusterDeleteEventListener> clusterEventListeners;
 
+    @Autowired
+    private MetaCache metaCache;
+
     @Override
     public ClusterEvent createClusterEvent(String clusterName) {
         
@@ -49,7 +54,7 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
                 logger.info("[createClusterEvent] Create Shard Delete Event: {}", shardTbl);
                 Map<Long, SetinelTbl> sentinelMap = sentinelService.findByShard(shardTbl.getId());
                 ShardDeleteEvent shardEvent = new ShardDeleteEvent(clusterName, shardTbl.getShardName(), executors);
-                shardEvent.setShardMonitorName(shardTbl.getSetinelMonitorName());
+                shardEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardTbl.getShardName()));
                 shardEvent.setShardSentinels(getShardSentinelAddress(sentinelMap));
                 shardDeleteEventListeners
                         .forEach(shardDeleteEventListener -> shardEvent.addObserver(shardDeleteEventListener));
