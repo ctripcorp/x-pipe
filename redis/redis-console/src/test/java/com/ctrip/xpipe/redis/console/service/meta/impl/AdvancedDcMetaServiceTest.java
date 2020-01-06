@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -152,6 +153,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
         return prepareDatasFromFile("src/test/resources/apptest.sql");
     }
 
+    @Ignore
     @Test
     public void testHangForever() {
 //        proxyService.deleteProxy();
