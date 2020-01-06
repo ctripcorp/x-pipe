@@ -25,6 +25,8 @@ public interface ConfigService {
 
     void stopSentinelCheck(ConfigModel config, int hours) throws DalException;
 
+    boolean shouldSentinelCheck(String cluster);
+
     List<ConfigModel> getActiveSentinelCheckExcludeConfig();
 
     boolean isAlertSystemOn();
