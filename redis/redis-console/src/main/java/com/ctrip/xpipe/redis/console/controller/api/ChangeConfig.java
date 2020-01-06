@@ -81,35 +81,40 @@ public class ChangeConfig extends AbstractConsoleController{
         configService.doIgnoreMigrationSystemAvailability(ignore);
     }
 
-    @RequestMapping(value = "/config/sentinel/check/exclude", method = RequestMethod.POST)
-    public RetMessage setSentinelCheckExcludeConfig(HttpServletRequest request,
-                                                    @RequestBody ClusterConfigModel configModel) throws DalException {
-        if (StringUtil.isEmpty(configModel.getClusterName())) throw new IllegalArgumentException("cluster can not be empty");
-        ClusterTbl clusterTbl = clusterService.find(configModel.getClusterName());
-        if (null == clusterTbl) throw new IllegalArgumentException("cluster not exist");
-
+    @RequestMapping(value = "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/start", method = RequestMethod.POST)
+    public RetMessage startSentinelCheck(HttpServletRequest request, @PathVariable String clusterName) throws DalException {
+        checkClusterName(clusterName);
         ConfigModel config = configModel(request, null);
-        config.setSubKey(configModel.getClusterName());
-
-        if (Boolean.TRUE.equals(configModel.getValue())) {
-            configService.stopSentinelCheck(config, consoleConfig.getNoAlarmMinutesForClusterUpdate());
-        } else {
-            configService.startSentinelCheck(config);
-        }
-
+        config.setSubKey(clusterName);
+        configService.startSentinelCheck(config);
         return RetMessage.createSuccessMessage("success");
     }
 
-    @RequestMapping(value = "/config/sentinel/check/exclude", method = RequestMethod.GET)
-    public ClusterConfigModel getSentinelCheckExcludeConfig(@RequestParam String clusterName) {
+    @RequestMapping(value = "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/stop", method = RequestMethod.POST)
+    public RetMessage stopSentinelCheck(HttpServletRequest request, @PathVariable String clusterName) throws DalException {
+        checkClusterName(clusterName);
+        ConfigModel config = configModel(request, null);
+        config.setSubKey(clusterName);
+        configService.stopSentinelCheck(config, consoleConfig.getNoAlarmMinutesForClusterUpdate());
+        return RetMessage.createSuccessMessage("success");
+    }
+
+    @RequestMapping(value = "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public ClusterConfigModel getSentinelCheckConfig(@PathVariable String clusterName) {
         if (StringUtil.isEmpty(clusterName)) throw new IllegalArgumentException("cluster can not be empty");
-        return new ClusterConfigModel(clusterName, !configService.shouldSentinelCheck(clusterName));
+        return new ClusterConfigModel(clusterName, configService.shouldSentinelCheck(clusterName));
     }
 
     @RequestMapping(value = "/config/sentinel/check/exclude/all", method = RequestMethod.GET)
     public List<String> getAllSentinelCheckExcludeConfig() {
         List<ConfigModel> configModels = configService.getActiveSentinelCheckExcludeConfig();
         return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
+    }
+
+    private void checkClusterName(String clusterName) {
+        if (StringUtil.isEmpty(clusterName)) throw new IllegalArgumentException("cluster can not be empty");
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (null == clusterTbl) throw new IllegalArgumentException("cluster not exist");
     }
 
     private ConfigModel configModel(HttpServletRequest request, ConfigModel configModel) {
