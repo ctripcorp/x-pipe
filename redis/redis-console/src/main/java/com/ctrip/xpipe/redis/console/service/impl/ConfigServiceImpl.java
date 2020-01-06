@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOff
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -114,6 +113,17 @@ public class ConfigServiceImpl implements ConfigService {
         logChangeEvent(config, date);
         configDao.setConfigAndUntil(config, date);
     }
+
+    @Override
+    public boolean shouldSentinelCheck(String cluster) {
+        try {
+            ConfigTbl config = configDao.getByKeyAndSubId(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, cluster);
+            return null == config || !Boolean.parseBoolean(config.getValue()) || (new Date()).after(config.getUntil());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
 
     @Override
     public List<ConfigModel> getActiveSentinelCheckExcludeConfig() {
