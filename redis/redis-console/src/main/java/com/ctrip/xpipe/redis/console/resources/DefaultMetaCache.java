@@ -278,16 +278,8 @@ public class DefaultMetaCache implements MetaCache {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
 
-        Set<String> dcs = xpipeMetaManager.getDcs();
-        for (String dc : dcs) {
-            // ignore backup dcs
-            ShardMeta shardMeta = xpipeMetaManager.getShardMeta(dc, clusterId, shardId);
-            if (shardMeta == null || !shardMeta.getActiveDc().equals(dc)) {
-                continue;
-            }
-            return shardMeta.getSentinelMonitorName();
-        }
-        return null;
+        String activeDc = xpipeMetaManager.getActiveDc(clusterId, shardId);
+        return xpipeMetaManager.getSentinelMonitorName(activeDc, clusterId, shardId);
     }
 
     @Override
