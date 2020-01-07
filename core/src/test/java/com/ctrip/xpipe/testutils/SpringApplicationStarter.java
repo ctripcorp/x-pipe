@@ -68,7 +68,7 @@ public class SpringApplicationStarter extends AbstractStartStoppable {
 
             Map<String, Object> properties = new HashMap<>();
             properties.put("server.port", String.valueOf(port));
-            properties.put("server.tomcat.max-threads", String.valueOf(123));
+            properties.put("server.tomcat.max-threads", String.valueOf(maxThreads));
             propertySources.addFirst(new MapPropertySource("TestAppServerProperty", properties));
 
         }
