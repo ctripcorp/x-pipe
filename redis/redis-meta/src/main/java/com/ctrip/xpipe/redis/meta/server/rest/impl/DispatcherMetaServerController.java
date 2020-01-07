@@ -7,9 +7,16 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
+import com.ctrip.xpipe.redis.meta.server.impl.RemoteMetaServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
+
+import javax.annotation.Resource;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 
 /**
  * dispatch service to proper server
@@ -20,7 +27,9 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping(META_SERVER_SERVICE.PATH.PATH_PREFIX)
 public class DispatcherMetaServerController extends AbstractDispatcherMetaServerController{
-	
+
+	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
+	private ExecutorService executors;
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CLUSTER_CHANGE, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public void clusterAdded(@PathVariable String clusterId, @RequestBody ClusterMeta clusterMeta, 
@@ -52,38 +61,77 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public KeeperMeta getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId, 
+	public DeferredResult<KeeperMeta> getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId,
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		
 		logger.debug("[getActiveKeeper]{},{},{},{}", clusterId, shardId);
-		return metaServer.getActiveKeeper(clusterId, shardId, forwardInfo);
+		return createDeferredResult(new Function<MetaServer, KeeperMeta >() {
+			@Override
+			public KeeperMeta apply(MetaServer metaServer) {
+				return metaServer.getActiveKeeper(clusterId, shardId, forwardInfo);
+			}
+		}, metaServer);
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC_CHECK, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public PrimaryDcCheckMessage changePrimaryDcCheck(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc, 
-			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
+	public DeferredResult<PrimaryDcCheckMessage> changePrimaryDcCheck(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
+																	 @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 		
 		logger.info("[changePrimaryDcCheck]{}, {}, {}", clusterId, shardId, newPrimaryDc);
-		return metaServer.changePrimaryDcCheck(clusterId, shardId, newPrimaryDc, forwardInfo);
+		return createDeferredResult(new Function<MetaServer, PrimaryDcCheckMessage >() {
+			@Override
+			public PrimaryDcCheckMessage apply(MetaServer metaServer) {
+				return metaServer.changePrimaryDcCheck(clusterId, shardId, newPrimaryDc, forwardInfo);
+			}
+		}, metaServer);
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_MAKE_MASTER_READONLY, method = RequestMethod.PUT, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly,
+	public DeferredResult<MetaServerConsoleService.PreviousPrimaryDcMessage> makeMasterReadOnly(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable boolean readOnly,
 																				@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 		
 		logger.info("[makeMasterReadOnly]{}, {}, {}", clusterId, shardId, readOnly);
-		return metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
+		return createDeferredResult(new Function<MetaServer, MetaServerConsoleService.PreviousPrimaryDcMessage >() {
+			@Override
+			public MetaServerConsoleService.PreviousPrimaryDcMessage apply(MetaServer metaServer) {
+				return metaServer.makeMasterReadOnly(clusterId, shardId, readOnly, forwardInfo);
+			}
+		}, metaServer);
 	}
 	
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_CHANGE_PRIMARY_DC, method = RequestMethod.PUT,
 			produces= MediaType.APPLICATION_JSON_UTF8_VALUE,
 			consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public PrimaryDcChangeMessage doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
+	public DeferredResult<PrimaryDcChangeMessage> doChangePrimaryDc(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String newPrimaryDc,
 													@RequestBody(required = false) MetaServerConsoleService.PrimaryDcChangeRequest request,
 													@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer){
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
-		return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, request, forwardInfo);
+		return createDeferredResult(new Function<MetaServer, PrimaryDcChangeMessage>() {
+			@Override
+			public PrimaryDcChangeMessage apply(MetaServer metaServer) {
+				return metaServer.doChangePrimaryDc(clusterId, shardId, newPrimaryDc, request, forwardInfo);
+			}
+		}, metaServer);
+	}
+
+	private <T> DeferredResult<T> createDeferredResult(Function<MetaServer, T> function, MetaServer metaServer) {
+		DeferredResult<T> response = new DeferredResult<>();
+		if (metaServer instanceof RemoteMetaServer) {
+			executors.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						response.setResult(function.apply(metaServer));
+					} catch (Exception e) {
+						response.setErrorResult(e);
+					}
+				}
+			});
+		} else {
+			response.setResult(function.apply(metaServer));
+		}
+		return response;
 	}
 
 }
