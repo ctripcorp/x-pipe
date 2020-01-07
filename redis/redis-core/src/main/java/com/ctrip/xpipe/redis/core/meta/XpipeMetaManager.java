@@ -81,6 +81,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	List<MetaServerMeta> getMetaServers(String dc);
 	
 	SentinelMeta getSentinel(String dc, String clusterId, String shardId);
+
+	String getSentinelMonitorName(String dc, String clusterId, String shardId);
 	
 	ZkServerMeta  getZkServerMeta(String dc);
 
