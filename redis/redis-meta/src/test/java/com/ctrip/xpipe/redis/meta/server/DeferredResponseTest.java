@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -19,6 +20,7 @@ import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -26,29 +28,40 @@ import org.springframework.web.client.RestOperations;
 
 import java.beans.PropertyDescriptor;
 
+import static com.ctrip.xpipe.AbstractTest.randomPort;
+
 @SpringBootApplication
 @Profile(AbstractProfile.PROFILE_NAME_TEST)
 public class DeferredResponseTest implements InstantiationAwareBeanPostProcessor {
 
     private RestOperations restOperations;
 
-    private static final String PORT = "9090";
+    private static final int PORT = randomPort();
 
     private static final String PATH = "/api/meta/getactivekeeper/testcluster/shard1";
 
     private static boolean onTest = false;
 
+    private ConfigurableApplicationContext applicationContext;
+
+    private int defaultThreads;
+
     @Before
     public void setupDeferredResponseTest() {
-        System.setProperty("server.port", PORT);
+        System.setProperty("server.port", PORT + "");
+        defaultThreads = Integer.parseInt(System.getProperty("server.tomcat.max-threads", "200"));
         System.setProperty("server.tomcat.max-threads", "1");
         onTest = true;
-        new SpringApplicationBuilder(DeferredResponseTest.class).run();
+        applicationContext = new SpringApplicationBuilder(DeferredResponseTest.class).run();
     }
 
     @After
     public void afterDeferredResponseTest() {
         onTest = false;
+        System.setProperty("server.tomcat.max-threads", "" + defaultThreads);
+        if (applicationContext != null) {
+            applicationContext.stop();
+        }
     }
 
     @Test
