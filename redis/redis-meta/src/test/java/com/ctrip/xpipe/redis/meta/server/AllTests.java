@@ -67,7 +67,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultSlaveOfJobTest.class,
 	DefaultKeeperStateControllerTest.class,
 	KeeperStateChangeJobTest.class,
-	DefaultKeeperStateChangeHandlerTest.class
+	DefaultKeeperStateChangeHandlerTest.class,
+	DeferredResponseTest.class
 })
 public class AllTests {
 
