@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -33,6 +34,9 @@ public abstract class AbstractCrossDcSentinelMonitorsCheck extends AbstractCross
     @Autowired
     private ConsoleConfig config;
 
+    @Autowired
+    private ConsoleDbConfig consoleDbConfig;
+
     @Override
     public void doCheck() {
         logger.debug("[doCheck] check sentinel monitors");
@@ -59,6 +63,11 @@ public abstract class AbstractCrossDcSentinelMonitorsCheck extends AbstractCross
         }
         result.removeAll(toRemove);
         return result;
+    }
+
+    @Override
+    protected boolean shouldCheck() {
+        return super.shouldCheck() && consoleDbConfig.isSentinelAutoProcess();
     }
 
     protected abstract void checkSentinel(SentinelMeta sentinelMeta, HostPort hostPort);

@@ -589,6 +589,16 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
+	public String getSentinelMonitorName(String dc, String clusterId, String shardId) {
+		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
+		if(null == shardMeta) {
+			throw new RedisRuntimeException(String.format("shardMeta not found:%s %s %s", dc, clusterId, shardId));
+		}
+
+		return shardMeta.getSentinelMonitorName();
+	}
+
+	@Override
 	public void primaryDcChanged(String dc, String clusterId, String shardId, String newPrimaryDc) {
 		
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
