@@ -225,8 +225,8 @@ public class DefaultMetaCache implements MetaCache {
     public boolean isCrossRegion(String activeDc, String backupDc) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
-        return !xpipeMetaManager.getDcMeta(activeDc).getZone()
-                .equalsIgnoreCase(xpipeMetaManager.getDcMeta(backupDc).getZone());
+        return !xpipeMetaManager.getDcZone(activeDc)
+                .equalsIgnoreCase(xpipeMetaManager.getDcZone(backupDc));
     }
 
     @Override

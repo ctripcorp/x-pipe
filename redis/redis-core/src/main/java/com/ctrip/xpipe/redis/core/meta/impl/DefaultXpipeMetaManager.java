@@ -533,6 +533,11 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
+	public String getDcZone(String dcId) {
+		return getDirectDcMeta(dcId).getZone();
+	}
+
+	@Override
 	public List<KeeperMeta> getAllSurviceKeepers(String dcId, String clusterId, String shardId) {
 
 		List<KeeperMeta> keepers = getDirectKeepers(dcId, clusterId, shardId);

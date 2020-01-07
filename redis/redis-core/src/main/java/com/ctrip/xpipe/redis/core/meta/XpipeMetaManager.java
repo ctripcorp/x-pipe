@@ -92,6 +92,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 
 	DcMeta getDcMeta(String dc);
 
+	String getDcZone(String dc);
+
 	List<KeeperMeta> getAllSurviceKeepers(String currentDc, String clusterId, String shardId);
 
 	boolean hasCluster(String currentDc, String clusterId);
