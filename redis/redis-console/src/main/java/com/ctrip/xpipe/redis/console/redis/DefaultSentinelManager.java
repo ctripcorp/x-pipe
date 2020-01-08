@@ -198,7 +198,7 @@ public class DefaultSentinelManager implements SentinelManager {
             try {
                 realSentinels = sentinelsCommand.execute().get();
                 logger.info("[getRealSentinels]findRedisHealthCheckInstance sentinels from {} : {}", sentinelAddress, realSentinels);
-                if(realSentinels.size() > 0){
+                if(null != realSentinels){
                     realSentinels.add(
                             new Sentinel(sentinelAddress.toString(),
                                     sentinelAddress.getHostString(),
