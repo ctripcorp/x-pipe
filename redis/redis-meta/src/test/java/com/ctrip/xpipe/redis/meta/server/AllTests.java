@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
+import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
@@ -68,7 +69,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperStateControllerTest.class,
 	KeeperStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
-	DeferredResponseTest.class
+	DeferredResponseTest.class,
+	DefaultSentinelManagerTest.class
 })
 public class AllTests {
 
