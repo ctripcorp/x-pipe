@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import org.junit.Assert;
 import org.junit.Test;
@@ -11,6 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -37,6 +42,16 @@ public class ClusterDeleteEventFactoryTest extends AbstractConsoleIntegrationTes
             Assert.assertTrue(shardEvent instanceof ShardDeleteEvent);
             Assert.assertEquals(clusterEvent.getClusterName(), shardEvent.getClusterName());
         }
+    }
+
+    @Test
+    public void testMetaCacheGetNull() {
+        List<ClusterTbl> clusters = clusterService.findAllClustersWithOrgInfo();
+        MetaCache metaCache = mock(MetaCache.class);
+        clusterDeleteEventFactory.setMetaCache(metaCache);
+        when(metaCache.getSentinelMonitorName(anyString(), anyString())).thenThrow(new RuntimeException());
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName());
+
     }
 
     @Override
