@@ -88,6 +88,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CONSOLE_DOMAINS = "console.domains";
 
+    private static final String KEY_SENTINEL_CHECK_INTERVAL = "console.health.sentinel.interval";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -234,6 +236,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
                 KEY_REDIS_CONF_CHECK_INTERVAL,
                 Integer.parseInt(System.getProperty(KEY_REDIS_CONF_CHECK_INTERVAL, "300000"))
         );
+    }
+
+    @Override
+    public int getSentinelCheckIntervalMilli() {
+        return getIntProperty(KEY_SENTINEL_CHECK_INTERVAL, 300000);
     }
 
     @Override

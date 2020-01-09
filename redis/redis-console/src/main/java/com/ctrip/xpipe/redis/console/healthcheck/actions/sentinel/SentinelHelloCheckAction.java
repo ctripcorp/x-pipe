@@ -94,4 +94,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         }
         return consoleDbConfig.isSentinelAutoProcess();
     }
+
+    @Override
+    protected int getBaseCheckInterval() {
+        return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
+    }
 }
