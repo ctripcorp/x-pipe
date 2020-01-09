@@ -169,8 +169,13 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 												Map<Long, SetinelTbl> sentinelTblMap) {
 
 		ShardDeleteEvent shardDeleteEvent = new ShardDeleteEvent(clusterName, shardName, executors);
-		shardDeleteEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardName));
 
+		try {
+			shardDeleteEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardTbl.getShardName()));
+		} catch (Exception e) {
+			logger.warn("[createClusterEvent]", e);
+			shardDeleteEvent.setShardMonitorName(shardTbl.getSetinelMonitorName());
+		}
 		// Splicing sentinel address as "127.0.0.1:6379,127.0.0.2:6380"
 		StringBuffer sb = new StringBuffer();
 		for(SetinelTbl setinelTbl : sentinelTblMap.values()) {

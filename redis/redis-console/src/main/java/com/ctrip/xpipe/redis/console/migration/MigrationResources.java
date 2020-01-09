@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.redis.console.migration;
 
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng
@@ -25,15 +23,15 @@ public class MigrationResources {
 
     @Bean(name = MIGRATION_EXECUTOR)
     public ExecutorService getMigrationlExecutor() {
-
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxThreads,
+                maxThreads,
+                120L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(OsUtils.getCpuCount()),
+                XpipeThreadFactory.create(MIGRATION_EXECUTOR),
+                new ThreadPoolExecutor.CallerRunsPolicy());
+        poolExecutor.allowCoreThreadTimeOut(true);
         return MoreExecutors.getExitingExecutorService(
-                new ThreadPoolExecutor(4,
-                    maxThreads,
-                    120L, TimeUnit.SECONDS,
-                    new SynchronousQueue<>(),
-                    XpipeThreadFactory.create(MIGRATION_EXECUTOR),
-                    new ThreadPoolExecutor.CallerRunsPolicy()),
-
+                poolExecutor,
                 AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
     }
 }
