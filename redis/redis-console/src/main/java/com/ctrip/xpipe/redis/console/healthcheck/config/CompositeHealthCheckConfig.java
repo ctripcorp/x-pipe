@@ -53,6 +53,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int getSentinelCheckIntervalMilli() {
+        return config.getSentinelCheckIntervalMilli();
+    }
+
+    @Override
     public String getMinXRedisVersion() {
         return config.getMinXRedisVersion();
     }

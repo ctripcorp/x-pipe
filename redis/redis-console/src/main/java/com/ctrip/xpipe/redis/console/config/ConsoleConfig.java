@@ -50,6 +50,8 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getRedisConfCheckIntervalMilli();
 
+	int getSentinelCheckIntervalMilli();
+
 	String getConsoleDomain();
 
 	QuorumConfig  getDefaultSentinelQuorumConfig();

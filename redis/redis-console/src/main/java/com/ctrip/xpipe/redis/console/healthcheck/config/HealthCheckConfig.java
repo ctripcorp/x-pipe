@@ -17,6 +17,8 @@ public interface HealthCheckConfig {
 
     int getRedisConfCheckIntervalMilli();
 
+    int getSentinelCheckIntervalMilli();
+
     String getMinXRedisVersion();
 
     String getMinDiskLessReplVersion();
