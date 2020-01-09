@@ -41,6 +41,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int getSentinelCheckIntervalMilli() {
+        return consoleConfig.getSentinelCheckIntervalMilli();
+    }
+
+    @Override
     public String getMinXRedisVersion() {
         return consoleConfig.getXRedisMinimumRequestVersion();
     }
