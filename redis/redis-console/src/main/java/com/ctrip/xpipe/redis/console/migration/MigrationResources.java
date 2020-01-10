@@ -26,7 +26,7 @@ public class MigrationResources {
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxThreads,
                 maxThreads,
                 120L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(OsUtils.getCpuCount()),
+                new ArrayBlockingQueue<>(maxThreads/2),
                 XpipeThreadFactory.create(MIGRATION_EXECUTOR),
                 new ThreadPoolExecutor.CallerRunsPolicy());
         poolExecutor.allowCoreThreadTimeOut(true);
