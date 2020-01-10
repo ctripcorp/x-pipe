@@ -19,6 +19,7 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 
 	private int n;
 	private RetryPolicy retryPolicy;
+	private boolean logDetail = true;
 	private AtomicBoolean destroyed = new AtomicBoolean(false);
 
 	public RetryNTimes(int n, int delayBaseMilli) {
@@ -32,6 +33,12 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 	public RetryNTimes(int n, RetryPolicy retryPolicy) {
 		this.n = n;
 		this.retryPolicy = retryPolicy;
+	}
+
+	public RetryNTimes(int n, RetryPolicy retryPolicy, boolean logDetail) {
+		this.n = n;
+		this.retryPolicy = retryPolicy;
+		this.logDetail = logDetail;
 	}
 
 	public static <V> RetryTemplate<V> retryForEver(RetryPolicy retryPolicy) {
@@ -70,7 +77,9 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 				}
 				return future.get(retryPolicy.waitTimeoutMilli(), TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
-				logger.error(String.format("cmd:%s, message:%s", command, e.getMessage()), e);
+				if (isLogDetail()) {
+					logger.warn(String.format("cmd:%s, message:%s", command, e.getMessage()), e);
+				}
 				Exception originalException = getOriginalException(e);
 				if (i == n || !retryPolicy.retry(originalException)) {
 					throw originalException;
@@ -97,4 +106,9 @@ public class RetryNTimes<V> extends AbstractRetryTemplate<V> {
 		logger.info("[destroy]{}", this);
 		destroyed.set(true);
 	}
+
+	protected boolean isLogDetail() {
+		return logDetail;
+	}
+
 }

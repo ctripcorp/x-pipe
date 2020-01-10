@@ -122,7 +122,7 @@ public class RestTemplateFactory {
         public Object retryableInvoke(final Object proxy, final Method method, final Object[] args) throws Exception {
             final RetryPolicy retryPolicy = retryPolicyFactory.create();
 
-            return new RetryNTimes<Object>(retryTimes, retryPolicy).execute(new AbstractCommand<Object>() {
+            return new RetryNTimes<Object>(retryTimes, retryPolicy, false).execute(new AbstractCommand<Object>() {
 
                 @Override
                 public String getName() {
@@ -138,6 +138,7 @@ public class RestTemplateFactory {
                 protected void doReset() {
 
                 }
+
             });
         }
 

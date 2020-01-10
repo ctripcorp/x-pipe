@@ -67,7 +67,7 @@
         <logger name="com.ctrip.xpipe.redis.console.health.delay.DefaultDelayMonitor" level="DEBUG"/>
         -->
         <root level="INFO">
-        	<appender-ref ref="Console"/>
+        	<!--<appender-ref ref="Console"/>-->
             <appender-ref ref="RollingFileInfo"/>
         </root>
     </loggers>
