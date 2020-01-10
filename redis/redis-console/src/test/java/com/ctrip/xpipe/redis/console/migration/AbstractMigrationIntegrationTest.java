@@ -105,7 +105,7 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
         ThreadPoolExecutor threadPool = new ThreadPoolExecutor(maxThreads,
                 maxThreads,
                 120L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(maxThreads),
+                new ArrayBlockingQueue<>(128),
                 XpipeThreadFactory.create(MIGRATION_EXECUTOR),
                 new ThreadPoolExecutor.CallerRunsPolicy());
         //109499

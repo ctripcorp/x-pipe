@@ -18,7 +18,7 @@ public abstract class AbstractService {
     protected static int DEFAULT_MAX_PER_ROUTE = Integer.parseInt(System.getProperty("max-per-route", "1000"));
     protected static int DEFAULT_MAX_TOTAL = Integer.parseInt(System.getProperty("max-per-route", "10000"));
     protected static int DEFAULT_RETRY_TIMES = Integer.parseInt(System.getProperty("retry-times", "1"));
-    protected static int DEFAULT_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "1500"));
+    protected static int DEFAULT_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("connect-timeout", "1000"));
     protected static int DEFAULT_SO_TIMEOUT = Integer.parseInt(System.getProperty("so-timeout", "3000"));
 
     public static int DEFAULT_RETRY_INTERVAL_MILLI = Integer
