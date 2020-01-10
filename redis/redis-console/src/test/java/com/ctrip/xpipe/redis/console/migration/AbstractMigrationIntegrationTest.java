@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImpl;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -38,10 +39,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.Random;
+import java.util.concurrent.*;
 
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
@@ -83,8 +82,7 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
     @Mock
     protected RedisService redisService;
 
-    @Mock
-    protected MigrationCommandBuilder migrationCommandBuilder;
+    protected MigrationCommandBuilder migrationCommandBuilder = new MockMigartionCommandBuilder();;
 
     @Mock
     protected OuterClientService outerClientService;
@@ -103,21 +101,30 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
     public static final int maxThreads = 512;
 
     public ExecutorService getMigrationlExecutor() {
-
+        //63337
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(maxThreads,
+                maxThreads,
+                120L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(maxThreads),
+                XpipeThreadFactory.create(MIGRATION_EXECUTOR),
+                new ThreadPoolExecutor.CallerRunsPolicy());
+        //109499
+//        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(4,
+//                maxThreads,
+//                120L, TimeUnit.SECONDS,
+//                new SynchronousQueue<>(),
+//                XpipeThreadFactory.create(MIGRATION_EXECUTOR),
+//                new ThreadPoolExecutor.CallerRunsPolicy());
+        threadPool.allowCoreThreadTimeOut(true);
         return MoreExecutors.getExitingExecutorService(
-                new ThreadPoolExecutor(4,
-                        maxThreads,
-                        120L, TimeUnit.SECONDS,
-                        new SynchronousQueue<>(),
-                        XpipeThreadFactory.create(MIGRATION_EXECUTOR),
-                        new ThreadPoolExecutor.CallerRunsPolicy()),
-
+                threadPool,
                 AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
     }
 
     @Before
     public void beforeAbstractMigrationIntegrationTest() throws Exception {
         MockitoAnnotations.initMocks(this);
+
         when(configService.ignoreMigrationSystemAvailability()).thenReturn(false);
         when(checker.getResult()).thenReturn(new MigrationSystemAvailableChecker.MigrationSystemAvailability(true, ""));
         when(clusterService.find(anyLong())).thenAnswer(new Answer<ClusterTbl>() {
@@ -233,133 +240,119 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
         return migrationEventTbl;
     }
 
-    protected void mockSuccessCheckCommand(MigrationCommandBuilder migrationCommandBuilder) {
-        when(migrationCommandBuilder.buildDcCheckCommand(anyString(), anyString(), anyString(), anyString()))
-                .thenAnswer(new Answer<Command<MetaServerConsoleService.PrimaryDcCheckMessage>>() {
-                    @Override
-                    public Command<MetaServerConsoleService.PrimaryDcCheckMessage> answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        String cluster = (String) invocationOnMock.getArguments()[0];
-                        String shard = (String) invocationOnMock.getArguments()[1];
-                        String dc = (String) invocationOnMock.getArguments()[2];
-                        String newPrimaryDc = (String) invocationOnMock.getArguments()[3];
-                        return new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
 
-                            @Override
-                            public String getName() {
-                                return String.format("Mocked-CheckSuccess-%s-%s-%s-%s", cluster, shard, dc, newPrimaryDc);
-                            }
+    public static class MockMigartionCommandBuilder extends AbstractService implements MigrationCommandBuilder {
 
-                            @Override
-                            protected void doExecute() throws Exception {
-                                Thread.sleep(randomInt(5, 10));
-//                                logger.info("[doExecute][set result]{}, {}, {}", cluster, shard, future());
-                                future().setSuccess(
-                                        new MetaServerConsoleService.PrimaryDcCheckMessage(MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT.SUCCESS, "Check success"));
-                            }
+        private Random random = new Random();
 
-                            @Override
-                            protected void doReset() {
+        protected int randomInt(int start, int end) {
+            return start + random.nextInt(end - start + 1);
+        }
 
-                            }
-                        };
+        @Override
+        public Command<MetaServerConsoleService.PrimaryDcCheckMessage> buildDcCheckCommand(String cluster, String shard, String dc, String newPrimaryDc) {
+            return new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
+
+                @Override
+                public String getName() {
+                    return String.format("Mocked-CheckSuccess-%s-%s-%s-%s", cluster, shard, dc, newPrimaryDc);
+                }
+
+                @Override
+                protected void doExecute() throws Exception {
+                    Thread.sleep(randomInt(5, 10));
+                    future().setSuccess(
+                            new MetaServerConsoleService.PrimaryDcCheckMessage(MetaServerConsoleService.PRIMARY_DC_CHECK_RESULT.SUCCESS, "Check success"));
+                }
+
+                @Override
+                protected void doReset() {
+
+                }
+            };
+        }
+
+        @Override
+        public Command<MetaServerConsoleService.PreviousPrimaryDcMessage> buildPrevPrimaryDcCommand(String cluster, String shard, String prevPrimaryDc) {
+            return new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+
+                @Override
+                public String getName() {
+                    return String.format("Mocked-CheckSuccess-%s-%s-%s", cluster, shard, prevPrimaryDc);
+                }
+
+                @Override
+                protected void doExecute() throws Exception {
+//                    Thread.sleep(3200);
+                    try {
+                        restTemplate.getForEntity("http://10.0.0.1:8080", Object.class);
+                    } catch (Exception ignore) {
+
                     }
-                });
-    }
+                    future().setSuccess(
+                            new MetaServerConsoleService.PreviousPrimaryDcMessage(new HostPort("127.0.0.1", 6379), null, "Prev success"));
+                }
 
-    protected void mockSuccessPrevPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder) {
-        when(migrationCommandBuilder.buildPrevPrimaryDcCommand(anyString(), anyString(), anyString()))
-                .thenAnswer(new Answer<Command<MetaServerConsoleService.PreviousPrimaryDcMessage>>() {
-                    @Override
-                    public Command<MetaServerConsoleService.PreviousPrimaryDcMessage> answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        String cluster = (String) invocationOnMock.getArguments()[0];
-                        String shard = (String) invocationOnMock.getArguments()[1];
-                        String newPrimaryDc = (String) invocationOnMock.getArguments()[2];
+                @Override
+                protected void doReset() {
 
-                        return new AbstractCommand<MetaServerConsoleService.PreviousPrimaryDcMessage>() {
+                }
+            };
+        }
 
-                            @Override
-                            public String getName() {
-                                return String.format("Mocked-CheckSuccess-%s-%s-%s", cluster, shard, newPrimaryDc);
-                            }
+        @Override
+        public Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildNewPrimaryDcCommand(String cluster, String shard, String newPrimaryDc, MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage) {
+            return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+                @Override
+                public String getName() {
+                    return String.format("Mocked-CheckSuccess-%s-%s-%s", cluster, shard, newPrimaryDc);
+                }
 
-                            @Override
-                            protected void doExecute() throws Exception {
-                                Thread.sleep(randomInt(65, 100));
-//                                logger.info("[doExecute][set result]{}, {}, {}", cluster, shard, future());
-                                future().setSuccess(
-                                        new MetaServerConsoleService.PreviousPrimaryDcMessage(new HostPort("127.0.0.1", 6379), null, "Prev success"));
-                            }
+                @Override
+                protected void doExecute() throws Exception {
+                    Thread.sleep(randomInt(32, 100));
+                    future().setSuccess(
+                            new MetaServerConsoleService.PrimaryDcChangeMessage("New success", "127.0.0.1", randomPort()));
+                }
 
-                            @Override
-                            protected void doReset() {
+                @Override
+                protected void doReset() {
 
-                            }
-                        };
+                }
+            };
+        }
+
+        @Override
+        public Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildOtherDcCommand(String cluster, String shard, String primaryDc, String executeDc) {
+            return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+                @Override
+                public String getName() {
+                    return String.format("Mocked-CheckSuccess-%s-%s-%s", cluster, shard, primaryDc);
+                }
+
+                @Override
+                protected void doExecute() throws Exception {
+//                    Thread.sleep(3200);
+                    try {
+                        restTemplate.getForEntity("http://10.0.0.1:8080", Object.class);
+                    } catch (Exception ignore) {
+
                     }
-                });
-    }
+                    future().setSuccess(
+                            new MetaServerConsoleService.PrimaryDcChangeMessage(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Other success"));
+                }
 
-    protected void mockSuccessNewPrimaryDcCommand(MigrationCommandBuilder migrationCommandBuilder) {
-        when(migrationCommandBuilder.buildNewPrimaryDcCommand(anyString(), anyString(), anyString(), anyObject()))
-                .thenAnswer(new Answer<Command<MetaServerConsoleService.PrimaryDcChangeMessage>>() {
-                    @Override
-                    public Command<MetaServerConsoleService.PrimaryDcChangeMessage> answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        String cluster = (String) invocationOnMock.getArguments()[0];
-                        String shard = (String) invocationOnMock.getArguments()[1];
-                        String newPrimaryDc = (String) invocationOnMock.getArguments()[2];
-                        return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
-                            @Override
-                            public String getName() {
-                                return String.format("Mocked-CheckSuccess-%s-%s-%s", cluster, shard, newPrimaryDc);
-                            }
+                @Override
+                protected void doReset() {
 
-                            @Override
-                            protected void doExecute() throws Exception {
-                                Thread.sleep(randomInt(32, 100));
-//                                logger.info("[doExecute][set result]{}, {}, {}", cluster, shard, future());
-                                future().setSuccess(
-                                        new MetaServerConsoleService.PrimaryDcChangeMessage("New success", "127.0.0.1", randomPort()));
-                            }
+                }
+            };
+        }
 
-                            @Override
-                            protected void doReset() {
-
-                            }
-                        };
-                    }
-                });
-
-    }
-
-    protected void mockSuccessOtherDcCommand(MigrationCommandBuilder migrationCommandBuilder) {
-        when(migrationCommandBuilder.buildOtherDcCommand(anyString(), anyString(), anyString(), anyString()))
-                .thenAnswer(new Answer<Command<MetaServerConsoleService.PrimaryDcChangeMessage>>() {
-                    @Override
-                    public Command<MetaServerConsoleService.PrimaryDcChangeMessage> answer(InvocationOnMock invocationOnMock) throws Throwable {
-                        String cluster = (String) invocationOnMock.getArguments()[0];
-                        String shard = (String) invocationOnMock.getArguments()[1];
-                        String newPrimaryDc = (String) invocationOnMock.getArguments()[2];
-                        return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
-                            @Override
-                            public String getName() {
-                                return String.format("Mocked-CheckSuccess-%s-%s-%s", cluster, shard, newPrimaryDc);
-                            }
-
-                            @Override
-                            protected void doExecute() throws Exception {
-                                Thread.sleep(randomInt(34, 100));
-//                                logger.info("[doExecute][set result]{}, {}, {}", cluster, shard, future());
-                                future().setSuccess(
-                                        new MetaServerConsoleService.PrimaryDcChangeMessage(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Other success"));
-                            }
-
-                            @Override
-                            protected void doReset() {
-
-                            }
-                        };
-                    }
-                });
+        @Override
+        public Command<MetaServerConsoleService.PreviousPrimaryDcMessage> buildRollBackCommand(String cluster, String shard, String prevPrimaryDc) {
+            return null;
+        }
 
     }
 }

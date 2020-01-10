@@ -91,11 +91,6 @@ public class DoMigrationIntegrationTest extends AbstractMigrationIntegrationTest
                 return null;
             }
         }).when(clusterService).updateActivedcId(anyLong(), anyLong());
-
-        mockSuccessCheckCommand(migrationCommandBuilder);
-        mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder);
-        mockSuccessNewPrimaryDcCommand(migrationCommandBuilder);
-        mockSuccessOtherDcCommand(migrationCommandBuilder);
     }
 
     @After
@@ -106,8 +101,10 @@ public class DoMigrationIntegrationTest extends AbstractMigrationIntegrationTest
     @Test
     public void testContinueMigration() throws Exception {
         migrationService.continueMigrationEvent(1000L);
+        long start = System.nanoTime();
         Thread.sleep(1000);
         waitConditionUntilTimeOut(()->migrationService.getMigrationEvent(1000L).isDone(), 30000);
+        logger.warn("[duration] {}", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
     @Test
@@ -121,18 +118,20 @@ public class DoMigrationIntegrationTest extends AbstractMigrationIntegrationTest
                 XpipeThreadFactory.create("http-nio"),
                 new ThreadPoolExecutor.AbortPolicy());
         ((ThreadPoolExecutor) tomcatSimulator).prestartAllCoreThreads();
+        long start = System.nanoTime();
         int clusterNum = 500;
         for (int i = 0; i < clusterNum; i++) {
             int eventId = i;
-//            tomcatSimulator.execute(new Runnable() {
-//                @Override
-//                public void run() {
+            tomcatSimulator.execute(new Runnable() {
+                @Override
+                public void run() {
                     migrationService.continueMigrationEvent(eventId);
-//                }
-//            });
+                }
+            });
         }
-        Thread.sleep(30 * 1000);
+        Thread.sleep(25 * 1000);
         waitConditionUntilTimeOut(()->isAllClusterMigrationDone(0, 500), 5 * 60 * 1000);
+        logger.warn("[duration] {}", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
 
