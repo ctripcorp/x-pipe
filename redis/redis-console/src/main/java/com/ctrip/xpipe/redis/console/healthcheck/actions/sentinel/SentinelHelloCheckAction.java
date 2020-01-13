@@ -36,6 +36,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ClusterService clusterService;
 
+    private long lastStartTime = System.currentTimeMillis();
+
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                                     ExecutorService executors, ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
         super(scheduled, instance, executors);
@@ -96,6 +98,23 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     @Override
+    protected void scheduleTask(int baseInterval) {
+        long checkInterval = getCheckTimeInterval(baseInterval);
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+
+            @Override
+            protected void doRun() {
+                long current = System.currentTimeMillis();
+                if( current - lastStartTime < getIntervalMilli()){
+                    logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
+                    return;
+                }
+                lastStartTime = current;
+                doTask();
+            }
+        }, checkInterval, 10000, TimeUnit.MILLISECONDS);
+    }
+
     protected int getIntervalMilli() {
         return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
     }
