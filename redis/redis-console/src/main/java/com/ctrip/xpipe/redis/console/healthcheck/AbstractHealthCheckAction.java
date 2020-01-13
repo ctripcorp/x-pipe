@@ -25,15 +25,13 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected ScheduledExecutorService scheduled;
 
-    private ScheduledFuture future;
+    protected ScheduledFuture future;
 
     protected ExecutorService executors;
 
     protected static Random random = new Random();
 
     protected static int DELTA = 500;
-
-    private long lastStartTime = System.currentTimeMillis();
 
     public AbstractHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                                      ExecutorService executors) {
@@ -99,21 +97,15 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         return future;
     }
 
-    private void scheduleTask(int baseInterval) {
+    protected void scheduleTask(int baseInterval) {
         long checkInterval = getCheckTimeInterval(baseInterval);
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
             protected void doRun() {
-                long current = System.currentTimeMillis();
-                if( current - lastStartTime < getIntervalMilli()){
-                    logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
-                    return;
-                }
-                lastStartTime = current;
                 doTask();
             }
-        }, checkInterval, 10000, TimeUnit.MILLISECONDS);
+        }, checkInterval, baseInterval, TimeUnit.MILLISECONDS);
     }
 
     protected int getCheckTimeInterval(int baseInterval) {
@@ -124,10 +116,6 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected int getBaseCheckInterval() {
         return instance.getHealthCheckConfig().checkIntervalMilli();
-    }
-
-    protected int getIntervalMilli() {
-        return getBaseCheckInterval();
     }
 
     @VisibleForTesting
