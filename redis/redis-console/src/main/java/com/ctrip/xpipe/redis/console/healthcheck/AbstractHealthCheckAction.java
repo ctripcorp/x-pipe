@@ -33,8 +33,6 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected static int DELTA = 500;
 
-    private long lastStartTime = System.currentTimeMillis();
-
     public AbstractHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                                      ExecutorService executors) {
         this.scheduled = scheduled;
@@ -105,15 +103,9 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
             @Override
             protected void doRun() {
-                long current = System.currentTimeMillis();
-                if( current - lastStartTime < getIntervalMilli()){
-                    logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
-                    return;
-                }
-                lastStartTime = current;
                 doTask();
             }
-        }, checkInterval, 10000, TimeUnit.MILLISECONDS);
+        }, checkInterval, baseInterval, TimeUnit.MILLISECONDS);
     }
 
     protected int getCheckTimeInterval(int baseInterval) {
@@ -124,10 +116,6 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected int getBaseCheckInterval() {
         return instance.getHealthCheckConfig().checkIntervalMilli();
-    }
-
-    protected int getIntervalMilli() {
-        return getBaseCheckInterval();
     }
 
     @VisibleForTesting

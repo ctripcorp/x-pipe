@@ -36,6 +36,10 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ClusterService clusterService;
 
+    private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
+
+    protected long lastStartTime = System.currentTimeMillis();
+
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                                     ExecutorService executors, ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
         super(scheduled, instance, executors);
@@ -76,6 +80,12 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     private boolean shouldStart() {
+        long current = System.currentTimeMillis();
+        if( current - lastStartTime < getIntervalMilli()){
+            logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
+            return false;
+        }
+
         if(getActionInstance().getRedisInstanceInfo().isInActiveDc()) {
             logger.debug("[doTask][BackupDc] do in backup dc only, quit");
             return false;
@@ -96,6 +106,10 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     @Override
+    protected int getBaseCheckInterval() {
+        return SENTINEL_CHECK_BASE_INTERVAL;
+    }
+
     protected int getIntervalMilli() {
         return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
     }
