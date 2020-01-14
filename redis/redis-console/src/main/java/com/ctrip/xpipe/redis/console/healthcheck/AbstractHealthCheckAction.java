@@ -25,7 +25,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected ScheduledExecutorService scheduled;
 
-    protected ScheduledFuture future;
+    private ScheduledFuture future;
 
     protected ExecutorService executors;
 
@@ -97,7 +97,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         return future;
     }
 
-    protected void scheduleTask(int baseInterval) {
+    private void scheduleTask(int baseInterval) {
         long checkInterval = getCheckTimeInterval(baseInterval);
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
