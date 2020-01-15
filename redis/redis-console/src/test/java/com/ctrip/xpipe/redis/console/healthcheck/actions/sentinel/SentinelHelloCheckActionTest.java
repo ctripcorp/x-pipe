@@ -120,6 +120,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
     public void testDoScheduleTask() {
         action = spy(action);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
+        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
         sleep(30);
         verify(action, times(1)).processSentinelHellos();
@@ -157,6 +158,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
             }
         });
         Assert.assertEquals(1, action.getListeners().size());
+        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() > 0, 500);
         sleep(SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 100);

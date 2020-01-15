@@ -36,7 +36,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ClusterService clusterService;
 
-    private long lastStartTime = System.currentTimeMillis();
+    private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
+
+    protected long lastStartTime = System.currentTimeMillis();
 
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                                     ExecutorService executors, ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
@@ -78,6 +80,12 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     private boolean shouldStart() {
+        long current = System.currentTimeMillis();
+        if( current - lastStartTime < getIntervalMilli()){
+            logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
+            return false;
+        }
+
         if(getActionInstance().getRedisInstanceInfo().isInActiveDc()) {
             logger.debug("[doTask][BackupDc] do in backup dc only, quit");
             return false;
@@ -98,21 +106,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     @Override
-    protected void scheduleTask(int baseInterval) {
-        long checkInterval = getCheckTimeInterval(baseInterval);
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() {
-                long current = System.currentTimeMillis();
-                if( current - lastStartTime < getIntervalMilli()){
-                    logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
-                    return;
-                }
-                lastStartTime = current;
-                doTask();
-            }
-        }, checkInterval, 10000, TimeUnit.MILLISECONDS);
+    protected int getBaseCheckInterval() {
+        return SENTINEL_CHECK_BASE_INTERVAL;
     }
 
     protected int getIntervalMilli() {
