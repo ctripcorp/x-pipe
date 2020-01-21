@@ -159,5 +159,10 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
         verifyNoMoreInteractions(command);
     }
 
+    @Test
+    public void testSequenceWithConcurrency() {
+
+    }
+
 
 }

@@ -25,7 +25,7 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     private Executor executors;
 
-    private Queue<Command<?>> tasks = new ConcurrentLinkedQueue<>();
+    protected Queue<Command<?>> tasks = new ConcurrentLinkedQueue<>();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
