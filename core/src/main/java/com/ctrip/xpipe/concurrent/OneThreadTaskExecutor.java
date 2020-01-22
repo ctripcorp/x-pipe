@@ -25,6 +25,8 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     private Executor executors;
 
+    private Command<?> currentCommand;
+
     protected Queue<Command<?>> tasks = new ConcurrentLinkedQueue<>();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -84,12 +86,13 @@ public class OneThreadTaskExecutor implements Destroyable {
             }
 
             Command retryCommand = retryCommand(command);
+            currentCommand = retryCommand;
 
             logger.info("[doRun][begin]{}", command);
-            retryCommand.execute().addListener(new CommandFutureListener() {
+            retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
                 public void operationComplete(CommandFuture commandFuture) throws Exception {
-
+                    currentCommand = null;
                     if (!isRunning.compareAndSet(true, false)) {
                         logger.error("[doRun][already exit]");
                     }
@@ -102,13 +105,18 @@ public class OneThreadTaskExecutor implements Destroyable {
                     doExecute();
                 }
             });
+            retryCommand.execute();
         }
 
-        private Command retryCommand(Command<?> command) throws Exception {
-            return retryCommandFactory.createRetryCommand(command);
+    }
 
-        }
+    protected Command retryCommand(Command<?> command) throws Exception {
+        return retryCommandFactory.createRetryCommand(command);
 
+    }
+
+    protected Command<?> getCurrentCommand() {
+        return currentCommand;
     }
 
     @Override

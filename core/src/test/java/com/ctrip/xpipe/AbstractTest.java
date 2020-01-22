@@ -2,6 +2,7 @@ package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
@@ -40,6 +41,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -746,5 +748,59 @@ public class AbstractTest {
     }
 
     protected void doAfterAbstractTest() throws Exception {
+    }
+
+    public static class BlockingCommand extends AbstractCommand<Void> {
+
+        private int sleepTime;
+
+        public BlockingCommand(int sleepTime) {
+            this.sleepTime = sleepTime;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+            Thread.sleep(sleepTime);
+            future().setSuccess();
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
+    }
+
+    public static class CountingCommand extends AbstractCommand<Void> {
+
+        private AtomicInteger counter;
+
+        private int sleepTime;
+
+        public CountingCommand(AtomicInteger counter, int sleepTime) {
+            this.counter = counter;
+            this.sleepTime = sleepTime;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+            Thread.sleep(sleepTime);
+            counter.incrementAndGet();
+            future().setSuccess();
+        }
+
+        @Override
+        protected void doReset() {
+            counter.decrementAndGet();
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
     }
 }

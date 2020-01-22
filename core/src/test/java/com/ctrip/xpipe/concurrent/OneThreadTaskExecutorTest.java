@@ -43,7 +43,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
 
     @Test
     public void testStart() {
-
+        when(command.future()).thenReturn(new DefaultCommandFuture<>());
         oneThreadTaskExecutor.executeCommand(command);
         sleep(50);
         verify(command).execute();
@@ -157,11 +157,6 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
         logger.info("[testClose][sleep verify no more interactions]");
         sleep(100);
         verifyNoMoreInteractions(command);
-    }
-
-    @Test
-    public void testSequenceWithConcurrency() {
-
     }
 
 
