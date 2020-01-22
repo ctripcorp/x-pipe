@@ -39,6 +39,7 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	private int retryTimes = 1;
 	protected ScheduledExecutorService scheduled;
 	protected Executor executors;
+	private CommandFuture<Object> commandChainFuture = null;
 
 	public AbstractRedisesSlaveofJob(List<RedisMeta> slaves, String masterHost, int masterPort, SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool, ScheduledExecutorService scheduled, Executor executors){
 		this.redises = new LinkedList<>(slaves);
@@ -63,7 +64,8 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 			commandChain.add(backupCommand);
 		}
 
-		commandChain.execute().addListener(new CommandFutureListener<Object>() {
+		commandChainFuture = commandChain.execute();
+		commandChainFuture.addListener(new CommandFutureListener<Object>() {
 			
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -86,7 +88,9 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 			
 			@Override
 			public boolean retry(Throwable th) {
-				
+				if (future().isDone()) {
+					return false;
+				}
 				Throwable rootCause = ExceptionUtils.getRootCause(th); 
 				if(rootCause instanceof RedisError){
 					logger.info("[retry][do not retry, because redis error]{}", rootCause.getMessage());
@@ -98,6 +102,13 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	}
 
 	protected abstract Command<?> createSlaveOfCommand(SimpleObjectPool<NettyClient> clientPool, String masterHost, int masterPort);
+
+	@Override
+	protected void doCancel() {
+		if (null != commandChainFuture && !commandChainFuture.isDone()) {
+			commandChainFuture.cancel(true);
+		}
+	}
 
 	@Override
 	protected void doReset(){
