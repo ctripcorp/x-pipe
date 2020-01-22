@@ -82,11 +82,15 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
         Command<?> current = getCurrentCommand();
         if (current != null && !current.future().isDone()) {
             try {
+<<<<<<< HEAD
                 synchronized (current.future()) {
                     if (!current.future().isDone()) {
                         current.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][cancel running command]"));
                     }
                 }
+=======
+                current.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][cancel running command]"));
+>>>>>>> 06e46c7df3cc9b1f03b6efac409b6ebdc16210df
             } catch (Exception e) {
                 logger.error("[clear][cancel running commands]", e);
             }
@@ -97,11 +101,15 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
         commands.forEach(task -> {
             try {
                 if (!task.future().isDone()) {
+<<<<<<< HEAD
                     synchronized (task.future()) {
                         if (!task.future().isDone()) {
                             task.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][drop]"));
                         }
                     }
+=======
+                    task.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][drop]"));
+>>>>>>> 06e46c7df3cc9b1f03b6efac409b6ebdc16210df
                 }
             } catch (Exception e) {
                 logger.error("[clear][cancel queued commands]", e);
