@@ -74,7 +74,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DomainValidateFilterTest.class,
 	CausalCommandTest.class,
 	CausalChainTest.class,
-	MutexableOneThreadTaskExecutorTest.class
+	MutexableOneThreadTaskExecutorTest.class,
+	KeyedOneThreadMutexableTaskExecutorTest.class
 })
 public class AllTests {
 
