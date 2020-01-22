@@ -40,16 +40,19 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
 
     @SuppressWarnings("unchecked")
     public void clearAndExecuteCommand(Command<?> command) {
-        logger.warn("[mutexExecuteCommand] {}", command);
-        blockOn(command);
+        logger.info("[mutexExecuteCommand] {}", command);
+        clearAndBlockOn(command);
         command.future().addListener((CommandFutureListener) commandFuture -> {
             unblock();
         });
         super.executeCommand(command);
     }
 
+    protected Command<?> retryCommand(Command<?> command) {
+        return command;
+    }
 
-    private void blockOn(Command<?> command) {
+    private void clearAndBlockOn(Command<?> command) {
         synchronized (this) {
             if (!tryBlock(command)) {
                 return;
@@ -60,7 +63,7 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
 
     private boolean tryBlock(Command<?> command) {
         if(!reference.compareAndSet(null, command)) {
-            logger.warn("[failure] command already exist");
+            logger.warn("[tryBlock] command already exist");
             return false;
         }
         return true;
@@ -71,14 +74,38 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
     }
 
     private void clear() {
-        List<Command<?>> commands = Lists.newArrayList(tasks);
-        tasks.clear();
+        List<Command<?>> commands = null;
+        synchronized (this) {
+            commands = Lists.newArrayList(tasks);
+            tasks.clear();
+        }
         Command<?> current = getCurrentCommand();
-        if (current != null) {
-            current.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][cancel running command]"));
+        if (current != null && !current.future().isDone()) {
+            try {
+                synchronized (current.future()) {
+                    if (!current.future().isDone()) {
+                        current.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][cancel running command]"));
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("[clear][cancel running commands]", e);
+            }
+        }
+        if (commands.isEmpty()) {
+            return;
         }
         commands.forEach(task -> {
-            task.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][drop]"));
+            try {
+                if (!task.future().isDone()) {
+                    synchronized (task.future()) {
+                        if (!task.future().isDone()) {
+                            task.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][drop]"));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("[clear][cancel queued commands]", e);
+            }
         });
     }
 
