@@ -7,12 +7,14 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.RetryCommandFactory;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.verification.AtLeast;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Queue;
 import java.util.concurrent.*;
@@ -37,6 +39,11 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
     public void beforeMutexableOneThreadTaskExecutorTest() {
         MockitoAnnotations.initMocks(this);
         oneThreadTaskExecutor = new MutexableOneThreadTaskExecutor(executors);
+    }
+
+    @After
+    public void afterMutexableOneThreadTaskExecutorTest() {
+        executors.shutdownNow();
     }
 
     @Test
@@ -116,8 +123,13 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                         e.printStackTrace();
                     }
                     StateCommand command = new StateCommand("not-expected", state, counter);
-                    command.future().addListener(commandFuture -> {taskDone.incrementAndGet();});
-                    oneThreadTaskExecutor.executeCommand(command);
+                    command.future().addListener(commandFuture -> {
+                        taskDone.incrementAndGet();});
+                    try {
+                        oneThreadTaskExecutor.executeCommand(command);
+                    } catch (IllegalStateException e) {
+                        taskDone.incrementAndGet();
+                    }
                 }
             });
         }
@@ -131,16 +143,129 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                 } catch (BrokenBarrierException e) {
                     e.printStackTrace();
                 }
-                sleep(10);
+                sleep(30);
+                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
                 oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
             }
         });
         sleep(200);
         waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1000);
+        waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 1000);
         Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
         Assert.assertEquals("expected", state.get());
         Assert.assertTrue(counter.get() > 1);
-        logger.info("[task done]", taskDone);
+        logger.info("[task done]{}", taskDone);
+    }
+
+    @Test
+    public void durableCall() throws TimeoutException, InterruptedException {
+        AtomicReference<String> state = new AtomicReference<>();
+        AtomicInteger taskDone = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger();
+        int taskNum = 100;
+        CyclicBarrier barrier = new CyclicBarrier(taskNum + 1);
+        for (int i = 0; i < taskNum; i++) {
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        barrier.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (BrokenBarrierException e) {
+                        e.printStackTrace();
+                    }
+                    StateCommand command = new StateCommand("not-expected", state, counter);
+                    command.future().addListener(commandFuture -> {
+                        taskDone.incrementAndGet();});
+                    try {
+                        oneThreadTaskExecutor.executeCommand(command);
+                    } catch (IllegalStateException e) {
+                        taskDone.incrementAndGet();
+                    }
+                }
+            });
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    barrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+                sleep(10);
+                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
+                latch.countDown();
+            }
+        });
+        latch.await();
+        sleep(50);
+        oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected-2", state, counter));
+        sleep(200);
+        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1000);
+        waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 1000);
+        Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
+        Assert.assertEquals("expected-2", state.get());
+        Assert.assertTrue(counter.get() > 1);
+        logger.info("[task done]{}", taskDone);
+    }
+
+//    @Test
+    public void durableCall2() throws TimeoutException, InterruptedException {
+        AtomicReference<String> state = new AtomicReference<>();
+        AtomicInteger taskDone = new AtomicInteger();
+        AtomicInteger counter = new AtomicInteger();
+        int taskNum = 100;
+        CyclicBarrier barrier = new CyclicBarrier(taskNum);
+        CountDownLatch latch = new CountDownLatch(taskNum);
+        for (int i = 0; i < taskNum; i++) {
+            int finalI = i;
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        barrier.await();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (BrokenBarrierException e) {
+                        e.printStackTrace();
+                    }
+
+                    StateCommand command = new StateCommand("expected-" + finalI, state, counter);
+                    command.future().addListener(commandFuture -> {
+//                        logger.info("[task done] {}", command.expected);
+                        taskDone.incrementAndGet();
+                    });
+
+                    oneThreadTaskExecutor.clearAndExecuteCommand(command);
+
+                    latch.countDown();
+
+                }
+            });
+        }
+
+        latch.await();
+        sleep(300);
+        oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
+        sleep(200);
+        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1000);
+        try {
+            waitConditionUntilTimeOut(()->taskDone.get() >= taskNum, 10000);
+        } catch (Exception ignore) {
+            logger.error("[taskDone] {}", taskDone, ignore);
+            throw ignore;
+        }
+
+        Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
+        Assert.assertEquals("expected", state.get());
+        Assert.assertTrue(counter.get() > 1);
+        logger.info("[task done]{}", taskDone);
     }
 
     @Test
@@ -194,20 +319,6 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
 
             Assert.assertTrue(current > previous);
             previous = current;
-        }
-    }
-
-    @Test
-    public void testStartMtimes() {
-
-        int times = 50;
-        CommandFuture<Void> future = new DefaultCommandFuture<>();
-        when(command.execute()).thenReturn(future);
-        future.setSuccess();
-        for (int i = 0; i < times; i++) {
-            oneThreadTaskExecutor.executeCommand(command);
-            sleep(30);
-            verify(command, times(i + 1)).execute();
         }
     }
 

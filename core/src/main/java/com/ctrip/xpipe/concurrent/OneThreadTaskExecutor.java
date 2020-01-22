@@ -71,8 +71,10 @@ public class OneThreadTaskExecutor implements Destroyable {
                 logger.debug("[doRun][already run]{}", this);
                 return;
             }
-
-            Command<?> command = tasks.poll();
+            Command<?> command = null;
+            synchronized (this) {
+                command = tasks.poll();
+            }
             if (command == null) {
                 isRunning.compareAndSet(true, false);
                 logger.debug("[no command][exit]{}", OneThreadTaskExecutor.this);
@@ -89,6 +91,7 @@ public class OneThreadTaskExecutor implements Destroyable {
             currentCommand = retryCommand;
 
             logger.info("[doRun][begin]{}", command);
+            Command<?> finalCommand = command;
             retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
                 public void operationComplete(CommandFuture commandFuture) throws Exception {
@@ -98,9 +101,9 @@ public class OneThreadTaskExecutor implements Destroyable {
                     }
 
                     if(commandFuture.isSuccess()){
-                        logger.info("[doRun][ end ][succeed]{}", command);
+                        logger.info("[doRun][ end ][succeed]{}", finalCommand);
                     }else {
-                        logger.error("[doRun][ end ][fail]" + command, commandFuture.cause());
+                        logger.error("[doRun][ end ][fail]" + finalCommand, commandFuture.cause());
                     }
                     doExecute();
                 }
