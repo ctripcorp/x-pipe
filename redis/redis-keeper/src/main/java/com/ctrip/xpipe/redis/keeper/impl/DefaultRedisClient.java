@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.sun.org.apache.bcel.internal.generic.BREAKPOINT;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -144,6 +145,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 						redisClientProtocol = new SimpleStringParser();
 					}
 					commandState = COMMAND_STATE.READ_COMMANDS;
+					break;
 				case READ_COMMANDS:
 					RedisClientProtocol<?> resultParser = redisClientProtocol.read(byteBuf);
 					if(resultParser == null){
