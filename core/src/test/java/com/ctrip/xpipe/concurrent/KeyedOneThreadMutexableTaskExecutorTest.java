@@ -17,8 +17,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>
@@ -31,7 +29,7 @@ public class KeyedOneThreadMutexableTaskExecutorTest extends AbstractTest {
 
     @Before
     public void beforeKeyedOneThreadMutexableTaskExecutorTest(){
-        keyed = new KeyedOneThreadMutexableTaskExecutor<>(executors);
+        keyed = new KeyedOneThreadMutexableTaskExecutor<>(executors, scheduled);
     }
 
     @Test
@@ -55,7 +53,7 @@ public class KeyedOneThreadMutexableTaskExecutorTest extends AbstractTest {
         try{
 
             executorService = Executors.newFixedThreadPool(threadCount, XpipeThreadFactory.create("test-hang"));
-            keyed = new KeyedOneThreadMutexableTaskExecutor<>(executorService);
+            keyed = new KeyedOneThreadMutexableTaskExecutor<>(executorService, scheduled);
 
             AtomicInteger completeCount = new AtomicInteger();
 

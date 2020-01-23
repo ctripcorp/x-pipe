@@ -1,6 +1,7 @@
 package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -750,9 +751,11 @@ public class AbstractTest {
     protected void doAfterAbstractTest() throws Exception {
     }
 
-    public static class BlockingCommand extends AbstractCommand<Void> {
+    public static class BlockingCommand extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
         private int sleepTime;
+
+        private int timeout;
 
         public BlockingCommand(int sleepTime) {
             this.sleepTime = sleepTime;
@@ -773,13 +776,25 @@ public class AbstractTest {
         public String getName() {
             return getClass().getSimpleName();
         }
+
+        @Override
+        public int getCommandTimeoutMilli() {
+            return timeout;
+        }
+
+        public BlockingCommand setTimeout(int timeout) {
+            this.timeout = timeout;
+            return this;
+        }
     }
 
-    public static class CountingCommand extends AbstractCommand<Void> {
+    public static class CountingCommand extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
         private AtomicInteger counter;
 
         private int sleepTime;
+
+        private int timeout;
 
         public CountingCommand(AtomicInteger counter, int sleepTime) {
             this.counter = counter;
@@ -801,6 +816,16 @@ public class AbstractTest {
         @Override
         public String getName() {
             return getClass().getSimpleName();
+        }
+
+        @Override
+        public int getCommandTimeoutMilli() {
+            return timeout;
+        }
+
+        public CountingCommand setTimeout(int timeout) {
+            this.timeout = timeout;
+            return this;
         }
     }
 }

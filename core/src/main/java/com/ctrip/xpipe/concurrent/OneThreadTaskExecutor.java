@@ -48,7 +48,10 @@ public class OneThreadTaskExecutor implements Destroyable {
     public void executeCommand(Command<?> command) {
 
         logger.debug("[executeCommand][offer it in pool]{}", command);
-        boolean offer = tasks.offer(command);
+        boolean offer = false;
+        synchronized (this) {
+            offer = tasks.offer(command);
+        }
         if (!offer) {
             throw new IllegalStateException("pool full:" + tasks.size());
         }

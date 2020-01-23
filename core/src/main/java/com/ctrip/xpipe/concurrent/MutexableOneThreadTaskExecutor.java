@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.concurrent;
 
 import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.command.RetryCommandFactory;
+import com.ctrip.xpipe.api.command.RequestResponseCommand;
+import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.exception.CommandNotExecuteException;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
@@ -19,58 +18,32 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
 
-    private AtomicReference<Command<?>> reference = new AtomicReference<>(null);
+    private ScheduledExecutorService scheduled;
 
-    public MutexableOneThreadTaskExecutor(Executor executors) {
+    public MutexableOneThreadTaskExecutor(Executor executors, ScheduledExecutorService scheduled) {
         super(executors);
+        this.scheduled = scheduled;
     }
 
-    public MutexableOneThreadTaskExecutor(RetryCommandFactory<?> retryCommandFactory, Executor executors) {
-        super(retryCommandFactory, executors);
-    }
-
+    @Override
     public void executeCommand(Command<?> command) {
-        synchronized (this) {
-            if (reference.get() != null) {
-                throw new IllegalStateException("[MutexableOneThreadTaskExecutor] blocking mode, not accept commands");
-            }
+        if (command instanceof RequestResponseCommand) {
+            super.executeCommand(command);
+        } else {
+            throw new IllegalArgumentException("Only timeout enabled command is allowed");
         }
-        super.executeCommand(command);
     }
+
 
     @SuppressWarnings("unchecked")
-    public void clearAndExecuteCommand(Command<?> command) {
-        logger.info("[mutexExecuteCommand] {}", command);
-        clearAndBlockOn(command);
-        command.future().addListener((CommandFutureListener) commandFuture -> {
-            unblock();
-        });
+    public void clearAndExecuteCommand(RequestResponseCommand<?> command) {
+        logger.info("[clearAndExecuteCommand] {}", command);
+        clear();
         super.executeCommand(command);
     }
 
     protected Command<?> retryCommand(Command<?> command) {
         return command;
-    }
-
-    private void clearAndBlockOn(Command<?> command) {
-        synchronized (this) {
-            if (!tryBlock(command)) {
-                return;
-            }
-        }
-        clear();
-    }
-
-    private boolean tryBlock(Command<?> command) {
-        if(!reference.compareAndSet(null, command)) {
-            logger.warn("[tryBlock] command already exist");
-            return false;
-        }
-        return true;
-    }
-
-    private void unblock() {
-        reference.set(null);
     }
 
     private void clear() {
@@ -79,26 +52,16 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
             commands = Lists.newArrayList(tasks);
             tasks.clear();
         }
-        Command<?> current = getCurrentCommand();
-        if (current != null && !current.future().isDone()) {
-            try {
-                synchronized (current.future()) {
-                    if (!current.future().isDone()) {
-                        current.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][cancel running command]"));
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("[clear][cancel running commands]", e);
-            }
-        }
+        waitForCurrentTask();
         if (commands.isEmpty()) {
             return;
         }
         commands.forEach(task -> {
             try {
                 if (!task.future().isDone()) {
-                    synchronized (task.future()) {
+                    synchronized (this) {
                         if (!task.future().isDone()) {
+                            logger.warn("[CLEAR] {}", task.getName());
                             task.future().setFailure(new CommandNotExecuteException("[OneThreadExecutor][drop]"));
                         }
                     }
@@ -107,6 +70,32 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
                 logger.error("[clear][cancel queued commands]", e);
             }
         });
+    }
+
+    private void waitForCurrentTask() {
+        RequestResponseCommand<?> current = (RequestResponseCommand<?>) getCurrentCommand();
+        if (current != null && !current.future().isDone()) {
+            scheduled.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    cancelLongTermRunningTask(current);
+                }
+            }, current.getCommandTimeoutMilli(), TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void cancelLongTermRunningTask(RequestResponseCommand<?> command) {
+        if (command != null && !command.future().isDone()) {
+            try {
+                synchronized (command.future()) {
+                    if (!command.future().isDone()) {
+                        command.future().setFailure(new CommandTimeoutException("[OneThreadExecutor][too long time][cancel running command]"));
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("[clear][cancel running commands]", e);
+            }
+        }
     }
 
 }

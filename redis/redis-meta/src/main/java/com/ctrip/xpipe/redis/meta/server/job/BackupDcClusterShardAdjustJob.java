@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -19,8 +20,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> {
+public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
     private String cluster;
 
@@ -114,9 +116,9 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> {
                 boolean change = false;
                 RoleCommand roleCommand = new RoleCommand(
                         pool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort())),
-                        500,
+                        200,
                         false, scheduled);
-                Role role = roleCommand.execute().get();
+                Role role = roleCommand.execute().get(200, TimeUnit.MILLISECONDS);
 
                 if (role.getServerRole() == Server.SERVER_ROLE.MASTER) {
                     change = true;
@@ -141,4 +143,8 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> {
         return redisesNeedChange;
     }
 
+    @Override
+    public int getCommandTimeoutMilli() {
+        return 1000;
+    }
 }

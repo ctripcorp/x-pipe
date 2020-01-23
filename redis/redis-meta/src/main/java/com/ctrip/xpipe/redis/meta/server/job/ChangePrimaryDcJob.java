@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 
-public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage> {
+public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>
+        implements RequestResponseCommand<MetaServerConsoleService.PrimaryDcChangeMessage> {
 
     private ChangePrimaryDcAction action;
 
@@ -28,7 +30,13 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     @Override
     protected void doExecute() throws Exception {
-        future().setSuccess(action.changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo));
+        try {
+            MetaServerConsoleService.PrimaryDcChangeMessage result = action
+                    .changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo);
+            future().setSuccess(result);
+        } catch (Exception e) {
+            future().setFailure(e);
+        }
     }
 
     @Override
@@ -41,4 +49,8 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
         return getClass().getSimpleName();
     }
 
+    @Override
+    public int getCommandTimeoutMilli() {
+        return 2000;
+    }
 }

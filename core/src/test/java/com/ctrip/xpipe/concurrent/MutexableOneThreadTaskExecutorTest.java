@@ -3,10 +3,13 @@ package com.ctrip.xpipe.concurrent;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.command.DefaultCommandFuture;
-import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
-import com.ctrip.xpipe.command.RetryCommandFactory;
+import com.ctrip.xpipe.api.command.RequestResponseCommand;
+import com.ctrip.xpipe.command.*;
+import com.ctrip.xpipe.exception.CommandNotExecuteException;
+import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
+import com.google.common.collect.Lists;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,8 +17,8 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.verification.AtLeast;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,12 +36,12 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
     private MutexableOneThreadTaskExecutor oneThreadTaskExecutor;
 
     @Mock
-    private Command<Void> command;
+    private RequestResponseCommand<Void> command;
 
     @Before
     public void beforeMutexableOneThreadTaskExecutorTest() {
         MockitoAnnotations.initMocks(this);
-        oneThreadTaskExecutor = new MutexableOneThreadTaskExecutor(executors);
+        oneThreadTaskExecutor = new MutexableOneThreadTaskExecutor(executors, scheduled);
     }
 
     @After
@@ -86,8 +89,8 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         Assert.assertEquals(1 + taskNum, counter.get());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testNotAcceptCommandDuringBlocking() throws Exception {
+    @Test
+    public void testAcceptCommandAfterClearAndExecute() throws Exception {
         Command command = new BlockingCommand(10 * 1000);
         oneThreadTaskExecutor.executeCommand(command);
         int taskNum = 100;
@@ -101,7 +104,34 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         }
         waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 2000);
         sleep(50);
-        Assert.assertTrue(1 + taskNum > counter.get());
+        Assert.assertEquals(1 + taskNum, counter.get());
+    }
+
+    @Test
+    public void testCommandHangWontImpact() throws TimeoutException {
+        BlockingCommand blockingCommand = new BlockingCommand(100).setTimeout(200);
+        CommandFuture future = blockingCommand.future();
+        oneThreadTaskExecutor.executeCommand(blockingCommand);
+        sleep(5);
+        oneThreadTaskExecutor.clearAndExecuteCommand(new CountingCommand(new AtomicInteger(), 1));
+        sleep(20);
+        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1500);
+        Assert.assertTrue(future.isSuccess());
+    }
+
+    @Test
+    public void testLongTermRunningTaskCanceled() throws Exception {
+        BlockingCommand longTermTask = new BlockingCommand(2000).setTimeout(200);
+        CommandFuture future = longTermTask.future();
+        oneThreadTaskExecutor.executeCommand(longTermTask);
+        sleep(5);
+        CountingCommand shouldExecute = new CountingCommand(new AtomicInteger(), 1);
+        oneThreadTaskExecutor.clearAndExecuteCommand(shouldExecute);
+        sleep(300);
+        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 3000);
+        Assert.assertFalse(future.isSuccess());
+        Assert.assertTrue(future.cause() instanceof CommandTimeoutException);
+        Assert.assertTrue(shouldExecute.future().isSuccess());
     }
 
     @Test
@@ -112,6 +142,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         int taskNum = 100;
         CyclicBarrier barrier = new CyclicBarrier(taskNum + 1);
         for (int i = 0; i < taskNum; i++) {
+            int finalI = i;
             executors.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -122,7 +153,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                     } catch (BrokenBarrierException e) {
                         e.printStackTrace();
                     }
-                    StateCommand command = new StateCommand("not-expected", state, counter);
+                    StateCommand command = new StateCommand("not-expected", state, finalI);
                     command.future().addListener(commandFuture -> {
                         taskDone.incrementAndGet();});
                     try {
@@ -144,8 +175,8 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                     e.printStackTrace();
                 }
                 sleep(30);
-                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
-                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
+                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 1));
+                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 1));
             }
         });
         sleep(200);
@@ -153,7 +184,6 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 1000);
         Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
         Assert.assertEquals("expected", state.get());
-        Assert.assertTrue(counter.get() > 1);
         logger.info("[task done]{}", taskDone);
     }
 
@@ -165,6 +195,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         int taskNum = 100;
         CyclicBarrier barrier = new CyclicBarrier(taskNum + 1);
         for (int i = 0; i < taskNum; i++) {
+            int finalI = i;
             executors.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -175,7 +206,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                     } catch (BrokenBarrierException e) {
                         e.printStackTrace();
                     }
-                    StateCommand command = new StateCommand("not-expected", state, counter);
+                    StateCommand command = new StateCommand("not-expected", state, finalI);
                     command.future().addListener(commandFuture -> {
                         taskDone.incrementAndGet();});
                     try {
@@ -199,23 +230,22 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                     e.printStackTrace();
                 }
                 sleep(10);
-                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
+                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 1));
                 latch.countDown();
             }
         });
         latch.await();
         sleep(50);
-        oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected-2", state, counter));
+        oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected-2", state, 2));
         sleep(200);
         waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1000);
         waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 1000);
         Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
         Assert.assertEquals("expected-2", state.get());
-        Assert.assertTrue(counter.get() > 1);
         logger.info("[task done]{}", taskDone);
     }
 
-//    @Test
+    @Test
     public void durableCall2() throws TimeoutException, InterruptedException {
         AtomicReference<String> state = new AtomicReference<>();
         AtomicInteger taskDone = new AtomicInteger();
@@ -223,6 +253,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         int taskNum = 100;
         CyclicBarrier barrier = new CyclicBarrier(taskNum);
         CountDownLatch latch = new CountDownLatch(taskNum);
+        List<CommandFuture> futures = Lists.newCopyOnWriteArrayList();
         for (int i = 0; i < taskNum; i++) {
             int finalI = i;
             executors.execute(new Runnable() {
@@ -236,7 +267,8 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                         e.printStackTrace();
                     }
 
-                    StateCommand command = new StateCommand("expected-" + finalI, state, counter);
+                    StateCommand command = new StateCommand("expected-" + finalI, state, finalI);
+                    futures.add(command.future());
                     command.future().addListener(commandFuture -> {
 //                        logger.info("[task done] {}", command.expected);
                         taskDone.incrementAndGet();
@@ -252,19 +284,23 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
 
         latch.await();
         sleep(300);
-        oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, counter));
+        oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 12345));
         sleep(200);
         waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1000);
         try {
             waitConditionUntilTimeOut(()->taskDone.get() >= taskNum, 10000);
         } catch (Exception ignore) {
+            for (CommandFuture future : futures) {
+                if (!future.isDone()) {
+                    logger.error("[NOT DONE] {}", future.command().getName());
+                }
+            }
             logger.error("[taskDone] {}", taskDone, ignore);
             throw ignore;
         }
 
         Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
         Assert.assertEquals("expected", state.get());
-        Assert.assertTrue(counter.get() > 1);
         logger.info("[task done]{}", taskDone);
     }
 
@@ -284,10 +320,15 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             int finalI = i;
-            oneThreadTaskExecutor.executeCommand(new AbstractCommand<Object>() {
+            oneThreadTaskExecutor.executeCommand(new AbstractRequestResponseCommand<Object>() {
 
                 @Override
-                protected void doExecute() throws Exception {
+                public int getCommandTimeoutMilli() {
+                    return 10;
+                }
+
+                @Override
+                protected void doExecute()  {
                     try{
                         logger.debug("{}", this);
                         list.offer(finalI);
@@ -349,15 +390,15 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         verifyNoMoreInteractions(command);
     }
 
-    public static class StateCommand extends AbstractCommand<Void> {
+    public static class StateCommand extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
         private String expected;
 
         private AtomicReference<String> state;
 
-        private AtomicInteger counter;
+        private int counter;
 
-        public StateCommand(String expected, AtomicReference<String> state, AtomicInteger counter) {
+        public StateCommand(String expected, AtomicReference<String> state, int counter) {
             this.expected = expected;
             this.state = state;
             this.counter = counter;
@@ -365,7 +406,6 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
 
         @Override
         protected void doExecute() throws Exception {
-            counter.incrementAndGet();
             state.set(expected);
             future().setSuccess();
         }
@@ -377,8 +417,16 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
 
         @Override
         public String getName() {
-            return getClass().getSimpleName();
+            return getClass().getSimpleName() + counter;
+        }
+
+        @Override
+        public int getCommandTimeoutMilli() {
+            return 10;
         }
     }
 
+    public static abstract class AbstractRequestResponseCommand<V> extends AbstractCommand<V> implements RequestResponseCommand<V> {
+
+    }
 }

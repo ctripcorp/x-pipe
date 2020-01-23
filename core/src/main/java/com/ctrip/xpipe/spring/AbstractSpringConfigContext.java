@@ -2,7 +2,6 @@ package com.ctrip.xpipe.spring;
 
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
-import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -68,12 +67,6 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 		DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(GLOBAL_EXECUTOR, corePoolSize, maxPoolSize,
 				new ThreadPoolExecutor.AbortPolicy());
 		return executorFactory.createExecutorService();
-	}
-
-	@Bean(name = CLUSTER_SHARD_ADJUST_EXECUTOR)
-	public KeyedOneThreadMutexableTaskExecutor<Pair<String, String> > getClusterShardAdjustExecutor(
-			@Qualifier(GLOBAL_EXECUTOR) ExecutorService executors) {
-		return new KeyedOneThreadMutexableTaskExecutor<>(executors);
 	}
 
 	@Bean
