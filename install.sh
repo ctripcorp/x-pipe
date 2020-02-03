@@ -81,5 +81,8 @@ for _Version in `ls org/unidal/maven/plugins/plexus-maven-plugin`; do
 	mvn install:install-file -Dfile=org/unidal/maven/plugins/plexus-maven-plugin/$_Version/plexus-maven-plugin-$_Version.jar -DpomFile=org/unidal/maven/plugins/plexus-maven-plugin/$_Version/plexus-maven-plugin-$_Version.pom
 done
 
+for _Version in `ls org/unidal/framework/test-framework`; do
+	mvn install:install-file -Dfile=org/unidal/framework/test-framework/$_Version/test-framework-$_Version.jar -DpomFile=org/unidal/framework/test-framework/$_Version/test-framework-$_Version.pom
+done
 
 
