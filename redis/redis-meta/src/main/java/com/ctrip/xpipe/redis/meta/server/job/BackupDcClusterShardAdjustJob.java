@@ -82,6 +82,9 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
             public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
                 if (!commandFuture.isSuccess()) {
                     logger.error("[operationComplete][fail]" + commandFuture.command(), commandFuture.cause());
+                    future().setFailure(commandFuture.cause());
+                } else {
+                    future().setSuccess();
                 }
             }
         });
