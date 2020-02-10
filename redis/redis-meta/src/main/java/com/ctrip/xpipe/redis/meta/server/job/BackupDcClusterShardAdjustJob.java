@@ -58,18 +58,21 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
 
         if (dcMetaCache.isCurrentDcPrimary(cluster, shard)) {
             logger.info("[doExecute][adjust skip] {}, {} become primary dc", cluster, shard);
+            future().setSuccess();
             return;
         }
 
         KeeperMeta keeperActive = currentMetaManager.getKeeperActive(cluster, shard);
         if(keeperActive == null){
             logger.info("[doExecute][keeper active null]{}, {}", cluster, shard);
+            future().setSuccess();
             return;
         }
 
         List<RedisMeta> redisNeedChange = getRedisNeedToChange(keeperActive);
 
         if (redisNeedChange.isEmpty()) {
+            future().setSuccess();
             return;
         }
 
