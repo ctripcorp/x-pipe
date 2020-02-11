@@ -43,7 +43,7 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
 
     @Test
     public void testStart() {
-
+        when(command.future()).thenReturn(new DefaultCommandFuture<>());
         oneThreadTaskExecutor.executeCommand(command);
         sleep(50);
         verify(command).execute();
