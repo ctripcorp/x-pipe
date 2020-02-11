@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomePrimaryAction;
+import com.ctrip.xpipe.redis.meta.server.job.BackupDcClusterShardAdjustJob;
+import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -30,6 +32,9 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
 
     @Mock
     ConsoleService mockConsoleService;
+
+    @Mock
+    CurrentMetaManager mockCurrentMetaManager;
 
     @Before
     public void beforeDefaultDcMetaCacheTest() throws Exception {
@@ -89,8 +94,25 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         Assert.assertEquals(expected.toString(), dcMetaCache.getDcMeta().getDcMeta().toString());
     }
 
+    @Test
+    public void refreshDcMetaWithBackupDcAdjust() throws Exception {
+        DcMeta origin = dcMetaCache.getDcMeta().getDcMeta();
+        ClusterMeta clusterMeta = (ClusterMeta) origin.getClusters().values().toArray()[0];
+        ShardMeta shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
+        dcMetaCache.getDcMeta().update(clusterMeta.setActiveDc("another"));
 
+        System.out.println(dcMetaCache.getDcMeta().getDcMeta());
+        BackupDcClusterShardAdjustJob job = new BackupDcClusterShardAdjustJob(clusterMeta.getId(), shardMeta.getId(), dcMetaCache,
+                mockCurrentMetaManager, null, null, null);
+        job.execute().get();
+        Mockito.verify(mockCurrentMetaManager, Mockito.times(1)).getKeeperActive(Mockito.anyString(), Mockito.anyString());
 
+        job = new BackupDcClusterShardAdjustJob(clusterMeta.getId(), shardMeta.getId(), dcMetaCache,
+                mockCurrentMetaManager, null, null, null);
+        dcMetaCache.getDcMeta().update(clusterMeta.setActiveDc(dcMetaCache.getCurrentDc()));
+        job.execute().get();
+        Mockito.verify(mockCurrentMetaManager, Mockito.times(1)).getKeeperActive(Mockito.anyString(), Mockito.anyString());
+    }
 
     private static class CustomBecomePrimaryAction extends BecomePrimaryAction {
         public CustomBecomePrimaryAction(DcMetaCache dcMetaCache,  ExecutionLog executionLog) {
