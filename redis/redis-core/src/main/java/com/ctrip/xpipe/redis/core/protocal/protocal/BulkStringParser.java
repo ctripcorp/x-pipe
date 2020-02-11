@@ -56,24 +56,24 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	
 	@Override
 	public RedisClientProtocol<InOutPayload> read(ByteBuf byteBuf){
-		
+
 		switch(bulkStringState){
-		
+
 			case READING_EOF_MARK:
 				eofJudger = readEOfMark(byteBuf);
 				if(eofJudger == null){
 					return null;
 				}
-				
+
 				logger.debug("[read]{}", eofJudger);
 				if(bulkStringParserListener != null){
 					bulkStringParserListener.onEofType(eofJudger.getEofType());
 				}
-				
+
 				bulkStringState = BULK_STRING_STATE.READING_CONTENT;
 				payload.startInput();
 			case READING_CONTENT:
-				
+
 				int readerIndex = byteBuf.readerIndex();
 				JudgeResult result = eofJudger.end(byteBuf.slice());
 				int length = 0;
@@ -87,7 +87,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 					throw new RedisRuntimeException("[write to payload exception]" + payload, e);
 				}
 				byteBuf.readerIndex(readerIndex + length);
-				
+
 				if(result.isEnd()){
 					int truncate = eofJudger.truncate();
 					try {

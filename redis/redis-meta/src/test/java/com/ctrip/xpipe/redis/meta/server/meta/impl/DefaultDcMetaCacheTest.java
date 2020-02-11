@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,11 +42,30 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
         future.addCluster(new ClusterMeta().setId(randomString(10)));
 
-        dcMetaCache.changeDcMeta(dcMeta, future);
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
 
         dcMetaCache.clusterAdded(new ClusterMeta().setId("add_" + randomString(5)));
         dcMetaCache.clusterDeleted("del_" + randomString(5));
 
+    }
+
+    @Test
+    public void testChangeDcMetaSkip() {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+
+        // check change success
+        DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
+        DcMeta future = MetaClone.clone(dcMeta);
+        future.getClusters().put("mockTestClusterForChangeSuccess", new ClusterMeta());
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
+        Assert.assertEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
+
+        // check change skip
+        dcMeta = future;
+        future = MetaClone.clone(future);
+        future.getClusters().put("mockTestClusterForChangeSkip", new ClusterMeta());
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() - 10000);
+        Assert.assertNotEquals(dcMetaCache.getClusters().size(), future.getClusters().size());
     }
 
     @Test

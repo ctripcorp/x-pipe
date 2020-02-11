@@ -49,7 +49,7 @@ public class ContinueResharding extends AbstractResharding{
 					executeTask(new MoveSlotFromDeadOrEmpty(slot, remoteClusterServerFactory.createClusterServer(slotInfo.getServerId(), null), to, zkClient));
 				}
 			}else{
-				executeTask(new RollbackMovingTask(slot, from, to, zkClient));
+				executeTask(new RollbackMovingTask(slot, from, null, zkClient));
 			}
 		}
 	}
