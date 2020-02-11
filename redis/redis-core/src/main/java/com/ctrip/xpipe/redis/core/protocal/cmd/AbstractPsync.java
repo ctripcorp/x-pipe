@@ -122,51 +122,49 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	@Override
 	protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
-		while (true) {
-			switch (psyncState) {
 
-				case PSYNC_COMMAND_WAITING_REPONSE:
-					Object response = super.doReceiveResponse(channel, byteBuf);
-					if (response == null) {
-						return null;
-					}
-					handleRedisResponse(channel, (String) response);
-					break;
+		switch (psyncState) {
 
-				case READING_RDB:
+		case PSYNC_COMMAND_WAITING_REPONSE:
+			Object response = super.doReceiveResponse(channel, byteBuf);
+			if (response == null) {
+				return null;
+			}
+			handleRedisResponse(channel, (String) response);
+			break;
 
-					if (rdbReader == null) {
-						logger.info("[doReceiveResponse][createRdbReader]{}", ChannelUtil.getDesc(channel));
-						rdbReader = createRdbReader();
-						rdbReader.setBulkStringParserListener(this);
-					}
+		case READING_RDB:
 
-					RedisClientProtocol<InOutPayload> payload = rdbReader.read(byteBuf);
-					if (payload != null) {
-						psyncState = PSYNC_STATE.READING_COMMANDS;
-						if (!saveCommands) {
-							future().setSuccess();
-						}
-						endReadRdb();
-						continue;
-					} else {
-						break;
-					}
-				case READING_COMMANDS:
-					if (saveCommands) {
-						try {
-							appendCommands(byteBuf);
-						} catch (IOException e) {
-							logger.error("[doHandleResponse][write commands error]" + this, e);
-						}
-					}
-					break;
-				default:
-					throw new IllegalStateException("unknown state:" + psyncState);
+			if (rdbReader == null) {
+				logger.info("[doReceiveResponse][createRdbReader]{}", ChannelUtil.getDesc(channel));
+				rdbReader = createRdbReader();
+				rdbReader.setBulkStringParserListener(this);
 			}
 
-			return null;
+			RedisClientProtocol<InOutPayload> payload = rdbReader.read(byteBuf);
+			if (payload != null) {
+				psyncState = PSYNC_STATE.READING_COMMANDS;
+				if (!saveCommands) {
+					future().setSuccess();
+				}
+				endReadRdb();
+			} else {
+				break;
+			}
+		case READING_COMMANDS:
+			if (saveCommands) {
+				try {
+					appendCommands(byteBuf);
+				} catch (IOException e) {
+					logger.error("[doHandleResponse][write commands error]" + this, e);
+				}
+			}
+			break;
+		default:
+			throw new IllegalStateException("unknown state:" + psyncState);
 		}
+
+		return null;
 	}
 
 	protected void handleRedisResponse(Channel channel, String psync) throws IOException {
