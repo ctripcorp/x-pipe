@@ -23,7 +23,7 @@ public class KeyedOneThreadTaskExecutor<K> implements Destroyable{
 	
 	private Map<K, OneThreadTaskExecutor> keyedExecutor = new ConcurrentHashMap<>();
 
-	private Executor executors;
+	protected Executor executors;
 	
 	public KeyedOneThreadTaskExecutor(Executor executors){
 		this.executors = executors;
@@ -36,15 +36,19 @@ public class KeyedOneThreadTaskExecutor<K> implements Destroyable{
 	}
 
 	
-	private OneThreadTaskExecutor getOrCreate(K key) {
+	protected OneThreadTaskExecutor getOrCreate(K key) {
 		
 		return MapUtils.getOrCreate(keyedExecutor, key, new ObjectFactory<OneThreadTaskExecutor>() {
 			
 			@Override
 			public OneThreadTaskExecutor create() {
-				return new OneThreadTaskExecutor(executors);
+				return createTaskExecutor();
 			}
 		});
+	}
+
+	protected OneThreadTaskExecutor createTaskExecutor() {
+		return new OneThreadTaskExecutor(executors);
 	}
 
 	@Override

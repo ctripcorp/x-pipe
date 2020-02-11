@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheRefreshTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
@@ -70,7 +71,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	KeeperStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
 	DeferredResponseTest.class,
-	DefaultSentinelManagerTest.class
+	DefaultSentinelManagerTest.class,
+	DefaultDcMetaCacheRefreshTest.class
 })
 public class AllTests {
 
