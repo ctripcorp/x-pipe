@@ -29,6 +29,10 @@ public class DefaultSlaveOfCommand extends AbstractSlaveOfCommand{
 
 	@Override
 	protected void doExecute() throws CommandExecutionException {
+
+		if (future().isDone()) {
+			return;
+		}
 		
 		SimpleObjectPool<NettyClient> clientPool = getClientPool();
 		

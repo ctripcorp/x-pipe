@@ -122,7 +122,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	@Override
 	protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
-		
+
 		switch (psyncState) {
 
 		case PSYNC_COMMAND_WAITING_REPONSE:

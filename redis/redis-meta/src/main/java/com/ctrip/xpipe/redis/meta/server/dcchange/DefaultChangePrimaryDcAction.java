@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
+import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
@@ -8,11 +9,13 @@ import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomeBackupAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomePrimaryAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
+import com.ctrip.xpipe.redis.meta.server.job.ChangePrimaryDcJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +43,9 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 
 	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
+
+	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
+	private KeyedOneThreadMutexableTaskExecutor<Pair<String, String> >  clusterShardExecutors;
 
 	@Autowired
 	private DcMetaCache  dcMetaCache;
@@ -71,13 +77,24 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 
 		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
-			logger.info("[doChangePrimaryDc][become primary]{}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager, offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
-		}else{
-			logger.info("[doChangePrimaryDc][become backup]{}, {}", clusterId, shardId, newPrimaryDc);
+			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
+			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
+					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
+			ChangePrimaryDcJob changePrimaryDcJob = new ChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
+					newPrimaryDc, masterInfo);
+
+			try {
+				clusterShardExecutors.clearAndExecute(new Pair<>(clusterId, shardId), changePrimaryDcJob);
+				return changePrimaryDcJob.future().get();
+			} catch (Exception e) {
+				logger.error("[changePrimaryDc][execute by adjust executors fail]" + clusterId + "," + shardId + "," + newPrimaryDc, e);
+				return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
+			}
+		} else {
+			logger.info("[doChangePrimaryDc][become backup]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
+			return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 		}
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 	}
 
 	private NewMasterChooser createNewMasterChooser() {

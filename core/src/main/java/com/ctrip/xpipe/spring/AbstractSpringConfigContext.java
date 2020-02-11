@@ -1,13 +1,16 @@
 package com.ctrip.xpipe.spring;
 
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.exception.DefaultExceptionHandler;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +38,7 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 
 	public static final String SCHEDULED_EXECUTOR = "scheduledExecutor";
 	public static final String GLOBAL_EXECUTOR = "globalExecutor";
+	public static final String CLUSTER_SHARD_ADJUST_EXECUTOR = "clusterShardAdjustExecutor";
 	public static final int maxScheduledCorePoolSize = 8;
 	public static final int THREAD_POOL_TIME_OUT = 5;
 	public static final int GLOBAL_THREAD_MULTI_CORE = 100;
