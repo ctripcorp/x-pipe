@@ -86,8 +86,8 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 			
 			@Override
 			public boolean retry(Throwable th) {
-				
-				Throwable rootCause = ExceptionUtils.getRootCause(th); 
+
+				Throwable rootCause = ExceptionUtils.getRootCause(th);
 				if(rootCause instanceof RedisError){
 					logger.info("[retry][do not retry, because redis error]{}", rootCause.getMessage());
 					return false;
