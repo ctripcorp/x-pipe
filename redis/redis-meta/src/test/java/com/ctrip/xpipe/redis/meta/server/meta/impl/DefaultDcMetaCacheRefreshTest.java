@@ -31,10 +31,10 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
     private DefaultDcMetaCache dcMetaCache;
 
     @Mock
-    ConsoleService mockConsoleService;
+    private ConsoleService mockConsoleService;
 
     @Mock
-    CurrentMetaManager mockCurrentMetaManager;
+    private CurrentMetaManager mockCurrentMetaManager;
 
     @Before
     public void beforeDefaultDcMetaCacheTest() throws Exception {
@@ -46,8 +46,6 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
 
         injectConsoleServiceInto(dcMetaCache);
         dcMetaCache.initialize();
-
-        System.out.println(dcMetaCache.getDcMeta());
     }
 
     private void injectConsoleServiceInto(DefaultDcMetaCache dcMetaCache) throws Exception {
@@ -79,12 +77,27 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         BecomePrimaryAction becomePrimaryAction = new CustomBecomePrimaryAction(dcMetaCache, executionLog);
 
         CountDownLatch latch = new CountDownLatch(2);
+        CyclicBarrier barrier = new CyclicBarrier(2);
         new Thread(() -> {
+            try {
+                barrier.await();
+            } catch (Exception e) {
+                logger.info("[refreshDcMetaWithDcChangeTest] barrier fail");
+                e.printStackTrace();
+            }
+
             dcMetaCache.run();
             latch.countDown();
         }).start();
 
         new Thread(() -> {
+            try {
+                barrier.await();
+            } catch (Exception e) {
+                logger.info("[refreshDcMetaWithDcChangeTest] barrier fail");
+                e.printStackTrace();
+            }
+
             sleep(200); // wait for dcMetaCache run
             becomePrimaryAction.changePrimaryDc(clusterMeta.getId(), shardMeta.getId(), newPrimaryDc, masterInfo);
             latch.countDown();
@@ -101,7 +114,6 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         ShardMeta shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
         dcMetaCache.getDcMeta().update(clusterMeta.setActiveDc("another"));
 
-        System.out.println(dcMetaCache.getDcMeta().getDcMeta());
         BackupDcClusterShardAdjustJob job = new BackupDcClusterShardAdjustJob(clusterMeta.getId(), shardMeta.getId(), dcMetaCache,
                 mockCurrentMetaManager, null, null, null);
         job.execute().get();
