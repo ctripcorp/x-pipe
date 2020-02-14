@@ -40,6 +40,8 @@ public class DefaultSentinelManager implements SentinelManager{
 	private static int DEFAULT_SENTINEL_QUORUM = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_QUORUM", "3"));
 	private static int DEFAULT_SENTINEL_ADD_SIZE = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_ADD_SIZE", "5"));
 
+	private static int DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("MIGRATE_SENTINEL_TIMEOUT", "100"));
+
 	private static Logger logger = LoggerFactory.getLogger(DefaultSentinelManager.class);
 	
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
@@ -86,7 +88,7 @@ public class DefaultSentinelManager implements SentinelManager{
 			
 			Endpoint sentinelAddress = new DefaultEndPoint(sentinels.get(i));
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
-			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled);
+			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
 				String result = command.execute().get();
 				executionLog.info(String.format("add to sentinel %s : %s", sentinelAddress, result));
@@ -134,7 +136,7 @@ public class DefaultSentinelManager implements SentinelManager{
 		for(Sentinel sentinel : realSentinels){
 			
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-			SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled);
+			SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
 				String result = sentinelRemove.execute().get();
 				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, result));
@@ -151,7 +153,7 @@ public class DefaultSentinelManager implements SentinelManager{
 		for(InetSocketAddress sentinelAddress: sentinels){
 			
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinelAddress));
-			Sentinels sentinelsCommand = new Sentinels(clientPool, sentinelMonitorName, scheduled);
+			Sentinels sentinelsCommand = new Sentinels(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
 				realSentinels = sentinelsCommand.execute().get();
 				executionLog.info(String.format("get sentinels from %s : %s", sentinelAddress, realSentinels));
