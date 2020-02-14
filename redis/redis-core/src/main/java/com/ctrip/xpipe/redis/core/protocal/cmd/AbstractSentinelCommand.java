@@ -26,6 +26,10 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		super(clientPool, scheduled);
 	}
 
+	public AbstractSentinelCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+		super(clientPool, scheduled, commandTimeoutMilli);
+	}
+
 	public static class Sentinels extends AbstractSentinelCommand<List<Sentinel>>{
 		
 		public static String SENTINELS = "sentinels";
@@ -36,7 +40,12 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 			super(clientPool, scheduled);
 			this.masterName = masterName;
 		}
-		
+
+		public Sentinels(SimpleObjectPool<NettyClient> clientPool, String masterName, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
+			this.masterName = masterName;
+		}
+
 		@Override
 		protected List<Sentinel> format(Object payload) {
 			
@@ -96,6 +105,14 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 			this.masterName = masterName;
 		}
 
+		public SentinelAdd(SimpleObjectPool<NettyClient> clientPool, String masterName, String masterIp, int masterPort, int quorum, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
+			this.masterIp = masterIp;
+			this.masterPort = masterPort;
+			this.quorum = quorum;
+			this.masterName = masterName;
+		}
+
 		@Override
 		protected String format(Object payload) {
 			return payloadToString(payload);
@@ -120,6 +137,11 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 
 		public SentinelRemove(SimpleObjectPool<NettyClient> clientPool, String masterName, ScheduledExecutorService scheduled) {
 			super(clientPool, scheduled);
+			this.masterName = masterName;
+		}
+
+		public SentinelRemove(SimpleObjectPool<NettyClient> clientPool, String masterName, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
 			this.masterName = masterName;
 		}
 
@@ -260,6 +282,14 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		public SentinelMonitor(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
 							 String monitorName, HostPort master, int quorum) {
 			super(clientPool, scheduled);
+			this.monitorName = monitorName;
+			this.master = master;
+			this.quorum = quorum;
+		}
+
+		public SentinelMonitor(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
+							   String monitorName, HostPort master, int quorum, int commandTimeoutMilli) {
+			super(clientPool, scheduled, commandTimeoutMilli);
 			this.monitorName = monitorName;
 			this.master = master;
 			this.quorum = quorum;
