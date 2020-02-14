@@ -15,9 +15,9 @@ import org.springframework.web.client.RestOperations;
  */
 public class AbstractRemoteClusterServer extends AbstractClusterServer implements RemoteClusterServer{
 	
-	private int maxConnPerRoute = Integer.parseInt(System.getProperty("remoteMaxConnPerRoute", "10"));
-	private int maxConnTotal = Integer.parseInt(System.getProperty("maxConnTotal", "100"));
-	private int connectTimeout = Integer.parseInt(System.getProperty("remoteConnectTimeout", "5000"));
+	private int maxConnPerRoute = Integer.parseInt(System.getProperty("remoteMaxConnPerRoute", "1000"));
+	private int maxConnTotal = Integer.parseInt(System.getProperty("maxConnTotal", "10000"));
+	private int connectTimeout = Integer.parseInt(System.getProperty("remoteConnectTimeout", "1000"));
 	private int soTimeout = Integer.parseInt(System.getProperty("remoteSoTimeout", "5000"));
 
 	protected RestOperations restTemplate;
