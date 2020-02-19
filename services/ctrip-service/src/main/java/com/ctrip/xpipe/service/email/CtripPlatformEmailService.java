@@ -41,9 +41,6 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static EmailServiceClient client = EmailServiceClient.getInstance();
 
-    private static final ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor(
-            XpipeThreadFactory.create(CtripPlatformEmailService.class.getSimpleName()));
-
     @Override
     public void sendEmail(Email email) {
 
@@ -64,17 +61,12 @@ public class CtripPlatformEmailService implements EmailService {
             }
 
         } catch (Exception e) {
-            logger.error("[sendEmail]Email service Error\n {}", e);
-            Throwable th = e;
-            while(th.getCause() instanceof XpipeRuntimeException) {
-                th = th.getCause();
-            }
-            throw new XpipeRuntimeException(th.getMessage());
+            logger.error("[sendEmail]Email service Error\n", e);
         }
     }
 
     private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
-            Pattern.compile("^[A-Z0-9._%+-]+@Ctrip.com$", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("^[A-Z0-9._%+-]+@C?trip.com$", Pattern.CASE_INSENSITIVE);
 
     @Override
     public CheckEmailResponse checkEmailAddress(String address) {
@@ -83,7 +75,7 @@ public class CtripPlatformEmailService implements EmailService {
         if(result) {
             return new CheckEmailResponse(true);
         } else {
-            return new CheckEmailResponse(false, "Emails should be ctrip emails and separated by comma or semicolon");
+            return new CheckEmailResponse(false, "Emails should be ctrip/trip emails and separated by comma or semicolon");
         }
     }
 
