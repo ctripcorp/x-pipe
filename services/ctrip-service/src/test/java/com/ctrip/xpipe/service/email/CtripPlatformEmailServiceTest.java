@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.email.Email;
 import com.ctrip.xpipe.api.email.EmailResponse;
+import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -78,6 +79,14 @@ public class CtripPlatformEmailServiceTest {
         List<String> expected = Lists.newArrayList("123", "456", "789");
         List<String> result = CtripPlatformEmailService.decodeListString("123,456,789");
         Assert.assertEquals(expected, result);
+    }
+
+    @Test
+    public void testCheckEmailAddress() {
+        EmailService.CheckEmailResponse response = emailService.checkEmailAddress("xpipe@trip.com");
+        EmailService.CheckEmailResponse response2 = emailService.checkEmailAddress("xpipe@Ctrip.com");
+        Assert.assertTrue(response.isOk());
+        Assert.assertTrue(response2.isOk());
     }
 
     private Email generateEmail() throws IOException {
