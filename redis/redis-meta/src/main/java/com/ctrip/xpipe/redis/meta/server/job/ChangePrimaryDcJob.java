@@ -5,6 +5,9 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>
         implements RequestResponseCommand<MetaServerConsoleService.PrimaryDcChangeMessage> {
@@ -19,6 +22,9 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     private MasterInfo masterInfo;
 
+    @VisibleForTesting
+    protected AtomicBoolean isRunning = new AtomicBoolean(false);
+
     public ChangePrimaryDcJob(ChangePrimaryDcAction action, String cluster, String shard,
                               String newPrimaryDc, MasterInfo masterInfo) {
         this.action = action;
@@ -30,6 +36,9 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     @Override
     protected void doExecute() throws Exception {
+        if(!isRunning.compareAndSet(false, true)) {
+            return;
+        }
         try {
             MetaServerConsoleService.PrimaryDcChangeMessage result = action
                     .changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo);

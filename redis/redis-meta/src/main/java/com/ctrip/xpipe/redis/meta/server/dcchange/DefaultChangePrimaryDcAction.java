@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -80,13 +83,22 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
 					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
-			ChangePrimaryDcJob changePrimaryDcJob = new ChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
+			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
 					newPrimaryDc, masterInfo);
 
 			try {
 				clusterShardExecutors.clearAndExecute(new Pair<>(clusterId, shardId), changePrimaryDcJob);
-				return changePrimaryDcJob.future().get();
-			} catch (Exception e) {
+				return changePrimaryDcJob.future().get(100, TimeUnit.MILLISECONDS);
+			} catch (TimeoutException|InterruptedException e) {
+				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
+				// In case task queue is blocked, we do downgrade(or a double-insurance)
+				try {
+					return changePrimaryDcJob.execute().get();
+				} catch (Exception innerException) {
+					logger.error("[changePrimaryDc][try direct-run failed]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
+					return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
+				}
+			}catch (Exception e) {
 				logger.error("[changePrimaryDc][execute by adjust executors fail]" + clusterId + "," + shardId + "," + newPrimaryDc, e);
 				return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 			}
@@ -97,8 +109,74 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		}
 	}
 
+	@VisibleForTesting
+	protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, String clusterId,
+														  String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+		return new ChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
+				newPrimaryDc, masterInfo);
+	}
+
 	private NewMasterChooser createNewMasterChooser() {
 		return new FirstNewMasterChooser(keyedObjectPool, scheduled, executors);
 	}
 
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setKeyedObjectPool(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+		this.keyedObjectPool = keyedObjectPool;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setScheduled(ScheduledExecutorService scheduled) {
+		this.scheduled = scheduled;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setExecutors(ExecutorService executors) {
+		this.executors = executors;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setClusterShardExecutors(KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutors) {
+		this.clusterShardExecutors = clusterShardExecutors;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setDcMetaCache(DcMetaCache dcMetaCache) {
+		this.dcMetaCache = dcMetaCache;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setCurrentMetaManager(CurrentMetaManager currentMetaManager) {
+		this.currentMetaManager = currentMetaManager;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setSentinelManager(SentinelManager sentinelManager) {
+		this.sentinelManager = sentinelManager;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setMultiDcService(MultiDcService multiDcService) {
+		this.multiDcService = multiDcService;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setOffsetWaiter(OffsetWaiter offsetWaiter) {
+		this.offsetWaiter = offsetWaiter;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setCurrentClusterServer(CurrentClusterServer currentClusterServer) {
+		this.currentClusterServer = currentClusterServer;
+		return this;
+	}
 }
