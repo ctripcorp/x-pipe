@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
+import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
@@ -72,7 +73,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperStateChangeHandlerTest.class,
 	DeferredResponseTest.class,
 	DefaultSentinelManagerTest.class,
-	DefaultDcMetaCacheRefreshTest.class
+	DefaultDcMetaCacheRefreshTest.class,
+	DefaultChangePrimaryDcActionTest.class
 })
 public class AllTests {
 
