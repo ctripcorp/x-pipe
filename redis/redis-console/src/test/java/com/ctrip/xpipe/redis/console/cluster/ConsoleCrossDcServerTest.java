@@ -40,9 +40,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
     @Before
     public void beforeConsoleCrossDcServerTest(){
         crossDcClusterServer = new ConsoleCrossDcServer();
-        crossDcClusterServer.setStartIntervalMilli(10);
 
-        crossDcClusterServer.setCheckIntervalMilli(checkIntervalMilli);
         consoleLeaderElector = mock(ConsoleLeaderElector.class);
         when(consoleLeaderElector.amILeader()).thenReturn(siteLeader.get());
         crossDcClusterServer.setConsoleLeaderElector(consoleLeaderElector);
@@ -53,7 +51,6 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
     @Test
     public void testNonSiteLeader() throws Exception {
-        crossDcClusterServer.setCheckIntervalMilli(1);
         when(consoleLeaderElector.amILeader()).thenReturn(false);
         crossDcClusterServer.start();
         Assert.assertFalse(consoleLeaderElector.amILeader());
@@ -63,7 +60,6 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
     @Test
     public void testValidLeader() throws Exception {
-        crossDcClusterServer.setCheckIntervalMilli(1);
         when(consoleLeaderElector.amILeader()).thenReturn(true);
         when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
         Map<String, String> ipDcMap = Maps.newHashMap();
@@ -77,7 +73,6 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
     @Test
     public void testNotLeader() throws Exception {
-        crossDcClusterServer.setCheckIntervalMilli(1);
         when(consoleLeaderElector.amILeader()).thenReturn(true);
         when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
         Map<String, String> ipDcMap = Maps.newHashMap();

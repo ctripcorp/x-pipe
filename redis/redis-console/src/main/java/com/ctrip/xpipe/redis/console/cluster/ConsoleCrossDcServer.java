@@ -3,23 +3,15 @@ package com.ctrip.xpipe.redis.console.cluster;
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
-import com.ctrip.xpipe.api.command.Command;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.command.SequenceCommandChain;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
-import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
-import com.ctrip.xpipe.redis.core.monitor.InstantaneousCounterMetric;
-import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
+import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -27,14 +19,9 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng
@@ -43,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, LeaderAware, ApplicationContextAware{
+public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, LeaderAware, Observer, ApplicationContextAware{
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -51,15 +38,10 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     @Autowired
     private ConsoleLeaderElector consoleLeaderElector;
 
-    private int checkIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "600000"));
-
-    private int startIntervalMilli = Integer.parseInt(System.getProperty("CROSS_DC_CHECK_INTERVAL_MILLI", "5000"));
+    @Autowired
+    private CrossDcLeaderElectionAction electionAction;
 
     private volatile boolean crossDcLeader = false;
-
-    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("CrossDcServer"));
-
-    private ScheduledFuture future;
 
     private ApplicationContext applicationContext;
 
@@ -71,38 +53,13 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
 
     @Override
     protected void doStart() throws Exception {
-
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() throws Exception {
-
-                checkDataBaseCurrentDc();
-
-            }
-
-        }, startIntervalMilli, checkIntervalMilli, TimeUnit.MILLISECONDS);
+        electionAction.addObserver(this);
+        electionAction.start();
     }
 
-    protected void checkDataBaseCurrentDc() {
-        try {
-            String domainName = consoleConfig.getDatabaseDomainName();
-            check(domainName);
-        } catch (Exception e) {
-            logger.error("[checkDataBaseCurrentDc]", e);
-        }
-    }
-
-    private void check(String domainName) {
-        try {
-            InetAddress ipAddress = InetAddress.getByName(domainName);
-            Map<String, String> ipDcMapping = consoleConfig.getDatabaseIpAddresses();
-            String dcName = ipDcMapping.get(ipAddress.getHostAddress());
-            triggerElection(dcName);
-        } catch (Exception e) {
-            logger.error("[check]Invalid database domain name", e);
-        }
-
+    @Override
+    public void update(Object crossDcLeader, Observable observable) {
+        triggerElection((String) crossDcLeader);
     }
 
     private void triggerElection(String dcName) {
@@ -111,16 +68,13 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             return;
         }
         boolean crossDcLeader = FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcName);
-        setCrossDcLeader(crossDcLeader, String.format("[result] Database domain name: %s", dcName));
+        setCrossDcLeader(crossDcLeader, String.format("[result] cross dc leader set to %s by elect", dcName));
     }
 
     @Override
     protected void doStop() throws Exception {
-
-        if (future != null) {
-            logger.info("[doStop][cancel future]{}", future);
-            future.cancel(true);
-        }
+        electionAction.removeObserver(this);
+        electionAction.stop();
     }
 
 
@@ -208,11 +162,6 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }
     }
 
-
-    public void setCheckIntervalMilli(int checkIntervalMilli) {
-        this.checkIntervalMilli = checkIntervalMilli;
-    }
-
     @VisibleForTesting
     protected ConsoleCrossDcServer setConsoleLeaderElector(ConsoleLeaderElector consoleLeaderElector) {
         this.consoleLeaderElector = consoleLeaderElector;
@@ -230,9 +179,4 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         this.applicationContext = applicationContext;
     }
 
-    @VisibleForTesting
-    protected ConsoleCrossDcServer setStartIntervalMilli(int startIntervalMilli) {
-        this.startIntervalMilli = startIntervalMilli;
-        return this;
-    }
 }

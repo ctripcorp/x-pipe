@@ -104,7 +104,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public void stopSentinelCheck(ConfigModel config, int minutes) throws DalException {
-        logger.info("[stopSentinelCheck] : turn on sentinel check exclude config {} for cluster {} till {} hours later",
+        logger.info("[stopSentinelCheck] : turn on sentinel check exclude config {} for cluster {} till {} minutes later",
                 config, config.getSubKey(), minutes);
 
         Date date = DateTimeUtils.getMinutesLaterThan(new Date(), minutes);
