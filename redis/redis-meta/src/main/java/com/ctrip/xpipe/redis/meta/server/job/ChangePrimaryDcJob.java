@@ -22,9 +22,6 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     private MasterInfo masterInfo;
 
-    @VisibleForTesting
-    protected AtomicBoolean isRunning = new AtomicBoolean(false);
-
     public ChangePrimaryDcJob(ChangePrimaryDcAction action, String cluster, String shard,
                               String newPrimaryDc, MasterInfo masterInfo) {
         this.action = action;
@@ -36,9 +33,6 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     @Override
     protected void doExecute() throws Exception {
-        if(!isRunning.compareAndSet(false, true)) {
-            return;
-        }
         try {
             MetaServerConsoleService.PrimaryDcChangeMessage result = action
                     .changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo);

@@ -28,7 +28,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
-	protected static final int DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS", "10")); 
+	public static final int DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS", "2"));
 	
 	protected int waitTimeoutSeconds = DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
 	

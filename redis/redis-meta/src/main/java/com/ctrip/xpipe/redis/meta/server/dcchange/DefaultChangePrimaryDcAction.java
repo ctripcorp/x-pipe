@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomeBackupAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomePrimaryAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
@@ -28,6 +29,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.ctrip.xpipe.redis.core.service.AbstractService.DEFAULT_SO_TIMEOUT;
+import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractChangePrimaryDcAction.DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
+import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractNewMasterChooser.CHECK_NEW_MASTER_TIMEOUT_SECONDS;
+import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.DefaultSentinelManager.DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI;
+
 /**
  * @author wenchao.meng
  *
@@ -37,6 +43,8 @@ import java.util.concurrent.TimeoutException;
 public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	
 	private static Logger logger = LoggerFactory.getLogger(DefaultChangePrimaryDcAction.class);
+
+	private static final int defaultTimeout = Integer.parseInt(System.getProperty("CHANGE_PRIMARY_DC_ACTION_TIMEOUT", "1000"));
 
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
@@ -68,6 +76,9 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Autowired
 	private CurrentClusterServer currentClusterServer;
 
+	@Autowired
+	private MetaServerConfig metaServerConfig;
+
 	@Override
 	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
 		
@@ -86,14 +97,18 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
 					newPrimaryDc, masterInfo);
 
+			int timeout = Math.max(DEFAULT_SO_TIMEOUT - DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI * 5
+					- metaServerConfig.getWaitforOffsetMilli() - CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2 * 1000
+					- DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS * 1000, defaultTimeout);
 			try {
 				clusterShardExecutors.clearAndExecute(new Pair<>(clusterId, shardId), changePrimaryDcJob);
-				return changePrimaryDcJob.future().get(100, TimeUnit.MILLISECONDS);
+				return changePrimaryDcJob.future().get(timeout, TimeUnit.MILLISECONDS);
 			} catch (TimeoutException|InterruptedException e) {
 				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
 				// In case task queue is blocked, we do downgrade(or a double-insurance)
 				try {
-					return changePrimaryDcJob.execute().get();
+					return createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId, newPrimaryDc, masterInfo)
+							.execute().get();
 				} catch (Exception innerException) {
 					logger.error("[changePrimaryDc][try direct-run failed]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
 					return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
@@ -177,6 +192,12 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@VisibleForTesting
 	protected DefaultChangePrimaryDcAction setCurrentClusterServer(CurrentClusterServer currentClusterServer) {
 		this.currentClusterServer = currentClusterServer;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected DefaultChangePrimaryDcAction setMetaServerConfig(MetaServerConfig metaServerConfig) {
+		this.metaServerConfig = metaServerConfig;
 		return this;
 	}
 }

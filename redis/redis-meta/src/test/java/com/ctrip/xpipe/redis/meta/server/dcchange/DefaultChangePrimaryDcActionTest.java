@@ -6,6 +6,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.ChangePrimaryDcJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -59,6 +60,9 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
     @Mock
     private CurrentClusterServer currentClusterServer;
 
+    @Mock
+    private MetaServerConfig metaServerConfig;
+
     private DefaultChangePrimaryDcAction action;
 
     private MetaServerConsoleService.PrimaryDcChangeMessage expectedResult;
@@ -74,17 +78,17 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
                 return new ChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId, newPrimaryDc, masterInfo) {
                     @Override
                     protected void doExecute() throws Exception {
-                        if (isRunning.compareAndSet(false, true)) {
-                            future().setSuccess(expectedResult);
-                        }
+                        future().setSuccess(expectedResult);
                     }
                 };
             }
         };
         doNothing().when(clusterShardExecutors).clearAndExecute(any(), any());
+        when(metaServerConfig.getWaitforOffsetMilli()).thenReturn(1000);
         action.setExecutors(executors).setScheduled(scheduled).setClusterShardExecutors(clusterShardExecutors)
         .setCurrentClusterServer(currentClusterServer).setOffsetWaiter(offsetWaiter).setMultiDcService(multiDcService)
-        .setCurrentMetaManager(currentMetaManager).setDcMetaCache(dcMetaCache).setSentinelManager(sentinelManager);
+        .setCurrentMetaManager(currentMetaManager).setDcMetaCache(dcMetaCache).setSentinelManager(sentinelManager)
+                .setMetaServerConfig(metaServerConfig);
     }
 
     @Test
