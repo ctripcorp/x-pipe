@@ -96,12 +96,10 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
 					newPrimaryDc, masterInfo);
-
-			int timeout = Math.max(DEFAULT_SO_TIMEOUT - DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI * 5
-					- metaServerConfig.getWaitforOffsetMilli() - CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2 * 1000
-					- DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS * 1000, defaultTimeout);
+			int timeout = DEFAULT_SO_TIMEOUT / 2;
 			try {
 				clusterShardExecutors.clearAndExecute(new Pair<>(clusterId, shardId), changePrimaryDcJob);
+				waitForCommandStart(changePrimaryDcJob);
 				return changePrimaryDcJob.future().get(timeout, TimeUnit.MILLISECONDS);
 			} catch (TimeoutException|InterruptedException e) {
 				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
@@ -122,6 +120,20 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
 			return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 		}
+	}
+
+	private void waitForCommandStart(ChangePrimaryDcJob changePrimaryDcJob) throws TimeoutException, InterruptedException {
+		int timeout = Math.max(DEFAULT_SO_TIMEOUT - DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI * 5
+				- metaServerConfig.getWaitforOffsetMilli() - CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2 * 1000
+				- DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS * 1000, defaultTimeout);
+		long endTime = System.currentTimeMillis() + timeout;
+		while(System.currentTimeMillis() < endTime) {
+			if (changePrimaryDcJob.isStarted()) {
+				return;
+			}
+			Thread.sleep(10);
+		}
+		throw new TimeoutException("ChangePrimaryDcJob has not started for " + timeout + "ms");
 	}
 
 	@VisibleForTesting

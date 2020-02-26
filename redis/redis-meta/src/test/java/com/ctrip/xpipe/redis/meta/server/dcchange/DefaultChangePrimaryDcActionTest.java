@@ -92,10 +92,11 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
     }
 
     @Test
-    public void testChangePrimaryDc() {
+    public void testChangePrimaryDcFirstTimeout() {
         when(currentMetaManager.hasCluster(anyString())).thenReturn(true);
         when(dcMetaCache.getCurrentDc()).thenReturn("SHAOY");
         MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc("cluster", "shard", "SHAOY", new MasterInfo());
         Assert.assertEquals(expectedResult, result);
     }
+
 }
