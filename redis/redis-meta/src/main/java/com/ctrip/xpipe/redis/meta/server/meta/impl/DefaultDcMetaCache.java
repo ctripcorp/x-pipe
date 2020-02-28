@@ -141,7 +141,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	protected void changeDcMeta(DcMeta current, DcMeta future, final long metaLoadTime) {
 
 		if (metaLoadTime <= metaModifyTime.get()) {
-			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime, metaLoadTime);
+			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime.get(), metaLoadTime);
 			return;
 		}
 
