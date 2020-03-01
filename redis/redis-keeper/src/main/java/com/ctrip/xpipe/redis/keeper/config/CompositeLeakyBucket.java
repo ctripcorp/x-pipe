@@ -120,7 +120,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
     @VisibleForTesting
     protected void refresh() {
-        if(keeperConfig.getMetaServerAddress() == null) {
+        if(StringUtil.isEmpty(keeperConfig.getMetaServerAddress())) {
             logger.info("[refresh]address null, will not update token size");
             return;
         }
