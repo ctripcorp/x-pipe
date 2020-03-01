@@ -20,7 +20,8 @@ import java.io.IOException;
  *
  * 2016年4月22日 上午11:49:02
  */
-public class PsyncHandler extends AbstractCommandHandler{
+public class
+PsyncHandler extends AbstractCommandHandler{
 	
 	public static final int WAIT_OFFSET_TIME_MILLI = 60 * 1000;
 	

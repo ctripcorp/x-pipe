@@ -1,7 +1,18 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.FixedObjectPool;
+import com.ctrip.xpipe.pool.XpipeNettyClientPool;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
+import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
+import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
@@ -10,14 +21,18 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.io.IOException;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
 import static org.mockito.Mockito.*;
@@ -71,7 +86,7 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
         ProxyEnabledEndpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", server.getPort(), protocol);
 
         when(redisMaster.masterEndPoint()).thenReturn(endpoint);
-        ProxyResourceManager proxyEndpointManager = mock(ProxyResourceManager.class);
+        KeeperResourceManager proxyEndpointManager = getRegistry().getComponent(KeeperResourceManager.class);
         ProxyEndpointSelector selector = mock(ProxyEndpointSelector.class);
         when(proxyEndpointManager.createProxyEndpointSelector(any())).thenReturn(selector);
         when(selector.nextHop()).thenReturn(protocol.nextEndpoints().get(0));
@@ -86,5 +101,55 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
 
         verify(redisMasterReplication, timeout(500).atLeast(2)).connectWithMaster();
+    }
+
+    @Test
+    public void testCheckKeeper() throws Exception {
+        Server server = startServer("-ERR syntax error");
+        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint("127.0.0.1", server.getPort()));
+        Replconf replconf = new Replconf(pool, Replconf.ReplConfType.KEEPER, scheduled, 100);
+        replconf.execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (!commandFuture.isSuccess()) {
+                    logger.error("[]", commandFuture.cause());
+                    Assert.assertTrue(commandFuture.cause() instanceof RedisError);
+                }
+            }
+        });
+        replconf.future().await();
+        server.stop();
+    }
+
+    @Test
+    public void testCheckKeeperWithTimeout() throws Exception {
+        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint("10.0.0.1", 0));
+        Replconf replconf = new Replconf(pool, Replconf.ReplConfType.KEEPER, scheduled, 100);
+        replconf.execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (!commandFuture.isSuccess()) {
+                    logger.error("[]", commandFuture.cause());
+                    Assert.assertTrue(commandFuture.cause() instanceof CommandTimeoutException);
+                }
+            }
+        });
+        replconf.future().await();
+    }
+
+    @Test
+    public void testCheckKeeperWithConnectRefused() throws Exception {
+        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint("127.0.0.1", randomPort()));
+        Replconf replconf = new Replconf(pool, Replconf.ReplConfType.KEEPER, scheduled, 100);
+        replconf.execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (!commandFuture.isSuccess()) {
+                    logger.error("[]", commandFuture.cause());
+                    Assert.assertTrue(commandFuture.cause() instanceof CommandTimeoutException);
+                }
+            }
+        });
+        replconf.future().await();
     }
 }

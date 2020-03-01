@@ -24,4 +24,19 @@ public interface RedisMasterReplication extends PsyncObserver, Lifecycle{
 	
 	RedisMaster redisMaster();
 
+	void addRedisMasterReplicationObserver(RedisMasterReplicationObserver observer);
+
+	public interface RedisMasterReplicationObserver {
+
+		void onMasterConnected();
+
+		void onMasterDisconnected();
+
+		void beforeSendPsync(Channel masterChannel);
+
+		void onContinue();
+
+		void onDumpFinished();
+	}
+
 }

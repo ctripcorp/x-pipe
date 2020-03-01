@@ -1,15 +1,18 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
+import com.ctrip.xpipe.redis.meta.server.service.keeper.KeeperTokenManager;
 import com.ctrip.xpipe.spring.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
 
@@ -31,7 +34,8 @@ public class CurrentMetaServerController extends AbstractController{
 	@Autowired
 	private DcMetaCache dcMetaCache;
 
-
+	@Autowired
+	private KeeperTokenManager tokenManager;
 	
 	@RequestMapping(path = "/slots", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public Set<Integer> getSlots(){
@@ -46,6 +50,17 @@ public class CurrentMetaServerController extends AbstractController{
 		String allMeta = ((DefaultDcMetaCache)dcMetaCache).getDcMeta().toString();
 		
 		return String.format("current:%s\nall:%s\n", currentMeta, allMeta);
+	}
+
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.KEEPER_TOKEN_STATUS, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public MetaServerKeeperService.KeeperContainerTokenStatusResponse refreshKeeperTokenStatus(@RequestBody MetaServerKeeperService.KeeperContainerTokenStatusRequest request) {
+		logger.info("[refreshKeeperTokenStatus] {}", request);
+		return tokenManager.refreshKeeperTokenStatus(request);
+	}
+
+	@RequestMapping(path = "/close/keeper/rate/limit", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public boolean closeKeeperRateLimit() {
+		return true;
 	}
 
 	public static class DebugInfo{

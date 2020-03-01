@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -38,15 +39,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-										 int replTimeoutMilli, ProxyResourceManager endpointManager) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, endpointManager);
+										 int replTimeoutMilli, KeeperResourceManager resourceManager) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, resourceManager);
 	}
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-										 ProxyResourceManager endpointManager) {
+										 KeeperResourceManager resourceManager) {
 		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI,
-				endpointManager);
+				resourceManager);
 	}
 
 	@Override
@@ -219,7 +220,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		try {
 			logger.info("[doOnFullSync]{}", this);
-			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer);
+			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer, resourceManager);
 			setRdbDumper(rdbDumper);
 			redisKeeperServer.setRdbDumper(rdbDumper, true);
 		} catch (SetRdbDumperException e) {

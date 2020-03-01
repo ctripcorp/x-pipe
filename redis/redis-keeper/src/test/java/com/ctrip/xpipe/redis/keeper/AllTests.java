@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.redis.keeper.config.CompositeLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.*;
@@ -45,7 +46,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	SlaveOfCommandHandlerTest.class,
 	KeeperCommandHandlerTest.class,
 	InfoHandlerTest.class,
-	DefaultKeeperStatsTest.class
+	DefaultKeeperStatsTest.class,
+	CompositeLeakyBucketTest.class,
+	RedisMasterReplicationTrafficRateLimitTest.class
 })
 public class AllTests {
 

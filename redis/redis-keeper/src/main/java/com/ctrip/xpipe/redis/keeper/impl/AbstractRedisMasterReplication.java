@@ -32,9 +32,13 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -44,11 +48,15 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -98,23 +106,31 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private int commandTimeoutMilli;
 
-	private ProxyResourceManager proxyResourceManager;
+	private List<RedisMasterReplicationObserver> replicationObservers = Lists.newArrayList();
+
+	protected KeeperResourceManager resourceManager;
 
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-										  ScheduledExecutorService scheduled, int replTimeoutMilli, ProxyResourceManager proxyResourceManager) {
+										  ScheduledExecutorService scheduled, int replTimeoutMilli, KeeperResourceManager resourceManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.replTimeoutMilli = replTimeoutMilli;
 		this.scheduled = scheduled;
-		this.proxyResourceManager = proxyResourceManager;
+		this.resourceManager = resourceManager;
 		this.commandTimeoutMilli = initCommandTimeoutMilli();
 	}
 
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		addRedisMasterReplicationObserver(new LeakyBucketBasedMasterReplicationListener(this, redisKeeperServer, resourceManager, scheduled));
+	}
+
 	public AbstractRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster, NioEventLoopGroup nioEventLoopGroup,
-										  ScheduledExecutorService scheduled, ProxyResourceManager proxyResourceManager) {
-		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, proxyResourceManager);
+										  ScheduledExecutorService scheduled, KeeperResourceManager resourceManager) {
+		this(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI, resourceManager);
 	}
 
 	public RedisMaster getRedisMaster() {
@@ -174,18 +190,21 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			doConnect(b);
 		} catch (Exception e) {
 			logger.error("[doConnect0] ", e);
-
-			scheduled.schedule(new Runnable() {
-				@Override
-				public void run() {
-					try{
-						connectWithMaster();
-					}catch(Throwable th){
-						logger.error("[doConnect0][connectUntilConnected]" + AbstractRedisMasterReplication.this, th);
-					}
-				}
-			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+			reconnectMasterLater();
 		}
+	}
+
+	private void reconnectMasterLater() {
+		scheduled.schedule(new Runnable() {
+			@Override
+			public void run() {
+				try{
+					connectWithMaster();
+				}catch(Throwable th){
+					logger.error("[reconnectMasterLater]" + AbstractRedisMasterReplication.this, th);
+				}
+			}
+		}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
 	}
 
 	protected abstract void doConnect(Bootstrap b);
@@ -209,7 +228,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
 		ProxyConnectProtocol protocol = endpoint.getProxyProtocol();
 		if(selector == null) {
-			selector = proxyResourceManager.createProxyEndpointSelector(protocol);
+			selector = resourceManager.createProxyEndpointSelector(protocol);
 		}
 		ProxyEndpoint nextHop = selector.nextHop();
 		logger.info("[tryConnectThroughProxy] connect endpoint: {}", nextHop.getUri());
@@ -236,14 +255,16 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		connectedTime = System.currentTimeMillis();
 		this.masterChannel = channel;
 		clientPool = new FixedObjectPool<NettyClient>(new DefaultNettyClient(channel));
-
+		for(RedisMasterReplicationObserver observer : replicationObservers) {
+			observer.onMasterConnected();
+		}
 		checkTimeout(channel);
 
 		if(isMasterConnectThroughProxy()) {
 			ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
 			channel.writeAndFlush(endpoint.getProxyProtocol().output());
 		}
-		
+
 		checkKeeper();
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
@@ -253,7 +274,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		Replconf capa = new Replconf(clientPool, ReplConfType.CAPA, scheduled, commandTimeoutMilli,
 				CAPA.EOF.toString(), CAPA.PSYNC2.toString());
 		chain.add(new FailSafeCommandWrapper<>(capa));
-		
+
 		try {
 			executeCommand(chain).addListener(new CommandFutureListener() {
 
@@ -317,6 +338,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	public void masterDisconntected(Channel channel) {
 
 		logger.info("[masterDisconntected]{}", channel);
+		for(RedisMasterReplicationObserver observer : replicationObservers) {
+			observer.onMasterDisconnected();
+		}
 		dumpFail(new IOException("master closed:" + channel));
 	}
 
@@ -337,6 +361,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	protected void sendReplicationCommand() throws CommandExecutionException {
+		for(RedisMasterReplicationObserver observer : replicationObservers) {
+			observer.beforeSendPsync(masterChannel);
+		}
+		if(masterChannel != null && (!masterChannel.isActive() || !masterChannel.isOpen())) {
+			reconnectMasterLater();
+			return;
+		}
 		executeCommand(psyncCommand());
 	}
 
@@ -372,6 +403,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 		return new NettySlaveHandler(this, redisKeeperServer, keeperConfig != null? keeperConfig.getTrafficReportIntervalMillis() : KeeperConfig.DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS);
+	}
+
+	@Override
+	public void addRedisMasterReplicationObserver(RedisMasterReplicationObserver observer) {
+		replicationObservers.add(observer);
 	}
 
 	@Override
@@ -430,6 +466,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	@Override
 	public void onContinue(String requestReplId, String responseReplId) {
+		for(RedisMasterReplicationObserver observer : replicationObservers) {
+			observer.onContinue();
+		}
 		doOnContinue();
 	}
 
@@ -437,7 +476,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected void dumpFinished() {
 		logger.info("[dumpFinished]{}", this);
-
+		for(RedisMasterReplicationObserver observer : replicationObservers) {
+			observer.onDumpFinished();
+		}
 		RdbDumper dumper = rdbDumper.get();
 		if (dumper != null) {
 			rdbDumper.set(null);
@@ -481,6 +522,129 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@VisibleForTesting
 	protected int commandTimeoutMilli() {
 		return commandTimeoutMilli;
+	}
+
+	public class LeakyBucketBasedMasterReplicationListener implements RedisMasterReplicationObserver {
+
+		public final static String KEY_CHECK_PARTIAL_SYNC_INTERVAL = "keeper.check.partial.traffic.milli";
+		private int checkPartialSyncInterval = Integer.parseInt(System.getProperty(KEY_CHECK_PARTIAL_SYNC_INTERVAL, "1000"));
+
+		private RedisMasterReplication redisMasterReplication;
+
+		private RedisKeeperServer redisKeeperServer;
+
+		private KeeperResourceManager resourceManager;
+
+		protected AtomicBoolean holdToken = new AtomicBoolean(false);
+
+		private ScheduledExecutorService scheduled;
+
+		protected ScheduledFuture<?> releaseTokenFuture;
+
+		private volatile long latestTps;
+
+		public LeakyBucketBasedMasterReplicationListener(RedisMasterReplication redisMasterReplication,
+														 RedisKeeperServer redisKeeperServer,
+														 KeeperResourceManager resourceManager,
+														 ScheduledExecutorService scheduled) {
+			this.redisMasterReplication = redisMasterReplication;
+			this.redisKeeperServer = redisKeeperServer;
+			this.resourceManager = resourceManager;
+			this.scheduled = scheduled;
+		}
+
+		@Override
+		public void onMasterConnected() {
+			initAndClear();
+		}
+
+		@Override
+		public void beforeSendPsync(Channel channel) {
+			if (redisMasterReplication.redisMaster().isKeeper()
+					&& (redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive)) {
+				if(resourceManager.getLeakyBucket().tryAcquire()) {
+						holdToken.set(true);
+				} else {
+					logger.error("[beforeSendPsync][upstream is keeper]not acquire bucket, close channel{} and wait for reconnect",
+							ChannelUtil.getDesc(channel));
+					channel.close();
+				}
+			}
+		}
+
+		@Override
+		public void onMasterDisconnected() {
+			if (holdToken.compareAndSet(true, false)) {
+				resourceManager.getLeakyBucket().release();
+			}
+			if (releaseTokenFuture != null && !releaseTokenFuture.isDone()) {
+				releaseTokenFuture.cancel(true);
+				releaseTokenFuture = null;
+			}
+		}
+
+		@Override
+		public void onContinue() {
+			tryDelayReleaseToken();
+		}
+
+		@Override
+		public void onDumpFinished() {
+			if (holdToken.compareAndSet(true, false)) {
+				resourceManager.getLeakyBucket().release();
+			}
+		}
+
+		private void initAndClear() {
+			holdToken.set(false);
+			if (releaseTokenFuture != null) {
+				releaseTokenFuture.cancel(true);
+				releaseTokenFuture = null;
+			}
+		}
+
+		private void tryDelayReleaseToken() {
+			if (holdToken.get()) {
+				KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
+				// num(files) * file-size / cross-dc-replication-rate
+				long afterMilli = 1000 * keeperConfig.getReplicationStoreCommandFileNumToKeep()
+						* keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
+				long deadline = afterMilli + System.currentTimeMillis();
+				logger.info("[tryDelayReleaseToken] release at most {}", DateTimeUtils.timeAsString(deadline));
+				checkIfNeedReleaseToken(deadline);
+			}
+		}
+
+		//either obvious speed shrink down, or under pre-defined threshold (low water mark)
+		//we consider TCP traffic is safe enough to release the token
+		private void checkIfNeedReleaseToken(final long deadline) {
+			logger.debug("[checkIfNeedReleaseToken]");
+			releaseTokenFuture = scheduled.schedule(new Runnable() {
+				@Override
+				public void run() {
+					if (holdToken.get()) {
+						if(isTokenReadyToRelease(deadline)) {
+							holdToken.set(false);
+							resourceManager.getLeakyBucket().release();
+						} else {
+							checkIfNeedReleaseToken(deadline);
+						}
+					}
+				}
+			}, checkPartialSyncInterval, TimeUnit.MILLISECONDS);
+		}
+
+		private boolean isTokenReadyToRelease(final long deadline) {
+			if (System.currentTimeMillis() >= deadline) {
+				return true;
+			}
+			long tps = redisKeeperServer.getKeeperMonitor().getKeeperStats().getInputInstantaneousBPS();
+			if (tps < latestTps/2 || tps <= redisKeeperServer.getKeeperConfig().getReplicationTrafficLowWaterMark()) {
+				return true;
+			}
+			latestTps = tps;
+			return false;
+		}
 	}
 
 }

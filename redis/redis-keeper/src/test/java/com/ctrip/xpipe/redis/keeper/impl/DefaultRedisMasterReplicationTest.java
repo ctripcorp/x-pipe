@@ -7,17 +7,18 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.simpleserver.Server;
+import com.ctrip.xpipe.utils.DefaultLeakyBucket;
 import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -66,7 +67,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	private MetaStore metaStore;
 
 	@Mock
-	private ProxyResourceManager proxyResourceManager;
+	private KeeperResourceManager proxyResourceManager;
 
 	private NioEventLoopGroup nioEventLoopGroup;
 
@@ -186,7 +187,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
-		ProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm());
+		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(()->4));
 
 		// first time empty list, sec time return endpoint
 		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())

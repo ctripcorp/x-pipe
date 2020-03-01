@@ -17,6 +17,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getMetaRefreshIntervalMillis();
 
+	String getMetaServerAddress();
+
 	int getReplicationStoreCommandFileSize();
 
 	int getReplicationStoreGcIntervalSeconds();
@@ -38,5 +40,10 @@ public interface KeeperConfig extends CoreConfig{
 	int getDelayLogLimitMicro();
 
     long getTrafficReportIntervalMillis();
-	
+
+    long getReplicationTrafficHighWaterMark();
+
+    long getReplicationTrafficLowWaterMark();
+
+    int getLeakyBucketInitSize();
 }

@@ -757,12 +757,19 @@ public class AbstractTest {
 
         private int timeout;
 
+        private volatile boolean processing = false;
+
         public BlockingCommand(int sleepTime) {
             this.sleepTime = sleepTime;
         }
 
+        public boolean isProcessing() {
+            return processing;
+        }
+
         @Override
         protected void doExecute() throws Exception {
+            processing = true;
             Thread.sleep(sleepTime);
             future().setSuccess();
         }

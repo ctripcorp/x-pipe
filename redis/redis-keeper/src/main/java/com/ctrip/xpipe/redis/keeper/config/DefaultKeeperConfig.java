@@ -25,8 +25,16 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_DELAY_LOG_LIMIT_MICRO = "monitor.delay.log.limit.micro";
     private static final String KEY_TRAFFIC_REPORT_INTERVAL = "monitor.traffic.report.interval";
 
+	private static final String KEY_LEAKY_BUCKET_INIT = "leaky.bucket.init";
+
 	private static String KEEPER_CONTAINER_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
 	private static String KEEPER_CONTAINER_PROPERTIES_FILE = "keeper-container.properties";
+
+	private static String KYE_REPLICATION_TRAFFIC_HIGH_WATER_MARK = "keeper.repl.traffic.high.water.mark";
+
+	private static String KYE_REPLICATION_TRAFFIC_LOW_WATER_MARK = "keeper.repl.traffic.low.water.mark";
+
+	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
 	public DefaultKeeperConfig(){
 
@@ -55,6 +63,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getMetaRefreshIntervalMillis() {
 		return 3000;
+	}
+
+	@Override
+	public String getMetaServerAddress() {
+		return getProperty(KEY_META_SERVER_ADDRESS, "");
 	}
 
 	@Override
@@ -102,4 +115,19 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
     public long getTrafficReportIntervalMillis() {
         return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS);
     }
+
+	@Override
+	public long getReplicationTrafficHighWaterMark() {
+		return getLongProperty(KYE_REPLICATION_TRAFFIC_HIGH_WATER_MARK, 100L * 1024 * 1024);  // 100MB/s
+	}
+
+	@Override
+	public long getReplicationTrafficLowWaterMark() {
+		return getLongProperty(KYE_REPLICATION_TRAFFIC_LOW_WATER_MARK, 20L * 1024 * 1024); // 20MB/s
+	}
+
+	@Override
+	public int getLeakyBucketInitSize() {
+		return getIntProperty(KEY_LEAKY_BUCKET_INIT, 1);
+	}
 }

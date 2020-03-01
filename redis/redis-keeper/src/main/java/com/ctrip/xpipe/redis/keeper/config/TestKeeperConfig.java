@@ -47,6 +47,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public String getMetaServerAddress() {
+		return "";
+	}
+
+	@Override
 	public int getReplicationStoreCommandFileSize() {
 		return replicationStoreCommandFileSize;
 	}
@@ -124,4 +129,31 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
     public long getTrafficReportIntervalMillis() {
         return 10000L;
     }
+
+    private long replLowWaterMark = 100L * 1024 * 1024;
+	@Override
+	public long getReplicationTrafficHighWaterMark() {
+		return replHighWaterMark;
+	}
+
+	private long replHighWaterMark = 20L * 1024 * 1024;
+	@Override
+	public long getReplicationTrafficLowWaterMark() {
+		return replLowWaterMark;
+	}
+
+	public TestKeeperConfig setReplLowWaterMark(long replLowWaterMark) {
+		this.replLowWaterMark = replLowWaterMark;
+		return this;
+	}
+
+	public TestKeeperConfig setReplHighWaterMark(long replHighWaterMark) {
+		this.replHighWaterMark = replHighWaterMark;
+		return this;
+	}
+
+	@Override
+	public int getLeakyBucketInitSize() {
+		return 3;
+	}
 }

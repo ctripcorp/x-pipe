@@ -75,7 +75,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	CausalCommandTest.class,
 	CausalChainTest.class,
 	MutexableOneThreadTaskExecutorTest.class,
-	KeyedOneThreadMutexableTaskExecutorTest.class
+	KeyedOneThreadMutexableTaskExecutorTest.class,
+	DefaultLeakyBucketTest.class
 })
 public class AllTests {
 
