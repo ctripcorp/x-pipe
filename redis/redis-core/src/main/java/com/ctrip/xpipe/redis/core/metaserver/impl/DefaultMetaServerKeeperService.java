@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import oracle.jvm.hotspot.jfr.Producer;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -12,6 +13,8 @@ import org.springframework.http.MediaType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * @author chen.zhu
@@ -20,18 +23,20 @@ import java.util.List;
  */
 public class DefaultMetaServerKeeperService extends AbstractMetaService implements MetaServerKeeperService {
 
-    private List<String> metaServerAddress;
+    private Supplier<String> metaServerAddress;
 
-    private String keeperToeknStatus;
+    public DefaultMetaServerKeeperService(Supplier<String> metaServerAddress) {
+        this.metaServerAddress = metaServerAddress;
+    }
 
-    public DefaultMetaServerKeeperService(String metaServerAddress) {
-        this.metaServerAddress = Lists.newArrayList(metaServerAddress);
-        this.keeperToeknStatus = META_SERVER_SERVICE.KEEPER_TOKEN_STATUS.getRealPath(metaServerAddress);
+    public DefaultMetaServerKeeperService(int retryTimes, int retryIntervalMilli, Supplier<String> metaServerAddress) {
+        super(retryTimes, retryIntervalMilli);
+        this.metaServerAddress = metaServerAddress;
     }
 
     @Override
     protected List<String> getMetaServerList() {
-        return metaServerAddress;
+        return Lists.newArrayList(metaServerAddress.get());
     }
 
     @Override
@@ -39,14 +44,10 @@ public class DefaultMetaServerKeeperService extends AbstractMetaService implemen
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8_VALUE);
         HttpEntity<Object> entity = new HttpEntity<Object>(request, httpHeaders);
-        return pollMetaServer(new Function<String, KeeperContainerTokenStatusResponse>() {
-            @Override
-            public KeeperContainerTokenStatusResponse apply(String metaServerAddress) {
-                return restTemplate.exchange(META_SERVER_SERVICE.KEEPER_TOKEN_STATUS.getRealPath(metaServerAddress),
+        return restTemplate.exchange(META_SERVER_SERVICE.KEEPER_TOKEN_STATUS.getRealPath(metaServerAddress.get()),
                         HttpMethod.POST,
                         entity,
                         KeeperContainerTokenStatusResponse.class).getBody();
-            }
-        });
+
     }
 }

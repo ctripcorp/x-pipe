@@ -50,7 +50,7 @@ public class Production extends AbstractProfile{
 
 	@Bean
 	public MetaServerKeeperService getMetaServerKeeperService(KeeperConfig keeperConfig) {
-		return new DefaultMetaServerKeeperService(keeperConfig.getMetaServerAddress());
+		return new DefaultMetaServerKeeperService(()->keeperConfig.getMetaServerAddress());
 	}
 
 	@Bean

@@ -99,16 +99,12 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
     @Override
     public void start() throws Exception {
-        if(keeperConfig.getMetaServerAddress() != null) {
-            startTalkToMetaServer();
-        }
+        startTalkToMetaServer();
     }
 
     @Override
     public void stop() throws Exception {
-        if(keeperConfig.getMetaServerAddress() != null) {
-            stopTalkToMetaServer();
-        }
+        stopTalkToMetaServer();
     }
 
     private void startTalkToMetaServer() {
@@ -124,6 +120,10 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
     @VisibleForTesting
     protected void refresh() {
+        if(keeperConfig.getMetaServerAddress() == null) {
+            logger.info("[refresh]address null, will not update token size");
+            return;
+        }
         List<RedisKeeperServer> keepers = keeperContainerService.list();
         int total = keepers.size(), ack = 0;
         for (RedisKeeperServer keeperServer : keepers) {
