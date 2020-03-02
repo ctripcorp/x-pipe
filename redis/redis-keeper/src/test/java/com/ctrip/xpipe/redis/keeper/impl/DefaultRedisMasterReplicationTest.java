@@ -18,7 +18,7 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.utils.DefaultLeakyBucket;
+import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket;
 import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -187,7 +187,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
-		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(()->4));
+		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(4));
 
 		// first time empty list, sec time return endpoint
 		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())

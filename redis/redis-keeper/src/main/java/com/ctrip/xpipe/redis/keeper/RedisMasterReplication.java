@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.keeper.ratelimit.PsyncChecker;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
@@ -12,7 +13,7 @@ import io.netty.channel.Channel;
  *
  * Aug 24, 2016
  */
-public interface RedisMasterReplication extends PsyncObserver, Lifecycle{
+public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
 
 	void handleResponse(Channel channel, ByteBuf msg) throws XpipeException;
 
@@ -24,19 +25,17 @@ public interface RedisMasterReplication extends PsyncObserver, Lifecycle{
 	
 	RedisMaster redisMaster();
 
-	void addRedisMasterReplicationObserver(RedisMasterReplicationObserver observer);
+	void updateReplicationObserver(RedisMasterReplicationObserver observer);
 
-	public interface RedisMasterReplicationObserver {
+	public interface RedisMasterReplicationObserver extends PsyncChecker {
 
 		void onMasterConnected();
 
 		void onMasterDisconnected();
 
-		void beforeSendPsync(Channel masterChannel);
-
-		void onContinue();
-
 		void onDumpFinished();
+
+		void onDumpFail();
 	}
 
 }

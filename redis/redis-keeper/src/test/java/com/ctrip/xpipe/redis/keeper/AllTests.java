@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
-import com.ctrip.xpipe.redis.keeper.config.CompositeLeakyBucketTest;
+import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.*;
@@ -8,6 +8,8 @@ import com.ctrip.xpipe.redis.keeper.impl.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStatsTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
+import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
+import com.ctrip.xpipe.redis.keeper.ratelimit.RedisMasterReplicationTrafficRateLimitTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -47,6 +49,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	KeeperCommandHandlerTest.class,
 	InfoHandlerTest.class,
 	DefaultKeeperStatsTest.class,
+	DefaultLeakyBucketTest.class,
 	CompositeLeakyBucketTest.class,
 	RedisMasterReplicationTrafficRateLimitTest.class
 })

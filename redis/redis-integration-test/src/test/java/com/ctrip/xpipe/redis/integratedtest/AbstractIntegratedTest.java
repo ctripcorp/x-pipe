@@ -16,7 +16,7 @@ import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
-import com.ctrip.xpipe.utils.DefaultLeakyBucket;
+import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;

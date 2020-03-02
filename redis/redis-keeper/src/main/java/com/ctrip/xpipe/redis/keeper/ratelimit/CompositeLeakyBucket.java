@@ -1,12 +1,12 @@
-package com.ctrip.xpipe.redis.keeper.config;
+package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.utils.*;
 import org.slf4j.Logger;
@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntSupplier;
 
 /**
  * @author chen.zhu
@@ -49,14 +47,9 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
         this.metaServerKeeperService = metaServerKeeperService;
         this.keeperContainerService = keeperContainerService;
         this.keeperConfig = keeperConfig;
-        this.origin = new DefaultLeakyBucket(new IntSupplier() {
-            @Override
-            public int getAsInt() {
-                return keeperConfig.getLeakyBucketInitSize();
-            }
-        });
+        this.origin = new DefaultLeakyBucket(keeperConfig.getLeakyBucketInitSize());
         String localIpAddress = Objects.requireNonNull(IpUtils.getFistNonLocalIpv4ServerAddress("10")).getHostAddress();
-        this.keeperContainerMeta = new KeeperContainerMeta().setIp(localIpAddress).setPort(8080);
+        this.keeperContainerMeta = new KeeperContainerMeta().setIp(localIpAddress);//.setPort(Integer.parseInt(System.getProperty("local.server.port")));
     }
 
     @Override
@@ -76,15 +69,10 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     }
 
     @Override
-    public void reset() {
-        if(!closed.get()) {
-            origin.reset();
-        }
-    }
-
-    @Override
     public void resize(int newSize) {
-        origin.resize(newSize);
+        if(!closed.get()) {
+            origin.resize(newSize);
+        }
     }
 
     @Override
@@ -93,8 +81,8 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     }
 
     @Override
-    public int totalSize() {
-        return origin.totalSize();
+    public int getTotalSize() {
+        return origin.getTotalSize();
     }
 
     @Override
@@ -140,7 +128,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                 return;
             }
             closed.set(response.isClose());
-            if (response.getTokenSize() != origin.totalSize()) {
+            if (response.getTokenSize() != origin.getTotalSize()) {
                 origin.resize(response.getTokenSize());
             }
         } catch (Exception e) {

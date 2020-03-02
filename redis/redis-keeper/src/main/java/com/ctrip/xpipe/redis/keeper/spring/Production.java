@@ -11,9 +11,9 @@ import com.ctrip.xpipe.redis.keeper.config.*;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.DefaultLeakyBucket;
-import com.ctrip.xpipe.utils.LeakyBucket;
+import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucket;
 import com.ctrip.xpipe.zk.ZkClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,7 +54,7 @@ public class Production extends AbstractProfile{
 	}
 
 	@Bean
-	public KeeperResourceManager getProxyResourceManager(LeakyBucket leakyBucket) {
+	public KeeperResourceManager getKeeperResourceManager(LeakyBucket leakyBucket) {
 		ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(()->2);
 		NextHopAlgorithm algorithm = new NaiveNextHopAlgorithm();
 		return new DefaultKeeperResourceManager(endpointManager, algorithm, leakyBucket);
@@ -62,8 +62,8 @@ public class Production extends AbstractProfile{
 
 	@Bean(initMethod = "start", destroyMethod = "stop")
 	public CompositeLeakyBucket getLeakyBucket(KeeperConfig keeperConfig,
-												MetaServerKeeperService metaServerKeeperService,
-												KeeperContainerService keeperContainerService) {
+                                               MetaServerKeeperService metaServerKeeperService,
+                                               KeeperContainerService keeperContainerService) {
 		return new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
 	}
 }

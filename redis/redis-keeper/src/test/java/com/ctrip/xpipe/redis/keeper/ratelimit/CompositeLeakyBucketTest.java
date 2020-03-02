@@ -1,7 +1,8 @@
-package com.ctrip.xpipe.redis.keeper.config;
+package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -9,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -34,11 +36,14 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     @Mock
     private KeeperContainerService keeperContainerService;
 
+    @Spy
+    private TestKeeperConfig keeperConfig = new TestKeeperConfig();
+
     @Before
     public void beforeCompositeLeakyBucketTest() {
         MockitoAnnotations.initMocks(this);
         when(keeperContainerService.list()).thenReturn(Lists.newArrayList());
-        leakyBucket = new CompositeLeakyBucket(new TestKeeperConfig(), metaServerKeeperService, keeperContainerService);
+        leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
     }
 
     @Test
@@ -58,7 +63,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             });
         }
         latch.await(1000, TimeUnit.MILLISECONDS);
-        Assert.assertEquals(leakyBucket.totalSize(), counter.get());
+        Assert.assertEquals(leakyBucket.getTotalSize(), counter.get());
     }
 
     @Test
@@ -87,7 +92,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             leakyBucket.tryAcquire();
             leakyBucket.release();
         }
-        leakyBucket.reset();
+        leakyBucket.resize(0);
         Assert.assertEquals(3, leakyBucket.references());
     }
 
@@ -131,6 +136,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     public void testRefresh() throws InterruptedException {
         when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any()))
                 .thenReturn(new MetaServerKeeperService.KeeperContainerTokenStatusResponse(3, true));
+        when(keeperConfig.getMetaServerAddress()).thenReturn("http://metaserver.com");
         AtomicInteger counter = new AtomicInteger();
         int task = 3 * 100, newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);

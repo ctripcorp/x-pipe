@@ -1,12 +1,10 @@
-package com.ctrip.xpipe.redis.keeper.impl;
+package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
@@ -18,13 +16,13 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.impl.fakeredis.AbstractFakeRedisTest;
+import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
+import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
+import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
+import com.ctrip.xpipe.redis.keeper.impl.RedisMasterReplicationRdbDumper;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
-import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.utils.DefaultLeakyBucket;
-import com.ctrip.xpipe.utils.LeakyBucket;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -37,17 +35,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.context.annotation.Bean;
 
 import java.io.IOException;
-import java.security.acl.Owner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
-import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.LeakyBucketBasedMasterReplicationListener.KEY_CHECK_PARTIAL_SYNC_INTERVAL;
+import static com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListener.KEY_CHECK_PARTIAL_SYNC_INTERVAL;
 import static org.mockito.Mockito.*;
 
 /**
@@ -129,7 +125,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     @Test
     public void testFullSyncFailHalfWayWontBother() throws Exception {
         server.setSendHalfRdbAndCloseConnectionCount(1);
-        LeakyBucket leakyBucket = new DefaultLeakyBucket(()->1);
+        LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         CountDownLatch countDownLatch = new CountDownLatch(2);
@@ -163,7 +159,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         countDownLatch.await(500, TimeUnit.MILLISECONDS);
         waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() == 3, 5000);
         Assert.assertTrue(2 <= ((ControllableRedisMasterReplication)armr).getConnectTimes());
-        Assert.assertTrue(2 <= otherReplication.getConnectTimes());
+        Assert.assertTrue(1 <= otherReplication.getConnectTimes());
     }
 
     private void makePartialSync() {
@@ -174,7 +170,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     @Test
     public void testPartialSyncReleaseTokenEventually() throws Exception {
         makePartialSync();
-        LeakyBucket leakyBucket = new DefaultLeakyBucket(()->1);
+        LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
@@ -195,7 +191,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     @Test
     public void testPartialSyncReleaseTokenASAP() throws Exception {
         makePartialSync();
-        LeakyBucket leakyBucket = new DefaultLeakyBucket(()->1);
+        LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
@@ -217,7 +213,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     public void testRateLimitWontImpactBackupKeeper() throws Exception {
         makePartialSync();
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateBackup(redisKeeperServer));
-        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(()->1));
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         LifecycleHelper.initializeIfPossible(armr);
@@ -231,7 +227,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     public void testRateLimitWontInfluencePrimaryDcKeeper() throws Exception {
         makePartialSync();
         when(redisMaster.isKeeper()).thenReturn(false);
-        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(()->1));
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         LifecycleHelper.initializeIfPossible(armr);
@@ -244,21 +240,21 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     @Test
     public void testTokenWillBeFreedDueToFullSyncFailure() throws Exception {
         server.setSendHalfRdbAndCloseConnectionCount(1);
-        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(()->1));
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         LifecycleHelper.initializeIfPossible(armr);
         LifecycleHelper.startIfPossible(armr);
 
         waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() == 2, 2000);
-        sleep(50);
+        sleep(100);
         verify(leakyBucket, times(2)).release();
     }
 
     @Test
     public void testTokenShallReleaseAfterPartialSyncFailure() throws Exception {
         makePartialSync();
-        LeakyBucket leakyBucket = new DefaultLeakyBucket(()->1);
+        LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
@@ -272,7 +268,8 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         //now disturb the link when partial sync
         server.stop();
         server = null;
-        sleep(200);
+        armr.stop();
+        sleep(100);
         Assert.assertEquals(1, leakyBucket.references());
     }
 

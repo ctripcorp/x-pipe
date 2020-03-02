@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.utils;
+package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 /**
  * @author chen.zhu
@@ -11,11 +11,9 @@ public interface LeakyBucket {
 
     void release();
 
-    void reset();
-
     void resize(int newSize);
 
     int references();
 
-    int totalSize();
+    int getTotalSize();
 }

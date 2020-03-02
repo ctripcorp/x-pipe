@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
-import com.ctrip.xpipe.utils.DefaultLeakyBucket;
-import com.ctrip.xpipe.utils.LeakyBucket;
+import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucket;
 
 /**
  * @author chen.zhu

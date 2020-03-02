@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.config.*;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkTestServer;

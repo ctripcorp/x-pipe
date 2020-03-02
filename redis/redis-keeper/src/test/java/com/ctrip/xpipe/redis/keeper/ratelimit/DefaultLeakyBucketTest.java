@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.utils;
+package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.config.Config;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,6 +10,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket.DEFAULT_BUCKET_SIZE;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -22,8 +28,7 @@ public class DefaultLeakyBucketTest extends AbstractTest {
 
     @Before
     public void beforeLeakyBucketTest() {
-
-        bucket = new DefaultLeakyBucket(()->init);
+        bucket = new DefaultLeakyBucket(1);
     }
 
     @Test
@@ -77,6 +82,12 @@ public class DefaultLeakyBucketTest extends AbstractTest {
     }
 
     @Test
+    public void testResizeSynchronously() {
+        bucket.resize(100);
+        Assert.assertEquals(100, bucket.references());
+    }
+
+    @Test
     public void testResize() throws InterruptedException {
         AtomicInteger counter = new AtomicInteger();
         int task = init * 100, newSize = 10;
@@ -98,6 +109,7 @@ public class DefaultLeakyBucketTest extends AbstractTest {
                 public void run() {
                     try {
                         barrier.await();
+                        sleep(randomInt(0, 2));
                     } catch (Exception ignore) {
                     }
                     if (bucket.tryAcquire()) {

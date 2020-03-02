@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
-import com.ctrip.xpipe.utils.DefaultLeakyBucket;
-import com.ctrip.xpipe.utils.LeakyBucket;
+import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucket;
 
 /**
  * @author chen.zhu
