@@ -38,7 +38,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
     private ScheduledExecutorService scheduled;
 
-    private ScheduledFuture<?> metaServerTalkProcess;
+    private ScheduledFuture<?> metaServerTalkProcess, checkConfigChangeProcess;
 
     private KeeperContainerMeta keeperContainerMeta;
 
@@ -49,7 +49,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
         this.keeperConfig = keeperConfig;
         this.origin = new DefaultLeakyBucket(keeperConfig.getLeakyBucketInitSize());
         String localIpAddress = Objects.requireNonNull(IpUtils.getFistNonLocalIpv4ServerAddress("10")).getHostAddress();
-        this.keeperContainerMeta = new KeeperContainerMeta().setIp(localIpAddress);//.setPort(Integer.parseInt(System.getProperty("local.server.port")));
+        this.keeperContainerMeta = new KeeperContainerMeta().setIp(localIpAddress);
     }
 
     @Override
@@ -88,6 +88,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     @Override
     public void start() throws Exception {
         startTalkToMetaServer();
+        checkKeeperConfigChange();
     }
 
     @Override
@@ -143,5 +144,16 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
         if (scheduled != null) {
             scheduled.shutdownNow();
         }
+    }
+
+    private void checkKeeperConfigChange() {
+        checkConfigChangeProcess = scheduled.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                if(keeperConfig.getLeakyBucketInitSize() != origin.getTotalSize()) {
+                    origin.resize(keeperConfig.getLeakyBucketInitSize());
+                }
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 }
