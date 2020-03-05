@@ -101,6 +101,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 						throw new RedisRuntimeException("[write to payload truncate exception]" + payload, e);
 					}
 					bulkStringState = BULK_STRING_STATE.READING_CR;
+					continue;
 				} else {
 					break;
 				}
