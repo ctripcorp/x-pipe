@@ -122,8 +122,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	@Override
 	protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
-
-		while (true) {
+		while(true) {
 			switch (psyncState) {
 
 				case PSYNC_COMMAND_WAITING_REPONSE:
@@ -151,7 +150,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 						endReadRdb();
 						break;
 					} else {
-						return null;
+						break;
 					}
 				case READING_COMMANDS:
 					if (saveCommands) {
@@ -161,11 +160,12 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 							logger.error("[doHandleResponse][write commands error]" + this, e);
 						}
 					}
-					return null;
+					break;
 				default:
 					throw new IllegalStateException("unknown state:" + psyncState);
 			}
 
+			return null;
 		}
 	}
 
