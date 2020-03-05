@@ -36,6 +36,16 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 		public ReplicationStoreStats getReplicationStoreStats() {
 			return replicationStoreStats;
 		}
+
+		@Override
+		public void start() throws Exception {
+
+		}
+
+		@Override
+		public void stop() throws Exception {
+
+		}
 	}
 
 	@Override

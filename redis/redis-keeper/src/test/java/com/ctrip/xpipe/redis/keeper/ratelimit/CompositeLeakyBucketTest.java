@@ -118,6 +118,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
                 public void run() {
                     try {
                         barrier.await();
+                        sleep(10);
                     } catch (Exception ignore) {
                     }
                     if (leakyBucket.tryAcquire()) {

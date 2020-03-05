@@ -21,6 +21,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author chen.zhu
  * <p>
  * Feb 25, 2020
+ *
+ * Token numbers would be manipulated through two stuffs:
+ *  1. metaserver dynamically arrange it
+ *  2. keeeper container's Apollo config would change
+ *
+ * So, the principle will be
+ *  Apollo maintance the minimum token num we should hold
+ *  MetaServer will define how many tokens we could take or close the ratelimit
+ *
+ * To make it simple
+ *  MetaServer cannot impact the minimum token, which, if it were attempting a smaller token than Apollo says,
+ *  the adjustment will not work
+ *
+ *  MetaServer can only offer what's more than Apollo config, but never less than
  */
 public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
@@ -87,6 +101,8 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
     @Override
     public void start() throws Exception {
+        int threadSize = 2;
+        scheduled = Executors.newScheduledThreadPool(threadSize, XpipeThreadFactory.create("leaky-bucket"));
         startTalkToMetaServer();
         checkKeeperConfigChange();
     }
@@ -94,11 +110,14 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     @Override
     public void stop() throws Exception {
         stopTalkToMetaServer();
+        stopCheckKeeperConfig();
+        if (scheduled != null) {
+            scheduled.shutdownNow();
+        }
     }
 
     private void startTalkToMetaServer() {
-        int threadSize = 2, period = 10;
-        scheduled = Executors.newScheduledThreadPool(threadSize, XpipeThreadFactory.create("leaky-bucket"));
+        int period = 10;
         metaServerTalkProcess = scheduled.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -129,7 +148,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                 return;
             }
             closed.set(response.isClose());
-            if (response.getTokenSize() != origin.getTotalSize()) {
+            if (response.getTokenSize() > origin.getTotalSize()) {
                 origin.resize(response.getTokenSize());
             }
         } catch (Exception e) {
@@ -140,9 +159,6 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     private void stopTalkToMetaServer() {
         if (metaServerTalkProcess != null) {
             metaServerTalkProcess.cancel(true);
-        }
-        if (scheduled != null) {
-            scheduled.shutdownNow();
         }
     }
 
@@ -155,5 +171,11 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                 }
             }
         }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    private void stopCheckKeeperConfig() {
+        if (checkConfigChangeProcess != null) {
+            checkConfigChangeProcess.cancel(true);
+        }
     }
 }
