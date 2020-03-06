@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.command.CommandExecutionException;
@@ -33,6 +34,7 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReason;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListener;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -373,6 +375,9 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		if(canSendPsync()) {
 			executeCommand(psyncCommand());
 		} else {
+			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getShardId());
+			redisKeeperServer.getKeeperMonitor().getKeeperStats().increasePsyncSendFail();
+			redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.TOKEN_LACK);
 			// close and reconnect later by masterDisconnect Logic
 			masterChannel.close();
 		}
@@ -393,7 +398,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 				if (!commandFuture.isSuccess()) {
 					logger.error("[operationComplete][psyncCommand][fail]" + AbstractRedisMasterReplication.this, commandFuture.cause());
-
+					redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.MASTER_DISCONNECTED);
 					dumpFail(commandFuture.cause());
 					psyncFail(commandFuture.cause());
 				}

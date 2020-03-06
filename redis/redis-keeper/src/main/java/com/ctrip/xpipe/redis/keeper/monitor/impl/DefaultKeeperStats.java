@@ -5,6 +5,7 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
 import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReason;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -39,6 +40,10 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 	private InstantaneousMetric inputBytesInstantaneousMetric = new BaseInstantaneousMetric();
 
 	private InstantaneousMetric outputBytesInstantaneousMetric = new BaseInstantaneousMetric();
+
+	private PsyncFailReason lastFailReason;
+
+	private AtomicLong psyncSendFailCount = new AtomicLong();
 
 	public DefaultKeeperStats(ScheduledExecutorService scheduled) {
 		this.scheduled = scheduled;
@@ -122,6 +127,26 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 	@Override
 	public long getOutputBytes() {
 		return outputBytes.get();
+	}
+
+	@Override
+	public void increasePsyncSendFail() {
+		psyncSendFailCount.incrementAndGet();
+	}
+
+	@Override
+	public long getPsyncSendFailCount() {
+		return psyncSendFailCount.get();
+	}
+
+	@Override
+	public void setLastPsyncFailReason(PsyncFailReason reason) {
+		this.lastFailReason = reason;
+	}
+
+	@Override
+	public PsyncFailReason getLastPsyncFailReason() {
+		return this.lastFailReason;
 	}
 
 	private void updatePerSec() {
