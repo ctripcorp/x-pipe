@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -9,11 +8,11 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
@@ -475,47 +474,18 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 			String prefix = "健康监测有问题的shard及redis:\n";
 
-			Map<String, ClusterListClusterModel> unhealthyClusters = Maps.newHashMap();
-			for(DcMeta dcMeta: xpipeMeta.getDcs().values()) {
-				for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-					StringBuffer sb = new StringBuffer();
-					for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
-						boolean shardLogged = false;
-						for(RedisMeta redisMeta : shardMeta.getRedises()) {
-							HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-							long delay = delayService.getDelay(hostPort);
-							if(delay == TimeUnit.NANOSECONDS.toMillis(DelayAction.SAMPLE_LOST_AND_NO_PONG)
-									|| delay == TimeUnit.NANOSECONDS.toMillis(DelayAction.SAMPLE_LOST_BUT_PONG)
-							) {
+			Map<String, ClusterListClusterModel> result = Maps.newHashMap();
+			UnhealthyInfoModel unhealthyInfo = delayService.getAllUnhealthyInstance();
 
-								String clusterName = clusterMeta.getId();
-								unhealthyClusters.putIfAbsent(clusterName,
-										new ClusterListClusterModel(clusterMeta.getId()));
-								if(!shardLogged) {
-									shardLogged = true;
-									sb.append(shardMeta.getId()).append(": ");
-								}
-								sb.append(hostPort.toString()).append(", ");
-							}
-						}
-						if(shardLogged) {
-							sb.append(";\n");
-						}
-					}
-					ClusterListClusterModel cluster = unhealthyClusters.get(clusterMeta.getId());
-					if(cluster != null) {
-						String message = cluster.getMessage() == null ? "" : cluster.getMessage();
-						message += sb.toString();
-						if(!message.startsWith(prefix)) {
-							message = prefix + message;
-						}
-						cluster.setMessage(message);
-					}
-				}
+			for (String unhealthyCluster : unhealthyInfo.getUnhealthyClusterNames()) {
+				ClusterListClusterModel cluster = new ClusterListClusterModel(unhealthyCluster);
+				cluster.setMessage(prefix + unhealthyInfo.getUnhealthyClusterDesc(unhealthyCluster));
+				result.put(unhealthyCluster, cluster);
 			}
-			return richClusterInfo(unhealthyClusters);
+
+			return richClusterInfo(result);
 		} catch (Exception e) {
-			logger.error("[findUnhealthyClusters]{}", e);
+			logger.error("[findUnhealthyClusters]", e);
 			return Collections.emptyList();
 		}
 	}
