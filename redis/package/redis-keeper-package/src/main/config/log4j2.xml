@@ -74,7 +74,7 @@
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
 
-        <logger name="com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager" level="INFO" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperMonitor" level="INFO" additivity="false">
             <appender-ref ref="trafficLogger"/>
         </logger>
         <root level="INFO">
