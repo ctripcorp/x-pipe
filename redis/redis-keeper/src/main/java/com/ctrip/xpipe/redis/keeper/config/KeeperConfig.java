@@ -48,4 +48,6 @@ public interface KeeperConfig extends CoreConfig{
     long getReplicationTrafficLowWaterMark();
 
     int getLeakyBucketInitSize();
+
+    int getPartialSyncTrafficMonitorIntervalTimes();
 }

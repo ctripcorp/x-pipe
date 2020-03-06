@@ -77,11 +77,11 @@ public class InfoHandler extends AbstractCommandHandler{
 			return String.format("# %s%s", name(), RedisProtocol.CRLF);
 		}
 
-		protected String strAndNum(String key, long val) {
+		protected String strAndLong(String key, long val) {
 			return String.format("%s:%d%s", key, val, RedisProtocol.CRLF);
 		}
 
-		protected String strAndNum(String key, float val) {
+		protected String strAndFloat(String key, float val) {
 			return String.format("%s:%f%s", key, val, RedisProtocol.CRLF);
 		}
 
@@ -136,6 +136,14 @@ public class InfoHandler extends AbstractCommandHandler{
 
 		private static final String KEY_INSTANTANEOUS_OUTPUT_KBPS = "instantaneous_output_kbps";
 
+		private static final String KEY_PSYNC_SEND_FAILURE = "psync_fail_send";
+
+		private static final String KEY_LAST_FAIL_REASON = "last_psync_fail_reason";
+
+		private static final String KEY_PEAK_INPUT_KBPS = "peak_input_kbps";
+
+		private static final String KEY_PEAK_OUTPUT_KBPS = "peak_output_kbps";
+
 		private static final String KEY_TOTAL_SYNC_FULL = "sync_full";
 
 		private static final String KEY_TOTAL_SYNC_PARTIAL_OK = "sync_partial_ok";
@@ -144,17 +152,23 @@ public class InfoHandler extends AbstractCommandHandler{
 
 		@Override
 		public String getInfo(RedisKeeperServer keeperServer) {
-			float kilo = 1024;
+			long kilo = 1024;
 			KeeperStats stats = keeperServer.getKeeperMonitor().getKeeperStats();
 			StringBuilder sb = new StringBuilder();
 			sb.append(getHeader());
-			sb.append(strAndNum(KEY_TOTAL_SYNC_FULL, stats.getFullSyncCount()));
-			sb.append(strAndNum(KEY_TOTAL_SYNC_PARTIAL_OK, stats.getPartialSyncCount()));
-			sb.append(strAndNum(KEY_TOTAL_SYNC_PARTIAL_ERROR, stats.getPartialSyncErrorCount()));
-			sb.append(strAndNum(KEY_TOTAL_NET_INPUT_BYTES, stats.getInputBytes()));
-			sb.append(strAndNum(KEY_TOTAL_NET_OUTPUT_BYTES, stats.getOutputBytes()));
-			sb.append(strAndNum(KEY_INSTANTANEOUS_INPUT_KBPS, ((float)stats.getInputInstantaneousBPS() / kilo)));
-			sb.append(strAndNum(KEY_INSTANTANEOUS_OUTPUT_KBPS, ((float)stats.getOutputInstantaneousBPS() / kilo)));
+			sb.append(strAndLong(KEY_TOTAL_SYNC_FULL, stats.getFullSyncCount()));
+			sb.append(strAndLong(KEY_TOTAL_SYNC_PARTIAL_OK, stats.getPartialSyncCount()));
+			sb.append(strAndLong(KEY_TOTAL_SYNC_PARTIAL_ERROR, stats.getPartialSyncErrorCount()));
+			sb.append(strAndLong(KEY_TOTAL_NET_INPUT_BYTES, stats.getInputBytes()));
+			sb.append(strAndLong(KEY_TOTAL_NET_OUTPUT_BYTES, stats.getOutputBytes()));
+			sb.append(strAndFloat(KEY_INSTANTANEOUS_INPUT_KBPS, ((float)stats.getInputInstantaneousBPS() / kilo)));
+			sb.append(strAndFloat(KEY_INSTANTANEOUS_OUTPUT_KBPS, ((float)stats.getOutputInstantaneousBPS() / kilo)));
+			sb.append(strAndLong(KEY_PEAK_INPUT_KBPS, stats.getPeakInputInstantaneousBPS() / kilo));
+			sb.append(strAndLong(KEY_PEAK_OUTPUT_KBPS, stats.getPeakOutputInstantaneousBPS() / kilo));
+			sb.append(strAndLong(KEY_PSYNC_SEND_FAILURE, stats.getPsyncSendFailCount()));
+			if(stats.getLastPsyncFailReason() != null) {
+				sb.append(strAndStr(KEY_LAST_FAIL_REASON, stats.getLastPsyncFailReason().name()));
+			}
 			return sb.toString();
 		}
 

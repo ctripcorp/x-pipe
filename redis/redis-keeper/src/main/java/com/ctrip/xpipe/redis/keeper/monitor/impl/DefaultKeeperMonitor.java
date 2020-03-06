@@ -71,7 +71,8 @@ public class DefaultKeeperMonitor extends AbstractStartStoppable implements Keep
 		future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() throws Exception {
-				DefaultKeeperMonitor.logger.info("[{}]{}", redisKeeperServer.getShardId(),keeperStats.getInputInstantaneousBPS());
+				DefaultKeeperMonitor.logger.info("[{}]{}",
+						redisKeeperServer.getShardId(), keeperStats.getInputInstantaneousBPS());
 			}
 		}, 1000, 1000, TimeUnit.MILLISECONDS);
 	}

@@ -156,4 +156,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getLeakyBucketInitSize() {
 		return 3;
 	}
+
+	@Override
+	public int getPartialSyncTrafficMonitorIntervalTimes() {
+		return 10;
+	}
 }

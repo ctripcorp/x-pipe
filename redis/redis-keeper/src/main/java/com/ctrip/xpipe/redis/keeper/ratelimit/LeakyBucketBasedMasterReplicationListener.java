@@ -1,19 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.pool.XpipeNettyClientPool;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoReplicationCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
+import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReason;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.IpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +28,6 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private static final Logger logger = LoggerFactory.getLogger(LeakyBucketBasedMasterReplicationListener.class);
 
-    public final static String KEY_CHECK_PARTIAL_SYNC_INTERVAL = "keeper.check.partial.traffic.milli";
-    private int checkPartialSyncInterval = Integer.parseInt(System.getProperty(KEY_CHECK_PARTIAL_SYNC_INTERVAL, "1000"));
-
     private RedisMasterReplication redisMasterReplication;
 
     private RedisKeeperServer redisKeeperServer;
@@ -47,7 +40,12 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     protected ScheduledFuture<?> releaseTokenFuture;
 
-    private volatile long latestTps;
+    private final int INIT_STATE = 1, EVER_SUCCEED = 2, KEEP_FAIL = 3;
+    private volatile int psyncEverSucceed = INIT_STATE;
+
+    private volatile long psyncSendUnixTime;
+
+    private volatile int trafficSafeCounter = 0;
 
     public LeakyBucketBasedMasterReplicationListener(RedisMasterReplication redisMasterReplication,
                                                      RedisKeeperServer redisKeeperServer,
@@ -68,10 +66,17 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     public boolean canSendPsync() {
         if (redisMasterReplication.redisMaster().isKeeper()
                 && (redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive)) {
+            // for those who always fails, let it go
+            if(psyncEverSucceed != INIT_STATE && !isPsyncEverSucceed()) {
+                return true;
+            }
             if(resourceManager.getLeakyBucket().tryAcquire()) {
                 holdToken.set(true);
+                recordPsyncSendTime();
             } else {
                 logger.warn("[canSendPsync]psync wont send as no token is available [port:{}]", redisKeeperServer.getListeningPort());
+                redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.TOKEN_LACK);
+                redisKeeperServer.getKeeperMonitor().getKeeperStats().increasePsyncSendFail();
                 return false;
             }
         }
@@ -91,6 +96,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     @Override
     public void endWriteRdb() {
+        initPsyncState();
         if (holdToken.compareAndSet(true, false)) {
             resourceManager.getLeakyBucket().release();
         }
@@ -98,7 +104,18 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     @Override
     public void onContinue(String requestReplId, String responseReplId) {
-        tryDelayReleaseToken();
+        int rtt = (int) (System.currentTimeMillis() - psyncSendUnixTime);
+        setPsyncSucceed();
+        tryDelayReleaseToken(rtt);
+    }
+
+    @Override
+    public void onFullSync() {
+        setPsyncSucceed();
+    }
+
+    @Override
+    public void reFullSync() {
     }
 
     @Override
@@ -108,9 +125,15 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     @Override
     public void onDumpFail() {
+        setPsyncFailed();
         if (holdToken.compareAndSet(true, false)) {
             resourceManager.getLeakyBucket().release();
         }
+    }
+
+    @Override
+    public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+
     }
 
     private void initAndClear() {
@@ -121,31 +144,43 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         }
     }
 
-    private void tryDelayReleaseToken() {
+    private void releaseToken() {
+        holdToken.set(false);
+        resourceManager.getLeakyBucket().release();
+    }
+
+    private void recordPsyncSendTime() {
+        psyncSendUnixTime = System.currentTimeMillis();
+    }
+
+    private void tryDelayReleaseToken(int rtt) {
         if (holdToken.get()) {
             KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
             // num(files) * file-size / cross-dc-replication-rate
             long afterMilli = 1000 * keeperConfig.getReplicationStoreCommandFileNumToKeep()
                     * keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
             long deadline = afterMilli + System.currentTimeMillis();
-            logger.info("[tryDelayReleaseToken] release at most {}", DateTimeUtils.timeAsString(deadline));
-            checkIfNeedReleaseToken(deadline);
+            int checkInterval = rtt * keeperConfig.getPartialSyncTrafficMonitorIntervalTimes();
+            // 100ms < checkInterval < 1000
+            checkInterval = Math.min(1000, Math.max(100, checkInterval));
+            logger.info("[tryDelayReleaseToken]deadline: {}, check-interval: {}", DateTimeUtils.timeAsString(deadline), checkInterval);
+            checkIfNeedReleaseToken(deadline, checkInterval);
         }
     }
 
     //either obvious speed shrink down, or under pre-defined threshold (low water mark)
     //we consider TCP traffic is safe enough to release the token
-    private void checkIfNeedReleaseToken(final long deadline) {
-        logger.debug("[checkIfNeedReleaseToken]");
+    private void checkIfNeedReleaseToken(final long deadline, final int checkPartialSyncInterval) {
         releaseTokenFuture = scheduled.schedule(new Runnable() {
             @Override
             public void run() {
                 if (holdToken.get()) {
                     if(isTokenReadyToRelease(deadline)) {
-                        holdToken.set(false);
-                        resourceManager.getLeakyBucket().release();
+                        logger.info("[checkIfNeedReleaseToken][release] deadline");
+                        initPsyncState();
+                        releaseToken();
                     } else {
-                        checkIfNeedReleaseToken(deadline);
+                        checkIfNeedReleaseToken(deadline, checkPartialSyncInterval);
                     }
                 }
             }
@@ -153,29 +188,39 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     private boolean isTokenReadyToRelease(final long deadline) {
-        if (System.currentTimeMillis() >= deadline) {
+        int oneSec = 1000;
+        if (Math.abs(System.currentTimeMillis() - deadline) < oneSec) {
             return true;
         }
-        long tps = redisKeeperServer.getKeeperMonitor().getKeeperStats().getInputInstantaneousBPS();
-        if (tps < latestTps/2 || tps <= redisKeeperServer.getKeeperConfig().getReplicationTrafficLowWaterMark()) {
+        KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
+        long peakBPS = keeperStats.getPeakInputInstantaneousBPS();
+        long curBPS = keeperStats.getPeakInputInstantaneousBPS();
+        if(curBPS < peakBPS / 2 || curBPS < redisKeeperServer.getKeeperConfig().getReplicationTrafficLowWaterMark()) {
+            trafficSafeCounter += 1;
+        }
+        if(trafficSafeCounter > 2) {
             return true;
         }
-        latestTps = tps;
         return false;
     }
 
-    @Override
-    public void onFullSync() {
-
+    private void setPsyncFailed() {
+        redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.MASTER_DISCONNECTED);
+        if(!isPsyncEverSucceed()) {
+            psyncEverSucceed = KEEP_FAIL;
+        }
     }
 
-    @Override
-    public void reFullSync() {
-
+    private void setPsyncSucceed() {
+        psyncEverSucceed = EVER_SUCCEED;
+        redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(null);
     }
 
-    @Override
-    public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+    private boolean isPsyncEverSucceed() {
+        return psyncEverSucceed == EVER_SUCCEED;
+    }
 
+    private void initPsyncState() {
+        psyncEverSucceed = INIT_STATE;
     }
 }

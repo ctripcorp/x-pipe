@@ -34,14 +34,10 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
-import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReason;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListener;
 import com.ctrip.xpipe.utils.ChannelUtil;
-import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Lists;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -51,15 +47,11 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -193,21 +185,18 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			doConnect(b);
 		} catch (Exception e) {
 			logger.error("[doConnect0] ", e);
-			reconnectMasterLater();
-		}
-	}
 
-	private void reconnectMasterLater() {
-		scheduled.schedule(new Runnable() {
-			@Override
-			public void run() {
-				try{
-					connectWithMaster();
-				}catch(Throwable th){
-					logger.error("[reconnectMasterLater]" + AbstractRedisMasterReplication.this, th);
+			scheduled.schedule(new Runnable() {
+				@Override
+				public void run() {
+					try{
+						connectWithMaster();
+					}catch(Throwable th){
+						logger.error("[doConnect0][connectUntilConnected]" + AbstractRedisMasterReplication.this, th);
+					}
 				}
-			}
-		}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+		}
 	}
 
 	protected abstract void doConnect(Bootstrap b);
@@ -341,9 +330,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	public void masterDisconntected(Channel channel) {
 
 		logger.info("[masterDisconntected]{}", channel);
-		if (replicationObserver != null) {
-			replicationObserver.onMasterDisconnected();
-		}
 		dumpFail(new IOException("master closed:" + channel));
 	}
 
@@ -376,8 +362,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			executeCommand(psyncCommand());
 		} else {
 			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getShardId());
-			redisKeeperServer.getKeeperMonitor().getKeeperStats().increasePsyncSendFail();
-			redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.TOKEN_LACK);
 			// close and reconnect later by masterDisconnect Logic
 			masterChannel.close();
 		}
@@ -398,7 +382,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 				if (!commandFuture.isSuccess()) {
 					logger.error("[operationComplete][psyncCommand][fail]" + AbstractRedisMasterReplication.this, commandFuture.cause());
-					redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.MASTER_DISCONNECTED);
+
 					dumpFail(commandFuture.cause());
 					psyncFail(commandFuture.cause());
 				}

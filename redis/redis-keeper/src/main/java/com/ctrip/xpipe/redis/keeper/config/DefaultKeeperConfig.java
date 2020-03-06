@@ -128,4 +128,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public int getLeakyBucketInitSize() {
 		return getIntProperty(KEY_LEAKY_BUCKET_INIT_SIZE, 3);
 	}
+
+	@Override
+	public int getPartialSyncTrafficMonitorIntervalTimes() {
+		return 5;
+	}
 }

@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
-import static com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListener.KEY_CHECK_PARTIAL_SYNC_INTERVAL;
 import static org.mockito.Mockito.*;
 
 /**
@@ -85,7 +84,6 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     @Before
     public void beforeRedisMasterReplicationTrafficRateLimitTest() throws Exception {
         System.setProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "1");
-        System.setProperty(KEY_CHECK_PARTIAL_SYNC_INTERVAL, "10");
         nioEventLoopGroup = new NioEventLoopGroup(2);
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         when(redisKeeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
@@ -117,7 +115,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         when(leakyBucket.tryAcquire()).thenReturn(false).thenReturn(true);
         LifecycleHelper.initializeIfPossible(armr);
         LifecycleHelper.startIfPossible(armr);
-        waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() == 1, 6000);
+        waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() >= 1, 6000);
         Assert.assertTrue(2 <= ((ControllableRedisMasterReplication)armr).getConnectTimes());
     }
 
@@ -203,7 +201,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
 
         waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
         // sleep to let partial sync return the token
-        sleep(20);
+        sleep(320);
         Assert.assertEquals(1, ((ControllableRedisMasterReplication)armr).getConnectTimes());
         Assert.assertEquals(1, leakyBucket.references());
     }
@@ -248,7 +246,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
 
         waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() == 2, 2000);
         sleep(100);
-        verify(leakyBucket, times(2)).release();
+        verify(leakyBucket, times(1)).release();
     }
 
     @Test

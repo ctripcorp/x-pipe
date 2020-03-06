@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket;
 import com.google.common.collect.Lists;
@@ -82,9 +83,11 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 				scheduled, replTimeoutMilli, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
+		when(redisMaster.isKeeper()).thenReturn(false);
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);
-
+		KeeperMonitor keeperMonitor = createkeeperMonitor();
+		when(redisKeeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
 		add(defaultRedisMasterReplication);
 	}
 
@@ -145,7 +148,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start();
 
-		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2, 3000);
+		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2, 5000);
 	}
 
 	@Test

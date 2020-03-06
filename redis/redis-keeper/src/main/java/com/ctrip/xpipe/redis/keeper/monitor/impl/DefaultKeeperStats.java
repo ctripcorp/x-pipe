@@ -35,7 +35,7 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 
 	private ScheduledExecutorService scheduled;
 
-	private ScheduledFuture future;
+	private ScheduledFuture<?> future;
 
 	private InstantaneousMetric inputBytesInstantaneousMetric = new BaseInstantaneousMetric();
 
@@ -44,6 +44,10 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 	private PsyncFailReason lastFailReason;
 
 	private AtomicLong psyncSendFailCount = new AtomicLong();
+
+	private AtomicLong peakInputInstantaneousInput = new AtomicLong();
+
+	private AtomicLong peakOutputInstantaneousOutput = new AtomicLong();
 
 	public DefaultKeeperStats(ScheduledExecutorService scheduled) {
 		this.scheduled = scheduled;
@@ -130,6 +134,16 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 	}
 
 	@Override
+	public long getPeakInputInstantaneousBPS() {
+		return peakInputInstantaneousInput.get();
+	}
+
+	@Override
+	public long getPeakOutputInstantaneousBPS() {
+		return peakOutputInstantaneousOutput.get();
+	}
+
+	@Override
 	public void increasePsyncSendFail() {
 		psyncSendFailCount.incrementAndGet();
 	}
@@ -156,8 +170,20 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 			protected void doRun() {
 				inputBytesInstantaneousMetric.trackInstantaneousMetric(inputBytes.get());
 				outputBytesInstantaneousMetric.trackInstantaneousMetric(outputBytes.get());
+				updatePeakStats();
 			}
 		}, interval, interval, TimeUnit.MILLISECONDS);
+	}
+
+	private void updatePeakStats() {
+		long inputBPS = getInputInstantaneousBPS();
+		if (inputBPS > getPeakInputInstantaneousBPS()) {
+			peakInputInstantaneousInput.set(inputBPS);
+		}
+		long outputBPS = getOutputInstantaneousBPS();
+		if (outputBPS > getPeakOutputInstantaneousBPS()) {
+			peakOutputInstantaneousOutput.set(outputBPS);
+		}
 	}
 
 	@Override
