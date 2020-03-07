@@ -110,6 +110,11 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
+    public void testOverload() {
+        logger.info("{}", 1000L * 6 * 1073741824 / 104857600L);
+    }
+
+    @Test
     public void testOnMasterDisconnected() {
     }
 

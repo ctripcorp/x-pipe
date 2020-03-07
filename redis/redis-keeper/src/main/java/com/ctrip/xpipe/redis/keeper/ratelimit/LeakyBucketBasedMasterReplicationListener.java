@@ -169,7 +169,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             // num(files) * file-size / cross-dc-replication-rate
             logger.info("[deadline]1000 * {} * {} / {}", keeperConfig.getReplicationStoreCommandFileNumToKeep(),
                     keeperConfig.getReplicationStoreCommandFileSize(), keeperConfig.getReplicationTrafficHighWaterMark());
-            long afterMilli = 1000 * keeperConfig.getReplicationStoreCommandFileNumToKeep()
+            long afterMilli = 1000L * keeperConfig.getReplicationStoreCommandFileNumToKeep()
                     * keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
             logger.info("[afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
