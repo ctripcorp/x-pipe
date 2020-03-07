@@ -98,6 +98,18 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
+    public void testCanSendPsyncWithFirstTimeFail() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        leakyBucket.tryAcquire();
+        Assert.assertFalse(listener.canSendPsync());
+        Assert.assertFalse(listener.canSendPsync());
+        verify(resourceManager, times(2)).getLeakyBucket();
+    }
+
+    @Test
     public void testOnMasterDisconnected() {
     }
 
