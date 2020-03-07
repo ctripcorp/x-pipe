@@ -101,18 +101,20 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     @Override
     public void endWriteRdb() {
-        initPsyncState();
         if (holdToken.compareAndSet(true, false)) {
             resourceManager.getLeakyBucket().release();
+            initPsyncState();
         }
     }
 
     @Override
     public void onContinue(String requestReplId, String responseReplId) {
-        int rtt = (int) (System.currentTimeMillis() - psyncSendUnixTime.get());
-        setPsyncSucceed();
-        logger.info("[onContinue][rtt] {}", rtt);
-        tryDelayReleaseToken(rtt);
+        if(holdToken.get()) {
+            int rtt = (int) (System.currentTimeMillis() - psyncSendUnixTime.get());
+            setPsyncSucceed();
+            logger.info("[onContinue][rtt] {}", rtt);
+            tryDelayReleaseToken(rtt);
+        }
     }
 
     @Override
