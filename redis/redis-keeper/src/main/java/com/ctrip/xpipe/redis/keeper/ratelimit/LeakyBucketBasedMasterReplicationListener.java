@@ -68,6 +68,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
                 && (redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive)) {
             // for those who always fails, let it go
             if(psyncEverSucceed != INIT_STATE && !isPsyncEverSucceed()) {
+                logger.warn("[canSendPsync]never succeed, let it psync");
                 return true;
             }
             if(resourceManager.getLeakyBucket().tryAcquire()) {
@@ -226,5 +227,6 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private void initPsyncState() {
         psyncEverSucceed = INIT_STATE;
+        logger.info("[initPsyncState] {}", psyncEverSucceed == INIT_STATE);
     }
 }
