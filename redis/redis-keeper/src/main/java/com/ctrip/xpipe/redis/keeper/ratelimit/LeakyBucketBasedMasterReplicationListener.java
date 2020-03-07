@@ -106,6 +106,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     public void onContinue(String requestReplId, String responseReplId) {
         int rtt = (int) (System.currentTimeMillis() - psyncSendUnixTime);
         setPsyncSucceed();
+        logger.info("[onContinue][rtt] {}", rtt);
         tryDelayReleaseToken(rtt);
     }
 
@@ -157,8 +158,11 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         if (holdToken.get()) {
             KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
             // num(files) * file-size / cross-dc-replication-rate
+            logger.info("[deadline]1000 * {} * {} / {}", keeperConfig.getReplicationStoreCommandFileNumToKeep(),
+                    keeperConfig.getReplicationStoreCommandFileSize(), keeperConfig.getReplicationTrafficHighWaterMark());
             long afterMilli = 1000 * keeperConfig.getReplicationStoreCommandFileNumToKeep()
                     * keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
+            logger.info("[afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
             int checkInterval = rtt * keeperConfig.getPartialSyncTrafficMonitorIntervalTimes();
             // 100ms < checkInterval < 1000
@@ -189,7 +193,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private boolean isTokenReadyToRelease(final long deadline) {
         int oneSec = 1000;
-        if (Math.abs(System.currentTimeMillis() - deadline) < oneSec) {
+        if (System.currentTimeMillis() >= deadline || Math.abs(System.currentTimeMillis() - deadline) < oneSec) {
             return true;
         }
         KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
