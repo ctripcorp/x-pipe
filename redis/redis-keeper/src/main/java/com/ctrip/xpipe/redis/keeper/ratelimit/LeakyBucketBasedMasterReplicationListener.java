@@ -134,8 +134,8 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     @Override
     public void onDumpFail() {
-        setPsyncFailed();
         if (holdToken.compareAndSet(true, false)) {
+            setPsyncFailed();
             resourceManager.getLeakyBucket().release();
         }
     }
