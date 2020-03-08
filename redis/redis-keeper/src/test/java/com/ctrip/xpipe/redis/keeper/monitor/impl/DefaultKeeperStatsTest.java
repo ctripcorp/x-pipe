@@ -158,4 +158,31 @@ public class DefaultKeeperStatsTest extends AbstractTest {
         keeperStats.stop();
         Assert.assertEquals(stats, stats2);
     }
+
+    //manually test
+    @Test
+    @Ignore
+    public void testGetPeakOutputBytesManually() throws Exception {
+        int interval = 10;
+        long n = TimeUnit.SECONDS.toMillis(60) / interval;
+        keeperStats.start();
+        sleep(100);
+        for(int i = 0; i < n; i++) {
+            keeperStats.increaseInputBytes(1000);
+            sleep(interval);
+            if(i % 100 == 0) {
+                logger.info("[{}]", keeperStats.getPeakInputInstantaneousBPS());
+            }
+        }
+
+        sleep(1000);
+        logger.info("[{}]", keeperStats.getPeakInputInstantaneousBPS());
+//        waitConditionUntilTimeOut(()->(keeperStats.getPeakOutputInstantaneousBPS()) > 0);
+//        long stats = keeperStats.getPeakOutputInstantaneousBPS();
+//        sleep(1000);
+//        long stats2 = keeperStats.getPeakOutputInstantaneousBPS();
+//        logger.info("[{}] v.s [{}]", stats, stats2);
+        keeperStats.stop();
+//        Assert.assertEquals(stats, stats2);
+    }
 }

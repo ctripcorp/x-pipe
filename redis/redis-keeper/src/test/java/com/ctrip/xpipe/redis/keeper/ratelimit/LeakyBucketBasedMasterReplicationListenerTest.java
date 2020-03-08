@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.core.entity.Keeper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
@@ -16,6 +18,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -45,6 +50,9 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     @Mock
     private KeeperMonitor keeperMonitor;
 
+    @Spy
+    private KeeperConfig keeperConfig = new DefaultKeeperConfig();
+
     private KeeperStats keeperStats;
 
     private LeakyBucketBasedMasterReplicationListener listener;
@@ -58,6 +66,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(redisKeeperServer.getRedisMaster()).thenReturn(redisMaster);
         when(redisMasterReplication.redisMaster()).thenReturn(redisMaster);
         when(redisKeeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
+        when(redisKeeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         keeperStats = spy(new DefaultKeeperStats(scheduled));
         when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
     }
@@ -112,6 +121,40 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     @Test
     public void testOverload() {
         logger.info("{}", 1000L * 6 * 1073741824 / 104857600L);
+    }
+
+    @Test
+    public void testIsTokenReadyToReleaseWhenDeadline() {
+        long deadline = System.currentTimeMillis() - 10;
+        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
+        deadline = System.currentTimeMillis() + 10;
+        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
+        deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+    }
+
+    @Test
+    public void testIsTokenReadyToReleaseWhenLessThan20MB() {
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L); //2kB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
+    }
+
+    @Test
+    public void testIsTokenReadyToReleaseIfNotContinuously() {
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L); //2MB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L);
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L);
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReason;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,11 +170,9 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         if (holdToken.get()) {
             KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
             // num(files) * file-size / cross-dc-replication-rate
-            logger.info("[deadline]1000 * {} * {} / {}", keeperConfig.getReplicationStoreCommandFileNumToKeep(),
-                    keeperConfig.getReplicationStoreCommandFileSize(), keeperConfig.getReplicationTrafficHighWaterMark());
             long afterMilli = 1000L * keeperConfig.getReplicationStoreCommandFileNumToKeep()
                     * keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
-            logger.info("[afterMilli]{}", afterMilli);
+            logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
             int checkInterval = rtt * keeperConfig.getPartialSyncTrafficMonitorIntervalTimes();
             // 100ms < checkInterval < 1000
@@ -191,7 +190,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             public void run() {
                 if (holdToken.get()) {
                     if(isTokenReadyToRelease(deadline)) {
-                        logger.info("[checkIfNeedReleaseToken][release] deadline");
+                        logger.info("[checkIfNeedReleaseToken][release]");
                         initPsyncState();
                         releaseToken();
                     } else {
@@ -202,7 +201,13 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         }, checkPartialSyncInterval, TimeUnit.MILLISECONDS);
     }
 
-    private boolean isTokenReadyToRelease(final long deadline) {
+    // token ready to release conditions:
+    // 1. The token is over due, that we believe the maximum files could be sent during these period time
+    // 2. The traffic rate is continuously 3 times than
+    //    2.1 peak QPS
+    //    2.2 defined QPS
+    @VisibleForTesting
+    protected boolean isTokenReadyToRelease(final long deadline) {
         int oneSec = 1000;
         if (System.currentTimeMillis() >= deadline || Math.abs(System.currentTimeMillis() - deadline) < oneSec) {
             return true;
@@ -212,14 +217,15 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         }
         KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
         long peakBPS = keeperStats.getPeakInputInstantaneousBPS();
-        long curBPS = keeperStats.getPeakInputInstantaneousBPS();
+        long curBPS = keeperStats.getInputInstantaneousBPS();
         if(curBPS < peakBPS / 2 || curBPS < redisKeeperServer.getKeeperConfig().getReplicationTrafficLowWaterMark()) {
+            logger.debug("[current BPS]{}", curBPS);
             trafficSafeCounter.incrementAndGet();
+        } else {
+            logger.debug("[current BPS]{}", curBPS);
+            trafficSafeCounter.set(0);
         }
-        if(trafficSafeCounter.get() > 2) {
-            return true;
-        }
-        return false;
+        return trafficSafeCounter.get() > 2;
     }
 
     private void setPsyncFailed() {

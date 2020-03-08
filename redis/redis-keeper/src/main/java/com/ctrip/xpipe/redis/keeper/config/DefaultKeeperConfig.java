@@ -41,7 +41,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		try{
 			compositeConfig.addConfig(new DefaultFileConfig(KEEPER_CONTAINER_PROPERTIES_PATH, KEEPER_CONTAINER_PROPERTIES_FILE));
 		}catch (Exception e){
-			logger.info("[DefaultKeeperConfig]{}", e);
+//			logger.info("[DefaultKeeperConfig]", e);
 		}
 		compositeConfig.addConfig(new DefaultPropertyConfig());
 		setConfig(compositeConfig);
