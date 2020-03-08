@@ -92,4 +92,24 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		}
 	}
 
+	@Test
+	public void testCurrentPrimaryDcPublish() {
+		long currentActiveDcId = 1;
+		long clusterId = randomInt();
+		long destinationDcId = 2;
+
+		DcTbl dcTbl = new DcTbl();
+		dcTbl.setId(destinationDcId);
+
+		ClusterTbl clusterTbl = new ClusterTbl();
+		clusterTbl.setId(clusterId);
+		clusterTbl.setActivedcId(currentActiveDcId);
+		clusterTbl.setStatus(ClusterStatus.Migrating.name());
+
+
+		when(migrationService.findLatestUnfinishedMigrationCluster(clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+		long target = clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl);
+		Assert.assertEquals(destinationDcId, target);
+	}
+
 }

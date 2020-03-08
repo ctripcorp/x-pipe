@@ -350,7 +350,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			InfoResultExtractor extractor = new InfoResultExtractor(info);
 			infoChecker = createKeeperInfoChecker(keeperMeta, clusterId, shardId, extractor);
 			if(infoChecker.isValid()) {
-				future().setSuccess(true);
+				future().setSuccess();
 			} else {
 				future().setFailure(new KeeperStateInCorrectException("Keeper Role not correct"));
 			}

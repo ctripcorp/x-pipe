@@ -101,6 +101,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         String clusterStatus = clusterService.find(getActionInstance().getRedisInstanceInfo().getClusterId()).getStatus();
         if (!ClusterStatus.isSameClusterStatus(clusterStatus, ClusterStatus.Normal)) {
             logger.warn("[shouldStart][{}] in migration, stop check", getActionInstance().getRedisInstanceInfo().getClusterId());
+            return false;
         }
         return consoleDbConfig.isSentinelAutoProcess();
     }
