@@ -70,6 +70,17 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         setStatus();
     }
 
+    @VisibleForTesting
+    public DefaultMigrationCluster(Executor executors, ScheduledExecutorService scheduled, MigrationEvent event,
+                                   MigrationClusterTbl migrationCluster, DcService dcService, ClusterService clusterService) {
+        this.event = event;
+        this.migrationCluster = migrationCluster;
+        this.clusterService = clusterService;
+        this.dcService = dcService;
+        this.executors = executors;
+        this.scheduled = scheduled;
+    }
+
     public ScheduledExecutorService getScheduled() {
         return scheduled;
     }
