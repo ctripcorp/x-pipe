@@ -111,7 +111,8 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         return factory.createRetryCommand(command);
     }
 
-    protected ClusterMeta getOrCreateClusterMeta(ClusterTbl cluster) {
+    @VisibleForTesting
+    public ClusterMeta getOrCreateClusterMeta(ClusterTbl cluster) {
         return MapUtils.getOrCreate(dcMeta.getClusters(), cluster.getClusterName(), new ObjectFactory<ClusterMeta>(){
             @Override
             public ClusterMeta create() {
