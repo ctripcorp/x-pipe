@@ -47,17 +47,17 @@ public class HealthController extends AbstractConsoleController{
         return delayService.getLocalCachedDelay(new HostPort(redisIp, redisPort));
     }
 
-    @GetMapping(value = "/redis/inner/delay/all")
+    @RequestMapping(value = "/redis/inner/delay/all", method = RequestMethod.GET)
     public Map<HostPort, Long> getAllInnerReplDelayMills() {
         return delayService.getDcCachedDelay(FoundationService.DEFAULT.getDataCenter());
     }
 
-    @GetMapping(value = "/redis/inner/unhealthy")
+    @RequestMapping(value = "/redis/inner/unhealthy", method = RequestMethod.GET)
     public UnhealthyInfoModel getActiveClusterUnhealthyRedis() {
         return delayService.getDcActiveClusterUnhealthyInstance(FoundationService.DEFAULT.getDataCenter());
     }
 
-    @GetMapping(value = "/redis/inner/unhealthy/all")
+    @RequestMapping(value = "/redis/inner/unhealthy/all", method = RequestMethod.GET)
     public UnhealthyInfoModel getAllUnhealthyRedis() {
         return delayService.getAllUnhealthyInstance();
     }

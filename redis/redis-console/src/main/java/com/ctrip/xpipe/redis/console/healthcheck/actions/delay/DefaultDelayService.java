@@ -30,6 +30,8 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
 
     private ConcurrentMap<HostPort, Long> hostPort2Delay = Maps.newConcurrentMap();
 
+    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
+
     @Autowired
     private MetaCache metaCache;
 
@@ -62,7 +64,6 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta) return Collections.emptyMap();
 
-        String currentDcId = FoundationService.DEFAULT.getDataCenter();
         if (!currentDcId.equalsIgnoreCase(dc)) {
             try {
                 return consoleServiceManager.getAllDelay(dc);
@@ -89,7 +90,6 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
             return null;
         }
 
-        String currentDcId = FoundationService.DEFAULT.getDataCenter();
         if (!currentDcId.equalsIgnoreCase(dc)) {
             try {
                 return consoleServiceManager.getUnhealthyInstanceByIdc(dc);
@@ -111,7 +111,7 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
                     for (RedisMeta redisMeta : shardMeta.getRedises()) {
                         HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
                         Long delay = redisDelayMap.get(hostPort);
-                        if(null != delay && (delay < 0 || delay.equals(DelayAction.SAMPLE_LOST_BUT_PONG))) {
+                        if(null != delay && (delay < 0 || delay == DelayAction.SAMPLE_LOST_BUT_PONG)) {
                             unhealthyInfo.addUnhealthyInstance(clusterMeta.getId(), dcMeta.getId(), shardMeta.getId(), hostPort);
                         }
                     }
