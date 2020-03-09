@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.redis.core.entity.Keeper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
@@ -22,7 +21,6 @@ import org.mockito.Spy;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -67,7 +65,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(redisMasterReplication.redisMaster()).thenReturn(redisMaster);
         when(redisKeeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
         when(redisKeeperServer.getKeeperConfig()).thenReturn(keeperConfig);
-        keeperStats = spy(new DefaultKeeperStats(scheduled));
+        keeperStats = spy(new DefaultKeeperStats("shard", scheduled));
         when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
     }
 

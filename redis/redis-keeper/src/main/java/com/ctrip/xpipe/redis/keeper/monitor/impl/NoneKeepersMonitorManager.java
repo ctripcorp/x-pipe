@@ -19,7 +19,7 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 		private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
 
 		public NoneKeeperMonitor(ScheduledExecutorService scheduled) {
-			keeperStats = new DefaultKeeperStats(scheduled);
+			keeperStats = new DefaultKeeperStats("shard", scheduled);
 		}
 
 		@Override

@@ -9,7 +9,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -27,7 +26,7 @@ public class DefaultKeeperStatsTest extends AbstractTest {
 
     @Before
     public void beforeDefaultKeeperStatsTest() {
-        keeperStats = new DefaultKeeperStats(scheduled);
+        keeperStats = new DefaultKeeperStats("shard", scheduled);
     }
 
     @Ignore

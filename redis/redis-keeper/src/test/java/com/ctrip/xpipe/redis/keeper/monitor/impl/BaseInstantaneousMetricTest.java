@@ -20,7 +20,9 @@ public class BaseInstantaneousMetricTest extends AbstractTest {
     @Test
     public void testGetInstantaneousMetric() {
         metric.trackInstantaneousMetric(FIXED_INPUT);
-        Assert.assertEquals(FIXED_INPUT, metric.getInstantaneousMetric());
+        sleep(1000);
+        metric.trackInstantaneousMetric(FIXED_INPUT * 2);
+        Assert.assertTrue(Math.abs(FIXED_INPUT - metric.getInstantaneousMetric()) < 20);
     }
 
     @Test

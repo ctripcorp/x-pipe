@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * Feb 20, 2017
  */
 public class DefaultKeeperStats extends AbstractStartStoppable implements KeeperStats {
+
+	private String shard;
 	
 	private AtomicLong fullSyncCount = new AtomicLong();
 	
@@ -49,7 +51,8 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 
 	private AtomicLong peakOutputInstantaneousOutput = new AtomicLong();
 
-	public DefaultKeeperStats(ScheduledExecutorService scheduled) {
+	public DefaultKeeperStats(String shard, ScheduledExecutorService scheduled) {
+		this.shard = shard;
 		this.scheduled = scheduled;
 	}
 
@@ -163,16 +166,21 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 		return this.lastFailReason;
 	}
 
-	private void updatePerSec() {
+	private void updateTrafficStats() {
 		int interval = 100;
 		future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() {
-				inputBytesInstantaneousMetric.trackInstantaneousMetric(inputBytes.get());
-				outputBytesInstantaneousMetric.trackInstantaneousMetric(outputBytes.get());
+				updateInstantaneousMetric();
 				updatePeakStats();
+				logStats();
 			}
 		}, interval, interval, TimeUnit.MILLISECONDS);
+	}
+
+	private void updateInstantaneousMetric() {
+		inputBytesInstantaneousMetric.trackInstantaneousMetric(inputBytes.get());
+		outputBytesInstantaneousMetric.trackInstantaneousMetric(outputBytes.get());
 	}
 
 	private void updatePeakStats() {
@@ -186,9 +194,16 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 		}
 	}
 
+	private void logStats() {
+		logger.debug("[{}][input]{}", shard, getInputInstantaneousBPS());
+		logger.debug("[{}][output]{}", shard, getOutputInstantaneousBPS());
+		logger.debug("[{}][peak-in]{}", shard, getPeakInputInstantaneousBPS());
+		logger.debug("[{}][peak-out]{}", shard, getPeakOutputInstantaneousBPS());
+	}
+
 	@Override
 	protected void doStart() throws Exception {
-		updatePerSec();
+		updateTrafficStats();
 	}
 
 	@Override

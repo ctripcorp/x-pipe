@@ -87,7 +87,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         nioEventLoopGroup = new NioEventLoopGroup(2);
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         when(redisKeeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
-        keeperStats = spy(new DefaultKeeperStats(scheduled));
+        keeperStats = spy(new DefaultKeeperStats("shard", scheduled));
         when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
         when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
         when(replicationStore.getMetaStore()).thenReturn(metaStore);

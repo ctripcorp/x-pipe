@@ -27,17 +27,10 @@ public class DefaultKeeperMonitor extends AbstractStartStoppable implements Keep
 	private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
 	
 	private RedisKeeperServer redisKeeperServer;
-
-	private ScheduledExecutorService scheduled;
-
-	private ScheduledFuture<?> future;
-
-	private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperMonitor.class);
 	
 	public DefaultKeeperMonitor(RedisKeeperServer redisKeeperServer, ScheduledExecutorService scheduled) {
 		this.redisKeeperServer = redisKeeperServer;
-		this.scheduled = scheduled;
-		this.keeperStats = new DefaultKeeperStats(scheduled);
+		this.keeperStats = new DefaultKeeperStats(redisKeeperServer.getShardId(), scheduled);
 	}
 	
 	@Override
@@ -58,28 +51,10 @@ public class DefaultKeeperMonitor extends AbstractStartStoppable implements Keep
 	@Override
 	protected void doStart() throws Exception {
 		this.keeperStats.start();
-		scheduledPrintQPS();
 	}
 
 	@Override
 	protected void doStop() throws Exception {
 		this.keeperStats.stop();
-		stopPrintQPS();
-	}
-
-	private void scheduledPrintQPS() {
-		future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-			@Override
-			protected void doRun() throws Exception {
-				DefaultKeeperMonitor.logger.info("[{}]{}",
-						redisKeeperServer.getShardId(), keeperStats.getInputInstantaneousBPS());
-			}
-		}, 1000, 1000, TimeUnit.MILLISECONDS);
-	}
-
-	private void stopPrintQPS() {
-		if(future != null) {
-			future.cancel(true);
-		}
 	}
 }
