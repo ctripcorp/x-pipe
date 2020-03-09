@@ -3,9 +3,13 @@ package com.ctrip.xpipe.redis.console.console.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
-import com.ctrip.xpipe.tuple.Pair;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -22,6 +26,13 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String delayStatusUrl;
 
+    private final String allDelayStatusUrl;
+
+    private final String unhealthyInstanceUrl;
+
+    private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
+            new ParameterizedTypeReference<Map<HostPort, Long>>(){};
+
     public DefaultConsoleService(String address){
 
         this.address = address;
@@ -31,6 +42,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
         pingStatusUrl = String.format("%s/api/redis/ping/{ip}/{port}", this.address);
         delayStatusUrl = String.format("%s/api/redis/inner/delay/{ip}/{port}", this.address);
+        allDelayStatusUrl = String.format("%s/api/redis/inner/delay/all", this.address);
+        unhealthyInstanceUrl = String.format("%s/api/redis/inner/unhealthy", this.address);
     }
 
     @Override
@@ -46,6 +59,18 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public Long getInstanceDelayStatus(String ip, int port) {
         return restTemplate.getForObject(delayStatusUrl, Long.class, ip, port);
+    }
+
+    @Override
+    public Map<HostPort, Long> getAllInstanceDelayStatus() {
+        ResponseEntity<Map<HostPort, Long> > response = restTemplate.exchange(allDelayStatusUrl, HttpMethod.GET,
+                null, hostDelayTypeDef);
+        return response.getBody();
+    }
+
+    @Override
+    public UnhealthyInfoModel getActiveClusterUnhealthyInstance() {
+        return restTemplate.getForObject(unhealthyInstanceUrl, UnhealthyInfoModel.class);
     }
 
     @Override
