@@ -175,10 +175,8 @@ public class DefaultMigrationClusterTest2 {
 
     @Test
     public void testCurrentPrimaryDcWhenPublish() {
-        when(clusterService.find(anyString())).thenReturn(clusterTbl);
-        DefaultMigrationCluster migrationCluster = new DefaultMigrationCluster(executors, scheduled, null,
-                new MigrationClusterTbl().setCluster(clusterTbl).setDestinationDcId(2), dcService, clusterService);
         ClusterTbl clusterTbl = new ClusterTbl().setId(1000L).setActivedcId(1).setStatus(ClusterStatus.Lock.name());
+        when(clusterService.find(anyString())).thenReturn(clusterTbl);
         migrationCluster = spy(migrationCluster);
 //        doNothing().when(migrationCluster).load
         doAnswer(new Answer() {
@@ -188,7 +186,7 @@ public class DefaultMigrationClusterTest2 {
                 clusterTbl.setStatus(clusterStatus.name());
                 return null;
             }
-        }).when(clusterService).updateStatusById(any(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any());
 
         migrationCluster.updateStat(new MigrationPublishState(migrationCluster));
 
