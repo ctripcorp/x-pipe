@@ -10,6 +10,7 @@ import java.util.List;
 public interface ClusterService {
 
 	ClusterTbl find(String clusterName);
+	List<ClusterTbl> findAllByNames(List<String> clusterNames);
 	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
 

@@ -8,6 +8,7 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $scope.getDcName = getDcName;
         $scope.preDeleteCluster = preDeleteCluster;
         $scope.deleteCluster = deleteCluster;
+        $scope.showUnhealthyShardOnly = false;
         $scope.showUnhealthyClusterOnly = false;
         $scope.dcName = $stateParams.dcName;
         $scope.type = $stateParams.type;
@@ -69,7 +70,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
 
         function showClusters() {
             if ($scope.showUnhealthyClusterOnly === true) {
+                $scope.showUnhealthyShardOnly = false
                 showUnhealthyClusters();
+            } else if ($scope.showUnhealthyShardOnly) {
+                $scope.showUnhealthyClusterOnly = false
+                showUnhealthyShards()
             } else if ($scope.dcName){
                 if ($scope.type === "activeDC"){
                     showClustersByActiveDc($scope.dcName);
@@ -87,6 +92,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
 
         function showUnhealthyClusters() {
             ClusterService.getUnhealthyClusters()
+                .then(loadTable);
+        }
+
+        function showUnhealthyShards() {
+            ClusterService.getUnhealthyShards()
                 .then(loadTable);
         }
 

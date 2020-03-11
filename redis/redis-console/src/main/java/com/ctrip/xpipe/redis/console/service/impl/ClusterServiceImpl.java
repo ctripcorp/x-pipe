@@ -88,6 +88,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<ClusterTbl> findAllByNames(List<String> clusterNames) {
+		return clusterDao.findClustersWithName(clusterNames);
+	}
+
+	@Override
 	public ClusterStatus clusterStatus(String clusterName) {
 
 		ClusterTbl clusterTbl = find(clusterName);
