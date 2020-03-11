@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
@@ -19,9 +22,7 @@ import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 @Service
@@ -33,6 +34,12 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private ShardDao shardDao;
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
+
+	@Autowired
+	private DelayService delayService;
+
+	@Autowired
+	private ClusterService clusterService;
 
 	@Autowired
 	private MetaCache metaCache;
@@ -162,6 +169,36 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
     		}
     	}
+	}
+
+	@Override
+	public List<ShardListModel> findAllUnhealthy() {
+		UnhealthyInfoModel unhealthyInfoModel = delayService.getAllUnhealthyInstance();
+		Set<String> unhealthyClusterNames = unhealthyInfoModel.getUnhealthyClusterNames();
+		if (unhealthyClusterNames.isEmpty()) return Collections.emptyList();
+
+		Map<String, ClusterTbl> clusterMap = new HashMap<>();
+		List<ShardListModel> shardModels = new ArrayList<>();
+		clusterService.findAllByNames(new ArrayList<>(unhealthyClusterNames))
+				.forEach(cluster -> {clusterMap.put(cluster.getClusterName(), cluster);});
+
+		for (String clusterName : unhealthyClusterNames) {
+			if (!clusterMap.containsKey(clusterName)) continue;
+
+			ClusterTbl cluster = clusterMap.get(clusterName);
+			unhealthyInfoModel.getUnhealthyDcShardByCluster(clusterName).forEach(dcShard -> {
+				ShardListModel shardModel = new ShardListModel();
+				shardModel.setDcName(dcShard.getKey())
+						.setShardName(dcShard.getValue())
+						.setClusterName(cluster.getClusterName())
+						.setClusterAdminEmails(cluster.getClusterAdminEmails())
+						.setClusterOrgName(cluster.getClusterOrgName())
+						.setClusterDescription(cluster.getClusterDescription());
+				shardModels.add(shardModel);
+			});
+		}
+
+		return shardModels;
 	}
 
 	@VisibleForTesting

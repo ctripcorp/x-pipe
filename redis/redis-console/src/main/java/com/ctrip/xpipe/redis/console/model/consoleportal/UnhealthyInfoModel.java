@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.tuple.Pair;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
@@ -50,6 +51,19 @@ public class UnhealthyInfoModel {
     @JsonIgnore
     public Set<String> getUnhealthyClusterNames() {
         return this.unhealthyInstance.keySet();
+    }
+
+    public List<Pair<String, String> > getUnhealthyDcShardByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
+
+        List<Pair<String, String> > unhealthyDcShard = new ArrayList<>();
+        for (String dcShard: this.unhealthyInstance.get(clusterName).keySet()) {
+            int breakPos = dcShard.indexOf(' ');
+            String dc = dcShard.substring(0, dcShard.indexOf(' '));
+            String shardName = dcShard.substring(breakPos + 1, dcShard.length());
+            unhealthyDcShard.add(new Pair<>(dc, shardName));
+        }
+        return unhealthyDcShard;
     }
 
     public String getUnhealthyClusterDesc(String clusterName) {
