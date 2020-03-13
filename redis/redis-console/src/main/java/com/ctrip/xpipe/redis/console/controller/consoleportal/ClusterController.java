@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -69,8 +69,8 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/unhealthy", method = RequestMethod.GET)
-    public List<ClusterListClusterModel> findUnhealthyClusters() {
-        return valueOrEmptySet(ClusterListClusterModel.class, clusterService.findUnhealthyClusters());
+    public List<ClusterListUnhealthyClusterModel> findUnhealthyClusters() {
+        return valueOrEmptySet(ClusterListUnhealthyClusterModel.class, clusterService.findUnhealthyClusters());
     }
 
     private List<ClusterTbl> joinClusterAndDcCluster(List<ClusterTbl> clusters, List<DcClusterTbl> dcClusters) {
