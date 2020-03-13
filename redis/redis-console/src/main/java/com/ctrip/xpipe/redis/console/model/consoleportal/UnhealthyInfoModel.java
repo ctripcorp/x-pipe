@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.tuple.Pair;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
@@ -52,20 +53,45 @@ public class UnhealthyInfoModel {
         return this.unhealthyInstance.keySet();
     }
 
-    public String getUnhealthyClusterDesc(String clusterName) {
-        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return "no such cluster";
-        StringBuilder sb = new StringBuilder();
+    public List<Pair<String, String> > getUnhealthyDcShardByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
+
+        List<Pair<String, String> > unhealthyDcShard = new ArrayList<>();
+        for (String dcShard: this.unhealthyInstance.get(clusterName).keySet()) {
+            int breakPos = dcShard.indexOf(' ');
+            String dc = dcShard.substring(0, dcShard.indexOf(' '));
+            String shardName = dcShard.substring(breakPos + 1, dcShard.length());
+            unhealthyDcShard.add(new Pair<>(dc, shardName));
+        }
+        return unhealthyDcShard;
+    }
+
+    public List<String> getUnhealthyClusterDesc(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
+        List<String> messages = new ArrayList<>();
 
         for (Map.Entry<String, List<HostPort> > shard : unhealthyInstance.get(clusterName).entrySet()) {
+            StringBuilder sb = new StringBuilder();
             sb.append(shard.getKey()).append(":");
             for (HostPort redis : shard.getValue()) {
                 sb.append(redis).append(",");
             }
 
-            sb.append(";\n");
+            sb.append(";");
+            messages.add(sb.toString());
         }
 
-        return sb.toString();
+        return messages;
+    }
+
+    public int countUnhealthyShardByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return 0;
+        return unhealthyInstance.get(clusterName).size();
+    }
+
+    public int countUnhealthyRedisByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return 0;
+        return unhealthyInstance.get(clusterName).values().stream().mapToInt(List::size).sum();
     }
 
     public int getUnhealthyCluster() {

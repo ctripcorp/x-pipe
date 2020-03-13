@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,11 @@ public class ShardController extends AbstractConsoleController {
     public void deleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
         logger.info("[Delete Shard]{},{}", clusterName, shardName);
         shardService.deleteShard(clusterName, shardName);
+    }
+
+    @RequestMapping(value = "/shards/unhealthy", method = RequestMethod.GET)
+    public List<ShardListModel> findAllUnhealthyShards() {
+        return valueOrEmptySet(ShardListModel.class, shardService.findAllUnhealthy());
     }
 
 }
