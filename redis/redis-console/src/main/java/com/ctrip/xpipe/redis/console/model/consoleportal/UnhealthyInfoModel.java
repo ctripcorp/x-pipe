@@ -66,20 +66,32 @@ public class UnhealthyInfoModel {
         return unhealthyDcShard;
     }
 
-    public String getUnhealthyClusterDesc(String clusterName) {
-        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return "no such cluster";
-        StringBuilder sb = new StringBuilder();
+    public List<String> getUnhealthyClusterDesc(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
+        List<String> messages = new ArrayList<>();
 
         for (Map.Entry<String, List<HostPort> > shard : unhealthyInstance.get(clusterName).entrySet()) {
+            StringBuilder sb = new StringBuilder();
             sb.append(shard.getKey()).append(":");
             for (HostPort redis : shard.getValue()) {
                 sb.append(redis).append(",");
             }
 
-            sb.append(";\n");
+            sb.append(";");
+            messages.add(sb.toString());
         }
 
-        return sb.toString();
+        return messages;
+    }
+
+    public int countUnhealthyShardByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return 0;
+        return unhealthyInstance.get(clusterName).size();
+    }
+
+    public int countUnhealthyRedisByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return 0;
+        return unhealthyInstance.get(clusterName).values().stream().mapToInt(List::size).sum();
     }
 
     public int getUnhealthyCluster() {

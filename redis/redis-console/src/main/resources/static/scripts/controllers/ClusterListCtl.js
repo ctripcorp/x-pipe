@@ -12,8 +12,8 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $scope.showUnhealthyClusterOnly = false;
         $scope.dcName = $stateParams.dcName;
         $scope.type = $stateParams.type;
-        
-        var sourceClusters = [], copedClusters = [];
+
+        $scope.sourceClusters = [];
         if($scope.clusterName) {
         	ClusterService.load_cluster($scope.clusterName)
             .then(function (data) {
@@ -118,32 +118,13 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         }
 
         function loadTable(data) {
-            sourceClusters = data;
-            copedClusters = _.clone(sourceClusters);
+            $scope.sourceClusters = data;
             $scope.tableParams = new NgTableParams({
                 page : 1,
                 count : 10
             }, {
                 filterDelay:100,
-                getData : function(params) {
-                    var filter_text = params.filter().clusterName;
-                    if(filter_text) {
-                        filter_text = filter_text.toLowerCase();
-                        var filtered_data = [];
-                        for(var i = 0 ; i < sourceClusters.length ; i++) {
-                            var cluster = sourceClusters[i];
-                            if(cluster.clusterName.toLowerCase().search(filter_text) !== -1) {
-                                filtered_data.push(cluster);
-                            }
-                        }
-                        copedClusters = filtered_data;
-                    }else {
-                        copedClusters = sourceClusters;
-                    }
-
-                    params.total(copedClusters.length);
-                    return copedClusters.slice((params.page() - 1) * params.count(), params.page() * params.count());
-                }
+                dataset: $scope.sourceClusters,
             });
         }
 
