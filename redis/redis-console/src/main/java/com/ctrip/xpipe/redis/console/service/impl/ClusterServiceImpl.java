@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListClusterModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
@@ -470,21 +470,21 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public List<ClusterListClusterModel> findUnhealthyClusters() {
+	public List<ClusterListUnhealthyClusterModel> findUnhealthyClusters() {
 		try {
 			XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
 			if(xpipeMeta == null || xpipeMeta.getDcs() == null) {
 				return Collections.emptyList();
 			}
 
-			String prefix = "健康监测有问题的shard及redis:\n";
-
-			Map<String, ClusterListClusterModel> result = Maps.newHashMap();
+			Map<String, ClusterListUnhealthyClusterModel> result = Maps.newHashMap();
 			UnhealthyInfoModel unhealthyInfo = delayService.getAllUnhealthyInstance();
 
 			for (String unhealthyCluster : unhealthyInfo.getUnhealthyClusterNames()) {
-				ClusterListClusterModel cluster = new ClusterListClusterModel(unhealthyCluster);
-				cluster.setMessage(prefix + unhealthyInfo.getUnhealthyClusterDesc(unhealthyCluster));
+				ClusterListUnhealthyClusterModel cluster = new ClusterListUnhealthyClusterModel(unhealthyCluster);
+				cluster.setMessages(unhealthyInfo.getUnhealthyClusterDesc(unhealthyCluster));
+				cluster.setUnhealthyShardsCnt(unhealthyInfo.countUnhealthyShardByCluster(unhealthyCluster));
+				cluster.setUnhealthyRedisCnt(unhealthyInfo.countUnhealthyRedisByCluster(unhealthyCluster));
 				result.put(unhealthyCluster, cluster);
 			}
 
@@ -496,7 +496,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@VisibleForTesting
-	protected List<ClusterListClusterModel> richClusterInfo(Map<String, ClusterListClusterModel> clusters) {
+	protected List<ClusterListUnhealthyClusterModel> richClusterInfo(Map<String, ClusterListUnhealthyClusterModel> clusters) {
 
 		if(clusters.isEmpty()) {
 			return Collections.emptyList();
@@ -505,10 +505,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterNames.addAll(clusters.keySet());
 		List<ClusterTbl> clusterTbls = clusterDao.findClustersWithName(clusterNames);
 
-		List<ClusterListClusterModel> result = Lists.newArrayListWithExpectedSize(clusterTbls.size());
+		List<ClusterListUnhealthyClusterModel> result = Lists.newArrayListWithExpectedSize(clusterTbls.size());
 
 		for(ClusterTbl clusterTbl : clusterTbls) {
-			ClusterListClusterModel cluster = clusters.get(clusterTbl.getClusterName());
+			ClusterListUnhealthyClusterModel cluster = clusters.get(clusterTbl.getClusterName());
 			cluster.setActivedcId(clusterTbl.getActivedcId())
 					.setClusterAdminEmails(clusterTbl.getClusterAdminEmails())
 					.setClusterDescription(clusterTbl.getClusterDescription());
