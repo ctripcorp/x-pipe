@@ -184,7 +184,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     //either obvious speed shrink down, or under pre-defined threshold (low water mark)
     //we consider TCP traffic is safe enough to release the token
-    private void checkIfNeedReleaseToken(final long deadline, final int checkPartialSyncInterval) {
+    protected void checkIfNeedReleaseToken(final long deadline, final int checkPartialSyncInterval) {
         releaseTokenFuture = scheduled.schedule(new Runnable() {
             @Override
             public void run() {
@@ -246,6 +246,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private void initPsyncState() {
         psyncEverSucceed.set(INIT_STATE);
+        trafficSafeCounter.set(0);
         logger.info("[initPsyncState] {}", psyncEverSucceed.get() == INIT_STATE);
     }
 }

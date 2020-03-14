@@ -156,6 +156,21 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
+    public void testLeakyBucketReleaseShouldAlsoResetCounter() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(resourceManager.getLeakyBucket()).thenReturn(new DefaultLeakyBucket(1));
+        Assert.assertTrue(listener.canSendPsync());
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L);
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(100);
+        listener.checkIfNeedReleaseToken(deadline, 10);
+        sleep(100 * 3 + 15);
+        // after sleep, token is released, now we shall reset all
+        // make sure, we reset the counter, so that we cannot pass in the first time(check 3 times)
+        Assert.assertFalse(listener.isTokenReadyToRelease(System.currentTimeMillis() + 1100));
+    }
+
+    @Test
     public void testOnMasterDisconnected() {
     }
 
