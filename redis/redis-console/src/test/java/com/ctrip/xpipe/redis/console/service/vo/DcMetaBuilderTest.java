@@ -2,16 +2,17 @@ package com.ctrip.xpipe.redis.console.service.vo;
 
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -25,6 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -54,6 +59,15 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private ShardService shardService;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private MigrationService migrationService;
 
     private List<DcClusterShardTbl> dcClusterShards;
 
