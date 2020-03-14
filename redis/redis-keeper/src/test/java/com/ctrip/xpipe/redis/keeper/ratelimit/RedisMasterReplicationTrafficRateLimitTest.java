@@ -180,7 +180,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
 
         waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
         // sleep to let partial sync return the token
-        sleep(1000 * 2 * 100 / 1000 + 20);
+        sleep(420);
         Assert.assertEquals(1, ((ControllableRedisMasterReplication)armr).getConnectTimes());
         Assert.assertEquals(1, leakyBucket.references());
     }

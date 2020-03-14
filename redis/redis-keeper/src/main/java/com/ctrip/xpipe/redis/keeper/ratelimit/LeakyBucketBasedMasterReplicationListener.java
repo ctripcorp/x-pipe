@@ -177,7 +177,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             // 100ms < checkInterval < 1000
             checkInterval = Math.min(300, Math.max(100, checkInterval));
             // to release the token fast, we choose the shorter deadline
-            afterMilli = 3 * Math.min(afterMilli, checkInterval);
+            afterMilli = Math.min(afterMilli, 3 * checkInterval);
             logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
             logger.info("[tryDelayReleaseToken]deadline: {}, check-interval: {}", DateTimeUtils.timeAsString(deadline), checkInterval);
