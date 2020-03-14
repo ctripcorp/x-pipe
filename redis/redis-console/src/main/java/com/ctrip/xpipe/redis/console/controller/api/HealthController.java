@@ -1,23 +1,21 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
-import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -47,6 +45,21 @@ public class HealthController extends AbstractConsoleController{
     @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Long getInnerReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
         return delayService.getLocalCachedDelay(new HostPort(redisIp, redisPort));
+    }
+
+    @RequestMapping(value = "/redis/inner/delay/all", method = RequestMethod.GET)
+    public Map<HostPort, Long> getAllInnerReplDelayMills() {
+        return delayService.getDcCachedDelay(FoundationService.DEFAULT.getDataCenter());
+    }
+
+    @RequestMapping(value = "/redis/inner/unhealthy", method = RequestMethod.GET)
+    public UnhealthyInfoModel getActiveClusterUnhealthyRedis() {
+        return delayService.getDcActiveClusterUnhealthyInstance(FoundationService.DEFAULT.getDataCenter());
+    }
+
+    @RequestMapping(value = "/redis/inner/unhealthy/all", method = RequestMethod.GET)
+    public UnhealthyInfoModel getAllUnhealthyRedis() {
+        return delayService.getAllUnhealthyInstance();
     }
 
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)
