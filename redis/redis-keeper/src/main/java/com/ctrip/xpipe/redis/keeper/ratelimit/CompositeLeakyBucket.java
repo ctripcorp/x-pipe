@@ -62,7 +62,12 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
         this.keeperContainerService = keeperContainerService;
         this.keeperConfig = keeperConfig;
         this.origin = new DefaultLeakyBucket(keeperConfig.getLeakyBucketInitSize());
-        String localIpAddress = Objects.requireNonNull(IpUtils.getFistNonLocalIpv4ServerAddress("10")).getHostAddress();
+        String localIpAddress = "UNKNOWN";
+        try {
+             localIpAddress = Objects.requireNonNull(IpUtils.getFistNonLocalIpv4ServerAddress("10")).getHostAddress();
+        } catch (Exception e) {
+            logger.warn("[local address not found]", e);
+        }
         this.keeperContainerMeta = new KeeperContainerMeta().setIp(localIpAddress);
     }
 
@@ -162,7 +167,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
         }
     }
 
-    private void checkKeeperConfigChange() {
+    protected void checkKeeperConfigChange() {
         checkConfigChangeProcess = scheduled.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -170,12 +175,17 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                     origin.resize(keeperConfig.getLeakyBucketInitSize());
                 }
             }
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 100, 100, TimeUnit.MILLISECONDS);
     }
 
     private void stopCheckKeeperConfig() {
         if (checkConfigChangeProcess != null) {
             checkConfigChangeProcess.cancel(true);
         }
+    }
+
+    @VisibleForTesting
+    protected void setScheduled(ScheduledExecutorService scheduled) {
+        this.scheduled = scheduled;
     }
 }

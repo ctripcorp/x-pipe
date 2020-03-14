@@ -1,17 +1,20 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +50,12 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
 
     @Mock
     private KeeperMonitor keeperMonitor;
+
+    @Mock
+    private MetaServerKeeperService metaServerKeeperService;
+
+    @Mock
+    private KeeperContainerService keeperContainerService;
 
     @Spy
     private KeeperConfig keeperConfig = new DefaultKeeperConfig();
@@ -125,8 +134,6 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     public void testIsTokenReadyToReleaseWhenDeadline() {
         long deadline = System.currentTimeMillis() - 10;
         Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
-        deadline = System.currentTimeMillis() + 10;
-        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
         deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
         Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
     }
@@ -171,11 +178,143 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
+    public void testDynamicAdjustTokenSize() {
+        //increase size
+        when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
+        CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        listener = new LeakyBucketBasedMasterReplicationListener(redisMasterReplication, redisKeeperServer,
+                resourceManager, scheduled);
+        // in case leakyBucket.refresh() not run
+        when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
+        MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1, false);
+        when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
+        leakyBucket.refresh();
+        Assert.assertEquals(keeperConfig.getLeakyBucketInitSize() + 1, leakyBucket.getTotalSize());
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        for(int i = 0; i < keeperConfig.getLeakyBucketInitSize() + 1; i++) {
+            Assert.assertTrue(listener.canSendPsync());
+        }
+        Assert.assertFalse(listener.canSendPsync());
+    }
+
+    @Test
+    public void testDynamicAdjustTokenSize2() {
+        //decrease size
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
+        CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
+        leakyBucket.setScheduled(scheduled);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        listener = new LeakyBucketBasedMasterReplicationListener(redisMasterReplication, redisKeeperServer,
+                resourceManager, scheduled);
+        for(int i = 0; i < keeperConfig.getLeakyBucketInitSize(); i++) {
+            Assert.assertTrue(listener.canSendPsync());
+        }
+        Assert.assertFalse(listener.canSendPsync());
+        // in case leakyBucket.refresh() not run
+        when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
+        MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize(), false);
+        when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
+        int originSize = keeperConfig.getLeakyBucketInitSize();
+        when(keeperConfig.getLeakyBucketInitSize()).thenReturn(originSize - 2);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(110);
+        for(int i = 0; i < originSize; i++) {
+            leakyBucket.release();
+        }
+        Assert.assertEquals(originSize -2 , leakyBucket.getTotalSize());
+        for(int i = 0; i < originSize - 2; i++) {
+            Assert.assertTrue(listener.canSendPsync());
+        }
+        Assert.assertFalse(listener.canSendPsync());
+    }
+
+    @Test
+    public void testConcurrentDecreaseTokenSize() {
+
+    }
+
+    @Test
+    public void testConcurrentIncreaseTokenSize() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
+        CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        listener = new LeakyBucketBasedMasterReplicationListener(redisMasterReplication, redisKeeperServer,
+                resourceManager, scheduled);
+        for(int i = 0; i < keeperConfig.getLeakyBucketInitSize(); i++) {
+            Assert.assertTrue(listener.canSendPsync());
+        }
+        Assert.assertFalse(listener.canSendPsync());
+        // in case leakyBucket.refresh() not run
+        when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
+        MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1, false);
+        when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
+        leakyBucket.refresh();
+        Assert.assertEquals(keeperConfig.getLeakyBucketInitSize() + 1, leakyBucket.getTotalSize());
+        Assert.assertTrue(listener.canSendPsync());
+        Assert.assertFalse(listener.canSendPsync());
+    }
+
+    @Test
+    public void testDynamicCloseIt() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
+        CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        listener = new LeakyBucketBasedMasterReplicationListener(redisMasterReplication, redisKeeperServer,
+                resourceManager, scheduled);
+        for(int i = 0; i < keeperConfig.getLeakyBucketInitSize(); i++) {
+            Assert.assertTrue(listener.canSendPsync());
+        }
+        Assert.assertFalse(listener.canSendPsync());
+        // in case leakyBucket.refresh() not run
+        when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
+        MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1, true);
+        when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
+        leakyBucket.refresh();
+        int INFINITY = 1024;
+        for(int i = 0; i < INFINITY; i ++) {
+            Assert.assertTrue(listener.canSendPsync());
+        }
+    }
+
+    @Test
+    public void testReleaseToken() {
+        listener = spy(listener);
+        listener.releaseToken();
+        verify(leakyBucket, times(1)).release();
+        int INIT_STATE = 1;
+        Assert.assertEquals(INIT_STATE, listener.psyncEverSucceed.get());
+    }
+
+    @Test
     public void testOnMasterDisconnected() {
+        listener = spy(listener);
+        listener.onMasterDisconnected();
+        verify(listener, never()).releaseToken();
+        listener.holdToken.set(true);
+        listener.onMasterDisconnected();
+        verify(listener, times(1)).releaseToken();
     }
 
     @Test
     public void testEndWriteRdb() {
+        listener = spy(listener);
+        listener.endWriteRdb();
+        verify(listener, never()).releaseToken();
+        listener.holdToken.set(true);
+        listener.endWriteRdb();
+        verify(listener, times(1)).releaseToken();
     }
 
     @Test
@@ -196,6 +335,12 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
 
     @Test
     public void testOnDumpFail() {
+        listener = spy(listener);
+        listener.holdToken.set(true);
+        listener.onDumpFail();
+        verify(leakyBucket, times(1)).release();
+        int KEEP_FAIL = 3;
+        Assert.assertEquals(KEEP_FAIL, listener.psyncEverSucceed.get());
     }
 
     @Test

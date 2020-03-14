@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
 
 /**
@@ -21,15 +22,18 @@ public class DefaultLeakyBucket implements LeakyBucket {
 
     private volatile Semaphore semaphore;
 
-    private volatile int totalSize;
+    private volatile AtomicInteger totalSize;
 
     public DefaultLeakyBucket(int initSize) {
         this.semaphore = new Semaphore(initSize);
-        this.totalSize = initSize;
+        this.totalSize = new AtomicInteger(initSize);
     }
 
     public synchronized void release() {
         logger.info("[release][before] {}", references());
+        if(semaphore.availablePermits() >= getTotalSize()) {
+            return;
+        }
         semaphore.release();
         logger.info("[release][after] {}", references());
     }
@@ -50,8 +54,8 @@ public class DefaultLeakyBucket implements LeakyBucket {
             int currentSize = getTotalSize();
             int borrowed = currentSize - semaphore.availablePermits();
             semaphore = new Semaphore(newSize);
-            semaphore.tryAcquire(borrowed);
-            totalSize = newSize;
+            semaphore.tryAcquire(Math.min(borrowed, newSize));
+            totalSize.set(newSize);
             logger.warn("[resize] from {} to {}", currentSize, newSize);
         }
     }
@@ -69,6 +73,6 @@ public class DefaultLeakyBucket implements LeakyBucket {
 
     @Override
     public int getTotalSize() {
-        return totalSize;
+        return totalSize.get();
     }
 }

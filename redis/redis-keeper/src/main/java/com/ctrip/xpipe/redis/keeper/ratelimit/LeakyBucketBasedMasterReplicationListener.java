@@ -44,7 +44,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     protected ScheduledFuture<?> releaseTokenFuture;
 
     private final int INIT_STATE = 1, EVER_SUCCEED = 2, KEEP_FAIL = 3;
-    private AtomicInteger psyncEverSucceed = new AtomicInteger(INIT_STATE);
+    protected AtomicInteger psyncEverSucceed = new AtomicInteger(INIT_STATE);
 
     private AtomicLong psyncSendUnixTime;
 
@@ -92,7 +92,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     @Override
     public void onMasterDisconnected() {
         if (holdToken.compareAndSet(true, false)) {
-            resourceManager.getLeakyBucket().release();
+            releaseToken();
         }
         if (releaseTokenFuture != null && !releaseTokenFuture.isDone()) {
             releaseTokenFuture.cancel(true);
@@ -103,7 +103,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     @Override
     public void endWriteRdb() {
         if (holdToken.compareAndSet(true, false)) {
-            resourceManager.getLeakyBucket().release();
+            releaseToken();
             initPsyncState();
         }
     }
@@ -135,8 +135,8 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     @Override
     public void onDumpFail() {
         if (holdToken.compareAndSet(true, false)) {
+            releaseToken();
             setPsyncFailed();
-            resourceManager.getLeakyBucket().release();
         }
     }
 
@@ -153,7 +153,8 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         }
     }
 
-    private void releaseToken() {
+    @VisibleForTesting
+    protected void releaseToken() {
         holdToken.set(false);
         resourceManager.getLeakyBucket().release();
     }
@@ -172,11 +173,13 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             // num(files) * file-size / cross-dc-replication-rate
             long afterMilli = 1000L * keeperConfig.getReplicationStoreCommandFileNumToKeep()
                     * keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
-            logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
-            long deadline = afterMilli + System.currentTimeMillis();
             int checkInterval = rtt * keeperConfig.getPartialSyncTrafficMonitorIntervalTimes();
             // 100ms < checkInterval < 1000
-            checkInterval = Math.min(1000, Math.max(100, checkInterval));
+            checkInterval = Math.min(300, Math.max(100, checkInterval));
+            // to release the token fast, we choose the shorter deadline
+            afterMilli = 3 * Math.min(afterMilli, checkInterval);
+            logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
+            long deadline = afterMilli + System.currentTimeMillis();
             logger.info("[tryDelayReleaseToken]deadline: {}, check-interval: {}", DateTimeUtils.timeAsString(deadline), checkInterval);
             checkIfNeedReleaseToken(deadline, checkInterval);
         }
@@ -208,8 +211,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     //    2.2 defined QPS
     @VisibleForTesting
     protected boolean isTokenReadyToRelease(final long deadline) {
-        int oneSec = 1000;
-        if (System.currentTimeMillis() >= deadline || Math.abs(System.currentTimeMillis() - deadline) < oneSec) {
+        if (System.currentTimeMillis() >= deadline) {
             return true;
         }
         if(trafficSafeCounter == null) {
@@ -246,7 +248,9 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private void initPsyncState() {
         psyncEverSucceed.set(INIT_STATE);
-        trafficSafeCounter.set(0);
+        if(trafficSafeCounter != null) {
+            trafficSafeCounter.set(0);
+        }
         logger.info("[initPsyncState] {}", psyncEverSucceed.get() == INIT_STATE);
     }
 }

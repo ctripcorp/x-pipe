@@ -146,6 +146,7 @@ public class DefaultLeakyBucketTest extends AbstractTest {
                 public void run() {
                     try {
                         barrier.await();
+                        sleep(1);
                     } catch (Exception ignore) {
                     }
                     if (bucket.tryAcquire()) {
@@ -156,7 +157,8 @@ public class DefaultLeakyBucketTest extends AbstractTest {
                 }
             });
         }
-        latch.await(1000, TimeUnit.MILLISECONDS);
+        latch.await(10000, TimeUnit.MILLISECONDS);
+        Assert.assertEquals(newSize, bucket.getTotalSize());
         Assert.assertEquals(newSize, bucket.references());
     }
 }
