@@ -126,7 +126,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getLeakyBucketInitSize() {
-		return getIntProperty(KEY_LEAKY_BUCKET_INIT_SIZE, 3);
+		return getIntProperty(KEY_LEAKY_BUCKET_INIT_SIZE, 8);
 	}
 
 	@Override
