@@ -38,13 +38,19 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
 
+    private volatile boolean subFail = false;
+
     protected long lastStartTime = System.currentTimeMillis();
 
+    private SentinelCheckController checkController;
+
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
+                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig,
+                                    ClusterService clusterService, SentinelCheckController checkController) {
         super(scheduled, instance, executors);
         this.consoleDbConfig = consoleDbConfig;
         this.clusterService = clusterService;
+        this.checkController = checkController;
     }
 
     @Override
@@ -52,6 +58,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         if(!shouldStart()) {
             return;
         }
+
+        subFail = false;
         getActionInstance().getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
@@ -61,6 +69,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
             @Override
             public void fail(Throwable e) {
+                subFail = true;
                 logger.error("[sub-failed]", e);
             }
         });
@@ -75,7 +84,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @VisibleForTesting
     protected void processSentinelHellos() {
         getActionInstance().getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
-        notifyListeners(new SentinelActionContext(getActionInstance(), hellos));
+        if (subFail && hellos.isEmpty()) {
+            notifyListeners(new SentinelActionContext(getActionInstance(), null));
+        } else {
+            notifyListeners(new SentinelActionContext(getActionInstance(), hellos));
+        }
         hellos = Sets.newConcurrentHashSet();
     }
 
@@ -83,11 +96,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         long current = System.currentTimeMillis();
         if( current - lastStartTime < getIntervalMilli()){
             logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
-            return false;
-        }
-
-        if(getActionInstance().getRedisInstanceInfo().isInActiveDc()) {
-            logger.debug("[doTask][BackupDc] do in backup dc only, quit");
             return false;
         }
 
@@ -103,6 +111,12 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             logger.warn("[shouldStart][{}] in migration, stop check", getActionInstance().getRedisInstanceInfo().getClusterId());
             return false;
         }
+
+        if (!checkController.shouldCheck(getActionInstance())) {
+            logger.info("[shouldStart] controller refuse check");
+            return false;
+        }
+
         return consoleDbConfig.isSentinelAutoProcess();
     }
 
