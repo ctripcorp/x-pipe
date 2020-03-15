@@ -24,6 +24,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
 	public static final String KEY_DELAY_LOG_LIMIT_MICRO = "monitor.delay.log.limit.micro";
     private static final String KEY_TRAFFIC_REPORT_INTERVAL = "monitor.traffic.report.interval";
+	private static final String KEY_KEEPER_RATE_LIMIT_OPEN = "keeper.rate.limit.open";
 
 	private static String KEEPER_CONTAINER_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
 	private static String KEEPER_CONTAINER_PROPERTIES_FILE = "keeper-container.properties";
@@ -132,5 +133,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getPartialSyncTrafficMonitorIntervalTimes() {
 		return 5;
+	}
+
+	@Override
+	public boolean isKeeperRateLimitOpen() {
+		return getBooleanProperty(KEY_KEEPER_RATE_LIMIT_OPEN, true);
 	}
 }

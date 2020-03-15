@@ -63,7 +63,7 @@ public class TestWithoutZkProfile extends AbstractProfile{
 		return new MetaServerKeeperService() {
 			@Override
 			public KeeperContainerTokenStatusResponse refreshKeeperContainerTokenStatus(KeeperContainerTokenStatusRequest request) {
-				return new KeeperContainerTokenStatusResponse(3, false);
+				return new KeeperContainerTokenStatusResponse(3);
 			}
 
 			@Override

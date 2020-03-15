@@ -152,7 +152,6 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                 logger.warn("[refresh][no-response]");
                 return;
             }
-            closed.set(response.isClose());
             if (response.getTokenSize() > origin.getTotalSize()) {
                 origin.resize(response.getTokenSize());
             }
@@ -173,6 +172,9 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
             public void run() {
                 if(keeperConfig.getLeakyBucketInitSize() != origin.getTotalSize()) {
                     origin.resize(keeperConfig.getLeakyBucketInitSize());
+                }
+                if(!keeperConfig.isKeeperRateLimitOpen()) {
+                    closed.set(true);
                 }
             }
         }, 100, 100, TimeUnit.MILLISECONDS);

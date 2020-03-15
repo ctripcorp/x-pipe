@@ -135,9 +135,10 @@ public class CompositeLeakyBucketTest extends AbstractTest {
 
     @Test
     public void testRefresh() throws InterruptedException {
-        when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any()))
-                .thenReturn(new MetaServerKeeperService.KeeperContainerTokenStatusResponse(3, true));
-        when(keeperConfig.getMetaServerAddress()).thenReturn("http://metaserver.com");
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
+        leakyBucket.setScheduled(scheduled);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(110);
         AtomicInteger counter = new AtomicInteger();
         int task = 3 * 100, newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);

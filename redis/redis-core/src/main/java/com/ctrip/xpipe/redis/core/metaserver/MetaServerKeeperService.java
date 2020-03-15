@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-
-import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -35,19 +31,13 @@ public interface MetaServerKeeperService extends MetaServerService {
 
 	public static class KeeperContainerTokenStatusResponse {
 		private int tokenSize;
-		private boolean close;
 
-		public KeeperContainerTokenStatusResponse(int tokenSize, boolean close) {
+		public KeeperContainerTokenStatusResponse(int tokenSize) {
 			this.tokenSize = tokenSize;
-			this.close = close;
 		}
 
 		public int getTokenSize() {
 			return tokenSize;
-		}
-
-		public boolean isClose() {
-			return close;
 		}
 
 	}

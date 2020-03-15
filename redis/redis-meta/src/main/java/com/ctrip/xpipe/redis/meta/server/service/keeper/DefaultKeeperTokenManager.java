@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * Feb 26, 2020
  */
-@Component
+//@Component
 public class DefaultKeeperTokenManager implements KeeperTokenManager, LeaderAware {
 
     private AtomicBoolean isKeeperRateLimitOpen = new AtomicBoolean(true);
@@ -21,7 +21,7 @@ public class DefaultKeeperTokenManager implements KeeperTokenManager, LeaderAwar
 
     @Override
     public MetaServerKeeperService.KeeperContainerTokenStatusResponse refreshKeeperTokenStatus(MetaServerKeeperService.KeeperContainerTokenStatusRequest request) {
-        return new MetaServerKeeperService.KeeperContainerTokenStatusResponse(3, isKeeperRateLimitOpen.get());
+        return new MetaServerKeeperService.KeeperContainerTokenStatusResponse(3);
     }
 
     @Override

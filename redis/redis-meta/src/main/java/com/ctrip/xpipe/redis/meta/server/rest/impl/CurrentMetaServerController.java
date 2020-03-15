@@ -33,9 +33,6 @@ public class CurrentMetaServerController extends AbstractController{
 	
 	@Autowired
 	private DcMetaCache dcMetaCache;
-
-	@Autowired
-	private KeeperTokenManager tokenManager;
 	
 	@RequestMapping(path = "/slots", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public Set<Integer> getSlots(){
@@ -55,12 +52,7 @@ public class CurrentMetaServerController extends AbstractController{
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.KEEPER_TOKEN_STATUS, method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public MetaServerKeeperService.KeeperContainerTokenStatusResponse refreshKeeperTokenStatus(@RequestBody MetaServerKeeperService.KeeperContainerTokenStatusRequest request) {
 		logger.info("[refreshKeeperTokenStatus] {}", request);
-		return tokenManager.refreshKeeperTokenStatus(request);
-	}
-
-	@RequestMapping(path = "/close/keeper/rate/limit", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
-	public boolean closeKeeperRateLimit() {
-		return true;
+		return new MetaServerKeeperService.KeeperContainerTokenStatusResponse(10);//tokenManager.refreshKeeperTokenStatus(request);
 	}
 
 	public static class DebugInfo{

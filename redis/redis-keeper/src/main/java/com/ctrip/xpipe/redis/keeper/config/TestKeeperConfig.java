@@ -161,4 +161,15 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getPartialSyncTrafficMonitorIntervalTimes() {
 		return 10;
 	}
+
+	private boolean keeperRateLimit = true;
+
+	@Override
+	public boolean isKeeperRateLimitOpen() {
+		return keeperRateLimit;
+	}
+
+	public void setKeeperRateLimit(boolean keeperRateLimit) {
+		this.keeperRateLimit = keeperRateLimit;
+	}
 }

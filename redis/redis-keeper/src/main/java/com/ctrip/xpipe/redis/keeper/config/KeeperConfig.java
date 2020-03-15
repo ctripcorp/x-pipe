@@ -50,4 +50,6 @@ public interface KeeperConfig extends CoreConfig{
     int getLeakyBucketInitSize();
 
     int getPartialSyncTrafficMonitorIntervalTimes();
+
+    boolean isKeeperRateLimitOpen();
 }

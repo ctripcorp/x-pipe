@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
-import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -188,7 +187,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         // in case leakyBucket.refresh() not run
         when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
         MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
-                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1, false);
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1);
         when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
         leakyBucket.refresh();
         Assert.assertEquals(keeperConfig.getLeakyBucketInitSize() + 1, leakyBucket.getTotalSize());
@@ -218,7 +217,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         // in case leakyBucket.refresh() not run
         when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
         MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
-                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize(), false);
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize());
         when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
         int originSize = keeperConfig.getLeakyBucketInitSize();
         when(keeperConfig.getLeakyBucketInitSize()).thenReturn(originSize - 2);
@@ -255,7 +254,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         // in case leakyBucket.refresh() not run
         when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
         MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
-                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1, false);
+                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1);
         when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
         leakyBucket.refresh();
         Assert.assertEquals(keeperConfig.getLeakyBucketInitSize() + 1, leakyBucket.getTotalSize());
@@ -277,11 +276,10 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         }
         Assert.assertFalse(listener.canSendPsync());
         // in case leakyBucket.refresh() not run
-        when(keeperConfig.getMetaServerAddress()).thenReturn("http://xpipe.meta.com");
-        MetaServerKeeperService.KeeperContainerTokenStatusResponse response = new MetaServerKeeperService
-                .KeeperContainerTokenStatusResponse(keeperConfig.getLeakyBucketInitSize() + 1, true);
-        when(metaServerKeeperService.refreshKeeperContainerTokenStatus(any())).thenReturn(response);
-        leakyBucket.refresh();
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
+        leakyBucket.setScheduled(scheduled);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(110);
         int INFINITY = 1024;
         for(int i = 0; i < INFINITY; i ++) {
             Assert.assertTrue(listener.canSendPsync());
