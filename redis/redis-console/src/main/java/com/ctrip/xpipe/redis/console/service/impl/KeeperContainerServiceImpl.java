@@ -8,12 +8,14 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 import org.unidal.dal.jdbc.DalException;
 
@@ -35,7 +37,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   @Autowired
   private RedisService redisService;
 
-  private RestTemplate restTemplate;
+  private RestOperations restTemplate;
 
   @Override
   public KeepercontainerTbl find(final long id) {
@@ -256,26 +258,30 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   private boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
-    List<KeepercontainerTbl> keepercontainerTbls = findAllByDcName(createInfo.getDcName());
-    for(KeepercontainerTbl kc : keepercontainerTbls) {
-      if(StringUtil.trimEquals(kc.getKeepercontainerIp(), createInfo.getKeepercontainerIp())) {
-        return true;
+    KeepercontainerTbl existing = queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
+      @Override
+      public KeepercontainerTbl doQuery() throws DalException {
+        return dao.findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort(),
+                KeepercontainerTblEntity.READSET_CONTAINER_ADDRESS);
       }
-    }
-    return false;
+    });
+    return existing == null;
   }
 
-  protected RestTemplate getOrCreateRestTemplate() {
+  protected void getOrCreateRestTemplate() {
     if (restTemplate == null) {
       synchronized (this) {
         if (restTemplate == null) {
-          restTemplate = RestTemplateFactory.createRestTemplate();
+          restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(10, 20, 3000, 5000);
         }
       }
     }
-    return restTemplate;
   }
 
+  @VisibleForTesting
+  protected void setRestTemplate(RestOperations restTemplate) {
+    this.restTemplate = restTemplate;
+  }
 
   protected boolean checkIpAndPort(String host, int port) {
 
@@ -285,7 +291,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       return restTemplate.getForObject(String.format(url, host, port), Boolean.class);
 
     } catch (RestClientException e) {
-      logger.error("[healthCheck]Http connect occur exception. {}", e);
+      logger.error("[healthCheck]Http connect occur exception. ", e);
     }
 
     return false;
