@@ -5,6 +5,7 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.core.monitor.BaseInstantaneousMetric;
 import com.ctrip.xpipe.redis.core.monitor.InstantaneousMetric;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReason;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -17,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * Feb 20, 2017
  */
 public class DefaultKeeperStats extends AbstractStartStoppable implements KeeperStats {
+
+	private String shard;
 	
 	private AtomicLong fullSyncCount = new AtomicLong();
 	
@@ -34,13 +37,22 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 
 	private ScheduledExecutorService scheduled;
 
-	private ScheduledFuture future;
+	private ScheduledFuture<?> future;
 
 	private InstantaneousMetric inputBytesInstantaneousMetric = new BaseInstantaneousMetric();
 
 	private InstantaneousMetric outputBytesInstantaneousMetric = new BaseInstantaneousMetric();
 
-	public DefaultKeeperStats(ScheduledExecutorService scheduled) {
+	private PsyncFailReason lastFailReason;
+
+	private AtomicLong psyncSendFailCount = new AtomicLong();
+
+	private AtomicLong peakInputInstantaneousInput = new AtomicLong();
+
+	private AtomicLong peakOutputInstantaneousOutput = new AtomicLong();
+
+	public DefaultKeeperStats(String shard, ScheduledExecutorService scheduled) {
+		this.shard = shard;
 		this.scheduled = scheduled;
 	}
 
@@ -124,20 +136,74 @@ public class DefaultKeeperStats extends AbstractStartStoppable implements Keeper
 		return outputBytes.get();
 	}
 
-	private void updatePerSec() {
+	@Override
+	public long getPeakInputInstantaneousBPS() {
+		return peakInputInstantaneousInput.get();
+	}
+
+	@Override
+	public long getPeakOutputInstantaneousBPS() {
+		return peakOutputInstantaneousOutput.get();
+	}
+
+	@Override
+	public void increasePsyncSendFail() {
+		psyncSendFailCount.incrementAndGet();
+	}
+
+	@Override
+	public long getPsyncSendFailCount() {
+		return psyncSendFailCount.get();
+	}
+
+	@Override
+	public void setLastPsyncFailReason(PsyncFailReason reason) {
+		this.lastFailReason = reason;
+	}
+
+	@Override
+	public PsyncFailReason getLastPsyncFailReason() {
+		return this.lastFailReason;
+	}
+
+	private void updateTrafficStats() {
 		int interval = 100;
 		future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() {
-				inputBytesInstantaneousMetric.trackInstantaneousMetric(inputBytes.get());
-				outputBytesInstantaneousMetric.trackInstantaneousMetric(outputBytes.get());
+				updateInstantaneousMetric();
+				updatePeakStats();
+				logStats();
 			}
 		}, interval, interval, TimeUnit.MILLISECONDS);
 	}
 
+	private void updateInstantaneousMetric() {
+		inputBytesInstantaneousMetric.trackInstantaneousMetric(inputBytes.get());
+		outputBytesInstantaneousMetric.trackInstantaneousMetric(outputBytes.get());
+	}
+
+	private void updatePeakStats() {
+		long inputBPS = getInputInstantaneousBPS();
+		if (inputBPS > getPeakInputInstantaneousBPS()) {
+			peakInputInstantaneousInput.set(inputBPS);
+		}
+		long outputBPS = getOutputInstantaneousBPS();
+		if (outputBPS > getPeakOutputInstantaneousBPS()) {
+			peakOutputInstantaneousOutput.set(outputBPS);
+		}
+	}
+
+	private void logStats() {
+		logger.debug("[{}][input]{}", shard, getInputInstantaneousBPS());
+		logger.debug("[{}][output]{}", shard, getOutputInstantaneousBPS());
+		logger.debug("[{}][peak-in]{}", shard, getPeakInputInstantaneousBPS());
+		logger.debug("[{}][peak-out]{}", shard, getPeakOutputInstantaneousBPS());
+	}
+
 	@Override
 	protected void doStart() throws Exception {
-		updatePerSec();
+		updateTrafficStats();
 	}
 
 	@Override

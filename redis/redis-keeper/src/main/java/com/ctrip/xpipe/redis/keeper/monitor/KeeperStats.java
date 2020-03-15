@@ -42,4 +42,16 @@ public interface KeeperStats extends Startable,Stoppable {
 
 	long getOutputBytes();
 
+	long getPeakInputInstantaneousBPS();
+
+	long getPeakOutputInstantaneousBPS();
+
+	void increasePsyncSendFail();
+
+	long getPsyncSendFailCount();
+
+	void setLastPsyncFailReason(PsyncFailReason reason);
+
+	PsyncFailReason getLastPsyncFailReason();
+
 }

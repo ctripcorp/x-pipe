@@ -8,7 +8,8 @@ public abstract class AbstractInstantaneousMetric implements InstantaneousMetric
 
     private final int statsMetricSamples;
 
-    private long statsCount = 1L;
+    private final static long INIT_STATE = -1L;
+    private long statsCount = INIT_STATE;
 
     private final long[] samples;
 
@@ -25,18 +26,26 @@ public abstract class AbstractInstantaneousMetric implements InstantaneousMetric
 
     @Override
     public long getInstantaneousMetric() {
+        if (statsCount < 1) {
+            return 0;
+        }
         long result = 0L;
         for(long sample : samples) {
             result += sample;
         }
-        int base = statsCount > statsMetricSamples ? statsMetricSamples : (int) statsCount;
+        long base = statsCount > statsMetricSamples ? statsMetricSamples : statsCount;
         return result / base;
     }
 
     @Override
     public void trackInstantaneousMetric(long currentStats) {
-        samples[index.getAndIncrement()] = getSample(currentStats);
-        index.set(index.get() % (statsMetricSamples - 1));
+        int idx = index.getAndIncrement() % statsMetricSamples;
+        samples[idx] = getSample(currentStats);
+        if (statsCount == INIT_STATE) {
+            index.set(0);
+        } else {
+            index.set(index.get() % statsMetricSamples);
+        }
         statsCount ++;
     }
 

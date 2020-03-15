@@ -144,6 +144,7 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 						redisClientProtocol = new SimpleStringParser();
 					}
 					commandState = COMMAND_STATE.READ_COMMANDS;
+					break;
 				case READ_COMMANDS:
 					RedisClientProtocol<?> resultParser = redisClientProtocol.read(byteBuf);
 					if(resultParser == null){
