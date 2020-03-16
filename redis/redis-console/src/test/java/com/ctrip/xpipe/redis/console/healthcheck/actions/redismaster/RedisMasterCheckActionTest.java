@@ -2,12 +2,12 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
 import org.junit.*;
@@ -146,5 +146,22 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, times(1)).updateBatchMaster(anyList());
         verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    public void testRedisRoleUnknownShouldNotChange() throws Exception {
+        instance = newHangedRedisHealthCheckInstance();
+        instance.getRedisInstanceInfo().isMaster(true);
+        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
+        redisTbl = new RedisTbl().setRedisIp(info.getHostPort().getHost())
+                .setRedisPort(info.getHostPort().getPort());
+        when(redisService.findRedisesByDcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()))
+                .thenReturn(Lists.newArrayList(redisTbl));
+        doNothing().when(redisService).updateBatchMaster(anyList());
+        action = new RedisMasterCheckAction(scheduled, instance, executors, redisService);
+        action.doTask();
+        sleep(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI + 15);
+        verify(redisService, never()).updateBatchMaster(anyList());
     }
 }
