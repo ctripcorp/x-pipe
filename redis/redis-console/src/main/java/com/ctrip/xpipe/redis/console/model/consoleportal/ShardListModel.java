@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ShardListModel extends AbstractClusterModel {
+
+    private Long activedcId;
 
     private String shardName;
 
-    private String dcName;
+    private List<String> dcNames = new ArrayList<>();
 
     public String getShardName() {
         return shardName;
@@ -15,12 +20,21 @@ public class ShardListModel extends AbstractClusterModel {
         return this;
     }
 
-    public String getDcName() {
-        return dcName;
+    public List<String> getDcNames() {
+        return dcNames;
     }
 
-    public ShardListModel setDcName(String dcName) {
-        this.dcName = dcName;
+    public ShardListModel addDc(String dcName) {
+        this.dcNames.add(dcName);
+        return this;
+    }
+
+    public Long getActivedcId() {
+        return activedcId;
+    }
+
+    public ShardListModel setActivedcId(Long activedcId) {
+        this.activedcId = activedcId;
         return this;
     }
 }
