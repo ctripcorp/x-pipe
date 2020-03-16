@@ -1,10 +1,6 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-
-import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -19,7 +15,7 @@ public interface MetaServerKeeperService extends MetaServerService {
 
 	/*********************** for keeper *******************/
 
-	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta);
+//	void ping(String clusterId, String shardId, KeeperInstanceMeta keeperInstanceMeta);
 
 	/*********************** for container *******************/
 
@@ -29,6 +25,57 @@ public interface MetaServerKeeperService extends MetaServerService {
 	 * @param keeperContainerMeta
 	 * @return
 	 */
-	List<KeeperTransMeta> getAllKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta);
+//	List<KeeperTransMeta> getAllKeepersByKeeperContainer(KeeperContainerMeta keeperContainerMeta);
+
+	KeeperContainerTokenStatusResponse refreshKeeperContainerTokenStatus(KeeperContainerTokenStatusRequest request);
+
+	public static class KeeperContainerTokenStatusResponse {
+		private int tokenSize;
+
+		public KeeperContainerTokenStatusResponse(int tokenSize) {
+			this.tokenSize = tokenSize;
+		}
+
+		public int getTokenSize() {
+			return tokenSize;
+		}
+
+	}
+
+	public static class KeeperContainerTokenStatusRequest {
+
+		private KeeperContainerMeta keeperContainerMeta;
+
+		private int keeperNum;
+
+		private int acked;
+
+		public KeeperContainerTokenStatusRequest(KeeperContainerMeta keeperContainerMeta, int keeperNum, int acked) {
+			this.keeperContainerMeta = keeperContainerMeta;
+			this.keeperNum = keeperNum;
+			this.acked = acked;
+		}
+
+		public KeeperContainerMeta getKeeperContainerMeta() {
+			return keeperContainerMeta;
+		}
+
+		public int getKeeperNum() {
+			return keeperNum;
+		}
+
+		public int getAcked() {
+			return acked;
+		}
+
+		@Override
+		public String toString() {
+			return "KeeperContainerTokenStatusRequest{" +
+					"keeperContainerMeta=" + keeperContainerMeta +
+					", keeperNum=" + keeperNum +
+					", acked=" + acked +
+					'}';
+		}
+	}
 
 }

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -54,7 +55,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 			File baseDir, LeaderElectorManager leaderElectorManager) {
 		
 		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, leaderElectorManager,
-				createkeepersMonitorManager(), mock(ProxyResourceManager.class)){
+				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class)){
 		
 			@Override
 			public void beginWriteRdb(EofType eofType, long offset) {

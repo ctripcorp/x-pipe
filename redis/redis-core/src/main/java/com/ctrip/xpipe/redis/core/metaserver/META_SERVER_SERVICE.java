@@ -24,6 +24,7 @@ public enum META_SERVER_SERVICE {
     MAKE_MASTER_READONLY(PATH.PATH_MAKE_MASTER_READONLY, ForwardType.FORWARD),
 
     //keeper
+    KEEPER_TOKEN_STATUS(PATH.KEEPER_TOKEN_STATUS, ForwardType.MULTICASTING),
 
     //multi dc
     UPSTREAM_CHANGE(PATH.PATH_UPSTREAM_CHANGE, ForwardType.FORWARD);
@@ -103,6 +104,7 @@ public enum META_SERVER_SERVICE {
         public static final String GET_ACTIVE_KEEPER = "/getactivekeeper/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
 
         //keeper
+        public static final String KEEPER_TOKEN_STATUS = "/keeper/token/status";
 
         //console
         public static final String PATH_CLUSTER_CHANGE = "/clusterchange/" + CLUSTER_ID_PATH_VARIABLE;
