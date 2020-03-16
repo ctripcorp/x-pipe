@@ -4,6 +4,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -58,6 +59,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     protected void doTask() {
         if(!shouldStart()) {
             return;
+        }
+
+        RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
+        if (instance.getRedisInstanceInfo().isInActiveDc()) {
+            logger.info("[doTask][{}-{}] in active dc, redis {}", info.getClusterId(), info.getShardId(), instance.getEndpoint());
         }
 
         subError = null;
@@ -115,6 +121,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             if (!controller.shouldCheck(instance)) {
                 logger.warn("[shouldStart][{}] controller {} refuse check",
                         getActionInstance().getRedisInstanceInfo().getClusterId(), controller.getClass().getSimpleName());
+                return false;
             }
         }
 
