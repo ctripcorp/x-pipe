@@ -5,14 +5,9 @@
                 <div class="col-md-6">
                     <span class="col-sm-2"> Clusters </span>
                     <div class="col-sm-4">
-                        <input type="checkbox" class="ace ace-checkbox-2" id="ace-settings-navbar" ng-disabled="showUnhealthyShardOnly"
+                        <input type="checkbox" class="ace ace-checkbox-2" id="ace-settings-navbar"
                                ng-model="showUnhealthyClusterOnly" ng-change="refresh()" />
                         <label class="lbl" for="ace-settings-navbar">显示问题Cluster</label>
-                    </div>
-                    <div class="col-sm-4">
-                        <input type="checkbox" class="ace ace-checkbox-2" ng-disabled="showUnhealthyClusterOnly"
-                               ng-model="showUnhealthyShardOnly" ng-change="refresh()" />
-                        <label class="lbl" for="ace-settings-navbar">显示问题Shard</label>
                     </div>
                 </div>
 
@@ -28,8 +23,6 @@
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">
                     <a href="/#/cluster_dc_shards/{{cluster.clusterName}}/">{{ cluster.clusterName }}</a>
                 </td>
-                <td ng-if="showUnhealthyShardOnly" data-title="'机房'" ng-bind="cluster.dcName"></td>
-                <td ng-if="showUnhealthyShardOnly" data-title="'分片'" ng-bind="cluster.shardName"></td>
                 <td ng-if="showUnhealthyClusterOnly" data-title="'详情'"><div class="action-buttons">
                     <a href="javascript:void(0)" class="green bigger-140 show-details-btn"
                        title="Show Details" ng-click="cluster.showDetail = !cluster.showDetail">
@@ -39,7 +32,7 @@
                 </div></td>
                 <td ng-if="showUnhealthyClusterOnly" data-title="'问题分片数'" ng-bind="cluster.unhealthyShardsCnt" sortable="'unhealthyShardsCnt'" ></td>
                 <td ng-if="showUnhealthyClusterOnly" data-title="'问题实例数'" ng-bind="cluster.unhealthyRedisCnt" sortable="'unhealthyRedisCnt'" ></td>
-                <td ng-if="!showUnhealthyShardOnly" data-title="'主数据中心'" ng-bind="getDcName({{cluster.activedcId}})"></td>
+                <td ng-if="true" data-title="'主数据中心'" ng-bind="getDcName({{cluster.activedcId}})"></td>
                 <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
                 <td ng-if="true" data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>
                 <td ng-if="true" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails| limitTo:50" ></td>
