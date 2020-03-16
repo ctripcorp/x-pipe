@@ -49,10 +49,10 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
     private MetaCache metaCache;
 
     @Mock
-    private ConsoleDbConfig config;
+    protected ConsoleDbConfig config;
 
     @Mock
-    private ClusterService clusterService;
+    protected ClusterService clusterService;
 
     private RedisHealthCheckInstance instance;
 
