@@ -12,6 +12,10 @@ import java.util.Set;
  */
 public class SentinelActionContext extends AbstractActionContext<Set<SentinelHello>> {
 
+    public SentinelActionContext(RedisHealthCheckInstance instance, Throwable t) {
+        super(instance, t);
+    }
+
     public SentinelActionContext(RedisHealthCheckInstance instance, Set<SentinelHello> sentinelHellos) {
         super(instance, sentinelHellos);
     }

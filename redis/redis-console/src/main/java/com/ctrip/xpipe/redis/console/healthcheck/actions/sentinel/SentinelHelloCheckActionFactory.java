@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
@@ -26,6 +27,9 @@ public class SentinelHelloCheckActionFactory extends AbstractLeaderAwareHealthCh
     private List<SentinelHelloCollector> collectors;
 
     @Autowired
+    private List<HealthCheckActionController> controllers;
+
+    @Autowired
     private ConsoleDbConfig consoleDbConfig;
 
     @Autowired
@@ -37,14 +41,15 @@ public class SentinelHelloCheckActionFactory extends AbstractLeaderAwareHealthCh
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getRedisInstanceInfo();
-        SentinelCheckController checkController = checkControllerManager.getCheckController(info.getClusterId(), info.getShardId());
 
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, consoleDbConfig,
-                clusterService, checkController);
+                clusterService);
 
-        action.addListener(checkController);
         for(SentinelHelloCollector collector : collectors) {
             action.addListener(collector);
+        }
+        for (HealthCheckActionController controller : controllers) {
+            action.addController(controller);
         }
         return action;
     }

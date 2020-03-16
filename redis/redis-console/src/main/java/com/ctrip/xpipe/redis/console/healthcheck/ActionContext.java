@@ -12,4 +12,8 @@ public interface ActionContext<C> {
     C getResult();
 
     long getRecvTimeMilli();
+
+    boolean isFail();
+
+    Throwable getCause();
 }
