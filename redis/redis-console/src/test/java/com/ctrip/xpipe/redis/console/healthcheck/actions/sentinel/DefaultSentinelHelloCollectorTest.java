@@ -15,10 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -134,6 +131,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
     }
 
     @Test
+    @Ignore
     public void testCorrectWhenDR() throws Exception {
         MetaCache metaCache = mock(MetaCache.class);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);

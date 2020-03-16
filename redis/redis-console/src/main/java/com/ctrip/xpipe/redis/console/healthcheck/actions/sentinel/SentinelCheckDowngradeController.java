@@ -69,7 +69,7 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
 
         if (info.isInActiveDc()) return;
 
-        if (checkFinishedInstance.size() >= countBackDcRedis(info.getClusterId())) {
+        if (checkFinishedInstance.size() >= countBackDcRedis()) {
             if (checkFinishedInstance.size() == checkFailInstance.size()) {
                 logger.warn("[{}-{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", clusterName, shardName);
                 needDowngrade.set(true);
@@ -86,15 +86,15 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
         // no nothing
     }
 
-    private int countBackDcRedis(String clusterName) {
+    private int countBackDcRedis() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta || StringUtil.isEmpty(clusterName)) return 0;
 
         int redisCnt = 0;
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             if (!dcMeta.getClusters().containsKey(clusterName)) continue;
-            redisCnt += dcMeta.getClusters().get(clusterName)
-                    .getShards().values().stream().mapToInt(shard -> shard.getRedises().size()).sum();
+            if (dcMeta.getClusters().get(clusterName).getActiveDc().equalsIgnoreCase(dcMeta.getId())) continue;
+            redisCnt += dcMeta.getClusters().get(clusterName).getShards().get(shardName).getRedises().size();
         }
 
         return redisCnt;

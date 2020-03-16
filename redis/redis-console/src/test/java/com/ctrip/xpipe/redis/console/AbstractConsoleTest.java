@@ -25,6 +25,15 @@ public abstract class AbstractConsoleTest extends AbstractRedisTest{
 	public static void beforeAbstractConsoleTest(){
 		System.setProperty(HealthChecker.ENABLED, "false");
 	}
+
+	protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, String activeDc, int port) throws Exception {
+		RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
+		DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(currentDc,
+				redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+				new HostPort(redisMeta.getIp(), redisMeta.getPort()),
+				activeDc);
+		return newRandomRedisHealthCheckInstance(info);
+	}
 	
 	protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String activeDc, int port) throws Exception {
 		RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
