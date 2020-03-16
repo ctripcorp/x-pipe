@@ -41,7 +41,9 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
     @Before
     public void beforeMutexableOneThreadTaskExecutorTest() {
         MockitoAnnotations.initMocks(this);
-        oneThreadTaskExecutor = new MutexableOneThreadTaskExecutor(executors, scheduled);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
+        oneThreadTaskExecutor = new MutexableOneThreadTaskExecutor(executorService, scheduledExecutorService);
     }
 
     @After
@@ -102,7 +104,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         for (int i = 0; i < taskNum; i++) {
             oneThreadTaskExecutor.executeCommand(new CountingCommand(counter, 10));
         }
-        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 2000);
+        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 20000);
         sleep(50);
         Assert.assertEquals(1 + taskNum, counter.get());
     }
@@ -138,7 +140,6 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
     public void testFinalConsistency() throws TimeoutException {
         AtomicReference<String> state = new AtomicReference<>();
         AtomicInteger taskDone = new AtomicInteger();
-        AtomicInteger counter = new AtomicInteger();
         int taskNum = 100;
         CyclicBarrier barrier = new CyclicBarrier(taskNum + 1);
         for (int i = 0; i < taskNum; i++) {
@@ -180,9 +181,10 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
             }
         });
         sleep(200);
-        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 1000);
-        waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 1000);
+        waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 10000);
+        waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 10000);
         Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
+        sleep(20);
         Assert.assertEquals("expected", state.get());
         logger.info("[task done]{}", taskDone);
     }
@@ -406,6 +408,9 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
 
         @Override
         protected void doExecute() throws Exception {
+            if(future().isDone()) {
+                return;
+            }
             state.set(expected);
             future().setSuccess();
         }
