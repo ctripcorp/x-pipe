@@ -17,9 +17,19 @@ public abstract class AbstractActionContext<C> implements ActionContext<C> {
 
     protected RedisHealthCheckInstance instance;
 
+    protected Throwable cause;
+
     public AbstractActionContext(RedisHealthCheckInstance instance, C c) {
         this.instance = instance;
         this.c = c;
+        this.cause = null;
+        this.recvTimeMilli = System.currentTimeMillis();
+    }
+
+    public AbstractActionContext(RedisHealthCheckInstance instance, Throwable t) {
+        this.instance = instance;
+        this.c = null;
+        this.cause = t;
         this.recvTimeMilli = System.currentTimeMillis();
     }
 
@@ -39,6 +49,16 @@ public abstract class AbstractActionContext<C> implements ActionContext<C> {
     }
 
     @Override
+    public boolean isFail() {
+        return null != cause;
+    }
+
+    @Override
+    public Throwable getCause() {
+        return cause;
+    }
+
+    @Override
     public int hashCode() {
         return ObjectUtils.hashCode(instance, c);
     }
@@ -50,6 +70,7 @@ public abstract class AbstractActionContext<C> implements ActionContext<C> {
         AbstractActionContext<?> that = (AbstractActionContext<?>) o;
         return recvTimeMilli == that.recvTimeMilli &&
                 Objects.equals(c, that.c) &&
+                Objects.equals(cause, that.cause) &&
                 Objects.equals(instance, that.instance);
     }
 }

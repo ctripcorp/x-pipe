@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SentinelCheckController implements HealthCheckActionController, SentinelHelloCollector {
+public class SentinelCheckDowngradeController implements HealthCheckActionController, SentinelHelloCollector {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -36,7 +36,7 @@ public class SentinelCheckController implements HealthCheckActionController, Sen
 
     private final String shardName;
 
-    public SentinelCheckController(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterName, String shardName) {
+    public SentinelCheckDowngradeController(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterName, String shardName) {
         this.metaCache = metaCache;
         this.realCollector = sentinelHelloCollector;
         this.clusterName = clusterName;
@@ -50,20 +50,20 @@ public class SentinelCheckController implements HealthCheckActionController, Sen
     }
 
     @Override
-    public void onAction(SentinelActionContext t) {
-        RedisInstanceInfo info = t.instance().getRedisInstanceInfo();
+    public void onAction(SentinelActionContext context) {
+        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
         if (!info.getClusterId().equalsIgnoreCase(clusterName) || !info.getShardId().equalsIgnoreCase(shardName)) return;
-        if (!shouldCheck(t.instance())) return;
+        if (!shouldCheck(context.instance())) return;
 
         synchronized (this) {
             checkFinishedInstance.add(info.getHostPort());
-            if (null != t.getResult()) checkResult.addAll(t.getResult());
+            if (!context.isFail()) checkResult.addAll(context.getResult());
             else checkFailInstance.add(info.getHostPort());
         }
 
         if (needDowngrade.compareAndSet(true, false)) {
             logger.info("[{}-{}][onAction] sub from active dc redis {}", clusterName, shardName, info.getHostPort());
-            doCollect(t.instance());
+            doCollect(context.instance());
             return;
         }
 
@@ -77,7 +77,7 @@ public class SentinelCheckController implements HealthCheckActionController, Sen
                 return;
             }
             logger.debug("[{}-{}][onAction] sub from backup dc all finish", clusterName, shardName);
-            doCollect(t.instance());
+            doCollect(context.instance());
         }
     }
 

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
@@ -12,6 +13,8 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,21 +39,19 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ClusterService clusterService;
 
+    private List<HealthCheckActionController> controllers = new ArrayList<>();
+
     private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
 
-    private volatile boolean subFail = false;
+    private Throwable subError;
 
     protected long lastStartTime = System.currentTimeMillis();
 
-    private SentinelCheckController checkController;
-
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig,
-                                    ClusterService clusterService, SentinelCheckController checkController) {
+                                    ExecutorService executors, ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
         super(scheduled, instance, executors);
         this.consoleDbConfig = consoleDbConfig;
         this.clusterService = clusterService;
-        this.checkController = checkController;
     }
 
     @Override
@@ -59,7 +60,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return;
         }
 
-        subFail = false;
+        subError = null;
         getActionInstance().getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
@@ -69,7 +70,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
             @Override
             public void fail(Throwable e) {
-                subFail = true;
+                subError = e;
                 logger.error("[sub-failed]", e);
             }
         });
@@ -84,11 +85,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @VisibleForTesting
     protected void processSentinelHellos() {
         getActionInstance().getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
-        if (subFail && hellos.isEmpty()) {
-            notifyListeners(new SentinelActionContext(getActionInstance(), null));
-        } else {
-            notifyListeners(new SentinelActionContext(getActionInstance(), hellos));
-        }
+        SentinelActionContext actionContext = null != subError ? new SentinelActionContext(getActionInstance(), subError) :
+                new SentinelActionContext(getActionInstance(), hellos);
+        notifyListeners(actionContext);
         hellos = Sets.newConcurrentHashSet();
     }
 
@@ -112,9 +111,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return false;
         }
 
-        if (!checkController.shouldCheck(getActionInstance())) {
-            logger.info("[shouldStart] controller refuse check");
-            return false;
+        for (HealthCheckActionController controller : controllers) {
+            if (!controller.shouldCheck(instance)) {
+                logger.warn("[shouldStart][{}] controller {} refuse check",
+                        getActionInstance().getRedisInstanceInfo().getClusterId(), controller.getClass().getSimpleName());
+            }
         }
 
         return consoleDbConfig.isSentinelAutoProcess();
@@ -127,5 +128,10 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     protected int getIntervalMilli() {
         return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
+    }
+
+    @Override
+    public void addController(HealthCheckActionController controller) {
+        this.controllers.add(controller);
     }
 }

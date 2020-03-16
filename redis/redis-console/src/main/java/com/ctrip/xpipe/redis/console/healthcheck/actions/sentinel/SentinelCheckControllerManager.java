@@ -19,14 +19,14 @@ public class SentinelCheckControllerManager {
     @Autowired
     private DefaultSentinelHelloCollector sentinelAdjuster;
 
-    private Map<Pair<String, String>, SentinelCheckController> controllerMap = Maps.newConcurrentMap();
+    private Map<Pair<String, String>, SentinelCheckDowngradeController> controllerMap = Maps.newConcurrentMap();
 
-    public SentinelCheckController getCheckController(String cluster, String shard) {
+    public SentinelCheckDowngradeController getCheckController(String cluster, String shard) {
         Pair<String, String> key = new Pair<>(cluster, shard);
-        return MapUtils.getOrCreate(controllerMap, key, new ObjectFactory<SentinelCheckController>() {
+        return MapUtils.getOrCreate(controllerMap, key, new ObjectFactory<SentinelCheckDowngradeController>() {
             @Override
-            public SentinelCheckController create() {
-                return new SentinelCheckController(metaCache, sentinelAdjuster, cluster, shard);
+            public SentinelCheckDowngradeController create() {
+                return new SentinelCheckDowngradeController(metaCache, sentinelAdjuster, cluster, shard);
             }
         });
     }
