@@ -2,8 +2,10 @@ package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Random;
@@ -100,6 +102,10 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     protected void scheduleTask(int baseInterval) {
         long checkInterval = getCheckTimeInterval(baseInterval);
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected Logger getLogger() {
+                return getHealthCheckLogger();
+            }
 
             @Override
             protected void doRun() {
@@ -113,6 +119,8 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
     protected abstract void doTask();
+
+    protected abstract Logger getHealthCheckLogger();
 
     protected int getBaseCheckInterval() {
         return instance.getHealthCheckConfig().checkIntervalMilli();

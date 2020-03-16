@@ -57,6 +57,11 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         }
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     private void reportDelay() {
         if(INIT_CONTEXT.equals(context.get())) {
             return;

@@ -8,6 +8,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +33,9 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 	}
 
 	public static class Sentinels extends AbstractSentinelCommand<List<Sentinel>>{
-		
+
+		private static final Logger logger = LoggerFactory.getLogger(Sentinels.class);
+
 		public static String SENTINELS = "sentinels";
 		
 		private String masterName;
@@ -85,10 +89,17 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		public String toString() {
 			return String.format("%s %s %s", SENTINEL, SENTINELS, masterName);
 		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
 	}
 	
 	
-	public static class SentinelAdd extends AbstractSentinelCommand<String>{
+	public static class SentinelAdd extends AbstractSentinelCommand<String> {
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelAdd.class);
 		
 		public static String MONITOR = "monitor";
 		
@@ -127,10 +138,17 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		public String toString() {
 			return String.format("%s %s %s %s %d %d", SENTINEL, MONITOR, masterName, masterIp, masterPort, quorum);
 		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
 	}
 	
 	public static class SentinelRemove extends AbstractSentinelCommand<String>{
-		
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelRemove.class);
+
 		public static String REMOVE = "remove";
 		
 		private String masterName;
@@ -159,9 +177,16 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		public String toString() {
 			return String.format("%s %s %s", SENTINEL, REMOVE, masterName);
 		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
 	}
 
 	public static class SentinelMaster extends AbstractSentinelCommand<HostPort> {
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelMaster.class);
 
 		private static final String MASTER = "master";
 
@@ -199,9 +224,16 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		public ByteBuf getRequest() {
 			return new RequestStringParser(SENTINEL, MASTER, monitorName).format();
 		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
 	}
 
 	public static class SentinelSlaves extends AbstractSentinelCommand<List<HostPort>> {
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelSlaves.class);
 
 		private static final String SLAVES = "slaves";
 
@@ -240,9 +272,16 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 			}
 			return slaves;
 		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
 	}
 
 	public static class SentinelReset extends AbstractSentinelCommand<Long>{
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelRemove.class);
 
 		public static String RESET = "reset";
 
@@ -267,9 +306,16 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		public String toString() {
 			return String.format("%s %s %s", SENTINEL, RESET, masterName);
 		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
+		}
 	}
 
 	public static class SentinelMonitor extends AbstractSentinelCommand<String>{
+
+		private static final Logger logger = LoggerFactory.getLogger(SentinelMonitor.class);
 
 		public static String MONITOR = "monitor";
 
@@ -309,6 +355,11 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		@Override
 		public String toString() {
 			return String.format("%s %s %s", SENTINEL, MONITOR, monitorName);
+		}
+
+		@Override
+		protected Logger getLogger() {
+			return logger;
 		}
 	}
 }

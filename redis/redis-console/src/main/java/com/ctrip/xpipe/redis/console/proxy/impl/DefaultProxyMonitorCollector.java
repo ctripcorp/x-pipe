@@ -24,6 +24,8 @@ import com.ctrip.xpipe.redis.core.proxy.monitor.TunnelTrafficResult;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 
 public class DefaultProxyMonitorCollector extends AbstractStartStoppable implements ProxyMonitorCollector {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyMonitorCollector.class);
 
     private List<PingStatsResult> pingStatsResults;
 
@@ -116,6 +120,11 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     @Override
     protected void doStart() {
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected Logger getLogger() {
+                return DefaultProxyMonitorCollector.logger;
+            }
+
             @Override
             protected void doRun() {
 

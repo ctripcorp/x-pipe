@@ -58,6 +58,11 @@ public class VersionCheckAction extends RedisConfigCheckAction {
         });
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     private boolean checkVersion() {
         if(info == null) {
             return false;

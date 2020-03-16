@@ -4,6 +4,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -61,10 +62,14 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
             @Override
             public void fail(Throwable e) {
-                logger.error("[sub-failed]", e);
+                logger.error("[sub-failed][{}]", getActionInstance().getRedisInstanceInfo().getHostPort(), e);
             }
         });
         scheduled.schedule(new AbstractExceptionLogTask() {
+            @Override
+            protected Logger getLogger() {
+                return SentinelHelloCheckAction.logger;
+            }
             @Override
             protected void doRun() throws Exception {
                 processSentinelHellos();

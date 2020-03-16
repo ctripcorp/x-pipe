@@ -10,6 +10,8 @@ import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -19,6 +21,8 @@ import java.util.concurrent.ScheduledExecutorService;
  * Apr 04, 2018
  */
 public class SubscribeCommand extends AbstractSubscribe {
+
+    private static final Logger logger = LoggerFactory.getLogger(SubscribeCommand.class);
 
     private NettyClient nettyClient;
 
@@ -82,5 +86,10 @@ public class SubscribeCommand extends AbstractSubscribe {
     @Override
     public String getName() {
         return "subscribe";
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return logger;
     }
 }

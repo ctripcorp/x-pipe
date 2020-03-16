@@ -87,6 +87,11 @@ public class DefaultMetaCache implements MetaCache {
             protected void doRun() throws Exception {
                 loadCache();
             }
+
+            @Override
+            protected Logger getLogger() {
+                return DefaultMetaCache.this.logger;
+            }
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 
