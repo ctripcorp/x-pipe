@@ -173,7 +173,8 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelConfigCheckTest.class,
         ClusterServiceImplTest4.class,
         DelayActionTest.class,
-        DelayServiceTest.class
+        DelayServiceTest.class,
+        SentinelHelloActionDowngradeTest.class
 })
 public class AllTests {
 
