@@ -32,6 +32,8 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
 
     private DefaultSentinelHelloCollector realCollector;
 
+    private long lastDoCollectTime = System.currentTimeMillis();
+
     private final String clusterName;
 
     private final String shardName;
@@ -45,15 +47,17 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        return !instance.getRedisInstanceInfo().isMaster()
-                && instance.getRedisInstanceInfo().isInActiveDc() == needDowngrade.get();
+        if (tooLongNoCollect(instance) && needDowngrade.compareAndSet(true, false)) {
+            logger.warn("[{}-{}][shouldCheck] too long no collect, cancel downgrade", clusterName, shardName);
+        }
+        return shouldCheckFromRedis(instance);
     }
 
     @Override
     public void onAction(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
         if (!info.getClusterId().equalsIgnoreCase(clusterName) || !info.getShardId().equalsIgnoreCase(shardName)) return;
-        if (!shouldCheck(context.instance())) return;
+        if (!shouldCheckFromRedis(context.instance())) return;
 
         synchronized (this) {
             checkFinishedInstance.add(info.getHostPort());
@@ -86,6 +90,16 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
         // no nothing
     }
 
+    private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
+        return !instance.getRedisInstanceInfo().isMaster()
+                && instance.getRedisInstanceInfo().isInActiveDc() == needDowngrade.get();
+    }
+
+    private boolean tooLongNoCollect(RedisHealthCheckInstance instance) {
+        int sentinelHealthCheckInterval = instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
+        return System.currentTimeMillis() - lastDoCollectTime > 3 * sentinelHealthCheckInterval;
+    }
+
     private int countBackDcRedis() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta || StringUtil.isEmpty(clusterName)) return 0;
@@ -103,6 +117,7 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
     private void doCollect(RedisHealthCheckInstance instance) {
         Set<SentinelHello> hellos = new HashSet<>(checkResult);
         resetCheckResult();
+        lastDoCollectTime = System.currentTimeMillis();
         this.realCollector.onAction(new SentinelActionContext(instance, hellos));
     }
 

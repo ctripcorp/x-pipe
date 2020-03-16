@@ -48,6 +48,8 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
 
     private int sentinelCollectInterval = 100;
 
+    private int sentinelCheckInterval = 1200;
+
     @InjectMocks
     private SentinelHelloCheckActionController checkActionController;
 
@@ -74,7 +76,7 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
         downgradeController = new SentinelCheckDowngradeController(metaCache, sentinelHelloCollector, clusterName, shardName);
         downgradeController = Mockito.spy(downgradeController);
         Mockito.when(checkControllerManager.getCheckController(clusterName, shardName)).thenReturn(downgradeController);
-        Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(0);
+        Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = sentinelCollectInterval;
         prepareActions();
         prepareMetaCache();
@@ -148,6 +150,35 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
         Assert.assertTrue(backupDcSlave2ServerCalled);
         Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void downgradeTimeoutTest() {
+        backupDcSlave1Available = false;
+        backupDcSlave2Available = false;
+
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertFalse(activeDcSlaveServerCalled);
+        Assert.assertTrue(backupDcSlave1ServerCalled);
+        Assert.assertTrue(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+
+        sleep(3 * sentinelCheckInterval);
+
+        backupDcSlave1Available = true;
+        backupDcSlave2Available = true;
+        resetCalled();
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertFalse(activeDcSlaveServerCalled);
+        Assert.assertTrue(backupDcSlave1ServerCalled);
+        Assert.assertTrue(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(4)).onAction(Mockito.any());
     }
 
     private void prepareActions() throws Exception {
@@ -269,6 +300,7 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
     }
 
     private void allActionDoTask() {
+        sleep(sentinelCheckInterval);
         activeDcMasterAction.doTask();
         activeDcSlaveAction.doTask();
         backupDcSlave1Action.doTask();
