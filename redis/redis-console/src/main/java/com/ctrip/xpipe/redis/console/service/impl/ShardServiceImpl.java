@@ -176,9 +176,6 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	public List<ShardListModel> findAllUnhealthy() {
 		UnhealthyInfoModel unhealthyInfoModel = delayService.getAllUnhealthyInstance();
 
-		unhealthyInfoModel.addUnhealthyInstance("cluster1", "jq", "shard1", new HostPort("127.0.0.1", 1));
-		unhealthyInfoModel.addUnhealthyInstance("cluster1", "oy", "shard1", new HostPort("127.0.0.1", 2));
-
 		Set<String> unhealthyClusterNames = unhealthyInfoModel.getUnhealthyClusterNames();
 		if (unhealthyClusterNames.isEmpty()) return Collections.emptyList();
 

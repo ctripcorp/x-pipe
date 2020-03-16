@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -30,8 +31,8 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
                                          NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-                                         RdbDumper rdbDumper, ProxyResourceManager endpointManager) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, endpointManager);
+                                         RdbDumper rdbDumper, KeeperResourceManager resourceManager) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, resourceManager);
 		setRdbDumper(rdbDumper);
 	}
 	

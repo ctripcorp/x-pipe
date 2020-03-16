@@ -532,11 +532,15 @@ public abstract class AbstractRedisTest extends AbstractTest {
     }
 
     protected RedisMeta newRandomFakeRedisMeta() {
+        return newRandomFakeRedisMeta("127.0.0.1", 6379);
+    }
+
+    protected RedisMeta newRandomFakeRedisMeta(String ip, int port) {
         DcMeta dcMeta = new DcMeta("dc");
         ClusterMeta clusterMeta = new ClusterMeta("cluster");
         clusterMeta.setActiveDc("dc");
         ShardMeta shardMeta = new ShardMeta("shard");
-        RedisMeta redis = new RedisMeta().setIp("127.0.0.1").setPort(6379);
+        RedisMeta redis = new RedisMeta().setIp(ip).setPort(port);
         shardMeta.addRedis(redis);
         clusterMeta.addShard(shardMeta);
         dcMeta.addCluster(clusterMeta);

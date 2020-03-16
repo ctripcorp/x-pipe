@@ -87,7 +87,7 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
     private void cancelLongTermRunningTask(RequestResponseCommand<?> command) {
         if (command != null && !command.future().isDone()) {
             try {
-                synchronized (command.future()) {
+                synchronized (this) {
                     if (!command.future().isDone()) {
                         command.future().setFailure(new CommandTimeoutException("[OneThreadExecutor][too long time][cancel running command]"));
                     }

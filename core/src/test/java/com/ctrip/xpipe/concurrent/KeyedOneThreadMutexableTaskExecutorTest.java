@@ -82,16 +82,16 @@ public class KeyedOneThreadMutexableTaskExecutorTest extends AbstractTest {
     @Ignore
     public void testSameKey(){
 
-        TestCommand command1 =  new TestCommand("success", sleepInterval);
-        TestCommand command2 =  new TestCommand("success", sleepInterval);
+        BlockingCommand command1 =  new BlockingCommand(sleepInterval);
+        BlockingCommand command2 =  new BlockingCommand(sleepInterval);
 
         keyed.execute("key1", command1);
         keyed.execute("key1", command2);
 
         sleep(sleepInterval/2);
 
-        Assert.assertTrue(command1.isBeginExecute());
-        Assert.assertFalse(command2.isBeginExecute());
+        Assert.assertTrue(command1.isProcessing());
+        Assert.assertFalse(command2.isProcessing());
 
     }
 
@@ -99,16 +99,16 @@ public class KeyedOneThreadMutexableTaskExecutorTest extends AbstractTest {
     @Ignore
     public void testDifferentKey(){
 
-        TestCommand command1 =  new TestCommand("success", sleepInterval);
-        TestCommand command2 =  new TestCommand("success", sleepInterval);
+        BlockingCommand command1 =  new BlockingCommand(sleepInterval);
+        BlockingCommand command2 =  new BlockingCommand(sleepInterval);
 
         keyed.execute("key1", command1);
         keyed.execute("key2", command2);
 
         sleep(sleepInterval/2);
 
-        Assert.assertTrue(command1.isBeginExecute());
-        Assert.assertTrue(command2.isBeginExecute());
+        Assert.assertTrue(command1.isProcessing());
+        Assert.assertTrue(command2.isProcessing());
 
     }
 

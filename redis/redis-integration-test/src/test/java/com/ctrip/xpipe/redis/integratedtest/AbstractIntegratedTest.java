@@ -5,17 +5,18 @@ import com.ctrip.xpipe.cluster.DefaultLeaderElectorManager;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
+import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.FileUtils;
@@ -54,8 +55,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
 
-	protected ProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(
-			new DefaultProxyEndpointManager(()->1000), new NaiveNextHopAlgorithm());
+	protected KeeperResourceManager resourceManager = new DefaultKeeperResourceManager(
+			new DefaultProxyEndpointManager(()->1000), new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(100));
 
 	@BeforeClass
 	public static void beforereAbstractIntegratedTestClass(){
@@ -140,7 +141,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 			 LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 
 		return new DefaultRedisKeeperServer(keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, proxyResourceManager);
+				leaderElectorManager, keeperMonitorManager, resourceManager);
 	}
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {

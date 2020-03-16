@@ -6,13 +6,13 @@ import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,20 +40,20 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private NioEventLoopGroup nioEventLoopGroup;
 
-	private ProxyResourceManager endpointManager;
+	private KeeperResourceManager keeperResourceManager;
 
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup nioEventLoopGroup,
 							  ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
-							  ProxyResourceManager proxyResourceManager) {
+							  KeeperResourceManager resourceManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.replicationStoreManager = replicationStoreManager;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
-		this.endpointManager = proxyResourceManager;
+		this.keeperResourceManager = resourceManager;
 		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup,
-				this.scheduled, proxyResourceManager);
+				this.scheduled, resourceManager);
 	}
 	
 	@Override
@@ -111,7 +111,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication);
 			throw new CreateRdbDumperException(this, "master state not connected, dumper not allowed:" + masterState);
 		}
-		return new RedisMasterNewRdbDumper(this, redisKeeperServer, nioEventLoopGroup, scheduled, endpointManager);
+		return new RedisMasterNewRdbDumper(this, redisKeeperServer, nioEventLoopGroup, scheduled, keeperResourceManager);
 	}
 	
 	public MASTER_STATE getMasterState() {
