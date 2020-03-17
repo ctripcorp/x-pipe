@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * Jun 26, 2016
  */
 public abstract class AbstractCommand<V> implements Command<V>{
-	
-	protected Logger logger;
-	
+
+	private Logger logger;
+
 	protected AtomicReference<CommandFuture<V>> future = new AtomicReference<CommandFuture<V>>(new DefaultCommandFuture<>(this));
 
 	@Override
@@ -64,7 +64,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 					if(!future().isDone()){
 						future().setFailure(e);
 					}else {
-						logger.error("[execute][done, but exception]" + this, e);
+						getLogger().error("[execute][done, but exception]" + this, e);
 					}
 				}
 			}
@@ -73,7 +73,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 	}
 
 	protected void doExecuteWhenCommandDone() {
-		logger.info("[execute][already done, reset]{}, {}", this, future().getNow());
+		getLogger().info("[execute][already done, reset]{}, {}", this, future().getNow());
 		reset();
 	}
 	

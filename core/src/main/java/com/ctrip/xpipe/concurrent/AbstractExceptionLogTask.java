@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractExceptionLogTask implements Runnable{
 	
-	protected Logger logger;
+	private Logger logger;
 
 	@Override
 	public void run() {

@@ -77,6 +77,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         }, SENTINEL_COLLECT_INFO_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     @VisibleForTesting
     protected void processSentinelHellos() {
         getActionInstance().getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);

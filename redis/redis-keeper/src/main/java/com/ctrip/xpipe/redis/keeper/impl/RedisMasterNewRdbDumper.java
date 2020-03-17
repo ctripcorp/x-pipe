@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,6 +22,8 @@ import java.util.concurrent.ScheduledExecutorService;
  * Aug 25, 2016
  */
 public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
+
+	private Logger logger = LoggerFactory.getLogger(RedisMasterNewRdbDumper.class);
 
 	private DumpedRdbStore dumpedRdbStore;
 	
@@ -104,5 +108,10 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	@Override
 	public String toString() {
 		return String.format("%s(%s)", getClass().getSimpleName(), rdbonlyRedisMasterReplication);
+	}
+
+	@Override
+	public Logger getLogger() {
+		return logger;
 	}
 }

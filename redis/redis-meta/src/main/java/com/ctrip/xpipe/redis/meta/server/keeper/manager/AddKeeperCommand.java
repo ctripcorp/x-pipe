@@ -114,7 +114,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 						if(commandFuture.isSuccess()){
 							SlaveRole keeperRole = (SlaveRole)commandFuture.getNow();
 							if(keeperRole.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED){
-								logger.info("[doExecute][success]{}", keeperRole);
+								getLogger().info("[doExecute][success]{}", keeperRole);
 								future().setSuccess(keeperRole);
 							}else{
 								future().setFailure(new KeeperMasterStateNotAsExpectedException(keeperMeta, keeperRole, MASTER_STATE.REDIS_REPL_CONNECTED));

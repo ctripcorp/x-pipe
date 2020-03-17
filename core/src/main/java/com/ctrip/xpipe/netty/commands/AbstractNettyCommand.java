@@ -43,7 +43,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 		
 		NettyClient nettyClient = null;
 		try {
-			logger.debug("[doExecute]{}", this);
+			getLogger().debug("[doExecute]{}", this);
 			nettyClient = clientPool.borrowObject();
 			ByteBuf byteBuf = getRequest();
 			doSendRequest(nettyClient, byteBuf);
@@ -59,7 +59,7 @@ public abstract class AbstractNettyCommand<V> extends AbstractCommand<V>{
 			try {
 				clientPool.returnObject(nettyClient);
 			} catch (ReturnObjectException e) {
-				logger.error("[doExecute]", e);
+				getLogger().error("[doExecute]", e);
 			}
 		}
 

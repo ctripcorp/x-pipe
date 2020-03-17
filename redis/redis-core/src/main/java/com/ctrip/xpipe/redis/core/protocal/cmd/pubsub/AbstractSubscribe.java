@@ -163,12 +163,12 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
 
         if(objects.length < 3 || !messageType.isFromSubType(payloadToString(objects[0]))) {
             String message = String.format("Subscribe channel response incorrect: %s", Arrays.toString(objects));
-            logger.error("[handleResponse]{}", message);
+            getLogger().error("[handleResponse]{}", message);
             throw new RedisRuntimeException(message);
         }
 
         if(logRequest()) {
-            logger.info("[handleResponse][subscribe success]channel[{}]{}", channel, channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
+            getLogger().info("[handleResponse][subscribe success]channel[{}]{}", channel, channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
         }
     }
 
@@ -195,7 +195,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
             try {
                 listener.message(channelAndMessage.getKey(), channelAndMessage.getValue());
             } catch (Exception e) {
-                logger.error("[notifyListeners] Listener: {}, exception: ", listener.getClass().getSimpleName(), e);
+                getLogger().error("[notifyListeners] Listener: {}, exception: ", listener.getClass().getSimpleName(), e);
             }
         }
     }

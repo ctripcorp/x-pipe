@@ -146,7 +146,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 			public void operationComplete( CommandFuture commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess() && activeSuccessCommand != null){
-					logger.info("[addActiveCommandHook][set active success, execute hook]{}, {}", setActiveCommand, activeSuccessCommand);
+					getLogger().info("[addActiveCommandHook][set active success, execute hook]{}, {}", setActiveCommand, activeSuccessCommand);
 					activeSuccessCommand.execute();
 				}
 			}

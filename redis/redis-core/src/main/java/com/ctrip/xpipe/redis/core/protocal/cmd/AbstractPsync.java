@@ -105,8 +105,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		}
 		RequestStringParser requestString = new RequestStringParser(getName(), replIdRequest,
 				String.valueOf(offsetRequest));
-		if (logger.isDebugEnabled()) {
-			logger.debug("[doRequest]{}, {}", this, StringUtil.join(" ", requestString.getPayload()));
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("[doRequest]{}, {}", this, StringUtil.join(" ", requestString.getPayload()));
 		}
 		return requestString.format();
 	}
@@ -136,7 +136,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 				case READING_RDB:
 
 					if (rdbReader == null) {
-						logger.info("[doReceiveResponse][createRdbReader]{}", ChannelUtil.getDesc(channel));
+						getLogger().info("[doReceiveResponse][createRdbReader]{}", ChannelUtil.getDesc(channel));
 						rdbReader = createRdbReader();
 						rdbReader.setBulkStringParserListener(this);
 					}
@@ -157,7 +157,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 						try {
 							appendCommands(byteBuf);
 						} catch (IOException e) {
-							logger.error("[doHandleResponse][write commands error]" + this, e);
+							getLogger().error("[doHandleResponse][write commands error]" + this, e);
 						}
 					}
 					break;
@@ -171,8 +171,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected void handleRedisResponse(Channel channel, String psync) throws IOException {
 
-		if (logger.isInfoEnabled()) {
-			logger.info("[handleRedisResponse]{}, {}, {}", ChannelUtil.getDesc(channel), this, psync);
+		if (getLogger().isInfoEnabled()) {
+			getLogger().info("[handleRedisResponse]{}, {}, {}", ChannelUtil.getDesc(channel), this, psync);
 		}
 		String[] split = splitSpace(psync);
 		if (split.length == 0) {
@@ -185,7 +185,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			}
 			replId = split[1];
 			masterRdbOffset = Long.parseLong(split[2]);
-			logger.debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, replId,
+			getLogger().debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, replId,
 					masterRdbOffset);
 			psyncState = PSYNC_STATE.READING_RDB;
 
@@ -206,12 +206,12 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected void endReadRdb() {
 
-		logger.info("[endReadRdb]");
+		getLogger().info("[endReadRdb]");
 		for (PsyncObserver observer : observers) {
 			try {
 				observer.endWriteRdb();
 			} catch (Throwable th) {
-				logger.error("[endReadRdb]" + this, th);
+				getLogger().error("[endReadRdb]" + this, th);
 			}
 		}
 	}
@@ -221,19 +221,19 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected abstract BulkStringParser createRdbReader();
 
 	protected void doOnFullSync() throws IOException {
-		logger.debug("[doOnFullSync]");
+		getLogger().debug("[doOnFullSync]");
 		notifyFullSync();
 	}
 
 	private void notifyFullSync() {
-		logger.debug("[notifyFullSync]");
+		getLogger().debug("[notifyFullSync]");
 		for (PsyncObserver observer : observers) {
 			observer.onFullSync();
 		}
 	}
 	
 	protected void doOnContinue(String newReplId) throws IOException{
-		logger.debug("[doOnContinue]{}",newReplId);
+		getLogger().debug("[doOnContinue]{}",newReplId);
 		notifyContinue(newReplId);
 	}
 
@@ -251,13 +251,13 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected void beginReadRdb(EofType eofType) {
 
-		logger.info("[beginReadRdb]{}, eof:{}", this, eofType);
+		getLogger().info("[beginReadRdb]{}, eof:{}", this, eofType);
 
 		for (PsyncObserver observer : observers) {
 			try {
 				observer.beginWriteRdb(eofType, masterRdbOffset);
 			} catch (Throwable th) {
-				logger.error("[beginReadRdb]" + this, th);
+				getLogger().error("[beginReadRdb]" + this, th);
 			}
 		}
 	}

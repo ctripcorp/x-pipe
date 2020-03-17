@@ -151,14 +151,14 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 
 		if(payload instanceof String){
 			
-			logger.debug("[payloadToString]{}", payload);
+			getLogger().debug("[payloadToString]{}", payload);
 			return (String)payload;
 		}
 		if(payload instanceof ByteArrayOutputStreamPayload){
 			
 			ByteArrayOutputStreamPayload baous = (ByteArrayOutputStreamPayload) payload;
 			String result = new String(baous.getBytes(), Codec.defaultCharset); 
-			logger.debug("[payloadToString]{}", result);
+			getLogger().debug("[payloadToString]{}", result);
 			return result;
 		}
 

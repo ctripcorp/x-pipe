@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -79,4 +81,18 @@ public class SubscribeCommandTest extends AbstractRedisTest {
         }
         Thread.sleep(5000);
     }
+
+//    @Test
+//    public void testSubConnectTimeout() {
+//        SubscribeCommand command = new SubscribeCommand("10.0.0.1", 6379, scheduled, "test");
+//        command.execute().addListener(new CommandFutureListener<Object>() {
+//            @Override
+//            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+//                if(!commandFuture.isSuccess()) {
+//                    logger.error("[testSubConnectTimeout]", commandFuture.cause());
+//                }
+//            }
+//        });
+//        sleep(5000);
+//    }
 }
