@@ -12,7 +12,7 @@ import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
-import com.ctrip.xpipe.payload.DirectByteBufInOutPayloadTest;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayloadTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPoolTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientPoolTest;
 import com.ctrip.xpipe.spring.DomainValidateFilterTest;
@@ -77,7 +77,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	CausalChainTest.class,
 	MutexableOneThreadTaskExecutorTest.class,
 	KeyedOneThreadMutexableTaskExecutorTest.class,
-	DirectByteBufInOutPayloadTest.class
+	DirectByteBufInStringOutPayloadTest.class
 })
 public class AllTests {
 

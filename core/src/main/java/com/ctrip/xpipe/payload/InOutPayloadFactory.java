@@ -9,7 +9,7 @@ public interface InOutPayloadFactory {
 
         @Override
         public InOutPayload create() {
-            return new DirectByteBufInOutPayload();
+            return new DirectByteBufInStringOutPayload();
         }
     }
 }

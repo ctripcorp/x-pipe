@@ -4,6 +4,8 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.testutils.MemoryPrinter;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,54 +15,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.concurrent.CountDownLatch;
 
-public class DirectByteBufInOutPayloadTest extends AbstractTest {
+public class DirectByteBufInStringOutPayloadTest extends AbstractTest {
 
-    private DirectByteBufInOutPayload payload = new DirectByteBufInOutPayload();
-
-    @Test
-    public void testDoIn() throws IOException {
-        String randomStr = randomString();
-
-        ByteBuf byteBuf = directByteBuf(randomStr.length());
-
-        byteBuf.writeBytes(randomStr.getBytes());
-        payload.startInput();
-        payload.in(byteBuf);
-        payload.endInput();
-
-
-        final ByteBuf result = directByteBuf(randomStr.length());
-
-        payload.startOutput();
-        long wroteLength = payload.out(new WritableByteChannel() {
-
-            @Override
-            public boolean isOpen() {
-                return false;
-            }
-
-            @Override
-            public void close() throws IOException {
-
-            }
-
-            @Override
-            public int write(ByteBuffer src) throws IOException {
-
-                int readable = result.readableBytes();
-                result.writeBytes(src);
-                return result.readableBytes() - readable;
-            }
-        });
-        payload.endOutput();
-
-
-        Assert.assertEquals(randomStr.length(), wroteLength);
-
-        byte []resultArray = new byte[(int) wroteLength];
-        result.readBytes(resultArray);
-        Assert.assertEquals(randomStr, new String(resultArray));
-    }
+    private DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();
 
     //manually check
     @Test
@@ -91,8 +48,10 @@ public class DirectByteBufInOutPayloadTest extends AbstractTest {
 
                             try{
                                 byteBuf.readerIndex(0);
-                                DirectByteBufInOutPayload payload = new DirectByteBufInOutPayload();
+                                DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();
+                                payload.startInput();
                                 payload.in(byteBuf);
+                                payload.endInput();
                             }finally{
                                 latch.countDown();
                             }
@@ -108,7 +67,7 @@ public class DirectByteBufInOutPayloadTest extends AbstractTest {
 
     @Test
     public void testScaleOut() throws Exception {
-        DirectByteBufInOutPayload payload = new DirectByteBufInOutPayload();
+        DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();
         String randomStr = randomString();
 
         ByteBuf byteBuf = directByteBuf(randomStr.length());
@@ -124,24 +83,26 @@ public class DirectByteBufInOutPayloadTest extends AbstractTest {
 
     @Test
     public void testContinuouslyInput() throws Exception {
-        DirectByteBufInOutPayload payload = new DirectByteBufInOutPayload();
+        DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();
         StringBuilder randomStr = new StringBuilder();
         payload.startInput();
-
+        ByteBufAllocator allocator = new PooledByteBufAllocator();
         for(int i = 0; i < 100; i ++) {
             String delta = randomString(100);
-            ByteBuf byteBuf = directByteBuf(delta.length());
+            ByteBuf byteBuf = allocator.directBuffer(delta.length());
             byteBuf.writeBytes(delta.getBytes());
             randomStr.append(delta);
             payload.in(byteBuf);
+//            byteBuf.release();
         }
         payload.endInput();
         Assert.assertEquals(randomStr.toString(), payload.toString());
+        sleep(5000);
     }
 
     @Test
     public void testContinuouslyWithLargeInput() throws Exception {
-        DirectByteBufInOutPayload payload = new DirectByteBufInOutPayload();
+        DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();
         StringBuilder randomStr = new StringBuilder();
         payload.startInput();
 
@@ -151,16 +112,18 @@ public class DirectByteBufInOutPayloadTest extends AbstractTest {
             byteBuf.writeBytes(delta.getBytes());
             randomStr.append(delta);
             payload.in(byteBuf);
+            byteBuf.release();
         }
         payload.endInput();
         Assert.assertEquals(randomStr.toString(), payload.toString());
+        sleep(5000);
     }
 
-    @Test
+    @Test(expected = UnsupportedOperationException.class)
     public void testDoOut() throws IOException {
         String content = randomString();
-        DirectByteBufInOutPayload payload = new DirectByteBufInOutPayload();
-
+        DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();
+        payload.startInput();
         try (ByteArrayWritableByteChannel channel = new ByteArrayWritableByteChannel()) {
 
             ByteBuffer byteBuffer = ByteBuffer.wrap(content.getBytes());
@@ -170,5 +133,12 @@ public class DirectByteBufInOutPayloadTest extends AbstractTest {
             byte[] result = channel.getResult();
             Assert.assertEquals(content, new String(result));
         }
+        payload.endInput();
+    }
+
+    @Test
+    public void testSize() {
+        int length = "10.25.59.121,22399,5646210298ed600330ed2721941ebe7d563385a6,499377,FlightTicketReimbursementCacheGroup1+SHAOY,10.25.168.222,6379,0".getBytes().length;
+        logger.info("{}", length);
     }
 }

@@ -8,7 +8,7 @@ import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -162,7 +162,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 			getLogger().debug("[payloadToString]{}", result);
 			return result;
 		}
-		if(payload instanceof DirectByteBufInOutPayload) {
+		if(payload instanceof DirectByteBufInStringOutPayload) {
 			return payload.toString();
 		}
 

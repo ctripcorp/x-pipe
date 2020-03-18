@@ -12,22 +12,26 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 
-public class DirectByteBufInOutPayload extends AbstractInOutPayload {
+public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 
-    private static final int INIT_SIZE = 2 << 10;
+    private static final int INIT_SIZE = 1 << 8; //256
 
     private ByteBuf cumulation;
 
     private final Cumulator cumulator = COMPOSITE_CUMULATOR;
 
+    private String result;
+
+    @Override
+    protected void doStartInput() {
+        super.doStartInput();
+        cumulation = Unpooled.compositeBuffer(INIT_SIZE);
+    }
+
     @Override
     protected int doIn(ByteBuf byteBuf) throws IOException {
-        boolean first = cumulation == null;
-        if (first) {
-            cumulation = byteBuf;
-        } else {
-            cumulation = cumulator.cumulate(cumulation, byteBuf);
-        }
+        cumulation = cumulator.cumulate(cumulation, byteBuf);
+        byteBuf.retain();
         return byteBuf.readableBytes();
     }
 
@@ -38,15 +42,22 @@ public class DirectByteBufInOutPayload extends AbstractInOutPayload {
 
     @Override
     protected long doOut(WritableByteChannel writableByteChannel) throws IOException {
-        return writableByteChannel.write(cumulation.nioBuffer());
+        throw new UnsupportedOperationException("Not support");
+    }
+
+    @Override
+    protected void doEndInput() throws IOException {
+        result = cumulation.toString(Codec.defaultCharset);
+        if(cumulation instanceof CompositeByteBuf) {
+            ((CompositeByteBuf) cumulation).removeComponents(0, ((CompositeByteBuf) cumulation).numComponents());
+        }
+        cumulation.release();
+        super.doEndInput();
     }
 
     @Override
     public String toString() {
-        if(cumulation == null) {
-            return "";
-        }
-        return cumulation.toString(Codec.defaultCharset);
+        return result;
     }
 
     /**
