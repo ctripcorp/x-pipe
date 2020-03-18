@@ -82,17 +82,24 @@ public class SubscribeCommandTest extends AbstractRedisTest {
         Thread.sleep(5000);
     }
 
-//    @Test
-//    public void testSubConnectTimeout() {
-//        SubscribeCommand command = new SubscribeCommand("10.0.0.1", 6379, scheduled, "test");
-//        command.execute().addListener(new CommandFutureListener<Object>() {
-//            @Override
-//            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-//                if(!commandFuture.isSuccess()) {
-//                    logger.error("[testSubConnectTimeout]", commandFuture.cause());
-//                }
-//            }
-//        });
-//        sleep(5000);
-//    }
+    @Test
+    public void testSubConnectTimeout() {
+        SubscribeCommand command = new SubscribeCommand("127.0.0.1", 6379, scheduled, "test");
+        command.addChannelListener(new SubscribeListener() {
+            @Override
+            public void message(String channel, String message) {
+
+            }
+        });
+        command.future().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    logger.error("[testSubConnectTimeout]", commandFuture.cause());
+                }
+            }
+        });
+        command.execute();
+        sleep(15000);
+    }
 }

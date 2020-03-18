@@ -6,6 +6,8 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -87,7 +89,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
                 byte sign = byteBuf.getByte(readIndex);
                 if(sign == RedisClientProtocol.ASTERISK_BYTE){
                     commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
-                    redisClientProtocol = new ArrayParser(bulkStringInitSize);
+                    redisClientProtocol = new ArrayParser().setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
                 } else {
                     throw new IllegalArgumentException("subscribe should response with redis array format");
                 }
