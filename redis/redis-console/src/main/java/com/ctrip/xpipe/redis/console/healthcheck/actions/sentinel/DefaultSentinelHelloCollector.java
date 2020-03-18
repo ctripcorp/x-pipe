@@ -9,6 +9,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
@@ -80,12 +81,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     }
 
+    @Override
+    public boolean worksfor(ActionContext t) {
+        return false;
+    }
+
     private void collect(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
-        if(info.isInActiveDc()) {
-            logger.warn("[not in backup dc][{}] quit", info.getHostPort());
-            return;
-        }
         Set<SentinelHello> hellos = context.getResult();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
