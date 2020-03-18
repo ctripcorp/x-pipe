@@ -29,10 +29,6 @@ public class SingleThreadDispatcher implements Dispatcher<AlertEntity> {
     @Override
     public void dispatch(Subscriber<AlertEntity> subscriber, AlertEntity alertEntity) {
         keyedOneThreadTaskExecutor.execute(alertEntity.getAlertType(), new AbstractCommand<Void>() {
-            @Override
-            protected Logger getLogger() {
-                return SingleThreadDispatcher.logger;
-            }
 
             @Override
             protected void doExecute() throws Exception {

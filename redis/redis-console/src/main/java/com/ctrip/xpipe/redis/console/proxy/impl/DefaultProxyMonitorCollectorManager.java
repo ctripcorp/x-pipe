@@ -68,11 +68,6 @@ public class DefaultProxyMonitorCollectorManager implements ProxyMonitorCollecto
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
-            protected Logger getLogger() {
-                return DefaultProxyMonitorCollectorManager.logger;
-            }
-
-            @Override
             protected void doRun() {
                 if(!taskTrigger.get()) {
                     return;

@@ -101,17 +101,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected void scheduleTask(int baseInterval) {
         long checkInterval = getCheckTimeInterval(baseInterval);
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected Logger getLogger() {
-                return getHealthCheckLogger();
-            }
-
-            @Override
-            protected void doRun() {
-                doTask();
-            }
-        }, checkInterval, baseInterval, TimeUnit.MILLISECONDS);
+        future = scheduled.scheduleWithFixedDelay(new ScheduledHealthCheckTask(), checkInterval, baseInterval, TimeUnit.MILLISECONDS);
     }
 
     protected int getCheckTimeInterval(int baseInterval) {
@@ -129,5 +119,17 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     @VisibleForTesting
     public List<HealthCheckActionListener<T>> getListeners() {
         return listeners;
+    }
+
+    private class ScheduledHealthCheckTask extends AbstractExceptionLogTask {
+        @Override
+        protected Logger getLogger() {
+            return getHealthCheckLogger();
+        }
+
+        @Override
+        protected void doRun() {
+            doTask();
+        }
     }
 }

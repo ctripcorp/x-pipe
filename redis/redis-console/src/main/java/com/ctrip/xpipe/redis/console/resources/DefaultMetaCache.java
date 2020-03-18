@@ -88,10 +88,6 @@ public class DefaultMetaCache implements MetaCache {
                 loadCache();
             }
 
-            @Override
-            protected Logger getLogger() {
-                return DefaultMetaCache.this.logger;
-            }
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 

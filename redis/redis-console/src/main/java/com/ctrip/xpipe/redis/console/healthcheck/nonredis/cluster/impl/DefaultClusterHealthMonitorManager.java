@@ -145,10 +145,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     private void onInstanceStateChange(Object args) {
 
         executors.execute(new AbstractExceptionLogTask() {
-            @Override
-            protected Logger getLogger() {
-                return DefaultClusterHealthMonitorManager.logger;
-            }
+
             @Override
             protected void doRun() {
                 AbstractInstanceEvent event = (AbstractInstanceEvent) args;

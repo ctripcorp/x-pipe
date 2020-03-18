@@ -120,10 +120,6 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
     @Override
     protected void doStart() {
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected Logger getLogger() {
-                return DefaultProxyMonitorCollector.logger;
-            }
 
             @Override
             protected void doRun() {

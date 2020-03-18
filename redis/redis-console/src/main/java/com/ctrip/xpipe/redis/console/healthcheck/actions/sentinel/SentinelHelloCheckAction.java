@@ -83,10 +83,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         });
         scheduled.schedule(new AbstractExceptionLogTask() {
             @Override
-            protected Logger getLogger() {
-                return SentinelHelloCheckAction.logger;
-            }
-            @Override
             protected void doRun() throws Exception {
                 processSentinelHellos();
             }

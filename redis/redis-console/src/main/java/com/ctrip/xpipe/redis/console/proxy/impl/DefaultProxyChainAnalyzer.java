@@ -82,10 +82,6 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
                 }
                 fullUpdate();
             }
-            @Override
-            protected Logger getLogger() {
-                return DefaultProxyChainAnalyzer.this.logger;
-            }
         }, Math.min(5, ANALYZE_INTERVAL * 5), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
     }
 

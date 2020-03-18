@@ -81,22 +81,25 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
             future.cancel(true);
         }
 
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected Logger getLogger() {
-                return HealthStatus.logger;
-            }
+        future = scheduled.scheduleWithFixedDelay(new CheckDownTask(),
+                0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
+    }
 
-            @Override
-            protected void doRun() throws Exception {
+    private class CheckDownTask extends AbstractExceptionLogTask {
+        @Override
+        protected Logger getLogger() {
+            return HealthStatus.logger;
+        }
 
-                if(lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0) {
-                    logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
-                    return;
-                }
-                healthStatusUpdate();
+        @Override
+        protected void doRun() throws Exception {
+
+            if(lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0) {
+                logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
+                return;
             }
-        }, 0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
+            healthStatusUpdate();
+        }
     }
 
     void pong(){
