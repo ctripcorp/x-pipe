@@ -88,8 +88,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		deadCheckFuture = scheduled.scheduleWithFixedDelay(new DeadKeeperChecker(), deadKeeperCheckIntervalMilli,
 				deadKeeperCheckIntervalMilli, TimeUnit.MILLISECONDS);
 
-//		keeperInfoCheckFuture = scheduled.scheduleWithFixedDelay(new KeeperStateAlignChecker(), config.getKeeperInfoCheckInterval(),
-//				config.getKeeperInfoCheckInterval(), TimeUnit.MILLISECONDS);
+		keeperInfoCheckFuture = scheduled.scheduleWithFixedDelay(new KeeperStateAlignChecker(), config.getKeeperInfoCheckInterval(),
+				config.getKeeperInfoCheckInterval(), TimeUnit.MILLISECONDS);
 
 	}
 
@@ -97,7 +97,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	protected void doStop() throws Exception {
 		super.doStop();
 		deadCheckFuture.cancel(true);
-//		keeperInfoCheckFuture.cancel(true);
+		keeperInfoCheckFuture.cancel(true);
 		executors.shutdownNow();
 	}
 
