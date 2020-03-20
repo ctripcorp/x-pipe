@@ -43,6 +43,6 @@ public class ApolloConfig extends AbstractConfig implements ConfigChangeListener
 
 	@Override
 	public int getOrder() {
-		return HIGHEST_PRECEDENCE;
+		return HIGHEST_PRECEDENCE / 2;
 	}
 }
