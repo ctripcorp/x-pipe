@@ -13,7 +13,9 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStats;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +61,8 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     @Spy
     private KeeperConfig keeperConfig = new DefaultKeeperConfig();
 
+    private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
+
     private KeeperStats keeperStats;
 
     private LeakyBucketBasedMasterReplicationListener listener;
@@ -75,6 +79,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(redisKeeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         keeperStats = spy(new DefaultKeeperStats("shard", scheduled));
         when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
+        when(keeperMonitor.getReplicationStoreStats()).thenReturn(replicationStoreStats);
     }
 
     @Test
@@ -343,5 +348,40 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
 
     @Test
     public void testBeginWriteRdb() {
+    }
+
+    @Test
+    public void testWhenDeployRateLimitWillNotBlock() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        logger.info("[{}]", redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli());
+        replicationStoreStats.refreshReplDownSince(System.currentTimeMillis());
+        Assert.assertTrue(listener.canSendPsync());
+        verify(leakyBucket, never()).tryAcquire();
+    }
+
+    @Test
+    public void testWhenRestart() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        replicationStoreStats.refreshReplDownSince(0);
+        Assert.assertTrue(listener.canSendPsync());
+        verify(leakyBucket, times(1)).tryAcquire();
+    }
+
+    @Test
+    public void testWhenNetworkBlockTooLong() {
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        when(leakyBucket.tryAcquire()).thenReturn(false);
+        logger.info("[{}]", redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli());
+        replicationStoreStats.refreshReplDownSince(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(10));
+        Assert.assertFalse(listener.canSendPsync());
+        verify(leakyBucket, times(1)).tryAcquire();
     }
 }

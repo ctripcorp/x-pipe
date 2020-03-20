@@ -92,7 +92,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public void masterDisconntected(Channel channel) {
 		super.masterDisconntected(channel);
-		
+		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
 		if (scheduleTime < 0) {
@@ -190,6 +190,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doEndWriteRdb() {
 		logger.info("[doEndWriteRdb]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
 		scheduleReplconf();
 		
 	}
@@ -199,6 +200,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		logger.info("[doOnContinue]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
 		try {
 			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
 		} catch (IOException e) {

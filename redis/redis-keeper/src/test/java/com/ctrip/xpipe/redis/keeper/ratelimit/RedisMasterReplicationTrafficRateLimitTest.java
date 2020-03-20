@@ -22,7 +22,9 @@ import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
 import com.ctrip.xpipe.redis.keeper.impl.RedisMasterReplicationRdbDumper;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStats;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -73,6 +75,8 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
     @Mock
     private KeeperMonitor keeperMonitor;
 
+    private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
+
     private NioEventLoopGroup nioEventLoopGroup;
 
     private KeeperStats keeperStats;
@@ -89,6 +93,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         when(redisKeeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
         keeperStats = spy(new DefaultKeeperStats("shard", scheduled));
         when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
+        when(keeperMonitor.getReplicationStoreStats()).thenReturn(replicationStoreStats);
         when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
         when(replicationStore.getMetaStore()).thenReturn(metaStore);
         server = startFakeRedisServer();
@@ -271,6 +276,94 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         Assert.assertEquals(1, leakyBucket.references());
     }
 
+    @Test
+    public void testDeployOrSwapWontRateLimit() throws Exception {
+
+        //first, be backup keeper, then assume the active keeper is restarting, it's turn to active
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateBackup(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+
+        makePartialSync();
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
+        when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+
+        when(redisKeeperServer.getKeeperConfig())
+                .thenReturn(new TestKeeperConfig(100, 2, 1000, 1000)
+                        .setReplHighWaterMark(1000).setReplLowWaterMark(20).setReplDownSafeIntervalMilli(5*1000*60L));
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
+        LifecycleHelper.initializeIfPossible(armr);
+        LifecycleHelper.startIfPossible(armr);
+
+        waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
+        //now disturb the link when partial sync
+        server.stop();
+        LifecycleHelper.stopIfPossible(armr);
+        LifecycleHelper.disposeIfPossible(armr);
+
+        sleep(100);
+        Assert.assertEquals(1, leakyBucket.references());
+        Assert.assertNotEquals(0, replicationStoreStats.getReplDownSince());
+        verify(leakyBucket, never()).tryAcquire();
+
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+
+        server.start();
+        LifecycleHelper.initializeIfPossible(armr);
+        LifecycleHelper.startIfPossible(armr);
+        waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 2, 5000);
+        Assert.assertEquals(0, replicationStoreStats.getReplDownSince());
+        // leaky bucket will not need when second time
+        verify(leakyBucket, never()).tryAcquire();
+    }
+
+    @Test
+    public void testRestartWillRateLimit() throws Exception {
+        //first, be backup keeper, then assume the active keeper is restarting, it's turn to active
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+
+        makePartialSync();
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
+        when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+
+        when(redisKeeperServer.getKeeperConfig())
+                .thenReturn(new TestKeeperConfig(100, 2, 1000, 1000)
+                        .setReplHighWaterMark(1000).setReplLowWaterMark(20).setReplDownSafeIntervalMilli(5*1000*60L));
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
+        LifecycleHelper.initializeIfPossible(armr);
+        LifecycleHelper.startIfPossible(armr);
+
+        waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
+        //now disturb the link when partial sync
+        server.stop();
+        LifecycleHelper.stopIfPossible(armr);
+        LifecycleHelper.disposeIfPossible(armr);
+
+        sleep(100);
+        Assert.assertEquals(1, leakyBucket.references());
+        Assert.assertNotEquals(0, replicationStoreStats.getReplDownSince());
+        verify(leakyBucket, times(1)).tryAcquire();
+
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+
+        server.start();
+        //new replication, as restart will cause a new one
+        // also new stats, as restart will cause a new one
+        when(keeperMonitor.getReplicationStoreStats()).thenReturn(new DefaultReplicationStoreStats());
+        armr = new ControllableRedisMasterReplication(redisKeeperServer, redisMaster,
+                nioEventLoopGroup, scheduled, keeperResourceManager);
+        makePartialSync();
+        LifecycleHelper.initializeIfPossible(armr);
+        LifecycleHelper.startIfPossible(armr);
+        waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() > 1, 2000);
+        waitConditionUntilTimeOut(()->leakyBucket.references() >= 1, 2000);
+        verify(leakyBucket, times(2)).tryAcquire();
+        Assert.assertEquals(0, keeperMonitor.getReplicationStoreStats().getReplDownSince());
+
+    }
+
     private static class ControllableRedisMasterReplication extends AbstractRedisMasterReplication {
 
         private static final AtomicInteger counter = new AtomicInteger(0);
@@ -346,7 +439,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         @Override
         public void masterDisconntected(Channel channel) {
             super.masterDisconntected(channel);
-
+            redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
             long interval = System.currentTimeMillis() - connectedTime;
             long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
             if (scheduleTime < 0) {
@@ -392,11 +485,12 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
 
         @Override
         protected void doEndWriteRdb() {
-
+            redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
         }
 
         @Override
         protected void doOnContinue() {
+            redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
             redisKeeperServer.getKeeperMonitor().getKeeperStats().increatePartialSync();
         }
 

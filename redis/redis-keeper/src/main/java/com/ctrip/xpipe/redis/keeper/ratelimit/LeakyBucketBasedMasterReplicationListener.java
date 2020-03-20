@@ -69,6 +69,11 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     public boolean canSendPsync() {
         if (redisMasterReplication.redisMaster().isKeeper()
                 && (redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive)) {
+            // when it's under deploying circumstance, or a roughly active-backup swap
+            // we won't limit the replication
+            if(replDownShortly()) {
+                return true;
+            }
             // for those who always fails, let it go
             KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
             if(keeperStats.getLastPsyncFailReason() != null && keeperStats.getLastPsyncFailReason() != PsyncFailReason.TOKEN_LACK
@@ -87,6 +92,14 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             }
         }
         return true;
+    }
+
+    private boolean replDownShortly() {
+        long repl_down_since = redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().getReplDownSince();
+        if(repl_down_since == 0L) {
+            return false;
+        }
+        return System.currentTimeMillis() - repl_down_since < redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli();
     }
 
     @Override
