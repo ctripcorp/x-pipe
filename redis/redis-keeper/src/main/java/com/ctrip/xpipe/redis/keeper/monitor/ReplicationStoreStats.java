@@ -11,4 +11,7 @@ public interface ReplicationStoreStats {
 	
 	long getReplicationStoreCreateCount();
 
+	long getReplDownSince();
+
+	void refreshReplDownSince(long repl_down_since);
 }
