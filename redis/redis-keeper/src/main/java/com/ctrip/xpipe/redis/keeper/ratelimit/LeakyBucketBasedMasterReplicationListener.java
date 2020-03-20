@@ -31,6 +31,8 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private static final Logger logger = LoggerFactory.getLogger(LeakyBucketBasedMasterReplicationListener.class);
 
+    private static final long KEEPER_INIT_STATE = 0L;
+
     private RedisMasterReplication redisMasterReplication;
 
     private RedisKeeperServer redisKeeperServer;
@@ -69,6 +71,12 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     public boolean canSendPsync() {
         if (redisMasterReplication.redisMaster().isKeeper()
                 && (redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateActive)) {
+            // when it's under deploying circumstance, or a roughly active-backup swap
+            // we won't limit the replication
+            if(replDownShortly()) {
+                logger.info("[canSendPsync][repl down short] let psync pass");
+                return true;
+            }
             // for those who always fails, let it go
             KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
             if(keeperStats.getLastPsyncFailReason() != null && keeperStats.getLastPsyncFailReason() != PsyncFailReason.TOKEN_LACK
@@ -87,6 +95,18 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             }
         }
         return true;
+    }
+
+    private boolean replDownShortly() {
+        long repl_down_since = redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().getReplDownSince();
+        if(repl_down_since == KEEPER_INIT_STATE) {
+            return false;
+        }
+        long currentTime = System.currentTimeMillis();
+        boolean result = currentTime - repl_down_since < redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli();
+        logger.info("[replDownShortly]currentTime - repl_down_since < getReplDownSafeIntervalMilli()");
+        logger.info("[replDownShortly]{} - {} < {} -> {}", currentTime, repl_down_since, redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli(), result);
+        return result;
     }
 
     @Override
@@ -178,6 +198,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             checkInterval = Math.min(300, Math.max(100, checkInterval));
             // to release the token fast, we choose the shorter deadline
             afterMilli = Math.min(afterMilli, 3 * checkInterval);
+            checkInterval = (int) Math.min(afterMilli, checkInterval);
             logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
             logger.info("[tryDelayReleaseToken]deadline: {}, check-interval: {}", DateTimeUtils.timeAsString(deadline), checkInterval);

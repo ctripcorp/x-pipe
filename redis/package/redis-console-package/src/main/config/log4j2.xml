@@ -33,9 +33,9 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="100 MB"/>
+                <SizeBasedTriggeringPolicy size="256 MB"/>
             </Policies>
-            <DefaultRolloverStrategy max="5">
+            <DefaultRolloverStrategy max="15">
                 <Delete basePath="${baseDir}" maxDepth="2">
                     <IfFileName glob="health-check*.log.gz"/>
                     <IfLastModified age="7d"/>
