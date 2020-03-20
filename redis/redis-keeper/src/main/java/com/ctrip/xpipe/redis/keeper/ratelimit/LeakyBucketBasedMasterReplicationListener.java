@@ -74,6 +74,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             // when it's under deploying circumstance, or a roughly active-backup swap
             // we won't limit the replication
             if(replDownShortly()) {
+                logger.info("[canSendPsync][repl down short] let psync pass");
                 return true;
             }
             // for those who always fails, let it go
