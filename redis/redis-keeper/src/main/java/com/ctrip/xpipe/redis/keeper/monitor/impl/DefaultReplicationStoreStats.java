@@ -13,6 +13,8 @@ public class DefaultReplicationStoreStats implements ReplicationStoreStats{
 	
 	private AtomicLong replicationStoreCreateCount = new AtomicLong();
 
+	private AtomicLong repl_down_since = new AtomicLong(0);
+
 	@Override
 	public void increateReplicationStoreCreateCount() {
 		replicationStoreCreateCount.incrementAndGet();
@@ -22,6 +24,16 @@ public class DefaultReplicationStoreStats implements ReplicationStoreStats{
 	@Override
 	public long getReplicationStoreCreateCount() {
 		return replicationStoreCreateCount.get();
+	}
+
+	@Override
+	public long getReplDownSince() {
+		return repl_down_since.get();
+	}
+
+	@Override
+	public void refreshReplDownSince(long replDownSince) {
+		repl_down_since.set(replDownSince);
 	}
 
 }
