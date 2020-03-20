@@ -92,7 +92,9 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public void masterDisconntected(Channel channel) {
 		super.masterDisconntected(channel);
-		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
+		if(getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED) {
+			redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
+		}
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
 		if (scheduleTime < 0) {

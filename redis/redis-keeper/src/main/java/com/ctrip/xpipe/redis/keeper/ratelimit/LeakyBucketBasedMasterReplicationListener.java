@@ -31,6 +31,8 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private static final Logger logger = LoggerFactory.getLogger(LeakyBucketBasedMasterReplicationListener.class);
 
+    private static final long KEEPER_INIT_STATE = 0L;
+
     private RedisMasterReplication redisMasterReplication;
 
     private RedisKeeperServer redisKeeperServer;
@@ -96,10 +98,14 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     private boolean replDownShortly() {
         long repl_down_since = redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().getReplDownSince();
-        if(repl_down_since == 0L) {
+        if(repl_down_since == KEEPER_INIT_STATE) {
             return false;
         }
-        return System.currentTimeMillis() - repl_down_since < redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli();
+        long currentTime = System.currentTimeMillis();
+        boolean result = currentTime - repl_down_since < redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli();
+        logger.info("[replDownShortly]currentTime - repl_down_since < getReplDownSafeIntervalMilli()");
+        logger.info("[replDownShortly]{} - {} < {} -> {}", currentTime, repl_down_since, redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli(), result);
+        return result;
     }
 
     @Override
@@ -191,6 +197,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             checkInterval = Math.min(300, Math.max(100, checkInterval));
             // to release the token fast, we choose the shorter deadline
             afterMilli = Math.min(afterMilli, 3 * checkInterval);
+            checkInterval = (int) Math.min(afterMilli, checkInterval);
             logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
             logger.info("[tryDelayReleaseToken]deadline: {}, check-interval: {}", DateTimeUtils.timeAsString(deadline), checkInterval);
