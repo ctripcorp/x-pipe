@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
@@ -174,6 +175,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	@Override
 	public List<ShardListModel> findAllUnhealthy() {
 		UnhealthyInfoModel unhealthyInfoModel = delayService.getAllUnhealthyInstance();
+
 		Set<String> unhealthyClusterNames = unhealthyInfoModel.getUnhealthyClusterNames();
 		if (unhealthyClusterNames.isEmpty()) return Collections.emptyList();
 
@@ -186,16 +188,22 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			if (!clusterMap.containsKey(clusterName)) continue;
 
 			ClusterTbl cluster = clusterMap.get(clusterName);
+			Map<String, ShardListModel> shardMap = new HashMap<>();
 			unhealthyInfoModel.getUnhealthyDcShardByCluster(clusterName).forEach(dcShard -> {
-				ShardListModel shardModel = new ShardListModel();
-				shardModel.setDcName(dcShard.getKey())
-						.setShardName(dcShard.getValue())
-						.setClusterName(cluster.getClusterName())
-						.setClusterAdminEmails(cluster.getClusterAdminEmails())
-						.setClusterOrgName(cluster.getClusterOrgName())
-						.setClusterDescription(cluster.getClusterDescription());
-				shardModels.add(shardModel);
+				if (!shardMap.containsKey(dcShard.getValue())) {
+					ShardListModel shardModel = new ShardListModel();
+					shardModel.setShardName(dcShard.getValue())
+							.setActivedcId(cluster.getActivedcId())
+							.setClusterName(cluster.getClusterName())
+							.setClusterAdminEmails(cluster.getClusterAdminEmails())
+							.setClusterOrgName(cluster.getClusterOrgName())
+							.setClusterDescription(cluster.getClusterDescription());
+					shardMap.put(dcShard.getValue(), shardModel);
+				}
+
+				shardMap.get(dcShard.getValue()).addDc(dcShard.getKey());
 			});
+			shardModels.addAll(shardMap.values());
 		}
 
 		return shardModels;

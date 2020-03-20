@@ -92,6 +92,11 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })
+        .state('shard_list', {
+            url: '/shard_list',
+            templateUrl: 'views/index/shard_list.html',
+            controller: 'ShardListCtl'
+        })
         .state('cluster_form', {
             url: '/cluster_form?clusterName&type',
             templateUrl: 'views/index/cluster_form.html',
