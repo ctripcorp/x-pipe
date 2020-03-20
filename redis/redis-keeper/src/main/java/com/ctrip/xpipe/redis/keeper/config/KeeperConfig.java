@@ -52,4 +52,6 @@ public interface KeeperConfig extends CoreConfig{
     int getPartialSyncTrafficMonitorIntervalTimes();
 
     boolean isKeeperRateLimitOpen();
+
+    long getReplDownSafeIntervalMilli();
 }
