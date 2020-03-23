@@ -101,7 +101,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	private int commandTimeoutMilli;
 
-	private RedisMasterReplicationObserver replicationObserver;
+	protected RedisMasterReplicationObserver replicationObserver;
 
 	protected KeeperResourceManager resourceManager;
 
@@ -375,6 +375,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		}
 
 		Psync psync = createPsync();
+		psync.addPsyncObserver(replicationObserver);
 		psync.future().addListener(new CommandFutureListener<Object>() {
 
 			@Override
@@ -453,9 +454,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	@Override
 	public void endWriteRdb() {
-		if (replicationObserver != null) {
-			replicationObserver.endWriteRdb();
-		}
 		dumpFinished();
 		doEndWriteRdb();
 	}
@@ -464,9 +462,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	@Override
 	public void onContinue(String requestReplId, String responseReplId) {
-		if (replicationObserver != null) {
-			replicationObserver.onContinue(requestReplId, responseReplId);
-		}
 		doOnContinue();
 	}
 
