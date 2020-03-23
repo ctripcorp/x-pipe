@@ -106,7 +106,7 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
         String shardName = group.getName();
         boolean shardMasterWarn = false;
         for(OuterClientService.InstanceInfo instance : group.getInstances()) {
-            if(!instance.isCanRead()) {
+            if(!instance.isMaster() && !instance.isCanRead()) {
                 alertManager.alert(clusterName, shardName,
                         new HostPort(instance.getIPAddress(), instance.getPort()),
                         ALERT_TYPE.CLIENT_INSTANCE_NOT_OK, "instance cannot read");
