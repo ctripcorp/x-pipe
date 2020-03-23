@@ -116,12 +116,12 @@ public class AlertManager {
     private void doAlert(String dc, String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message, boolean force) {
 
         if(!force && !shouldAlert(cluster)){
-            logger.warn("[alert][skip]{}, {}, {}, {}", cluster, shard, type, message);
+//            logger.warn("[alert][skip]{}, {}, {}, {}", cluster, shard, type, message);
             return;
         }
 
 
-        logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
+//        logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
         EventMonitor.DEFAULT.logEvent(ALERT_TYPE, generateAlertMessage(dc, cluster, shard, type, message));
         notifier.addAlert(dc, cluster, shard, hostPort, type, message);
     }
@@ -136,7 +136,7 @@ public class AlertManager {
                 return false;
             }
         } catch (Exception e) {
-            logger.error("[shouldAlert]", e);
+            logger.warn("[shouldAlert]", e);
         }
         return !alertClusterWhiteList.contains(cluster);
     }
@@ -148,7 +148,7 @@ public class AlertManager {
             }
             return null;
         } catch (Exception e) {
-            logger.error("[findDc] error: {}", e);
+            logger.warn("[findDc] error: ", e);
             return null;
         }
     }

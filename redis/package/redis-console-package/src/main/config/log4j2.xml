@@ -115,6 +115,10 @@
             <appender-ref ref="rollingFileInfo"/>
         </logger>
 
+        <logger name="com.ctrip.xpipe.pool.XpipeNettyClientPool" level="WARN" additivity="false">
+            <appender-ref ref="rollingFileInfo"/>
+        </logger>
+
         <logger name="org.apache.zookeeper" level="INFO" additivity="false">
             <appender-ref ref="zkLogFile"/>
             <appender-ref ref="catAppender4Log4j2"/>

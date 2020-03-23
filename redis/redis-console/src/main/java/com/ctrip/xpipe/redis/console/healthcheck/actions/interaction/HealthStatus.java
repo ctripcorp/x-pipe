@@ -222,7 +222,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         if(pre.equals(cur)) {
             return;
         }
-        logger.info("[state-change][{}] {} -> {}", this, pre, cur);
+        logger.debug("[state-change][{}] {} -> {}", this, pre, cur);
     }
 
     @Override

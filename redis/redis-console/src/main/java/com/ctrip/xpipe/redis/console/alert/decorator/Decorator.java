@@ -61,12 +61,12 @@ public abstract class Decorator {
             velocityEngine.mergeTemplate(templateName, encoding, context, stringWriter);
             return stringWriter.toString();
         } catch (Exception e) {
-            logger.error("[getRenderedString] Error with velocity:\n{}", e);
+            logger.error("[getRenderedString] Error with velocity:\n", e);
         } finally {
             try {
                 stringWriter.close();
             } catch (IOException e) {
-                logger.error("[getRenderedString] Closing string writer error:\n {}", e);
+                logger.error("[getRenderedString] Closing string writer error:\n ", e);
             }
         }
         return null;

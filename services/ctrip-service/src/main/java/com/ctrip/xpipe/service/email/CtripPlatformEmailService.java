@@ -103,7 +103,7 @@ public class CtripPlatformEmailService implements EmailService {
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
         }catch (Exception e) {
-            logger.error("check email send response error: {}", e);
+            logger.error("check email send response error: ", e);
         }
         return false;
     }

@@ -34,7 +34,7 @@ public class CompositeEmailSenderCallback implements AsyncEmailSenderCallback, T
             try {
                 callbackFunction.success();
             } catch (Exception e) {
-                logger.error("[success][{}] exception: {}", callbackFunction.getClass().getSimpleName(), e);
+                logger.error("[success][{}] exception", callbackFunction.getClass().getSimpleName(), e);
             }
         });
     }
@@ -45,7 +45,7 @@ public class CompositeEmailSenderCallback implements AsyncEmailSenderCallback, T
             try {
                 callbackFunction.fail(throwable);
             } catch (Exception e) {
-                logger.error("[fail][{}] exception: {}", callbackFunction.getClass().getSimpleName(), e);
+                logger.error("[fail][{}] exception", callbackFunction.getClass().getSimpleName(), e);
             }
         });
     }
