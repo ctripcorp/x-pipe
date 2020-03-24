@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.payload;
 
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,7 +17,8 @@ import java.nio.channels.WritableByteChannel;
  * 2016年3月29日 下午4:33:20
  */
 public class FileInOutPayload extends AbstractInOutPayload{
-	
+
+	private static final Logger logger = LoggerFactory.getLogger(FileInOutPayload.class);
 	public String fileName;
 	private FileChannel inFileChannel; 
 	private FileChannel outFileChannel; 

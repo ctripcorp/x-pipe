@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.proxy.command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.exception.XPipeProxyResultException;
@@ -25,11 +26,13 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
 
     public AbstractProxyMonitorCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
         super(clientPool, scheduled);
+        setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
     }
 
     public AbstractProxyMonitorCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
                                        int commandTimeoutMilli) {
         super(clientPool, scheduled, commandTimeoutMilli);
+        setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
     }
 
     @Override

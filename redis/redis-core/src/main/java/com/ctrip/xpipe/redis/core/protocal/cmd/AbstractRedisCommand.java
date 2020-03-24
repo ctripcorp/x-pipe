@@ -9,6 +9,7 @@ import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -35,6 +36,8 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	private boolean logResponse = true;
 
 	private boolean logRequest = true;
+
+	private InOutPayloadFactory inOutPayloadFactory;
 
 	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port, scheduled);
@@ -96,10 +99,14 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 						redisClientProtocol = new RedisErrorParser();
 						break;
 					case RedisClientProtocol.ASTERISK_BYTE:
-						redisClientProtocol = new ArrayParser();
+						redisClientProtocol = new ArrayParser().setInOutPayloadFactory(inOutPayloadFactory);
 						break;
 					case RedisClientProtocol.DOLLAR_BYTE:
-						redisClientProtocol = new BulkStringParser(getBulkStringPayload());
+						if(inOutPayloadFactory != null) {
+							redisClientProtocol = new BulkStringParser(inOutPayloadFactory.create());
+						} else {
+							redisClientProtocol = new BulkStringParser(getBulkStringPayload());
+						}
 						break;
 					case RedisClientProtocol.COLON_BYTE:
 						redisClientProtocol = new LongParser();
@@ -251,5 +258,10 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 
 	protected boolean isProxyEnabled(Endpoint endpoint) {
 		return endpoint instanceof ProxyEnabled;
+	}
+
+	protected AbstractRedisCommand setInOutPayloadFactory(InOutPayloadFactory inOutPayloadFactory) {
+		this.inOutPayloadFactory = inOutPayloadFactory;
+		return this;
 	}
 }

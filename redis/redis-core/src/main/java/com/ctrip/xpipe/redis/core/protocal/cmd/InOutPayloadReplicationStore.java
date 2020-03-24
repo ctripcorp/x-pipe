@@ -5,6 +5,8 @@ import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
@@ -16,6 +18,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 2016年4月20日 下午5:19:55
  */
 public class InOutPayloadReplicationStore extends AbstractInOutPayload implements InOutPayload {
+
+	private static final Logger logger = LoggerFactory.getLogger(InOutPayloadReplicationStore.class);
 
 	public  RdbStore rdbStore;
 	
