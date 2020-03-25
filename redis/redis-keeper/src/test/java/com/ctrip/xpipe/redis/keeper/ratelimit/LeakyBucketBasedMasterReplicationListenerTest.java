@@ -102,11 +102,16 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
     @Test
     public void testCanSendPsyncWithAlwaysFail() {
-        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateBackup(redisKeeperServer));
-        listener.onDumpFail();
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
+        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+        Assert.assertTrue(listener.canSendPsync());
         listener.onDumpFail();
         Assert.assertTrue(listener.canSendPsync());
-        verify(resourceManager, never()).getLeakyBucket();
+        listener.onDumpFail();
+        Assert.assertTrue(listener.canSendPsync());
+        verify(leakyBucket, times(1)).tryAcquire();
     }
     @Test
     public void testCanSendPsync() {
@@ -143,9 +148,47 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
+    public void testIsTokenReadyToReleaseWhenPeakBPSHuge() {
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        when(keeperConfig.getReplicationTrafficLowWaterMark()).thenReturn(1024 * 1024 * 20L); // 20MB/s
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L); //21MB/s
+        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 50L); //50MB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
+    }
+
+    @Test
+    public void testIsTokenReadyToReleaseWhenPeakBPSTiny() {
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        when(keeperConfig.getReplicationTrafficLowWaterMark()).thenReturn(1024 * 1024 * 20L); // 20MB/s
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L); //21MB/s
+        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 30L); //30MB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+    }
+
+    @Test
+    public void testIsTokenReadyToReleaseWhenPeakBPSChange() {
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+        when(keeperConfig.getReplicationTrafficLowWaterMark()).thenReturn(1024 * 1024 * 20L); // 20MB/s
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L); //21MB/s
+        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 50L); //50MB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 30L); //30MB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 50L); //50MB/s
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
+        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
+    }
+
+    @Test
     public void testIsTokenReadyToReleaseWhenLessThan20MB() {
         long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L); //2kB/s
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L); //2MB/s
         Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
         Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
         Assert.assertTrue(listener.isTokenReadyToRelease(deadline));

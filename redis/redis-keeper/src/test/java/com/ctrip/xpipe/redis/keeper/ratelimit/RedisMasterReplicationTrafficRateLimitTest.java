@@ -187,15 +187,16 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
-                .thenReturn(new TestKeeperConfig(100, 2, 1000, 1000).setReplHighWaterMark(1000).setReplLowWaterMark(20));
+                .thenReturn(new TestKeeperConfig(1000, 2, 1000, 1000)
+                        .setReplHighWaterMark(1000).setReplLowWaterMark(20).setMaxPartialSyncKeepTokenRounds(2).setPartialSyncTrafficMonitorIntervalTimes(1));
         when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
 
         LifecycleHelper.initializeIfPossible(armr);
         LifecycleHelper.startIfPossible(armr);
 
         waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
-        // sleep to let partial sync return the token
-        sleep(420);
+        // sleep 4 round to let partial sync return the token
+        sleep(4 * 100);
         Assert.assertEquals(1, ((ControllableRedisMasterReplication)armr).getConnectTimes());
         Assert.assertEquals(1, leakyBucket.references());
     }
@@ -208,15 +209,16 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
-                .thenReturn(new TestKeeperConfig(100, 2, 1000, 1000).setReplHighWaterMark(1000).setReplLowWaterMark(1000));
+                .thenReturn(new TestKeeperConfig(1000, 2, 1000, 1000)
+                        .setReplHighWaterMark(1000).setReplLowWaterMark(1000).setMaxPartialSyncKeepTokenRounds(10).setPartialSyncTrafficMonitorIntervalTimes(1));
         when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
 
         LifecycleHelper.initializeIfPossible(armr);
         LifecycleHelper.startIfPossible(armr);
 
         waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
-        // sleep to let partial sync return the token
-        sleep(350);
+        // sleep 4 round to let partial sync return the token
+        sleep(4 * 100);
         Assert.assertEquals(1, ((ControllableRedisMasterReplication)armr).getConnectTimes());
         Assert.assertEquals(1, leakyBucket.references());
     }
