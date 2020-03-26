@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.lifecycle.Stoppable;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
@@ -39,6 +40,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 
     private static final Logger logger = LoggerFactory.getLogger(CompositeLeakyBucket.class);
+
+    private static final String LEAKY_BUCKET_EVENT_TYEP = "XPIPE.LEAKY.BUCKET";
+
+    private static final String LEAKY_BUCKET_OPEN = "LEAKY.BUCKET.OPEN";
+
+    private static final String LEAKY_BUCKET_CLOSE = "LEAKY.BUCKET.CLOSE";
+
+    private static final String LEAKY_BUCKET_RESIZE = "LEAK.BUCKET.RESIZE";
 
     private DefaultLeakyBucket origin;
 
@@ -134,7 +143,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     @VisibleForTesting
     protected void refresh() {
         if(StringUtil.isEmpty(keeperConfig.getMetaServerAddress())) {
-            logger.info("[refresh]address null, will not update token size");
+            logger.debug("[refresh]address null, will not update token size");
             return;
         }
         List<RedisKeeperServer> keepers = keeperContainerService.list();
@@ -172,6 +181,15 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
             public void run() {
                 if(keeperConfig.getLeakyBucketInitSize() != origin.getTotalSize()) {
                     origin.resize(keeperConfig.getLeakyBucketInitSize());
+                    EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_RESIZE + "->" + keeperConfig.getLeakyBucketInitSize());
+                }
+                if(closed.get() != keeperConfig.isKeeperRateLimitOpen()) {
+                    logger.warn("[checkKeeperConfigChange][close-state-change]{} -> {}", closed.get(), !keeperConfig.isKeeperRateLimitOpen());
+                    if(closed.get()) {
+                        EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_CLOSE);
+                    } else {
+                        EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_OPEN);
+                    }
                 }
                 closed.set(!keeperConfig.isKeeperRateLimitOpen());
             }
@@ -187,5 +205,9 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     @VisibleForTesting
     protected void setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
+    }
+
+    public boolean isClosed() {
+        return closed.get();
     }
 }
