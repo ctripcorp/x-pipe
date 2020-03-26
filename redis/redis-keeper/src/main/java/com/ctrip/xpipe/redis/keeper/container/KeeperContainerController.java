@@ -79,7 +79,7 @@ public class KeeperContainerController extends AbstractController {
 
     @RequestMapping(value = "/leakybucket", method = RequestMethod.GET)
     public LeakyBucketInfo getLeakyBucketInfo() {
-        return new LeakyBucketInfo(leakyBucket.isClosed(), leakyBucket.getTotalSize());
+        return new LeakyBucketInfo(!leakyBucket.isClosed(), leakyBucket.getTotalSize());
     }
 
     private class LeakyBucketInfo {
