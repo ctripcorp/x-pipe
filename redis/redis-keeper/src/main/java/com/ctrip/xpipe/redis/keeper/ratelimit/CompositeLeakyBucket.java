@@ -183,7 +183,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                     origin.resize(keeperConfig.getLeakyBucketInitSize());
                     EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_RESIZE + "->" + keeperConfig.getLeakyBucketInitSize());
                 }
-                if(closed.get() != keeperConfig.isKeeperRateLimitOpen()) {
+                if(closed.get() == keeperConfig.isKeeperRateLimitOpen()) {
                     logger.warn("[checkKeeperConfigChange][close-state-change]{} -> {}", closed.get(), !keeperConfig.isKeeperRateLimitOpen());
                     if(closed.get()) {
                         EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_CLOSE);
