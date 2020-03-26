@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeper
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.DefaultDcKeeperMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.PrimaryDcKeeperMasterChooserAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
@@ -74,7 +75,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DeferredResponseTest.class,
 	DefaultSentinelManagerTest.class,
 	DefaultDcMetaCacheRefreshTest.class,
-	DefaultChangePrimaryDcActionTest.class
+	DefaultChangePrimaryDcActionTest.class,
+	DefaultKeeperManagerTest.class
 })
 public class AllTests {
 

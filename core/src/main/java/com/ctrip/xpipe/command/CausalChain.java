@@ -49,8 +49,6 @@ public class CausalChain extends AbstractCommandChain {
 
     private void failExecuteNext(CommandFuture<?> commandFuture) {
 
-        logger.error("[failExecuteNext]" + commandFuture.command(), commandFuture.cause());
-
         if(failContinue){
             executeChain();
             return;
