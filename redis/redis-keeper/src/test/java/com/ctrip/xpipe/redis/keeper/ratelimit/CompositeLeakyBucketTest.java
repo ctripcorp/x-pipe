@@ -172,4 +172,200 @@ public class CompositeLeakyBucketTest extends AbstractTest {
         latch.await(1000, TimeUnit.MILLISECONDS);
         Assert.assertTrue(3 < counter.get());
     }
+
+    @Test
+    public void testCloseAndOpen() throws InterruptedException {
+        //first close
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
+        leakyBucket.setScheduled(scheduled);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(110);
+        AtomicInteger counter = new AtomicInteger();
+        int task = 3 * 100, newSize = 10;
+        CountDownLatch latch = new CountDownLatch(task);
+        CyclicBarrier barrier = new CyclicBarrier(task + 1);
+        CyclicBarrier finalBarrier2 = barrier;
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    finalBarrier2.await();
+                } catch (Exception ignore) {
+                }
+                leakyBucket.refresh();
+            }
+        });
+        for (int i = 0; i < task; i++) {
+            CyclicBarrier finalBarrier3 = barrier;
+            CountDownLatch finalLatch1 = latch;
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        finalBarrier3.await();
+                    } catch (Exception ignore) {
+                    }
+                    if (leakyBucket.tryAcquire()) {
+                        counter.incrementAndGet();
+                    }
+                    finalLatch1.countDown();
+                }
+            });
+        }
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(3 < counter.get());
+
+        // second, open
+        counter.set(0);
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(110);
+        latch = new CountDownLatch(task);
+        barrier = new CyclicBarrier(task + 1);
+        CyclicBarrier finalBarrier = barrier;
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    finalBarrier.await();
+                } catch (Exception ignore) {
+                }
+                leakyBucket.refresh();
+            }
+        });
+        for (int i = 0; i < task; i++) {
+            CyclicBarrier finalBarrier1 = barrier;
+            CountDownLatch finalLatch = latch;
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        finalBarrier1.await();
+                    } catch (Exception ignore) {
+                    }
+                    if (leakyBucket.tryAcquire()) {
+                        counter.incrementAndGet();
+                    }
+                    finalLatch.countDown();
+                }
+            });
+        }
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(3 >= counter.get());
+    }
+
+    @Test
+    public void testOpenAndCloseAndOpen() throws InterruptedException {
+        //first open
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        leakyBucket.setScheduled(scheduled);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(110);
+        AtomicInteger counter = new AtomicInteger();
+        int task = 3 * 100, newSize = 10;
+        CountDownLatch latch = new CountDownLatch(task);
+        CyclicBarrier barrier = new CyclicBarrier(task + 1);
+
+        sleep(110);
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    barrier.await();
+                } catch (Exception ignore) {
+                }
+                leakyBucket.refresh();
+            }
+        });
+        for (int i = 0; i < task; i++) {
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        barrier.await();
+                    } catch (Exception ignore) {
+                    }
+                    if (leakyBucket.tryAcquire()) {
+                        counter.incrementAndGet();
+                    }
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(3 >= counter.get());
+
+        // second, close
+        counter.set(0);
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
+        leakyBucket.checkKeeperConfigChange();
+        CountDownLatch latch2 = new CountDownLatch(task);
+        CyclicBarrier barrier2 = new CyclicBarrier(task + 1);
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    barrier2.await();
+                } catch (Exception ignore) {
+                }
+                leakyBucket.refresh();
+            }
+        });
+        for (int i = 0; i < task; i++) {
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        barrier2.await();
+                    } catch (Exception ignore) {
+                    }
+                    if (leakyBucket.tryAcquire()) {
+                        counter.incrementAndGet();
+                    }
+                    latch2.countDown();
+                }
+            });
+        }
+
+        latch2.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(3 < counter.get());
+
+        //third, open again
+        counter.set(0);
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        leakyBucket.checkKeeperConfigChange();
+        CountDownLatch latch3 = new CountDownLatch(task);
+        CyclicBarrier barrier3 = new CyclicBarrier(task + 1);
+        executors.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    barrier3.await();
+                } catch (Exception ignore) {
+                }
+                leakyBucket.refresh();
+            }
+        });
+        for (int i = 0; i < task; i++) {
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        barrier3.await();
+                    } catch (Exception ignore) {
+                    }
+                    if (leakyBucket.tryAcquire()) {
+                        counter.incrementAndGet();
+                    }
+                    latch3.countDown();
+                }
+            });
+        }
+
+        latch3.await(1000, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(3 < counter.get());
+    }
 }

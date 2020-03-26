@@ -173,9 +173,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                 if(keeperConfig.getLeakyBucketInitSize() != origin.getTotalSize()) {
                     origin.resize(keeperConfig.getLeakyBucketInitSize());
                 }
-                if(!keeperConfig.isKeeperRateLimitOpen()) {
-                    closed.set(true);
-                }
+                closed.set(!keeperConfig.isKeeperRateLimitOpen());
             }
         }, 100, 100, TimeUnit.MILLISECONDS);
     }
