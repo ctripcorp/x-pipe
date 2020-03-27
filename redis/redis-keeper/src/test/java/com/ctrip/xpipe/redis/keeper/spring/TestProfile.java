@@ -97,9 +97,10 @@ public class TestProfile extends AbstractProfile{
 		return new DefaultKeeperResourceManager(endpointManager, algorithm, leakyBucket);
 	}
 
-	private CompositeLeakyBucket getLeakyBucket(KeeperConfig keeperConfig,
-												MetaServerKeeperService metaServerKeeperService,
-												KeeperContainerService keeperContainerService) {
+	@Bean
+	public CompositeLeakyBucket getLeakyBucket(KeeperConfig keeperConfig,
+											   MetaServerKeeperService metaServerKeeperService,
+											   KeeperContainerService keeperContainerService) {
 		return new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
 	}
 	
