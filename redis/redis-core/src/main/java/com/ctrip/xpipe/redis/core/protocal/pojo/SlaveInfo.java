@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.core.protocal.pojo;
 
 import com.ctrip.xpipe.api.server.Server;
 
+import static com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo.MASTER_REPL_OFFSET_PREFIX;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -14,6 +16,7 @@ public class SlaveInfo extends AbstractInfo{
 
     private Long slaveReplOffset;
     private String masterReplId;
+    private Long masterReplOffset;
 
     public SlaveInfo(){
         this(null, null, false);
@@ -35,6 +38,10 @@ public class SlaveInfo extends AbstractInfo{
 
     public String getMasterReplId() {
         return masterReplId;
+    }
+
+    public Long getMasterReplOffset() {
+        return masterReplOffset;
     }
 
     //when psync2, master -> slave, get raw master info
@@ -67,6 +74,10 @@ public class SlaveInfo extends AbstractInfo{
             }
             if(key.equalsIgnoreCase(SLAVE_REPL_OFFSET_PREFIX)){
                 info.slaveReplOffset = Long.parseLong(value);
+                continue;
+            }
+            if (key.equalsIgnoreCase(MASTER_REPL_OFFSET_PREFIX)) {
+                info.masterReplOffset = Long.parseLong(value);
                 continue;
             }
         }
