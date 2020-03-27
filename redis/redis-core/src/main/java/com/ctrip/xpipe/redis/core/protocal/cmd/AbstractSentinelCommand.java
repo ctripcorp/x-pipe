@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -26,10 +28,12 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 
 	public AbstractSentinelCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
+		setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
 	}
 
 	public AbstractSentinelCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
 		super(clientPool, scheduled, commandTimeoutMilli);
+		setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
 	}
 
 	public static class Sentinels extends AbstractSentinelCommand<List<Sentinel>>{
