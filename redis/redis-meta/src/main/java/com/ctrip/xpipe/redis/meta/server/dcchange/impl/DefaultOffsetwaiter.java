@@ -78,8 +78,7 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
         long endTime = System.currentTimeMillis() + waitMilli;
 
         String slaveReplId = null;
-//        Long slaveOffset = null;
-        Long slaveMasterOffset = null;
+        Long slaveOffset = null;
 
         executionLog.info(String.format("wait timeout config:%d ms", waitMilli));
 
@@ -101,8 +100,7 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
 
                 SlaveInfo slaveInfo = (SlaveInfo) redisInfo;
                 slaveReplId = slaveInfo.getMasterReplId();
-//                slaveOffset = slaveInfo.getSlaveReplOffset();
-                slaveMasterOffset = slaveInfo.getMasterReplOffset();
+                slaveOffset = slaveInfo.getSlaveReplOffset();
 
                 if (!StringUtil.isEmpty(slaveReplId) && !StringUtil.isEmpty(masterReplId)) {
                     if (!slaveReplId.equalsIgnoreCase(masterReplId)) {
@@ -110,8 +108,8 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
                         break;
                     }
                 }
-                if (slaveMasterOffset >= masterOffset) {
-                    executionLog.info(String.format("wait succeed:%d >= %d", slaveMasterOffset, masterOffset));
+                if (slaveOffset >= masterOffset) {
+                    executionLog.info(String.format("wait succeed:%d >= %d", slaveOffset, masterOffset));
                     return true;
                 }
             } catch (Exception e) {
@@ -126,8 +124,8 @@ public class DefaultOffsetwaiter implements OffsetWaiter {
             sleep(1);
         }
 
-        if(slaveMasterOffset != null){
-            executionLog.info(String.format("master offset:%s, slave offset:%d, sub:%d", masterOffset, slaveMasterOffset, masterOffset - slaveMasterOffset));
+        if(slaveOffset != null){
+            executionLog.info(String.format("master offset:%s, slave offset:%d, sub:%d", masterOffset, slaveOffset, masterOffset - slaveOffset));
         }
         return false;
     }
