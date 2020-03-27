@@ -9,7 +9,7 @@ import com.ctrip.xpipe.api.server.Server;
  */
 public class MasterInfo extends AbstractInfo{
 
-    public static final String MASTER_REPL_OFFSET_PREFIX = "master_repl_offset";
+    private static final String MASTER_REPL_OFFSET_PREFIX = "master_repl_offset";
     private static final String MASTER_REPLID_PREFIX = "master_replid";
 
     private Long masterReplOffset;
