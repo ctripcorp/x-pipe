@@ -194,10 +194,10 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             long afterMilli = 1000L * keeperConfig.getReplicationStoreCommandFileNumToKeep()
                     * keeperConfig.getReplicationStoreCommandFileSize() / keeperConfig.getReplicationTrafficHighWaterMark();
             int checkInterval = rtt * keeperConfig.getPartialSyncTrafficMonitorIntervalTimes();
-            // 100ms < checkInterval < 1000
+            // 100ms < checkInterval < 300ms
             checkInterval = Math.min(300, Math.max(100, checkInterval));
             // to release the token fast, we choose the shorter deadline
-            afterMilli = Math.min(afterMilli, 3 * checkInterval);
+            afterMilli = Math.min(afterMilli, keeperConfig.getMaxPartialSyncKeepTokenRounds() * checkInterval);
             checkInterval = (int) Math.min(afterMilli, checkInterval);
             logger.info("[tryDelayReleaseToken][afterMilli]{}", afterMilli);
             long deadline = afterMilli + System.currentTimeMillis();
@@ -241,11 +241,12 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
         long peakBPS = keeperStats.getPeakInputInstantaneousBPS();
         long curBPS = keeperStats.getInputInstantaneousBPS();
-        if(curBPS < peakBPS / 2 || curBPS < redisKeeperServer.getKeeperConfig().getReplicationTrafficLowWaterMark()) {
-            logger.debug("[current BPS]{}", curBPS);
+        long lowWaterMark = redisKeeperServer.getKeeperConfig().getReplicationTrafficLowWaterMark();
+        if(curBPS < peakBPS / 2 || curBPS < lowWaterMark) {
+            logger.debug("[isTokenReadyToRelease] current BPS {} peak BPS {} lowWaterMark {}", curBPS, peakBPS, lowWaterMark);
             trafficSafeCounter.incrementAndGet();
         } else {
-            logger.debug("[current BPS]{}", curBPS);
+            logger.debug("[isTokenReadyToRelease] current BPS {} peak BPS {} lowWaterMark {}", curBPS, peakBPS, lowWaterMark);
             trafficSafeCounter.set(0);
         }
         return trafficSafeCounter.get() > 2;

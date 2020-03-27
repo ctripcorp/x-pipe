@@ -10,6 +10,7 @@ import com.ctrip.xpipe.command.CausalCommand;
 import com.ctrip.xpipe.command.CausalException;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -26,6 +27,7 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -52,11 +54,11 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements KeeperManager, TopElement {
 
-	@Autowired
-	private MetaServerConfig config;
-
 	private int deadKeeperCheckIntervalMilli = Integer
 			.parseInt(System.getProperty("deadKeeperCheckIntervalMilli", "15000"));
+
+	@Autowired
+	private MetaServerConfig config;
 
 	@Autowired
 	private KeeperStateController keeperStateController;
@@ -66,6 +68,12 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool;
+
+	@Autowired
+	private DcMetaCache metaCache;
+
+	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
+	private KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutor;
 
 	private ScheduledFuture<?> deadCheckFuture;
 
@@ -258,6 +266,29 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 	}
 
+	/**
+	 * for primary dc, keeper's master should be a redis
+	 * for backup dc, keeper's master should not be a redis
+	 * because the current meta may delay, we need to make sure the relationship is correct*/
+	protected boolean isCurrentMetaKeeperMasterMatch(String clusterId, String shardId) {
+		if(metaCache.isCurrentDcPrimary(clusterId)) {
+			return isKeeperMasterRedis(clusterId, shardId);
+		} else {
+			return !isKeeperMasterRedis(clusterId, shardId);
+		}
+	}
+
+	private boolean isKeeperMasterRedis(String clusterId, String shardId) {
+		List<RedisMeta> redises = metaCache.getShardRedises(clusterId, shardId);
+		Pair<String, Integer> master = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		for (RedisMeta redis : redises) {
+			if (redis.getPort().equals(master.getValue()) && redis.getIp().equals(master.getKey())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	interface KeeperStateChecker extends Runnable {}
 
 	private abstract class AbstractKeeperStateChecker implements KeeperStateChecker {
@@ -319,15 +350,20 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 
 		private void doCorrect(String clusterId, String shardId, List<KeeperMeta> survivedKeepers) {
+			//double check again
+			if(!isCurrentMetaKeeperMasterMatch(clusterId, shardId)) {
+				return;
+			}
 			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterId, survivedKeepers,
 					currentMetaManager.getKeeperMaster(clusterId, shardId));
-			job.execute(executors).addListener(new CommandFutureListener<Void>() {
+			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
 				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
 					logger.info("[{}][KeeperInfoCorrect]cluster: {}, shard: {}, result: {}",
 							getClass(), clusterId, shardId, commandFuture.isSuccess());
 				}
 			});
+			clusterShardExecutor.execute(Pair.from(clusterId, shardId), job);
 		}
 	}
 
@@ -349,7 +385,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected void onSuccess(String info) {
 			InfoResultExtractor extractor = new InfoResultExtractor(info);
 			infoChecker = createKeeperInfoChecker(keeperMeta, clusterId, shardId, extractor);
-			if(infoChecker.isValid()) {
+			if(infoChecker.isValid() || infoChecker.shouldStop()) {
 				future().setSuccess();
 			} else {
 				future().setFailure(new KeeperStateInCorrectException("Keeper Role not correct"));
@@ -391,6 +427,10 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			this.shardId = shardId;
 		}
 
+		protected boolean shouldStop() {
+			return false;
+		}
+
 		protected boolean isValid() {
 			return isKeeperStateOk() && isMasterMatched();
 		}
@@ -414,6 +454,11 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public ActiveKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
 			super(extractor, clusterId, shardId);
 			master = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		}
+
+		@Override
+		protected boolean shouldStop() {
+			return !isCurrentMetaKeeperMasterMatch(clusterId, shardId);
 		}
 
 		@Override
@@ -471,5 +516,15 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	protected DefaultKeeperManager setExecutors(ExecutorService executors) {
 		this.executors = executors;
 		return this;
+	}
+
+	@VisibleForTesting
+	protected void setMetaCache(DcMetaCache metaCache) {
+		this.metaCache = metaCache;
+	}
+
+	@VisibleForTesting
+	protected void setClusterShardExecutor(KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutor) {
+		this.clusterShardExecutor = clusterShardExecutor;
 	}
 }

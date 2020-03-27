@@ -92,9 +92,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public void masterDisconntected(Channel channel) {
 		super.masterDisconntected(channel);
-		if(getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED) {
-			redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
-		}
+		refreshReplDownSince();
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
 		if (scheduleTime < 0) {
@@ -108,6 +106,20 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 				connectWithMaster();
 			}
 		}, scheduleTime, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	protected void doStop() throws Exception {
+		refreshReplDownSince();
+		super.doStop();
+	}
+
+	private void refreshReplDownSince() {
+		if(getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED) {
+			logger.warn("[refreshReplDownSince]set state to MASTER_STATE.REDIS_REPL_NONE, and refresh repl_down_since");
+			redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
+			getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);
+		}
 	}
 	
 	public void setMasterConnectRetryDelaySeconds(int masterConnectRetryDelaySeconds) {

@@ -187,15 +187,16 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
-                .thenReturn(new TestKeeperConfig(100, 2, 1000, 1000).setReplHighWaterMark(1000).setReplLowWaterMark(20));
+                .thenReturn(new TestKeeperConfig(1000, 2, 1000, 1000)
+                        .setReplHighWaterMark(1000).setReplLowWaterMark(20).setMaxPartialSyncKeepTokenRounds(2).setPartialSyncTrafficMonitorIntervalTimes(1));
         when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
 
         LifecycleHelper.initializeIfPossible(armr);
         LifecycleHelper.startIfPossible(armr);
 
         waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
-        // sleep to let partial sync return the token
-        sleep(420);
+        // sleep 4 round to let partial sync return the token
+        sleep(4 * 100);
         Assert.assertEquals(1, ((ControllableRedisMasterReplication)armr).getConnectTimes());
         Assert.assertEquals(1, leakyBucket.references());
     }
@@ -208,15 +209,16 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
 
         when(redisKeeperServer.getKeeperConfig())
-                .thenReturn(new TestKeeperConfig(100, 2, 1000, 1000).setReplHighWaterMark(1000).setReplLowWaterMark(1000));
+                .thenReturn(new TestKeeperConfig(1000, 2, 1000, 1000)
+                        .setReplHighWaterMark(1000).setReplLowWaterMark(1000).setMaxPartialSyncKeepTokenRounds(10).setPartialSyncTrafficMonitorIntervalTimes(1));
         when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
 
         LifecycleHelper.initializeIfPossible(armr);
         LifecycleHelper.startIfPossible(armr);
 
         waitConditionUntilTimeOut(()->keeperStats.getPartialSyncCount() == 1, 5000);
-        // sleep to let partial sync return the token
-        sleep(350);
+        // sleep 4 round to let partial sync return the token
+        sleep(4 * 100);
         Assert.assertEquals(1, ((ControllableRedisMasterReplication)armr).getConnectTimes());
         Assert.assertEquals(1, leakyBucket.references());
     }
@@ -493,6 +495,70 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         LifecycleHelper.stopIfPossible(armr);
         LifecycleHelper.disposeIfPossible(armr);
 
+    }
+
+    @Test
+    public void testBugReplicationStartNewBeforeCloseOldNettyChannel() throws Exception {
+        when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
+        when(keeperMonitor.getReplicationStoreStats()).thenReturn(replicationStoreStats);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                keeperMonitor.getKeeperStats().increaseFullSync();
+                return null;
+            }
+        }).when(redisKeeperServer).onFullSync();
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+                keeperMonitor.getKeeperStats().increatePartialSync();
+                return null;
+            }
+        }).when(redisKeeperServer).onContinue(anyString(), anyString());
+        RedisMaster redisMaster = spy(new DefaultRedisMaster(redisKeeperServer,
+                new DefaultEndPoint("127.0.0.1", server.getPort()), nioEventLoopGroup, createReplicationStoreManager(),
+                scheduled, keeperResourceManager));
+        when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
+        when(redisKeeperServer.getRedisMaster()).thenReturn(redisMaster);
+
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateBackup(redisKeeperServer));
+        when(redisMaster.isKeeper()).thenReturn(true);
+
+        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(3));
+        when(keeperResourceManager.getLeakyBucket()).thenReturn(leakyBucket);
+
+        TestKeeperConfig keeperConfig = new TestKeeperConfig(100, 2, 1000, 1000)
+                .setReplHighWaterMark(1000).setReplLowWaterMark(20).setReplDownSafeIntervalMilli(1000);
+        when(redisKeeperServer.getKeeperConfig())
+                .thenReturn(keeperConfig);
+        when(keeperStats.getInputInstantaneousBPS()).thenReturn(100L);
+
+        armr = new InMemoryDefaultReplication(redisMaster, redisKeeperServer,
+                nioEventLoopGroup, scheduled, keeperResourceManager);
+        LifecycleHelper.initializeIfPossible(armr);
+        LifecycleHelper.startIfPossible(armr);
+        waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() >= 1, 2000);
+        // should not borrow token
+        verify(leakyBucket, never()).tryAcquire();
+        waitConditionUntilTimeOut(()->redisMaster.getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED, 2000);
+        // this should not refresh the repl_down_since !!!!!
+        LifecycleHelper.stopIfPossible(armr);
+        LifecycleHelper.disposeIfPossible(armr);
+
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
+        armr = new InMemoryDefaultReplication(redisMaster, redisKeeperServer,
+                nioEventLoopGroup, scheduled, keeperResourceManager);
+        LifecycleHelper.initializeIfPossible(armr);
+        LifecycleHelper.startIfPossible(armr);
+        waitConditionUntilTimeOut(()->keeperStats.getFullSyncCount() >= 2, 2000);
+        // here's the bug
+        // stop/dispose will call "channel.close()", but netty will trigger the real 'channelClosed' event
+        // only in eventloop, that's unexpected time
+        // we try to simulate the bug, as we believe normally we'll start before netty calls
+        verify(leakyBucket, never()).tryAcquire();
+
+        LifecycleHelper.stopIfPossible(armr);
+        LifecycleHelper.disposeIfPossible(armr);
     }
 
     private static class InMemoryDefaultReplication extends DefaultRedisMasterReplication {
