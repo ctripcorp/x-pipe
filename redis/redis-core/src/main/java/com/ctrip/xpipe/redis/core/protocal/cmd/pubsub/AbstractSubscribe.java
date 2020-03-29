@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
@@ -12,7 +14,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -21,6 +22,8 @@ import io.netty.channel.Channel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -43,6 +46,10 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     private AtomicInteger channelResponsed = new AtomicInteger(0);
 
     private List<SubscribeListener> listeners = Lists.newCopyOnWriteArrayList();
+
+    private ScheduledFuture timeoutFuture;
+
+    protected static int RECEIVE_TIMEOUT_MILL = 2000;
 
     protected AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled,
                                 Subscribe.MESSAGE_TYPE messageType, String... subscribeChannel) {
@@ -73,6 +80,25 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     @Override
     public void removeChannelListener(SubscribeListener listener) {
         listeners.remove(listener);
+    }
+
+    @Override
+    protected void doSendRequest(final NettyClient nettyClient, ByteBuf byteBuf) {
+        super.doSendRequest(nettyClient, byteBuf);
+        timeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
+
+            @Override
+            public void doRun() {
+                future().setFailure(new CommandTimeoutException("timeout " + getCommandTimeoutMilli()));
+            }
+        }, RECEIVE_TIMEOUT_MILL, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
+        // only timeout for no any response
+        if (!timeoutFuture.isCancelled()) timeoutFuture.cancel(false);
+        return super.receive(channel, byteBuf);
     }
 
     @Override

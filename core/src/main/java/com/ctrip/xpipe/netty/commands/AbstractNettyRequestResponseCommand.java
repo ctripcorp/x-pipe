@@ -7,6 +7,8 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.netty.NettyRequestListener;
+import com.ctrip.xpipe.netty.NettyTimeoutTtlListener;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -25,15 +27,19 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNettyCommand<V> implements ByteBufReceiver, RequestResponseCommand<V>{
 		
 	protected ScheduledExecutorService scheduled;
+
+	private NettyRequestListener requestListener;
 	
 	public AbstractNettyRequestResponseCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port);
 		this.scheduled = scheduled;
+		this.requestListener = NettyTimeoutTtlListener.INSTANCE;
 	}
 	
 	public AbstractNettyRequestResponseCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool);
 		this.scheduled = scheduled;
+		this.requestListener = NettyTimeoutTtlListener.INSTANCE;
 	}
 	
 	@Override
@@ -42,6 +48,8 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		if(logRequest()){
 			logger.info("[doSendRequest]{}, {}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()));
 		}
+
+		requestListener.onSend(nettyClient.channel(), byteBuf);
 
 		if(hasResponse()){
 			nettyClient.sendRequest(byteBuf, this);
@@ -59,6 +67,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 				
 				@Override
 				public void doRun() {
+					requestListener.onTimeout(nettyClient.channel(), getCommandTimeoutMilli());
 					AbstractNettyRequestResponseCommand.this.logger.info("[{}][run][timeout]{}", AbstractNettyRequestResponseCommand.this, nettyClient);
 					future().setFailure(new CommandTimeoutException("timeout " +  + getCommandTimeoutMilli()));
 				}
@@ -95,6 +104,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 
 	@Override
 	public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
+		requestListener.onReceive(channel, byteBuf);
 		
 		if(future().isDone()){
 			logger.debug("[receive][done, return]{}", channel);

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.AbstractSubscribe;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.Callable;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -30,6 +32,11 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
     private RedisHealthCheckInstance activeDcSlaveInstance;
     private RedisHealthCheckInstance backupDcSlave1Instance;
     private RedisHealthCheckInstance backupDcSlave2Instance;
+
+    private Callable<String> activeDcMasterHandler = null;
+    private Callable<String> activeDcSlaveHandler = null;
+    private Callable<String> backupDcSlave1Handler = null;
+    private Callable<String> backupDcSlave2Handler = null;
 
     private SentinelHelloCheckAction activeDcMasterAction;
     private SentinelHelloCheckAction activeDcSlaveAction;
@@ -46,9 +53,11 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
     private volatile boolean backupDcSlave1ServerCalled = false;
     private volatile boolean backupDcSlave2ServerCalled = false;
 
-    private int sentinelCollectInterval = 100;
+    private int sentinelCollectInterval = 300;
 
     private int sentinelCheckInterval = 1200;
+
+    private int sentinelSubTimeout = 200;
 
     @InjectMocks
     private SentinelHelloCheckActionController checkActionController;
@@ -84,10 +93,10 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
 
     @After
     public void afterSentinelHelloActionDowngradeTest() throws Exception {
-        activeDcMasterServer.stop();
-        activeDcSlaveServer.stop();
-        backupDcSlave1Server.stop();
-        backupDcSlave2Server.stop();
+        if (null != activeDcMasterServer) activeDcMasterServer.stop();
+        if (null != activeDcSlaveServer) activeDcSlaveServer.stop();
+        if (null != backupDcSlave1Server) backupDcSlave1Server.stop();
+        if (null != backupDcSlave2Server) backupDcSlave2Server.stop();
     }
 
     @Test
@@ -114,7 +123,7 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
     }
 
     @Test
-    public void backupDownTest() {
+    public void backupErrRespTest() {
         backupDcSlave1Available = false;
         backupDcSlave2Available = false;
         activeDcSlaveAvailable = false;
@@ -181,11 +190,92 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
         Mockito.verify(downgradeController, Mockito.times(4)).onAction(Mockito.any());
     }
 
+    @Test
+    public void backupTimeoutTest() throws Exception {
+        Field timeoutField = AbstractSubscribe.class.getDeclaredField("RECEIVE_TIMEOUT_MILL");
+        timeoutField.setAccessible(true);
+        timeoutField.set(null, sentinelSubTimeout);
+
+
+        backupDcSlave1Handler = new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                sleep(sentinelSubTimeout + 10);
+                return buildSentinelHello();
+            }
+        };
+        backupDcSlave2Handler = new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                sleep(sentinelSubTimeout + 10);
+                return buildSentinelHello();
+            }
+        };
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertFalse(activeDcSlaveServerCalled);
+        Assert.assertTrue(backupDcSlave1ServerCalled);
+        Assert.assertTrue(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertTrue(activeDcSlaveServerCalled);
+        Assert.assertFalse(backupDcSlave1ServerCalled);
+        Assert.assertFalse(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+
+        backupDcSlave1Handler = null;
+        backupDcSlave2Handler = null;
+        resetCalled();
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertFalse(activeDcSlaveServerCalled);
+        Assert.assertTrue(backupDcSlave1ServerCalled);
+        Assert.assertTrue(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void backupLoseConnectTest() throws Exception {
+        backupDcSlave1Server.stop();
+        backupDcSlave2Server.stop();
+        backupDcSlave1Server = null;
+        backupDcSlave2Server = null;
+
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertFalse(activeDcSlaveServerCalled);
+        Assert.assertFalse(backupDcSlave1ServerCalled);
+        Assert.assertFalse(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        Assert.assertFalse(activeDcMasterServerCalled);
+        Assert.assertTrue(activeDcSlaveServerCalled);
+        Assert.assertFalse(backupDcSlave1ServerCalled);
+        Assert.assertFalse(backupDcSlave2ServerCalled);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+    }
+
     private void prepareActions() throws Exception {
         activeDcMasterServer = startServerWithFlexibleResult(new Callable<String>() {
             @Override
-            public String call() {
+            public String call() throws Exception {
                 activeDcMasterServerCalled = true;
+                if (null != activeDcMasterHandler) return activeDcMasterHandler.call();
                 if (activeDcMasterAvailable) {
                     return buildSentinelHello();
                 } else {
@@ -202,8 +292,9 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
 
         activeDcSlaveServer = startServerWithFlexibleResult(new Callable<String>() {
             @Override
-            public String call() {
+            public String call() throws Exception {
                 activeDcSlaveServerCalled = true;
+                if (null != activeDcSlaveHandler) return activeDcSlaveHandler.call();
                 if (activeDcSlaveAvailable) {
                     return buildSentinelHello();
                 } else {
@@ -220,8 +311,9 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
 
         backupDcSlave1Server = startServerWithFlexibleResult(new Callable<String>() {
             @Override
-            public String call() {
+            public String call() throws Exception {
                 backupDcSlave1ServerCalled = true;
+                if (null != backupDcSlave1Handler) return backupDcSlave1Handler.call();
                 if (backupDcSlave1Available) {
                     return buildSentinelHello();
                 } else {
@@ -238,8 +330,9 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
 
         backupDcSlave2Server = startServerWithFlexibleResult(new Callable<String>() {
             @Override
-            public String call() {
+            public String call() throws Exception {
                 backupDcSlave2ServerCalled = true;
+                if (null != backupDcSlave2Handler) return backupDcSlave2Handler.call();
                 if (backupDcSlave2Available) {
                     return buildSentinelHello();
                 } else {
