@@ -70,7 +70,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
-    public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "1000"));
+    public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "30000"));
 
     @PostConstruct
     public void postConstruct() {
@@ -82,7 +82,7 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
                 }
                 fullUpdate();
             }
-        }, Math.min(5, ANALYZE_INTERVAL * 5), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
+        }, Math.min(5, ANALYZE_INTERVAL), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy

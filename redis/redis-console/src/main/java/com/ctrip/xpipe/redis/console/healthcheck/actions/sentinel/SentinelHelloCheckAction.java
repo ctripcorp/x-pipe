@@ -71,8 +71,13 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         getActionInstance().getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
-                SentinelHello hello = SentinelHello.fromString(message);
-                hellos.add(hello);
+                executors.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        SentinelHello hello = SentinelHello.fromString(message);
+                        hellos.add(hello);
+                    }
+                });
             }
 
             @Override
