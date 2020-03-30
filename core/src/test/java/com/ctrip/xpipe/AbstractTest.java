@@ -56,7 +56,7 @@ public class AbstractTest {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    private ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+    protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 
     public static String KEY_INCRMENTAL_ZK_PORT = "INCRMENTAL_ZK_PORT";
 

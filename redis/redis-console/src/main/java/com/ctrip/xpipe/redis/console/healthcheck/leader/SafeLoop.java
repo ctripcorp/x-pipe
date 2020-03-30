@@ -36,7 +36,7 @@ public abstract class SafeLoop<T> {
                     try {
                         doRun0(t);
                     } catch (Exception e) {
-                        logger.error("[SafeLoop][{}]", getInfo(t), e);
+                        getLogger().error("[SafeLoop][{}]", getInfo(t), e);
                     }
                 }
             });

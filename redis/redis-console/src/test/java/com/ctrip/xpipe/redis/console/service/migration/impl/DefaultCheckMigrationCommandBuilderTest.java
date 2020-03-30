@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
@@ -39,6 +40,11 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleH2Db
     private DefaultCheckMigrationCommandBuilder builder;
 
     private Server server;
+
+    @BeforeClass
+    public static void beforeDefaultCheckMigrationCommandBuilderTestClass() {
+        AbstractService.DEFAULT_SO_TIMEOUT = 10;
+    }
 
     @Before
     public void beforeDefaultCheckMigrationCommandBuilderTest() throws Exception {

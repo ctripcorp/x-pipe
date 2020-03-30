@@ -33,7 +33,7 @@ public abstract class CausalCommand<T, V> extends AbstractCommand implements Cau
             });
             return future();
         }
-        logger.error("[causal failure] previous already set");
+        getLogger().error("[causal failure] previous already set");
         return null;
     }
 

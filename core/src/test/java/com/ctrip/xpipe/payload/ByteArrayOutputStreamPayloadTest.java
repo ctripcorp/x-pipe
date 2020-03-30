@@ -127,4 +127,16 @@ public class ByteArrayOutputStreamPayloadTest extends AbstractTest{
 		payload.endInput();
 	}
 
+	@Test
+	public void testDoIn() throws IOException {
+		ByteArrayOutputStreamPayload payload = new ByteArrayOutputStreamPayload();
+		String randomStr = randomString();
+
+		ByteBuf byteBuf = directByteBuf(randomStr.length());
+
+		byteBuf.writeBytes(randomStr.getBytes());
+		payload.startInput();
+		int size = payload.in(byteBuf);
+		Assert.assertEquals(size, randomStr.length());
+	}
 }

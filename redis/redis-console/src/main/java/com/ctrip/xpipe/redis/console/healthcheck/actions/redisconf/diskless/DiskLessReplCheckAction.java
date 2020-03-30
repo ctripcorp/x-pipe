@@ -69,6 +69,11 @@ public class DiskLessReplCheckAction extends RedisConfigCheckAction {
         });
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
 
     private boolean checkDiskLessSetting() {
         if(info == null || !configReady) {

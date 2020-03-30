@@ -52,7 +52,7 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 		@Override
 		public void run() {
 			
-			logger.info("[run]{},{},{}", keeperMeta, promoteIp, promotePort);
+			getLogger().info("[run]{},{},{}", keeperMeta, promoteIp, promotePort);
 			
 			try{
 				SimpleObjectPool<NettyClient> client = new XpipeObjectPoolFromKeyed<InetSocketAddress, NettyClient>(keyedClientPool, 
@@ -60,9 +60,9 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 				
 				SlaveOfCommand slaveOfCommand = new SlaveOfCommand(client, null, 0, String.format("%s %d", promoteIp, promotePort), scheduled);
 				slaveOfCommand.execute().addListener(this);
-				logger.info("[run][write cmd]{}", slaveOfCommand);
+				getLogger().info("[run][write cmd]{}", slaveOfCommand);
 			} catch (Exception e) {
-				logger.error("[run]" + keeperMeta + "," + promoteIp + ":" + promotePort, e);
+				getLogger().error("[run]" + keeperMeta + "," + promoteIp + ":" + promotePort, e);
 				future.setFailure(e);
 			}
 		}
@@ -70,7 +70,7 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 		@Override
 		public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
 
-			logger.info("[operationComplete]{},{}", commandFuture);
+			getLogger().info("[operationComplete]{},{}", commandFuture);
 			try{
 				String result = commandFuture.get();
 				if(result.equalsIgnoreCase(RedisProtocol.OK)){
@@ -80,7 +80,7 @@ public class SlavePromotionJob extends AbstractCommand<Void>{
 				}
 				return;
 			}catch(Exception e){
-				logger.error("[onComplete]" + keeperMeta + "," + promoteIp + ":" + promotePort, e);
+				getLogger().error("[onComplete]" + keeperMeta + "," + promoteIp + ":" + promotePort, e);
 				future.setFailure(e);
 			}
 		}

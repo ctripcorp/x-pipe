@@ -39,7 +39,7 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 	@Override
 	protected void doExecute() throws Exception {
 		
-		logger.info("[doExecute]{}", this);
+		getLogger().info("[doExecute]{}", this);
 		doOpetation();
 	}
 
@@ -70,10 +70,10 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess()){
-					logger.info("[checkUntilStateOk][ok]{}", AbstractKeeperCommand.this);
+					getLogger().info("[checkUntilStateOk][ok]{}", AbstractKeeperCommand.this);
 					future().setSuccess(commandFuture.get());
 				}else{
-					logger.info("[checkUntilStateOk][fail]{}, {}", AbstractKeeperCommand.this, commandFuture.cause());
+					getLogger().info("[checkUntilStateOk][fail]{}, {}", AbstractKeeperCommand.this, commandFuture.cause());
 					future().setFailure(commandFuture.cause());
 				}
 			}

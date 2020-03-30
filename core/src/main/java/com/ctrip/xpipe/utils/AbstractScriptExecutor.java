@@ -55,7 +55,7 @@ public abstract class AbstractScriptExecutor<V> extends AbstractCommand<V> imple
             return lines;
         } catch (IOException e) {
             t.setStatus(e);
-            logger.warn("[getBashCommandInfo]", e);
+            getLogger().warn("[getBashCommandInfo]", e);
             future().setFailure(e);
         } finally {
             try {

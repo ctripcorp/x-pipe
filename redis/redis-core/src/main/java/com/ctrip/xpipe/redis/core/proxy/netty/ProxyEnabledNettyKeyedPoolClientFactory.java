@@ -28,6 +28,11 @@ public class ProxyEnabledNettyKeyedPoolClientFactory extends NettyKeyedPoolClien
 
     private ProxyedConnectionFactory proxyedConnectionFactory;
 
+    public ProxyEnabledNettyKeyedPoolClientFactory(int eventLoopThreads, ProxyResourceManager resourceManager) {
+        super(eventLoopThreads);
+        this.proxyedConnectionFactory = new DefaultProxyedConnectionFactory(resourceManager);
+    }
+
     public ProxyEnabledNettyKeyedPoolClientFactory(ProxyResourceManager resourceManager) {
         this.proxyedConnectionFactory = new DefaultProxyedConnectionFactory(resourceManager);
     }

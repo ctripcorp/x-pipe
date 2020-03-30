@@ -55,7 +55,7 @@ public class InMemoryPsync extends AbstractPsync{
 	
 	@Override
 	protected void failReadRdb(Throwable throwable) {
-		logger.error("[failReadRdb]", throwable);
+		getLogger().error("[failReadRdb]", throwable);
 	}
 
 	public byte[] getCommands() {

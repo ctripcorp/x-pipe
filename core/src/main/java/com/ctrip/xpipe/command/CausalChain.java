@@ -3,8 +3,12 @@ package com.ctrip.xpipe.command;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CausalChain extends AbstractCommandChain {
+
+    private static final Logger logger = LoggerFactory.getLogger(CausalChain.class);
 
     private boolean failContinue = false;
 
@@ -57,5 +61,8 @@ public class CausalChain extends AbstractCommandChain {
         future().setFailure(new CommandChainException("causal chain, fail stop", getResult()));
     }
 
+    protected Logger getLogger() {
+        return logger;
+    }
 
 }

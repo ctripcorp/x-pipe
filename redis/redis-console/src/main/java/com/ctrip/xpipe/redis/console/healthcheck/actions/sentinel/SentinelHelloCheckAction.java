@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -70,14 +71,19 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         getActionInstance().getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
-                SentinelHello hello = SentinelHello.fromString(message);
-                hellos.add(hello);
+                executors.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        SentinelHello hello = SentinelHello.fromString(message);
+                        hellos.add(hello);
+                    }
+                });
             }
 
             @Override
             public void fail(Throwable e) {
+                logger.error("[sub-failed][{}]", getActionInstance().getRedisInstanceInfo().getHostPort(), e);
                 subError = e;
-                logger.error("[sub-failed]", e);
             }
         });
         scheduled.schedule(new AbstractExceptionLogTask() {
@@ -86,6 +92,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                 processSentinelHellos();
             }
         }, SENTINEL_COLLECT_INFO_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
     }
 
     @VisibleForTesting

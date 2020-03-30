@@ -36,7 +36,7 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 		try {
 			return replicationStoreManager.createIfNotExist();
 		} catch (IOException e) {
-			logger.error("[doRequest]" + this + replicationStoreManager, e);
+			getLogger().error("[doRequest]" + this + replicationStoreManager, e);
 			throw new XpipeRuntimeException("[doRequest]getReplicationStore failed." + replicationStoreManager, e);
 		}
 	}
@@ -53,14 +53,14 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 		ReplicationStore oldStore = currentReplicationStore;
 		if(oldStore != null){
 			try {
-				logger.info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
+				getLogger().info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
 				oldStore.close();
 			} catch (Exception e) {
-				logger.error("[handleRedisReponse]" + oldStore, e);
+				getLogger().error("[handleRedisReponse]" + oldStore, e);
 			}
 			notifyReFullSync();
 		}
-		logger.info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}", replId);
+		getLogger().info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}", replId);
 		currentReplicationStore = createReplicationStore();
 	}
 	

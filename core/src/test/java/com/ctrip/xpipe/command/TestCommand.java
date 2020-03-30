@@ -60,14 +60,14 @@ public class TestCommand extends AbstractCommand<String>{
 			@Override
 			public void doRun() {
 				try {
-					logger.debug("[doExecute][begin]{}", this);
+					TestCommand.this.getLogger().debug("[doExecute][begin]{}", this);
 					if(e != null){
 						future().setFailure(e);
 					}else{
 						future().setSuccess(successMessage);
 					}
 				}finally{
-					logger.debug("[doExecute][ end ]{}", this);
+					TestCommand.this.getLogger().debug("[doExecute][ end ]{}", this);
 					scheduled.shutdown();
 				}
 			}

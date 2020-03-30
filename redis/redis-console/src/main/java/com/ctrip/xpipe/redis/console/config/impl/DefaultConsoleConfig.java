@@ -345,7 +345,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public int getProxyInfoCollectInterval() {
-        return getIntProperty(KEY_PROXY_INFO_CHECK_INTERVAL, 10 * 1000);
+        return getIntProperty(KEY_PROXY_INFO_CHECK_INTERVAL, 30 * 1000);
     }
 
     @Override

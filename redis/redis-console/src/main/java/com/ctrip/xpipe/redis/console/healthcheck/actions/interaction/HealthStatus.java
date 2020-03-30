@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.Insta
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceHalfSick;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHelloCheckAction;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -80,17 +81,25 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
             future.cancel(true);
         }
 
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() throws Exception {
+        future = scheduled.scheduleWithFixedDelay(new CheckDownTask(),
+                0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
+    }
 
-                if(lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0) {
-                    logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
-                    return;
-                }
-                healthStatusUpdate();
+    private class CheckDownTask extends AbstractExceptionLogTask {
+        @Override
+        protected Logger getLogger() {
+            return HealthStatus.logger;
+        }
+
+        @Override
+        protected void doRun() throws Exception {
+
+            if(lastHealthDelayTime.get() < 0 && lastPongTime.get() < 0) {
+                logger.debug("[last unhealthy time < 0, break]{}, {}", instance, lastHealthDelayTime);
+                return;
             }
-        }, 0, instance.getHealthCheckConfig().checkIntervalMilli(), TimeUnit.MILLISECONDS);
+            healthStatusUpdate();
+        }
     }
 
     void pong(){
@@ -213,7 +222,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         if(pre.equals(cur)) {
             return;
         }
-        logger.info("[state-change][{}] {} -> {}", this, pre, cur);
+        logger.debug("[state-change][{}] {} -> {}", this, pre, cur);
     }
 
     @Override
