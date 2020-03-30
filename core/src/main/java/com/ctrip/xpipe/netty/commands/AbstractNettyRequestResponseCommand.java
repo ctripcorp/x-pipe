@@ -75,6 +75,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 					} catch (InterruptedException e) {
 					}catch(ExecutionException e){
 						if(e.getCause() instanceof CommandTimeoutException){
+							nettyClient.onTimeout(AbstractNettyRequestResponseCommand.this, getCommandTimeoutMilli());
 							cancel = false;
 						}
 					}
