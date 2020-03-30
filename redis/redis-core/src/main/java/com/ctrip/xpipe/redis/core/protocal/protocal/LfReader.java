@@ -16,7 +16,7 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 
 	private static final Logger logger = LoggerFactory.getLogger(LfReader.class);
 
-	private ByteArrayOutputStream baous = new ByteArrayOutputStream();
+	private ByteArrayOutputStream baous = new ByteArrayOutputStream(1 << 6);
 
 	@Override
 	public RedisClientProtocol<byte[]> read(ByteBuf byteBuf) {

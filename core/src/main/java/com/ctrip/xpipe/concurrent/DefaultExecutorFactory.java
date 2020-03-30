@@ -66,7 +66,7 @@ public class DefaultExecutorFactory implements ExecutorFactory{
         this.maxQueueSize = maxQueueSize;
         this.keepAliveTime = keepAliveTime;
         this.keepAliveTimeUnit = keepAliveTimeUnit;
-        this.workQueue = new LinkedBlockingDeque<>(maxQueueSize);
+        this.workQueue = new LinkedBlockingQueue<>(maxQueueSize);
         this.rejectedExecutionHandler = rejectedExecutionHandler;
     }
 

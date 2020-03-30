@@ -64,7 +64,7 @@ public class ScheduleCommandWrapper<V> extends AbstractCommand<V>{
 			@Override
 			public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
 				if(commandFuture.isCancelled()){
-					logger.info("[command canceled][cancel execution]{}", time);
+					getLogger().info("[command canceled][cancel execution]{}", time);
 					command.future().cancel(true);
 					scheduleFuture.cancel(false);
 				}

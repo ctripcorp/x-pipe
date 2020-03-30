@@ -5,6 +5,8 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -14,6 +16,8 @@ import java.util.concurrent.ScheduledExecutorService;
  * Apr 09, 2018
  */
 public class PublishCommand extends AbstractRedisCommand<Object> {
+
+    private static final Logger logger = LoggerFactory.getLogger(PublishCommand.class);
 
     private static final String PUBLISH_COMMAND_NAME = "publish";
 
@@ -47,5 +51,10 @@ public class PublishCommand extends AbstractRedisCommand<Object> {
     @Override
     public String getName() {
         return PUBLISH_COMMAND_NAME;
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return logger;
     }
 }

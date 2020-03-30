@@ -110,7 +110,7 @@ public abstract class AbstractAlertEntitySubscriber implements AlertEntitySubscr
         long recoveryMilli = recoveryMilli(alert);
         long expectedRecoverMilli = recoveryMilli + alert.getDate().getTime();
         if(expectedRecoverMilli <= System.currentTimeMillis()) {
-            logger.warn("[alertRecovered] alert: {}, expected: {}, now: {}", DateTimeUtils.timeAsString(alert.getDate()),
+            logger.debug("[alertRecovered] alert: {}, expected: {}, now: {}", DateTimeUtils.timeAsString(alert.getDate()),
                     DateTimeUtils.timeAsString(expectedRecoverMilli), DateTimeUtils.currentTimeAsString());
             return true;
         }

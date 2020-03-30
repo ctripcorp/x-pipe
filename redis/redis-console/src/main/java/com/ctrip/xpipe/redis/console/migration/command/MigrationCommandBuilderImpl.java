@@ -36,7 +36,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 						.changePrimaryDcCheck(cluster, shard, newPrimaryDc);
 					future().setSuccess(result);
 				} catch (Exception e) {
-					logger.error("[MigrateDcCheck][Failed]{}-{}-{}-{}", cluster, shard, dc, newPrimaryDc);
+					getLogger().error("[MigrateDcCheck][Failed]{}-{}-{}-{}", cluster, shard, dc, newPrimaryDc);
 					future().setFailure(e);
 				}
 			}
@@ -67,7 +67,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 					
 					future().setSuccess(result);
 				} catch (Exception e) {
-					logger.error("[PrimaryDcChange][PrevPrimaryDc][Failed]{}-{}", cluster, shard, e);
+					getLogger().error("[PrimaryDcChange][PrevPrimaryDc][Failed]{}-{}", cluster, shard, e);
 					future().setFailure(e);
 				}
 			}
@@ -97,7 +97,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 
 					future().setSuccess(result);
 				} catch (Exception e) {
-					logger.error("[PrimaryDcChange][NewPrimaryDc][Failed]{}-{}", cluster, shard);
+					getLogger().error("[PrimaryDcChange][NewPrimaryDc][Failed]{}-{}", cluster, shard);
 					future().setFailure(e);
 				}
 			}
@@ -126,7 +126,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 							.doChangePrimaryDc(cluster, shard, primaryDc, null);
 					future().setSuccess(result);
 				} catch (Exception e) {
-					logger.error("[PrimaryDcChange][OtherDc][Failed]{}-{}", cluster, shard);
+					getLogger().error("[PrimaryDcChange][OtherDc][Failed]{}-{}", cluster, shard);
 					future().setFailure(e);
 				}
 			}
@@ -156,7 +156,7 @@ public enum MigrationCommandBuilderImpl implements MigrationCommandBuilder {
 
 					future().setSuccess(result);
 				} catch (Exception e) {
-					logger.error("[RollBack][PrevPrimaryDc][Failed]{}-{}", cluster, shard, e);
+					getLogger().error("[RollBack][PrevPrimaryDc][Failed]{}-{}", cluster, shard, e);
 					future().setFailure(e);
 				}
 			}

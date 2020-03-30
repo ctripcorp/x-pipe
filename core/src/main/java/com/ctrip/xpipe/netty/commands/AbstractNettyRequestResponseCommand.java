@@ -40,7 +40,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	protected void doSendRequest(final NettyClient nettyClient, ByteBuf byteBuf) {
 		
 		if(logRequest()){
-			logger.info("[doSendRequest]{}, {}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()));
+			getLogger().info("[doSendRequest]{}, {}", nettyClient, ByteBufUtils.readToString(byteBuf.slice()));
 		}
 
 		if(hasResponse()){
@@ -53,13 +53,13 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		}
 		
 		if(getCommandTimeoutMilli() > 0 && scheduled != null){
-			
-			logger.debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
+
+			getLogger().debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
 			final ScheduledFuture<?> timeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
 				
 				@Override
 				public void doRun() {
-					AbstractNettyRequestResponseCommand.this.logger.info("[{}][run][timeout]{}", AbstractNettyRequestResponseCommand.this, nettyClient);
+					getLogger().info("[{}][run][timeout]{}", AbstractNettyRequestResponseCommand.this, nettyClient);
 					future().setFailure(new CommandTimeoutException("timeout " +  + getCommandTimeoutMilli()));
 				}
 			}, getCommandTimeoutMilli(), TimeUnit.MILLISECONDS);
@@ -79,7 +79,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 						}
 					}
 					if(cancel){
-						logger.debug("[operationComplete][cancel timeout future]");
+						getLogger().debug("[operationComplete][cancel timeout future]");
 						timeoutFuture.cancel(false);
 					}
 				}
@@ -97,7 +97,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
 		
 		if(future().isDone()){
-			logger.debug("[receive][done, return]{}", channel);
+			getLogger().debug("[receive][done, return]{}", channel);
 			return RECEIVER_RESULT.ALREADY_FINISH;
 		}
 		
@@ -105,7 +105,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 			 V result = doReceiveResponse(channel, byteBuf);
 			 if(result != null){
 				 if(logResponse()){
-					 logger.info("[receive]{}, {}", ChannelUtil.getDesc(channel), result);
+					 getLogger().info("[receive]{}, {}", ChannelUtil.getDesc(channel), result);
 				 }
 				 if(!future().isDone()) {
 					 future().setSuccess(result);

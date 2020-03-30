@@ -61,7 +61,7 @@ public class SequenceCommandChain extends AbstractCommandChain{
 
 	private void failExecuteNext(CommandFuture<?> commandFuture) {
 		
-		logger.error("[failExecuteNext]" + commandFuture.command(), commandFuture.cause());
+		getLogger().error("[failExecuteNext]" + commandFuture.command(), commandFuture.cause());
 		
 		if(failContinue){
 			executeChain();

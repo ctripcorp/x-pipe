@@ -49,6 +49,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     @Override
     protected void doTask() {
+        //TODO: log only when it's too long to not execute
 //        logger.info("[doTask][begin][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
         reportDelay();
         RedisSession session = instance.getRedisSession();
@@ -57,6 +58,11 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 //            logger.info("[doTask][pub][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
             session.publish(CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
         }
+    }
+
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
     }
 
     private void reportDelay() {

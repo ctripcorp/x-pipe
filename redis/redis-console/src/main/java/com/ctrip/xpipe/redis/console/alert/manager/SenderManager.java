@@ -36,7 +36,7 @@ public class SenderManager {
             logger.debug("[sendAlert] Channel: {}, message: {}, send out: {}", channel, message.getTitle(), result);
             return result;
         } catch (Exception e) {
-            logger.error("[sendAlert] {}", e);
+            logger.error("[sendAlert]", e);
             return false;
         }
     }

@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -45,4 +47,8 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 		
 	}
 
+	@Override
+	protected InOutPayload getBulkStringPayload() {
+		return new DirectByteBufInStringOutPayload();
+	}
 }

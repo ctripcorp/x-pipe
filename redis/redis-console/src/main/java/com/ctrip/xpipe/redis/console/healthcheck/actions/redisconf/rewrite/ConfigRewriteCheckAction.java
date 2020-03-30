@@ -41,6 +41,11 @@ public class ConfigRewriteCheckAction extends RedisConfigCheckAction {
         });
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     private void checkFailReason(Throwable throwable) {
         if(throwable instanceof CommandTimeoutException) {
             return;

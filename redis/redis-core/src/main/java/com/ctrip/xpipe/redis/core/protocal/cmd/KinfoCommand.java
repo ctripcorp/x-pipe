@@ -49,7 +49,7 @@ public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 		ByteArrayOutputStreamPayload data = (ByteArrayOutputStreamPayload) payload;
 		String buff = new String(data.getBytes(), Codec.defaultCharset);
 		
-		logger.info("[format]{}", buff);
+		getLogger().info("[format]{}", buff);
 		
 		ReplicationStoreMeta meta = null;
 		meta = JSON.parseObject(buff, ReplicationStoreMeta.class);

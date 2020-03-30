@@ -69,6 +69,11 @@ public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction
         });
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     private void checkMaster() {
         if(serverRole.equals(Server.SERVER_ROLE.UNKNOWN)) {
             RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
