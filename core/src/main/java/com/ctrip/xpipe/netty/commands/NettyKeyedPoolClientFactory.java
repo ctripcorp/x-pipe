@@ -27,7 +27,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	private int eventLoopThreads;
 	protected NioEventLoopGroup eventLoopGroup;
 	protected Bootstrap b = new Bootstrap();
-	protected int connectTimeoutMilli = 2000;
+	protected int connectTimeoutMilli = 1000;
 	private static Logger logger = LoggerFactory.getLogger(NettyKeyedPoolClientFactory.class);
 
 	public NettyKeyedPoolClientFactory() {
