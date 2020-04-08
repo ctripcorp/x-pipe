@@ -24,7 +24,7 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String qconfigDataSourceProviderClass =
-            "com.ctrip.xpipe.service.datasource.DataSourceProvider";
+            "com.ctrip.xpipe.service.datasource.QConfigDataSourceProvider";
     private static boolean qconfigDataSourceProviderPresent =
             ClassUtils.isPresent(qconfigDataSourceProviderClass, XpipeDataSourceProvider.class.getClassLoader());
 
