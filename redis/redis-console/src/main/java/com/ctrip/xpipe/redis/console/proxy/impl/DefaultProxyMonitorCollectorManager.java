@@ -64,24 +64,6 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
-    @PostConstruct
-    public void postConstruct() {
-        try {
-            start();
-        } catch (Exception e) {
-            logger.error("[postConstruct]", e);
-        }
-    }
-
-    @PreDestroy
-    public void preDestroy() {
-        try {
-            stop();
-        } catch (Exception e) {
-            logger.error("[preDestroy]", e);
-        }
-    }
-
     @Override
     public ProxyMonitorCollector getOrCreate(ProxyModel proxyModel) {
         return MapUtils.getOrCreate(proxySamples, proxyModel, new ObjectFactory<ProxyMonitorCollector>() {
