@@ -61,6 +61,19 @@ public class DefaultProxyMonitorCollectorManagerTest extends AbstractRedisTest {
         Assert.assertTrue(manager.getProxyMonitorResults().isEmpty());
     }
 
+    @Test
+    public void testNotLeaderFreeAllMonitor() {
+        manager.isleader();
+        ProxyMonitorCollector collector = manager.getOrCreate(
+                new ProxyModel().setActive(true).setDcName("dc").setId(1L).setUri("PROXYTCP://10.26.188.174:80"));
+        Assert.assertNotNull(collector);
+        manager.getOrCreate(new ProxyModel().setActive(true).setDcName("dc").setId(1L).setUri("PROXYTCP://10.26.188.174:80"));
+        Assert.assertEquals(1, manager.getProxyMonitorResults().size());
+
+        manager.notLeader();
+        Assert.assertTrue(manager.getProxyMonitorResults().isEmpty());
+    }
+
     private ProxyModel newProxyModel(String uri) {
         return new ProxyModel().setActive(true).setDcName("dc").setId(index ++).setUri(uri).setMonitorActive(true);
     }
