@@ -82,7 +82,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     try {
       List<KeeperBasicInfo> bestKeepers =
           keeperAdvancedService.findBestKeepers(dcId, RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true, clusterId);
-      logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardId, bestKeepers);
+      logger.info("[addKeepers]{},{},{},{}", dcId, clusterId, shardId, bestKeepers);
       redisService.insertKeepers(dcId, clusterId, shardId, bestKeepers);
       return RetMessage.createSuccessMessage("insert success:" + bestKeepers);
     } catch (Exception e) {
