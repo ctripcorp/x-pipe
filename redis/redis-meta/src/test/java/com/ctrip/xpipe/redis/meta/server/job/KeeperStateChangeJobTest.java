@@ -32,8 +32,8 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 	
 	private KeeperStateChangeJob job;
 	private List<KeeperMeta> keepers;
-	private int delayBaseMilli = 200;
-	private int retryTimes = 1;
+	private int delayBaseMilli = 1000;
+	private int retryTimes = 5;
 	
 	@Mock
 	private Command<?> activeSuccessCommand;
@@ -128,6 +128,23 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 		}
 		
 		verifyZeroInteractions(activeSuccessCommand);
+	}
+
+	@Test
+	public void testTimeout() throws Exception {
+		long start = System.nanoTime();
+		job = new KeeperStateChangeJob(keepers,
+				new Pair<>("10.0.0.1", randomPort()),
+				null,
+				getXpipeNettyClientKeyedObjectPool(),
+				delayBaseMilli, retryTimes,
+				scheduled, executors);
+		try {
+			job.execute().sync();
+		} catch (Exception e) {
+
+		}
+		logger.info("[duration] {}", TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start));
 	}
 
 }
