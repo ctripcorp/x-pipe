@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
@@ -243,6 +244,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 			migrateResult = commandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc, shardMigrationResult.getPreviousPrimaryDcMessage()).execute();
 		} catch (Exception e) {
 			shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, LogUtils.error(e.getMessage()));
+			migrateResult = new DefaultCommandFuture<PrimaryDcChangeMessage>();
+			migrateResult.setFailure(e);
 			return migrateResult;
 		}
 		migrateResult.addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {

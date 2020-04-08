@@ -12,7 +12,7 @@ import java.io.IOException;
 public class QConfigTest extends AbstractServiceTest {
 
     @Test
-    public void testApollo(){
+    public void testQConfig(){
 
         Config config = Config.DEFAULT;
         Assert.assertTrue(config instanceof QConfig);
@@ -32,7 +32,7 @@ public class QConfigTest extends AbstractServiceTest {
     }
 
     @After
-    public void afterApolloConfigTest() throws IOException {
+    public void afterQConfigTest() throws IOException {
         waitForAnyKeyToExit();
     }
 }
