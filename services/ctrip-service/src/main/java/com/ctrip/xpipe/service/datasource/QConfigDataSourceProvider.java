@@ -54,7 +54,7 @@ public class QConfigDataSourceProvider implements DataSourceProvider, LogEnabled
         m_logger = logger;
     }
 
-    private static class CustomParser implements TypedConfig.Parser<String> {
+    public static class CustomParser implements TypedConfig.Parser<String> {
 
         @Override
         public String parse(String data) throws IOException {
