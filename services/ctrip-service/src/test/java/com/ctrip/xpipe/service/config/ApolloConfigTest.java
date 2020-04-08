@@ -21,7 +21,7 @@ public class ApolloConfigTest extends AbstractServiceTest{
 	public void testApollo(){
 		
 		Config config = Config.DEFAULT;
-		Assert.assertTrue(config instanceof ApolloConfig);
+		Assert.assertTrue(config instanceof QConfig);
 
 
 		

@@ -38,7 +38,7 @@ public class QConfigDataSourceProvider implements DataSourceProvider, LogEnabled
                 try {
                     m_def = DefaultSaxParser.parse(content);
                 } catch (Exception e) {
-                    throw new IllegalStateException(String.format("Error when parsing datasources.xml from Apollo(env=%s, app.id=%s)!", envType, appId), e);
+                    throw new IllegalStateException(String.format("Error when parsing datasources.xml from QConfig(env=%s, app.id=%s)!", envType, appId), e);
                 }
             } else {
                 m_logger.warn(String.format("Can't get datasources.xml from QConfig(env=%s, app.id=%s)!", envType, appId));

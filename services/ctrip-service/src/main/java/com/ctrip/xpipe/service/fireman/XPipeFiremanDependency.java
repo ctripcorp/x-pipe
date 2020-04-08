@@ -3,7 +3,7 @@ package com.ctrip.xpipe.service.fireman;
 import com.ctrip.framework.fireman.spi.FiremanDependency;
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSource;
-import com.ctrip.xpipe.service.config.ApolloConfig;
+import com.ctrip.xpipe.service.config.QConfig;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
 
     @Override
     public int mhaSwitchMaxExecuteTimeoutS() {
-        return Integer.parseInt(ApolloConfig.DEFAULT.get("xpipe.mha.switch.timeout", "100"));
+        return Integer.parseInt(QConfig.DEFAULT.get("xpipe.mha.switch.timeout", "100"));
     }
 
     @Override

@@ -25,17 +25,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * Token numbers would be manipulated through two stuffs:
  *  1. metaserver dynamically arrange it
- *  2. keeeper container's Apollo config would change
+ *  2. keeeper container's QConfig config would change
  *
  * So, the principle will be
- *  Apollo maintance the minimum token num we should hold
+ *  QConfig maintance the minimum token num we should hold
  *  MetaServer will define how many tokens we could take or close the ratelimit
  *
  * To make it simple
- *  MetaServer cannot impact the minimum token, which, if it were attempting a smaller token than Apollo says,
+ *  MetaServer cannot impact the minimum token, which, if it were attempting a smaller token than QConfig says,
  *  the adjustment will not work
  *
- *  MetaServer can only offer what's more than Apollo config, but never less than
+ *  MetaServer can only offer what's more than QConfig config, but never less than
  */
 public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
 

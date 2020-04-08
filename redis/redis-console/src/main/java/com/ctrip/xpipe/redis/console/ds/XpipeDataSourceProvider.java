@@ -34,7 +34,7 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
             try {
                 m_delegate = (DataSourceProvider)(Class.forName(qconfigDataSourceProviderClass).newInstance());
             } catch (Throwable ex) {
-                m_logger.error("Loading apollo datasource provider failed", ex);
+                m_logger.error("Loading qconfig datasource provider failed", ex);
             }
         }
         if (m_delegate == null) {
