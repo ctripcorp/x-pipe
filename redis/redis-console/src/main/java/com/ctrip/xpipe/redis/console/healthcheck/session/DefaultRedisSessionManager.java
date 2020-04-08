@@ -106,6 +106,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			return;
 
 		Set<HostPort> redisInUse = getInUseRedises();
+		if(redisInUse == null || redisInUse.isEmpty()) {
+			return;
+		}
 		List<Endpoint> unusedRedises = new LinkedList<>();
 
 		for(Endpoint endpoint : currentStoredRedises) {
