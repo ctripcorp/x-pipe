@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.proxy.*;
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Component
 @Lazy
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
+public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements ProxyChainAnalyzer {
 
     private Logger logger = LoggerFactory.getLogger(DefaultProxyChainAnalyzer.class);
 
@@ -66,31 +67,11 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
-    private ScheduledFuture future;
+    private ScheduledFuture<?> future;
 
     private AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
     public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "30000"));
-
-    @PostConstruct
-    public void postConstruct() {
-        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() throws Exception {
-                if(!taskTrigger.get()) {
-                    return;
-                }
-                fullUpdate();
-            }
-        }, Math.min(5, ANALYZE_INTERVAL), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
-    }
-
-    @PreDestroy
-    public void preDestroy() {
-        if(future != null) {
-            future.cancel(true);
-        }
-    }
 
     @Override
     public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId) {
@@ -176,11 +157,49 @@ public class DefaultProxyChainAnalyzer implements ProxyChainAnalyzer {
     @Override
     public void isleader() {
         taskTrigger.set(true);
+        stopAndStart();
+    }
+
+    private void stopAndStart() {
+        try {
+            stop();
+            start();
+        } catch (Exception e) {
+            logger.error("[notLeader]", e);
+        }
     }
 
     @Override
     public void notLeader() {
         taskTrigger.set(false);
+        try {
+            stop();
+        } catch (Exception e) {
+            logger.error("[notLeader]", e);
+        }
+    }
+
+    @Override
+    protected void doStart() throws Exception {
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                if(!taskTrigger.get()) {
+                    return;
+                }
+                fullUpdate();
+            }
+        }, Math.min(30000, ANALYZE_INTERVAL), ANALYZE_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    protected void doStop() throws Exception {
+        if(future != null) {
+            future.cancel(true);
+            future = null;
+        }
+        reverseMap.clear();
+        chains.clear();
     }
 
     private final class ProxyChainBuilder extends AbstractCommand<Map<SourceDest, List<TunnelInfo>>> {
