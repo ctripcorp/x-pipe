@@ -26,8 +26,7 @@ public class DefaultMetric implements MetricProxy{
     public DefaultMetric(){
 
         executors = DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("Metric").createExecutorService();
-        //TODO: Hickwall Currently not usable, try to introduce Hickwall2
-        //        metricProxies.add(new HickwallMetric());
+        metricProxies.add(new HickwallMetric());
         metricProxies.add(new DashBoardMetric());
     }
 
