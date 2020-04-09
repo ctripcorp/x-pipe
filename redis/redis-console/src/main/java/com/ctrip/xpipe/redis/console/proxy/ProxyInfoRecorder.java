@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.ctrip.xpipe.metric.MetricProxy.DEFAULT_METRIC_PREFIX;
+
 @Component
 @Lazy
 public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
@@ -31,9 +33,9 @@ public class ProxyInfoRecorder implements ProxyMonitorCollector.Listener {
 
     private MetricProxy metricProxy = ServicesUtil.getMetricProxy();
 
-    private static final String PING_METRIC_TYPE = "proxy.ping";
+    private static final String PING_METRIC_TYPE = DEFAULT_METRIC_PREFIX + "proxy.ping";
 
-    private static final String TRAFFIC_METRIC_TYPE = "proxy.traffic";
+    private static final String TRAFFIC_METRIC_TYPE = DEFAULT_METRIC_PREFIX + "proxy.traffic";
 
     private static final String FAKE_CLUSTER = "cluster", FAKE_SHARD = "shard";
 

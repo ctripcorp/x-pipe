@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import static com.ctrip.xpipe.metric.MetricProxy.DEFAULT_METRIC_PREFIX;
+
 
 /**
  * @author chen.zhu
@@ -22,7 +24,7 @@ public class MetricDelayListener implements DelayActionListener {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricDelayListener.class);
 
-    private static final String TYPE = "delay";
+    private static final String TYPE = DEFAULT_METRIC_PREFIX + "delay";
 
     private static final double THOUSAND = 1000.0;
 

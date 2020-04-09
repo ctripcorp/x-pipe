@@ -9,6 +9,8 @@ import com.ctrip.xpipe.api.lifecycle.Ordered;
  */
 public interface MetricProxy extends Ordered {
 
+	String DEFAULT_METRIC_PREFIX = "fx.xpipe.";
+
 	void writeBinMultiDataPoint(MetricData data) throws MetricProxyException;
 
 }

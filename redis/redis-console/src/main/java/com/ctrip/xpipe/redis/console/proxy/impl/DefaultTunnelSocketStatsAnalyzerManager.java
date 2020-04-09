@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import static com.ctrip.xpipe.metric.MetricProxy.DEFAULT_METRIC_PREFIX;
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_SOCKET_STATS_ANALYZERS;
 
 @Component
@@ -189,7 +190,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
     protected static class RetransAnalyzer extends AbstractMultiValueTunnelSocketStatsAnalyzer {
 
-        protected static final String KEY_RETRANS = "retrans";
+        protected static final String KEY_RETRANS = DEFAULT_METRIC_PREFIX + "retrans";
 
         public RetransAnalyzer() {
             super(KEY_RETRANS);
@@ -208,7 +209,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
     protected static class RttAnalyzer extends AbstractMultiValueTunnelSocketStatsAnalyzer {
 
-        protected static final String KEY_RTT = "rtt";
+        protected static final String KEY_RTT = DEFAULT_METRIC_PREFIX + "rtt";
 
         public RttAnalyzer() {
             super(KEY_RTT);
@@ -248,7 +249,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
     protected static class SendQueueAnalyzer extends AbstractKeyWordBaseLineAnalyzer {
 
-        protected static final String KEY_SEND_QUEUE = "send.queue";
+        protected static final String KEY_SEND_QUEUE = DEFAULT_METRIC_PREFIX + "send.queue";
 
         protected static final String WHITE_SPACE = " ";
 
@@ -277,7 +278,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
     protected static class RecvQueueAnalyzer extends AbstractKeyWordBaseLineAnalyzer {
 
-        protected static final String KEY_RECV_QUEUE = "recv.queue";
+        protected static final String KEY_RECV_QUEUE = DEFAULT_METRIC_PREFIX + "recv.queue";
         @Override
         protected String getSplitter() {
             return SendQueueAnalyzer.WHITE_SPACE;
@@ -304,7 +305,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
         private static final String KEY_SEND = "send";
 
-        private static final String KEY_SEND_RATE = "send.rate";
+        private static final String KEY_SEND_RATE = DEFAULT_METRIC_PREFIX + "send.rate";
 
         public SendRateAnalyzer() {
             super(KEY_SEND);
@@ -343,7 +344,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
 
         @Override
         public String getType() {
-            return type;
+            return DEFAULT_METRIC_PREFIX + type;
         }
     }
 }
