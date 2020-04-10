@@ -38,8 +38,6 @@ public class ProxyChainController extends AbstractConsoleController {
 
     private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.traffic;address='%s:%d',direction)";
 
-    private static final String SUFFIX = "&panel.datasource=incluster&panel.db=FX&panelId=1&fullscreen&edit";
-
     private static final String ENDCODE_TYPE = "UTF-8";
 
     @Autowired
@@ -134,7 +132,7 @@ public class ProxyChainController extends AbstractConsoleController {
         if (Strings.isEmpty(prefix)) {
             return "";
         }
-        return prefix + middle + SUFFIX;
+        return prefix + middle;
     }
 
 
