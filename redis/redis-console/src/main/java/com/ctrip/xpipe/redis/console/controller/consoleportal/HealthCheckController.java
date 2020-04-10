@@ -34,7 +34,7 @@ public class HealthCheckController extends AbstractConsoleController {
     @Autowired
     private ConsoleConfig config;
 
-    private static final String TEMPLATE = "&var-address=%s:%d&var-dc=%s&var-cluster=%s&var-shard=%s";
+    private static final String TEMPLATE = "panelId=2&var-dc=%s&var-cluster=%s&var-shard=%s&var-address=%s:%d";
 
     private static final String ENDCODE_TYPE = "UTF-8";
 
@@ -56,7 +56,7 @@ public class HealthCheckController extends AbstractConsoleController {
         }
         String template = null;
         try {
-            template = URLEncoder.encode(String.format(TEMPLATE, redisIp, redisPort, dcName, clusterName, shardName), ENDCODE_TYPE);
+            template = URLEncoder.encode(String.format(TEMPLATE, dcName, clusterName, shardName, redisIp, redisPort), ENDCODE_TYPE);
         } catch (UnsupportedEncodingException e) {
             logger.error("[getHickwallAddress]", e);
             return ImmutableMap.of("addr", "");
