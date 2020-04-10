@@ -32,11 +32,11 @@ import java.util.Map;
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class ProxyChainController extends AbstractConsoleController {
 
-    private static final String PROXY_PING_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.ping,address)";
+    private static final String PROXY_PING_HICKWALL_TEMPLATE = "panelId=4";
 
-    private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.%s;cluster=%s;shard=%s,address)";
+    private static final String PROXY_CHAIN_HICKWALL_TEMPLATE = "panelId=8&var-measure=%s&var-cluster=%s&var-shard=%s";
 
-    private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "aliasBy(fx.xpipe.proxy.traffic;address='%s:%d',direction)";
+    private static final String PROXY_TRAFFIC_HICKWALL_TEMPLATE = "panelId=6&var-address=%s:%d";
 
     private static final String ENDCODE_TYPE = "UTF-8";
 
@@ -118,7 +118,7 @@ public class ProxyChainController extends AbstractConsoleController {
         String template = null;
         for(String metricType : metricTypes) {
             try {
-                template = URLEncoder.encode(String.format(PROXY_CHAIN_HICKWALL_TEMPLATE, metricType, clusterId, shardId), ENDCODE_TYPE);
+                template = URLEncoder.encode(String.format(PROXY_CHAIN_HICKWALL_TEMPLATE, metricType + "_value", clusterId, shardId), ENDCODE_TYPE);
                 result.put(metricType, getHickwall(template));
             } catch (UnsupportedEncodingException e) {
                 logger.error("[getHickwallAddress]", e);
