@@ -174,8 +174,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public HickwallMetricInfo getHickwallMetricInfo() {
-        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "");
-        if(hickwallInfo != null && !localInfo.equals(hickwallInfo)) {
+        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "{\"domain\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/UR32kfjWz/fx-xpipe?fullscreen&orgId=1&from=now-1h&to=now\", \"delayPanelId\": 2, \"proxyPingPanelId\": 4, \"proxyTrafficPanelId\": 6, \"proxyCollectionPanelId\": 8}");
+        if(StringUtil.isEmpty(hickwallInfo) || !localInfo.equals(hickwallInfo)) {
             hickwallInfo = localInfo;
             info = JsonCodec.INSTANCE.decode(hickwallInfo, HickwallMetricInfo.class);
         }
