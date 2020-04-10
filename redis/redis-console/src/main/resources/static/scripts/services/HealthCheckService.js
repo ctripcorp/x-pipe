@@ -10,7 +10,7 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		},
 		get_hickwall_addr: {
 			method: 'GET',
-			url: '/console/redis/health/hickwall/:dc/:cluster/:shard/:redisIp/:redisPort'
+			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort'
 		}
 	});
 	
@@ -44,7 +44,6 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 	function getHickwallAddr(dc, cluster, shard, redisIp, redisPort) {
 		var d = $q.defer();
 		resource.get_hickwall_addr({
-			dc: dc,
 			cluster : cluster,
 			shard : shard,
 			redisIp : redisIp,

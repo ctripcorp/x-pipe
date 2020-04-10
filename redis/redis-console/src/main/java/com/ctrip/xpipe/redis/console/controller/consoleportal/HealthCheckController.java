@@ -32,7 +32,7 @@ public class HealthCheckController extends AbstractConsoleController {
     @Autowired
     private ConsoleConfig config;
 
-    private static final String TEMPLATE = "&panelId=%d&var-dc=%s&var-cluster=%s&var-shard=%s&var-address=%s:%d";
+    private static final String TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
 
     private static final String ENDCODE_TYPE = "UTF-8";
 
@@ -46,15 +46,15 @@ public class HealthCheckController extends AbstractConsoleController {
         return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
     }
 
-    @RequestMapping(value = "/redis/health/hickwall/{dc}/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public Map<String, String> getHickwallAddress(@PathVariable String dcName, @PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
         HickwallMetricInfo info = config.getHickwallMetricInfo();
         if (Strings.isEmpty(info.getDomain())) {
             return ImmutableMap.of("addr", "");
         }
         String template = null;
         try {
-            template = String.format(TEMPLATE, info.getDelayPanelId(), dcName, clusterName, shardName, redisIp, redisPort);
+            template = String.format(TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort);
         } catch (Exception e) {
             logger.error("[getHickwallAddress]", e);
             return ImmutableMap.of("addr", "");
