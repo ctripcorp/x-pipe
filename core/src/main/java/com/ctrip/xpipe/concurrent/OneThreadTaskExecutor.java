@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
+import com.ctrip.xpipe.command.LogCommandWrapper;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     private Command<?> currentCommand;
 
-    protected Queue<Command<?>> tasks = new ConcurrentLinkedQueue<>();
+    protected Queue<LogCommandWrapper<?>> tasks = new ConcurrentLinkedQueue<>();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -46,11 +47,15 @@ public class OneThreadTaskExecutor implements Destroyable {
     }
 
     public void executeCommand(Command<?> command) {
+        executeCommand(command, true);
+    }
+
+    public void executeCommand(Command<?> command, boolean needLog) {
 
         logger.debug("[executeCommand][offer it in pool]{}", command);
         boolean offer = false;
         synchronized (this) {
-            offer = tasks.offer(command);
+            offer = tasks.offer(new LogCommandWrapper<>(command, needLog));
         }
         if (!offer) {
             throw new IllegalStateException("pool full:" + tasks.size());
@@ -74,7 +79,7 @@ public class OneThreadTaskExecutor implements Destroyable {
                 logger.debug("[doRun][already run]{}", this);
                 return;
             }
-            Command<?> command = null;
+            LogCommandWrapper<?> command = null;
             synchronized (this) {
                 command = tasks.poll();
             }
@@ -91,9 +96,10 @@ public class OneThreadTaskExecutor implements Destroyable {
             }
 
             Command retryCommand = retryCommand(command);
+            final boolean needLog = command.isNeedLog();
             currentCommand = retryCommand;
 
-            logger.info("[doRun][begin]{}", command);
+            if (needLog) logger.info("[doRun][begin]{}", command);
             Command<?> finalCommand = command;
             retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
@@ -103,7 +109,9 @@ public class OneThreadTaskExecutor implements Destroyable {
                         logger.error("[doRun][already exit]");
                     }
 
-                    if(commandFuture.isSuccess()){
+                    if (!needLog) {
+                        // do not log
+                    } else if (commandFuture.isSuccess()){
                         logger.info("[doRun][ end ][succeed]{}", finalCommand);
                     }else {
                         logger.error("[doRun][ end ][fail]" + finalCommand, commandFuture.cause());
@@ -116,7 +124,7 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     }
 
-    protected Command retryCommand(Command<?> command) throws Exception {
+    protected Command retryCommand(LogCommandWrapper<?> command) throws Exception {
         return retryCommandFactory.createRetryCommand(command);
 
     }

@@ -130,7 +130,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
         for (HealthCheckActionController controller : controllers) {
             if (!controller.shouldCheck(instance)) {
-                logger.warn("[shouldStart][{}] controller {} refuse check",
+                logger.debug("[shouldStart][{}] controller {} refuse check",
                         getActionInstance().getRedisInstanceInfo().getClusterId(), controller.getClass().getSimpleName());
                 return false;
             }
