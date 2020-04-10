@@ -41,7 +41,7 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		return d.promise;
 	}
 	
-	function getHickwallAddr(dc, cluster, shard, redisIp, redisPort) {
+	function getHickwallAddr(cluster, shard, redisIp, redisPort) {
 		var d = $q.defer();
 		resource.get_hickwall_addr({
 			cluster : cluster,

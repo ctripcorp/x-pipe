@@ -92,7 +92,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         	}
         }
 
-        function gotoHickwall(dcName, clusterName, shardName, redisIp, redisPort) {
+        function gotoHickwall(clusterName, shardName, redisIp, redisPort) {
         	HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort)
         		.then(function(result) {
         			if(result.addr) {
