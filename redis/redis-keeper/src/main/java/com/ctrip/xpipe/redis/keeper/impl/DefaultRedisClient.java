@@ -62,8 +62,8 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 			
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
-				logger.info("[operationComplete][channel closed]{}, {}, {}", future.channel(), future.isDone(), future.isSuccess());
-				logger.info("[operationComplete]{}", future.cause());
+				logger.info("[operationComplete][channel closed]{}, {}, {}, {}", future.channel(), this, future.isDone(), future.isSuccess());
+				if (!future.isSuccess()) logger.info("[operationComplete]", future.cause());
 				release();
 			}
 		});
@@ -227,7 +227,6 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public void close() {
-		logger.info("[close]{}", this);
 		channel.close();
 	}
 	
@@ -292,7 +291,6 @@ public class DefaultRedisClient extends AbstractObservable implements RedisClien
 
 	@Override
 	public void release() throws Exception {
-		logger.info("[release]{}", this);
 		close();
 	}
 

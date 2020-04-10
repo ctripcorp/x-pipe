@@ -28,11 +28,15 @@ public class KeyedOneThreadTaskExecutor<K> implements Destroyable{
 	public KeyedOneThreadTaskExecutor(Executor executors){
 		this.executors = executors;
 	}
-	
+
 	public void execute(K key, Command<?> command){
+		execute(key, command, true);
+	}
+	
+	public void execute(K key, Command<?> command, boolean needLog){
 		
 		OneThreadTaskExecutor oneThreadTaskExecutor = getOrCreate(key);
-		oneThreadTaskExecutor.executeCommand(command);
+		oneThreadTaskExecutor.executeCommand(command, needLog);
 	}
 
 	
