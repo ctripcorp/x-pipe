@@ -4,6 +4,7 @@ import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.tuple.Pair;
@@ -28,7 +29,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
     public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
     public static final String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
-    public static final String KEY_HICKWALL_ADDRESS = "console.hickwall.address";
+    public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
     public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
     public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
     public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
@@ -167,9 +168,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getIntProperty(KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL, 2000);
     }
 
+    private String hickwallInfo;
+
+    private HickwallMetricInfo info;
+
     @Override
-    public String getHickwallAddress() {
-        return getProperty(KEY_HICKWALL_ADDRESS, "http://hickwall.qa.nt.ctripcorp.com/grafana/dashboard/script/scripted_sole.js?from=now-15m&to=now&target=");
+    public HickwallMetricInfo getHickwallMetricInfo() {
+        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "");
+        if(hickwallInfo != null && !localInfo.equals(hickwallInfo)) {
+            hickwallInfo = localInfo;
+            info = JsonCodec.INSTANCE.decode(hickwallInfo, HickwallMetricInfo.class);
+        }
+        return info;
     }
 
     @Override
