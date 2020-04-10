@@ -33,12 +33,8 @@ public class HealthCheckController extends AbstractConsoleController {
     private DelayService delayService;
     @Autowired
     private ConsoleConfig config;
-    @Autowired
-    private ClusterService clusterService;
 
-    private static final String TEMPLATE = "aliasBy(fx.xpipe.delay;cluster=%s;shard=%s;address=%s:%d,srcaddr)";
-
-    private static final String SUFFIX = "&panel.datasource=incluster&panel.db=FX&panelId=1&fullscreen&edit";
+    private static final String TEMPLATE = "&var-address=%s:%d&var-dc=%s&var-cluster=%s&var-shard=%s";
 
     private static final String ENDCODE_TYPE = "UTF-8";
 
@@ -52,20 +48,20 @@ public class HealthCheckController extends AbstractConsoleController {
         return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
     }
 
-    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+    @RequestMapping(value = "/redis/health/hickwall/{dc}/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getHickwallAddress(@PathVariable String dcName, @PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
         String prefix = config.getHickwallAddress();
         if (Strings.isEmpty(prefix)) {
             return ImmutableMap.of("addr", "");
         }
         String template = null;
         try {
-            template = URLEncoder.encode(String.format(TEMPLATE, clusterName, shardName, redisIp, redisPort), ENDCODE_TYPE);
+            template = URLEncoder.encode(String.format(TEMPLATE, redisIp, redisPort, dcName, clusterName, shardName), ENDCODE_TYPE);
         } catch (UnsupportedEncodingException e) {
             logger.error("[getHickwallAddress]", e);
             return ImmutableMap.of("addr", "");
         }
-        String url = prefix + template + SUFFIX;
+        String url = prefix + template;
         return ImmutableMap.of("addr", url);
     }
 }
