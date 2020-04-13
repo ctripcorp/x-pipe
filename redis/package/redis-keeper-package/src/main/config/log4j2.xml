@@ -92,11 +92,11 @@
         <logger name="com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats" level="DEBUG" additivity="false">
             <appender-ref ref="trafficLogger"/>
         </logger>
-        <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler">
+        <logger name="com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler" additivity="false">
             <appender-ref ref="nettyServerLogger"/>
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
-        <logger name="io.netty.handler.logging.LoggingHandler">
+        <logger name="io.netty.handler.logging.LoggingHandler" additivity="false">
             <appender-ref ref="nettyServerLogger"/>
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
