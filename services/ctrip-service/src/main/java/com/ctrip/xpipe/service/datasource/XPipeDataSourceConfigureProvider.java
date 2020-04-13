@@ -75,7 +75,7 @@ public class XPipeDataSourceConfigureProvider implements IDataSourceConfigurePro
         }
 
 
-        // lao wu's tricky decode for password, even if I got the password from Apollo insteadof unidal itself
+        // lao wu's tricky decode for password, even if I got the password from QConfig insteadof unidal itself
         private String decode(String src) {
             if (src == null) {
                 return null;
