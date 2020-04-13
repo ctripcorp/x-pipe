@@ -3,7 +3,6 @@ package com.ctrip.xpipe.concurrent;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.command.CommandTimeoutException;
-import com.ctrip.xpipe.command.LogCommandWrapper;
 import com.ctrip.xpipe.exception.CommandNotExecuteException;
 import com.google.common.collect.Lists;
 
@@ -43,8 +42,8 @@ public class MutexableOneThreadTaskExecutor extends OneThreadTaskExecutor {
         super.executeCommand(command);
     }
 
-    protected Command<?> retryCommand(LogCommandWrapper<?> command) {
-        return command.getInnerCommand();
+    protected Command<?> retryCommand(Command<?> command) {
+        return command;
     }
 
     private void clear() {
