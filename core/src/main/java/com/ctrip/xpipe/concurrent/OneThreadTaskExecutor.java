@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
-import com.ctrip.xpipe.command.LogCommandWrapper;
+import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     private Command<?> currentCommand;
 
-    protected Queue<LogCommandWrapper<?>> tasks = new ConcurrentLinkedQueue<>();
+    protected Queue<Command<?>> tasks = new ConcurrentLinkedQueue<>();
 
     private AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -47,15 +47,11 @@ public class OneThreadTaskExecutor implements Destroyable {
     }
 
     public void executeCommand(Command<?> command) {
-        executeCommand(command, true);
-    }
-
-    public void executeCommand(Command<?> command, boolean needLog) {
 
         logger.debug("[executeCommand][offer it in pool]{}", command);
         boolean offer = false;
         synchronized (this) {
-            offer = tasks.offer(new LogCommandWrapper<>(command, needLog));
+            offer = tasks.offer(command);
         }
         if (!offer) {
             throw new IllegalStateException("pool full:" + tasks.size());
@@ -79,7 +75,7 @@ public class OneThreadTaskExecutor implements Destroyable {
                 logger.debug("[doRun][already run]{}", this);
                 return;
             }
-            LogCommandWrapper<?> command = null;
+            Command<?> command = null;
             synchronized (this) {
                 command = tasks.poll();
             }
@@ -96,7 +92,7 @@ public class OneThreadTaskExecutor implements Destroyable {
             }
 
             Command retryCommand = retryCommand(command);
-            final boolean needLog = command.isNeedLog();
+            final boolean needLog = !(command instanceof LogIgnoreCommand);
             currentCommand = retryCommand;
 
             if (needLog) logger.info("[doRun][begin]{}", command);
@@ -124,7 +120,7 @@ public class OneThreadTaskExecutor implements Destroyable {
 
     }
 
-    protected Command retryCommand(LogCommandWrapper<?> command) throws Exception {
+    protected Command retryCommand(Command<?> command) throws Exception {
         return retryCommandFactory.createRetryCommand(command);
 
     }
