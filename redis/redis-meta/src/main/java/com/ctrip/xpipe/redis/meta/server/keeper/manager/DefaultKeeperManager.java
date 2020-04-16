@@ -5,10 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
-import com.ctrip.xpipe.command.CausalChain;
-import com.ctrip.xpipe.command.CausalCommand;
-import com.ctrip.xpipe.command.CausalException;
-import com.ctrip.xpipe.command.SequenceCommandChain;
+import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -41,10 +38,7 @@ import org.springframework.web.client.ResourceAccessException;
 import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng
@@ -325,7 +319,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected void doCheckShard(String clusterId, ShardMeta shardMeta) {
 			String shardId = shardMeta.getId();
 			List<KeeperMeta> keeperMetas = currentMetaManager.getSurviveKeepers(clusterId, shardId);
-			SequenceCommandChain sequenceCommandChain = new SequenceCommandChain();
+			SequenceCommandChain sequenceCommandChain =
+					new SequenceCommandChain(String.format("%s-%s-%s", this.getClass().getSimpleName(), clusterId, shardId));
 			for (KeeperMeta keeperMeta : keeperMetas) {
 				InfoCommand infoCommand = new InfoCommand(
 						clientPool.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort())),

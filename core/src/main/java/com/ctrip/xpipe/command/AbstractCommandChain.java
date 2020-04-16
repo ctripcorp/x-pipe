@@ -22,8 +22,14 @@ public abstract class AbstractCommandChain extends AbstractCommand<Object> imple
 	
 	private AtomicInteger current = new AtomicInteger(-1);
 
+	protected String tag = "Normal";
+
 	public AbstractCommandChain() {
-		
+
+	}
+
+	public AbstractCommandChain(String tag) {
+		this.tag = tag;
 	}
 
 	public AbstractCommandChain(@SuppressWarnings("rawtypes") List<Command> commandsList) {
