@@ -88,7 +88,11 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						return;
 					}
 
-					logger.error("[operationComplete]" + command, commandFuture.cause());
+					if (commandFuture.cause() instanceof CommandTimeoutException) {
+						logger.error("[operationComplete]{}, {}", command, commandFuture.cause().getMessage());
+					} else {
+						logger.error("[operationComplete]" + command, commandFuture.cause());
+					}
 					
 					int waitMilli = retryPolicy.retryWaitMilli();
 					logger.info("[retry]{},{},{}", executeCount.get(), waitMilli, command);

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> implements RequestResponseCommand<Void>, LogIgnoreCommand {
 
@@ -143,6 +144,8 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
                 if (change) {
                     redisesNeedChange.add(redisMeta);
                 }
+            } catch (TimeoutException timeoutException) {
+                // do nothing
             } catch (Exception e) {
                 getLogger().error("[getRedisNeedToChange]" + redisMeta, e);
             }

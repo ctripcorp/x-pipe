@@ -3,8 +3,11 @@ package com.ctrip.xpipe.command;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 /**
@@ -101,6 +104,19 @@ public class SequenceCommandChainTest extends AbstractCommandChainTest{
 			}
 		}
 		
+	}
+
+	@Test(expected = ExecutionException.class)
+	@Ignore
+	public void testSeqCommandChainErrorLog() throws InterruptedException, ExecutionException {
+		SequenceCommandChain chain = new SequenceCommandChain(this.getClass().getSimpleName());
+		CommandFuture<String> f = new DefaultCommandFuture<>(new TestCommand("Success"));
+		f.setFailure(new CommandTimeoutException("timeout 500"));
+		for (Command<?> command : createCommands(totalCommandCount, successMessage, failIndex,
+				new CommandChainException("outer exception", Collections.singletonList(f)))) {
+			chain.add(command);
+		}
+		chain.execute().get();
 	}
 
 }

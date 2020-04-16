@@ -3,6 +3,7 @@ package com.ctrip.xpipe.command;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 
 /**
  * @author wenchao.meng
@@ -12,6 +13,10 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 public class SequenceCommandChain extends AbstractCommandChain{
 	
 	private boolean failContinue = false;
+
+	public SequenceCommandChain(String tag) {
+		super(tag);
+	}
 
 	public SequenceCommandChain(boolean failContinue){
 		this.failContinue = failContinue;
@@ -60,8 +65,11 @@ public class SequenceCommandChain extends AbstractCommandChain{
 	}
 
 	private void failExecuteNext(CommandFuture<?> commandFuture) {
-		
-		getLogger().error("[failExecuteNext]" + commandFuture.command(), commandFuture.cause());
+		if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException) {
+			getLogger().error("[{}][failExecuteNext]{}, {}", tag, commandFuture.command(), commandFuture.cause().getMessage());
+		} else {
+			getLogger().error("[{}][failExecuteNext]{}", tag, commandFuture.command(), commandFuture.cause());
+		}
 		
 		if(failContinue){
 			executeChain();
