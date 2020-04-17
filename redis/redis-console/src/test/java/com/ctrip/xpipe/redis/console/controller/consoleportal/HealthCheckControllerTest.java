@@ -20,7 +20,7 @@ public class HealthCheckControllerTest extends AbstractConsoleIntegrationTest {
     public void testGetHickwallAddress() {
         String cluster = "xpipe_function", shard = "shard1", redisIp = "10.2.55.174";
         int port = 6379;
-        Map<String, String> map = controller.getHickwallAddress("UAT", cluster, shard, redisIp, port);
+        Map<String, String> map = controller.getHickwallAddress(cluster, shard, redisIp, port);
         logger.info("[map] {}", map);
     }
 }
