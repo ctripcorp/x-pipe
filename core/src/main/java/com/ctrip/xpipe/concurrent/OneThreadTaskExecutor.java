@@ -8,6 +8,7 @@ import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.command.RetryCommandFactory;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.client.ResourceAccessException;
@@ -111,7 +112,8 @@ public class OneThreadTaskExecutor implements Destroyable {
                         // do not log
                     } else if (commandFuture.isSuccess()){
                         logger.info("[doRun][ end ][succeed]{}", finalCommand);
-                    } else if (commandFuture.cause() instanceof CommandTimeoutException || commandFuture.cause() instanceof ResourceAccessException) {
+                    } else if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException
+                            || commandFuture.cause() instanceof ResourceAccessException) {
                         logger.error("[doRun][ end ][fail]{}, {}", finalCommand, commandFuture.cause().getMessage());
                     } else {
                         logger.error("[doRun][ end ][fail]" + finalCommand, commandFuture.cause());

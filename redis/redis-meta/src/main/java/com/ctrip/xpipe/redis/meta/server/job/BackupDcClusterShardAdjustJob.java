@@ -5,8 +5,10 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -19,10 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> implements RequestResponseCommand<Void>, LogIgnoreCommand {
 
@@ -147,7 +146,9 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
             } catch (TimeoutException timeoutException) {
                 // do nothing
             } catch (Exception e) {
-                getLogger().error("[getRedisNeedToChange]" + redisMeta, e);
+                if (!(ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException)) {
+                    getLogger().error("[getRedisNeedToChange]" + redisMeta, e);
+                }
             }
         }
         return redisesNeedChange;
