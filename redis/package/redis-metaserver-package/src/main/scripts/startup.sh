@@ -62,10 +62,26 @@ function getCurrentRealPath(){
     echo $dir
 }
 
+function trySaveHeapTrace() {
+    logdir=$1
+    suffix=`date +%Y%m%d%H%M%S`
+    if [[ -f "$logdir/heap_trace.txt" ]]; then
+        cp "$logdir/heap_trace.txt" "$logdir/heap_trace_$suffix.txt"
+    fi
+}
+
+function tryRemoveHeapTrace() {
+    logdir=$1
+    suffix=`date -d "$(date +%Y%m)01 last month" +%Y%m`
+    find "$logdir" -type f -name "heap_trace_$suffix*.txt" -delete
+}
+
 #VARS
 FULL_DIR=`getCurrentRealPath`
 SERVICE_NAME=redis-meta
 LOG_DIR=/opt/logs/100004375
+`trySaveHeapTrace ${LOG_DIR}`
+`tryRemoveHeapTrace ${LOG_DIR}`
 SERVER_PORT=`getPortFromPathOrDefault $FULL_DIR 8080`
 JMX_PORT=` expr $SERVER_PORT + 10000 `
 IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`

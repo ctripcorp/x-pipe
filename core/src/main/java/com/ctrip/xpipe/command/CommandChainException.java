@@ -48,4 +48,16 @@ public class CommandChainException extends XpipeException{
 		return sb.toString();
 	}
 
+	@Override
+	public synchronized Throwable getCause() {
+		Throwable cause = super.getCause();
+		if (null == cause) {
+			for(CommandFuture<?> future : result) {
+				if (!future.isSuccess()) return future.cause();
+			}
+		}
+
+		return cause;
+	}
+
 }
