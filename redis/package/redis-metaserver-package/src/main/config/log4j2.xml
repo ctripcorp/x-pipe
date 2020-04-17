@@ -16,9 +16,9 @@
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="500 MB"/>
+                <SizeBasedTriggeringPolicy size="1 GB"/>
             </Policies>
-			<DefaultRolloverStrategy max="15">
+			<DefaultRolloverStrategy max="10">
 				<Delete basePath="${baseDir}" maxDepth="2">
 					<IfFileName glob="${appName}*.log.gz" />
 					<IfLastModified age="30d" />
