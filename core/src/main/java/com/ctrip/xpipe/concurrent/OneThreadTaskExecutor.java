@@ -4,10 +4,14 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
+import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.command.RetryCommandFactory;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -91,9 +95,10 @@ public class OneThreadTaskExecutor implements Destroyable {
             }
 
             Command retryCommand = retryCommand(command);
+            final boolean needLog = !(command instanceof LogIgnoreCommand);
             currentCommand = retryCommand;
 
-            logger.info("[doRun][begin]{}", command);
+            if (needLog) logger.info("[doRun][begin]{}", command);
             Command<?> finalCommand = command;
             retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
@@ -103,9 +108,14 @@ public class OneThreadTaskExecutor implements Destroyable {
                         logger.error("[doRun][already exit]");
                     }
 
-                    if(commandFuture.isSuccess()){
+                    if (!needLog) {
+                        // do not log
+                    } else if (commandFuture.isSuccess()){
                         logger.info("[doRun][ end ][succeed]{}", finalCommand);
-                    }else {
+                    } else if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException
+                            || commandFuture.cause() instanceof ResourceAccessException) {
+                        logger.error("[doRun][ end ][fail]{}, {}", finalCommand, commandFuture.cause().getMessage());
+                    } else {
                         logger.error("[doRun][ end ][fail]" + finalCommand, commandFuture.cause());
                     }
                     doExecute();

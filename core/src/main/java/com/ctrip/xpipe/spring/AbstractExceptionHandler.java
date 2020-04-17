@@ -2,6 +2,7 @@ package com.ctrip.xpipe.spring;
 
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.exception.ErrorMessageAware;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -42,7 +43,11 @@ public class AbstractExceptionHandler {
         String message = ex.getMessage();
         String requestPath = request.getRequestURI() + (request.getQueryString() == null ? "" : ("?" + request
                 .getQueryString()));
-        logger.error(String.format("%s,%s", message, requestPath), ex);
+        if (ExceptionUtils.xpipeExceptionLogMessage(ex)) {
+            logger.error("{},{}", message, requestPath);
+        } else {
+            logger.error(String.format("%s,%s", message, requestPath), ex);
+        }
 
         Object response = null;
 
