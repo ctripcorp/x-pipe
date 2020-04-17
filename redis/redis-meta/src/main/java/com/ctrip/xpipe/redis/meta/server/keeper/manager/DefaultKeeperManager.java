@@ -319,6 +319,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected void doCheckShard(String clusterId, ShardMeta shardMeta) {
 			String shardId = shardMeta.getId();
 			List<KeeperMeta> keeperMetas = currentMetaManager.getSurviveKeepers(clusterId, shardId);
+			if (keeperMetas.isEmpty()) return;
+			
 			SequenceCommandChain sequenceCommandChain =
 					new SequenceCommandChain(String.format("%s-%s-%s", this.getClass().getSimpleName(), clusterId, shardId));
 			for (KeeperMeta keeperMeta : keeperMetas) {
