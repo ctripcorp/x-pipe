@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -24,9 +25,11 @@ import com.ctrip.xpipe.utils.OsUtils;
 import com.google.common.collect.Lists;
 import org.junit.*;
 
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
@@ -485,5 +488,40 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
         activeKeeper.stop();
         backupKeeper.stop();
+    }
+
+    @Test
+    public void timeoutNotDoCorrectTest() throws Exception {
+        String clusterId = "clsuter", shardId = "shard";
+        AtomicBoolean requestFinish = new AtomicBoolean(false);
+
+        Server keeperServer = startServer(new AbstractIoActionFactory() {
+            @Override
+            protected byte[] getToWrite(Object readResult) {
+                try {
+                    sleep(10);
+                } catch (Exception e) {
+
+                }
+
+                requestFinish.set(true);
+                return ("+state:ACTIVE\nmaster_host:localhost\nmaster_port:"+randomInt()+"\r\n").getBytes();
+            }
+        });
+
+        manager.setScheduled(scheduled);
+        KeeperMeta keeperMeta = new KeeperMeta().setIp("localhost").setPort(keeperServer.getPort()).setActive(false);
+        when(currentMetaManager.getSurviveKeepers(clusterId, shardId))
+                .thenReturn(Collections.singletonList(keeperMeta));
+        InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
+
+        DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
+        doNothing().when(checker).doCorrect(anyString(), anyString(), anyList());
+        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+
+        waitConditionUntilTimeOut(requestFinish::get, 1000);
+        sleep(100);
+        verify(checker, never()).doCorrect(anyString(), anyString(), anyList());
+        keeperServer.stop();
     }
 }

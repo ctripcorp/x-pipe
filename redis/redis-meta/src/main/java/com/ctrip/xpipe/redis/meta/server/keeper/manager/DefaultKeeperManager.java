@@ -9,6 +9,7 @@ import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -340,13 +341,18 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				@Override
 				public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
 					if(!commandFuture.isSuccess()) {
+						if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException) {
+							logger.debug("[doCheckShard][{}-{}] not do correct for command timeout", clusterId, shardId);
+							return;
+						}
+
 						doCorrect(clusterId, shardId, keeperMetas);
 					}
 				}
 			});
 		}
 
-		private void doCorrect(String clusterId, String shardId, List<KeeperMeta> survivedKeepers) {
+		protected void doCorrect(String clusterId, String shardId, List<KeeperMeta> survivedKeepers) {
 			//double check again
 			if(!isCurrentMetaKeeperMasterMatch(clusterId, shardId)) {
 				return;
@@ -523,5 +529,10 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	@VisibleForTesting
 	protected void setClusterShardExecutor(KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutor) {
 		this.clusterShardExecutor = clusterShardExecutor;
+	}
+
+	@VisibleForTesting
+	protected void setScheduled(ScheduledExecutorService scheduled) {
+		this.scheduled = scheduled;
 	}
 }
