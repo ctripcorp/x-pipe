@@ -95,10 +95,10 @@ public class OneThreadTaskExecutor implements Destroyable {
             }
 
             Command retryCommand = retryCommand(command);
-            final boolean needLog = !(command instanceof LogIgnoreCommand);
+            logCommand(command, retryCommand);
             currentCommand = retryCommand;
 
-            if (needLog) logger.info("[doRun][begin]{}", command);
+            if (!(command instanceof LogIgnoreCommand)) logger.info("[doRun][begin]{}", command);
             Command<?> finalCommand = command;
             retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
@@ -108,22 +108,30 @@ public class OneThreadTaskExecutor implements Destroyable {
                         logger.error("[doRun][already exit]");
                     }
 
-                    if (!needLog) {
-                        // do not log
-                    } else if (commandFuture.isSuccess()){
-                        logger.info("[doRun][ end ][succeed]{}", finalCommand);
-                    } else if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException
-                            || commandFuture.cause() instanceof ResourceAccessException) {
-                        logger.error("[doRun][ end ][fail]{}, {}", finalCommand, commandFuture.cause().getMessage());
-                    } else {
-                        logger.error("[doRun][ end ][fail]" + finalCommand, commandFuture.cause());
-                    }
                     doExecute();
                 }
             });
             retryCommand.execute();
         }
 
+    }
+
+    protected void logCommand(Command<?> originCommand, Command<?> retryCommand) {
+        retryCommand.future().addListener(new CommandFutureListener() {
+            @Override
+            public void operationComplete(CommandFuture commandFuture) throws Exception {
+                if (originCommand instanceof LogIgnoreCommand) {
+                    // do not log
+                } else if (commandFuture.isSuccess()){
+                    logger.info("[doRun][ end ][succeed]{}", originCommand);
+                } else if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException
+                        || commandFuture.cause() instanceof ResourceAccessException) {
+                    logger.error("[doRun][ end ][fail]{}, {}", originCommand, commandFuture.cause().getMessage());
+                } else {
+                    logger.error("[doRun][ end ][fail]" + originCommand, commandFuture.cause());
+                }
+            }
+        });
     }
 
     protected Command retryCommand(Command<?> command) throws Exception {
