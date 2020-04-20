@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,6 +36,10 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     private SubscribeCallback callback = new SubscribeCallback();
 
     private AtomicReference<DelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
+
+    private AtomicInteger continuouslyDelayCnt = new AtomicInteger(0);
+
+    protected static int EXPIRE_LOG_FREQUENCY = Integer.parseInt(System.getProperty("EXPIRE_LOG_FREQUENCY", "30"));
 
     private PingService pingService;
 
@@ -70,8 +75,10 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             return;
         }
         if(isExpired()) {
-            logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
-                    DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
+            if (Math.abs(continuouslyDelayCnt.incrementAndGet()) % EXPIRE_LOG_FREQUENCY == 1) {
+                logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
+                        DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
+            }
 
             long result = SAMPLE_LOST_AND_NO_PONG;
             if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
@@ -79,6 +86,10 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             }
             notifyListeners(new DelayActionContext(instance, result));
         } else {
+            if (continuouslyDelayCnt.get() != 0) {
+                continuouslyDelayCnt.set(0);
+                logger.info("[expire][{}] recovery", instance.getRedisInstanceInfo().getHostPort());
+            }
             notifyListeners(context.get());
         }
     }

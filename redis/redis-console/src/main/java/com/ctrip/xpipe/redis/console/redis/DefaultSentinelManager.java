@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
@@ -139,7 +141,11 @@ public class DefaultSentinelManager implements SentinelManager {
             silentCommand(command);
             command.execute().get();
         } catch (Exception e) {
-            logger.error("[slaves] sentinel: {}", sentinel, e);
+            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
+                logger.error("[monitor] sentinel: {} : {}", sentinel, e.getMessage());
+            } else {
+                logger.error("[monitor] sentinel: {}", sentinel, e);
+            }
         }
     }
 
@@ -154,7 +160,11 @@ public class DefaultSentinelManager implements SentinelManager {
             silentCommand(command);
             return command.execute().get();
         } catch (Exception e) {
-            logger.error("[slaves] sentinel: {}", sentinel, e);
+            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
+                logger.error("[slaves] sentinel: {} : {}", sentinel, e.getMessage());
+            } else {
+                logger.error("[slaves] sentinel: {}", sentinel, e);
+            }
         }
         return Lists.newArrayList();
     }
@@ -166,7 +176,11 @@ public class DefaultSentinelManager implements SentinelManager {
         try {
             new AbstractSentinelCommand.SentinelReset(clientPool, sentinelMonitorName, scheduled).execute().get();
         } catch (Exception e) {
-            logger.error("[slaves] sentinel: {}", sentinel, e);
+            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
+                logger.error("[reset] sentinel: {} : {}", sentinel, e.getMessage());
+            } else {
+                logger.error("[reset] sentinel: {}", sentinel, e);
+            }
         }
     }
 
