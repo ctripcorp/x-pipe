@@ -62,6 +62,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return;
         }
 
+        lastStartTime = System.currentTimeMillis();
         RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
         if (instance.getRedisInstanceInfo().isInActiveDc()) {
             logger.info("[doTask][{}-{}] in active dc, redis {}", info.getClusterId(), info.getShardId(), instance.getEndpoint());
