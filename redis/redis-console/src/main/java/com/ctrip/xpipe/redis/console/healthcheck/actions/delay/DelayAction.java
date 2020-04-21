@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,9 +37,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private AtomicReference<DelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
 
-    private AtomicInteger continuouslyDelayCnt = new AtomicInteger(0);
-
-    protected static int EXPIRE_LOG_FREQUENCY = Integer.parseInt(System.getProperty("EXPIRE_LOG_FREQUENCY", "30"));
+    private AtomicBoolean isExpired = new AtomicBoolean(false);
 
     private PingService pingService;
 
@@ -75,7 +73,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             return;
         }
         if(isExpired()) {
-            if (Math.abs(continuouslyDelayCnt.incrementAndGet()) % EXPIRE_LOG_FREQUENCY == 1) {
+            if (isExpired.compareAndSet(false, true)) {
                 logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
                         DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
             }
@@ -86,8 +84,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             }
             notifyListeners(new DelayActionContext(instance, result));
         } else {
-            if (continuouslyDelayCnt.get() != 0) {
-                continuouslyDelayCnt.set(0);
+            if (isExpired.compareAndSet(true, false)) {
                 logger.info("[expire][{}] recovery", instance.getRedisInstanceInfo().getHostPort());
             }
             notifyListeners(context.get());
