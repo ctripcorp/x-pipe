@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -110,7 +111,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         //check add
         Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, masterDcSentinels, hellos, masterAddr, quorumConfig);
 
-        doAction(toDelete, toAdd, quorumConfig);
+        doAction(sentinelMonitorName, masterAddr, toDelete, toAdd, quorumConfig);
     }
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
@@ -210,13 +211,15 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return false;
     }
 
-    private void doAction(Set<SentinelHello> toDelete, Set<SentinelHello> toAdd, QuorumConfig quorumConfig) {
+    private void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
+                          QuorumConfig quorumConfig) {
 
         if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
             return;
         }
         if (toAdd != null && toAdd.size() > 0) {
-            logger.info("[doAction][add]{}", toAdd);
+            logger.info("[doAction][add]name: {}, master: {}, stl: {}", sentinelMonitorName, masterAddr,
+                    toAdd.stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toSet()));
         }
 
         if (toDelete != null && toDelete.size() > 0) {
