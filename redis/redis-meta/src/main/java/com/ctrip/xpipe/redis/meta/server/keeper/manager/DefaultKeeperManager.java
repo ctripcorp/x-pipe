@@ -341,11 +341,6 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				@Override
 				public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
 					if(!commandFuture.isSuccess()) {
-						if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException) {
-							logger.debug("[doCheckShard][{}-{}] not do correct for command timeout", clusterId, shardId);
-							return;
-						}
-
 						doCorrect(clusterId, shardId, keeperMetas);
 					}
 				}
@@ -398,7 +393,12 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		@Override
 		protected void onFailure(Throwable throwable) {
-			future().setFailure(throwable);
+			if (ExceptionUtils.getRootCause(throwable) instanceof CommandTimeoutException) {
+				logger.debug("[onFailure][{}-{}] ignore failure for command timeout", clusterId, shardId);
+				future().setSuccess();
+			} else {
+				future().setFailure(throwable);
+			}
 		}
 	}
 

@@ -4,8 +4,10 @@ package com.ctrip.xpipe.command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.exception.XpipeException;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 
 /**
  * @author wenchao.meng
@@ -52,8 +54,12 @@ public class CommandChainException extends XpipeException{
 	public synchronized Throwable getCause() {
 		Throwable cause = super.getCause();
 		if (null == cause) {
-			for(CommandFuture<?> future : result) {
-				if (!future.isSuccess()) return future.cause();
+			ListIterator<CommandFuture<?> > reverseIterator = result.listIterator(result.size());
+
+			// normally think that the last cause is reason for breaking chain execution
+			while (reverseIterator.hasPrevious()) {
+				CommandFuture<?> future = reverseIterator.previous();
+				if (future.isDone() && !future.isSuccess()) return future.cause();
 			}
 		}
 
