@@ -61,7 +61,7 @@ public class CausalChain extends AbstractCommandChain {
             return;
         }
 
-        future().setFailure(new CommandChainException("causal chain, fail stop", getResult()));
+        future().setFailure(new CommandChainException("causal chain, fail stop", commandFuture.cause(), getResult()));
     }
 
     protected Logger getLogger() {

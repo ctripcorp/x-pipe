@@ -124,8 +124,7 @@ public class OneThreadTaskExecutor implements Destroyable {
                     // do not log
                 } else if (commandFuture.isSuccess()){
                     logger.info("[doRun][ end ][succeed]{}", originCommand);
-                } else if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException
-                        || commandFuture.cause() instanceof ResourceAccessException) {
+                } else if (ExceptionUtils.isStackTraceUnnecessary(commandFuture.cause())) {
                     logger.error("[doRun][ end ][fail]{}, {}", originCommand, commandFuture.cause().getMessage());
                 } else {
                     logger.error("[doRun][ end ][fail]" + originCommand, commandFuture.cause());

@@ -89,7 +89,7 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						return;
 					}
 
-					if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException) {
+					if (ExceptionUtils.isStackTraceUnnecessary(commandFuture.cause())) {
 						logger.error("[operationComplete]{}, {}", command, commandFuture.cause().getMessage());
 					} else {
 						logger.error("[operationComplete]" + command, commandFuture.cause());
