@@ -60,6 +60,7 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.ShardMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import org.junit.runner.RunWith;
@@ -174,7 +175,8 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterServiceImplTest4.class,
         DelayActionTest.class,
         DelayServiceTest.class,
-        SentinelHelloActionDowngradeTest.class
+        SentinelHelloActionDowngradeTest.class,
+        ShardMetaServiceImplTest.class
 })
 public class AllTests {
 
