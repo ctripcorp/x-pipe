@@ -213,11 +213,6 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         return new RequestStringParser(request).format();
     }
 
-    @Override
-    public int getCommandTimeoutMilli() {
-        return 0;
-    }
-
     protected String[] getSubscribeChannel() {
         return subscribeChannel;
     }
@@ -227,11 +222,20 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     }
 
     private synchronized void setSubscribeState(SUBSCRIBE_STATE state) {
+        if (SUBSCRIBE_STATE.WAITING_RESPONSE == this.subscribeState && SUBSCRIBE_STATE.SUBSCRIBING == state) {
+            cancelTimeout();
+        }
         this.subscribeState = state;
     }
 
     public void unSubscribe() {
         setSubscribeState(SUBSCRIBE_STATE.UNSUBSCRIBE);
         doUnsubscribe();
+    }
+
+    @Override
+    protected void handleTimeout(NettyClient nettyClient) {
+        super.handleTimeout(nettyClient);
+        unSubscribe();
     }
 }
