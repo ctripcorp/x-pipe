@@ -53,12 +53,15 @@ public class CausalChain extends AbstractCommandChain {
 
     private void failExecuteNext(CommandFuture<?> commandFuture) {
 
-        if(failContinue){
+        Command<?> next = getCommand(executeCount());
+
+        // break chain or not depend on next command when next command is causal
+        if (next instanceof Causal || failContinue) {
             executeChain();
             return;
         }
 
-        future().setFailure(new CommandChainException("causal chain, fail stop", getResult()));
+        future().setFailure(new CommandChainException("causal chain, fail stop", commandFuture.cause(), getResult()));
     }
 
     protected Logger getLogger() {
