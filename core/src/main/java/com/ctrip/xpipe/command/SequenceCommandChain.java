@@ -65,18 +65,22 @@ public class SequenceCommandChain extends AbstractCommandChain{
 	}
 
 	private void failExecuteNext(CommandFuture<?> commandFuture) {
-		if (ExceptionUtils.getRootCause(commandFuture.cause()) instanceof CommandTimeoutException) {
-			getLogger().error("[{}][failExecuteNext]{}, {}", tag, commandFuture.command(), commandFuture.cause().getMessage());
-		} else {
-			getLogger().error("[{}][failExecuteNext]{}", tag, commandFuture.command(), commandFuture.cause());
-		}
+		logFail(commandFuture);
 		
 		if(failContinue){
 			executeChain();
 			return;
 		}
 		
-		future().setFailure(new CommandChainException("sequence chain, fail stop", getResult()));
+		future().setFailure(new CommandChainException("sequence chain, fail stop", commandFuture.cause(), getResult()));
+	}
+
+	private void logFail(CommandFuture<?> commandFuture) {
+		if (ExceptionUtils.isStackTraceUnnecessary(commandFuture.cause())) {
+			getLogger().error("[{}][failExecuteNext]{}, {}", tag, commandFuture.command(), commandFuture.cause().getMessage());
+		} else {
+			getLogger().error("[{}][failExecuteNext]{}", tag, commandFuture.command(), commandFuture.cause());
+		}
 	}
 
 }
