@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.exception;
 
+import com.ctrip.xpipe.command.CommandTimeoutException;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.net.SocketException;
 
@@ -61,5 +63,10 @@ public class ExceptionUtils {
 			return ((XpipeRuntimeException) throwable).isOnlyLogMessage();
 		}
 		return false;
+	}
+
+	public static boolean isStackTraceUnnecessary(Throwable throwable) {
+		return ExceptionUtils.getRootCause(throwable) instanceof CommandTimeoutException
+				|| throwable instanceof ResourceAccessException;
 	}
 }

@@ -98,6 +98,71 @@ public class CausalChainTest extends AbstractTest {
         Assert.assertEquals(task, futures.get(futures.size()-1).getNow());
     }
 
+    @Test
+    public void failBreakTest() throws Exception {
+        CausalCommand<String, String> causalCommand = new CausalCommand<String, String>() {
+            @Override
+            protected void onSuccess(String result) {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void onFailure(Throwable throwable) {
+                if (throwable instanceof TimeoutException) future().setSuccess();
+                else future().setFailure(throwable);
+            }
+        };
+
+        Command<String> timeoutCommand = new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Exception {
+                future().setFailure(new TimeoutException());
+            }
+
+            @Override
+            protected void doReset() {
+            }
+
+            @Override
+            public String getName() {
+                return "TimeoutCommand";
+            }
+        };
+
+        Command<String> otherCommand = new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Exception {
+                future().setFailure(new Exception());
+            }
+
+            @Override
+            protected void doReset() {
+            }
+
+            @Override
+            public String getName() {
+                return "OtherCommand";
+            }
+        };
+
+
+        CausalChain timeoutChain = new CausalChain();
+        CausalChain otherChain = new CausalChain();
+
+        timeoutChain.add(timeoutCommand);
+        timeoutChain.add(causalCommand);
+        CommandFuture timeoutFuture = timeoutChain.execute(executors);
+        waitConditionUntilTimeOut(()->timeoutFuture.isDone(), 1000);
+        Assert.assertTrue(timeoutFuture.isSuccess());
+
+        causalCommand.reset();
+        otherChain.add(otherCommand);
+        otherChain.add(causalCommand);
+        CommandFuture otherFuture = otherChain.execute(executors);
+        waitConditionUntilTimeOut(()->otherFuture.isDone(), 1000);
+        Assert.assertFalse(otherFuture.isSuccess());
+    }
+
     private class Counter extends CausalCommand<Integer, Integer> {
 
         @Override
