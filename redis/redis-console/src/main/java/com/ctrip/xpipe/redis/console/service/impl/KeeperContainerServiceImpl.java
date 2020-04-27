@@ -257,7 +257,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  private boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
+  protected boolean keeperContainerAlreadyExists(KeeperContainerCreateInfo createInfo) {
     KeepercontainerTbl existing = queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
       @Override
       public KeepercontainerTbl doQuery() throws DalException {
@@ -265,7 +265,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
                 KeepercontainerTblEntity.READSET_CONTAINER_ADDRESS);
       }
     });
-    return existing == null;
+    return existing != null;
   }
 
   protected void getOrCreateRestTemplate() {
