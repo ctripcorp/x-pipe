@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
@@ -83,7 +84,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
             @Override
             public void fail(Throwable e) {
-                logger.error("[sub-failed][{}]", getActionInstance().getRedisInstanceInfo().getHostPort(), e);
+                if (ExceptionUtils.isStackTraceUnnecessary(e)) {
+                    logger.error("[sub-failed][{}] {}", getActionInstance().getRedisInstanceInfo().getHostPort(), e.getMessage());
+                } else {
+                    logger.error("[sub-failed][{}]", getActionInstance().getRedisInstanceInfo().getHostPort(), e);
+                }
                 subError = e;
             }
         });
@@ -131,8 +136,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
         for (HealthCheckActionController controller : controllers) {
             if (!controller.shouldCheck(instance)) {
-                logger.debug("[shouldStart][{}] controller {} refuse check",
-                        getActionInstance().getRedisInstanceInfo().getClusterId(), controller.getClass().getSimpleName());
+                RedisInstanceInfo redisInfo = getActionInstance().getRedisInstanceInfo();
+                logger.debug("[shouldStart][{}-{}] {} {} controller {} refuse check",
+                        redisInfo.getClusterId(), redisInfo.getShardId(),
+                        redisInfo.isInActiveDc() ? "activeDc" : "backupDc", redisInfo.getDcId(),
+                        controller.getClass().getSimpleName());
                 return false;
             }
         }
