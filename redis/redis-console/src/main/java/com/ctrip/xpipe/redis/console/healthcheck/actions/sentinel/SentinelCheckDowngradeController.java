@@ -32,7 +32,8 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
 
     private DefaultSentinelHelloCollector realCollector;
 
-    private long lastDoCollectTime = System.currentTimeMillis();
+    // avoid always do downgrade without recovery
+    private volatile long downgradeBeginTime = 0;
 
     private final String clusterName;
 
@@ -65,7 +66,8 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
             else checkFailInstance.add(info.getHostPort());
         }
 
-        if (needDowngrade.compareAndSet(true, false)) {
+        // only deal with success result when downgrade
+        if (!context.isFail() && needDowngrade.compareAndSet(true, false)) {
             logger.info("[{}-{}][onAction] sub from active dc redis {}", clusterName, shardName, info.getHostPort());
             doCollect(context.instance());
             return;
@@ -76,8 +78,7 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
         if (checkFinishedInstance.size() >= countBackDcRedis()) {
             if (checkFinishedInstance.size() == checkFailInstance.size()) {
                 logger.warn("[{}-{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", clusterName, shardName);
-                needDowngrade.set(true);
-                resetCheckResult();
+                beginDowngrade();
                 return;
             }
             logger.debug("[{}-{}][onAction] sub from backup dc all finish", clusterName, shardName);
@@ -97,7 +98,7 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
 
     private boolean tooLongNoCollect(RedisHealthCheckInstance instance) {
         int sentinelHealthCheckInterval = instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
-        return System.currentTimeMillis() - lastDoCollectTime > 3 * sentinelHealthCheckInterval;
+        return System.currentTimeMillis() - downgradeBeginTime > 3 * sentinelHealthCheckInterval;
     }
 
     private int countBackDcRedis() {
@@ -117,7 +118,6 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
     private void doCollect(RedisHealthCheckInstance instance) {
         Set<SentinelHello> hellos = new HashSet<>(checkResult);
         resetCheckResult();
-        lastDoCollectTime = System.currentTimeMillis();
         this.realCollector.onAction(new SentinelActionContext(instance, hellos));
     }
 
@@ -125,6 +125,12 @@ public class SentinelCheckDowngradeController implements HealthCheckActionContro
         this.checkFinishedInstance.clear();
         this.checkFailInstance.clear();
         this.checkResult.clear();
+    }
+
+    private void beginDowngrade() {
+        downgradeBeginTime = System.currentTimeMillis();
+        needDowngrade.set(true);
+        resetCheckResult();
     }
 
 }

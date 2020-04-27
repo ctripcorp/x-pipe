@@ -130,7 +130,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
 
     @Test
     public void backupErrRespTest() {
-        setServerErrResp(false, true, true, true);
+        setServerErrResp(false, false, true, true);
 
         allActionDoTask();
 
@@ -238,13 +238,19 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
 
         sleep(3 * sentinelCheckInterval);
 
-        setServerErrResp(false, false, false, false);
         resetCalled();
         allActionDoTask();
 
         assertServerCalled(false, false, true, true);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(4)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+        // should not always timeout, so do downgrade
+        assertServerCalled(false, true, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
     }
 
     private void prepareActions() throws Exception {
