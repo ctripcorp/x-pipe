@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNettyCommand<V> implements ByteBufReceiver, RequestResponseCommand<V>{
 		
 	protected ScheduledExecutorService scheduled;
+
+	private ScheduledFuture<?> timeoutFuture = null;
 	
 	public AbstractNettyRequestResponseCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port);
@@ -55,7 +57,7 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 		if(getCommandTimeoutMilli() > 0 && scheduled != null){
 
 			getLogger().debug("[doSendRequest][schedule timeout]{}, {}", this, getCommandTimeoutMilli());
-			final ScheduledFuture<?> timeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
+			timeoutFuture = scheduled.schedule(new AbstractExceptionLogTask() {
 				
 				@Override
 				public void doRun() {
@@ -75,13 +77,13 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 					} catch (InterruptedException e) {
 					}catch(ExecutionException e){
 						if(e.getCause() instanceof CommandTimeoutException){
-							nettyClient.onTimeout(AbstractNettyRequestResponseCommand.this, getCommandTimeoutMilli());
+							handleTimeout(nettyClient);
 							cancel = false;
 						}
 					}
 					if(cancel){
 						getLogger().debug("[operationComplete][cancel timeout future]");
-						timeoutFuture.cancel(false);
+						cancelTimeout();
 					}
 				}
 			});
@@ -148,5 +150,16 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	@Override
 	public int getCommandTimeoutMilli() {
 		return 0;
+	}
+
+	protected void handleTimeout(NettyClient nettyClient) {
+		nettyClient.onTimeout(AbstractNettyRequestResponseCommand.this, getCommandTimeoutMilli());
+	}
+
+	protected void cancelTimeout() {
+		if (null != timeoutFuture && !timeoutFuture.isDone()) {
+			timeoutFuture.cancel(false);
+			timeoutFuture = null;
+		}
 	}
 }

@@ -1,10 +1,21 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
+import com.ctrip.xpipe.simpleserver.AbstractIoAction;
+import com.ctrip.xpipe.simpleserver.IoAction;
+import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -16,39 +27,33 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.concurrent.Callable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTest {
+public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
 
-    private Server activeDcMasterServer;
-    private Server activeDcSlaveServer;
-    private Server backupDcSlave1Server;
-    private Server backupDcSlave2Server;
+    private SentinelCheckStatus activeDcMaster;
+    private SentinelCheckStatus activeDcSlave;
+    private SentinelCheckStatus backupDcSlave1;
+    private SentinelCheckStatus backupDcSlave2;
 
-    private RedisHealthCheckInstance masterInstance;
-    private RedisHealthCheckInstance activeDcSlaveInstance;
-    private RedisHealthCheckInstance backupDcSlave1Instance;
-    private RedisHealthCheckInstance backupDcSlave2Instance;
+    @Mock
+    protected ConsoleDbConfig config;
 
-    private SentinelHelloCheckAction activeDcMasterAction;
-    private SentinelHelloCheckAction activeDcSlaveAction;
-    private SentinelHelloCheckAction backupDcSlave1Action;
-    private SentinelHelloCheckAction backupDcSlave2Action;
+    @Mock
+    protected ClusterService clusterService;
 
-    private boolean activeDcMasterAvailable = true;
-    private boolean activeDcSlaveAvailable = true;
-    private boolean backupDcSlave1Available = true;
-    private boolean backupDcSlave2Available = true;
+    private int sentinelCollectInterval = 300;
 
-    private volatile boolean activeDcMasterServerCalled = false;
-    private volatile boolean activeDcSlaveServerCalled = false;
-    private volatile boolean backupDcSlave1ServerCalled = false;
-    private volatile boolean backupDcSlave2ServerCalled = false;
+    private int sentinelCheckInterval = 2000;
 
-    private int sentinelCollectInterval = 100;
-
-    private int sentinelCheckInterval = 1200;
+    private int sentinelSubTimeout = 200;
 
     @InjectMocks
     private SentinelHelloCheckActionController checkActionController;
@@ -78,181 +83,181 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
         Mockito.when(checkControllerManager.getCheckController(clusterName, shardName)).thenReturn(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = sentinelCollectInterval;
+        SubscribeCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = sentinelSubTimeout;
         prepareActions();
         prepareMetaCache();
+
+        when(config.isSentinelAutoProcess()).thenReturn(true);
+        when(config.shouldSentinelCheck(Mockito.anyString(), Mockito.anyBoolean())).thenReturn(true);
+        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setStatus(ClusterStatus.Normal.toString()));
     }
 
     @After
     public void afterSentinelHelloActionDowngradeTest() throws Exception {
-        activeDcMasterServer.stop();
-        activeDcSlaveServer.stop();
-        backupDcSlave1Server.stop();
-        backupDcSlave2Server.stop();
+        if (null != activeDcMaster.redisServer) activeDcMaster.redisServer.stop();
+        if (null != activeDcSlave.redisServer) activeDcSlave.redisServer.stop();
+        if (null != backupDcSlave1.redisServer) backupDcSlave1.redisServer.stop();
+        if (null != backupDcSlave2.redisServer) backupDcSlave2.redisServer.stop();
     }
 
     @Test
     public void allUpTest() {
-        allActionDoTask();
+        setSentinelCollectInterval(1000);
+        sleep(sentinelCheckInterval);
+        allActionDoTaskWithoutWait();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertFalse(activeDcSlaveServerCalled);
-        Assert.assertTrue(backupDcSlave1ServerCalled);
-        Assert.assertTrue(backupDcSlave2ServerCalled);
+        sleep(300);
+        assertServerCalled(false, false, true, true);
+        // no close connect before collect sentinel hello
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+        sleep(1000);
         Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+        // close connect after collect sentinel hello
+        Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
 
-        backupDcSlave1Available = false;
+        // break one slave in backup dc
+        backupDcSlave1.errorResp = true;
         resetCalled();
         allActionDoTask();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertFalse(activeDcSlaveServerCalled);
-        Assert.assertTrue(backupDcSlave1ServerCalled);
-        Assert.assertTrue(backupDcSlave2ServerCalled);
+        assertServerCalled(false, false, true, true);
         Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(4)).onAction(Mockito.any());
     }
 
     @Test
-    public void backupDownTest() {
-        backupDcSlave1Available = false;
-        backupDcSlave2Available = false;
-        activeDcSlaveAvailable = false;
+    public void backupErrRespTest() {
+        setServerErrResp(false, false, true, true);
 
         allActionDoTask();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertFalse(activeDcSlaveServerCalled);
-        Assert.assertTrue(backupDcSlave1ServerCalled);
-        Assert.assertTrue(backupDcSlave2ServerCalled);
+        assertServerCalled(false, false, true, true);
         Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
 
         resetCalled();
         allActionDoTask();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertTrue(activeDcSlaveServerCalled);
-        Assert.assertFalse(backupDcSlave1ServerCalled);
-        Assert.assertFalse(backupDcSlave2ServerCalled);
+        assertServerCalled(false, true, false, false);
         Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
 
-        backupDcSlave1Available = true;
-        backupDcSlave2Available = true;
-        activeDcSlaveAvailable = true;
+        setServerErrResp(false, false, false, false);
         resetCalled();
         allActionDoTask();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertFalse(activeDcSlaveServerCalled);
-        Assert.assertTrue(backupDcSlave1ServerCalled);
-        Assert.assertTrue(backupDcSlave2ServerCalled);
+        assertServerCalled(false, false, true, true);
         Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
     }
 
     @Test
-    public void downgradeTimeoutTest() {
-        backupDcSlave1Available = false;
-        backupDcSlave2Available = false;
+    public void backupCommandTimeoutTest() {
+        setServerHang(false, false, true, true);
+        allActionDoTask();
+
+        assertServerCalled(false, false, true, true);
+        // close connect immediately after time out
+        Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, true, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+
+        setServerHang(false, false, false, false);
+        resetCalled();
+        allActionDoTask();
+
+
+        assertServerCalled(false, false, true, true);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void backupLoseConnectTest() throws Exception {
+        backupDcSlave1.redisServer.stop();
+        backupDcSlave2.redisServer.stop();
+        backupDcSlave1.redisServer = null;
+        backupDcSlave2.redisServer = null;
 
         allActionDoTask();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertFalse(activeDcSlaveServerCalled);
-        Assert.assertTrue(backupDcSlave1ServerCalled);
-        Assert.assertTrue(backupDcSlave2ServerCalled);
+        assertServerCalled(false, false, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, true, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void backupConnectTimeoutTest() throws Exception {
+        // set unreachable redis server
+        ((DefaultRedisHealthCheckInstance)backupDcSlave1.checkInstance).setSession(
+                new RedisSession(new DefaultEndPoint("10.0.127.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool()));
+        ((DefaultRedisHealthCheckInstance)backupDcSlave2.checkInstance).setSession(
+                new RedisSession(new DefaultEndPoint("10.0.127.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool()));
+
+        allActionDoTask();
+        assertServerCalled(false, false, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, true, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+    }
+
+
+    @Test
+    public void downgradeTimeoutTest() {
+        setServerErrResp(false, false, true, true);
+
+        allActionDoTask();
+
+        assertServerCalled(false, false, true, true);
         Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
 
         sleep(3 * sentinelCheckInterval);
 
-        backupDcSlave1Available = true;
-        backupDcSlave2Available = true;
         resetCalled();
         allActionDoTask();
 
-        Assert.assertFalse(activeDcMasterServerCalled);
-        Assert.assertFalse(activeDcSlaveServerCalled);
-        Assert.assertTrue(backupDcSlave1ServerCalled);
-        Assert.assertTrue(backupDcSlave2ServerCalled);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        assertServerCalled(false, false, true, true);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(4)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+        // should not always timeout, so do downgrade
+        assertServerCalled(false, true, false, false);
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
+        Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
     }
 
     private void prepareActions() throws Exception {
-        activeDcMasterServer = startServerWithFlexibleResult(new Callable<String>() {
-            @Override
-            public String call() {
-                activeDcMasterServerCalled = true;
-                if (activeDcMasterAvailable) {
-                    return buildSentinelHello();
-                } else {
-                    return "-----error response-----";
-                }
-            }
-        });
-        masterInstance = newRandomRedisHealthCheckInstance("dc1", "dc1", activeDcMasterServer.getPort());
-        ((DefaultRedisHealthCheckInstance)masterInstance).setHealthCheckConfig(healthCheckConfig);
-        masterInstance.getRedisInstanceInfo().isMaster(true);
-        activeDcMasterAction = new SentinelHelloCheckAction(scheduled, masterInstance, executors, config, clusterService);
-        activeDcMasterAction.addController(checkActionController);
-        activeDcMasterAction.addListener(checkActionController);
-
-        activeDcSlaveServer = startServerWithFlexibleResult(new Callable<String>() {
-            @Override
-            public String call() {
-                activeDcSlaveServerCalled = true;
-                if (activeDcSlaveAvailable) {
-                    return buildSentinelHello();
-                } else {
-                    return "-----error response-----";
-                }
-            }
-        });
-        activeDcSlaveInstance = newRandomRedisHealthCheckInstance("dc1", "dc1", activeDcSlaveServer.getPort());
-        ((DefaultRedisHealthCheckInstance)activeDcSlaveInstance).setHealthCheckConfig(healthCheckConfig);
-        activeDcSlaveInstance.getRedisInstanceInfo().isMaster(false);
-        activeDcSlaveAction = new SentinelHelloCheckAction(scheduled, activeDcSlaveInstance, executors, config, clusterService);
-        activeDcSlaveAction.addController(checkActionController);
-        activeDcSlaveAction.addListener(checkActionController);
-
-        backupDcSlave1Server = startServerWithFlexibleResult(new Callable<String>() {
-            @Override
-            public String call() {
-                backupDcSlave1ServerCalled = true;
-                if (backupDcSlave1Available) {
-                    return buildSentinelHello();
-                } else {
-                    return "-----error response-----";
-                }
-            }
-        });
-        backupDcSlave1Instance = newRandomRedisHealthCheckInstance("dc2", "dc1", backupDcSlave1Server.getPort());
-        ((DefaultRedisHealthCheckInstance)backupDcSlave1Instance).setHealthCheckConfig(healthCheckConfig);
-        backupDcSlave1Instance.getRedisInstanceInfo().isMaster(false);
-        backupDcSlave1Action = new SentinelHelloCheckAction(scheduled, backupDcSlave1Instance, executors, config, clusterService);
-        backupDcSlave1Action.addController(checkActionController);
-        backupDcSlave1Action.addListener(checkActionController);
-
-        backupDcSlave2Server = startServerWithFlexibleResult(new Callable<String>() {
-            @Override
-            public String call() {
-                backupDcSlave2ServerCalled = true;
-                if (backupDcSlave2Available) {
-                    return buildSentinelHello();
-                } else {
-                    return "-----error response-----";
-                }
-            }
-        });
-        backupDcSlave2Instance = newRandomRedisHealthCheckInstance("dc2", "dc1", backupDcSlave2Server.getPort());
-        ((DefaultRedisHealthCheckInstance)backupDcSlave2Instance).setHealthCheckConfig(healthCheckConfig);
-        backupDcSlave2Instance.getRedisInstanceInfo().isMaster(false);
-        backupDcSlave2Action = new SentinelHelloCheckAction(scheduled, backupDcSlave2Instance, executors, config, clusterService);
-        backupDcSlave2Action.addController(checkActionController);
-        backupDcSlave2Action.addListener(checkActionController);
+        activeDcMaster = new SentinelCheckStatus("dc1", "dc1", true);
+        activeDcSlave = new SentinelCheckStatus("dc1", "dc1", false);
+        backupDcSlave1 = new SentinelCheckStatus("dc2", "dc1", false);
+        backupDcSlave2 = new SentinelCheckStatus("dc2", "dc1", false);
     }
 
     public void prepareMetaCache() {
@@ -293,27 +298,131 @@ public class SentinelHelloActionDowngradeTest extends SentinelHelloCheckActionTe
     }
 
     private void resetCalled() {
-        activeDcMasterServerCalled = false;
-        activeDcSlaveServerCalled = false;
-        backupDcSlave1ServerCalled = false;
-        backupDcSlave2ServerCalled = false;
+        activeDcMaster.called = false;
+        activeDcSlave.called = false;
+        backupDcSlave1.called = false;
+        backupDcSlave2.called = false;
     }
 
     private void allActionDoTask() {
         sleep(sentinelCheckInterval);
-        activeDcMasterAction.doTask();
-        activeDcSlaveAction.doTask();
-        backupDcSlave1Action.doTask();
-        backupDcSlave2Action.doTask();
+        allActionDoTaskWithoutWait();
         sleep(sentinelCollectInterval * 2);
     }
 
+    private void allActionDoTaskWithoutWait() {
+        activeDcMaster.checkAction.doTask();
+        activeDcSlave.checkAction.doTask();
+        backupDcSlave1.checkAction.doTask();
+        backupDcSlave2.checkAction.doTask();
+    }
+
+    private void setSentinelCollectInterval(int interval) {
+        this.sentinelCollectInterval = interval;
+        SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = sentinelCollectInterval;
+    }
+
+    private void setServerHang(boolean activeDcMasterHang, boolean activeDcSlaveHang, boolean backupDcSlave1Hang, boolean backupDcSlave2Hang) {
+        activeDcMaster.serverHang = activeDcMasterHang;
+        activeDcSlave.serverHang = activeDcSlaveHang;
+        backupDcSlave1.serverHang = backupDcSlave1Hang;
+        backupDcSlave2.serverHang = backupDcSlave2Hang;
+    }
+
+    private void setServerErrResp(boolean activeDcMasterErrResp, boolean activeDcSlaveErrResp, boolean backupDcSlave1ErrResp, boolean backupDcSlave2ErrResp) {
+        activeDcMaster.errorResp = activeDcMasterErrResp;
+        activeDcSlave.errorResp = activeDcSlaveErrResp;
+        backupDcSlave1.errorResp = backupDcSlave1ErrResp;
+        backupDcSlave2.errorResp = backupDcSlave2ErrResp;
+    }
+
+    private void assertServerCalled(boolean activeDcMasterCalled, boolean activeDcSlaveCalled, boolean backupDcSlave1Called, boolean backDcSlave2Called) {
+        Assert.assertEquals(activeDcMasterCalled, activeDcMaster.called);
+        Assert.assertEquals(activeDcSlaveCalled, activeDcSlave.called);
+        Assert.assertEquals(backupDcSlave1Called, backupDcSlave1.called);
+        Assert.assertEquals(backDcSlave2Called, backupDcSlave2.called);
+    }
+
     private String buildSentinelHello() {
-        StringBuilder sb = new StringBuilder(SUBSCRIBE_HEADER);
+        StringBuilder sb = new StringBuilder(SentinelHelloCheckActionTest.SUBSCRIBE_HEADER);
         for(int i = 0; i < 5; i++) {
-            sb.append(String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i));
+            sb.append(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5000 + i));
         }
         return sb.toString();
+    }
+
+    private class SentinelCheckStatus {
+
+        public Server redisServer;
+
+        public RedisHealthCheckInstance checkInstance;
+
+        public SentinelHelloCheckAction checkAction;
+
+        public volatile boolean errorResp = false;
+
+        public volatile boolean serverHang = false;
+
+        public volatile boolean called = false;
+
+        public SentinelCheckStatus(String currentDc, String activeDc, boolean isMaster) throws Exception {
+            initServer();
+            initMeta(currentDc, activeDc, isMaster);
+        }
+
+        private void initMeta(String currentDc, String activeDc, boolean isMaster) throws Exception {
+            checkInstance = newRandomRedisHealthCheckInstance(currentDc, activeDc, redisServer.getPort());
+            ((DefaultRedisHealthCheckInstance)checkInstance).setHealthCheckConfig(healthCheckConfig);
+            checkInstance.getRedisInstanceInfo().isMaster(isMaster);
+            checkAction = new SentinelHelloCheckAction(scheduled, checkInstance, executors, config, clusterService);
+            checkAction.addController(checkActionController);
+            checkAction.addListener(checkActionController);
+        }
+
+        private void initServer() throws Exception {
+            redisServer = startServer(randomPort(), new IoActionFactory() {
+                @Override
+                public IoAction createIoAction(Socket socket) {
+                    return new AbstractIoAction(socket) {
+
+                        private String readLine = null;
+
+                        @Override
+                        protected void doWrite(OutputStream ous, Object readResult) throws IOException {
+                            try {
+                                called = true;
+                                String response = null;
+
+                                if (errorResp) {
+                                    response = "-----error response-----";
+                                } else if (serverHang) {
+                                    sleep(sentinelSubTimeout);
+                                } else {
+                                    response = buildSentinelHello();
+                                }
+
+                                if (null != response) ous.write(response.getBytes());
+
+                                while (true) {
+                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001).getBytes());
+                                    sleep(10);
+                                }
+                            } catch (Exception e) {
+                                logger.error("[doWrite] " + e.getMessage());
+                            }
+                        }
+
+                        @Override
+                        protected Object doRead(InputStream ins) throws IOException {
+                            readLine = readLine(ins);
+                            logger.info("[doRead]{}", readLine == null ? null : readLine.trim());
+                            return readLine;
+                        }
+                    };
+                }
+            });
+        }
+
     }
 
 }

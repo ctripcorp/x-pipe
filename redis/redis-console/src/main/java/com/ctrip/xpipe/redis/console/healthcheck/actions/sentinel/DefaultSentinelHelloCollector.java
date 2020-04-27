@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.net.SocketException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -204,7 +205,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
             return true;
         }
-        if (role.get() instanceof CommandExecutionException || role.get() instanceof CommandTimeoutException) {
+        if (role.get() instanceof CommandExecutionException || role.get() instanceof CommandTimeoutException
+                || role.get() instanceof SocketException) {
             return true;
         }
         logger.info("[isKeeperOrDead] role: {}", role.get());
