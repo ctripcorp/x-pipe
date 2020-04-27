@@ -222,6 +222,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     }
 
     private synchronized void setSubscribeState(SUBSCRIBE_STATE state) {
+        // WAITING_RESPONSE -> SUBSCRIBING means that subscriber has received subscribe header
         if (SUBSCRIBE_STATE.WAITING_RESPONSE == this.subscribeState && SUBSCRIBE_STATE.SUBSCRIBING == state) {
             cancelTimeout();
         }
