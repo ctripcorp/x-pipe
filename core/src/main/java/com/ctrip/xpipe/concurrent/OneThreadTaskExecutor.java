@@ -4,14 +4,12 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
-import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -99,7 +97,6 @@ public class OneThreadTaskExecutor implements Destroyable {
             currentCommand = retryCommand;
 
             if (!(command instanceof LogIgnoreCommand)) logger.info("[doRun][begin]{}", command);
-            Command<?> finalCommand = command;
             retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
                 public void operationComplete(CommandFuture commandFuture) throws Exception {
