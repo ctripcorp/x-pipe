@@ -58,7 +58,6 @@ public class AsyncNettyClient extends DefaultNettyClient {
                         AsyncNettyClient.super.sendRequest(byteBuf);
                     } else {
                         logger.warn("[async][wont-send][{}]", desc);
-                        AsyncNettyClient.super.channelClosed(future.channel());
                     }
                 }
             });
@@ -79,7 +78,6 @@ public class AsyncNettyClient extends DefaultNettyClient {
                     } else {
                         logger.warn("[async][wont-send][{}] {}", desc, byteBufReceiver.getClass().getSimpleName());
                         byteBufReceiver.clientClosed(AsyncNettyClient.this);
-                        AsyncNettyClient.super.channelClosed(future.channel());
                     }
                 }
             });
