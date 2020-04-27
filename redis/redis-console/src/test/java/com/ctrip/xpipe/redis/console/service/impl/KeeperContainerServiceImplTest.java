@@ -14,14 +14,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng
@@ -221,5 +217,16 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(2, infos.get(0).getClusterCount());
         Assert.assertEquals(2, infos.get(0).getShardCount());
         Assert.assertEquals(2, infos.get(0).getKeeperCount());
+    }
+
+    @Test
+    public void testKeeperContainerAlreadyExists() {
+        KeeperContainerCreateInfo existKeeperContainer = new KeeperContainerCreateInfo()
+                .setKeepercontainerIp("127.0.0.1").setKeepercontainerPort(7080);
+        KeeperContainerCreateInfo newKeeperContainer = new KeeperContainerCreateInfo()
+                .setKeepercontainerIp("127.0.0.1").setKeepercontainerPort(9090);
+
+        Assert.assertTrue(keeperContainerService.keeperContainerAlreadyExists(existKeeperContainer));
+        Assert.assertFalse(keeperContainerService.keeperContainerAlreadyExists(newKeeperContainer));
     }
 }
