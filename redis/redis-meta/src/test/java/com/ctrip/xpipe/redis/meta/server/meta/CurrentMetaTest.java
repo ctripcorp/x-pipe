@@ -13,7 +13,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * @author wenchao.meng
@@ -37,7 +42,38 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		clusterId = clusterMeta.getId();
 		shardId = clusterMeta.getShards().keySet().iterator().next();
 	}
-	
+
+	@Test
+	public void testAddResourceConcurrently() throws Exception {
+		int concurrentSize = 1000;
+		AtomicInteger releaseCount = new AtomicInteger(0);
+		CountDownLatch latch = new CountDownLatch(concurrentSize);
+		CyclicBarrier barrier = new CyclicBarrier(concurrentSize);
+		IntStream.range(0, concurrentSize).forEach(i -> {
+			new Thread(() -> {
+				try {
+					barrier.await();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (BrokenBarrierException e) {
+					e.printStackTrace();
+				}
+
+				currentMeta.addResource(clusterId, shardId, new Releasable() {
+					@Override
+					public void release() throws Exception {
+						releaseCount.incrementAndGet();
+					}
+				});
+				latch.countDown();
+			}).start();
+		});
+
+		latch.await(3, TimeUnit.SECONDS);
+		currentMeta.release();
+
+		Assert.assertEquals(concurrentSize, releaseCount.get());
+	}
 	
 	@Test
 	public void testGetKeeperMaster(){
