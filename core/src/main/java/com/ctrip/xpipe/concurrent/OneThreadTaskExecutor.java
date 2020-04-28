@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *         <p>
  *         Sep 7, 2016
  */
-public class OneThreadTaskExecutor implements Destroyable {
+public class OneThreadTaskExecutor implements Destroyable, TaskExecutor {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,6 +49,7 @@ public class OneThreadTaskExecutor implements Destroyable {
         this.executors = executors;
     }
 
+    @Override
     public void executeCommand(Command<?> command) {
 
         logger.debug("[executeCommand][offer it in pool]{}", command);

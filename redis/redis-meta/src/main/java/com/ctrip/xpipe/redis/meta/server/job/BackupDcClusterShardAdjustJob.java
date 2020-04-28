@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> implements RequestResponseCommand<Void>, LogIgnoreCommand {
+public class BackupDcClusterShardAdjustJob extends AbstractMetaServerJob<Void> implements RequestResponseCommand<Void>, LogIgnoreCommand {
 
     private String cluster;
 
@@ -157,5 +157,10 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
     @Override
     public int getCommandTimeoutMilli() {
         return 1000;
+    }
+
+    @Override
+    public boolean isSerial() {
+        return false;
     }
 }

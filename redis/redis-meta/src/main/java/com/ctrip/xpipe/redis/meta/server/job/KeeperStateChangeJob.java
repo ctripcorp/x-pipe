@@ -31,7 +31,7 @@ import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAU
  *
  * Jul 8, 2016
  */
-public class KeeperStateChangeJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
+public class KeeperStateChangeJob extends AbstractMetaServerJob<Void> implements RequestResponseCommand<Void> {
 	
 	private List<KeeperMeta> keepers;
 	private Pair<String, Integer> activeKeeperMaster;
@@ -172,5 +172,10 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 	@Override
 	public int getCommandTimeoutMilli() {
 		return DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI * 2;
+	}
+
+	@Override
+	public boolean isSerial() {
+		return true;
 	}
 }

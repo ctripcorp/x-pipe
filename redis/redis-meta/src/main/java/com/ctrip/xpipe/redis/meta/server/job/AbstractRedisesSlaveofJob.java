@@ -29,7 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * Jul 8, 2016
  */
-public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
+public abstract class AbstractRedisesSlaveofJob extends AbstractMetaServerJob<Void>{
 	
 	private List<RedisMeta> redises;
 	private String masterHost;
@@ -108,5 +108,9 @@ public abstract class AbstractRedisesSlaveofJob extends AbstractCommand<Void>{
 	public String toString() {
 		return String.format("[%s] slaveof %s:%d", StringUtil.join(",", (redis)-> redis.desc(), redises), masterHost, masterPort);
 	}
-	
+
+	@Override
+	public boolean isSerial() {
+		return true;
+	}
 }

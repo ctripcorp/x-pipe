@@ -10,7 +10,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>
+public class ChangePrimaryDcJob extends AbstractMetaServerJob<MetaServerConsoleService.PrimaryDcChangeMessage>
         implements RequestResponseCommand<MetaServerConsoleService.PrimaryDcChangeMessage> {
 
     private ChangePrimaryDcAction action;
@@ -63,5 +63,10 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     public boolean isStarted() {
         return started.get();
+    }
+
+    @Override
+    public boolean isSerial() {
+        return true;
     }
 }
