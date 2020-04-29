@@ -1,24 +1,36 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
+import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.client.RestOperations;
 import org.unidal.dal.jdbc.DalException;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 
@@ -46,6 +58,10 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         dcName = dcNames[0];
         shardName = shardNames[0];
 
+    }
+
+    {
+        shardNames = new String[]{"shard1", "shard2", "shard3", "shard4"};
     }
 
     @Test
@@ -291,8 +307,84 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
         RedisTbl redis = redisTbls.get(0);
         Assert.assertTrue(redis.getKeepercontainerId() > 0);
-        Assert.assertEquals(2, redis.getCount());
+        Assert.assertEquals(shardNames.length, redis.getCount());
         Assert.assertEquals(1, redis.getDcClusterShardInfo().getClusterCount());
-        Assert.assertEquals(2, redis.getDcClusterShardInfo().getShardCount());
+        Assert.assertEquals(shardNames.length, redis.getDcClusterShardInfo().getShardCount());
     }
+
+    @Test
+    public void addKeeperConcurrentlyTest() throws Exception {
+        int threadCnt = shardNames.length;
+        CyclicBarrier barrier = new CyclicBarrier(threadCnt);
+        CountDownLatch latch = new CountDownLatch(threadCnt);
+        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcName, clusterName);
+        logger.info("[addKeeperConcurrentlyTest] addKeepers {}", bestKeepers);
+
+        IntStream.range(0, threadCnt).forEach(i -> {
+            new Thread(() -> {
+                RedisServiceImpl localRedisService = buildLocalRedisService();
+                try {
+                    redisService.deleteKeepers(dcName, clusterName, shardNames[i]);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    barrier.await(2, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    localRedisService.insertKeepers(dcName, clusterName, shardNames[i], bestKeepers);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    latch.countDown();
+                }
+            }).start();
+        });
+
+        latch.await(5, TimeUnit.SECONDS);
+
+        AtomicInteger noKeeperShardCnt = new AtomicInteger();
+        AtomicInteger twoKeeperShardCnt = new AtomicInteger();
+        AtomicInteger otherShardCnt = new AtomicInteger();
+
+        IntStream.range(0, threadCnt).forEach(i -> {
+            try {
+                List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardNames[i]);
+                if (keepers.isEmpty()) noKeeperShardCnt.incrementAndGet();
+                else if (keepers.size() == 2) twoKeeperShardCnt.incrementAndGet();
+                else otherShardCnt.incrementAndGet();
+            } catch (ResourceNotFoundException e) {
+                Assert.fail();
+            }
+        });
+
+        logger.info("[addKeeperConcurrentlyTest] twoKeeperShardCnt {} noKeeperShardCnt {}, otherShardCnt {}",
+                twoKeeperShardCnt.get(), noKeeperShardCnt.get(), otherShardCnt.get());
+        Assert.assertEquals(1, twoKeeperShardCnt.get());
+        Assert.assertEquals(shardNames.length - 1, noKeeperShardCnt.get());
+        Assert.assertEquals(0, otherShardCnt.get());
+    }
+
+    private RedisServiceImpl buildLocalRedisService() {
+        RedisServiceImpl localRedisService = new RedisServiceImpl();
+        localRedisService.clusterService = redisService.clusterService;
+        localRedisService.dcClusterShardService = redisService.dcClusterShardService;
+        localRedisService.keeperContainerService = redisService.keeperContainerService;
+        localRedisService.notifier = redisService.notifier;
+        localRedisService.redisDao = redisService.redisDao;
+
+        try {
+            Field daoField = AbstractConsoleService.class.getDeclaredField("dao");
+            daoField.setAccessible(true);
+            daoField.set(localRedisService, daoField.get(redisService));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return localRedisService;
+    }
+
 }

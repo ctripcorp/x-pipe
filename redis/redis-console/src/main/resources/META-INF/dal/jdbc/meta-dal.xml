@@ -856,7 +856,7 @@
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-        			SET <FIELD name='deleted'/> = 1, <FIELD name='run-id'/> = ${run-id}
+        			SET <FIELD name='deleted'/> = 1, <FIELD name='run-id'/> = ${run-id}, <FIELD name='deleted-at'/> = UNIX_TIMESTAMP()
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
