@@ -278,8 +278,10 @@
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <member name="deleted-at" field="deleted_at" value-type="int" length="10" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
+    <index name="ip_port_deleted_at" unique="true" members="redis_ip ASC, redis_port ASC, deleted_at ASC" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <index name="DcClusterShardId" members="dc_cluster_shard_id ASC" />
     <index name="keeper_active" members="keeper_active ASC" />
