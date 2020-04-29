@@ -31,7 +31,9 @@ public abstract class AbstractDedupJobManager implements JobManager<Command<?>> 
         DedupCommand future = new DedupCommand((Command<?>) task);
         DedupCommand current = jobs.putIfAbsent(task.getClass(), future);
         if(current != null) {
-            current.replace((Command<?>) task);
+            if(!current.replace((Command<?>) task)) {
+                jobs.put(task.getClass(), future);
+            }
         } else {
             executorJob(future);
         }
@@ -51,12 +53,15 @@ public abstract class AbstractDedupJobManager implements JobManager<Command<?>> 
             this.innerCommand = innerCommand;
         }
 
-        public void replace(Command<?> newCommand) {
+        public boolean replace(Command<?> newCommand) {
             synchronized (this) {
                 Command<?> old = this.innerCommand;
                 if(!isRunning) {
                     this.innerCommand = newCommand;
                     old.future().cancel(true);
+                    return true;
+                } else {
+                    return false;
                 }
             }
         }
