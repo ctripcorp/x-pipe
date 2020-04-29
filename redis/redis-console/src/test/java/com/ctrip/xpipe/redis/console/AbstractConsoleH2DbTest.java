@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.redis.console.h2.FunctionsMySQL;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -73,6 +74,7 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
         String driver = dataSource.getDescriptor().getProperty("driver", null);
 
         if (driver != null && driver.equals("org.h2.Driver")) {
+            registerMySQLFunctions();
             executeSqlScript(FileUtils.readFileAsString(TABLE_STRUCTURE));
             executeSqlScript(FileUtils.readFileAsString(TABLE_DATA));
         } else {
@@ -80,6 +82,16 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
         }
 
         executeSqlScript(prepareDatas());
+    }
+
+    private void registerMySQLFunctions() {
+        try {
+            DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+            Connection conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
+            FunctionsMySQL.register(conn);
+        } catch (Exception e) {
+            logger.error("[SetUpTestDataSource][fail]: register MySQL functions fail ", e);
+        }
     }
 
     protected void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {

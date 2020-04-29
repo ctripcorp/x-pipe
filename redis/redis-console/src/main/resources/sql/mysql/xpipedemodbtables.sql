@@ -154,7 +154,9 @@ CREATE TABLE `REDIS_TBL` (
   `keepercontainer_id` bigint(20) unsigned DEFAULT NULL COMMENT 'keepercontainer id',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  `deleted_at` int(11) NOT NULL DEFAULT '0' COMMENT 'deleted time',
   PRIMARY KEY (`id`),
+  UNIQUE KEY `ip_port_deleted_at` (`redis_ip`,`redis_port`,`deleted_at`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `DcClusterShardId` (`dc_cluster_shard_id`),
   KEY `keeper_active` (`keeper_active`)
