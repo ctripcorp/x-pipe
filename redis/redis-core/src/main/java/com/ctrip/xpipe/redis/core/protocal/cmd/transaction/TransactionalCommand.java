@@ -56,7 +56,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 						try {
 							parentClientPool.returnObject(nettyClient);
 						} catch (ReturnObjectException e) {
-							logger.error("[doExecute]" + this, e);
+							getLogger().error("[doExecute]" + this, e);
 						}
 					}
 				}
@@ -68,7 +68,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 
 	private void startTransaction(final SimpleObjectPool<NettyClient> clientPool) {
 
-		logger.info("[startTransaction]{}", this);
+		getLogger().info("[startTransaction]{}", this);
 		
 		new MultiCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<String>() {
 
@@ -98,7 +98,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 			public void operationComplete(CommandFuture commandFuture) throws Exception {
 				
 				if(!commandFuture.isSuccess()){
-					logger.error("[doWork][fail]", commandFuture.cause());
+					getLogger().error("[doWork][fail]", commandFuture.cause());
 				}
 				
 				endTranscation(clientPool);
@@ -108,7 +108,7 @@ public class TransactionalCommand extends AbstractRedisCommand<Object[]>{
 
 	protected void endTranscation(SimpleObjectPool<NettyClient> clientPool) {
 		
-		logger.info("[endTranscation]{}", this);
+		getLogger().info("[endTranscation]{}", this);
 		
 		new ExecCommand(clientPool, scheduled).execute().addListener(new CommandFutureListener<Object[]>() {
 			

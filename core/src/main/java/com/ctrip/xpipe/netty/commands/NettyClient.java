@@ -25,5 +25,7 @@ public interface NettyClient {
 	 * @param byteBufReceiver
 	 */
 	void sendRequest(ByteBuf byteBuf, ByteBufReceiver byteBufReceiver);
+
+	void onTimeout(ByteBufReceiver byteBufReceiver, int timeoutMill);
 	
 }

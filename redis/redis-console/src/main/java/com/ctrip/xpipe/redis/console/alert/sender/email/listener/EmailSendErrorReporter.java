@@ -17,7 +17,7 @@ public class EmailSendErrorReporter extends AbstractEmailSenderCallback {
 
     @Override
     public void fail(Throwable throwable) {
-        logger.error("[fail] Email fail exception: {}", throwable);
+        logger.error("[fail] Email fail exception", throwable);
         EventMonitor.DEFAULT.logEvent(EMAIL_SERVICE_CAT_TYPE,
                 String.format("%s Email send out error: %s",
                         DateTimeUtils.currentTimeAsString(), throwable.getMessage()));

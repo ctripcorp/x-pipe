@@ -8,7 +8,10 @@ import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import io.netty.channel.nio.NioEventLoopGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,6 +23,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 
+	private Logger logger = LoggerFactory.getLogger(RedisMasterNewRdbDumper.class);
+
 	private DumpedRdbStore dumpedRdbStore;
 	
 	private RedisMaster redisMaster;
@@ -30,22 +35,22 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	
 	private ScheduledExecutorService scheduled;
 
-	private ProxyResourceManager endpointManager;
+	private KeeperResourceManager resourceManager;
 
 	public RedisMasterNewRdbDumper(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
                                    NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-                                   ProxyResourceManager endpointManager) {
+                                   KeeperResourceManager resourceManager) {
 		super(redisKeeperServer);
 		this.redisMaster = redisMaster;
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.scheduled = scheduled;
-		this.endpointManager = endpointManager;
+		this.resourceManager = resourceManager;
 	}
 
 	@Override
 	protected void doExecute() throws Exception {
 		
-		rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, this, endpointManager);
+		rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, this, resourceManager);
 		
 		rdbonlyRedisMasterReplication.initialize();
 		rdbonlyRedisMasterReplication.start();
@@ -103,5 +108,10 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 	@Override
 	public String toString() {
 		return String.format("%s(%s)", getClass().getSimpleName(), rdbonlyRedisMasterReplication);
+	}
+
+	@Override
+	public Logger getLogger() {
+		return logger;
 	}
 }

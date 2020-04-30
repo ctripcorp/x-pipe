@@ -29,9 +29,6 @@ public class MigrationController extends AbstractConsoleController {
 	private MigrationService migrationService;
 
 	@Autowired
-	private ConfigService configService;
-
-	@Autowired
 	private ClusterService clusterService;
 
 	@Autowired
@@ -153,8 +150,6 @@ public class MigrationController extends AbstractConsoleController {
 		if(clusterTbl == null || clusterTbl.getClusterName() == null) {
 			logger.warn("[getDefaultMigrationCluster]not found default cluster: {}", clusterName);
 		}
-		List<DcTbl> dcs = dcService.findClusterRelatedDc(clusterTbl.getClusterName());
-
 		return clusterTbl;
 	}
 }

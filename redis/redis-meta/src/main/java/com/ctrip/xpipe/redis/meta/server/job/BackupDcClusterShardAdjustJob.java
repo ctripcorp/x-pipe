@@ -5,7 +5,10 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -18,11 +21,9 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
+public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> implements RequestResponseCommand<Void>, LogIgnoreCommand {
 
     private String cluster;
 
@@ -54,17 +55,17 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
 
     @Override
     protected void doExecute() throws Exception {
-        logger.debug("[doExecute]{}, {}", cluster, shard);
+        getLogger().debug("[doExecute]{}, {}", cluster, shard);
 
         if (dcMetaCache.isCurrentDcPrimary(cluster, shard)) {
-            logger.info("[doExecute][adjust skip] {}, {} become primary dc", cluster, shard);
+            getLogger().info("[doExecute][adjust skip] {}, {} become primary dc", cluster, shard);
             future().setSuccess();
             return;
         }
 
         KeeperMeta keeperActive = currentMetaManager.getKeeperActive(cluster, shard);
         if(keeperActive == null){
-            logger.info("[doExecute][keeper active null]{}, {}", cluster, shard);
+            getLogger().info("[doExecute][keeper active null]{}, {}", cluster, shard);
             future().setSuccess();
             return;
         }
@@ -76,7 +77,7 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
             return;
         }
 
-        logger.info("[doExecute][change state]{}, {}, {}", cluster, keeperActive, redisNeedChange);
+        getLogger().info("[doExecute][change state]{}, {}, {}", cluster, keeperActive, redisNeedChange);
 
         slaveOfJobFuture = new DefaultSlaveOfJob(redisNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled, executors).execute();
         slaveOfJobFuture.addListener(new CommandFutureListener<Void>() {
@@ -84,7 +85,7 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
             @Override
             public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
                 if (!commandFuture.isSuccess()) {
-                    logger.error("[operationComplete][fail]" + commandFuture.command(), commandFuture.cause());
+                    getLogger().error("[operationComplete][fail]" + commandFuture.command(), commandFuture.cause());
                     future().setFailure(commandFuture.cause());
                 } else {
                     future().setSuccess();
@@ -128,22 +129,26 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
 
                 if (role.getServerRole() == Server.SERVER_ROLE.MASTER) {
                     change = true;
-                    logger.info("[getRedisNeedToChange][redis master, change to slave of keeper]{}, {}", redisMeta, keeperActive);
+                    getLogger().info("[getRedisNeedToChange][redis master, change to slave of keeper]{}, {}", redisMeta, keeperActive);
                 } else if (role.getServerRole() == Server.SERVER_ROLE.SLAVE) {
                     SlaveRole slaveRole = (SlaveRole) role;
                     if (!keeperActive.getIp().equals(slaveRole.getMasterHost()) || !keeperActive.getPort().equals(slaveRole.getMasterPort())) {
-                        logger.info("[getRedisNeedToChange][redis master not active keeper, change to slaveof keeper]{}, {}, {}", slaveRole, redisMeta, keeperActive);
+                        getLogger().info("[getRedisNeedToChange][redis master not active keeper, change to slaveof keeper]{}, {}, {}", slaveRole, redisMeta, keeperActive);
                         change = true;
                     }
                 } else {
-                    logger.warn("[getRedisNeedToChange][role error]{}, {}", redisMeta, role);
+                    getLogger().warn("[getRedisNeedToChange][role error]{}, {}", redisMeta, role);
                     continue;
                 }
                 if (change) {
                     redisesNeedChange.add(redisMeta);
                 }
+            } catch (TimeoutException timeoutException) {
+                // do nothing
             } catch (Exception e) {
-                logger.error("[getRedisNeedToChange]" + redisMeta, e);
+                if (!(ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException)) {
+                    getLogger().error("[getRedisNeedToChange]" + redisMeta, e);
+                }
             }
         }
         return redisesNeedChange;

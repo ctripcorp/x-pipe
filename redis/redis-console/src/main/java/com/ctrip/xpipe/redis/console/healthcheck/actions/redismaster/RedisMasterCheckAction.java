@@ -69,7 +69,17 @@ public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction
         });
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     private void checkMaster() {
+        if(serverRole.equals(Server.SERVER_ROLE.UNKNOWN)) {
+            RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
+            logger.warn("[checkMaster][{}] redis role unknown, skip", info.getHostPort());
+            return;
+        }
         boolean actualMaster = serverRole.equals(Server.SERVER_ROLE.MASTER);
         RedisRoleState state = RedisRoleState.getFrom(getActionInstance().getRedisInstanceInfo().isMaster(), actualMaster);
         if(state.shouldBeCorrect()) {

@@ -6,13 +6,13 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -87,7 +87,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
                 byte sign = byteBuf.getByte(readIndex);
                 if(sign == RedisClientProtocol.ASTERISK_BYTE){
                     commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
-                    redisClientProtocol = new ArrayParser(bulkStringInitSize);
+                    redisClientProtocol = new ArrayParser().setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
                 } else {
                     throw new IllegalArgumentException("subscribe should response with redis array format");
                 }
@@ -163,12 +163,12 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
 
         if(objects.length < 3 || !messageType.isFromSubType(payloadToString(objects[0]))) {
             String message = String.format("Subscribe channel response incorrect: %s", Arrays.toString(objects));
-            logger.error("[handleResponse]{}", message);
+            getLogger().error("[handleResponse]{}", message);
             throw new RedisRuntimeException(message);
         }
 
         if(logRequest()) {
-            logger.info("[handleResponse][subscribe success]channel[{}]{}", channel, channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
+            getLogger().info("[handleResponse][subscribe success]channel[{}]{}", channel, channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
         }
     }
 
@@ -195,7 +195,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
             try {
                 listener.message(channelAndMessage.getKey(), channelAndMessage.getValue());
             } catch (Exception e) {
-                logger.error("[notifyListeners] Listener: {}, exception: ", listener.getClass().getSimpleName(), e);
+                getLogger().error("[notifyListeners] Listener: {}, exception: ", listener.getClass().getSimpleName(), e);
             }
         }
     }
@@ -213,11 +213,6 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         return new RequestStringParser(request).format();
     }
 
-    @Override
-    public int getCommandTimeoutMilli() {
-        return 0;
-    }
-
     protected String[] getSubscribeChannel() {
         return subscribeChannel;
     }
@@ -227,11 +222,21 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     }
 
     private synchronized void setSubscribeState(SUBSCRIBE_STATE state) {
+        // WAITING_RESPONSE -> SUBSCRIBING means that subscriber has received subscribe header
+        if (SUBSCRIBE_STATE.WAITING_RESPONSE == this.subscribeState && SUBSCRIBE_STATE.SUBSCRIBING == state) {
+            cancelTimeout();
+        }
         this.subscribeState = state;
     }
 
     public void unSubscribe() {
         setSubscribeState(SUBSCRIBE_STATE.UNSUBSCRIBE);
         doUnsubscribe();
+    }
+
+    @Override
+    protected void handleTimeout(NettyClient nettyClient) {
+        super.handleTimeout(nettyClient);
+        unSubscribe();
     }
 }

@@ -6,10 +6,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.TestCommand;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -44,6 +41,7 @@ public class KeyedOneThreadMutexableTaskExecutorTest extends AbstractTest {
     }
 
     @Test
+    @Ignore
     public void testHang() throws TimeoutException, IOException {
 
         int threadCount = 10;
@@ -81,34 +79,36 @@ public class KeyedOneThreadMutexableTaskExecutorTest extends AbstractTest {
 
 
     @Test
+    @Ignore
     public void testSameKey(){
 
-        TestCommand command1 =  new TestCommand("success", sleepInterval);
-        TestCommand command2 =  new TestCommand("success", sleepInterval);
+        BlockingCommand command1 =  new BlockingCommand(sleepInterval);
+        BlockingCommand command2 =  new BlockingCommand(sleepInterval);
 
         keyed.execute("key1", command1);
         keyed.execute("key1", command2);
 
         sleep(sleepInterval/2);
 
-        Assert.assertTrue(command1.isBeginExecute());
-        Assert.assertFalse(command2.isBeginExecute());
+        Assert.assertTrue(command1.isProcessing());
+        Assert.assertFalse(command2.isProcessing());
 
     }
 
     @Test
+    @Ignore
     public void testDifferentKey(){
 
-        TestCommand command1 =  new TestCommand("success", sleepInterval);
-        TestCommand command2 =  new TestCommand("success", sleepInterval);
+        BlockingCommand command1 =  new BlockingCommand(sleepInterval);
+        BlockingCommand command2 =  new BlockingCommand(sleepInterval);
 
         keyed.execute("key1", command1);
         keyed.execute("key2", command2);
 
         sleep(sleepInterval/2);
 
-        Assert.assertTrue(command1.isBeginExecute());
-        Assert.assertTrue(command2.isBeginExecute());
+        Assert.assertTrue(command1.isProcessing());
+        Assert.assertTrue(command2.isProcessing());
 
     }
 

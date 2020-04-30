@@ -7,11 +7,13 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.*;
+import com.ctrip.xpipe.netty.NettyTimeoutTtlListenerTest;
 import com.ctrip.xpipe.netty.TcpPortCheckCommandTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayloadTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPoolTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientPoolTest;
 import com.ctrip.xpipe.spring.DomainValidateFilterTest;
@@ -75,7 +77,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	CausalCommandTest.class,
 	CausalChainTest.class,
 	MutexableOneThreadTaskExecutorTest.class,
-	KeyedOneThreadMutexableTaskExecutorTest.class
+	KeyedOneThreadMutexableTaskExecutorTest.class,
+	DirectByteBufInStringOutPayloadTest.class,
+	NettyTimeoutTtlListenerTest.class
 })
 public class AllTests {
 

@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -12,6 +16,8 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,7 +42,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ClusterService clusterService;
 
+    private List<HealthCheckActionController> controllers = new ArrayList<>();
+
     private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
+
+    private Throwable subError;
 
     protected long lastStartTime = System.currentTimeMillis();
 
@@ -52,16 +62,34 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         if(!shouldStart()) {
             return;
         }
+
+        lastStartTime = System.currentTimeMillis();
+        RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
+        if (instance.getRedisInstanceInfo().isInActiveDc()) {
+            logger.info("[doTask][{}-{}] in active dc, redis {}", info.getClusterId(), info.getShardId(), instance.getEndpoint());
+        }
+
+        subError = null;
         getActionInstance().getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {
-                SentinelHello hello = SentinelHello.fromString(message);
-                hellos.add(hello);
+                executors.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        SentinelHello hello = SentinelHello.fromString(message);
+                        hellos.add(hello);
+                    }
+                });
             }
 
             @Override
             public void fail(Throwable e) {
-                logger.error("[sub-failed]", e);
+                if (ExceptionUtils.isStackTraceUnnecessary(e)) {
+                    logger.error("[sub-failed][{}] {}", getActionInstance().getRedisInstanceInfo().getHostPort(), e.getMessage());
+                } else {
+                    logger.error("[sub-failed][{}]", getActionInstance().getRedisInstanceInfo().getHostPort(), e);
+                }
+                subError = e;
             }
         });
         scheduled.schedule(new AbstractExceptionLogTask() {
@@ -72,10 +100,17 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         }, SENTINEL_COLLECT_INFO_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
+    }
+
     @VisibleForTesting
     protected void processSentinelHellos() {
         getActionInstance().getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
-        notifyListeners(new SentinelActionContext(getActionInstance(), hellos));
+        SentinelActionContext actionContext = null != subError ? new SentinelActionContext(getActionInstance(), subError) :
+                new SentinelActionContext(getActionInstance(), hellos);
+        notifyListeners(actionContext);
         hellos = Sets.newConcurrentHashSet();
     }
 
@@ -83,11 +118,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         long current = System.currentTimeMillis();
         if( current - lastStartTime < getIntervalMilli()){
             logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
-            return false;
-        }
-
-        if(getActionInstance().getRedisInstanceInfo().isInActiveDc()) {
-            logger.debug("[doTask][BackupDc] do in backup dc only, quit");
             return false;
         }
 
@@ -101,7 +131,20 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         String clusterStatus = clusterService.find(getActionInstance().getRedisInstanceInfo().getClusterId()).getStatus();
         if (!ClusterStatus.isSameClusterStatus(clusterStatus, ClusterStatus.Normal)) {
             logger.warn("[shouldStart][{}] in migration, stop check", getActionInstance().getRedisInstanceInfo().getClusterId());
+            return false;
         }
+
+        for (HealthCheckActionController controller : controllers) {
+            if (!controller.shouldCheck(instance)) {
+                RedisInstanceInfo redisInfo = getActionInstance().getRedisInstanceInfo();
+                logger.debug("[shouldStart][{}-{}] {} {} controller {} refuse check",
+                        redisInfo.getClusterId(), redisInfo.getShardId(),
+                        redisInfo.isInActiveDc() ? "activeDc" : "backupDc", redisInfo.getDcId(),
+                        controller.getClass().getSimpleName());
+                return false;
+            }
+        }
+
         return consoleDbConfig.isSentinelAutoProcess();
     }
 
@@ -112,5 +155,10 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     protected int getIntervalMilli() {
         return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
+    }
+
+    @Override
+    public void addController(HealthCheckActionController controller) {
+        this.controllers.add(controller);
     }
 }

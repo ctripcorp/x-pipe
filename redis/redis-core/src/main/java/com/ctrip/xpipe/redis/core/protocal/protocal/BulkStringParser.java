@@ -56,22 +56,23 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	
 	@Override
 	public RedisClientProtocol<InOutPayload> read(ByteBuf byteBuf){
-
-		switch(bulkStringState){
+	while (true) {
+		switch (bulkStringState) {
 
 			case READING_EOF_MARK:
 				eofJudger = readEOfMark(byteBuf);
-				if(eofJudger == null){
+				if (eofJudger == null) {
 					return null;
 				}
 
 				logger.debug("[read]{}", eofJudger);
-				if(bulkStringParserListener != null){
+				if (bulkStringParserListener != null) {
 					bulkStringParserListener.onEofType(eofJudger.getEofType());
 				}
 
 				bulkStringState = BULK_STRING_STATE.READING_CONTENT;
 				payload.startInput();
+				continue;
 			case READING_CONTENT:
 
 				int readerIndex = byteBuf.readerIndex();
@@ -79,47 +80,48 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 				int length = 0;
 				try {
 					length = payload.in(byteBuf.slice(readerIndex, result.getReadLen()));
-					if(length != result.getReadLen()){
+					if (length != result.getReadLen()) {
 						throw new IllegalStateException(String.format("expected readLen:%d, but real:%d", result.getReadLen(), length));
 					}
 				} catch (IOException e) {
-					logger.error("[read][exception]" + payload ,e);
+					logger.error("[read][exception]" + payload, e);
 					throw new RedisRuntimeException("[write to payload exception]" + payload, e);
 				}
 				byteBuf.readerIndex(readerIndex + length);
 
-				if(result.isEnd()){
+				if (result.isEnd()) {
 					int truncate = eofJudger.truncate();
 					try {
-						if(truncate > 0){
-								payload.endInputTruncate(truncate);
-						}else{
+						if (truncate > 0) {
+							payload.endInputTruncate(truncate);
+						} else {
 							payload.endInput();
 						}
 					} catch (IOException e) {
 						throw new RedisRuntimeException("[write to payload truncate exception]" + payload, e);
 					}
 					bulkStringState = BULK_STRING_STATE.READING_CR;
-				}else{
+					continue;
+				} else {
 					break;
 				}
 			case READING_CR:
-				if(byteBuf.readableBytes() == 0){
+				if (byteBuf.readableBytes() == 0) {
 					return new BulkStringParser(payload);
 				}
 				byte data1 = byteBuf.getByte(byteBuf.readerIndex());
-				if(data1 == '\r'){
+				if (data1 == '\r') {
 					byteBuf.readByte();
 					bulkStringState = BULK_STRING_STATE.READING_LF;
-				}else{
+				} else {
 					return new BulkStringParser(payload);
 				}
 			case READING_LF:
-				if(byteBuf.readableBytes() == 0){
+				if (byteBuf.readableBytes() == 0) {
 					return null;
 				}
 				data1 = byteBuf.getByte(byteBuf.readerIndex());
-				if(data1 == '\n'){
+				if (data1 == '\n') {
 					byteBuf.readByte();
 					bulkStringState = BULK_STRING_STATE.END;
 				}
@@ -130,6 +132,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 				break;
 		}
 		return null;
+	}
 	}
 
 	private LfReader lfReader = null;

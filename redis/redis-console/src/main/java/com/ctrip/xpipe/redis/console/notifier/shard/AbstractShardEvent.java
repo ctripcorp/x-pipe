@@ -97,7 +97,7 @@ public abstract class AbstractShardEvent implements ShardEvent {
             executor.execute(new AbstractExceptionLogTask() {
                 @Override
                 protected void doRun() throws Exception {
-                    logger.info("[onEvent] execute observer: {}", observer.getClass());
+                    getLogger().info("[onEvent] execute observer: {}", observer.getClass());
                     observer.update(getShardEventType(), getSelf());
                 }
             });

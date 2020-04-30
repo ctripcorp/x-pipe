@@ -82,6 +82,11 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             method: 'GET',
             url: '/console/clusters/keepercontainer/:containerId',
             isArray: true
+        },
+        find_unhealthy_shards: {
+            method: 'GET',
+            url: '/console/shards/unhealthy',
+            isArray: true
         }
     });
     function getInvolvedOrgs() {
@@ -307,6 +312,17 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
+    function getUnhealthyShards() {
+        var d = $q.defer();
+        resource.find_unhealthy_shards ({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -322,6 +338,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getOrganizations: getOrganizations,
         getInvolvedOrgs: getInvolvedOrgs,
         getUnhealthyClusters: getUnhealthyClusters,
+        getUnhealthyShards: getUnhealthyShards,
         findClustersByDcNameBind: findClustersByDcNameBind,
         findClustersByDcName : findClustersByDcName,
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,

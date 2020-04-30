@@ -34,7 +34,7 @@ public class FailSafeCommandWrapper<V> extends AbstractCommand<V>{
 					future().setSuccess(commandFuture.get());
 				}else{
 					if(!future().isDone()){
-						logger.error("[command fail, but treat it as success]" + command, commandFuture.cause());
+						getLogger().error("[command fail, but treat it as success]" + command, commandFuture.cause());
 						future().setSuccess();
 					}
 				}

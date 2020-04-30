@@ -60,7 +60,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector {
     @Override
     public void onAction(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
-        if(!info.isInActiveDc()) {
+        if(!info.isInActiveDc() && !context.isFail()) {
             doCollect(context);
         }
     }

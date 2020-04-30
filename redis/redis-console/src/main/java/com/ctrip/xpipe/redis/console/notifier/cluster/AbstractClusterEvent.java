@@ -62,7 +62,7 @@ public abstract class AbstractClusterEvent implements ClusterEvent {
             executor.execute(new AbstractExceptionLogTask() {
                 @Override
                 protected void doRun() throws Exception {
-                    logger.info("[onEvent] execute observer: {}", observer.getClass());
+                    getLogger().info("[onEvent] execute observer: {}", observer.getClass());
                     observer.update(getClusterEventType(), getSelf());
                 }
             });

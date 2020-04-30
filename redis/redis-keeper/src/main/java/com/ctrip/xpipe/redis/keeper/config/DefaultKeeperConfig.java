@@ -24,9 +24,20 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
 	public static final String KEY_DELAY_LOG_LIMIT_MICRO = "monitor.delay.log.limit.micro";
     private static final String KEY_TRAFFIC_REPORT_INTERVAL = "monitor.traffic.report.interval";
+	private static final String KEY_KEEPER_RATE_LIMIT_OPEN = "keeper.rate.limit.open";
 
 	private static String KEEPER_CONTAINER_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
 	private static String KEEPER_CONTAINER_PROPERTIES_FILE = "keeper-container.properties";
+
+	private static String KYE_REPLICATION_TRAFFIC_HIGH_WATER_MARK = "keeper.repl.traffic.high.water.mark";
+
+	private static String KYE_REPLICATION_TRAFFIC_LOW_WATER_MARK = "keeper.repl.traffic.low.water.mark";
+
+	private static String KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI = "keeper.repl.down.safe.interval.milli";
+
+	private static final String KEY_MAX_PARTIAL_SYNC_KEEP_TOKEN_ROUNDS = "keeper.leaky.keep.rounds.max";
+
+	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
 	public DefaultKeeperConfig(){
 
@@ -35,7 +46,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		try{
 			compositeConfig.addConfig(new DefaultFileConfig(KEEPER_CONTAINER_PROPERTIES_PATH, KEEPER_CONTAINER_PROPERTIES_FILE));
 		}catch (Exception e){
-			logger.info("[DefaultKeeperConfig]{}", e);
+//			logger.info("[DefaultKeeperConfig]", e);
 		}
 		compositeConfig.addConfig(new DefaultPropertyConfig());
 		setConfig(compositeConfig);
@@ -55,6 +66,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getMetaRefreshIntervalMillis() {
 		return 3000;
+	}
+
+	@Override
+	public String getMetaServerAddress() {
+		return getProperty(KEY_META_SERVER_ADDRESS, "");
 	}
 
 	@Override
@@ -102,4 +118,39 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
     public long getTrafficReportIntervalMillis() {
         return getLongProperty(KEY_TRAFFIC_REPORT_INTERVAL, DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS);
     }
+
+	@Override
+	public long getReplicationTrafficHighWaterMark() {
+		return getLongProperty(KYE_REPLICATION_TRAFFIC_HIGH_WATER_MARK, 100L * 1024 * 1024);  // 100MB/s
+	}
+
+	@Override
+	public long getReplicationTrafficLowWaterMark() {
+		return getLongProperty(KYE_REPLICATION_TRAFFIC_LOW_WATER_MARK, 20L * 1024 * 1024); // 20MB/s
+	}
+
+	@Override
+	public int getLeakyBucketInitSize() {
+		return getIntProperty(KEY_LEAKY_BUCKET_INIT_SIZE, 8);
+	}
+
+	@Override
+	public int getPartialSyncTrafficMonitorIntervalTimes() {
+		return 5;
+	}
+
+	@Override
+	public int getMaxPartialSyncKeepTokenRounds() {
+		return getIntProperty(KEY_MAX_PARTIAL_SYNC_KEEP_TOKEN_ROUNDS, 3);
+	}
+
+	@Override
+	public boolean isKeeperRateLimitOpen() {
+		return getBooleanProperty(KEY_KEEPER_RATE_LIMIT_OPEN, true);
+	}
+
+	@Override
+	public long getReplDownSafeIntervalMilli() {
+		return getLongProperty(KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI, 5L * 60 * 1000); // 5min
+	}
 }

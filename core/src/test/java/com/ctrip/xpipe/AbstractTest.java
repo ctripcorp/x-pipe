@@ -56,7 +56,7 @@ public class AbstractTest {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    private ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
+    protected ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
 
     public static String KEY_INCRMENTAL_ZK_PORT = "INCRMENTAL_ZK_PORT";
 
@@ -757,12 +757,19 @@ public class AbstractTest {
 
         private int timeout;
 
+        private volatile boolean processing = false;
+
         public BlockingCommand(int sleepTime) {
             this.sleepTime = sleepTime;
         }
 
+        public boolean isProcessing() {
+            return processing;
+        }
+
         @Override
         protected void doExecute() throws Exception {
+            processing = true;
             Thread.sleep(sleepTime);
             future().setSuccess();
         }

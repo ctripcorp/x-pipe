@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.service.meta.ShardMetaService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -146,7 +147,7 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		
 		shardMeta.setId(shardInfo.getShardName());
 		shardMeta.setSentinelId(dcClusterShardInfo.getSetinelId());
-		shardMeta.setSentinelMonitorName(shardInfo.getSetinelMonitorName());
+		shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(shardInfo.getSetinelMonitorName(), dcInfo.getDcName()));
 		
 		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardInfo.getDcClusterShardId());
 		if(null != shard_redises) {

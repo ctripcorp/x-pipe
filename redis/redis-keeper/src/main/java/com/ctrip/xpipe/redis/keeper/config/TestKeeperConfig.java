@@ -16,6 +16,8 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private long replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private int minTimeMilliToGcAfterCreate = 2000;
 	private int rdbDumpMinIntervalMilli = 1000;
+	private int maxPartialSyncKeepTokenRounds = 3;
+	private int partialSyncTrafficMonitorIntervalTimes = 10;
 	
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
@@ -44,6 +46,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getMetaRefreshIntervalMillis() {
 		return 60000;
+	}
+
+	@Override
+	public String getMetaServerAddress() {
+		return "";
 	}
 
 	@Override
@@ -124,4 +131,73 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
     public long getTrafficReportIntervalMillis() {
         return 10000L;
     }
+
+    private long replLowWaterMark = 100L * 1024 * 1024;
+	@Override
+	public long getReplicationTrafficHighWaterMark() {
+		return replHighWaterMark;
+	}
+
+	private long replHighWaterMark = 20L * 1024 * 1024;
+	@Override
+	public long getReplicationTrafficLowWaterMark() {
+		return replLowWaterMark;
+	}
+
+	public TestKeeperConfig setReplLowWaterMark(long replLowWaterMark) {
+		this.replLowWaterMark = replLowWaterMark;
+		return this;
+	}
+
+	public TestKeeperConfig setReplHighWaterMark(long replHighWaterMark) {
+		this.replHighWaterMark = replHighWaterMark;
+		return this;
+	}
+
+	@Override
+	public int getLeakyBucketInitSize() {
+		return 3;
+	}
+
+	@Override
+	public int getPartialSyncTrafficMonitorIntervalTimes() {
+		return partialSyncTrafficMonitorIntervalTimes;
+	}
+
+	public TestKeeperConfig setPartialSyncTrafficMonitorIntervalTimes(int partialSyncTrafficMonitorIntervalTimes) {
+		this.partialSyncTrafficMonitorIntervalTimes = partialSyncTrafficMonitorIntervalTimes;
+		return this;
+	}
+
+	@Override
+	public int getMaxPartialSyncKeepTokenRounds() {
+		return maxPartialSyncKeepTokenRounds;
+	}
+
+	public TestKeeperConfig setMaxPartialSyncKeepTokenRounds(int maxPartialSyncKeepTokenRounds) {
+		this.maxPartialSyncKeepTokenRounds = maxPartialSyncKeepTokenRounds;
+		return this;
+	}
+
+	private boolean keeperRateLimit = true;
+
+	@Override
+	public boolean isKeeperRateLimitOpen() {
+		return keeperRateLimit;
+	}
+
+	private long replDownSafeIntervalMilli = 0;
+	@Override
+	public long getReplDownSafeIntervalMilli() {
+		return replDownSafeIntervalMilli;
+	}
+
+	public void setKeeperRateLimit(boolean keeperRateLimit) {
+		this.keeperRateLimit = keeperRateLimit;
+	}
+
+	public TestKeeperConfig setReplDownSafeIntervalMilli(long replDownSafeIntervalMilli) {
+		this.replDownSafeIntervalMilli = replDownSafeIntervalMilli;
+		return this;
+	}
 }

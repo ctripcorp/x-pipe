@@ -1,10 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
+import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>
         implements RequestResponseCommand<MetaServerConsoleService.PrimaryDcChangeMessage> {
@@ -19,6 +23,8 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     private MasterInfo masterInfo;
 
+    protected AtomicBoolean started = new AtomicBoolean(false);
+
     public ChangePrimaryDcJob(ChangePrimaryDcAction action, String cluster, String shard,
                               String newPrimaryDc, MasterInfo masterInfo) {
         this.action = action;
@@ -30,6 +36,7 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     @Override
     protected void doExecute() throws Exception {
+        started.set(true);
         try {
             MetaServerConsoleService.PrimaryDcChangeMessage result = action
                     .changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo);
@@ -52,5 +59,9 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
     @Override
     public int getCommandTimeoutMilli() {
         return 2000;
+    }
+
+    public boolean isStarted() {
+        return started.get();
     }
 }

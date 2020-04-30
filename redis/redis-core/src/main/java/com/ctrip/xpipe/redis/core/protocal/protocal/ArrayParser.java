@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
@@ -31,14 +32,10 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	private RedisClientProtocol<?> currentParser  = null;
 	private ARRAY_STATE arrayState = ARRAY_STATE.READ_SIZE;
 
-	private int bulkStringInitSize;
+	private InOutPayloadFactory inOutPayloadFactory;
 
 	public ArrayParser() {
 
-	}
-	
-	public ArrayParser(int bulkStringInitSize) {
-		this.bulkStringInitSize = bulkStringInitSize;
 	}
 	
 	public ArrayParser(Object []payload){
@@ -91,13 +88,17 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 									byteBuf.readByte();
 									break;
 								case DOLLAR_BYTE:
-									currentParser = new BulkStringParser(new ByteArrayOutputStreamPayload(bulkStringInitSize));
+									if(inOutPayloadFactory != null) {
+										currentParser = new BulkStringParser(inOutPayloadFactory.create());
+									} else {
+										currentParser = new BulkStringParser(new ByteArrayOutputStreamPayload());
+									}
 									break;
 								case COLON_BYTE:
 									currentParser = new LongParser();
 									break;
 								case ASTERISK_BYTE:
-									currentParser = new ArrayParser(bulkStringInitSize);
+									currentParser = new ArrayParser().setInOutPayloadFactory(inOutPayloadFactory);
 									break;
 								case MINUS_BYTE:
 									currentParser = new RedisErrorParser();
@@ -154,5 +155,10 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	@Override
 	public boolean supportes(Class<?> clazz) {
 		return clazz.isArray();
+	}
+
+	public ArrayParser setInOutPayloadFactory(InOutPayloadFactory inOutPayloadFactory) {
+		this.inOutPayloadFactory = inOutPayloadFactory;
+		return this;
 	}
 }

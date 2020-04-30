@@ -15,8 +15,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * 2016年3月29日 下午4:31:30
  */
 public abstract class AbstractInOutPayload implements InOutPayload{
-	
-	protected Logger logger = LoggerFactory.getLogger(getClass());
 
 	private AtomicLong inSize = new AtomicLong();
 	private AtomicLong outSize = new AtomicLong();

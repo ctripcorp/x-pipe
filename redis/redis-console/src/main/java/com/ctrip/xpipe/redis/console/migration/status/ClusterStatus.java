@@ -9,7 +9,6 @@ public enum ClusterStatus {
 	Normal,
 	Lock,
 	Migrating,
-	TmpMigrated,
 	Rollback;
 	
 	public static boolean isSameClusterStatus(String source, ClusterStatus target) {

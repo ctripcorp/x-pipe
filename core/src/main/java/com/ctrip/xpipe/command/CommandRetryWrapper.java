@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.retry.RetryPolicy;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.retry.NoWaitRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,11 @@ public final class CommandRetryWrapper<V> extends AbstractCommand<V>{
 						return;
 					}
 
-					logger.error("[operationComplete]" + command, commandFuture.cause());
+					if (ExceptionUtils.isStackTraceUnnecessary(commandFuture.cause())) {
+						logger.error("[operationComplete]{}, {}", command, commandFuture.cause().getMessage());
+					} else {
+						logger.error("[operationComplete]" + command, commandFuture.cause());
+					}
 					
 					int waitMilli = retryPolicy.retryWaitMilli();
 					logger.info("[retry]{},{},{}", executeCount.get(), waitMilli, command);

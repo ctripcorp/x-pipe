@@ -6,15 +6,18 @@ import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.util.List;
+
 
 /**
  * @author wenchao.meng
@@ -32,6 +35,8 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
 
     @Before
     public void beforeAbstractServiceImpl(){
+        keeperContainerService.setRestTemplate(RestTemplateFactory.createCommonsHttpRestTemplate(
+                10, 20, 10, 50));
     }
 
     @Test
@@ -116,7 +121,6 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
     @Test(expected = IllegalArgumentException.class)
     public void testAddKeeperContainer() {
         KeeperContainerCreateInfo createInfo = new KeeperContainerCreateInfo();
-
         keeperContainerService.addKeeperContainer(createInfo);
     }
 
@@ -193,6 +197,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    @Ignore
     public void testCheckHostAndPort() {
         boolean result = keeperContainerService.checkIpAndPort("10.2.73.161", 8080);
         Assert.assertTrue(result);
@@ -212,5 +217,16 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(2, infos.get(0).getClusterCount());
         Assert.assertEquals(2, infos.get(0).getShardCount());
         Assert.assertEquals(2, infos.get(0).getKeeperCount());
+    }
+
+    @Test
+    public void testKeeperContainerAlreadyExists() {
+        KeeperContainerCreateInfo existKeeperContainer = new KeeperContainerCreateInfo()
+                .setKeepercontainerIp("127.0.0.1").setKeepercontainerPort(7080);
+        KeeperContainerCreateInfo newKeeperContainer = new KeeperContainerCreateInfo()
+                .setKeepercontainerIp("127.0.0.1").setKeepercontainerPort(9090);
+
+        Assert.assertTrue(keeperContainerService.keeperContainerAlreadyExists(existKeeperContainer));
+        Assert.assertFalse(keeperContainerService.keeperContainerAlreadyExists(newKeeperContainer));
     }
 }

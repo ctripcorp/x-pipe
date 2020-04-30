@@ -25,7 +25,7 @@ public class LongTimeAlertTask extends AbstractExceptionLogTask {
         long end = System.currentTimeMillis();
         long duration = end - begin;
         if( duration >= alertMilli){
-            logger.warn("[doRun]{} ms, {}", duration, task);
+            getLogger().warn("[doRun]{} ms, {}", duration, task);
             EventMonitor.DEFAULT.logAlertEvent(String.format("%d ms, %s", duration, task));
         }
     }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
+import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
@@ -12,6 +13,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.annotation.Resource;
@@ -123,6 +125,10 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 				public void run() {
 					try {
 						response.setResult(function.apply(metaServer));
+					} catch (RestClientException restException) {
+						XpipeException outerException = new XpipeException(restException.getMessage(), restException);
+						outerException.setOnlyLogMessage(true);
+						response.setErrorResult(outerException);
 					} catch (Exception e) {
 						response.setErrorResult(e);
 					}
