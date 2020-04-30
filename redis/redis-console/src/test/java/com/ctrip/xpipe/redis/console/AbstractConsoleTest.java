@@ -25,6 +25,15 @@ public abstract class AbstractConsoleTest extends AbstractRedisTest{
 	public static void beforeAbstractConsoleTest(){
 		System.setProperty(HealthChecker.ENABLED, "false");
 	}
+
+	protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, String activeDc, int port) throws Exception {
+		RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
+		DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(currentDc,
+				redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+				new HostPort(redisMeta.getIp(), redisMeta.getPort()),
+				activeDc);
+		return newRandomRedisHealthCheckInstance(info);
+	}
 	
 	protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String activeDc, int port) throws Exception {
 		RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
@@ -51,5 +60,14 @@ public abstract class AbstractConsoleTest extends AbstractRedisTest{
 		instance.setHealthCheckConfig(new DefaultHealthCheckConfig(new DefaultConsoleConfig()));
 		instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool()));
 		return instance;
+	}
+
+	protected RedisHealthCheckInstance newHangedRedisHealthCheckInstance() throws Exception {
+		RedisMeta redisMeta = newRandomFakeRedisMeta("10.0.0.1", 6379);
+		DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
+				redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+				new HostPort(redisMeta.getIp(), redisMeta.getPort()),
+				redisMeta.parent().getActiveDc());
+		return newRandomRedisHealthCheckInstance(info);
 	}
 }

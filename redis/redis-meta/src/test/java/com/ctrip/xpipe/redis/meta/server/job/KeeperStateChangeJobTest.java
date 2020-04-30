@@ -8,6 +8,7 @@ import com.ctrip.xpipe.simpleserver.AbstractIoActionFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -128,6 +129,26 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 		}
 		
 		verifyZeroInteractions(activeSuccessCommand);
+	}
+
+	@Ignore
+	@Test
+	public void testTimeout() throws Exception {
+		delayBaseMilli = 1000;
+		retryTimes = 5;
+		long start = System.nanoTime();
+		job = new KeeperStateChangeJob(keepers,
+				new Pair<>("10.0.0.1", randomPort()),
+				null,
+				getXpipeNettyClientKeyedObjectPool(),
+				delayBaseMilli, retryTimes,
+				scheduled, executors);
+		try {
+			job.execute().sync();
+		} catch (Exception e) {
+
+		}
+		logger.info("[duration] {}", TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start));
 	}
 
 }

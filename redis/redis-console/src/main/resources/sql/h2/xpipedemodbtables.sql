@@ -126,7 +126,9 @@ create table REDIS_TBL
 	redis_master bigint unsigned default null,
 	keepercontainer_id bigint unsigned default null,
    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
-	deleted tinyint(1) not null default 0
+	deleted tinyint(1) not null default 0,
+    deleted_at int not null default 0,
+    UNIQUE KEY `ip_port_deleted_at` (`redis_ip`,`redis_port`, `deleted_at`)
 );
 
 

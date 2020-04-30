@@ -77,6 +77,10 @@ public class SentinelHello {
             return false;
         }
 
+        if (!ObjectUtils.equals(masterAddr, other.masterAddr)) {
+            return false;
+        }
+
         return true;
     }
 

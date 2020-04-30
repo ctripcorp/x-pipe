@@ -11,11 +11,15 @@ public interface KeeperConfig extends CoreConfig{
 
 	public static final long DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS = 5000L;
 
+	public static final String KEY_LEAKY_BUCKET_INIT_SIZE = "leaky.bucket.init.size";
+
 	int getMetaServerConnectTimeout();
 
 	int getMetaServerReadTimeout();
 
 	int getMetaRefreshIntervalMillis();
+
+	String getMetaServerAddress();
 
 	int getReplicationStoreCommandFileSize();
 
@@ -38,5 +42,18 @@ public interface KeeperConfig extends CoreConfig{
 	int getDelayLogLimitMicro();
 
     long getTrafficReportIntervalMillis();
-	
+
+    long getReplicationTrafficHighWaterMark();
+
+    long getReplicationTrafficLowWaterMark();
+
+    int getLeakyBucketInitSize();
+
+    int getPartialSyncTrafficMonitorIntervalTimes();
+
+	int getMaxPartialSyncKeepTokenRounds();
+
+    boolean isKeeperRateLimitOpen();
+
+    long getReplDownSafeIntervalMilli();
 }

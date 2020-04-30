@@ -18,6 +18,8 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -49,10 +51,10 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
     private MetaCache metaCache;
 
     @Mock
-    private ConsoleDbConfig config;
+    protected ConsoleDbConfig config;
 
     @Mock
-    private ClusterService clusterService;
+    protected ClusterService clusterService;
 
     private RedisHealthCheckInstance instance;
 
@@ -124,6 +126,20 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         action.doTask();
         sleep(30);
         verify(action, times(1)).processSentinelHellos();
+    }
+
+    @Test
+    public void testDoScheduleTaskInterval() {
+        action = spy(action);
+        SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
+        when(action.getIntervalMilli()).thenReturn(500);
+        action.lastStartTime = System.currentTimeMillis() - 500;
+
+        ScheduledFuture f = scheduled.scheduleWithFixedDelay(() -> action.doTask(), 0, 200, TimeUnit.MILLISECONDS);
+
+        sleep(900);
+        f.cancel(false);
+        verify(action, times(2)).processSentinelHellos();
     }
 
     @Test

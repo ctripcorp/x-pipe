@@ -21,7 +21,7 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 	
 	private volatile Object result = null;
 	
-	private final CauseHolder CANCELLED_RESULT = new CauseHolder(new CancellationException());
+	private final static CauseHolder CANCELLED_RESULT = new CauseHolder(new CancellationException());
 	
 	private static final String SUCCESS_NO_RESULT = "SUCCESS_NO_RESULT";
 	

@@ -91,8 +91,8 @@ public class AlertRecoverySubscriber extends AbstractAlertEntitySubscriber {
                 }
             }
             unRecoveredAlerts.removeAll(recovered);
-            logger.info("[RecoveredAlertCleaner][recovered] {}", recovered);
-            logger.info("[RecoveredAlertCleaner][un-recovered] {}", unRecoveredAlerts);
+            logger.debug("[RecoveredAlertCleaner][recovered] {}", recovered);
+            logger.debug("[RecoveredAlertCleaner][un-recovered] {}", unRecoveredAlerts);
             future().setSuccess(recovered);
         }
 

@@ -72,7 +72,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			String activeDc = clusterMeta.getActiveDc();
 			if(activeDc == null){
 				logger.info("[getActiveDc][activeDc null]{}", clusterMeta);
-				throw new MetaException(String.format("cluster exist but active dc == null {}", clusterMeta));
+				throw new MetaException(String.format("cluster exist but active dc == null %s", clusterMeta));
 			}
 			return activeDc.trim().toLowerCase();
 		}

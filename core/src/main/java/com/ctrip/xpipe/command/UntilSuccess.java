@@ -45,7 +45,7 @@ public class UntilSuccess extends AbstractCommandChain{
 				if(commandFuture.isSuccess()){
 					future().setSuccess(commandFuture.get());
 				}else{
-					logger.error("[doExecute]" + currentCommand(), commandFuture.cause());
+					getLogger().error("[doExecute]" + currentCommand(), commandFuture.cause());
 					doExecute();
 				}
 			}

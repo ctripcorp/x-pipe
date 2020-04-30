@@ -18,7 +18,7 @@ public class HealthCheckControllerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testGetHickwallAddress() {
-        String cluster = "sitemon", shard = "xpipegroup0", redisIp = "10.2.75.143";
+        String cluster = "xpipe_function", shard = "shard1", redisIp = "10.2.55.174";
         int port = 6379;
         Map<String, String> map = controller.getHickwallAddress(cluster, shard, redisIp, port);
         logger.info("[map] {}", map);

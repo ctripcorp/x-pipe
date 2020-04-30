@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
+import com.ctrip.xpipe.redis.console.health.action.delay.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.RouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DefaultDcMetaChangeManagerTest;
@@ -59,6 +60,7 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.ShardMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import org.junit.runner.RunWith;
@@ -171,7 +173,10 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationServiceImplPaginationTest.class,
         SentinelConfigCheckTest.class,
         ClusterServiceImplTest4.class,
-        DelayActionTest.class
+        DelayActionTest.class,
+        DelayServiceTest.class,
+        SentinelHelloActionDowngradeTest.class,
+        ShardMetaServiceImplTest.class
 })
 public class AllTests {
 

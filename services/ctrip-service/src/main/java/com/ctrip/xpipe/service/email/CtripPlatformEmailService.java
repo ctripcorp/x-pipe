@@ -39,7 +39,9 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static final String TYPE = "SOA.EMAIL.SERVICE";
 
-    private static EmailServiceClient client = EmailServiceClient.getInstance();
+    private static EmailConfig config = new EmailConfig();
+
+    private static EmailServiceClient client = EmailServiceClient.getInstance(config.getEmailServiceUrl());
 
     @Override
     public void sendEmail(Email email) {
@@ -101,7 +103,7 @@ public class CtripPlatformEmailService implements EmailService {
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
         }catch (Exception e) {
-            logger.error("check email send response error: {}", e);
+            logger.error("check email send response error: ", e);
         }
         return false;
     }

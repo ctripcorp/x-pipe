@@ -36,6 +36,8 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private AtomicReference<DelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
 
+    private volatile boolean isExpired = false;
+
     private PingService pingService;
 
     private final long expireInterval;
@@ -49,12 +51,20 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     @Override
     protected void doTask() {
+        //TODO: log only when it's too long to not execute
+//        logger.info("[doTask][begin][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
         reportDelay();
         RedisSession session = instance.getRedisSession();
         session.subscribeIfAbsent(CHECK_CHANNEL, callback);
         if(instance.getRedisInstanceInfo().isMaster()) {
+//            logger.info("[doTask][pub][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
             session.publish(CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
         }
+    }
+
+    @Override
+    protected Logger getHealthCheckLogger() {
+        return logger;
     }
 
     private void reportDelay() {
@@ -62,8 +72,11 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             return;
         }
         if(isExpired()) {
-            logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
-                    DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
+            if (!isExpired) {
+                isExpired = true;
+                logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
+                        DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
+            }
 
             long result = SAMPLE_LOST_AND_NO_PONG;
             if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
@@ -71,6 +84,10 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
             }
             notifyListeners(new DelayActionContext(instance, result));
         } else {
+            if (isExpired) {
+                isExpired = false;
+                logger.info("[expire][{}] recovery", instance.getRedisInstanceInfo().getHostPort());
+            }
             notifyListeners(context.get());
         }
     }

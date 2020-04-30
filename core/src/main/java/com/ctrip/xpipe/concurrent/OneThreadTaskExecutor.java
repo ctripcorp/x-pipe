@@ -5,7 +5,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
+import com.ctrip.xpipe.command.LogIgnoreCommand;
 import com.ctrip.xpipe.command.RetryCommandFactory;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,10 +93,10 @@ public class OneThreadTaskExecutor implements Destroyable {
             }
 
             Command retryCommand = retryCommand(command);
+            logCommand(command, retryCommand);
             currentCommand = retryCommand;
 
-            logger.info("[doRun][begin]{}", command);
-            Command<?> finalCommand = command;
+            if (!(command instanceof LogIgnoreCommand)) logger.info("[doRun][begin]{}", command);
             retryCommand.future().addListener(new CommandFutureListener() {
                 @Override
                 public void operationComplete(CommandFuture commandFuture) throws Exception {
@@ -103,17 +105,29 @@ public class OneThreadTaskExecutor implements Destroyable {
                         logger.error("[doRun][already exit]");
                     }
 
-                    if(commandFuture.isSuccess()){
-                        logger.info("[doRun][ end ][succeed]{}", finalCommand);
-                    }else {
-                        logger.error("[doRun][ end ][fail]" + finalCommand, commandFuture.cause());
-                    }
                     doExecute();
                 }
             });
             retryCommand.execute();
         }
 
+    }
+
+    protected void logCommand(Command<?> originCommand, Command<?> retryCommand) {
+        retryCommand.future().addListener(new CommandFutureListener() {
+            @Override
+            public void operationComplete(CommandFuture commandFuture) throws Exception {
+                if (originCommand instanceof LogIgnoreCommand) {
+                    // do not log
+                } else if (commandFuture.isSuccess()){
+                    logger.info("[doRun][ end ][succeed]{}", originCommand);
+                } else if (ExceptionUtils.isStackTraceUnnecessary(commandFuture.cause())) {
+                    logger.error("[doRun][ end ][fail]{}, {}", originCommand, commandFuture.cause().getMessage());
+                } else {
+                    logger.error("[doRun][ end ][fail]" + originCommand, commandFuture.cause());
+                }
+            }
+        });
     }
 
     protected Command retryCommand(Command<?> command) throws Exception {

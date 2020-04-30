@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -281,7 +280,9 @@ public class CurrentMeta implements Releasable {
 		}
 
 		public void addResource(Releasable releasable) {
-			resources.add(releasable);
+			synchronized (resources) {
+				resources.add(releasable);
+			}
 		}
 
 		@Override

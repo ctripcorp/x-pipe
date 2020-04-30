@@ -31,6 +31,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -122,11 +123,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KeepersMonitorManager keepersMonitorManager;
 	private KeeperMonitor keeperMonitor;
 
-	private ProxyResourceManager proxyResourceManager;
+	private KeeperResourceManager resourceManager;
 	
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
-									KeepersMonitorManager keepersMonitorManager, ProxyResourceManager proxyResourceManager){
+									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
 		this.clusterId = currentKeeperMeta.parent().parent().getId();
 		this.shardId = currentKeeperMeta.parent().getId();
 		this.currentKeeperMeta = currentKeeperMeta;
@@ -136,7 +137,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.leaderElectorManager = leaderElectorManager;
-		this.proxyResourceManager = proxyResourceManager;
+		this.resourceManager = resourceManager;
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -212,7 +213,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		keeperMonitor.getKeeperStats().start();
+		keeperMonitor.start();
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
@@ -223,7 +224,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	protected void doStop() throws Exception {
-		keeperMonitor.getKeeperStats().stop();
+		keeperMonitor.stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		this.leaderElector.stop();
 		stopServer();
@@ -282,7 +283,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup,
-					replicationStoreManager, scheduled, proxyResourceManager);
+					replicationStoreManager, scheduled, resourceManager);
 
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);

@@ -38,7 +38,7 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 
-		logger.info("[doExecute][try xslaveof]{}", this);
+		getLogger().info("[doExecute][try xslaveof]{}", this);
 		
 		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), scheduled, new XSlaveofCommand(null, ip, port, scheduled), new ConfigRewrite(null, scheduled));
 		try{
@@ -49,7 +49,7 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 					if(!commandFuture.isSuccess()){
 						failXslaveof(commandFuture.cause());
 					}else{
-						logger.info("[doExecute][xslaveof success]{}", this);
+						getLogger().info("[doExecute][xslaveof success]{}", this);
 						future().setSuccess(commandFuture.get());
 					}
 				}
@@ -64,12 +64,12 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 		
 		Throwable rootCause = ExceptionUtils.getRootCause(e);
 		if((rootCause instanceof IOException)){
-			logger.info("[failXslaveof][do not try slaveof]");
+			getLogger().info("[failXslaveof][do not try slaveof]");
 			fail(e);
 			return;
 		}
 		
-		logger.error("[doExecute][xlaveof fail, try slaveof]" + ip + ":"+ port, e);
+		getLogger().error("[doExecute][xlaveof fail, try slaveof]" + ip + ":"+ port, e);
 		
 		TransactionalCommand slaveofTransaction = new TransactionalCommand(getClientPool(), scheduled, new SlaveOfCommand(null, ip, port, scheduled), new ConfigRewrite(null, scheduled));
 		try{
@@ -81,7 +81,7 @@ public class TransactionalSlaveOfCommand extends AbstractRedisCommand<Object[]>{
 					if(!commandFuture.isSuccess()){
 						fail(commandFuture.cause());
 					}else{
-						logger.info("[doExecute][slaveof success]{}", this);
+						getLogger().info("[doExecute][slaveof success]{}", this);
 						future().setSuccess(commandFuture.get());
 					}
 				}

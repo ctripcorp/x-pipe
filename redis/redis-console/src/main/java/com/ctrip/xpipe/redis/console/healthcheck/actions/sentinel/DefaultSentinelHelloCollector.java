@@ -9,6 +9,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
@@ -33,11 +34,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.net.SocketException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -80,12 +83,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     }
 
+    @Override
+    public boolean worksfor(ActionContext t) {
+        return false;
+    }
+
     private void collect(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
-        if(info.isInActiveDc()) {
-            logger.warn("[not in backup dc][{}] quit", info.getHostPort());
-            return;
-        }
         Set<SentinelHello> hellos = context.getResult();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
@@ -108,7 +112,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         //check add
         Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, masterDcSentinels, hellos, masterAddr, quorumConfig);
 
-        doAction(toDelete, toAdd, quorumConfig);
+        doAction(sentinelMonitorName, masterAddr, toDelete, toAdd, quorumConfig);
     }
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
@@ -201,20 +205,23 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
             return true;
         }
-        if (role.get() instanceof CommandExecutionException || role.get() instanceof CommandTimeoutException) {
+        if (role.get() instanceof CommandExecutionException || role.get() instanceof CommandTimeoutException
+                || role.get() instanceof SocketException) {
             return true;
         }
         logger.info("[isKeeperOrDead] role: {}", role.get());
         return false;
     }
 
-    private void doAction(Set<SentinelHello> toDelete, Set<SentinelHello> toAdd, QuorumConfig quorumConfig) {
+    private void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
+                          QuorumConfig quorumConfig) {
 
         if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
             return;
         }
         if (toAdd != null && toAdd.size() > 0) {
-            logger.info("[doAction][add]{}", toAdd);
+            logger.info("[doAction][add]name: {}, master: {}, stl: {}", sentinelMonitorName, masterAddr,
+                    toAdd.stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toSet()));
         }
 
         if (toDelete != null && toDelete.size() > 0) {

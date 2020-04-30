@@ -48,7 +48,7 @@ public class InfoReplicationComplementCommand extends AbstractCommand<RedisInfo>
                 if(redisInfo instanceof MasterInfo){
                     MasterInfo masterInfo = (MasterInfo) redisInfo;
                     if (masterInfo.getReplId() == null){
-                        logger.info("replid null, get master id. {}, {}", clientPool.desc(), masterInfo);
+                        getLogger().info("replid null, get master id. {}, {}", clientPool.desc(), masterInfo);
                         getRunId(masterInfo);
                     }else {
                         future().setSuccess(redisInfo);
@@ -67,7 +67,7 @@ public class InfoReplicationComplementCommand extends AbstractCommand<RedisInfo>
             public void operationComplete(CommandFuture<String> commandFuture) throws InterruptedException, ExecutionException {
 
                 if(!commandFuture.isSuccess()){
-                    logger.info("[getRunId][fail use previous result]{}, {}", clientPool.desc(), masterInfo);
+                    getLogger().info("[getRunId][fail use previous result]{}, {}", clientPool.desc(), masterInfo);
                     future().setSuccess(masterInfo);
                     return;
                 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -23,12 +24,14 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+
 /**
  * @author wenchao.meng
  *
  * Jul 8, 2016
  */
-public class KeeperStateChangeJob extends AbstractCommand<Void>{
+public class KeeperStateChangeJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 	
 	private List<KeeperMeta> keepers;
 	private Pair<String, Integer> activeKeeperMaster;
@@ -71,6 +74,9 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 
+		if(future().isDone()) {
+			return;
+		}
 		KeeperMeta activeKeeper = null;
 		for(KeeperMeta keeperMeta : keepers){
 			if(keeperMeta.isActive()){
@@ -101,7 +107,10 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		}
 
 		chain.add(backupChain);
-		
+
+		if(future().isDone()) {
+			return;
+		}
 		chain.execute().addListener(new CommandFutureListener<Object>() {
 			
 			@Override
@@ -146,7 +155,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 			public void operationComplete( CommandFuture commandFuture) throws Exception {
 				
 				if(commandFuture.isSuccess() && activeSuccessCommand != null){
-					logger.info("[addActiveCommandHook][set active success, execute hook]{}, {}", setActiveCommand, activeSuccessCommand);
+					getLogger().info("[addActiveCommandHook][set active success, execute hook]{}, {}", setActiveCommand, activeSuccessCommand);
 					activeSuccessCommand.execute();
 				}
 			}
@@ -158,5 +167,10 @@ public class KeeperStateChangeJob extends AbstractCommand<Void>{
 		return String.format("[%s] master: %s",
 				StringUtil.join(",", (keeper) -> String.format("%s.%s", keeper.desc(), keeper.isActive()), keepers),
 				activeKeeperMaster);
+	}
+
+	@Override
+	public int getCommandTimeoutMilli() {
+		return DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI * 2;
 	}
 }

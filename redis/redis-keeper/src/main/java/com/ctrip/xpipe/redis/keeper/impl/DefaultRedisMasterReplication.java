@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -38,15 +39,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-										 int replTimeoutMilli, ProxyResourceManager endpointManager) {
-		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, endpointManager);
+										 int replTimeoutMilli, KeeperResourceManager resourceManager) {
+		super(redisKeeperServer, redisMaster, nioEventLoopGroup, scheduled, replTimeoutMilli, resourceManager);
 	}
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
-										 ProxyResourceManager endpointManager) {
+										 KeeperResourceManager resourceManager) {
 		this(redisMaster, redisKeeperServer, nioEventLoopGroup, scheduled, DEFAULT_REPLICATION_TIMEOUT_MILLI,
-				endpointManager);
+				resourceManager);
 	}
 
 	@Override
@@ -91,7 +92,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	@Override
 	public void masterDisconntected(Channel channel) {
 		super.masterDisconntected(channel);
-		
+		refreshReplDownSince();
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
 		if (scheduleTime < 0) {
@@ -105,6 +106,20 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 				connectWithMaster();
 			}
 		}, scheduleTime, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	protected void doStop() throws Exception {
+		refreshReplDownSince();
+		super.doStop();
+	}
+
+	private void refreshReplDownSince() {
+		if(getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED) {
+			logger.warn("[refreshReplDownSince]set state to MASTER_STATE.REDIS_REPL_NONE, and refresh repl_down_since");
+			redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
+			getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);
+		}
 	}
 	
 	public void setMasterConnectRetryDelaySeconds(int masterConnectRetryDelaySeconds) {
@@ -189,6 +204,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doEndWriteRdb() {
 		logger.info("[doEndWriteRdb]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
 		scheduleReplconf();
 		
 	}
@@ -198,6 +214,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		logger.info("[doOnContinue]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
 		try {
 			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
 		} catch (IOException e) {
@@ -219,7 +236,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		try {
 			logger.info("[doOnFullSync]{}", this);
-			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer);
+			RdbDumper rdbDumper  = new RedisMasterReplicationRdbDumper(this, redisKeeperServer, resourceManager);
 			setRdbDumper(rdbDumper);
 			redisKeeperServer.setRdbDumper(rdbDumper, true);
 		} catch (SetRdbDumperException e) {

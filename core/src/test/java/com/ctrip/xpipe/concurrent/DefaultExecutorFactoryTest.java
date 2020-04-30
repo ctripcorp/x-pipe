@@ -74,4 +74,28 @@ public class DefaultExecutorFactoryTest extends AbstractTest{
         Assert.assertEquals(2, threadPoolExecutor.getCorePoolSize());
         Assert.assertEquals(2, threadPoolExecutor.getMaximumPoolSize());
     }
+
+    @Test
+    public void testPerformanceBetweenBlockingQueueAndDeque() throws InterruptedException {
+        ExecutorService executors = DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-")
+                .createExecutorService();
+        int tasks = 1000;
+        CountDownLatch latch = new CountDownLatch(tasks);
+        long start = System.nanoTime();
+        for(int i = 0; i < tasks; i++) {
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    int i = 1;
+                    i += 10;
+                    int j = i % 10;
+                    j ^= i;
+                    latch.countDown();
+                }
+            });
+        }
+        latch.await();
+        long end = System.nanoTime();
+        logger.info("[duration] {}", end - start);
+    }
 }

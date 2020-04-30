@@ -83,7 +83,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 			super.beginReadRdb(eofType);
 		} catch (IOException e) {
-			logger.error("[beginReadRdb]" + replId + "," + masterRdbOffset, e);
+			getLogger().error("[beginReadRdb]" + replId + "," + masterRdbOffset, e);
 		}
 	}
 	

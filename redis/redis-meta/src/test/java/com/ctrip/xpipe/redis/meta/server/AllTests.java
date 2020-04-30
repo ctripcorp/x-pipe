@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
+import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
@@ -19,6 +20,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeper
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.DefaultDcKeeperMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.PrimaryDcKeeperMasterChooserAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
@@ -72,7 +74,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperStateChangeHandlerTest.class,
 	DeferredResponseTest.class,
 	DefaultSentinelManagerTest.class,
-	DefaultDcMetaCacheRefreshTest.class
+	DefaultDcMetaCacheRefreshTest.class,
+	DefaultChangePrimaryDcActionTest.class,
+	DefaultKeeperManagerTest.class
 })
 public class AllTests {
 

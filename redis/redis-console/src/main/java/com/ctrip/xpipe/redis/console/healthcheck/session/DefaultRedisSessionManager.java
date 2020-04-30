@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.REDIS_SESSION_NETTY_CLIENT_POOL;
 
 /**
  * @author marsqing
@@ -46,7 +46,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Autowired
 	private HealthCheckEndpointFactory endpointFactory;
 
-	@Resource(name = KEYED_NETTY_CLIENT_POOL)
+	@Resource(name = REDIS_SESSION_NETTY_CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
 	@Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)
@@ -106,6 +106,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 			return;
 
 		Set<HostPort> redisInUse = getInUseRedises();
+		if(redisInUse == null || redisInUse.isEmpty()) {
+			return;
+		}
 		List<Endpoint> unusedRedises = new LinkedList<>();
 
 		for(Endpoint endpoint : currentStoredRedises) {

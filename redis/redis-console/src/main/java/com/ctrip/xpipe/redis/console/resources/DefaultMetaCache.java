@@ -87,6 +87,7 @@ public class DefaultMetaCache implements MetaCache {
             protected void doRun() throws Exception {
                 loadCache();
             }
+
         }, 1000, refreshIntervalMilli, TimeUnit.MILLISECONDS);
     }
 

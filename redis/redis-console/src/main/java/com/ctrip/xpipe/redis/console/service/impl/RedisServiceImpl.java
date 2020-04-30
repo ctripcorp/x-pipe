@@ -26,15 +26,15 @@ import java.util.function.Consumer;
 public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implements RedisService {
 
     @Autowired
-    private RedisDao redisDao;
+    protected RedisDao redisDao;
     @Autowired
-    private ClusterService clusterService;
+    protected ClusterService clusterService;
     @Autowired
-    private DcClusterShardService dcClusterShardService;
+    protected DcClusterShardService dcClusterShardService;
     @Autowired
-    private KeeperContainerService keeperContainerService;
+    protected KeeperContainerService keeperContainerService;
     @Autowired
-    private ClusterMetaModifiedNotifier notifier;
+    protected ClusterMetaModifiedNotifier notifier;
 
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override

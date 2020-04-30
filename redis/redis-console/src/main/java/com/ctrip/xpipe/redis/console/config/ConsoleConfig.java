@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.config;
 
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.tuple.Pair;
@@ -28,8 +29,8 @@ public interface ConsoleConfig extends CoreConfig {
 	Set<String> getConsoleUserAccessWhiteList();
 	
 	int getRedisReplicationHealthCheckInterval();
-	
-	String getHickwallAddress();
+
+	HickwallMetricInfo getHickwallMetricInfo();
 
 	int getHealthyDelayMilli();
 
