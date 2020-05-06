@@ -33,6 +33,7 @@ public abstract class AbstractDedupJobManager implements JobManager<Command<?>> 
         if(current != null) {
             if(!current.replace((Command<?>) task)) {
                 jobs.put(task.getClass(), future);
+                executorJob(future);
             }
         } else {
             executorJob(future);

@@ -29,290 +29,282 @@ import java.util.function.LongSupplier;
 
 public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
-	
-	public static final long FAIL_RDB_LENGTH = -1; 
-	
-	private RandomAccessFile writeFile;
+    public static final long FAIL_RDB_LENGTH = -1;
+    private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
+    protected File file;
+    protected EofType eofType;
+    protected long rdbOffset;
+    private RandomAccessFile writeFile;
+    private FileChannel channel;
+    private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
+    private AtomicInteger refCount = new AtomicInteger(0);
 
-	protected File file;
+    private List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
 
-	private FileChannel channel;
+    private Object truncateLock = new Object();
 
-	protected EofType eofType;
+    public DefaultRdbStore(File file, long rdbOffset, EofType eofType) throws IOException {
 
-	private AtomicReference<Status> status = new AtomicReference<>(Status.Writing);
+        this.file = file;
+        this.eofType = eofType;
+        this.rdbOffset = rdbOffset;
 
-	protected long rdbOffset;
+        if (file.length() > 0) {
+            checkAndSetRdbState();
+        } else {
+            writeFile = new RandomAccessFile(file, "rw");
+            channel = writeFile.getChannel();
+        }
+    }
 
-	private AtomicInteger refCount = new AtomicInteger(0);
-	
-	private List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
-	
-	private Object truncateLock = new Object();
-	
-	public DefaultRdbStore(File file, long rdbOffset, EofType eofType) throws IOException {
+    @Override
+    public int writeRdb(ByteBuf byteBuf) throws IOException {
+        makeSureOpen();
 
-		this.file = file;
-		this.eofType = eofType;
-		this.rdbOffset = rdbOffset;
-		
-		if(file.length() > 0){
-			checkAndSetRdbState();
-		}else{
-			writeFile = new RandomAccessFile(file, "rw");
-			channel = writeFile.getChannel();
-		}
-	}
-	
-	@Override
-	public int writeRdb(ByteBuf byteBuf) throws IOException {
-		makeSureOpen();
+        int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
+        return wrote;
+    }
 
-		int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
-		return wrote;
-	}
+    @Override
+    public void truncateEndRdb(int reduceLen) throws IOException {
 
-	@Override
-	public void truncateEndRdb(int reduceLen) throws IOException {
-		
-		logger.info("[truncateEndRdb]{}, {}", this, reduceLen);
-		
-		synchronized (truncateLock) {
-			channel.truncate(channel.size() - reduceLen);
-			endRdb();
-		}
-	}
+        logger.info("[truncateEndRdb]{}, {}", this, reduceLen);
 
-	@Override
-	public void endRdb() {
-		
-		if(status.get() != Status.Writing){
-			logger.info("[endRdb][already ended]{}, {}, {}", this, file, status);
-			return;
-		}
-		
-		try{
-			checkAndSetRdbState();
-		}finally{
-			notifyListenersEndRdb();
-			try {
-				writeFile.close();
-			} catch (IOException e) {
-				logger.error("[endRdb]" + this, e);
-			}
-		}
-	}
+        synchronized (truncateLock) {
+            channel.truncate(channel.size() - reduceLen);
+            endRdb();
+        }
+    }
 
-	private void notifyListenersEndRdb() {
-		
-		for(RdbStoreListener listener : rdbStoreListeners){
-			try{
-				listener.onEndRdb();
-			}catch(Throwable th){
-				logger.error("[notifyListenersEndRdb]" + this, th);
-			}
-		}
-	}
+    @Override
+    public void endRdb() {
 
-	@Override
-	public void failRdb(Throwable throwable) {
-		
-		logger.info("[failRdb]" + this, throwable);
-		
-		if(status.get() != Status.Writing){
-			throw new IllegalStateException("already finished with final state:" + status.get());
-		}
-		
-		status.set(Status.Fail);
-		notifyListenersEndRdb();
-		try {
-			writeFile.close();
-		} catch (IOException e1) {
-			logger.error("[failRdb]" + this, e1);
-		}
-	}
+        if (status.get() != Status.Writing) {
+            logger.info("[endRdb][already ended]{}, {}, {}", this, file, status);
+            return;
+        }
 
-	@Override
-	public long rdbFileLength() {
-		
-		if(status.get() == Status.Fail){
-			return FAIL_RDB_LENGTH;
-		}
-		return file.length();
-	}
+        try {
+            checkAndSetRdbState();
+        } finally {
+            notifyListenersEndRdb();
+            try {
+                writeFile.close();
+            } catch (IOException e) {
+                logger.error("[endRdb]" + this, e);
+            }
+        }
+    }
 
-	private void checkAndSetRdbState() {
-		
-		//TODO check file format
-		if(eofType.fileOk(file)){
-			status.set(Status.Success);
-			logger.info("[checkAndSetRdbState]{}, {}", this, status);
-		} else {
-			status.set(Status.Fail);
-			long actualFileLen = file.length();
-			logger.error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
-		}
-	}
+    private void notifyListenersEndRdb() {
 
-	@Override
-	public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
-		
-		makeSureOpen();
+        for (RdbStoreListener listener : rdbStoreListeners) {
+            try {
+                listener.onEndRdb();
+            } catch (Throwable th) {
+                logger.error("[notifyListenersEndRdb]" + this, th);
+            }
+        }
+    }
 
-		rdbFileListener.beforeFileData();
-		refCount.incrementAndGet();
+    @Override
+    public void failRdb(Throwable throwable) {
 
-		try (ReferenceFileChannel channel = new ReferenceFileChannel(createControllableFile())) {
-			doReadRdbFile(rdbFileListener, channel);
-		} catch (Exception e) {
-			logger.error("[readRdbFile]Error read rdb file" + file, e);
-		}finally{
-			refCount.decrementAndGet();
-		}
-	}
+        logger.info("[failRdb]" + this, throwable);
 
-	private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
-		
-		rdbFileListener.setRdbFileInfo(eofType, rdbOffset);
+        if (status.get() != Status.Writing) {
+            throw new IllegalStateException("already finished with final state:" + status.get());
+        }
 
-		long lastLogTime = System.currentTimeMillis();
-		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
-			
-		ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
-		
-		rdbFileListener.onFileData(referenceFileRegion);
-		if(referenceFileRegion.count() <= 0)
-			try {
-				Thread.sleep(1);
-				long currentTime = System.currentTimeMillis();
-				if(currentTime - lastLogTime > 10000){
-					logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}", 
-							status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
-					lastLogTime = currentTime;
-				}
-			} catch (InterruptedException e) {
-				logger.error("[doReadRdbFile]" + rdbFileListener, e);
-				Thread.currentThread().interrupt();
-			}
-		}
+        status.set(Status.Fail);
+        notifyListenersEndRdb();
+        try {
+            writeFile.close();
+        } catch (IOException e1) {
+            logger.error("[failRdb]" + this, e1);
+        }
+    }
 
-		logger.info("[doReadRdbFile] done with status {}", status.get());
+    @Override
+    public long rdbFileLength() {
 
-		switch (status.get()) {
-			case Success:
-				if(file.exists()){//this is necessery because file may be deleted
-					rdbFileListener.onFileData(null);
-				}else{
-					rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
-				}
-				break;
-	
-			case Fail:
-				rdbFileListener.exception(new Exception("[rdb error]" + file));
-				break;
-			default:
-				rdbFileListener.exception(new Exception("[status not right]" + file + "," + status));
-				break;
-		}
-	}
+        if (status.get() == Status.Fail) {
+            return FAIL_RDB_LENGTH;
+        }
+        return file.length();
+    }
 
-	private boolean isRdbWriting(Status status) {
-		return status != Status.Fail && status != Status.Success;
-	}
+    private void checkAndSetRdbState() {
 
-	@Override
-	public int refCount() {
-		return refCount.get();
-	}
+        //TODO check file format
+        if (eofType.fileOk(file)) {
+            status.set(Status.Success);
+            logger.info("[checkAndSetRdbState]{}, {}", this, status);
+        } else {
+            status.set(Status.Fail);
+            long actualFileLen = file.length();
+            logger.error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
+        }
+    }
 
-	@Override
-	public long rdbOffset() {
-		return rdbOffset;
-	}
-	
-	public void incrementRefCount() {
-		refCount.incrementAndGet();
-	}
-	
-	public void decrementRefCount() {
-		refCount.decrementAndGet();
-	}
+    @Override
+    public void readRdbFile(final RdbFileListener rdbFileListener) throws IOException {
 
-	@Override
-	public boolean checkOk() {
-		return status.get() == Status.Writing 
-				|| ( status.get() == Status.Success && file.exists());
-	}
+        makeSureOpen();
 
-	@Override
-	public void destroy() throws Exception {
-		
-		logger.info("[destroy][delete file]{}", file);
-		file.delete();
-	}
+        rdbFileListener.beforeFileData();
+        refCount.incrementAndGet();
 
-	@Override
-	public void close() throws IOException {
-		
-		if(cmpAndSetClosed()){
-			logger.info("[close]{}", file);
-			if(writeFile != null){
-				writeFile.close();
-			}
-		}else{
-			logger.warn("[close][already closed]{}", this);
-		}
-	}
+        try (ReferenceFileChannel channel = new ReferenceFileChannel(createControllableFile())) {
+            doReadRdbFile(rdbFileListener, channel);
+        } catch (Exception e) {
+            logger.error("[readRdbFile]Error read rdb file" + file, e);
+        } finally {
+            refCount.decrementAndGet();
+        }
+    }
 
-	@Override
-	public void addListener(RdbStoreListener rdbStoreListener) {
-		rdbStoreListeners.add(rdbStoreListener);
-	}
+    private void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 
-	@Override
-	public void removeListener(RdbStoreListener rdbStoreListener) {
-		rdbStoreListeners.remove(rdbStoreListener);
-	}
+        rdbFileListener.setRdbFileInfo(eofType, rdbOffset);
 
-	private ControllableFile createControllableFile() throws IOException {
-		
-		if(eofType instanceof LenEofType){
-			return new DefaultControllableFile(file);
-		}else if(eofType instanceof EofMarkType){
-			
-			return new SizeControllableFile(file, new FileSize() {
-				
-				@Override
-				public long getSize(LongSupplier realSizeProvider) {
-					
-					long realSize = 0;
-					synchronized (truncateLock) {//truncate may make size wrong
-						realSize = realSizeProvider.getAsLong();
-					}
-					
-					if(status.get() == Status.Writing){
-						
-						long ret = realSize - ((EofMarkType)eofType).getTag().length(); 
-						logger.debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
-						return ret < 0 ? 0 : ret;
-					}
-					return realSize;
-				}
-			});
-		}else{
-			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
-		}
-	}
+        long lastLogTime = System.currentTimeMillis();
+        while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
 
-	@Override
-	public String toString() {
-		return String.format("eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbOffset, file, file.exists(), status.get());
-	}
+            ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
 
-	@Override
-	public boolean sameRdbFile(File file) {
-		return this.file.equals(file);
-	}
+            rdbFileListener.onFileData(referenceFileRegion);
+            if (referenceFileRegion.count() <= 0)
+                try {
+                    Thread.sleep(1);
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastLogTime > 10000) {
+                        logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}",
+                                status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
+                        lastLogTime = currentTime;
+                    }
+                } catch (InterruptedException e) {
+                    logger.error("[doReadRdbFile]" + rdbFileListener, e);
+                    Thread.currentThread().interrupt();
+                }
+        }
+
+        logger.info("[doReadRdbFile] done with status {}", status.get());
+
+        switch (status.get()) {
+            case Success:
+                if (file.exists()) {//this is necessery because file may be deleted
+                    rdbFileListener.onFileData(null);
+                } else {
+                    rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
+                }
+                break;
+
+            case Fail:
+                rdbFileListener.exception(new Exception("[rdb error]" + file));
+                break;
+            default:
+                rdbFileListener.exception(new Exception("[status not right]" + file + "," + status));
+                break;
+        }
+    }
+
+    private boolean isRdbWriting(Status status) {
+        return status != Status.Fail && status != Status.Success;
+    }
+
+    @Override
+    public int refCount() {
+        return refCount.get();
+    }
+
+    @Override
+    public long rdbOffset() {
+        return rdbOffset;
+    }
+
+    public void incrementRefCount() {
+        refCount.incrementAndGet();
+    }
+
+    public void decrementRefCount() {
+        refCount.decrementAndGet();
+    }
+
+    @Override
+    public boolean checkOk() {
+        return status.get() == Status.Writing
+                || (status.get() == Status.Success && file.exists());
+    }
+
+    @Override
+    public void destroy() throws Exception {
+
+        logger.info("[destroy][delete file]{}", file);
+        file.delete();
+    }
+
+    @Override
+    public void close() throws IOException {
+
+        if (cmpAndSetClosed()) {
+            logger.info("[close]{}", file);
+            if (writeFile != null) {
+                writeFile.close();
+            }
+        } else {
+            logger.warn("[close][already closed]{}", this);
+        }
+    }
+
+    @Override
+    public void addListener(RdbStoreListener rdbStoreListener) {
+        rdbStoreListeners.add(rdbStoreListener);
+    }
+
+    @Override
+    public void removeListener(RdbStoreListener rdbStoreListener) {
+        rdbStoreListeners.remove(rdbStoreListener);
+    }
+
+    private ControllableFile createControllableFile() throws IOException {
+
+        if (eofType instanceof LenEofType) {
+            return new DefaultControllableFile(file);
+        } else if (eofType instanceof EofMarkType) {
+
+            return new SizeControllableFile(file, new FileSize() {
+
+                @Override
+                public long getSize(LongSupplier realSizeProvider) {
+
+                    long realSize = 0;
+                    synchronized (truncateLock) {//truncate may make size wrong
+                        realSize = realSizeProvider.getAsLong();
+                    }
+
+                    if (status.get() == Status.Writing) {
+
+                        long ret = realSize - ((EofMarkType) eofType).getTag().length();
+                        logger.debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
+                        return ret < 0 ? 0 : ret;
+                    }
+                    return realSize;
+                }
+            });
+        } else {
+            throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s", eofType, rdbOffset, file, file.exists(), status.get());
+    }
+
+    @Override
+    public boolean sameRdbFile(File file) {
+        return this.file.equals(file);
+    }
 
 }
