@@ -41,6 +41,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     private ConfigTbl currentConfig;
 
+    @Override
     protected void doElect() {
         int retryTime = 0;
         ConfigModel model = buildDefaultConfig();
@@ -71,6 +72,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         logger.info("[doElect][fail] retry {} times", retryTime);
     }
 
+    @Override
     protected boolean shouldElect() {
         try {
             refreshConfig();
@@ -90,6 +92,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         return isConfigExpired();
     }
 
+    @Override
     protected void beforeElect() {
         long delay = calculateElectDelay();
         logger.debug("[beforeElect] sleep for {}", delay);
@@ -100,16 +103,23 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         }
     }
 
+    @Override
     protected void afterElect() {
         logger.debug("[afterElect] current config {}", currentConfig);
         if (isConfigActive()) notifyObservers(currentConfig.getValue());
         else if (isConfigExpired()) notifyObservers(null);
     }
 
+    @Override
     protected long getElectIntervalMillSecond() {
         if (isConfigActive()) return currentConfig.getUntil().getTime() - (new Date()).getTime();
         else if (isConfigExpired()) return 0;
-        else return ELECTION_INTERVAL_SECOND * 1000;
+        else return ELECTION_INTERVAL_SECOND * 1000L;
+    }
+
+    @Override
+    protected String getElectionName() {
+        return "CrossDcLeaderElection";
     }
 
     private ConfigModel buildDefaultConfig() {
