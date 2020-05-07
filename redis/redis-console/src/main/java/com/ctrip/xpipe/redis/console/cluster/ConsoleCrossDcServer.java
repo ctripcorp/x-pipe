@@ -7,9 +7,11 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.BeansException;
@@ -19,6 +21,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +36,13 @@ import java.util.Map;
 public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, LeaderAware, Observer, ApplicationContextAware{
 
     @Autowired
-    private ConsoleConfig consoleConfig;
-
-    @Autowired
     private ConsoleLeaderElector consoleLeaderElector;
 
     @Autowired
     private CrossDcLeaderElectionAction electionAction;
+
+    @Autowired
+    private ConfigService configService;
 
     private volatile boolean crossDcLeader = false;
 
@@ -89,6 +92,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     public void isleader() {
         try {
             //become dc leader
+            triggerElection(configService.getCrossDcLeader());
             start();
         } catch (Exception e) {
             logger.error("[isCrossDcLeader]", e);
@@ -126,6 +130,31 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             EventMonitor.DEFAULT.logEvent("XPIPE.LEADER.CHANGE", "LOSE.LEADER");
             loseLeader();
         }
+    }
+
+    public void forceSetCrossLeader(ConfigModel config, Date until) throws Exception {
+        if(!consoleLeaderElector.amILeader()) {
+            throw new XpipeException("not dc leader");
+        }
+
+        try {
+            configService.updateCrossDcLeader(config, until);
+        } catch (Exception e) {
+            throw new XpipeException("success but update lease to dc fail, " + e.getMessage());
+        } finally {
+            long nextElectionDelayMilliSecond = until.getTime() - new Date().getTime();
+            electionAction.resetNextElection(Math.max(nextElectionDelayMilliSecond, 0));
+            triggerElection(config.getVal());
+        }
+    }
+
+    public void refreshCrossLeaderStatus() throws Exception {
+        if(!consoleLeaderElector.amILeader()) {
+            throw new XpipeException("not dc leader");
+        }
+        triggerElection(configService.getCrossDcLeader());
+
+        electionAction.resetNextElection(0);
     }
 
     private void loseLeader() {
@@ -171,8 +200,14 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
     }
 
     @VisibleForTesting
-    protected ConsoleCrossDcServer setConsoleConfig(ConsoleConfig consoleConfig) {
-        this.consoleConfig = consoleConfig;
+    protected ConsoleCrossDcServer setCrossDcLeaderElectionAction(CrossDcLeaderElectionAction electionAction) {
+        this.electionAction = electionAction;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected ConsoleCrossDcServer setConfigService(ConfigService configService) {
+        this.configService = configService;
         return this;
     }
 
