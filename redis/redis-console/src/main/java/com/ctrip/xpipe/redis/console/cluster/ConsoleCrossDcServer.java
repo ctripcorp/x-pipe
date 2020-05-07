@@ -68,7 +68,9 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
             return;
         }
         boolean crossDcLeader = FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcName);
-        setCrossDcLeader(crossDcLeader, String.format("[result] cross dc leader set to %s by elect", dcName));
+        String reason = (null == dcName) ? "no leader is elected"
+                : String.format("[result] cross dc leader set to %s by elect", dcName);
+        setCrossDcLeader(crossDcLeader, reason);
     }
 
     @Override

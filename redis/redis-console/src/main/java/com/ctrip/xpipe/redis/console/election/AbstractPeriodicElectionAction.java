@@ -21,7 +21,10 @@ public abstract class AbstractPeriodicElectionAction extends AbstractObservable 
     }
 
     public void stop() throws Exception {
-        if (null != future && !future.isDone()) future.cancel(false);
+        if (null != future && !future.isDone()) {
+            future.cancel(false);
+            future = null;
+        }
     }
 
     protected void elect() {
