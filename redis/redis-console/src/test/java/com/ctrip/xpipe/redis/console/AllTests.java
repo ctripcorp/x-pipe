@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
+import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.health.action.delay.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.RouteHealthEventProcessorTest;
@@ -176,7 +177,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DelayActionTest.class,
         DelayServiceTest.class,
         SentinelHelloActionDowngradeTest.class,
-        ShardMetaServiceImplTest.class
+        ShardMetaServiceImplTest.class,
+        CrossDcLeaderElectionActionTest.class
 })
 public class AllTests {
 

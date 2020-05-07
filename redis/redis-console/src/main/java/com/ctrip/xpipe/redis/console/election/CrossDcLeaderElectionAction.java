@@ -5,11 +5,11 @@ import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.dal.jdbc.DalException;
@@ -19,24 +19,25 @@ import java.util.Date;
 @Component
 public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction {
 
-    public static final String KEY_LEASE_CONFIG = "lease";
+    public static final String KEY_LEASE_CONFIG = "LEASE";
 
     public static final String SUB_KEY_CROSS_DC_LEADER = "CROSS_DC_LEADER";
 
-    public static final long MAX_ELECTION_DELAY_SECOND = 30;
+    protected static int MAX_ELECTION_DELAY_MILLISECOND = 30 * 1000;
 
-    public static final int ELECTION_INTERVAL_MINUTE = 10;
+    protected static int ELECTION_INTERVAL_SECOND = 10 * 60;
 
-    private static final int MAX_ELECT_RETRY_TIME = 3;
+    protected static int MAX_ELECT_RETRY_TIME = 3;
+
+    protected String dataCenter = FoundationService.DEFAULT.getDataCenter();
+
+    protected String localIp = FoundationService.DEFAULT.getLocalIp();
 
     @Autowired
     private ConfigDao configDao;
 
     @Autowired
     private MetaCache metaCache;
-
-    @Autowired
-    private ClusterService clusterService;
 
     private ConfigTbl currentConfig;
 
@@ -48,12 +49,12 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
             retryTime++;
 
             try {
-                logger.info("[doElect] try to elect self to cross dc leader");
+                logger.debug("[doElect] dc {} try to elect self to cross dc leader", dataCenter);
                 configDao.updateConfigIdempotent(model,
-                        DateTimeUtils.getMinutesLaterThan(new Date(), ELECTION_INTERVAL_MINUTE),
+                        DateTimeUtils.getSecondsLaterThan(new Date(), ELECTION_INTERVAL_SECOND),
                         currentConfig.getDataChangeLastTime());
             } catch (Exception e) {
-                logger.warn("[doElect] elect self fail, {}", e.getMessage());
+                logger.info("[doElect] elect self fail, {}", e.getMessage());
             }
 
             try {
@@ -63,18 +64,18 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
                     return;
                 }
             } catch (Exception e) {
-                logger.warn("[doElect] refresh config fail, {}", e.getMessage());
+                logger.info("[doElect] refresh config fail, {}", e.getMessage());
             }
         }
 
-        logger.warn("[doElect][fail] retry {} times", retryTime);
+        logger.info("[doElect][fail] retry {} times", retryTime);
     }
 
     protected boolean shouldElect() {
         try {
             refreshConfig();
         } catch (Exception e) {
-            logger.warn("[shouldElect] get master dc lease fail {}", e.getMessage());
+            logger.info("[shouldElect] get master dc lease fail {}", e.getMessage());
         }
 
         if (null == currentConfig) {
@@ -82,7 +83,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
                 configDao.insertConfig(buildDefaultConfig(), new Date(), "lease for cross dc leader");
                 refreshConfig();
             } catch (Exception e) {
-                logger.warn("[shouldElect] create and get master dc lease fail {}", e.getMessage());
+                logger.info("[shouldElect] create and get master dc lease fail {}", e.getMessage());
             }
         }
 
@@ -93,47 +94,47 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         long delay = calculateElectDelay();
         logger.debug("[beforeElect] sleep for {}", delay);
         try {
-            if (delay > 0) Thread.sleep(calculateElectDelay());
+            if (delay > 0) Thread.sleep(delay);
         } catch (Exception e) {
-            logger.warn("[beforeElect] wait for {} fail {}", delay, e.getMessage());
+            logger.info("[beforeElect] wait for {} fail {}", delay, e.getMessage());
         }
     }
 
     protected void afterElect() {
         logger.debug("[afterElect] current config {}", currentConfig);
         if (isConfigActive()) notifyObservers(currentConfig.getValue());
+        else if (isConfigExpired()) notifyObservers(null);
     }
 
     protected long getElectIntervalMillSecond() {
         if (isConfigActive()) return currentConfig.getUntil().getTime() - (new Date()).getTime();
-        return ELECTION_INTERVAL_MINUTE * 60 * 1000L;
+        else if (isConfigExpired()) return 0;
+        else return ELECTION_INTERVAL_SECOND * 1000;
     }
 
     private ConfigModel buildDefaultConfig() {
         ConfigModel config = new ConfigModel();
         config.setKey(KEY_LEASE_CONFIG)
                 .setSubKey(SUB_KEY_CROSS_DC_LEADER)
-                .setVal(FoundationService.DEFAULT.getDataCenter())
-                .setUpdateIP(FoundationService.DEFAULT.getLocalIp())
-                .setUpdateUser(FoundationService.DEFAULT.getDataCenter() + "-DcLeader");
+                .setVal(dataCenter)
+                .setUpdateIP(localIp)
+                .setUpdateUser(dataCenter + "-DcLeader");
 
         return config;
     }
 
     private long calculateElectDelay() {
-        long totalCluster = clusterService.getAllCount();
-        long activeClusterCount = countActiveClusterInCurrentDc();
-        return (long) ((activeClusterCount / (totalCluster * 1f) ) * MAX_ELECTION_DELAY_SECOND * 1000);
+        return (long) (calculateActiveClusterRatio() * MAX_ELECTION_DELAY_MILLISECOND);
     }
 
-    private long countActiveClusterInCurrentDc() {
+    private float calculateActiveClusterRatio() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        long count = 0;
-        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (!dcMeta.getId().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
-                continue;
-            }
+        long count;
+        long totalCluster = 0;
+        long activeClusterCount = 0;
 
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            count = 0;
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 if (!clusterMeta.getActiveDc().equals(dcMeta.getId())) {
                     continue;
@@ -141,9 +142,15 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
                 count++;
             }
+
+            if (dcMeta.getId().equalsIgnoreCase(dataCenter)) {
+                activeClusterCount += count;
+            }
+            totalCluster += count;
         }
 
-        return count;
+        if (0 == totalCluster) return 0;
+        return activeClusterCount / (totalCluster * 1f);
     }
 
     private boolean isConfigExpired() {
@@ -161,5 +168,15 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
             currentConfig = null;
             throw e;
         }
+    }
+
+    @VisibleForTesting
+    protected void setConfigDao(ConfigDao configDao) {
+        this.configDao = configDao;
+    }
+
+    @VisibleForTesting
+    protected void setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
     }
 }
