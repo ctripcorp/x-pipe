@@ -3,6 +3,8 @@ package com.ctrip.xpipe;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.command.RequestResponseCommand;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
+import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -22,6 +24,7 @@ import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkTestServer;
+import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ResourceLeakDetector;
@@ -37,10 +40,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -797,6 +797,8 @@ public class AbstractTest {
 
     public static class CountingCommand extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
+        private List<CountingCommandListener> observers = Lists.newArrayList();
+
         private AtomicInteger counter;
 
         private int sleepTime;
@@ -810,7 +812,18 @@ public class AbstractTest {
 
         @Override
         protected void doExecute() throws Exception {
+            if(!observers.isEmpty()) {
+                for(CountingCommandListener observer : observers) {
+                    observer.beforeSleep(this);
+                }
+            }
             Thread.sleep(sleepTime);
+            if(!observers.isEmpty()) {
+                for(CountingCommandListener observer : observers) {
+                    observer.afterSleep(this);
+                }
+            }
+
             counter.incrementAndGet();
             future().setSuccess();
         }
@@ -834,5 +847,24 @@ public class AbstractTest {
             this.timeout = timeout;
             return this;
         }
+
+
+        public void addObserver(CountingCommandListener observer) {
+            synchronized (this) {
+                observers.add(observer);
+            }
+        }
+
+
+        public void removeObserver(CountingCommandListener observer) {
+            synchronized (this) {
+                observers.remove(observer);
+            }
+        }
+    }
+
+    public static interface CountingCommandListener {
+        void beforeSleep(CountingCommand command);
+        void afterSleep(CountingCommand command);
     }
 }

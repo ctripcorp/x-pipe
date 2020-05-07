@@ -7,7 +7,7 @@ import com.ctrip.xpipe.api.command.Command;
  * <p>
  * Apr 28, 2020
  */
-public interface JobManager<T extends Command<?>> {
+public interface JobManager {
 
     void offer(Command<?> task);
 }

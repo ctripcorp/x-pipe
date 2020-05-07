@@ -67,6 +67,10 @@ public class OneThreadTaskExecutor implements Destroyable, TaskExecutor {
         executors.execute(new Task());
     }
 
+    public boolean isEmpty() {
+        return tasks.isEmpty();
+    }
+
 
     public class Task extends AbstractExceptionLogTask {
 

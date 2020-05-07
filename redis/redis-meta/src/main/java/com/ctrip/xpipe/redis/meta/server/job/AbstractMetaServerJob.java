@@ -7,6 +7,6 @@ import com.ctrip.xpipe.command.AbstractCommand;
  * <p>
  * Apr 28, 2020
  */
-public abstract class AbstractMetaServerJob<V> extends AbstractCommand<V> implements MetaServerJob {
+public abstract class AbstractMetaServerJob<V> extends AbstractCommand<V> implements MetaServerJob<V> {
 
 }

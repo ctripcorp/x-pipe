@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.meta.server.job.MetaServerJob;
  * <p>
  * Apr 28, 2020
  */
-public class MetaServerJobManager implements JobManager<MetaServerJob<?>> {
+public class MetaServerJobManager implements JobManager {
 
     private SerialDedupJobManager serialJobManager;
 

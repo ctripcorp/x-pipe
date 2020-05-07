@@ -16,13 +16,13 @@ public class SerialDedupJobManager extends AbstractDedupJobManager {
         super(executors);
     }
 
-    @Override
-    public void offer(Command<?> task) {
-        if(task instanceof ChangePrimaryDcJob) {
-            jobs.clear();
-            ((MutexableOneThreadTaskExecutor) executors).clearAndExecuteCommand((ChangePrimaryDcJob) task);
-        } else {
-            super.offer(task);
-        }
-    }
+//    @Override
+//    public void offer(Command<?> task) {
+//        if(task instanceof ChangePrimaryDcJob) {
+//            jobs.clear();
+//            ((MutexableOneThreadTaskExecutor) executors).clearAndExecuteCommand((ChangePrimaryDcJob) task);
+//        } else {
+//            super.offer(task);
+//        }
+//    }
 }

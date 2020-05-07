@@ -7,6 +7,8 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.TaskExecutor;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import org.jboss.netty.util.internal.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Objects;
@@ -16,7 +18,9 @@ import java.util.Objects;
  * <p>
  * Apr 28, 2020
  */
-public abstract class AbstractDedupJobManager implements JobManager<Command<?>> {
+public abstract class AbstractDedupJobManager implements JobManager {
+
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     protected Map<Class<?>, DedupCommand> jobs = new ConcurrentHashMap<>();
 
@@ -29,15 +33,19 @@ public abstract class AbstractDedupJobManager implements JobManager<Command<?>> 
     @Override
     public void offer(Command<?> task) {
         DedupCommand future = new DedupCommand((Command<?>) task);
-        DedupCommand current = jobs.putIfAbsent(task.getClass(), future);
-        if(current != null) {
-            if(!current.replace((Command<?>) task)) {
-                jobs.put(task.getClass(), future);
-                executorJob(future);
+        if(jobs.get(task.getClass()) == null) {
+            synchronized (this) {
+                DedupCommand current = jobs.putIfAbsent(task.getClass(), future);
+                if(current != null) {
+                    if(!current.replace((Command<?>) task)) {
+                        executorJob(future);
+                    }
+                } else {
+                    executorJob(future);
+                }
             }
-        } else {
-            executorJob(future);
         }
+
     }
 
     protected void executorJob(DedupCommand command) {
@@ -62,6 +70,7 @@ public abstract class AbstractDedupJobManager implements JobManager<Command<?>> 
                     old.future().cancel(true);
                     return true;
                 } else {
+                    logger.info("[DedupCommand][replace] false, {}", getInnerCommand().getName());
                     return false;
                 }
             }
