@@ -1,15 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
-import com.ctrip.xpipe.redis.console.model.LeaseModel;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.spring.AbstractController;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,29 +21,17 @@ public class CrossDcController extends AbstractConsoleController {
     @Autowired(required = false)
     private ConsoleCrossDcServer crossDcClusterServer;
 
-    @Autowired
-    private DcService dcService;
+    private static final int DEFAULT_LEASE_PERIOD = 10;
 
-    private final static int DEFAULT_LEASE_PERIOD = 10;
-
-    @RequestMapping(value = "/cross-dc/lease", method = RequestMethod.POST)
-    public RetMessage updateCrossDcLeaderLease(HttpServletRequest request, @RequestBody LeaseModel leaseModel) {
+    @RequestMapping(value = {"/cross-dc/leader/force/{validPeriod}", "/cross-dc/leader/force"}, method = RequestMethod.POST)
+    public RetMessage updateCrossDcLeaderLease(HttpServletRequest request, @PathVariable(required = false) Integer validPeriod) {
         if (null == crossDcClusterServer) return RetMessage.createSuccessMessage();
 
-        if (StringUtil.isEmpty(leaseModel.getOwner())) {
-            return RetMessage.createFailMessage("invalid lease owner");
-        }
-
-        String dcName = leaseModel.getOwner().toUpperCase();
-        if (null == dcService.find(dcName)) {
-            return RetMessage.createFailMessage("dc not found");
-        }
-
+        String dcName = FoundationService.DEFAULT.getDataCenter();
         String sourceIp = request.getHeader("X-FORWARDED-FOR");
         if(sourceIp == null) {
             sourceIp = request.getRemoteAddr();
         }
-        Integer validPeriod = leaseModel.getValidPeriod();
         if (null == validPeriod || validPeriod < 0) {
             validPeriod = DEFAULT_LEASE_PERIOD;
         }
@@ -67,7 +53,7 @@ public class CrossDcController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
-    @RequestMapping(value = "/cross-dc/lease/refresh", method = RequestMethod.POST)
+    @RequestMapping(value = "/cross-dc/leader/refresh", method = RequestMethod.POST)
     public RetMessage refreshCrossDcLeaderLease() {
         if (null == crossDcClusterServer) return RetMessage.createSuccessMessage();
 

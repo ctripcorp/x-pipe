@@ -39,7 +39,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
     @Autowired
     private MetaCache metaCache;
 
-    private ConfigTbl currentConfig;
+    private ConfigTbl lease;
 
     @Override
     protected void doElect() {
@@ -53,15 +53,15 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
                 logger.debug("[doElect] dc {} try to elect self to cross dc leader", dataCenter);
                 configDao.updateConfigIdempotent(model,
                         DateTimeUtils.getSecondsLaterThan(new Date(), ELECTION_INTERVAL_SECOND),
-                        currentConfig.getDataChangeLastTime());
+                        lease.getDataChangeLastTime());
             } catch (Exception e) {
                 logger.info("[doElect] elect self fail, {}", e.getMessage());
             }
 
             try {
                 refreshConfig();
-                if (isConfigActive()) {
-                    logger.info("[doElect] new lease take effect, cross dc leader {}", currentConfig.getValue());
+                if (isLeaseOn()) {
+                    logger.info("[doElect] new lease take effect, cross dc leader {}", lease.getValue());
                     return;
                 }
             } catch (Exception e) {
@@ -80,7 +80,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
             logger.info("[shouldElect] get master dc lease fail {}", e.getMessage());
         }
 
-        if (null == currentConfig) {
+        if (null == lease) {
             try {
                 configDao.insertConfig(buildDefaultConfig(), new Date(), "lease for cross dc leader");
                 refreshConfig();
@@ -89,7 +89,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
             }
         }
 
-        return isConfigExpired();
+        return isLeaseExpired();
     }
 
     @Override
@@ -105,15 +105,15 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     @Override
     protected void afterElect() {
-        logger.debug("[afterElect] current config {}", currentConfig);
-        if (isConfigActive()) notifyObservers(currentConfig.getValue());
-        else if (isConfigExpired()) notifyObservers(null);
+        logger.debug("[afterElect] current lease {}", lease);
+        if (isLeaseOn()) notifyObservers(lease.getValue());
+        else if (isLeaseExpired()) notifyObservers(null);
     }
 
     @Override
     protected long getElectIntervalMillSecond() {
-        if (isConfigActive()) return currentConfig.getUntil().getTime() - (new Date()).getTime();
-        else if (isConfigExpired()) return 0;
+        if (isLeaseOn()) return lease.getUntil().getTime() - (new Date()).getTime();
+        else if (isLeaseExpired()) return 0;
         else return ELECTION_INTERVAL_SECOND * 1000L;
     }
 
@@ -133,6 +133,8 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         return config;
     }
 
+    // make dc leader with least active cluster sleep less
+    // so it can be elected to cross dc leader more likely
     private long calculateElectDelay() {
         return (long) (calculateActiveClusterRatio() * MAX_ELECTION_DELAY_MILLISECOND);
     }
@@ -163,19 +165,19 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         return activeClusterCount / (totalCluster * 1f);
     }
 
-    private boolean isConfigExpired() {
-        return null != currentConfig && (new Date()).compareTo(currentConfig.getUntil()) >= 0;
+    private boolean isLeaseExpired() {
+        return null != lease && (new Date()).compareTo(lease.getUntil()) >= 0;
     }
 
-    private boolean isConfigActive() {
-        return null != currentConfig && (new Date()).compareTo(currentConfig.getUntil()) < 0;
+    private boolean isLeaseOn() {
+        return null != lease && (new Date()).compareTo(lease.getUntil()) < 0;
     }
 
     private void refreshConfig() throws DalException {
         try {
-            currentConfig = configDao.getByKeyAndSubId(KEY_LEASE_CONFIG, SUB_KEY_CROSS_DC_LEADER);
+            lease = configDao.getByKeyAndSubId(KEY_LEASE_CONFIG, SUB_KEY_CROSS_DC_LEADER);
         } catch (Exception e) {
-            currentConfig = null;
+            lease = null;
             throw e;
         }
     }
