@@ -39,7 +39,6 @@
         <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
         <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
-        <spring-webmvc.version>4.3.4.RELEASE</spring-webmvc.version>
         <ctrip-framework-foundation.version>1.8.3</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>2.21.1</cat.version>
