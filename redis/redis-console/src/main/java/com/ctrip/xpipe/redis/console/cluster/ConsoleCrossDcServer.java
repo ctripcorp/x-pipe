@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.unidal.dal.jdbc.DalException;
 
 import java.util.Date;
 import java.util.LinkedList;
@@ -132,7 +133,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }
     }
 
-    public void forceSetCrossLeader(ConfigModel config, Date until) throws Exception {
+    public void forceSetCrossLeader(ConfigModel config, Date until) throws XpipeException {
         if(!consoleLeaderElector.amILeader()) {
             throw new XpipeException("not dc leader");
         }
@@ -148,7 +149,7 @@ public class ConsoleCrossDcServer extends AbstractStartStoppable implements Cros
         }
     }
 
-    public void refreshCrossLeaderStatus() throws Exception {
+    public void refreshCrossLeaderStatus() throws XpipeException, DalException {
         if(!consoleLeaderElector.amILeader()) {
             throw new XpipeException("not dc leader");
         }

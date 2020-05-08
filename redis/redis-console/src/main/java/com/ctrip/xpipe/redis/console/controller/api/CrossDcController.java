@@ -26,7 +26,9 @@ public class CrossDcController extends AbstractConsoleController {
     @Autowired
     private DcService dcService;
 
-    @PostMapping(value = "/cross-dc/lease")
+    private final static int DEFAULT_LEASE_PERIOD = 10;
+
+    @RequestMapping(value = "/cross-dc/lease", method = RequestMethod.POST)
     public RetMessage updateCrossDcLeaderLease(HttpServletRequest request, @RequestBody LeaseModel leaseModel) {
         if (null == crossDcClusterServer) return RetMessage.createSuccessMessage();
 
@@ -45,7 +47,7 @@ public class CrossDcController extends AbstractConsoleController {
         }
         Integer validPeriod = leaseModel.getValidPeriod();
         if (null == validPeriod || validPeriod < 0) {
-            validPeriod = 10;
+            validPeriod = DEFAULT_LEASE_PERIOD;
         }
 
         UserInfo user = UserInfoHolder.DEFAULT.getUser();
@@ -65,7 +67,7 @@ public class CrossDcController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage();
     }
 
-    @PostMapping(value = "/cross-dc/lease/refresh")
+    @RequestMapping(value = "/cross-dc/lease/refresh", method = RequestMethod.POST)
     public RetMessage refreshCrossDcLeaderLease() {
         if (null == crossDcClusterServer) return RetMessage.createSuccessMessage();
 
