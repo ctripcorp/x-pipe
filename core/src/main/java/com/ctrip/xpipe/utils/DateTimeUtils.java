@@ -44,6 +44,13 @@ public class DateTimeUtils {
 		return cal.getTime();
 	}
 
+	public synchronized static Date getSecondsLaterThan(Date date, int second) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(Calendar.SECOND, second);
+		return cal.getTime();
+	}
+
 	public static Date getHoursBeforeDate(Date date, int hours) {
 		int minusHours = -Math.abs(hours);
 		Calendar cal = Calendar.getInstance();

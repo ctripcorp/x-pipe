@@ -1499,6 +1499,15 @@
 			</readset>
 		</readsets>
 
+		<updatesets>
+			<updateset name="VALUE_AND_UNTIL" >
+				<member name="value" />
+				<member name="until" />
+				<member name="latest-update-user" />
+				<member name ="latest-update-ip" />
+			</updateset>
+		</updatesets>
+
 		<query-defs>
 			<query name="update-by-key" type="UPDATE" batch="false">
 				<param name="key"/>
@@ -1554,6 +1563,19 @@
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
+			</query>
+
+			<query name="update-by-key-and-sub-key-and-change-time" type="UPDATE">
+				<param name="key"/>
+				<param name="sub-key"/>
+				<param name="data-change-last-time" />
+				<statement><![CDATA[UPDATE <TABLE/>
+					SET <FIELDS/>
+					WHERE <FIELD name='key'/> = ${key}
+					AND <FIELD name='sub-key'/> = ${sub-key}
+					AND <FIELD name='deleted'/> = 0
+					AND <FIELD name='data-change-last-time'/> = ${data-change-last-time}
+				]]></statement>
 			</query>
 		</query-defs>
 	</entity>
