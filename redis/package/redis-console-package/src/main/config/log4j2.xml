@@ -59,7 +59,7 @@
         </RollingFile>
 
         <RollingFile name="rollingNettyClient" fileName="${baseDir}/${nettyClient}.log"
-                     filePattern="${baseDir}/${delayLogName}-%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="${baseDir}/${nettyClient}-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}]%m%xpEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>

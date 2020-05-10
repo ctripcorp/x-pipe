@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.redis.console.exception.DalInsertException;
+import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
@@ -73,23 +75,7 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
             insert = true;
         }
 
-        ConfigTbl configTbl = new ConfigTbl();
-        configTbl.setKey(config.getKey());
-        configTbl.setValue(config.getVal());
-        configTbl.setSubKey(config.getSubKey());
-        if (null == configTbl.getSubKey()) {
-            configTbl.setSubKey("");
-        }
-        if(config.getUpdateIP() != null) {
-            configTbl.setLatestUpdateIp(config.getUpdateIP());
-        }
-        if(config.getUpdateUser() != null) {
-            configTbl.setLatestUpdateUser(config.getUpdateUser());
-        }
-
-        if(until != null) {
-            configTbl.setUntil(until);
-        }
+        ConfigTbl configTbl = buildConfigTbl(config, until);
         if(!insert) {
             queryHandler.handleUpdate(new DalQuery<Integer>() {
                 @Override
@@ -117,6 +103,30 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
         return configTblDao.findByKeyAndSubKey(key, subId, ConfigTblEntity.READSET_FULL);
     }
 
+    public void insertConfig(ConfigModel config, Date until, String desc) throws DalInsertException {
+        ConfigTbl configTbl = buildConfigTbl(config, until);
+        configTbl.setDesc(desc);
+
+        queryHandler.handleInsert(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return configTblDao.insert(configTbl);
+            }
+        });
+    }
+
+    public void updateConfigIdempotent(ConfigModel config, Date until, Date dataChangeLastTime) throws DalUpdateException {
+        ConfigTbl configTbl = buildConfigTbl(config, until);
+        configTbl.setDataChangeLastTime(dataChangeLastTime);
+
+        queryHandler.handleUpdate(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                return configTblDao.updateByKeyAndSubKeyAndChangeTime(configTbl, ConfigTblEntity.UPDATESET_VALUE_AND_UNTIL);
+            }
+        });
+    }
+
     public List<ConfigTbl> findAllByKeyAndValueAndUntilAfter(String key, String value, Date until) {
         return queryHandler.handleQuery(new DalQuery<List<ConfigTbl>>() {
             @Override
@@ -124,6 +134,28 @@ public class ConfigDao extends AbstractXpipeConsoleDAO{
                 return configTblDao.findAllByKeyAndValueAndUntilAfter(key, value, until, ConfigTblEntity.READSET_FULL);
             }
         });
+    }
+
+    private ConfigTbl buildConfigTbl(ConfigModel config, Date until) {
+        ConfigTbl configTbl = new ConfigTbl();
+        configTbl.setKey(config.getKey());
+        configTbl.setValue(config.getVal());
+        configTbl.setSubKey(config.getSubKey());
+        if (null == configTbl.getSubKey()) {
+            configTbl.setSubKey("");
+        }
+        if(config.getUpdateIP() != null) {
+            configTbl.setLatestUpdateIp(config.getUpdateIP());
+        }
+        if(config.getUpdateUser() != null) {
+            configTbl.setLatestUpdateUser(config.getUpdateUser());
+        }
+
+        if(until != null) {
+            configTbl.setUntil(until);
+        }
+
+        return configTbl;
     }
 
 }

@@ -23,7 +23,11 @@ public interface ConfigService {
 
     void startSentinelCheck(ConfigModel config) throws DalException;
 
-    void stopSentinelCheck(ConfigModel config, int hours) throws DalException;
+    void stopSentinelCheck(ConfigModel config, int minutes) throws DalException;
+
+    void updateCrossDcLeader(ConfigModel config, Date until) throws DalException;
+    
+    String getCrossDcLeader() throws DalException;
 
     boolean shouldSentinelCheck(String cluster);
 

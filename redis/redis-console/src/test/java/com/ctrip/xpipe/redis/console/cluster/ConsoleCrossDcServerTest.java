@@ -2,17 +2,21 @@ package com.ctrip.xpipe.redis.console.cluster;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.google.common.collect.Maps;
+import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
+import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.Map;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.Mockito.mock;
@@ -26,99 +30,93 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
+
     @Mock
-    private ConsoleConfig consoleConfig;
+    private ConfigService configService;
 
     private ConsoleCrossDcServer crossDcClusterServer;
-
-    private int checkIntervalMilli = 10;
 
     private AtomicBoolean siteLeader = new AtomicBoolean(true);
 
     private ConsoleLeaderElector consoleLeaderElector;
 
+    private volatile String leaderDc = "init-dc";
+
+    private String currentDc = FoundationService.DEFAULT.getDataCenter();
+
+    private volatile int electInterval = 10;
+
     @Before
-    public void beforeConsoleCrossDcServerTest(){
+    public void beforeConsoleCrossDcServerTest() throws Exception {
         crossDcClusterServer = new ConsoleCrossDcServer();
-        crossDcClusterServer.setStartIntervalMilli(10);
 
-        crossDcClusterServer.setCheckIntervalMilli(checkIntervalMilli);
         consoleLeaderElector = mock(ConsoleLeaderElector.class);
-        when(consoleLeaderElector.amILeader()).thenReturn(siteLeader.get());
         crossDcClusterServer.setConsoleLeaderElector(consoleLeaderElector);
+        crossDcClusterServer.setCrossDcLeaderElectionAction(new TestCrossDcLeaderElectionAction());
+        crossDcClusterServer.setConfigService(configService);
 
-        crossDcClusterServer.setConsoleConfig(consoleConfig);
+        when(configService.getCrossDcLeader()).thenAnswer(inv -> leaderDc);
+        when(consoleLeaderElector.amILeader()).thenAnswer(inv -> siteLeader.get());
 
+        // db can not write with network island
+        Mockito.doAnswer(inv -> { throw new DalUpdateException("db write is not available"); })
+                .when(configService).updateCrossDcLeader(Mockito.any(), Mockito.any());
     }
 
     @Test
     public void testNonSiteLeader() throws Exception {
-        crossDcClusterServer.setCheckIntervalMilli(1);
-        when(consoleLeaderElector.amILeader()).thenReturn(false);
+        siteLeader.set(false);
+        leaderDc = currentDc;
+
         crossDcClusterServer.start();
         Assert.assertFalse(consoleLeaderElector.amILeader());
-        Thread.sleep(2);
+
+        sleep(electInterval);
         Assert.assertFalse(crossDcClusterServer.amILeader());
     }
 
     @Test
     public void testValidLeader() throws Exception {
-        crossDcClusterServer.setCheckIntervalMilli(1);
-        when(consoleLeaderElector.amILeader()).thenReturn(true);
-        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
-        Map<String, String> ipDcMap = Maps.newHashMap();
-        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
-        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
-        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
+        siteLeader.set(true);
+        leaderDc = currentDc;
         crossDcClusterServer.start();
+
         Assert.assertTrue(consoleLeaderElector.amILeader());
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
     }
 
     @Test
     public void testNotLeader() throws Exception {
-        crossDcClusterServer.setCheckIntervalMilli(1);
-        when(consoleLeaderElector.amILeader()).thenReturn(true);
-        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
-        Map<String, String> ipDcMap = Maps.newHashMap();
-        ipDcMap.put("127.0.0.1", "non-exists");
-        ipDcMap.put("localhost", "non-exists");
-        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
+        siteLeader.set(true);
+
         crossDcClusterServer.start();
         Assert.assertTrue(consoleLeaderElector.amILeader());
-        sleep(10);
+
+        sleep(electInterval);
         waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader());
     }
 
 
     @Test
-    public void testLeaderBecomeCrossDcLeader() throws Exception {
-        when(consoleLeaderElector.amILeader()).thenReturn(true);
-        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
-        Map<String, String> ipDcMap = Maps.newHashMap();
-        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
-        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
-        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
-        crossDcClusterServer.isleader();
+    public void testLeaderBecomeCrossDcLeader() {
+        siteLeader.set(true);
+        leaderDc = currentDc;
 
-        waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
+        crossDcClusterServer.isleader();
+        sleep(electInterval);
+        Assert.assertTrue(crossDcClusterServer.amILeader());
 
     }
 
     @Test
     public void testNotLeaderTwo() throws Exception {
-        when(consoleLeaderElector.amILeader()).thenReturn(true);
-        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
-        Map<String, String> ipDcMap = Maps.newHashMap();
-        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
-        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
-        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
-        crossDcClusterServer.isleader();
+        siteLeader.set(true);
+        leaderDc = currentDc;
 
+        crossDcClusterServer.isleader();
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
 
         crossDcClusterServer.notLeader();
-
         waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader(), 300);
         Assert.assertFalse(crossDcClusterServer.amILeader());
 
@@ -127,28 +125,107 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
     @Test
     public void testLeaderBecomeCrossDcLeaderThenFallback() throws Exception {
+        siteLeader.set(true);
+        leaderDc = currentDc;
 
-        when(consoleLeaderElector.amILeader()).thenReturn(true);
-        when(consoleConfig.getDatabaseDomainName()).thenReturn("localhost");
-        Map<String, String> ipDcMap = Maps.newHashMap();
-        ipDcMap.put("127.0.0.1", FoundationService.DEFAULT.getDataCenter());
-        ipDcMap.put("localhost", FoundationService.DEFAULT.getDataCenter());
-        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
         crossDcClusterServer.isleader();
-
         waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
-        ipDcMap = Maps.newHashMap();
-        ipDcMap.put("127.0.0.1", "not-exist");
-        ipDcMap.put("localhost", "not-exist");
-        when(consoleConfig.getDatabaseIpAddresses()).thenReturn(ipDcMap);
 
-        waitConditionUntilTimeOut(() -> !crossDcClusterServer.amILeader());
+        leaderDc = "other-dc";
+        sleep(electInterval * 2);
+        Assert.assertFalse(crossDcClusterServer.amILeader());
+    }
+
+    @Test
+    public void testForceSetLeader() {
+        siteLeader.set(true);
+
+        crossDcClusterServer.isleader();
+        sleep(2 * electInterval);
+        Assert.assertFalse(crossDcClusterServer.amILeader());
+
+        ConfigModel config = new ConfigModel();
+        config.setVal(currentDc);
+
+        try {
+            crossDcClusterServer.forceSetCrossLeader(config, DateTimeUtils.getSecondsLaterThan(new Date(), 100));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        sleep(2 * electInterval);
+        Assert.assertTrue(crossDcClusterServer.amILeader());
+    }
+
+    @Test
+    public void testForceSetNotLeader() throws Exception {
+        siteLeader.set(true);
+        leaderDc = currentDc;
+
+        crossDcClusterServer.isleader();
+        waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
+
+        ConfigModel config = new ConfigModel();
+        config.setVal("other-dc");
+
+        try {
+            crossDcClusterServer.forceSetCrossLeader(config, DateTimeUtils.getSecondsLaterThan(new Date(), 100));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        sleep(2 * electInterval);
+        Assert.assertFalse(crossDcClusterServer.amILeader());
+    }
+
+    @Test
+    public void testRefreshLeader() throws Exception {
+        int originElectInterval = electInterval;
+        siteLeader.set(true);
+        leaderDc = currentDc;
+
+        crossDcClusterServer.isleader();
+        waitConditionUntilTimeOut(() -> crossDcClusterServer.amILeader());
+
+        electInterval = 10000;
+        sleep(originElectInterval);
+
+        leaderDc = "other-dc";
+        sleep(2 * originElectInterval);
+        Assert.assertTrue(crossDcClusterServer.amILeader());
+
+        crossDcClusterServer.refreshCrossLeaderStatus();
+        Assert.assertFalse(crossDcClusterServer.amILeader());
     }
 
 
     @After
     public void afterConsoleCrossDcServerTest() throws Exception {
         crossDcClusterServer.stop();
+    }
+
+    private class TestCrossDcLeaderElectionAction extends CrossDcLeaderElectionAction {
+
+        public TestCrossDcLeaderElectionAction() {
+        }
+
+        protected boolean shouldElect() {
+            return true;
+        }
+
+        protected void beforeElect() {
+        }
+
+        protected void doElect() {
+        }
+
+        protected void afterElect() {
+            notifyObservers(leaderDc);
+        }
+
+        protected long getElectIntervalMillSecond() {
+            return electInterval;
+        }
     }
 
 }

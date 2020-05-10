@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
+import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
@@ -104,7 +105,7 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public void stopSentinelCheck(ConfigModel config, int minutes) throws DalException {
-        logger.info("[stopSentinelCheck] : turn on sentinel check exclude config {} for cluster {} till {} hours later",
+        logger.info("[stopSentinelCheck] : turn on sentinel check exclude config {} for cluster {} till {} minutes later",
                 config, config.getSubKey(), minutes);
 
         Date date = DateTimeUtils.getMinutesLaterThan(new Date(), minutes);
@@ -112,6 +113,23 @@ public class ConfigServiceImpl implements ConfigService {
                 .setVal(String.valueOf(true));
         logChangeEvent(config, date);
         configDao.setConfigAndUntil(config, date);
+    }
+
+    public void updateCrossDcLeader(ConfigModel config, Date until) throws DalException {
+        logger.info("[updateCrossDcLeader] update lease to {} until {}", config.getVal(), until);
+        config.setKey(CrossDcLeaderElectionAction.KEY_LEASE_CONFIG);
+        config.setSubKey(CrossDcLeaderElectionAction.SUB_KEY_CROSS_DC_LEADER);
+
+        configDao.setConfig(config, until);
+    }
+
+    public String getCrossDcLeader() throws DalException {
+        ConfigTbl leaseConfig = configDao.getByKeyAndSubId(CrossDcLeaderElectionAction.KEY_LEASE_CONFIG,
+                CrossDcLeaderElectionAction.SUB_KEY_CROSS_DC_LEADER);
+
+        // only return when lease is active
+        if (new Date().compareTo(leaseConfig.getUntil()) < 0) return leaseConfig.getValue();
+        else return null;
     }
 
     @Override
