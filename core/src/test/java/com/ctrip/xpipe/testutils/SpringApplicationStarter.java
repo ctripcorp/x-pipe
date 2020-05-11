@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.testutils;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.sun.javafx.collections.UnmodifiableObservableMap;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
