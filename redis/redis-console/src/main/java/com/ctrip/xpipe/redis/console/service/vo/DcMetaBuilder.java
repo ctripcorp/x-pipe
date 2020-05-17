@@ -153,7 +153,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             public ShardMeta create() {
                 ShardMeta shardMeta = new ShardMeta(shard.getShardName());
                 shardMeta.setParent(clusterMeta);
-                shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(shard.getSetinelMonitorName(), dcMeta.getId()));
+                shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(clusterId, shard.getSetinelMonitorName(), dcMeta.getId()));
                 shardMeta.setSentinelId(sentinelId);
                 return shardMeta;
             }
