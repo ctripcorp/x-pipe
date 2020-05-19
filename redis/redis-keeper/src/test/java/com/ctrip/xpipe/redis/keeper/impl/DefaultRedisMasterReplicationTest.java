@@ -19,7 +19,7 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket;
+import com.ctrip.xpipe.utils.DefaultLeakyBucket;
 import com.google.common.collect.Lists;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
