@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
  */
 public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, ProxyEnabled {
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private ProxyConnectProtocol protocol;
 
     public ProxyEnabledEndpoint(String ip, int port, ProxyConnectProtocol protocol) {

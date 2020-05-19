@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListenerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.RedisMasterReplicationTrafficRateLimitTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
+import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -53,7 +54,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultLeakyBucketTest.class,
 	CompositeLeakyBucketTest.class,
 	RedisMasterReplicationTrafficRateLimitTest.class,
-	LeakyBucketBasedMasterReplicationListenerTest.class
+	LeakyBucketBasedMasterReplicationListenerTest.class,
+	TestAbstractMetaStoreTest.class
 })
 public class AllTests {
 
