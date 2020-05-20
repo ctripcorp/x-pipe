@@ -78,10 +78,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     public static final String KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK = "console.cluster.shard.for.migrate.sys.check";
 
-    private static final String KEY_DATABASE_DOMAIN_NAME = "console.database.domain.name";
-
-    private static final String KEY_DATABASE_IP_ADDRESSES = "console.database.ip.address";
-
     private static final String KEY_PROXY_INFO_CHECK_INTERVAL = "console.proxy.info.collector.check.interval";
 
     private static final String KEY_OUTTER_CLIENT_CHECK_INTERVAL = "console.outter.client.check.interval";
@@ -89,6 +85,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CONSOLE_DOMAINS = "console.domains";
 
     private static final String KEY_SENTINEL_CHECK_INTERVAL = "console.health.sentinel.interval";
+
+    private static final String KEY_SENTINEL_RATE_LIMIT_OPEN = "console.sentinel.rate.limit.open";
+
+    private static final String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -349,11 +349,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getDatabaseDomainName() {
-        return getProperty(KEY_DATABASE_DOMAIN_NAME, "localhost");
-    }
-
-    @Override
     public int getProxyInfoCollectInterval() {
         return getIntProperty(KEY_PROXY_INFO_CHECK_INTERVAL, 30 * 1000);
     }
@@ -370,8 +365,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public Map<String, String> getDatabaseIpAddresses() {
-        String property = getProperty(KEY_DATABASE_IP_ADDRESSES, "{}");
-        return JsonCodec.INSTANCE.decode(property, Map.class);
+    public boolean isSentinelRateLimitOpen() {
+        return getBooleanProperty(KEY_SENTINEL_RATE_LIMIT_OPEN, false);
     }
+
+    @Override
+    public int getSentinelRateLimitSize() {
+        return getIntProperty(KEY_SENTINEL_RATE_LIMIT_SIZE, 3);
+    }
+
 }

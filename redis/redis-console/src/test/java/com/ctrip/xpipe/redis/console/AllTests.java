@@ -178,7 +178,9 @@ import org.junit.runners.Suite.SuiteClasses;
         DelayServiceTest.class,
         SentinelHelloActionDowngradeTest.class,
         ShardMetaServiceImplTest.class,
-        CrossDcLeaderElectionActionTest.class
+        CrossDcLeaderElectionActionTest.class,
+        ShardDaoTest.class,
+        SentinelLeakyBucketTest.class
 })
 public class AllTests {
 

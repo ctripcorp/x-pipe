@@ -94,12 +94,12 @@ public class ShardMetaServiceImplTest extends AbstractTest {
         ShardMeta shardMeta = shardMetaService.getShardMeta(dcName, clusterName, shardName);
         Assert.assertEquals(shardName, shardMeta.getId());
         Assert.assertEquals(Long.valueOf(shardName.hashCode()), shardMeta.getSentinelId());
-        Assert.assertEquals(SentinelUtil.getSentinelMonitorName(shardName, dcName), shardMeta.getSentinelMonitorName());
+        Assert.assertEquals(SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName), shardMeta.getSentinelMonitorName());
 
         shardMeta = shardMetaService.getShardMeta(mockDcInfo(dcName), mockClusterTbl(clusterName), mockShardTbl(clusterName, shardName));
         Assert.assertEquals(shardName, shardMeta.getId());
         Assert.assertEquals(Long.valueOf(shardName.hashCode()), shardMeta.getSentinelId());
-        Assert.assertEquals(SentinelUtil.getSentinelMonitorName(shardName, dcName), shardMeta.getSentinelMonitorName());
+        Assert.assertEquals(SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName), shardMeta.getSentinelMonitorName());
     }
 
     private DcTbl mockDcInfo(String dcName) {
