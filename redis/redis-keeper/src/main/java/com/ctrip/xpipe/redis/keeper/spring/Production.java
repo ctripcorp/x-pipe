@@ -13,7 +13,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucket;
+import com.ctrip.xpipe.utils.LeakyBucket;
 import com.ctrip.xpipe.zk.ZkClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

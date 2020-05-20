@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.unidal.dal.jdbc.DalException;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -32,6 +35,11 @@ public class ShardDaoTest extends AbstractConsoleIntegrationTest {
                 "cluster2shard2", "cluster3shard1", "cluster3shard2");
         Set<String> monitors = shardDao.queryAllShardMonitorNames();
         Assert.assertEquals(expectedMonitors, monitors);
+    }
+
+    @Test
+    public void testAddShardThenSentinelNameShouldEqShardName() throws DalException {
+        shardDao.createShard("cluster1", new ShardTbl().setShardName("cluster-test-1_1"), Maps.newHashMap());
     }
 
     @Override
