@@ -16,6 +16,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStats;
+import com.ctrip.xpipe.utils.DefaultLeakyBucket;
+import com.ctrip.xpipe.utils.LeakyBucket;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

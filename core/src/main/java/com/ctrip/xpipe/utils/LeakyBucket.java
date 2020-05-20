@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.ratelimit;
+package com.ctrip.xpipe.utils;
 
 /**
  * @author chen.zhu

@@ -1,13 +1,10 @@
-package com.ctrip.xpipe.redis.keeper.ratelimit;
+package com.ctrip.xpipe.utils;
 
-import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntSupplier;
 
 /**
  * @author chen.zhu
