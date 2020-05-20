@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.LeakyBucket;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -33,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.net.SocketException;
 import java.util.HashSet;
@@ -72,6 +75,28 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
+    private SentinelLeakyBucket leakyBucket;
+
+    @PostConstruct
+    public void postConstruct() {
+        leakyBucket = new SentinelLeakyBucket(consoleConfig, scheduled);
+        try {
+            leakyBucket.start();
+        } catch (Exception e) {
+            logger.error("[postConstruct]", e);
+        }
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        if (leakyBucket != null) {
+            try {
+                leakyBucket.stop();
+            } catch (Exception e) {
+                logger.error("[preDestroy]", e);
+            }
+        }
+    }
 
     @Override
     public void onAction(SentinelActionContext context) {
@@ -213,12 +238,14 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return false;
     }
 
-    private void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
+    @VisibleForTesting
+    protected void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
                           QuorumConfig quorumConfig) {
 
         if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
             return;
         }
+
         if (toAdd != null && toAdd.size() > 0) {
             logger.info("[doAction][add]name: {}, master: {}, stl: {}", sentinelMonitorName, masterAddr,
                     toAdd.stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toSet()));
@@ -226,6 +253,15 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         if (toDelete != null && toDelete.size() > 0) {
             logger.info("[doAction][del]{}", toDelete);
+        }
+
+        // add rate limit logic to reduce frequently sentinel operations
+        if (!leakyBucket.tryAcquire()) {
+            logger.warn("[doAction][not-mod]");
+            return;
+        } else {
+            // I got the lock, remember to release it
+            leakyBucket.delayRelease(1000, TimeUnit.MICROSECONDS);
         }
 
         if(toDelete != null){
@@ -404,6 +440,18 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @VisibleForTesting
     protected DefaultSentinelHelloCollector setConsoleConfig(ConsoleConfig consoleConfig) {
         this.consoleConfig = consoleConfig;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected DefaultSentinelHelloCollector setSentinelManager(SentinelManager sentinelManager) {
+        this.sentinelManager = sentinelManager;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected DefaultSentinelHelloCollector setScheduled(ScheduledExecutorService scheduled) {
+        this.scheduled = scheduled;
         return this;
     }
 }

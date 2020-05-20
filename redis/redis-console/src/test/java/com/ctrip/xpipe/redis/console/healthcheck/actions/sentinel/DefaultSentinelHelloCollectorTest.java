@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
+import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -224,5 +225,38 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
         );
         Set<SentinelHello> toDeleted = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, new HostPort("127.0.0.2", 6379));
         Assert.assertEquals(5, toDeleted.size());
+    }
+
+    @Test
+    public void testRateLimitWorks() {
+        ConsoleConfig consoleConfig = mock(ConsoleConfig.class);
+        SentinelManager sentinelManager = mock(SentinelManager.class);
+        sentinelCollector.setConsoleConfig(consoleConfig);
+        sentinelCollector.setSentinelManager(sentinelManager);
+        sentinelCollector.setScheduled(scheduled);
+        doNothing().when(sentinelManager).removeSentinelMonitor(any(), anyString());
+        when(consoleConfig.getSentinelRateLimitSize()).thenReturn(0);
+        when(consoleConfig.isSentinelRateLimitOpen()).thenReturn(true);
+        sentinelCollector = spy(sentinelCollector);
+        sentinelCollector.postConstruct();
+        sentinelCollector.doAction("monitor", new HostPort("127.0.0.1", 6379), Sets.newHashSet(new SentinelHello()), Sets.newHashSet(), new QuorumConfig(5, 3));
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), anyString());
+    }
+
+    @Test
+    public void testRateNotLimit() {
+        ConsoleConfig consoleConfig = mock(ConsoleConfig.class);
+        SentinelManager sentinelManager = mock(SentinelManager.class);
+        sentinelCollector.setConsoleConfig(consoleConfig);
+        sentinelCollector.setSentinelManager(sentinelManager);
+        sentinelCollector.setScheduled(scheduled);
+        doNothing().when(sentinelManager).removeSentinelMonitor(any(), anyString());
+        when(consoleConfig.getSentinelRateLimitSize()).thenReturn(0);
+        when(consoleConfig.isSentinelRateLimitOpen()).thenReturn(false);
+        sentinelCollector = spy(sentinelCollector);
+        sentinelCollector.postConstruct();
+        sentinelCollector.doAction("monitor", new HostPort("127.0.0.1", 6379),
+                Sets.newHashSet(new SentinelHello(new HostPort("127.0.0.1", 5050), new HostPort("127.0.0.1", 6379), "monitorName")), Sets.newHashSet(), new QuorumConfig(5, 3));
+        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), anyString());
     }
 }
