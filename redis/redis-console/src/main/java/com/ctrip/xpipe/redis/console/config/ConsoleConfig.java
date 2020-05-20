@@ -94,13 +94,14 @@ public interface ConsoleConfig extends CoreConfig {
 
 	Pair<String, String> getClusterShardForMigrationSysCheck();
 
-	String getDatabaseDomainName();
-
-	Map<String, String> getDatabaseIpAddresses();
-
 	int getProxyInfoCollectInterval();
 
 	int getOutterClientCheckInterval();
 
 	Map<String, String> getConsoleDomains();
+
+	boolean isSentinelRateLimitOpen();
+
+	int getSentinelRateLimitSize();
+
 }

@@ -23,6 +23,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStats;
+import com.ctrip.xpipe.utils.DefaultLeakyBucket;
+import com.ctrip.xpipe.utils.LeakyBucket;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;

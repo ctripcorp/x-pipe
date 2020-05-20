@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.utils.DefaultLeakyBucket;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,10 +11,8 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucket.DEFAULT_BUCKET_SIZE;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu

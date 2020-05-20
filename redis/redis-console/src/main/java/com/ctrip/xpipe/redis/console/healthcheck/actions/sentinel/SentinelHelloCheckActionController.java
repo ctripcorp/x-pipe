@@ -18,7 +18,8 @@ public class SentinelHelloCheckActionController implements HealthCheckActionCont
 
     public void onAction(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
-        checkControllerManager.getCheckController(info.getClusterId(), info.getShardId()).onAction(context);
+        checkControllerManager.getCheckController(info.getClusterId(), info.getShardId())
+                .onAction(context);
     }
 
     public void stopWatch(HealthCheckAction action) {
