@@ -26,6 +26,10 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-simple</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>fastjson</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -67,6 +71,10 @@
                     <groupId>commons-collections</groupId>
                     <artifactId>commons-collections</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>fastjson</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -78,7 +86,7 @@
         <dependency>
             <groupId>com.ctrip.platform</groupId>
             <artifactId>ctrip-datasource</artifactId>
-            <version>1.17.8</version>
+            <version>2.0.11</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.tomcat</groupId>
@@ -88,13 +96,17 @@
                     <groupId>javax.persistence</groupId>
                     <artifactId>persistence-api</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>fastjson</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
             <groupId>com.ctrip.framework.fireman</groupId>
             <artifactId>fireman</artifactId>
-            <version>1.0.10</version>
+            <version>2.0.4</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
@@ -108,7 +120,17 @@
                     <groupId>com.ctrip.platform</groupId>
                     <artifactId>ctrip-datasource</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>fastjson</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>qunar.common</groupId>
+            <artifactId>common-core</artifactId>
+            <version>9.2.21</version>
         </dependency>
 
         <!--Email Service-->

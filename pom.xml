@@ -101,6 +101,11 @@
                 <version>${qunaer.common.version}</version>
             </dependency>
             <dependency>
+                <groupId>qunar.common</groupId>
+                <artifactId>common-core</artifactId>
+                <version>${qunaer.common.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>qunar.tc.qconfig</groupId>
                 <artifactId>qconfig-client</artifactId>
                 <version>${qconfig.client.version}</version>
