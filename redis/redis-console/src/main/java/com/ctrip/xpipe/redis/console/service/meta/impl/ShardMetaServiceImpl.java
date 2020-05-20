@@ -147,7 +147,7 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		
 		shardMeta.setId(shardInfo.getShardName());
 		shardMeta.setSentinelId(dcClusterShardInfo.getSetinelId());
-		shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(shardInfo.getSetinelMonitorName(), dcInfo.getDcName()));
+		shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(clusterInfo.getClusterName(), shardInfo.getSetinelMonitorName(), dcInfo.getDcName()));
 		
 		List<RedisTbl> shard_redises = redisService.findAllByDcClusterShard(dcClusterShardInfo.getDcClusterShardId());
 		if(null != shard_redises) {
