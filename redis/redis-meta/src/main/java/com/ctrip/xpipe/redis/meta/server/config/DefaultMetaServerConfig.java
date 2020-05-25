@@ -42,6 +42,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SERVER_PORT = "server.port";
 
 	private static final String KEY_KEEPER_INFO_CHECK_INTERVAL = "meta.keeper.info.check.interval";
+	private static final String KEY_WAIT_FOR_META_SYNC_MILLI = "meta.sync.delay.milli";
 	
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 	
@@ -138,6 +139,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public int getKeeperInfoCheckInterval() {
 		return getIntProperty(KEY_KEEPER_INFO_CHECK_INTERVAL, 30 * 1000);
+	}
+
+	@Override
+	public int getWaitForMetaSyncDelayMilli() {
+		return getIntProperty(KEY_WAIT_FOR_META_SYNC_MILLI, 0);
 	}
 
 

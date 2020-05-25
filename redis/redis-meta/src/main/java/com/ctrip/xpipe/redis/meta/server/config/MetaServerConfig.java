@@ -35,4 +35,6 @@ public interface MetaServerConfig extends CoreConfig {
 	boolean validateDomain();
 
 	int getKeeperInfoCheckInterval();
+
+	int getWaitForMetaSyncDelayMilli();
 }

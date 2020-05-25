@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
+import com.ctrip.xpipe.redis.meta.server.dcchange.OffsetWaiter;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomePrimaryAction;
 import com.ctrip.xpipe.redis.meta.server.job.BackupDcClusterShardAdjustJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -57,16 +59,13 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
     @Test
     public void refreshDcMetaWithDcChangeTest() throws Exception {
         DcMeta origin = dcMetaCache.getDcMeta().getDcMeta();
+        dcMetaCache.setMetaServerConfig(new UnitTestServerConfig());
         ClusterMeta clusterMeta = (ClusterMeta) origin.getClusters().values().toArray()[0];
         ShardMeta shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
         String newPrimaryDc = "newPrimaryDc";
         String newBackUpDcs = StringUtil.isEmpty(clusterMeta.getBackupDcs()) ? clusterMeta.getActiveDc()
                 : clusterMeta.getActiveDc() + "," + clusterMeta.getBackupDcs();
         MasterInfo masterInfo = new MasterInfo();
-
-        DcMeta expected = MetaClone.clone(origin);
-        expected.getClusters().get(clusterMeta.getId()).setActiveDc(newPrimaryDc.trim().toLowerCase())
-                .setBackupDcs(newBackUpDcs);
 
         Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString())).thenAnswer(invocationOnMock -> {
             sleep(1000);
@@ -104,7 +103,7 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         }).start();
 
         latch.await(3000, TimeUnit.MILLISECONDS);
-        Assert.assertEquals(expected.toString(), dcMetaCache.getDcMeta().getDcMeta().toString());
+        Assert.assertEquals(newPrimaryDc.toLowerCase(), dcMetaCache.getPrimaryDc(clusterMeta.getId(), shardMeta.getId()));
     }
 
     @Test
@@ -128,7 +127,12 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
 
     private static class CustomBecomePrimaryAction extends BecomePrimaryAction {
         public CustomBecomePrimaryAction(DcMetaCache dcMetaCache,  ExecutionLog executionLog) {
-            super(dcMetaCache, null, null, null, executionLog,
+            super(dcMetaCache, null, null, new OffsetWaiter() {
+                        @Override
+                        public boolean tryWaitfor(HostPort hostPort, MasterInfo masterInfo, ExecutionLog executionLog) {
+                            return false;
+                        }
+                    }, executionLog,
                     null, null, null, null);
         }
 
