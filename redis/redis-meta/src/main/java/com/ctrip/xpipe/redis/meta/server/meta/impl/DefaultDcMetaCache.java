@@ -140,7 +140,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@VisibleForTesting
 	protected void changeDcMeta(DcMeta current, DcMeta future, final long metaLoadTime) {
 
-		if (metaLoadTime <= metaModifyTime.get()) {
+		if (!mayMetaUpdateFromConsole(metaLoadTime)) {
 			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime.get(), metaLoadTime);
 			return;
 		}
@@ -158,7 +158,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		DcMetaManager newDcMetaManager = DefaultDcMetaManager.buildFromDcMeta(future);
 		boolean dcMetaUpdated = false;
 		synchronized (this) {
-			if (metaLoadTime > metaModifyTime.get()) {
+			if (mayMetaUpdateFromConsole(metaLoadTime)) {
 				dcMetaManager.set(newDcMetaManager);
 				dcMetaUpdated = true;
 			}
@@ -323,6 +323,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		dcMetaManager.get().primaryDcChanged(clusterId, shardId, newPrimaryDc);
 	}
 
+	private boolean mayMetaUpdateFromConsole(final long metaLoadTime) {
+		// consider that meta from console may be old because of db sync delay or other
+		return metaLoadTime > metaModifyTime.get() + metaServerConfig.getWaitForMetaSyncDelayMilli();
+	}
+
 
 	/** we believe a cluster meta change comes from DR migration under these circumstances:
 	 * 1. cluster meta comparator contains no shard add/delete
@@ -352,5 +357,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		private boolean isShardChangedByDrOnly(ShardMetaComparator shardMetaComparator) {
 			return shardMetaComparator.getAdded().isEmpty() && shardMetaComparator.getRemoved().isEmpty();
 		}
+	}
+
+	@VisibleForTesting
+	protected void setMetaServerConfig(MetaServerConfig metaServerConfig) {
+		this.metaServerConfig = metaServerConfig;
 	}
 }
