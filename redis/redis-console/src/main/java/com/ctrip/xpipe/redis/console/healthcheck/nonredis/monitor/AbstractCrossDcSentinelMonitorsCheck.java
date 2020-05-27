@@ -32,10 +32,7 @@ public abstract class AbstractCrossDcSentinelMonitorsCheck extends AbstractCross
     protected SentinelManager sentinelManager;
 
     @Autowired
-    private ConsoleConfig config;
-
-    @Autowired
-    private ConsoleDbConfig consoleDbConfig;
+    protected ConsoleDbConfig consoleDbConfig;
 
     @Override
     public void doCheck() {
@@ -54,7 +51,7 @@ public abstract class AbstractCrossDcSentinelMonitorsCheck extends AbstractCross
 
     protected List<DcMeta> dcsToCheck() {
         List<DcMeta> result = new LinkedList<>(metaCache.getXpipeMeta().getDcs().values());
-        Set<String> ignoredDcNames = config.getIgnoredHealthCheckDc();
+        Set<String> ignoredDcNames = consoleConfig.getIgnoredHealthCheckDc();
         List<DcMeta> toRemove = Lists.newArrayList();
         for(DcMeta dcMeta : result) {
             if (ignoredDcNames.contains(dcMeta.getId()) || ignoredDcNames.contains(dcMeta.getId().toUpperCase())) {
