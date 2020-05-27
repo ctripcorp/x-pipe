@@ -20,7 +20,7 @@ public enum HEALTH_STATE {
 
         @Override
         protected HEALTH_STATE afterPingFail() {
-            return UNKNOWN;
+            return DOWN;
         }
 
         @Override
