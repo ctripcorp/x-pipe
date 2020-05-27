@@ -25,7 +25,7 @@ public class DBVariablesCheck extends AbstractCrossDcIntervalCheck {
 
     private DataSourceManager dataSourceManager;
 
-    private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.SQL_VARIABLES_INVALIDATE);
+    private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.DB_VARIABLES_INVALIDATE);
 
     private Map<String, DatabaseVariablesCheck> databaseVariablesCheckMap = new HashMap<>();
 

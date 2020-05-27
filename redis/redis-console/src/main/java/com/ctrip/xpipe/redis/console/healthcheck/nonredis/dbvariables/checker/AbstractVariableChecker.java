@@ -33,6 +33,7 @@ abstract class AbstractVariableChecker implements VariableChecker {
 
         try {
             logger.debug("[check] start check variables {} for {} ", getName(), dataSource.getDescriptor());
+
             connection = dataSource.getConnection();
             statement = connection.prepareStatement(String.format(SHOW_VARIABLES_TEMPLATE, getName()),
                     ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
@@ -42,8 +43,7 @@ abstract class AbstractVariableChecker implements VariableChecker {
                 logger.info("[check] instance {} get variables {} empty", dataSource, getName());
             } else if (!checkValue(resultSet.getObject(COLUMN_VALUE))) {
                 logger.debug("[check] unexpected variables {} value {}", getName(), resultSet.getObject(COLUMN_VALUE));
-                alertManager.alert("", "", null, ALERT_TYPE.SQL_VARIABLES_INVALIDATE,
-                        String.format("variable:%s, value:%s, datasource:%s", dataSource.getDescriptor(), getName(), resultSet.getObject(COLUMN_VALUE)));
+                alertMessage(dataSource, resultSet.getObject(COLUMN_VALUE));
             }
         } catch (Exception e) {
             // skip check when query fail
@@ -71,5 +71,11 @@ abstract class AbstractVariableChecker implements VariableChecker {
                 }
             }
         }
+    }
+
+    protected void alertMessage(DataSource dataSource, Object value) {
+        alertManager.alert("", "", null, ALERT_TYPE.DB_VARIABLES_INVALIDATE,
+                String.format("url:%s, variable:%s, value:%s",
+                        dataSource.getDescriptor().getProperty("url", null), getName(), value));
     }
 }
