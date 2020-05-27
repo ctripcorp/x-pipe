@@ -315,7 +315,7 @@ public enum ALERT_TYPE {
                     "Sentinels config is not found in db");
         }
     },
-    SQL_VARIABLES_INVALIDATE("SQL variables not as expected", EMAIL_XPIPE_ADMIN) {
+    DB_VARIABLES_INVALIDATE("DB variables not as expected", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;
@@ -328,7 +328,7 @@ public enum ALERT_TYPE {
 
         @Override
         public DetailDesc detailDesc() {
-            return new DetailDesc("SQL variables not as expected", "XPipe need some special sql variables");
+            return new DetailDesc("DB variables not as expected", "XPipe need some special DB variables");
         }
     };
 
