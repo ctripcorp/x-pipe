@@ -181,7 +181,7 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
                 healthStatus.pong();
             } else {
                 if(healthStatus.getState() == HEALTH_STATE.UNKNOWN) {
-                    createOrGetHealthStatus(pingActionContext.instance()).pongInit();
+                    healthStatus.pongInit();
                 }
             }
         }
