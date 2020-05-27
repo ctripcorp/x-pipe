@@ -261,7 +261,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             return;
         } else {
             // I got the lock, remember to release it
-            leakyBucket.delayRelease(1000, TimeUnit.MICROSECONDS);
+            leakyBucket.delayRelease(1000, TimeUnit.MILLISECONDS);
         }
 
         if(toDelete != null){
