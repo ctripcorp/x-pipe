@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.utils.CloseState;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,10 @@ public class DefaultSentinelMonitorsCheckCrossDc extends AbstractCrossDcSentinel
 
         if(infoSentinel == null) {
             logger.warn("[checkSentinel] info sentinel empty: {}", sentinel);
+            return;
+        }
+
+        if(!consoleDbConfig.isSentinelAutoProcess()) {
             return;
         }
 
