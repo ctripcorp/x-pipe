@@ -314,6 +314,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("sentinel config missing",
                     "Sentinels config is not found in db");
         }
+    },
+    SQL_VARIABLES_INVALIDATE("SQL variables not as expected", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("SQL variables not as expected", "XPipe need some special sql variables");
+        }
     };
 
     private String simpleDesc;
