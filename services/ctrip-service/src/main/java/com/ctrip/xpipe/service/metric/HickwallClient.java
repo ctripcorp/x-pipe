@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.service.metric;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.ctrip.hickwall.proxy.HickwallClientConfig;
-import com.ctrip.hickwall.proxy.common.DataPoint;
+import com.ctrip.xpipe.api.codec.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +86,7 @@ public class HickwallClient {
     }
 
     public Boolean send(ArrayList<DataPoint> datapoints) throws IOException {
-        String s = JSON.toJSONString(datapoints, new SerializerFeature[]{SerializerFeature.DisableCircularReferenceDetect});
+        String s = Codec.DEFAULT.encode(datapoints);
         return this.send(s);
     }
 
@@ -119,7 +116,7 @@ public class HickwallClient {
             } finally {
                 if (var10) {
                     if (httpURLConnection != null) {
-                        InputStream in = httpURLConnection.getErrorStream();
+                        in = httpURLConnection.getErrorStream();
                         if (in != null) {
                             in.close();
                         }
@@ -163,13 +160,13 @@ public class HickwallClient {
                     for(int i = 0; i < this.config.THREAD_NUM; ++i) {
                         Thread t = new Thread() {
                             public void run() {
-                                while(!com.ctrip.hickwall.proxy.HickwallClient.this.close || !com.ctrip.hickwall.proxy.HickwallClient.this.queue.isEmpty()) {
+                                while(!close || !queue.isEmpty()) {
                                     ArrayList array = new ArrayList();
 
                                     try {
-                                        DataPoint dp = (DataPoint) com.ctrip.hickwall.proxy.HickwallClient.this.queue.take();
+                                        DataPoint dp = (DataPoint) queue.take();
 
-                                        for(Integer c = 0; dp != null && c < com.ctrip.hickwall.proxy.HickwallClient.this.config.BATCH_SIZE; dp = (DataPoint) com.ctrip.hickwall.proxy.HickwallClient.this.queue.poll((long) com.ctrip.hickwall.proxy.HickwallClient.this.config.BUFFER_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                                        for(Integer c = 0; dp != null && c < config.BATCH_SIZE; dp = (DataPoint) queue.poll((long) config.BUFFER_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                                             array.add(dp);
                                             c = c + 1;
                                         }
@@ -179,22 +176,22 @@ public class HickwallClient {
                                         }
 
                                         Boolean success = false;
-                                        Integer reties = com.ctrip.hickwall.proxy.HickwallClient.this.config.RETRIES;
+                                        Integer reties = config.RETRIES;
 
                                         String s;
-                                        for(s = JSON.toJSONString(array); !success && reties >= 0; reties = reties - 1) {
+                                        for(s = Codec.DEFAULT.encode(array); !success && reties >= 0; reties = reties - 1) {
                                             try {
-                                                success = com.ctrip.hickwall.proxy.HickwallClient.this.send(s);
+                                                success = send(s);
                                             } catch (Exception var9) {
-                                                com.ctrip.hickwall.proxy.HickwallClient.logger.warn("", var9);
+                                                logger.warn("", var9);
                                             }
                                         }
 
                                         if (!success) {
-                                            com.ctrip.hickwall.proxy.HickwallClient.logger.warn("fail to send: " + s);
+                                            logger.warn("fail to send: " + s);
                                         }
                                     } catch (Exception var10) {
-                                        com.ctrip.hickwall.proxy.HickwallClient.logger.warn("", var10);
+                                        logger.warn("", var10);
                                     }
                                 }
 
@@ -214,8 +211,4 @@ public class HickwallClient {
         this.close = true;
     }
 
-    protected void finalize() throws Throwable {
-        super.finalize();
-        this.close();
-    }
 }
