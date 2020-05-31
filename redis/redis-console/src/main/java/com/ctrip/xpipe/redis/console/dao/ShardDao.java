@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Sets;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 
 	public ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) throws DalException{
 		// shard basic
+		shard.setSetinelMonitorName(shard.getShardName().trim());
 		validateShard(clusterName, shard);
 		return insertShard(clusterName, shard, sentinels);
 	}
@@ -134,6 +136,11 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	}
 	
 	private void validateShard(final String clusterName, ShardTbl shard) throws DalException {
+		// validate monitor name
+		if (!shard.getShardName().equals(shard.getSetinelMonitorName())) {
+			throw new BadRequestException("Monitor name should be exact same with shard name");
+		}
+
 		// validate shard name
 		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>(){
 			@Override
