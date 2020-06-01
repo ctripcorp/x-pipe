@@ -36,6 +36,8 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthS
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariablesCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
@@ -180,7 +182,9 @@ import org.junit.runners.Suite.SuiteClasses;
         ShardMetaServiceImplTest.class,
         CrossDcLeaderElectionActionTest.class,
         ShardDaoTest.class,
-        SentinelLeakyBucketTest.class
+        SentinelLeakyBucketTest.class,
+        VariablesCheckerTest.class,
+        DBVariablesCheckTest.class
 })
 public class AllTests {
 

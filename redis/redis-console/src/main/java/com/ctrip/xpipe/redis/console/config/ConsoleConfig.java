@@ -104,4 +104,5 @@ public interface ConsoleConfig extends CoreConfig {
 
 	int getSentinelRateLimitSize();
 
+	Set<String> getVariablesCheckDataSources();
 }
