@@ -108,7 +108,7 @@ public class DatabaseVariablesCheck implements Releasable, VariableChecker {
                 try {
                     ((Disposable) dataSource).dispose();
                 } catch (Exception e) {
-                    // do nothing
+                    logger.info("[release] dataSource release fail", e);
                 }
             }
         });
