@@ -28,6 +28,8 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	private int metaServerPort = 9747;
 
 	private int waitforOffsetMilli = 1000;
+
+	private int waitForMetaSyncDelayMilli = 0;
 	
 	public UnitTestServerConfig(){
 		
@@ -135,5 +137,14 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public UnitTestServerConfig setWaitforOffsetMilli(int waitforOffsetMilli) {
 		this.waitforOffsetMilli = waitforOffsetMilli;
 		return this;
+	}
+
+	public void setWaitForMetaSyncDelayMilli(int delayMilli) {
+		this.waitForMetaSyncDelayMilli = delayMilli;
+	}
+
+	@Override
+	public int getWaitForMetaSyncDelayMilli() {
+		return waitForMetaSyncDelayMilli;
 	}
 }
