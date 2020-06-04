@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
 import com.ctrip.xpipe.redis.console.controller.api.GenericRetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
@@ -37,6 +38,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
   @Autowired
   private KeeperContainerService keeperContainerService;
 
+  @ClusterTypeLimit
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
   public List<String> getKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
@@ -62,6 +64,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     return result;
   }
 
+  @ClusterTypeLimit
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST)
   public RetMessage addKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
@@ -91,6 +94,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     }
   }
 
+  @ClusterTypeLimit
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.DELETE)
   public RetMessage deleteKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {

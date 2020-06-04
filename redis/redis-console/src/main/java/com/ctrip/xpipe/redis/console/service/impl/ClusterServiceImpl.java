@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -154,6 +155,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 		ClusterTbl proto = dao.createLocal();
 		proto.setClusterName(cluster.getClusterName().trim());
+		proto.setClusterType(StringUtil.isEmpty(cluster.getClusterType()) ?
+				ClusterType.ONE_WAY.toString() : cluster.getClusterType());
 		proto.setActivedcId(cluster.getActivedcId());
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setStatus(ClusterStatus.Normal.toString());
@@ -220,6 +223,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override public List<ClusterTbl> findAllClustersWithOrgInfo() {
 		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	@Override public List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType) {
+		List<ClusterTbl> result = clusterDao.findClusterWithOrgInfoByClusterType(clusterType);
 		result = fillClusterOrgName(result);
 		return setOrgNullIfNoOrgIdExsits(result);
 	}

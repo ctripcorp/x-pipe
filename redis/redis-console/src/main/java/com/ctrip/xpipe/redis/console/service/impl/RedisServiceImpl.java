@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -7,6 +8,7 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
@@ -35,6 +37,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected KeeperContainerService keeperContainerService;
     @Autowired
     protected ClusterMetaModifiedNotifier notifier;
+    @Autowired
+    protected MetaCache metaCache;
 
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
@@ -147,6 +151,11 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                                           List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
 
         logger.info("[insertKeepers]{}, {}, {}, {}", dcId, clusterId, shardId, keepers);
+
+        ClusterType clusterType = metaCache.getClusterType(clusterId);
+        if (null == clusterType || !clusterType.supportKeeper()) {
+            throw new IllegalArgumentException(String.format("cluster %s type %s not support keeper", clusterId, clusterType));
+        }
 
         DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
         if (dcClusterShardTbl == null) {

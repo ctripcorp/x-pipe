@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
@@ -25,6 +26,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
         int SUCCESS_STATE = RetMessage.SUCCESS_STATE;
         long ORG_ID = 5L;
         ClusterTbl clusterTbl = new ClusterTbl().setClusterName(CLUSTER_NAME)
+                                            .setClusterType(ClusterType.ONE_WAY.toString())
                                             .setClusterDescription("")
                                             .setActivedcId(1)
                                             .setIsXpipeInterested(true)
@@ -63,6 +65,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
         String EXPECTED_MESSAGE = String.format("No field changes for cluster: %s", CLUSTER_NAME);
         long ORG_ID = 5L;
         ClusterTbl clusterTbl = new ClusterTbl().setClusterName(CLUSTER_NAME)
+                .setClusterType(ClusterType.ONE_WAY.toString())
                 .setClusterDescription("")
                 .setActivedcId(1)
                 .setIsXpipeInterested(true)
@@ -91,6 +94,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
         long ORG_ID = 99L;
         String EXPECTED_MESSAGE = String.format("Organization Id: %d, could not be found", ORG_ID);
         ClusterTbl clusterTbl = new ClusterTbl().setClusterName(CLUSTER_NAME)
+                .setClusterType(ClusterType.ONE_WAY.toString())
                 .setClusterDescription("")
                 .setActivedcId(1)
                 .setIsXpipeInterested(true)

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -46,4 +47,6 @@ public interface MetaCache {
     String getActiveDc(HostPort hostPort);
 
     long getLastUpdateTime();
+
+    ClusterType getClusterType(String clusterId);
 }

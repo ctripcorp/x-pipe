@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -102,6 +103,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public long getLastUpdateTime() {
         return 0;
+    }
+
+    @Override
+    public ClusterType getClusterType(String clusterId) {
+        return ClusterType.ONE_WAY;
     }
 
 }

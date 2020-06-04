@@ -222,6 +222,14 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		});
 	}
 
+	public List<ClusterTbl> findClusterWithOrgInfoByClusterType(String type) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findClustersWithOrgInfoByClusterType(type, ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
+	}
+
 	public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(final long dcId) {
 		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override public List<ClusterTbl> doQuery() throws DalException {

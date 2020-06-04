@@ -376,6 +376,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         localRedisService.keeperContainerService = redisService.keeperContainerService;
         localRedisService.notifier = redisService.notifier;
         localRedisService.redisDao = redisService.redisDao;
+        localRedisService.metaCache = redisService.metaCache;
 
         try {
             Field daoField = AbstractConsoleService.class.getDeclaredField("dao");

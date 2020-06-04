@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -360,6 +361,17 @@ public class DefaultMetaCache implements MetaCache {
     public String getActiveDc(String clusterId, String shardId){
         XpipeMetaManager xpipeMetaManager  =  meta.getValue();
         return xpipeMetaManager.getActiveDc(clusterId, shardId);
+    }
+
+    @Override
+    public ClusterType getClusterType(String clusterId) {
+        XpipeMeta xpipeMeta = meta.getKey();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (!dcMeta.getClusters().containsKey(clusterId)) continue;
+            return ClusterType.lookup(dcMeta.getClusters().get(clusterId).getType());
+        }
+
+        throw new IllegalStateException("unfound cluster for name:" + clusterId);
     }
 
     @VisibleForTesting
