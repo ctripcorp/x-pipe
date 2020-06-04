@@ -39,7 +39,7 @@
         <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
         <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
-        <ctrip-framework-foundation.version>1.8.3</ctrip-framework-foundation.version>
+        <ctrip-framework-foundation.version>1.8.11</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>2.21.1</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
@@ -54,7 +54,7 @@
         <clogging.version>4.1.8</clogging.version>
         <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
-        <qunaer.common.version>9.2.21</qunaer.common.version>
+        <qunaer.common.version>9.2.37</qunaer.common.version>
         <qconfig.client.version>1.6.11</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
         <netty3.version>3.10.5.Final</netty3.version>
@@ -90,6 +90,11 @@
                         <artifactId>qclient-redis</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>qunar.common</groupId>
+                <artifactId>common-core</artifactId>
+                <version>${qunaer.common.version}</version>
             </dependency>
             <dependency>
                 <groupId>qunar.common</groupId>
