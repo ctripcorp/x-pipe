@@ -247,6 +247,15 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		});
 	}
 
+	public List<ClusterTbl> findAllClusterNamesByDcId(final long dcId) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findAllByDcId(dcId, ClusterTblEntity.READSET_NAME);
+			}
+		});
+	}
+
 	public List<ClusterTbl> findClustersWithName(List<String> clusterNames) {
 		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override public List<ClusterTbl> doQuery() throws DalException {

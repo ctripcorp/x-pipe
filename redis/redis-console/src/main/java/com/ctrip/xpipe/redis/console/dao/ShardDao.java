@@ -203,4 +203,13 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		}
 		return shard;
 	}
+
+	public List<ShardTbl> findAllClusterShardMonitorName() {
+		return queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+			@Override
+			public List<ShardTbl> doQuery() throws DalException {
+				return shardTblDao.findAllWithCluster(ShardTblEntity.READSET_CLUSTER_SHARD_MONITOR_NAME);
+			}
+		});
+	}
 }

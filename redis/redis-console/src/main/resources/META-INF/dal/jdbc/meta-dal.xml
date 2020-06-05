@@ -322,6 +322,7 @@
 					SELECT <FIELDS />
 					FROM <TABLE />, <TABLE name='dc-cluster-info' />
 					WHERE <FIELD name='id' /> = dct.cluster_id
+					AND dct.dc_id = ${dc-id}
 					AND <FIELD name='deleted' /> = 0
 					AND dct.deleted = 0
 					group by <FIELD name='id' />
@@ -455,6 +456,10 @@
 				<member name="shard-name"/>
 				<member name="setinel-monitor-name"/>
 			</readset>
+			<readset name="CLUSTER_SHARD_MONITOR_NAME">
+				<readset-ref name="NAME" relation-name="cluster-info"/>
+				<readset-ref name="NAME_AND_MONITOR_NAME"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -527,6 +532,17 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-with-cluster" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS />
+					FROM <TABLE />, <TABLE name='cluster-info' />
+					WHERE <FIELD name='cluster-id' /> = ct.id
+					AND <FIELD name='deleted' /> = 0
+					AND ct.deleted = 0
 					]]>
 				</statement>
 			</query>

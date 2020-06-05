@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
-import com.ctrip.xpipe.utils.CloseState;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,7 +41,7 @@ public class DefaultSentinelMonitorsCheckCrossDc extends AbstractCrossDcSentinel
         // master0:name=cluster_mengshard1,status=ok,address=10.2.58.242:6399,slaves=1,sentinels=3
         for(String monitorName : sentinelMonitors.getMonitors()) {
 
-            if(metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
+            if(!checkMonitorName(monitorName)) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName);
                 String message = String.format("Sentinel monitor: %s not exist in XPipe", monitorName);
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);

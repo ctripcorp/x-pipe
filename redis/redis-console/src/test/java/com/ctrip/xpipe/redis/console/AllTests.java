@@ -40,6 +40,8 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariable
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.DefaultSentinelMonitorsCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.GetSentinelMonitorNamesCommandTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
@@ -184,7 +186,9 @@ import org.junit.runners.Suite.SuiteClasses;
         ShardDaoTest.class,
         SentinelLeakyBucketTest.class,
         VariablesCheckerTest.class,
-        DBVariablesCheckTest.class
+        DBVariablesCheckTest.class,
+        GetSentinelMonitorNamesCommandTest.class,
+        DefaultSentinelMonitorsCheckTest.class
 })
 public class AllTests {
 
