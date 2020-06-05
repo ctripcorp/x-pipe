@@ -90,6 +90,24 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    public void testBuildMetaForClusterType() throws Exception {
+        DcMeta dcMeta = builder.execute().get();
+
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+            Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
+        }
+
+        long dcId = dcNameMap.keySet().iterator().next();
+        builder = new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.BI_DIRECTION.toString()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                new DefaultRetryCommandFactory());
+
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+            Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION));
+        }
+    }
+
+    @Test
     public void getOrCreateClusterMeta() throws Exception {
         builder.getOrCreateClusterMeta(dcClusterShards.get(0).getClusterInfo());
         ClusterMeta clusterMeta = dcMeta.getClusters().get(dcClusterShards.get(0).getClusterInfo().getClusterName());
