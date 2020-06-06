@@ -3,15 +3,20 @@ package com.ctrip.xpipe.cluster;
 import com.ctrip.xpipe.utils.StringUtil;
 
 public enum ClusterType {
-    ONE_WAY(true, true),
-    BI_DIRECTION(false, false);
+    ONE_WAY(true, true, true, false),
+    // TODO: BI_DIRECTION support health check
+    BI_DIRECTION(false, false, false, true);
 
     private boolean supportKeeper;
     private boolean supportMigration;
+    private boolean supportHealthCheck;
+    private boolean supportMultiActiveDC;
 
-    ClusterType(boolean supportKeeper, boolean supportMigration) {
+    ClusterType(boolean supportKeeper, boolean supportMigration, boolean supportHealthCheck, boolean supportMultiActiveDC) {
         this.supportKeeper = supportKeeper;
         this.supportMigration = supportMigration;
+        this.supportHealthCheck = supportHealthCheck;
+        this.supportMultiActiveDC = supportMultiActiveDC;
     }
 
     public boolean supportKeeper() {
@@ -20,6 +25,14 @@ public enum ClusterType {
 
     public boolean supportMigration() {
         return this.supportMigration;
+    }
+
+    public boolean supportHealthCheck() {
+        return this.supportHealthCheck;
+    }
+
+    public boolean supportMultiActiveDC() {
+        return this.supportMultiActiveDC;
     }
 
     public static boolean isSameClusterType(String source, ClusterType target) {

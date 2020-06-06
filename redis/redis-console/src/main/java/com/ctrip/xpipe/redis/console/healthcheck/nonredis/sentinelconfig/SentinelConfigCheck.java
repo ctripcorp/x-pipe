@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
@@ -47,15 +48,24 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
         for (ClusterMeta cluster: dcMeta.getClusters().values()) {
             for (ShardMeta shard: cluster.getShards().values()) {
                 if (whitelist.contains(cluster.getId())) continue;
-                String activeDc = metaCache.getActiveDc(cluster.getId(), shard.getId());
-                // sentinel is unnecessary for cross-region dc
-                if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) continue;
-                if (null != shard.getSentinelId() && !shard.getSentinelId().equals(0L)) continue;
-                clusterShards.add(new DcClusterShard(dcMeta.getId(), cluster.getId(), shard.getId()));
+
+                if (!isDcClusterShardSafe(dcMeta, cluster, shard)) {
+                    clusterShards.add(new DcClusterShard(dcMeta.getId(), cluster.getId(), shard.getId()));
+                }
             }
         }
 
         return clusterShards;
+    }
+
+    private boolean isDcClusterShardSafe(DcMeta dcMeta, ClusterMeta cluster, ShardMeta shard) {
+        if (!ClusterType.lookup(cluster.getType()).supportMultiActiveDC()) {
+            // sentinel is unnecessary for single active cluster in cross-region dc
+            String activeDc = metaCache.getActiveDc(cluster.getId(), shard.getId());
+            if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) return true;
+        }
+
+        return null != shard.getSentinelId() && !shard.getSentinelId().equals(0L);
     }
 
     private void alertForSentinelMissing(String dc, List<DcClusterShard> clusterShards) {
