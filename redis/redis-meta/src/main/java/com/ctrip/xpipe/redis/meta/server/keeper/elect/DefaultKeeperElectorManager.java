@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkUtils;
+import com.google.common.collect.Sets;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -27,9 +29,7 @@ import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -174,6 +174,11 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	@Override
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
 		//nothing to do
+	}
+
+	@Override
+	protected Set<ClusterType> getSupportClusterTypes() {
+		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
 	public void setKeeperActiveElectAlgorithmManager(

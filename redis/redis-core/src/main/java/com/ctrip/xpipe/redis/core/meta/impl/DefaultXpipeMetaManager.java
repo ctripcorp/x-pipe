@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
@@ -69,6 +70,9 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			if(clusterMeta == null){
 				continue;
 			}
+			if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+				throw new IllegalArgumentException("cluster " + clusterId +" support multi active dc");
+			}
 			String activeDc = clusterMeta.getActiveDc();
 			if(activeDc == null){
 				logger.info("[getActiveDc][activeDc null]{}", clusterMeta);
@@ -134,6 +138,19 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	public ClusterMeta getClusterMeta(String dc, String clusterId) {
 		
 		return clone(getDirectClusterMeta(dc, clusterId));
+	}
+
+	@Override
+	public ClusterType getClusterType(String clusterId) {
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+
+			ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
+			if (clusterMeta == null) {
+				continue;
+			}
+			return ClusterType.lookup(clusterMeta.getType());
+		}
+		throw new MetaException("clusterId " + clusterId + " not found!");
 	}
 	
 	public ClusterMeta getDirectClusterMeta(String dc, String clusterId) {

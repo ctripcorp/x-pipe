@@ -390,9 +390,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public Set<String> getOwnClusterType() {
-        String dataSources = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
+        String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
 
-        return getSplitStringSet(dataSources);
+        return getSplitStringSet(clusterTypes);
     }
 
     @Override

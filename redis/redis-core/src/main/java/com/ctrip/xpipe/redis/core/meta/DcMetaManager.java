@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 
 import java.util.List;
@@ -34,6 +35,8 @@ public interface DcMetaManager{
 	boolean hasShard(String clusterId, String shardId);
 	
 	ClusterMeta getClusterMeta(String clusterId);
+
+	ClusterType getClusterType(String clusterId);
 	
 	String getActiveDc(String clusterId, String shardId);
 	

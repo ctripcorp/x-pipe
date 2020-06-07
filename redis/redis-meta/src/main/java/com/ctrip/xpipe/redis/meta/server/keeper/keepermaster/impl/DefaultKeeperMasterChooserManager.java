@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -14,10 +15,13 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -77,6 +81,12 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		}
 		
 	}
+
+	@Override
+	protected Set<ClusterType> getSupportClusterTypes() {
+		return Collections.singleton(ClusterType.ONE_WAY);
+	}
+
 	private void addShard(String clusterId, ShardMeta shardMeta) {
 		
 		String shardId = shardMeta.getId();

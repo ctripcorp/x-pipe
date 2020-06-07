@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.console;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 
 import java.util.Set;
@@ -20,6 +21,8 @@ public interface ConsoleService {
 	Set<String> getClusterShardIds(String clusterId);
 
 	DcMeta  getDcMeta(String dcId);
+
+	DcMeta getDcMetaWithClusterTypes(String dcId, Set<String> types);
 
 	ClusterMeta getClusterMeta(String dcId, String clusterId);
 
