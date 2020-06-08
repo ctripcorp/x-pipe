@@ -213,7 +213,14 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
                 throw new BadRequestException("Target DC Id Illegal for cluster: " + clusterInfo.getClusterId());
             }
 
-            ClusterType clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
+            ClusterType clusterType;
+            if (StringUtil.isEmpty(clusterInfo.getClusterName())) {
+                ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterId());
+                clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+            } else {
+                clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
+            }
+
             if (null == clusterType || !clusterType.supportMigration())
                 throw new BadRequestException(String.format("cluster %s type %s not support migration", clusterInfo.getClusterName(), clusterType));
         }
