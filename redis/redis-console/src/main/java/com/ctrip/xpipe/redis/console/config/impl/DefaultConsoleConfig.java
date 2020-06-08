@@ -90,6 +90,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
+    private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -374,4 +376,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getIntProperty(KEY_SENTINEL_RATE_LIMIT_SIZE, 3);
     }
 
+    @Override
+    public Set<String> getVariablesCheckDataSources() {
+        String dataSources = getProperty(KEY_VARIABLES_CHECK_DATASOURCE, "");
+
+        return getSplitStringSet(dataSources);
+    }
 }
