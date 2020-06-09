@@ -1,5 +1,5 @@
-index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService', 'HealthCheckService', 'ProxyService',
-    function ($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService, ProxyService) {
+index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location', 'toastr', 'AppUtil', 'ClusterService', 'ShardService', 'HealthCheckService', 'ProxyService', 'ClusterType',
+    function ($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService, ProxyService, ClusterType) {
 
         $scope.dcs, $scope.shards;
         $scope.clusterName = $stateParams.clusterName;
@@ -11,6 +11,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.loadShards = loadShards;
         $scope.gotoHickwall = gotoHickwall;
         $scope.existsRoute = existsRoute;
+        $scope.showHealthStatus = true
         
         if ($scope.clusterName) {
             loadCluster();
@@ -53,6 +54,9 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                                     $scope.currentDcName = $scope.dcs[0].dcName; 
                                 }
 
+                                var type = ClusterType.lookup(cluster.clusterType)
+                                $scope.showHealthStatus = type && type.healthCheck
+
                                 loadShards($scope.clusterName, $scope.currentDcName);
                             }, function(result) {
                                 $scope.currentDcName = $scope.dcs[0].dcName; 
@@ -80,7 +84,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         }
         
         function healthCheck() {
-        	if($scope.shards) {
+        	if($scope.showHealthStatus && $scope.shards) {
         		$scope.shards.forEach(function(shard) {
         			shard.redises.forEach(function(redis) {
         				HealthCheckService.getReplDelay(redis.redisIp, redis.redisPort)

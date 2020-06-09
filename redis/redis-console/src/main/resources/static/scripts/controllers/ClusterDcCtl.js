@@ -7,8 +7,9 @@ index_module.controller('ClusterDcCtl', [
 		'toastr',
 		'ClusterService',
 		'DcService',
+		'ClusterType',
 		function($rootScope, $scope, $window, $stateParams, AppUtil, toastr,
-				ClusterService, DcService) {
+				ClusterService, DcService, ClusterType) {
 
 			$rootScope.currentNav = '1-4';
 
@@ -24,6 +25,7 @@ index_module.controller('ClusterDcCtl', [
 			$scope.bindDc = bindDc;
 			$scope.preUnbindDc = preUnbindDc;
 			$scope.unbindDc = unbindDc;
+			$scope.isActiveDc = isActiveDc
 
 			$scope.toBindDc = {};
 			function preBindDc(dc) {
@@ -100,6 +102,13 @@ index_module.controller('ClusterDcCtl', [
 				}, function(result) {
 					toastr.error(AppUtil.errorMsg(result));
 				});
+			}
+
+			function isActiveDc(dcId) {
+				if (!$scope.cluster) return false
+				var clusterType = ClusterType.lookup($scope.cluster.clusterType)
+				if (clusterType && clusterType.multiActiveDcs) return true
+				else return $scope.cluster.activedcId === dcId
 			}
 
 		} ]);

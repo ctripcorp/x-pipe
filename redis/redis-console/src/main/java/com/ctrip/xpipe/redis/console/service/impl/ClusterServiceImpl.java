@@ -148,20 +148,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl cluster = clusterModel.getClusterTbl();
 		List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
 		List<ShardModel> shards = clusterModel.getShards();
+		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
 
 		// ensure active dc assigned
-		if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
+		if(!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
 			throw new BadRequestException("No active dc assigned.");
 		}
 		ClusterTbl proto = dao.createLocal();
 		proto.setClusterName(cluster.getClusterName().trim());
-		proto.setClusterType(StringUtil.isEmpty(cluster.getClusterType()) ?
-				ClusterType.ONE_WAY.toString() : cluster.getClusterType());
-		proto.setActivedcId(cluster.getActivedcId());
+		proto.setClusterType(cluster.getClusterType());
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setStatus(ClusterStatus.Normal.toString());
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+
+		if (clusterType.supportMultiActiveDC()) {
+			proto.setActivedcId(0L);
+		} else {
+			proto.setActivedcId(cluster.getActivedcId());
+		}
 		if(!checkEmails(cluster.getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
