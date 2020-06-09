@@ -144,6 +144,19 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/sentinel/monitor/{clusterName}", method = RequestMethod.DELETE)
+    public RetMessage removeSentinelMonitor(@PathVariable String clusterName) {
+        logger.info("[removeSentinelMonitor][begin]");
+        try {
+            return sentinelService.removeSentinelMonitor(clusterName);
+        } catch (Exception e) {
+            logger.error("[removeSentinelMonitor]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        } finally {
+            logger.info("[removeSentinelMonitor][end]");
+        }
+    }
+
     @VisibleForTesting
     protected SetinelTbl convert2SentinelTbl(SentinelModel sentinelModel) {
         StringBuilder sb = new StringBuilder();

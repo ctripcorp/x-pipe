@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
@@ -57,6 +58,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     protected KeeperAdvancedService keeperAdvancedService;
+
+    @Autowired
+    private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -122,6 +126,29 @@ public class MetaUpdate extends AbstractConsoleController {
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    //synchronizelly delete cluster, including meta server
+    @RequestMapping(value = "/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
+    public RetMessage deleteCluster(@PathVariable String clusterName) {
+        logger.info("[deleteCluster]{}", clusterName);
+        try {
+            clusterService.deleteCluster(clusterName);
+            for(DcTbl dcTbl : dcService.findAllDcNames()) {
+                try {
+                    metaServerConsoleServiceManagerWrapper.get(dcTbl.getDcName()).clusterDeleted(clusterName);
+                } catch (Exception e) {
+                    logger.warn("[deleteCluster]", e);
+                }
+            }
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[deleteCluster]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        } finally {
+            logger.info("[deleteCluster][end]");
+        }
+
     }
 
     private OrganizationTbl getOrganizationTbl(ClusterCreateInfo clusterCreateInfo) {

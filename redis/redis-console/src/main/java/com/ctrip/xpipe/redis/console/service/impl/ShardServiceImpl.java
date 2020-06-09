@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -219,7 +220,10 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			shardDeleteEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardTbl.getShardName()));
 		} catch (Exception e) {
 			logger.warn("[createClusterEvent]", e);
-			shardDeleteEvent.setShardMonitorName(shardTbl.getSetinelMonitorName());
+			long activeDcId = clusterService.find(clusterName).getActivedcId();
+			String activeDcName = dcService.getDcName(activeDcId);
+			shardDeleteEvent.setShardMonitorName(SentinelUtil.getSentinelMonitorName(
+					clusterName, shardTbl.getSetinelMonitorName(), activeDcName));
 		}
 		// Splicing sentinel address as "127.0.0.1:6379,127.0.0.2:6380"
 		StringBuffer sb = new StringBuffer();
