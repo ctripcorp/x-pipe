@@ -5,6 +5,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -24,13 +25,13 @@ public abstract class AbstractShardEvent implements ShardEvent {
 
     private List<Observer> observers;
 
-    private ExecutorService executor;
+    private Executor executor;
 
     protected AbstractShardEvent() {
         this.observers = Lists.newArrayListWithExpectedSize(5);
     }
 
-    protected AbstractShardEvent(String clusterName, String shardName, ExecutorService executor) {
+    protected AbstractShardEvent(String clusterName, String shardName, Executor executor) {
         this.clusterName = clusterName;
         this.shardName = shardName;
         this.executor = executor;
