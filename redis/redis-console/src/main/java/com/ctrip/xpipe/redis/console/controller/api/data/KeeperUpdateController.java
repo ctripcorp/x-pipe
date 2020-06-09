@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
 import com.ctrip.xpipe.redis.console.controller.api.GenericRetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -37,6 +39,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
   @Autowired
   private KeeperContainerService keeperContainerService;
+
+  @Autowired
+  protected ClusterService clusterService;
 
   @ClusterTypeLimit
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
@@ -80,6 +85,14 @@ public class KeeperUpdateController extends AbstractConsoleController {
     } catch (ResourceNotFoundException e) {
       logger.info("[addKeepers][not found]{}, {}, {}", dcId, clusterId, shardId);
       return RetMessage.createFailMessage(e.getMessage());
+    }
+
+    ClusterTbl clusterTbl = clusterService.find(clusterId);
+    if (null == clusterTbl) {
+      return RetMessage.createFailMessage("not found cluster " + clusterId);
+    }
+    if (!ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) {
+      return RetMessage.createFailMessage("cluster " + clusterId + " not support keepers");
     }
 
     try {
