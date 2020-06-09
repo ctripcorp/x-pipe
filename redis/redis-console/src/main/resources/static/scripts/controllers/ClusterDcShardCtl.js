@@ -41,9 +41,9 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
 	                    	}
 	                    });
 	                    
-	                    if(!$scope.currentDcName) {
-                            ClusterService.load_cluster($stateParams.clusterName).then(function(result) {
-                                var cluster = result;
+                        ClusterService.load_cluster($stateParams.clusterName).then(function(result) {
+                            var cluster = result;
+                            if (!$scope.currentDcName) {
                                 var filteredDc = $scope.dcs.filter(function(dc) {
                                     return dc.id === cluster.activedcId;
                                 })
@@ -51,20 +51,18 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                                     $scope.currentDcName = filteredDc[0].dcName;
                                     $scope.activeDcName = filteredDc[0].dcName;
                                 } else {
-                                    $scope.currentDcName = $scope.dcs[0].dcName; 
+                                    $scope.currentDcName = $scope.dcs[0].dcName;
                                 }
+                            }
 
-                                var type = ClusterType.lookup(cluster.clusterType)
-                                $scope.showHealthStatus = type && type.healthCheck
+                            var type = ClusterType.lookup(cluster.clusterType);
+                            $scope.showHealthStatus = type && type.healthCheck;
 
-                                loadShards($scope.clusterName, $scope.currentDcName);
-                            }, function(result) {
-                                $scope.currentDcName = $scope.dcs[0].dcName; 
-                                loadShards($scope.clusterName, $scope.currentDcName);
-                            });
-	                    } else {
                             loadShards($scope.clusterName, $scope.currentDcName);
-                        }
+                        }, function(result) {
+                            $scope.currentDcName = $scope.dcs[0].dcName;
+                            loadShards($scope.clusterName, $scope.currentDcName);
+                        });
                     }
 
                 }, function (result) {
