@@ -69,7 +69,6 @@ public class KeeperUpdateController extends AbstractConsoleController {
     return result;
   }
 
-  @ClusterTypeLimit
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST)
   public RetMessage addKeepers(@PathVariable String dcId, @PathVariable String clusterId,
       @PathVariable String shardId) {
