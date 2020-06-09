@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
@@ -53,6 +54,9 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void visitAdded(ClusterMeta added) {
+        if (!ClusterType.lookup(added.getType()).supportHealthCheck()) {
+            return;
+        }
         if (!added.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
             return;
         }
