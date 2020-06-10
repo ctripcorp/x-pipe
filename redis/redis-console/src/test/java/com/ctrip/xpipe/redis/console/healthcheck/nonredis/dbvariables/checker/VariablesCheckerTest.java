@@ -12,6 +12,8 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import org.unidal.dal.jdbc.datasource.DataSource;
+import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -37,6 +39,7 @@ public class VariablesCheckerTest extends AbstractTest {
     @Before
     public void setupExitActionCheckerTest() throws Exception {
         Mockito.when(dataSource.getConnection()).thenReturn(connection);
+        Mockito.when(dataSource.getDescriptor()).thenReturn(Mockito.mock(DataSourceDescriptor.class));
         Mockito.when(connection.prepareStatement(Matchers.anyString(), Matchers.anyInt(), Matchers.anyInt()))
                 .thenReturn(statement);
         Mockito.when(statement.executeQuery()).thenReturn(resultSet);

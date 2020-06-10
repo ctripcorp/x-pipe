@@ -34,11 +34,11 @@
                 <td ng-bind="dc.dcDescription"></td>
                 <td>
 					<span class="label label-info arrowed-right arrowed-in"
-						ng-if="cluster.activedcId === dc.id">主数据中心</span>
+						ng-if="isActiveDc(dc.id)">主数据中心</span>
 					<span class="label label-warning label-sm"
-						ng-if="cluster.activedcId !== dc.id">从数据中心</span>
+						ng-if="!isActiveDc(dc.id)">从数据中心</span>
                 <td>
-                    <a ng-if="cluster.activedcId !== dc.id"
+                    <a ng-if="!isActiveDc(dc.id)"
                        ng-click="preUnbindDc(dc)">解除绑定</a>
                 </td>
             </tr>

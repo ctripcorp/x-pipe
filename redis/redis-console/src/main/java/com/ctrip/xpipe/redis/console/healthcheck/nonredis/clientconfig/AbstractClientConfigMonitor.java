@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
@@ -50,6 +51,9 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
                 continue;
             }
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                if (!ClusterType.lookup(clusterMeta.getType()).supportHealthCheck()) {
+                    continue;
+                }
                 if (!clusterMeta.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
                     continue;
                 }
