@@ -75,7 +75,7 @@ public class ConfigCheck extends AbstractIntegratedTest {
         ((ConsoleServiceImpl) consoleService).setHost(addr);
         XpipeMeta xpipeMeta = new XpipeMeta();
         for (String dc : dcs) {
-            DcMeta dcMeta = consoleService.getDcMeta(dc);
+            DcMeta dcMeta = consoleService.getDcMeta(dc, null);
             xpipeMeta.addDc(dcMeta);
         }
         return xpipeMeta;

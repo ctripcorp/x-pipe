@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -32,7 +33,7 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
             @Override
             public ClusterTbl answer(InvocationOnMock invocationOnMock) throws Throwable {
                 Thread.sleep(randomInt(5, 25));
-                return new ClusterTbl().setId(10000L).setActivedcId(100L);
+                return new ClusterTbl().setId(10000L).setActivedcId(100L).setClusterType(ClusterType.ONE_WAY.toString());
             }
         });
         when(migrationClusterDao.findUnfinishedByClusterId(anyLong())).thenAnswer(new Answer<List<MigrationClusterTbl>>() {
@@ -58,8 +59,21 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
         });
     }
 
+    @Test(expected = MigrationNotSupportException.class)
+    public void tryMigrate() throws Exception {
+        when(clusterService.find(anyString())).thenAnswer(new Answer<ClusterTbl>() {
+            @Override
+            public ClusterTbl answer(InvocationOnMock invocationOnMock) throws Throwable {
+                Thread.sleep(randomInt(5, 25));
+                return new ClusterTbl().setId(10000L).setActivedcId(100L).setClusterType(ClusterType.BI_DIRECTION.toString());
+            }
+        });
+
+        migrationService.tryMigrate("cluster", fromIdc, toIdc);
+    }
+
     @Test
-    public void testConsoleTryMigration() throws ClusterMigratingNow, ToIdcNotFoundException, ClusterNotFoundException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest {
+    public void testConsoleTryMigration() throws ClusterMigratingNow, ToIdcNotFoundException, ClusterNotFoundException, MigrationNotSupportException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest {
 
         migrationService.tryMigrate("cluster-", fromIdc, toIdc);
     }

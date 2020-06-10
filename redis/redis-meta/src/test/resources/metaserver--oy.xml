@@ -14,7 +14,7 @@
 			<keeperContainer id="2" ip="127.0.0.1" port="7181" />
 		</keeperContainers>
 
-		<cluster id="cluster1" active-dc="jq" backup-dcs="oy">
+		<cluster id="cluster1" active-dc="jq" backup-dcs="oy" type="one_way">
 			<shard id="shard1" active-dc="jq">
 				<keeper id="ffffffffffffffffffffffffffffffffffffffff" master="127.0.0.1:6000" ip="127.0.0.1" port="6100" active="true" keeperContainerId="1" />
 				<keeper id="ffffffffffffffffffffffffffffffffffffffff" master="127.0.0.1:6100" ip="127.0.0.1" port="6101" active="false" keeperContainerId="2" />

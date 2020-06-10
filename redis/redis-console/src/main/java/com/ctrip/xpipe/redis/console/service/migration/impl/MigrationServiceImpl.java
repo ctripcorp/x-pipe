@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
@@ -59,6 +61,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private MetaCache metaCache;
 
     private MigrationShardTblDao migrationShardTblDao;
 
@@ -208,6 +213,16 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
                 throw new BadRequestException("Target DC Id Illegal for cluster: " + clusterInfo.getClusterId());
             }
 
+            ClusterType clusterType;
+            if (StringUtil.isEmpty(clusterInfo.getClusterName())) {
+                ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterId());
+                clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+            } else {
+                clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
+            }
+
+            if (null == clusterType || !clusterType.supportMigration())
+                throw new BadRequestException(String.format("cluster %s type %s not support migration", clusterInfo.getClusterName(), clusterType));
         }
     }
 
@@ -338,7 +353,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException {
+    public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc)
+            throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException {
 
         if(!checker.getResult().isAvaiable() && !configService.ignoreMigrationSystemAvailability()) {
             throw new MigrationSystemNotHealthyException(checker.getResult().getMessage());
@@ -346,6 +362,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (clusterTbl == null) {
             throw new ClusterNotFoundException(clusterName);
+        }
+        if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMigration()) {
+            throw new MigrationNotSupportException(clusterName);
         }
 
         MigrationClusterTbl unfinished = findLatestUnfinishedMigrationCluster(clusterTbl.getId());

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
@@ -224,6 +225,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
         clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
         clusterCreateInfo.setClusterName(clusterName);
+        clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
         clusterCreateInfo.setDcs(Lists.newArrayList(activeDC, backupDC));
         clusterCreateInfo.setOrganizationId(3L);
         clusterCreateInfo.setDesc("test cluster");

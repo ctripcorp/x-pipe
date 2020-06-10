@@ -147,7 +147,6 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                                           List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
 
         logger.info("[insertKeepers]{}, {}, {}, {}", dcId, clusterId, shardId, keepers);
-
         DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
         if (dcClusterShardTbl == null) {
             throw new ResourceNotFoundException(dcId, clusterId, shardId);

@@ -26,6 +26,22 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> 集群类型 </label>
+
+                    <div class="col-sm-6">
+                        <select
+                                allow_single_deselect=true
+                                style="width:200px;"
+                                ng-required="true"
+                                ng-disabled="operateType == 'update'"
+                                ng-model="selectedType"
+                                ng-change="typeChange()"
+                        >
+                            <option ng-repeat="type in clusterTypes" value="{{type.value}}">{{type.name}}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" ng-if="showActiveDc">
                     <label class="col-sm-4 control-label no-padding-right"> 主数据中心 </label>
 
                     <div class="col-sm-7">
@@ -112,11 +128,17 @@
                         <label ng-bind="cluster.clusterName"></label>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" ng-if="showActiveDc">
                     <label class="col-sm-4 control-label no-padding-right"> 主数据中心 </label>
 
                     <div class="col-sm-7" ng-bind="getDcName(cluster.activedcId)">
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> 集群类型 </label>
+
+                    <div class="col-sm-7" >{{clusterTypeName}}</div>
                 </div>
 
                 <div class="form-group">

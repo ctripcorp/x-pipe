@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.dao;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -68,19 +69,21 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				return clusterTblDao.insert(cluster);
 			}
 		});
-	    
-	    // related dc-cluster
+
 	    ClusterTbl newCluster = clusterTblDao.findClusterByClusterName(cluster.getClusterName(), ClusterTblEntity.READSET_FULL);
-	    DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
-	    DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
-	    protoDcCluster.setDcId(activeDc.getId())
-	    		.setClusterId(newCluster.getId());
-	    queryHandler.handleInsert(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return dcClusterTblDao.insert(protoDcCluster);
-			}
-		});
+	    if (!ClusterType.lookup(newCluster.getClusterType()).supportMultiActiveDC()) {
+			// related dc-cluster
+			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
+			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
+			protoDcCluster.setDcId(activeDc.getId())
+					.setClusterId(newCluster.getId());
+			queryHandler.handleInsert(new DalQuery<Integer>() {
+				@Override
+				public Integer doQuery() throws DalException {
+					return dcClusterTblDao.insert(protoDcCluster);
+				}
+			});
+		}
 
 		return newCluster;
 	}
@@ -218,6 +221,14 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override public List<ClusterTbl> doQuery() throws DalException {
 				return clusterTblDao.findAllClustersWithOrgInfo(ClusterTblEntity.READSET_FULL_WITH_ORG);
+			}
+		});
+	}
+
+	public List<ClusterTbl> findClusterWithOrgInfoByClusterType(String type) {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findClustersWithOrgInfoByClusterType(type, ClusterTblEntity.READSET_FULL_WITH_ORG);
 			}
 		});
 	}

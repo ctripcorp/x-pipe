@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
@@ -17,6 +19,7 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,6 +105,7 @@ public class MetaUpdate extends AbstractConsoleController {
         }
 
         ClusterModel clusterModel = new ClusterModel();
+        ClusterType clusterType = ClusterType.lookup(clusterCreateInfo.getClusterType());
         OrganizationTbl organizationTbl;
         try {
             organizationTbl = getOrganizationTbl(clusterCreateInfo);
@@ -109,9 +113,13 @@ public class MetaUpdate extends AbstractConsoleController {
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
+        long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcs.get(0).getId();
+        List<DcTbl> slaveDcs = clusterType.supportMultiActiveDC() ? dcs : dcs.subList(1, dcs.size());
+
         clusterModel.setClusterTbl(new ClusterTbl()
-                .setActivedcId(dcs.get(0).getId())
+                .setActivedcId(activeDcId)
                 .setClusterName(clusterCreateInfo.getClusterName())
+                .setClusterType(clusterCreateInfo.getClusterType())
                 .setClusterDescription(clusterCreateInfo.getDesc())
                 .setClusterAdminEmails(clusterCreateInfo.getClusterAdminEmails())
                 .setOrganizationInfo(organizationTbl)
@@ -120,7 +128,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
 
         try {
-            clusterModel.setSlaveDcs(dcs.subList(1, dcs.size()));
+            clusterModel.setSlaveDcs(slaveDcs);
             clusterService.createCluster(clusterModel);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
@@ -240,11 +248,15 @@ public class MetaUpdate extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters", method = RequestMethod.GET)
-    public List<ClusterCreateInfo> getClusters() {
+    public List<ClusterCreateInfo> getClusters(
+            @RequestParam(required=false, defaultValue = "one_way", name = "type") String clusterType) throws CheckFailException {
+        if (!ClusterType.isTypeValidate(clusterType)) {
+            throw new CheckFailException("unknow cluster type " + clusterType);
+        }
 
         logger.info("[getClusters]");
 
-        List<ClusterTbl> allClusters = clusterService.findAllClustersWithOrgInfo();
+        List<ClusterTbl> allClusters = clusterService.findClustersWithOrgInfoByClusterType(clusterType);
 
         List<ClusterCreateInfo> result = new LinkedList<>();
         allClusters.forEach(clusterTbl -> {
@@ -412,7 +424,7 @@ public class MetaUpdate extends AbstractConsoleController {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
             redisService.insertRedises(dcId, clusterName, shardName,
                     redisCreateInfo.getRedisAddresses());
-            addKeepers(dcId, clusterName, shardTbl);
+            if (ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) addKeepers(dcId, clusterName, shardTbl);
         }
     }
 

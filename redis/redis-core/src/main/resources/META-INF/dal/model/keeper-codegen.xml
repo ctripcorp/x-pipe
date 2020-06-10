@@ -33,6 +33,7 @@
   </entity>
   <entity name="cluster">
     <attribute name="id" value-type="String" />
+    <attribute name="type" value-type="String" />
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
     <attribute name="org-id" value-type="int" />

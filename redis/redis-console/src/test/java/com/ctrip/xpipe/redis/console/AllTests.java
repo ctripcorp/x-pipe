@@ -40,6 +40,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariable
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
@@ -66,6 +67,7 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTes
 import com.ctrip.xpipe.redis.console.service.meta.impl.ShardMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
+import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -184,7 +186,9 @@ import org.junit.runners.Suite.SuiteClasses;
         ShardDaoTest.class,
         SentinelLeakyBucketTest.class,
         VariablesCheckerTest.class,
-        DBVariablesCheckTest.class
+        DBVariablesCheckTest.class,
+        DefaultSentinelMonitorsCheckTest.class,
+        DcMetaBuilderTest.class
 })
 public class AllTests {
 
