@@ -155,6 +155,7 @@
 			<readset name="CLUSTER_META_INFO">
 				<member name="id"/>
 				<member name="cluster-name"/>
+				<member name="cluster-type"/>
 				<member name="status"/>
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
@@ -169,6 +170,17 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='id'/> IN <IN>${ids}</IN>
+					]]>
+				</statement>
+			</query>
+			<query name="find-clusters-with-org-info-by-cluster-type" type="SELECT" multiple="true">
+				<param name="cluster-type" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
+					WHERE <FIELD name='cluster-type' /> = ${cluster-type}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -310,6 +322,7 @@
 					SELECT <FIELDS />
 					FROM <TABLE />, <TABLE name='dc-cluster-info' />
 					WHERE <FIELD name='id' /> = dct.cluster_id
+					AND dct.dc_id = ${dc-id}
 					AND <FIELD name='deleted' /> = 0
 					AND dct.deleted = 0
 					group by <FIELD name='id' />
@@ -529,6 +542,7 @@
 		<var name="dc-name" value-type="String"/>
 		<var name="cluster-name" value-type="String"/>
 		<var name="shard-name" value-type="String"/>
+		<var name="cluster-types" value-type="java.util.Set&lt;String&gt;" />
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
@@ -638,6 +652,27 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='redis-info'/>, <TABLE name='shard-info'/>
 					WHERE dct.dc_id = ${dc-id}
+					AND dct.cluster_id = ct.id
+					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND <FIELD name='shard-id' /> = st2.id
+					AND <FIELD name='dc-cluster-shard-id'/> = rt.dc_cluster_shard_id
+					AND st2.deleted = 0
+					AND rt.deleted = 0
+					AND ct.deleted = 0
+					AND dct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-by-dc-id-and-in-cluster-types' type='SELECT' multiple='true'>
+				<param name="dc-id"/>
+				<param name="cluster-types"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='redis-info'/>, <TABLE name='shard-info'/>
+					WHERE dct.dc_id = ${dc-id}
+					AND ct.cluster_type in <IN>${cluster-types}</IN>
 					AND dct.cluster_id = ct.id
 					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
 					AND <FIELD name='shard-id' /> = st2.id

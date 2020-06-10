@@ -1,8 +1,8 @@
 index_module.controller('ClusterDcShardUpdateCtl',
                         ['$rootScope', '$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil',
-                         'ClusterService', 'ShardService', 'RedisService', 'KeeperContainerService',
+                         'ClusterService', 'ShardService', 'RedisService', 'KeeperContainerService', 'ClusterType',
                          function ($rootScope, $scope, $stateParams, $window, $location, toastr, AppUtil,
-                                   ClusterService, ShardService, RedisService, KeeperContainerService) {
+                                   ClusterService, ShardService, RedisService, KeeperContainerService, ClusterType) {
 
                              $scope.dcs,$scope.hasMasterRedis = false, $scope.createKeeperErrorMsg = '';
                              $scope.dcShards = {};
@@ -27,6 +27,7 @@ index_module.controller('ClusterDcShardUpdateCtl',
                              $scope.deleteRedis = deleteRedis;
 
                              $scope.submitUpdates = submitUpdates;
+                             $scope.useKeeper = false
 
                              if ($scope.clusterName) {
                                  loadCluster();
@@ -64,7 +65,9 @@ index_module.controller('ClusterDcShardUpdateCtl',
                                          
                                          ClusterService.load_cluster($scope.clusterName)
                                  	 		.then(function(result) {
+                                 	 			var clusterType = ClusterType.lookup(result.clusterType)
                                  	 			$scope.cluster = result;
+                                 	 			$scope.useKeeper = clusterType && clusterType.useKeeper
                                  	 			for(var i = 0 ; i != $scope.dcs.length; ++i) {
                                  	 				if($scope.dcs[i].id === $scope.cluster.activedcId) {
                                  	 					$scope.masterDcName = $scope.dcs[i].dcName;

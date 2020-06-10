@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -189,12 +190,15 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			if (!clusterMap.containsKey(clusterName)) continue;
 
 			ClusterTbl cluster = clusterMap.get(clusterName);
+			if (!ClusterType.lookup(cluster.getClusterType()).supportHealthCheck()) continue;
+
 			Map<String, ShardListModel> shardMap = new HashMap<>();
 			unhealthyInfoModel.getUnhealthyDcShardByCluster(clusterName).forEach(dcShard -> {
 				if (!shardMap.containsKey(dcShard.getValue())) {
 					ShardListModel shardModel = new ShardListModel();
 					shardModel.setShardName(dcShard.getValue())
 							.setActivedcId(cluster.getActivedcId())
+							.setClusterType(cluster.getClusterType())
 							.setClusterName(cluster.getClusterName())
 							.setClusterAdminEmails(cluster.getClusterAdminEmails())
 							.setClusterOrgName(cluster.getClusterOrgName())

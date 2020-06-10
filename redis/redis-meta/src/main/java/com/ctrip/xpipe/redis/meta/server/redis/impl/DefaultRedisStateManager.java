@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.redis.impl;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.redis.ClusterRedisStateAjustTask;
 import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
@@ -81,12 +83,35 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 			
 			for(String clusterId : currentMetaManager.allClusters()){
 
-				if(dcMetaCache.isCurrentDcPrimary(clusterId)){
-					executors.execute(new PrimaryDcClusterRedisStateAjust());
-				}else{
-					executors.execute(new BackupDcClusterRedisStateAjust(clusterId, dcMetaCache, currentMetaManager,
-							keyedObjectPool, scheduled, executors, clusterShardExecutors));
+				ClusterRedisStateAjustTask adjustTask = buildAdjustTaskForCluster(clusterId);
+				if (null != adjustTask) {
+					executors.execute(adjustTask);
 				}
+
+			}
+		}
+
+		private ClusterRedisStateAjustTask buildAdjustTaskForCluster(String clusterId) {
+			ClusterType type;
+
+			try {
+				type = dcMetaCache.getClusterType(clusterId);
+			} catch (Exception e) {
+				logger.info("[buildAdjustTaskForCluster] get type for cluster {} fail", clusterId, e);
+				return null;
+			}
+
+			switch (type) {
+				case ONE_WAY:
+					if (dcMetaCache.isCurrentDcPrimary(clusterId)) {
+						return new PrimaryDcClusterRedisStateAjust();
+					} else {
+						return new BackupDcClusterRedisStateAjust(clusterId, dcMetaCache, currentMetaManager,
+								keyedObjectPool, scheduled, executors, clusterShardExecutors);
+					}
+				case BI_DIRECTION:
+				default:
+					return null;
 			}
 		}
 	}

@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -53,14 +54,17 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     private long dcId;
 
+    private Set<String> interestClusterTypes;
+
     private Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
 
     private List<DcClusterShardTbl> dcClusterShards;
 
-    public DcMetaBuilder(DcMeta dcMeta, long dcId, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
+    public DcMetaBuilder(DcMeta dcMeta, long dcId, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
                          ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, RetryCommandFactory factory) {
         this.dcMeta = dcMeta;
         this.dcId = dcId;
+        this.interestClusterTypes = clusterTypes;
         this.executors = executors;
         this.redisMetaService = redisMetaService;
         this.dcClusterService = dcClusterService;
@@ -123,6 +127,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setParent(dcMeta);
                 clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
+                clusterMeta.setType(cluster.getClusterType());
                 return clusterMeta;
             }
         });
@@ -171,7 +176,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         @Override
         protected void doExecute() throws Exception {
             try {
-                dcClusterShards = dcClusterShardService.findAllByDcId(dcId);
+                dcClusterShards = dcClusterShardService.findAllByDcIdAndInClusterTypes(dcId, interestClusterTypes);
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);

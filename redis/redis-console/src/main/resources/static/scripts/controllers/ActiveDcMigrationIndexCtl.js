@@ -191,7 +191,8 @@ index_module.controller('ActiveDcMigrationIndexCtl', ['$rootScope', '$scope', '$
 				migrationClusters.push({
 					clusterId : cluster.id,
 					sourceDcId : cluster.activedcId,
-					destinationDcId : getDcId(cluster.targetDc)
+					destinationDcId : getDcId(cluster.targetDc),
+					cluster,
 				});
 			});
 			MigrationService.createEvent(migrationClusters)

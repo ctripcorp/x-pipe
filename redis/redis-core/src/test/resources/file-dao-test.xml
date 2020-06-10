@@ -7,7 +7,7 @@
 		<zkServer address="127.0.0.1:2181" />
 		<metaServer ip="127.0.0.1" port="9747" master="true" />
 
-		<cluster id="cluster1" active-dc="jq" backup-dcs="JQ, Fq, oy, fra" phase="1">
+		<cluster id="cluster1" active-dc="jq" backup-dcs="JQ, Fq, oy, fra" phase="1" type="one_way">
 			<shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1-shard1">
 				<redis ip="127.0.0.1" port="6379" master="true" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000"
@@ -22,7 +22,7 @@
 	<dc id="fq">
 		<zkServer address="127.0.0.1:2281" />
 		<metaServer ip="127.0.0.1" port="9847" master="true" />
-		<cluster id="cluster1" active-dc="jq" backup-dcs="" phase="1">
+		<cluster id="cluster1" active-dc="jq" backup-dcs="" phase="1" type="one_way">
 			<shard id="shard1" upstream="127.0.0.1:6000">
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
 					ip="127.0.0.1" port="6100" active="true" />
@@ -46,7 +46,7 @@
 
 		<zkServer address="127.0.0.1:2281" />
 		<metaServer ip="127.0.0.1" port="9847" master="true" />
-		<cluster id="cluster1" active-dc="jq" backup-dcs="" phase="1" org-id="1">
+		<cluster id="cluster1" active-dc="jq" backup-dcs="" phase="1" org-id="1" type="one_way">
 			<shard id="shard1" upstream="127.0.0.1:6000">
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
 						ip="127.0.0.1" port="6100" active="true" />
@@ -56,7 +56,7 @@
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
 		</cluster>
-		<cluster id="cluster2" active-dc="jq" backup-dcs="" phase="1" org-id="1000">
+		<cluster id="cluster2" active-dc="jq" backup-dcs="" phase="1" org-id="1000" type="one_way">
 			<shard id="shard1" upstream="127.0.0.1:6000">
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
 						ip="127.0.0.1" port="6100" active="true" />
@@ -66,7 +66,7 @@
 				<redis ip="127.0.0.1" port="8101" master="127.0.0.1:6100" />
 			</shard>
 		</cluster>
-		<cluster id="cluster3" active-dc="fq" backup-dcs="" phase="1" org-id="1000">
+		<cluster id="cluster3" active-dc="fq" backup-dcs="" phase="1" org-id="1000" type="one_way">
 			<shard id="shard1" upstream="127.0.0.1:6000">
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000"
 						ip="127.0.0.1" port="6100" active="true" />

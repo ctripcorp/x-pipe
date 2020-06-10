@@ -58,6 +58,7 @@ create table CLUSTER_TBL
 (
 	id bigint unsigned not null auto_increment primary key,
 	cluster_name varchar(128) not null unique,
+    cluster_type varchar(32) not null default 'ONE_WAY',
 	activedc_id bigint unsigned not null,
 	cluster_description varchar(1024) not null default 'nothing',
     cluster_last_modified_time varchar(40) not null default '',
