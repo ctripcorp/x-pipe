@@ -9,6 +9,7 @@ import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
+import com.ctrip.xpipe.redis.meta.server.keeper.ClusterTypeAware;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -19,7 +20,7 @@ import java.util.Set;
  *
  * Sep 4, 2016
  */
-public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObservable implements Observer{
+public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObservable implements Observer, ClusterTypeAware {
 	
 	@Autowired
 	protected CurrentMetaManager currentMetaManager;
@@ -84,8 +85,6 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	protected abstract void handleClusterDeleted(ClusterMeta clusterMeta);
 
 	protected abstract void handleClusterAdd(ClusterMeta clusterMeta);
-
-	protected abstract Set<ClusterType> getSupportClusterTypes();
 
 	public void setCurrentMetaManager(CurrentMetaManager currentMetaManager) {
 		this.currentMetaManager = currentMetaManager;

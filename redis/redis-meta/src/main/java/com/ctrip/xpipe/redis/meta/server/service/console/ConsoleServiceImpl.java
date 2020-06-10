@@ -62,12 +62,11 @@ public class ConsoleServiceImpl extends AbstractService implements ConsoleServic
 	}
 
 	@Override
-	public DcMeta getDcMeta(String dcId) {
-		return restTemplate.getForObject(host + "/api/dc/{dcId}", DcMeta.class, dcId);
-	}
+	public DcMeta getDcMeta(String dcId, Set<String> types) {
+		if (null == types) {
+			return restTemplate.getForObject(host + "/api/dc/{dcId}", DcMeta.class, dcId);
+		}
 
-	@Override
-	public DcMeta getDcMetaWithClusterTypes(String dcId, Set<String> types) {
 		UriComponents comp = UriComponentsBuilder.fromHttpUrl(host + "/api/dc/{dcId}")
 				.queryParam("types", types.toArray())
 				.buildAndExpand(dcId);

@@ -49,8 +49,7 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
 
         XpipeMeta xpipeMeta = getXpipeMeta();
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
-        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString())).thenReturn(dcMeta);
-        Mockito.when(mockConsoleService.getDcMetaWithClusterTypes(Mockito.anyString(), Mockito.anySet())).thenReturn(dcMeta);
+        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString(), Mockito.anySet())).thenReturn(dcMeta);
         Mockito.when(mockMetaServerConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.BI_DIRECTION.toString()));
 
         injectConsoleServiceInto(dcMetaCache);
@@ -77,7 +76,7 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
                 : clusterMeta.getActiveDc() + "," + clusterMeta.getBackupDcs();
         MasterInfo masterInfo = new MasterInfo();
 
-        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString())).thenAnswer(invocationOnMock -> {
+        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString(), Mockito.anySet())).thenAnswer(invocationOnMock -> {
             sleep(1000);
             return origin;
         });

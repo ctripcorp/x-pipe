@@ -140,11 +140,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	private DcMeta loadMetaFromConsole() {
 		Set<String> types = metaServerConfig.getOwnClusterType();
-		if (null == types || types.isEmpty()) {
-			return consoleService.getDcMeta(currentDc);
-		} else {
-			return consoleService.getDcMetaWithClusterTypes(currentDc, types);
-		}
+		return consoleService.getDcMeta(currentDc, types);
 	}
 
 	@VisibleForTesting

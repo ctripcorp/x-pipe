@@ -371,7 +371,7 @@ public class DefaultMetaCache implements MetaCache {
             return ClusterType.lookup(dcMeta.getClusters().get(clusterId).getType());
         }
 
-        throw new IllegalStateException("unfound cluster for name:" + clusterId);
+        throw new IllegalStateException("[getClusterType] unfound cluster for name:" + clusterId);
     }
 
     @VisibleForTesting

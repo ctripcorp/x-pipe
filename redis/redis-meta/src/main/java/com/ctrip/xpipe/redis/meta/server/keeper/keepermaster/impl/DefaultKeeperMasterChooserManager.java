@@ -83,7 +83,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 	}
 
 	@Override
-	protected Set<ClusterType> getSupportClusterTypes() {
+	public Set<ClusterType> getSupportClusterTypes() {
 		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 

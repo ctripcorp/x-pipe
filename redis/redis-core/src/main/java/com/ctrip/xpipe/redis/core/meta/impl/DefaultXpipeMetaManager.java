@@ -150,7 +150,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			}
 			return ClusterType.lookup(clusterMeta.getType());
 		}
-		throw new MetaException("clusterId " + clusterId + " not found!");
+		throw new MetaException("[getClusterType] unfound cluster for name:" + clusterId);
 	}
 	
 	public ClusterMeta getDirectClusterMeta(String dc, String clusterId) {
