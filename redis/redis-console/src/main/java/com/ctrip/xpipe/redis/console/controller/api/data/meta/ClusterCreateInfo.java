@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -19,6 +20,8 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
     private String clusterName;
 
+    private String clusterType = ClusterType.ONE_WAY.toString();
+
     private List<String> dcs = new LinkedList<>();
 
     private String desc;
@@ -33,6 +36,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
         clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
         clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
+        clusterCreateInfo.setClusterType(clusterTbl.getClusterType());
         OrganizationTbl organizationTbl = clusterTbl.getOrganizationInfo();
         clusterCreateInfo.setOrganizationId(organizationTbl != null ? organizationTbl.getOrgId() : 0L);
         clusterCreateInfo.setClusterAdminEmails(clusterTbl.getClusterAdminEmails());
@@ -110,11 +114,23 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
         this.clusterName = clusterName;
     }
 
+    public String getClusterType() {
+        return clusterType;
+    }
+
+    public void setClusterType(String clusterType) {
+        this.clusterType = clusterType;
+    }
+
     @Override
     public void check() throws CheckFailException{
 
         if(StringUtil.isEmpty(clusterName)){
             throw new CheckFailException("clusterName empty");
+        }
+
+        if(!ClusterType.isTypeValidate(clusterType)){
+            throw new CheckFailException("invalidate clusterType");
         }
 
         if(StringUtil.isEmpty(desc)){

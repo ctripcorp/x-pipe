@@ -70,6 +70,7 @@ drop table if exists CLUSTER_TBL;
 CREATE TABLE `CLUSTER_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `cluster_name` varchar(128) NOT NULL DEFAULT 'default' COMMENT 'cluster name',
+  `cluster_type` varchar(32) NOT NULL DEFAULT 'one_way' COMMENT 'cluster type',
   `activedc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'active dc id',
   `cluster_description` varchar(1024) NOT NULL DEFAULT 'nothing' COMMENT 'cluster description',
   `cluster_last_modified_time` varchar(40) NOT NULL DEFAULT '' COMMENT 'last modified tag',

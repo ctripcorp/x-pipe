@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
@@ -64,6 +65,12 @@ public abstract class AbstractCrossDcSentinelMonitorsCheck extends AbstractCross
 
     @Override
     protected boolean shouldCheck() {
+        Set<String> ownClusterType = consoleConfig.getOwnClusterType();
+        if (null != ownClusterType
+                && ownClusterType.stream().noneMatch(type -> ClusterType.lookup(type).supportHealthCheck())) {
+            return false;
+        }
+
         return super.shouldCheck() && consoleDbConfig.isSentinelAutoProcess();
     }
 

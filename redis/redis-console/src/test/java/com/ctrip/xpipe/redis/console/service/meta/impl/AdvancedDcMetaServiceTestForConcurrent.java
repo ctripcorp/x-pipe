@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -349,6 +350,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
                     long activeDcId = clusterMeta.getActiveDc().equalsIgnoreCase("NTGXH") ? 1L : 2L;
                     ClusterTbl clusterTbl = new ClusterTbl().setActivedcId(activeDcId)
                             .setClusterName(clusterMeta.getId()).setClusterLastModifiedTime(clusterMeta.getLastModifiedTime())
+                            .setClusterType(ClusterType.ONE_WAY.toString())
                             .setClusterAdminEmails("test@ctrip.com").setClusterDescription(clusterMeta.getId());
                     ClusterModel clusterModel = new ClusterModel();
                     clusterModel.setClusterTbl(clusterTbl);

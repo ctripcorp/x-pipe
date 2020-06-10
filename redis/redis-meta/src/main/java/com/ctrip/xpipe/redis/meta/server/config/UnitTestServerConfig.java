@@ -2,13 +2,16 @@ package com.ctrip.xpipe.redis.meta.server.config;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.google.common.collect.Maps;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -146,5 +149,10 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	@Override
 	public int getWaitForMetaSyncDelayMilli() {
 		return waitForMetaSyncDelayMilli;
+	}
+
+	@Override
+	public Set<String> getOwnClusterType() {
+		return Collections.singleton(ClusterType.ONE_WAY.toString());
 	}
 }

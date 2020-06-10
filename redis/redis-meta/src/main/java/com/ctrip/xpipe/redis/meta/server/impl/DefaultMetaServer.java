@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -218,6 +219,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MetaServerConsoleService.PrimaryDcChangeRequest request,
 			ForwardInfo forwardInfo) {
+		ClusterType clusterType = dcMetaCache.getClusterType(clusterId);
+		if (!clusterType.supportMigration()) {
+			logger.info("[doChangePrimaryDc] cluster {} type {} not support migration", clusterId, clusterType);
+			return new PrimaryDcChangeMessage(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL,
+					"cluster " + clusterId + " not support miggration");
+		}
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
 		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);

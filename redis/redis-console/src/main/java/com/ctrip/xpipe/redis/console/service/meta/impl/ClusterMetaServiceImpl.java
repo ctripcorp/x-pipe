@@ -115,6 +115,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 				return clusterMeta;
 
 			clusterMeta.setId(clusterInfo.getClusterName());
+			clusterMeta.setType(clusterInfo.getClusterType());
 			clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 			
 			for (DcTbl dc : clusterRelatedDc) {

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 
 import java.util.List;
@@ -18,6 +19,8 @@ public interface DcMetaCache extends Observable {
 	String getCurrentDc();
 
 	ClusterMeta getClusterMeta(String clusterId);
+
+	ClusterType getClusterType(String clusterId);
 
 	RouteMeta randomRoute(String clusterId);
 
