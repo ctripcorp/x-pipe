@@ -41,7 +41,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.Va
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.DefaultSentinelMonitorsCheckTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.GetSentinelMonitorNamesCommandTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
@@ -188,7 +187,6 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelLeakyBucketTest.class,
         VariablesCheckerTest.class,
         DBVariablesCheckTest.class,
-        GetSentinelMonitorNamesCommandTest.class,
         DefaultSentinelMonitorsCheckTest.class,
         DcMetaBuilderTest.class
 })

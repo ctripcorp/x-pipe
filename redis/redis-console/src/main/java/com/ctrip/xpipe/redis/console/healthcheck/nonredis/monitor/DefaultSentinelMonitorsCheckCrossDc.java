@@ -41,7 +41,7 @@ public class DefaultSentinelMonitorsCheckCrossDc extends AbstractCrossDcSentinel
         // master0:name=cluster_mengshard1,status=ok,address=10.2.58.242:6399,slaves=1,sentinels=3
         for(String monitorName : sentinelMonitors.getMonitors()) {
 
-            if(!checkMonitorName(monitorName)) {
+            if(metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName);
                 String message = String.format("Sentinel monitor: %s not exist in XPipe", monitorName);
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
