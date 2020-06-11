@@ -18,9 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author zhangle
@@ -46,9 +46,15 @@ public class ConsoleController extends AbstractConsoleController {
 	private RedisMetaService redisMetaService;
 
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
-	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format) {
+	public String getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
+							@RequestParam(value ="types", required = false) Set<String> types) {
+		DcMeta result;
+		if (null != types && !types.isEmpty()) {
+			result = dcMetaService.getDcMeta(dcId, types);
+		} else {
+			result = dcMetaService.getDcMeta(dcId);
+		}
 
-		DcMeta result = dcMetaService.getDcMeta(dcId);
 		return (format != null && format.equals("xml"))? result.toString() : coder.encode(result);
 	}
 	

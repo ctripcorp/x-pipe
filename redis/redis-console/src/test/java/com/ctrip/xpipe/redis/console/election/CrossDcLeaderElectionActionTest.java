@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.console.election;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.exception.DalInsertException;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
@@ -30,10 +31,11 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction.KEY_LEASE_CONFIG;
-import static com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction.SUB_KEY_CROSS_DC_LEADER;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CrossDcLeaderElectionActionTest extends AbstractTest {
+
+    private static final String SUB_KEY_CROSS_DC_LEADER = "CROSS_DC_LEADER";
 
     @Mock
     private MetaCache metaCache;
@@ -226,6 +228,8 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
 
         private ConfigDao configDao;
 
+        private ConsoleConfig consoleConfig;
+
         private CrossDcLeaderElectionAction electionAction;
 
         private String electionResult;
@@ -238,6 +242,8 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
             this.electionResult = "init";
 
             configDao = Mockito.mock(ConfigDao.class);
+            consoleConfig = Mockito.mock(ConsoleConfig.class);
+
             Mockito.doAnswer(inv -> {
                 if (!dbWriteAvailable) {
                     throw new DalUpdateException("db write is not available for dc " + dcName);
@@ -267,9 +273,9 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
                 return null;
             }).when(configDao).insertConfig(Mockito.any(), Mockito.any(), Mockito.anyString());
 
-            electionAction = new CrossDcLeaderElectionAction();
-            electionAction.setConfigDao(configDao);
-            electionAction.setMetaCache(metaCache);
+            Mockito.when(consoleConfig.getCrossDcLeaderLeaseName()).thenReturn(SUB_KEY_CROSS_DC_LEADER);
+
+            electionAction = new CrossDcLeaderElectionAction(configDao, metaCache, consoleConfig);
             electionAction.setExecutors(executors);
             electionAction.dataCenter = dcName;
             electionAction.localIp = "127.0.0.1";

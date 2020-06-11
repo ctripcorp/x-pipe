@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
@@ -126,27 +127,6 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void createShard3() throws Exception {
-        ShardCreateInfo shardCreateInfo1 = new ShardCreateInfo();
-        shardCreateInfo1.setShardMonitorName(shardName);
-        shardCreateInfo1.setShardName(shardName+1);
-
-        ShardCreateInfo shardCreateInfo2 = new ShardCreateInfo();
-        shardCreateInfo2.setShardMonitorName(clusterName + "-" + shardName);
-        shardCreateInfo2.setShardName(shardName+2);
-
-        metaUpdate.createShards(clusterName, Lists.newArrayList(shardCreateInfo1, shardCreateInfo2));
-
-        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
-                Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
-
-        RetMessage result = metaUpdate.createShard(clusterName, shardName, createInfo);
-        Assert.assertEquals(RetMessage.FAIL_STATE, result.getState());
-        Assert.assertEquals(String.format("Both %s and %s is assigned as sentinel monitor name",
-                shardName, clusterName + "-" + shardName), result.getMessage());
-    }
-
-    @Test
     public void createShard4() throws Exception {
         ShardCreateInfo shardCreateInfo1 = new ShardCreateInfo();
         shardCreateInfo1.setShardMonitorName(shardName);
@@ -245,6 +225,7 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
         clusterCreateInfo.setClusterAdminEmails("xpipe@ctrip.com");
         clusterCreateInfo.setClusterName(clusterName);
+        clusterCreateInfo.setClusterType(ClusterType.ONE_WAY.toString());
         clusterCreateInfo.setDcs(Lists.newArrayList(activeDC, backupDC));
         clusterCreateInfo.setOrganizationId(3L);
         clusterCreateInfo.setDesc("test cluster");

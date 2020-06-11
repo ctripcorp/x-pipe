@@ -1,17 +1,23 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.tuple.Pair;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -36,6 +42,12 @@ public class DefaultSentinelMonitorsCheckTest {
 
     @Mock
     private SentinelManager sentinelManager;
+
+    @Mock
+    private ConsoleDbConfig consoleDbConfig;
+
+    @Mock
+    private ConsoleConfig consoleConfig;
 
     @Before
     public void beforeDefaultSentinelMonitorsCheckTest() {
@@ -128,6 +140,7 @@ public class DefaultSentinelMonitorsCheckTest {
                 "master81:name=xpipe-auto-build-87-shard-2,status=ok,address=10.5.109.151:6465,slaves=2,sentinels=5";
         when(sentinelManager.infoSentinel(any())).thenReturn(result);
         when(alertManager.shouldAlert(any())).thenReturn(true);
+        when(consoleDbConfig.isSentinelAutoProcess()).thenReturn(true);
     }
 
     @Test
@@ -146,6 +159,14 @@ public class DefaultSentinelMonitorsCheckTest {
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, never()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+    }
+
+    @Test
+    public void testShouldCheck() {
+        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.ONE_WAY.toString()));
+        Assert.assertTrue(checker.shouldCheck());
+        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.BI_DIRECTION.toString()));
+        Assert.assertFalse(checker.shouldCheck());
     }
 
 }

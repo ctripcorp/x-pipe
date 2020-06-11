@@ -1,9 +1,10 @@
-index_module.controller('ShardListCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'ClusterService','DcService', 'NgTableParams',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, ClusterService, DcService, NgTableParams, $filters) {
+index_module.controller('ShardListCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'ClusterService','DcService', 'NgTableParams', 'ClusterType',
+    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, ClusterService, DcService, NgTableParams, ClusterType) {
 
         $rootScope.currentNav = '1-2';
         $scope.dcs = {};
-        $scope.getDcName = getDcName;
+        $scope.getActiveDcName = getActiveDcName;
+        $scope.getTypeName = getTypeName
         $scope.showUnhealthyShardOnly = true;
 
         $scope.sourceClusters = [];
@@ -17,8 +18,18 @@ index_module.controller('ShardListCtl', ['$rootScope', '$scope', '$window', '$st
                 }
             });
 
-        function getDcName(dcId) {
-            return $scope.dcs[dcId] || "Unbind";
+        function getActiveDcName(shard) {
+            var clusterType = ClusterType.lookup(shard.clusterType)
+            if (clusterType && clusterType.multiActiveDcs) {
+                return "-"
+            }
+            return $scope.dcs[shard.activedcId] || "Unbind";
+        }
+
+        function getTypeName(type) {
+            var clusterType = ClusterType.lookup(type)
+            if (clusterType) return clusterType.name
+            else return '未知类型'
         }
 
         $scope.refresh = function() {
