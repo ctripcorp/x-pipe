@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.meta.server.config;
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
@@ -11,11 +12,12 @@ import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * @author marsqing
@@ -42,6 +44,9 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static String KEY_SERVER_PORT = "server.port";
 
 	private static final String KEY_KEEPER_INFO_CHECK_INTERVAL = "meta.keeper.info.check.interval";
+	private static final String KEY_WAIT_FOR_META_SYNC_MILLI = "meta.sync.delay.milli";
+
+	private static final String KEY_OWN_CLUSTER_TYPES = "meta.cluster.types";
 	
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 	
@@ -140,6 +145,17 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 		return getIntProperty(KEY_KEEPER_INFO_CHECK_INTERVAL, 30 * 1000);
 	}
 
+	@Override
+	public int getWaitForMetaSyncDelayMilli() {
+		return getIntProperty(KEY_WAIT_FOR_META_SYNC_MILLI, 0);
+	}
+
+	@Override
+	public Set<String> getOwnClusterType() {
+		String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
+		String[] split = clusterTypes.split("\\s*(,|;)\\s*");
+		return Arrays.stream(split).filter(sp -> !StringUtil.isEmpty(sp)).collect(Collectors.toSet());
+	}
 
 	//from local config file
 	@Override

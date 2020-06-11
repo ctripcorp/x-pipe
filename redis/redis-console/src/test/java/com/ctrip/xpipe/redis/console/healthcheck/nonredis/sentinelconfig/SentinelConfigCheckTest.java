@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -30,6 +31,8 @@ public class SentinelConfigCheckTest {
 
     @Mock
     private ConsoleDbConfig consoleDbConfig;
+
+    private ClusterType mockClusterType = ClusterType.ONE_WAY;
 
     private List<String> mockDcs = Arrays.asList("jq", "oy", "fra");
 
@@ -74,7 +77,7 @@ public class SentinelConfigCheckTest {
     }
 
     @Test
-    public void testDoCheck() {
+    public void testDoCheckWithOneWayCluster() {
         Mockito.doAnswer(invocationOnMock -> {
            String dc = invocationOnMock.getArgumentAt(0, String.class);
            String cluster = invocationOnMock.getArgumentAt(1, String.class);
@@ -90,6 +93,18 @@ public class SentinelConfigCheckTest {
         sentinelConfigCheck.doCheck();
 
         Mockito.verify(alertManager, Mockito.times(6))
+                .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+                        Mockito.any(), Mockito.any(), Mockito.anyString());
+    }
+
+    @Test
+    public void testDoCheckWithBiDirectionCluster() {
+        this.mockClusterType = ClusterType.BI_DIRECTION;
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
+
+        sentinelConfigCheck.doCheck();
+
+        Mockito.verify(alertManager, Mockito.times(12))
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());
     }
@@ -127,6 +142,7 @@ public class SentinelConfigCheckTest {
     private ClusterMeta mockClusterMeta(String cluster) {
         ClusterMeta clusterMeta = new ClusterMeta();
         clusterMeta.setId(cluster);
+        clusterMeta.setType(mockClusterType.toString());
 
         for (String shard: mockShards) {
             clusterMeta.addShard(mockShardMeta(shard));

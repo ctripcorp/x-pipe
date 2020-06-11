@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Component
 public class DefaultDcMetaCache extends AbstractLifecycleObservable implements DcMetaCache, Runnable, TopElement {
 
-	public static final String META_MODIFY_JUST_NOW_TEMPLATE = "current dc meta modifyTime {} larger than meta loadTime {}";
+	public static final String META_MODIFY_JUST_NOW_TEMPLATE = "current dc meta modifyTime {}, loadTime {}";
 
 	public static String MEMORY_META_SERVER_DAO_KEY = "memory_meta_server_dao_file";
 
@@ -82,7 +83,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		if (consoleService != null) {
 			try {
 				logger.info("[loadMetaManager][load from console]");
-				DcMeta dcMeta = consoleService.getDcMeta(currentDc);
+				DcMeta dcMeta = loadMetaFromConsole();
 				dcMetaManager = DefaultDcMetaManager.buildFromDcMeta(dcMeta);
 			} catch (ResourceAccessException e) {
 				logger.error("[loadMetaManager][consoleService]" + e.getMessage());
@@ -126,7 +127,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		try {
 			if (consoleService != null) {
 				long metaLoadTime = System.currentTimeMillis();
-				DcMeta future = consoleService.getDcMeta(currentDc);
+				DcMeta future = loadMetaFromConsole();
 				DcMeta current = dcMetaManager.get().getDcMeta();
 
 				changeDcMeta(current, future, metaLoadTime);
@@ -137,10 +138,15 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		}
 	}
 
+	private DcMeta loadMetaFromConsole() {
+		Set<String> types = metaServerConfig.getOwnClusterType();
+		return consoleService.getDcMeta(currentDc, types);
+	}
+
 	@VisibleForTesting
 	protected void changeDcMeta(DcMeta current, DcMeta future, final long metaLoadTime) {
 
-		if (metaLoadTime <= metaModifyTime.get()) {
+		if (!mayMetaUpdateFromConsole(metaLoadTime)) {
 			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime.get(), metaLoadTime);
 			return;
 		}
@@ -158,7 +164,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		DcMetaManager newDcMetaManager = DefaultDcMetaManager.buildFromDcMeta(future);
 		boolean dcMetaUpdated = false;
 		synchronized (this) {
-			if (metaLoadTime > metaModifyTime.get()) {
+			if (mayMetaUpdateFromConsole(metaLoadTime)) {
 				dcMetaManager.set(newDcMetaManager);
 				dcMetaUpdated = true;
 			}
@@ -223,6 +229,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public ClusterMeta getClusterMeta(String clusterId) {
 		return dcMetaManager.get().getClusterMeta(clusterId);
+	}
+
+	@Override
+	public ClusterType getClusterType(String clusterId) {
+		return dcMetaManager.get().getClusterType(clusterId);
 	}
 
 	@Override
@@ -323,6 +334,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		dcMetaManager.get().primaryDcChanged(clusterId, shardId, newPrimaryDc);
 	}
 
+	private boolean mayMetaUpdateFromConsole(final long metaLoadTime) {
+		// consider that meta from console may be old because of db sync delay or other
+		return metaLoadTime > metaModifyTime.get() + metaServerConfig.getWaitForMetaSyncDelayMilli();
+	}
+
 
 	/** we believe a cluster meta change comes from DR migration under these circumstances:
 	 * 1. cluster meta comparator contains no shard add/delete
@@ -352,5 +368,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		private boolean isShardChangedByDrOnly(ShardMetaComparator shardMetaComparator) {
 			return shardMetaComparator.getAdded().isEmpty() && shardMetaComparator.getRemoved().isEmpty();
 		}
+	}
+
+	@VisibleForTesting
+	protected void setMetaServerConfig(MetaServerConfig metaServerConfig) {
+		this.metaServerConfig = metaServerConfig;
 	}
 }

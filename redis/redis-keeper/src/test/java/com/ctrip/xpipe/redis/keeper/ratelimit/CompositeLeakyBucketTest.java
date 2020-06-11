@@ -302,7 +302,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
         counter.set(0);
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
         leakyBucket.checkKeeperConfigChange();
-        sleep(110);
+        sleep(200);
         CountDownLatch latch2 = new CountDownLatch(task);
         CyclicBarrier barrier2 = new CyclicBarrier(task + 1);
         executors.execute(new Runnable() {
@@ -338,7 +338,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
         //third, open again
         counter.set(0);
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
-        leakyBucket.checkKeeperConfigChange();
+        sleep(200);
         CountDownLatch latch3 = new CountDownLatch(task);
         CyclicBarrier barrier3 = new CyclicBarrier(task + 1);
         executors.execute(new Runnable() {

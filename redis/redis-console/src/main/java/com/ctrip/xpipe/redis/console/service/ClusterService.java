@@ -16,6 +16,7 @@ public interface ClusterService {
 
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClustersWithOrgInfo();
+	List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType);
 	List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc);
 	List<String> findAllClusterNames();
 	Long getAllCount();

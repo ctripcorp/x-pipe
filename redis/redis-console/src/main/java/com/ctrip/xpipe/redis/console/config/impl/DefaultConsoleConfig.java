@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
@@ -89,6 +90,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_SENTINEL_RATE_LIMIT_OPEN = "console.sentinel.rate.limit.open";
 
     private static final String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
+
+    private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
+
+    private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
+
+    private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -374,4 +381,22 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getIntProperty(KEY_SENTINEL_RATE_LIMIT_SIZE, 3);
     }
 
+    @Override
+    public Set<String> getVariablesCheckDataSources() {
+        String dataSources = getProperty(KEY_VARIABLES_CHECK_DATASOURCE, "");
+
+        return getSplitStringSet(dataSources);
+    }
+
+    @Override
+    public Set<String> getOwnClusterType() {
+        String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
+
+        return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
+    public String getCrossDcLeaderLeaseName() {
+        return getProperty(KEY_CROSS_DC_LEADER_LEASE_NAME, "CROSS_DC_LEADER");
+    }
 }
