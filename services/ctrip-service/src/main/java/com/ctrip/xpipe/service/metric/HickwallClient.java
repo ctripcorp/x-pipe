@@ -29,6 +29,7 @@ public class HickwallClient {
     private volatile ArrayBlockingQueue<DataPoint> queue;
     private volatile boolean close;
     private HickwallClientConfig config;
+    private HttpURLConnection connection;
 
     public HickwallClient(String address) throws IOException {
         this(address, 1000, 1000);
@@ -42,6 +43,7 @@ public class HickwallClient {
         this.config.READ_TIMEOUT_MS = readTimeOut;
         this.address = Arrays.asList(this.config.PROXY_ADDRESS.split(","));
         Collections.shuffle(this.address);
+        connection = getConnection();
     }
 
     public HickwallClient(HickwallClientConfig config) throws IOException {
@@ -85,36 +87,42 @@ public class HickwallClient {
         return httpURLConnection;
     }
 
-    public Boolean send(ArrayList<DataPoint> datapoints) throws IOException {
+    public boolean send(ArrayList<DataPoint> datapoints) throws IOException {
         String s = Codec.DEFAULT.encode(datapoints);
         return this.send(s);
     }
 
-    private synchronized Boolean send(String s) throws IOException {
-        HttpURLConnection httpURLConnection = this.getConnection();
-        boolean var10 = false;
+    private boolean send(String s) throws IOException {
+        HttpURLConnection httpURLConnection = this.connection;
+        boolean isValidConnection = false;
 
-        Boolean var5;
+        boolean var5 = false;
         InputStream in;
+        OutputStream out = null;
         label99: {
             try {
-                var10 = true;
-                OutputStream out = httpURLConnection.getOutputStream();
+                isValidConnection = true;
+                out = httpURLConnection.getOutputStream();
                 out.write(s.getBytes("UTF-8"));
                 out.flush();
-                out.close();
                 int code = httpURLConnection.getResponseCode();
                 if (code == 200) {
                     var5 = true;
-                    var10 = false;
+                    isValidConnection = false;
                     break label99;
                 }
 
                 logger.warn("error " + code);
                 var5 = false;
-                var10 = false;
-            } finally {
-                if (var10) {
+                isValidConnection = false;
+            } catch (IOException e) {
+                try {
+                    this.connection.disconnect();
+                } catch (Exception ex) {
+                    logger.debug("[send]", ex);
+                }
+            }finally {
+                if (isValidConnection) {
                     if (httpURLConnection != null) {
                         in = httpURLConnection.getErrorStream();
                         if (in != null) {
@@ -149,66 +157,6 @@ public class HickwallClient {
         }
 
         return var5;
-    }
-
-    public Boolean sendAsync(DataPoint datapoint) {
-        if (this.queue == null) {
-            synchronized(this) {
-                if (this.queue == null) {
-                    this.queue = new ArrayBlockingQueue(this.config.BUFFER_SIZE);
-
-                    for(int i = 0; i < this.config.THREAD_NUM; ++i) {
-                        Thread t = new Thread() {
-                            public void run() {
-                                while(!close || !queue.isEmpty()) {
-                                    ArrayList array = new ArrayList();
-
-                                    try {
-                                        DataPoint dp = (DataPoint) queue.take();
-
-                                        for(Integer c = 0; dp != null && c < config.BATCH_SIZE; dp = (DataPoint) queue.poll((long) config.BUFFER_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                                            array.add(dp);
-                                            c = c + 1;
-                                        }
-
-                                        if (dp != null) {
-                                            array.add(dp);
-                                        }
-
-                                        Boolean success = false;
-                                        Integer reties = config.RETRIES;
-
-                                        String s;
-                                        for(s = Codec.DEFAULT.encode(array); !success && reties >= 0; reties = reties - 1) {
-                                            try {
-                                                success = send(s);
-                                            } catch (Exception var9) {
-                                                logger.warn("", var9);
-                                            }
-                                        }
-
-                                        if (!success) {
-                                            logger.warn("fail to send: " + s);
-                                        }
-                                    } catch (Exception var10) {
-                                        logger.warn("", var10);
-                                    }
-                                }
-
-                            }
-                        };
-                        t.setDaemon(true);
-                        t.start();
-                    }
-                }
-            }
-        }
-
-        return this.queue.offer(datapoint);
-    }
-
-    public void close() {
-        this.close = true;
     }
 
 }
