@@ -1,28 +1,57 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.notifier.EventType;
+import com.ctrip.xpipe.redis.console.notifier.shard.AbstractShardEvent;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
+import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.ctrip.xpipe.redis.console.redis.SentinelManager;
+import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 @Service
 public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> implements SentinelService {
 
 	private DcClusterShardTblDao dcClusterShardTblDao;
+
+	@Autowired
+	private DcClusterShardService dcClusterShardService;
+
+	@Autowired
+	private ClusterService clusterService;
+
+	@Autowired
+	private DcService dcService;
+
+	@Autowired
+	private SentinelManager sentinelManager;
+
+	@Autowired
+	private ShardService shardService;
 	
 	@PostConstruct
 	private void postConstruct() {
@@ -199,6 +228,31 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 	}
 
 	@Override
+	public RetMessage removeSentinelMonitor(String clusterName) {
+		long activedcId = clusterService.find(clusterName).getActivedcId();
+		String dcName = dcService.getDcName(activedcId);
+		List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAllByDcCluster(dcName, clusterName);
+		for(DcClusterShardTbl dcClusterShard : dcClusterShardTbls) {
+			try {
+				removeSentinelMonitorByShard(dcName, clusterName, dcClusterShard);
+			} catch (Exception e) {
+				return RetMessage.createFailMessage("[stl-id: " + dcClusterShard.getSetinelId() + "]" + e.getMessage());
+			}
+		}
+		return RetMessage.createSuccessMessage();
+	}
+
+	@VisibleForTesting
+	protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, DcClusterShardTbl dcClusterShard) {
+		ShardTbl shardTbl = shardService.find(dcClusterShard.getShardId());
+		RemoveShardSentinelMonitorEvent shardEvent = new RemoveShardSentinelMonitorEvent(clusterName,
+				shardTbl.getShardName(), MoreExecutors.directExecutor());
+		shardEvent.setShardSentinels(find(dcClusterShard.getSetinelId()).getSetinelAddress());
+		shardEvent.setShardMonitorName(SentinelUtil.getSentinelMonitorName(clusterName, shardTbl.getSetinelMonitorName(), activeIdc));
+		sentinelManager.removeShardSentinelMonitors(shardEvent);
+	}
+
+	@Override
 	public void delete(long id) {
 		SetinelTbl setinelTbl = dao.createLocal();
 		setinelTbl.setSetinelId(id);
@@ -225,5 +279,52 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 				return dao.updateByPK(setinelTbl, SetinelTblEntity.UPDATESET_FULL);
 			}
 		});
+	}
+
+	private static class RemoveShardSentinelMonitorEvent extends AbstractShardEvent {
+
+		public RemoveShardSentinelMonitorEvent(String clusterName, String shardName, Executor executor) {
+			super(clusterName, shardName, executor);
+		}
+
+		@Override
+		public EventType getShardEventType() {
+			return EventType.DELETE;
+		}
+
+		@Override
+		protected ShardEvent getSelf() {
+			return RemoveShardSentinelMonitorEvent.this;
+		}
+	}
+
+	@VisibleForTesting
+	protected SentinelServiceImpl setDcClusterShardService(DcClusterShardService dcClusterShardService) {
+		this.dcClusterShardService = dcClusterShardService;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected SentinelServiceImpl setClusterService(ClusterService clusterService) {
+		this.clusterService = clusterService;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected SentinelServiceImpl setDcService(DcService dcService) {
+		this.dcService = dcService;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected SentinelServiceImpl setSentinelManager(SentinelManager sentinelManager) {
+		this.sentinelManager = sentinelManager;
+		return this;
+	}
+
+	@VisibleForTesting
+	protected SentinelServiceImpl setShardService(ShardService shardService) {
+		this.shardService = shardService;
+		return this;
 	}
 }

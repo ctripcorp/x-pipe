@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -82,7 +83,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		if (consoleService != null) {
 			try {
 				logger.info("[loadMetaManager][load from console]");
-				DcMeta dcMeta = consoleService.getDcMeta(currentDc);
+				DcMeta dcMeta = loadMetaFromConsole();
 				dcMetaManager = DefaultDcMetaManager.buildFromDcMeta(dcMeta);
 			} catch (ResourceAccessException e) {
 				logger.error("[loadMetaManager][consoleService]" + e.getMessage());
@@ -126,7 +127,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		try {
 			if (consoleService != null) {
 				long metaLoadTime = System.currentTimeMillis();
-				DcMeta future = consoleService.getDcMeta(currentDc);
+				DcMeta future = loadMetaFromConsole();
 				DcMeta current = dcMetaManager.get().getDcMeta();
 
 				changeDcMeta(current, future, metaLoadTime);
@@ -135,6 +136,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		} catch (Throwable th) {
 			logger.error("[run]" + th.getMessage());
 		}
+	}
+
+	private DcMeta loadMetaFromConsole() {
+		Set<String> types = metaServerConfig.getOwnClusterType();
+		return consoleService.getDcMeta(currentDc, types);
 	}
 
 	@VisibleForTesting
@@ -223,6 +229,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public ClusterMeta getClusterMeta(String clusterId) {
 		return dcMetaManager.get().getClusterMeta(clusterId);
+	}
+
+	@Override
+	public ClusterType getClusterType(String clusterId) {
+		return dcMetaManager.get().getClusterType(clusterId);
 	}
 
 	@Override

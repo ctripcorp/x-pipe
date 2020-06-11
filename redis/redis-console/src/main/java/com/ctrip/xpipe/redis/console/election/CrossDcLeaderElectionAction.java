@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.election;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
@@ -9,7 +10,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.unidal.dal.jdbc.DalException;
@@ -21,8 +21,6 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     public static final String KEY_LEASE_CONFIG = "LEASE";
 
-    public static final String SUB_KEY_CROSS_DC_LEADER = "CROSS_DC_LEADER";
-
     protected static int MAX_ELECTION_DELAY_MILLISECOND = 30 * 1000;
 
     protected static int ELECTION_INTERVAL_SECOND = 10 * 60;
@@ -33,13 +31,20 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     protected String localIp = FoundationService.DEFAULT.getLocalIp();
 
-    @Autowired
     private ConfigDao configDao;
 
-    @Autowired
     private MetaCache metaCache;
 
+    private String leaseName;
+
     private ConfigTbl lease;
+
+    @Autowired
+    public CrossDcLeaderElectionAction(ConfigDao configDao, MetaCache metaCache, ConsoleConfig consoleConfig) {
+        this.configDao = configDao;
+        this.metaCache = metaCache;
+        this.leaseName = consoleConfig.getCrossDcLeaderLeaseName();
+    }
 
     @Override
     protected void doElect() {
@@ -125,7 +130,7 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
     private ConfigModel buildDefaultConfig() {
         ConfigModel config = new ConfigModel();
         config.setKey(KEY_LEASE_CONFIG)
-                .setSubKey(SUB_KEY_CROSS_DC_LEADER)
+                .setSubKey(leaseName)
                 .setVal(dataCenter)
                 .setUpdateIP(localIp)
                 .setUpdateUser(dataCenter + "-DcLeader");
@@ -175,20 +180,11 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     private void refreshConfig() throws DalException {
         try {
-            lease = configDao.getByKeyAndSubId(KEY_LEASE_CONFIG, SUB_KEY_CROSS_DC_LEADER);
+            lease = configDao.getByKeyAndSubId(KEY_LEASE_CONFIG, leaseName);
         } catch (Exception e) {
             lease = null;
             throw e;
         }
     }
 
-    @VisibleForTesting
-    protected void setConfigDao(ConfigDao configDao) {
-        this.configDao = configDao;
-    }
-
-    @VisibleForTesting
-    protected void setMetaCache(MetaCache metaCache) {
-        this.metaCache = metaCache;
-    }
 }

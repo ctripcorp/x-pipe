@@ -1,17 +1,19 @@
 package com.ctrip.xpipe.redis.meta.server.service.console;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author zhangle
@@ -60,8 +62,16 @@ public class ConsoleServiceImpl extends AbstractService implements ConsoleServic
 	}
 
 	@Override
-	public DcMeta getDcMeta(String dcId) {
-		return restTemplate.getForObject(host + "/api/dc/{dcId}", DcMeta.class, dcId);
+	public DcMeta getDcMeta(String dcId, Set<String> types) {
+		if (null == types) {
+			return restTemplate.getForObject(host + "/api/dc/{dcId}", DcMeta.class, dcId);
+		}
+
+		UriComponents comp = UriComponentsBuilder.fromHttpUrl(host + "/api/dc/{dcId}")
+				.queryParam("types", types.toArray())
+				.buildAndExpand(dcId);
+
+		return restTemplate.getForObject(comp.toString(), DcMeta.class);
 	}
 
 	@Override

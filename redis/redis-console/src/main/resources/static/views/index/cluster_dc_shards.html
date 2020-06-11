@@ -41,10 +41,10 @@
                             <th>
                                 端口
                             </th>
-                            <th>
+                            <th ng-if="showHealthStatus">
                             	状态
                             </th>
-                            <th>
+                            <th ng-if="showHealthStatus">
                             	Hickwall
                             </th>
                         </tr>
@@ -59,11 +59,11 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
-                            <td>
+                            <td ng-if="showHealthStatus">
                             <span ng-class="{'glyphicon glyphicon-remove-sign red':(redis.delay < 0 || redis.delay == 99999), 
                             					'glyphicon glyphicon-ok-sign green':redis.delay >= 0 && redis.delay != 99999}"></span>
                             </td>
-                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="showHealthStatus"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">

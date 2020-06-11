@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
@@ -41,9 +42,16 @@ public class ConfigServiceImpl implements ConfigService {
     @Autowired
     private SentinelAutoProcessChecker sentinelAutoProcessChecker;
 
+    private String crossDcLeaderLeaseName;
+
     private Logger logger = LoggerFactory.getLogger(ConfigServiceImpl.class);
 
     private static final String EVENT_CONFIG_CHANGE = "event_config_change";
+
+    @Autowired
+    public ConfigServiceImpl(ConsoleConfig consoleConfig) {
+        this.crossDcLeaderLeaseName = consoleConfig.getCrossDcLeaderLeaseName();
+    }
 
     @Override
     public void startAlertSystem(ConfigModel config) throws DalException {
@@ -118,14 +126,13 @@ public class ConfigServiceImpl implements ConfigService {
     public void updateCrossDcLeader(ConfigModel config, Date until) throws DalException {
         logger.info("[updateCrossDcLeader] update lease to {} until {}", config.getVal(), until);
         config.setKey(CrossDcLeaderElectionAction.KEY_LEASE_CONFIG);
-        config.setSubKey(CrossDcLeaderElectionAction.SUB_KEY_CROSS_DC_LEADER);
+        config.setSubKey(crossDcLeaderLeaseName);
 
         configDao.setConfig(config, until);
     }
 
     public String getCrossDcLeader() throws DalException {
-        ConfigTbl leaseConfig = configDao.getByKeyAndSubId(CrossDcLeaderElectionAction.KEY_LEASE_CONFIG,
-                CrossDcLeaderElectionAction.SUB_KEY_CROSS_DC_LEADER);
+        ConfigTbl leaseConfig = configDao.getByKeyAndSubId(CrossDcLeaderElectionAction.KEY_LEASE_CONFIG, crossDcLeaderLeaseName);
 
         // only return when lease is active
         if (new Date().compareTo(leaseConfig.getUntil()) < 0) return leaseConfig.getValue();
@@ -150,9 +157,7 @@ public class ConfigServiceImpl implements ConfigService {
         if (configTbls.isEmpty()) return Collections.emptyList();
         List<ConfigModel> models = new ArrayList<>();
 
-        configTbls.forEach(configTbl -> {
-            models.add(new ConfigModel(configTbl));
-        });
+        configTbls.forEach(configTbl -> models.add(new ConfigModel(configTbl)));
 
         return models;
     }
@@ -172,7 +177,7 @@ public class ConfigServiceImpl implements ConfigService {
         try {
             return configDao.getByKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).getUntil();
         } catch (DalException e) {
-            logger.error("[getAlertSystemRecovertIME] {}", e);
+            logger.error("[getAlertSystemRecovertIME]", e);
             return null;
         }
     }
@@ -182,7 +187,7 @@ public class ConfigServiceImpl implements ConfigService {
         try {
             return configDao.getByKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS).getUntil();
         } catch (DalException e) {
-            logger.error("[getAlertSystemRecovertIME] {}", e);
+            logger.error("[getAlertSystemRecovertIME]", e);
             return null;
         }
     }
@@ -221,7 +226,7 @@ public class ConfigServiceImpl implements ConfigService {
             ConfigTbl configTbl = configDao.getByKeyAndSubId(key, subId);
             return new ConfigModel(configTbl);
         } catch (DalException e) {
-            logger.error("[getConfig] {}", e);
+            logger.error("[getConfig]", e);
             return null;
         }
     }
@@ -260,7 +265,7 @@ public class ConfigServiceImpl implements ConfigService {
     private boolean getAndResetTrueIfExpired(String key) {
         try {
             ConfigTbl config = configDao.getByKey(key);
-            boolean result = Boolean.valueOf(config.getValue());
+            boolean result = Boolean.parseBoolean(config.getValue());
             if(!result) {
                 Date expireDate = config.getUntil();
                 Date currentDate = new Date();

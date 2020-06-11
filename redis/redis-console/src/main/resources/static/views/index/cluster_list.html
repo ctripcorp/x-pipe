@@ -32,7 +32,8 @@
                 </div></td>
                 <td ng-if="showUnhealthyClusterOnly" data-title="'问题分片数'" ng-bind="cluster.unhealthyShardsCnt" sortable="'unhealthyShardsCnt'" ></td>
                 <td ng-if="showUnhealthyClusterOnly" data-title="'问题实例数'" ng-bind="cluster.unhealthyRedisCnt" sortable="'unhealthyRedisCnt'" ></td>
-                <td ng-if="true" data-title="'主数据中心'" ng-bind="getDcName({{cluster.activedcId}})"></td>
+                <td ng-if="true" data-title="'主数据中心'" ng-bind="getClusterActiveDc(cluster)"></td>
+                <td data-title="'集群类型'" ng-bind="getTypeName(cluster.clusterType)"></td>
                 <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
                 <td ng-if="true" data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>
                 <td ng-if="true" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails| limitTo:50" ></td>

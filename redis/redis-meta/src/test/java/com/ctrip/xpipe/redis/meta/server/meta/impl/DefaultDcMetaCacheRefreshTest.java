@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.OffsetWaiter;
@@ -38,13 +40,17 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
     @Mock
     private CurrentMetaManager mockCurrentMetaManager;
 
+    @Mock
+    private MetaServerConfig mockMetaServerConfig;
+
     @Before
     public void beforeDefaultDcMetaCacheTest() throws Exception {
         dcMetaCache = new DefaultDcMetaCache();
 
         XpipeMeta xpipeMeta = getXpipeMeta();
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
-        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString())).thenReturn(dcMeta);
+        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString(), Mockito.anySet())).thenReturn(dcMeta);
+        Mockito.when(mockMetaServerConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.BI_DIRECTION.toString()));
 
         injectConsoleServiceInto(dcMetaCache);
         dcMetaCache.initialize();
@@ -54,6 +60,9 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         Field consoleField = DefaultDcMetaCache.class.getDeclaredField("consoleService");
         consoleField.setAccessible(true);
         consoleField.set(dcMetaCache, mockConsoleService);
+        Field configField = DefaultDcMetaCache.class.getDeclaredField("metaServerConfig");
+        configField.setAccessible(true);
+        configField.set(dcMetaCache, mockMetaServerConfig);
     }
 
     @Test
@@ -67,7 +76,7 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
                 : clusterMeta.getActiveDc() + "," + clusterMeta.getBackupDcs();
         MasterInfo masterInfo = new MasterInfo();
 
-        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString())).thenAnswer(invocationOnMock -> {
+        Mockito.when(mockConsoleService.getDcMeta(Mockito.anyString(), Mockito.anySet())).thenAnswer(invocationOnMock -> {
             sleep(1000);
             return origin;
         });

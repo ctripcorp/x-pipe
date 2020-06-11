@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.cluster;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
@@ -141,6 +142,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		
 		ClusterMeta clusterMeta = new ClusterMeta();
 		clusterMeta.setId(getTestName());
+		clusterMeta.setType(ClusterType.ONE_WAY.toString());
 		return clusterMeta;
 	}
 
