@@ -112,7 +112,6 @@
         <dependency>
             <groupId>qunar.common</groupId>
             <artifactId>common-core</artifactId>
-            <version>9.2.21</version>
         </dependency>
 
         <!--Email Service-->
