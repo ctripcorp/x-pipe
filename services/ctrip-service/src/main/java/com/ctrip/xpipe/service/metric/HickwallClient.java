@@ -94,6 +94,9 @@ public class HickwallClient {
 
     private boolean send(String s) throws IOException {
         HttpURLConnection httpURLConnection = this.connection;
+        if(httpURLConnection == null) {
+            httpURLConnection = getConnection();
+        }
         boolean isValidConnection = false;
 
         boolean var5 = false;
