@@ -179,8 +179,7 @@ public class DataObjectAssemblyTakeOtherThreadsInfoTest extends AbstractConsoleI
                 .setClusterAdminEmails("admin@ctrip.com")
                 .setOrganizationInfo(new OrganizationTbl().setId(2L).setOrgId(3))
                 .setClusterOrgName("org-2"));
-        List<DcTbl> slaveDcs = clusterMeta.getActiveDc().equalsIgnoreCase(dcNames[0]) ? Arrays.asList(dcTbl1) : Arrays.asList(dcTbl0);
-        clusterModel.setSlaveDcs(slaveDcs);
+        clusterModel.setDcs(Arrays.asList(dcTbl0, dcTbl1));
         return clusterModel;
     }
 
