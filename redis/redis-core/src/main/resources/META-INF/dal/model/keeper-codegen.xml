@@ -36,6 +36,7 @@
     <attribute name="type" value-type="String" />
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
+    <attribute name="dcs" value-type="String" />
     <attribute name="org-id" value-type="int" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />

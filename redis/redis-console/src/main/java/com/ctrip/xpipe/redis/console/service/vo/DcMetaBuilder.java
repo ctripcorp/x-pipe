@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.vo;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -21,10 +22,7 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -59,6 +57,8 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
     private Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
 
     private List<DcClusterShardTbl> dcClusterShards;
+
+    private static final String DC_NAME_DELIMITER = ",";
 
     public DcMetaBuilder(DcMeta dcMeta, long dcId, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
                          ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, RetryCommandFactory factory) {
@@ -121,11 +121,8 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             @Override
             public ClusterMeta create() {
                 ClusterMeta clusterMeta = new ClusterMeta(cluster.getClusterName());
-                DcTbl proto = new DcTbl().setId(dcId);
-                long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
-                clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
+                loadDcs(cluster, clusterMeta);
                 clusterMeta.setParent(dcMeta);
-                clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 clusterMeta.setType(cluster.getClusterType());
                 return clusterMeta;
@@ -133,19 +130,28 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         });
     }
 
-    @VisibleForTesting
-    protected String getBackupDcs(ClusterTbl cluster, long activeDcId) {
+    protected void loadDcs(ClusterTbl cluster, ClusterMeta clusterMeta) {
+        DcTbl proto = new DcTbl().setId(dcId);
+        List<String> allDcs = new ArrayList<>();
+        List<String> backupDcs = new ArrayList<>();
+        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
-        StringBuilder sb = new StringBuilder();
+        long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
+
         relatedDcClusters.forEach(dcClusterTbl -> {
-            if(dcClusterTbl.getDcId() != activeDcId) {
-                sb.append(dcNameMap.get(dcClusterTbl.getDcId())).append(",");
+            String dcName = dcNameMap.get(dcClusterTbl.getDcId());
+            allDcs.add(dcName);
+            if (clusterType.supportMultiActiveDC()) return;
+
+            if(dcClusterTbl.getDcId() == activeDcId) {
+                clusterMeta.setActiveDc(dcName);
+            } else {
+                backupDcs.add(dcName);
             }
         });
-        if (sb.length() > 1) {
-            sb.deleteCharAt(sb.length() - 1);
-        }
-        return sb.toString();
+
+        if (!allDcs.isEmpty()) clusterMeta.setDcs(String.join(DC_NAME_DELIMITER, allDcs));
+        if (!backupDcs.isEmpty()) clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, backupDcs));
     }
 
     public ShardMeta getOrCreateShardMeta(String clusterId, ShardTbl shard, long sentinelId) {
