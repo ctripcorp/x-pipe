@@ -79,8 +79,9 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 		if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMultiActiveDC()) {
 			clusterMeta.setActiveDc(activeDc);
 			if (!backupDcs.isEmpty()) clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, backupDcs));
+		} else {
+			clusterMeta.setDcs(String.join(DC_NAME_DELIMITER, allDcs));
 		}
-		if (!allDcs.isEmpty()) clusterMeta.setDcs(String.join(DC_NAME_DELIMITER, allDcs));
 	}
 
 	@Override
