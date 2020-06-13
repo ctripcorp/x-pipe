@@ -121,37 +121,49 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             @Override
             public ClusterMeta create() {
                 ClusterMeta clusterMeta = new ClusterMeta(cluster.getClusterName());
-                loadDcs(cluster, clusterMeta);
                 clusterMeta.setParent(dcMeta);
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 clusterMeta.setType(cluster.getClusterType());
+
+                if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+                    clusterMeta.setDcs(getDcs(cluster));
+                } else {
+                    DcTbl proto = new DcTbl().setId(dcId);
+                    long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
+                    clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
+                    clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
+                }
+
                 return clusterMeta;
             }
         });
     }
 
-    protected void loadDcs(ClusterTbl cluster, ClusterMeta clusterMeta) {
-        DcTbl proto = new DcTbl().setId(dcId);
-        List<String> allDcs = new ArrayList<>();
-        List<String> backupDcs = new ArrayList<>();
-        ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+    @VisibleForTesting
+    protected String getBackupDcs(ClusterTbl cluster, long activeDcId) {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
-        long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
-
+        StringBuilder sb = new StringBuilder();
         relatedDcClusters.forEach(dcClusterTbl -> {
-            String dcName = dcNameMap.get(dcClusterTbl.getDcId());
-            allDcs.add(dcName);
-            if (clusterType.supportMultiActiveDC()) return;
-
-            if(dcClusterTbl.getDcId() == activeDcId) {
-                clusterMeta.setActiveDc(dcName);
-            } else {
-                backupDcs.add(dcName);
+            if(dcClusterTbl.getDcId() != activeDcId) {
+                sb.append(dcNameMap.get(dcClusterTbl.getDcId())).append(",");
             }
         });
+        if (sb.length() > 1) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
+    }
 
-        if (!allDcs.isEmpty()) clusterMeta.setDcs(String.join(DC_NAME_DELIMITER, allDcs));
-        if (!backupDcs.isEmpty()) clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, backupDcs));
+    protected String getDcs(ClusterTbl cluster) {
+        List<String> allDcs = new ArrayList<>();
+        List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
+
+        relatedDcClusters.forEach(dcClusterTbl ->
+            allDcs.add(dcNameMap.get(dcClusterTbl.getDcId()))
+        );
+
+        if (!allDcs.isEmpty()) return String.join(DC_NAME_DELIMITER, allDcs);
+        return null;
     }
 
     public ShardMeta getOrCreateShardMeta(String clusterId, ShardTbl shard, long sentinelId) {

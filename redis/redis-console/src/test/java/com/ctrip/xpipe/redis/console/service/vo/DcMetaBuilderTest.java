@@ -103,7 +103,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
         Assert.assertEquals("jq", clusterMeta.getActiveDc());
         Assert.assertEquals("oy,fra", clusterMeta.getBackupDcs());
-        Assert.assertEquals("jq,oy,fra", clusterMeta.getDcs());
+        Assert.assertNull(clusterMeta.getDcs());
     }
 
     @Test
