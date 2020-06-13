@@ -94,13 +94,11 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	
 	@Test
 	public void testDefaultMaster(){
-		
-		CurrentMeta currentMeta = new CurrentMeta();
 		String clusterId = getClusterId(), shardId = getShardId();
 		String activeDc = getDcMeta(getDc()).getClusters().get(clusterId).getActiveDc();
 				
 		for(String dc : getDcs()){
-			
+			CurrentMeta currentMeta = new CurrentMeta();
 			ClusterMeta clusterMeta = getDcMeta(dc).getClusters().get(clusterId); 
 			currentMeta.addCluster(clusterMeta);
 			Pair<String, Integer> keeperMaster = currentMeta.getKeeperMaster(clusterId, shardId);
