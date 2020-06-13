@@ -13,7 +13,7 @@
 		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>
 
 		
-		<cluster id="cluster1" active-dc="jq" backup-dcs = "oy,fra" org-id="1" phase="1" lastModifiedTime="1234567abc"><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
+		<cluster id="cluster1" active-dc="jq" backup-dcs = "oy,fra" org-id="1" phase="1" lastModifiedTime="1234567abc" type="one_way"><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
 			<shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1-shard1" phase="1"> <!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
 				<keeper id="40a" ip="1.1.1.1" port="8888" master="1.1.1.1:1234" active="true" keeperContainerId="1" offset="111111" survive="false"/>
 				<keeper id="40a" ip="1.1.1.2" port="9999" master="1.1.1.1:8888" active="false" keeperContainerId="1" offset="11111" survive="false"/>
@@ -23,6 +23,12 @@
 			<shard id="shard02" />
 		</cluster>
 		<cluster id="cluster02" />
+		<cluster id="bi-cluster1" type="bi_direction" dcs="jq, oy" org-id="1" lastModifiedTime="1234567">
+			<shard id="bi-cluster1-shard1">
+				<redis id="123" ip="1.0.0.1" port="1111" gid="123" master="" />
+				<redis id="124" ip="1.0.0.2" port="1111" gid="123" master="1.0.0.1:1111" />
+			</shard>
+		</cluster>
 	</dc>
 	
 	<dc id="oy" zone="SHA">
@@ -36,6 +42,12 @@
 			<shard id="shard2" />
 		</cluster>
 		<cluster id="cluster2" />
+		<cluster id="bi-cluster1" type="bi_direction" dcs="jq, oy" org-id="1" lastModifiedTime="1234567">
+			<shard id="bi-cluster1-shard1">
+				<redis id="125" ip="1.0.0.3" port="1111" gid="124" master="" />
+				<redis id="126" ip="1.0.0.4" port="1111" gid="124" master="1.0.0.3:1111" />
+			</shard>
+		</cluster>
 	</dc>
 	<dc id="fra" zone="FRA">
 		<routes>
