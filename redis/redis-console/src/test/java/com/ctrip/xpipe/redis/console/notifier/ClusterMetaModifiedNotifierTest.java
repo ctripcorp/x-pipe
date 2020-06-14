@@ -17,6 +17,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -74,7 +75,7 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 
 	@Test
 	public void testNotifyClusterUpdate() throws InterruptedException {
-		notifier.notifyClusterUpdate(dcName, clusterName);
+		notifier.notifyClusterUpdate(clusterName, Collections.singletonList(dcName));
 		TimeUnit.SECONDS.sleep(1);
 		verify(metaServerConsoleServiceManagerWrapper, times(retryTimes)).get(dcName);
 		verify(mockedMetaServerConsoleService, times(retryTimes)).clusterModified(clusterName, mockedClusterMeta);

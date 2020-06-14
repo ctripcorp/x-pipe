@@ -27,6 +27,7 @@ import org.unidal.dal.jdbc.DalException;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Service
 public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implements ShardService {
@@ -167,10 +168,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	/** Notify meta server **/
 		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	if(null != relatedDcs) {
-    		for(DcTbl dc : relatedDcs) {
-    			notifier.notifyClusterUpdate(dc.getDcName(), clusterName);
-
-    		}
+    		notifier.notifyClusterUpdate(clusterName, relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
     	}
 	}
 
