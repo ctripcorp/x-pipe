@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.rest.impl;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
@@ -62,6 +63,14 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 		metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
 	}
 
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_PEER_CHANGE, method = RequestMethod.PUT)
+	public void upstreamPeerChange(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId,
+									@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+
+		logger.debug("[upstreamPeerChange]{},{}", clusterId, shardId);
+		metaServer.handleUpstreamPeerChange(dcId, clusterId, shardId, forwardInfo);
+	}
+
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	public DeferredResult<KeeperMeta> getActiveKeeper(@PathVariable String clusterId, @PathVariable String shardId,
 			@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
@@ -71,6 +80,19 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 			@Override
 			public KeeperMeta apply(MetaServer metaServer) {
 				return metaServer.getActiveKeeper(clusterId, shardId, forwardInfo);
+			}
+		}, metaServer);
+	}
+
+	@GetMapping(path = META_SERVER_SERVICE.PATH.GET_PEER_MASTER, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public DeferredResult<RedisMeta> getPeerMaster(@PathVariable String clusterId, @PathVariable String shardId,
+													  @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+
+		logger.debug("[getPeerMaster] {},{}", clusterId, shardId);
+		return createDeferredResult(new Function<MetaServer, RedisMeta>() {
+			@Override
+			public RedisMeta apply(MetaServer metaServer) {
+				return metaServer.getPeerMaster(clusterId, shardId, forwardInfo);
 			}
 		}, metaServer);
 	}

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.multidc;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 /**
  * @author wenchao.meng
@@ -10,5 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 public interface MultiDcService {
 	
 	KeeperMeta getActiveKeeper(String dcName, String clusterId, String shardId);
+
+	RedisMeta getPeerMaster(String dcName, String clusterId, String shardId);
 
 }

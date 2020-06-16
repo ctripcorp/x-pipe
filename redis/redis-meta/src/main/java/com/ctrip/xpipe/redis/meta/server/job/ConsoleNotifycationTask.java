@@ -105,4 +105,9 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
 		//nothing to do
 	}
+
+	@Override
+	public void peerMasterChanged(String clusterId, String shardId) {
+		//nothing to do
+	}
 }

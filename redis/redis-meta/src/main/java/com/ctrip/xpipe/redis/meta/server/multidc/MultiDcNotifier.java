@@ -76,6 +76,27 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 
 	}
 
+	@Override
+	public void peerMasterChanged(String clusterId, String shardId) {
+		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
+		Set<String> relatedDcs = dcMetaCache.getRelatedDcs(clusterId, shardId);
+		logger.info("[peerMasterChanged][notify related dc]{}, {}, {}", clusterId, shardId, relatedDcs);
+		for (String dcName : relatedDcs) {
+			if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcName)) {
+				continue;
+			}
+			DcInfo dcInfo = dcInfos.get(dcName);
+
+			if (dcInfo == null) {
+				logger.error("[peerMasterChanged][can not find dcinfo]{}, {}", dcName, dcInfos);
+				continue;
+			}
+			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
+					.getOrCreate(dcInfo.getMetaServerAddress());
+			executors.execute(new PeerDcNotifyTask(metaServerMultiDcService, dcName, clusterId, shardId));
+		}
+	}
+
 	public class BackupDcNotifyTask extends AbstractExceptionLogTask {
 
 		private MetaServerMultiDcService metaServerMultiDcService;
@@ -102,6 +123,32 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 
 		}
 
+	}
+
+	public class PeerDcNotifyTask extends AbstractExceptionLogTask {
+
+		private MetaServerMultiDcService metaServerMultiDcService;
+
+		private String dcId;
+
+		private String clusterId;
+
+		private String shardId;
+
+		public PeerDcNotifyTask(MetaServerMultiDcService metaServerMultiDcService, String dcId, String clusterId, String shardId) {
+			this.metaServerMultiDcService = metaServerMultiDcService;
+			this.dcId = dcId;
+			this.clusterId = clusterId;
+			this.shardId = shardId;
+		}
+
+		@Override
+		protected void doRun() throws Exception {
+
+			logger.info("[doRun]{}, {}, {}", metaServerMultiDcService, clusterId, shardId);
+			metaServerMultiDcService.upstreamPeerChange(dcId, clusterId, shardId);
+
+		}
 	}
 
 }

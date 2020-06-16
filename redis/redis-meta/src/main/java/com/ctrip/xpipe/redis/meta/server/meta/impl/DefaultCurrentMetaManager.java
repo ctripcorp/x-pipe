@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
+import com.ctrip.xpipe.redis.meta.server.crdt.event.RemotePeerMasterChangeEvent;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -419,6 +420,40 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Override
 	public boolean watchIfNotWatched(String clusterId, String shardId) {
 		return currentMeta.watchIfNotWatched(clusterId, shardId);
+	}
+
+	@Override
+	public void setPeerMaster(String dcName, String clusterId, String shardId, int gid, String ip, int port) {
+		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
+		currentMeta.setPeerMaster(dcName, clusterId, shardId, peerMaster);
+		if (dcName.equalsIgnoreCase(dcMetaCache.getCurrentDc())) {
+			notifyPeerMasterChange(clusterId, shardId);
+		}
+	}
+
+	@Override
+	public RedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
+		return currentMeta.getPeerMaster(dcName, clusterId, shardId);
+	}
+
+	@Override
+	public void removePeerMaster(String dcName, String clusterId, String shardId) {
+		currentMeta.removePeerMaster(dcName, clusterId, shardId);
+	}
+
+	@Override
+	public void upstreamPeerChange(String dcId, String clusterId, String shardId) {
+		notifyObservers(new RemotePeerMasterChangeEvent(dcId, clusterId, shardId));
+	}
+
+	private void notifyPeerMasterChange(String clusterId, String shardId) {
+		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.peerMasterChanged(clusterId, shardId);
+			} catch (Exception e) {
+				logger.error("[notifyPeerMasterChange] {}, {}", clusterId, shardId, e);
+			}
+		}
 	}
 	
 	private void notifyKeeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {

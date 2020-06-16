@@ -32,6 +32,8 @@ public interface DcMetaCache extends Observable {
 
 	Set<String> getBakupDcs(String clusterId, String shardId);
 
+	Set<String> getRelatedDcs(String clusterId, String shardId);
+
 	String getPrimaryDc(String clusterId, String shardId);
 
 	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);

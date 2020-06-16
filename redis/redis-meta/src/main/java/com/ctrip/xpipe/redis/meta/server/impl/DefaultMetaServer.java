@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.PeerMasterChooserManager;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
@@ -61,6 +63,11 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Autowired
 	private PrimaryDcPrepareToChange primaryDcPrepareToChange;
 
+	@Autowired
+	private PeerMasterChooserManager peerMasterChooserManager;
+
+	private String currentDc = FoundationService.DEFAULT.getDataCenter();
+
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
@@ -105,6 +112,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 		logger.debug("[getActiveKeeper]{}, {}", clusterId, shardId);
 		return currentMetaManager.getKeeperActive(clusterId, shardId);
+	}
+
+	@Override
+	public RedisMeta getPeerMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		logger.debug("[getPeerMaster]{}, {}", clusterId, shardId);
+		return currentMetaManager.getPeerMaster(currentDc, clusterId, shardId);
 	}
 
 	@Override
@@ -169,6 +182,17 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 			logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterId, shardId, ip,
 					port);
 		}
+	}
+
+	@Override
+	public void handleUpstreamPeerChange(String dcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
+		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+		if (null == clusterMeta || !ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+			logger.info("[handleUpstreamPeerChange] cluster {} not found or not support", clusterId);
+			return;
+		}
+
+		currentMetaManager.upstreamPeerChange(dcId, clusterId, shardId);
 	}
 
 	@Override

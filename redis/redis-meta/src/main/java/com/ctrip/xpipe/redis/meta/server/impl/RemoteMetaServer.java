@@ -26,11 +26,13 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	
 	private String changeClusterPath;
 	private String upstreamChangePath;
+	private String upstreamPeerChangePath;
 	private String getActiveKeeperPath;
+	private String getPeerMasterPath;
 	private String changePrimaryDcCheckPath;
 	private String makeMasterReadonlyPath;
 	private String changePrimaryDcPath;
-	
+
 	public RemoteMetaServer(int currentServerId, int serverId) {
 		super(currentServerId, serverId);
 	}
@@ -41,10 +43,12 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		if(getHttpHost() != null){
 			changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(getHttpHost());
 			upstreamChangePath = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(getHttpHost());
+			upstreamPeerChangePath = META_SERVER_SERVICE.UPSTREAM_PEER_CHANGE.getRealPath(getHttpHost());
 			getActiveKeeperPath = META_SERVER_SERVICE.GET_ACTIVE_KEEPER.getRealPath(getHttpHost());
 			changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(getHttpHost());
 			makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(getHttpHost());
 			changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(getHttpHost());
+			getPeerMasterPath = META_SERVER_SERVICE.GET_PEER_MASTER.getRealPath(getHttpHost());
 		}
 	}
 
@@ -56,6 +60,16 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 
 		HttpEntity<Void> entity = new HttpEntity<>(headers);
 		ResponseEntity<KeeperMeta> response = restTemplate.exchange(getActiveKeeperPath, HttpMethod.GET, entity, KeeperMeta.class, clusterId, shardId);
+		return response.getBody();
+	}
+
+	@Override
+	public RedisMeta getPeerMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		logger.debug("[getPeerMaster][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<Void> entity = new HttpEntity<>(headers);
+		ResponseEntity<RedisMeta> response = restTemplate.exchange(getPeerMasterPath, HttpMethod.GET, entity, RedisMeta.class, clusterId, shardId);
 		return response.getBody();
 	}
 
@@ -105,6 +119,15 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
 		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port);
 		
+	}
+
+	@Override
+	public void handleUpstreamPeerChange(String dcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.UPSTREAM_CHANGE.getForwardType());
+		logger.info("[handleUpstreamPeerChange][forward]{},{},{}, {}--> {}", dcId, clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
+		restTemplate.exchange(upstreamPeerChangePath, HttpMethod.PUT, entity, String.class, dcId, clusterId, shardId);
 	}
 	
 	@Override

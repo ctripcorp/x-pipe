@@ -21,4 +21,6 @@ public interface MetaServerStateChangeHandler {
 	void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper);
 
 	void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster);
+
+	void peerMasterChanged(String clusterId, String shardId);
 }

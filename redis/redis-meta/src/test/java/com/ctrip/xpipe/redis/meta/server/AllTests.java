@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.meta.server;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.RemoteDcPeerMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
@@ -76,7 +79,11 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultSentinelManagerTest.class,
 	DefaultDcMetaCacheRefreshTest.class,
 	DefaultChangePrimaryDcActionTest.class,
-	DefaultKeeperManagerTest.class
+	DefaultKeeperManagerTest.class,
+	DefaultPeerMasterChooseCommandTest.class,
+	DefaultPeerMasterChooserTest.class,
+	DefaultPeerMasterChooseCommandTest.class,
+	RemoteDcPeerMasterChooseCommandTest.class
 })
 public class AllTests {
 
