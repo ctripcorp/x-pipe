@@ -34,6 +34,8 @@ public class CurrentMeta implements Releasable {
 
 	private static final String CLUSTER_NOT_SUPPORT_KEEPER_TEMPLATE = "cluster: %s, type: %s not support keeper";
 
+	private static final String CLUSTER_NOT_SUPPORT_PEER_MASTER_TEMPLATE = "cluster: %s, type: %s not support peer master";
+
 	public Set<String> allClusters() {
 		return new HashSet<>(currentMetas.keySet());
 	}
@@ -101,12 +103,42 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getKeeperMaster();
 	}
 
+	public void setPeerMaster(String dcName, String clusterId, String shardId, RedisMeta peerMaster) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentCRDTShardMeta.setPeerMaster(dcName, peerMaster);
+	}
+
+	public RedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getPeerMaster(dcName);
+	}
+
+	public void removePeerMaster(String dcName, String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentCRDTShardMeta.removePeerMaster(dcName);
+	}
+
 	private void checkClusterSupportKeeper(String clusterId) {
 		if (!currentMetas.containsKey(clusterId)) return;
 
 		String clusterType = currentMetas.get(clusterId).clusterType;
 		if (!ClusterType.lookup(clusterType).supportKeeper()) {
 			throw new IllegalArgumentException(String.format(CLUSTER_NOT_SUPPORT_KEEPER_TEMPLATE, clusterId, clusterType));
+		}
+	}
+
+	private void checkClusterSupportPeerMaster(String clusterId) {
+		if (!currentMetas.containsKey(clusterId)) return;
+
+		String clusterType = currentMetas.get(clusterId).clusterType;
+		if (!ClusterType.lookup(clusterType).supportMultiActiveDC()) {
+			throw new IllegalArgumentException(String.format(CLUSTER_NOT_SUPPORT_PEER_MASTER_TEMPLATE, clusterId, clusterType));
 		}
 	}
 

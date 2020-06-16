@@ -85,6 +85,8 @@ public interface DcMetaManager{
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
+	Set<String> getRelatedDcs(String clusterId, String shardId);
+
 	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
 
 }

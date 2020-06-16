@@ -124,6 +124,11 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		executors.shutdown();
 		super.doDispose();
 	}
+
+	@Override
+	public void peerMasterChanged(String clusterId, String shardId) {
+		// do nothing
+	}
 	
 	public void setcurrentMetaManager(CurrentMetaManager currentMetaManager) {
 		this.currentMetaManager = currentMetaManager;
