@@ -15,11 +15,13 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
     }
 
     public void setPeerMaster(String dcId, RedisMeta peerMaster) {
+        if (null == peerMaster) return;
         peerMasters.put(dcId.toLowerCase(), clonePeerMaster(peerMaster));
     }
 
     public RedisMeta getPeerMaster(String dcId) {
         RedisMeta peerMaster = peerMasters.get(dcId.toLowerCase());
+        if (null == peerMaster) return null;
         return clonePeerMaster(peerMaster);
     }
 
