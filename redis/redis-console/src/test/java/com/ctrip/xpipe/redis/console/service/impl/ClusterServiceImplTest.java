@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -224,6 +226,16 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         List<ClusterTbl> clusterTbls = clusterService.findAllClusterByKeeperContainer(4);
         Assert.assertTrue(clusterTbls.size() > 0);
         Assert.assertNotNull(clusterTbls.get(0).getOrganizationInfo());
+    }
+
+    @Test
+    public void testGetClusterRelatedDcs() {
+        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs("cluster101");
+        Set<Long> dcSet = Sets.newHashSet();
+        dcTbls.forEach(dcTbl -> {dcSet.add(dcTbl.getId());});
+        Assert.assertEquals(2, dcSet.size());
+        Assert.assertTrue(dcSet.contains(1L));
+        Assert.assertTrue(dcSet.contains(2L));
     }
 
     @Override
