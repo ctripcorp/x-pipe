@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -22,14 +22,14 @@ public class SimpleFunctionTest extends AbstractRedisTest{
 		person.setAnother(name);
 
 		
-		String personStr = JSON.toJSONString(person);
+		String personStr = Codec.DEFAULT.encode(person);
 		
 		String personStrRep = personStr.replaceAll("another", "name");
 		logger.info("{}\n{}", personStr, personStrRep);
 		
 		Assert.assertNotEquals(personStr, personStrRep);
 		
-		Person newPerson = JSON.parseObject(personStrRep, Person.class);
+		Person newPerson = Codec.DEFAULT.decode(personStrRep, Person.class);
 		
 		Assert.assertEquals(person, newPerson);
 	}
