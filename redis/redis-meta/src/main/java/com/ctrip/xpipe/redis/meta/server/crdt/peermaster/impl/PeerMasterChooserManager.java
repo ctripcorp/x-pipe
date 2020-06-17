@@ -91,7 +91,7 @@ public class PeerMasterChooserManager extends AbstractPeerMasterMetaObserver {
             //release resources
             currentMetaManager.addResource(clusterId, shardId, chooser);
         } catch (Exception e) {
-            logger.error("[getOrCreatePeerMasterChooser]{}, {}", clusterId, shardId);
+            logger.error("[getOrCreatePeerMasterChooser]{}, {}", clusterId, shardId, e);
         }
     }
 
