@@ -14,6 +14,7 @@ import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.Map;
@@ -23,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+@Component
 public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
 
     @Resource(name = "clientPool")
@@ -100,7 +102,7 @@ public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
             //release resources
             currentMetaManager.addResource(clusterId, shardId, adjuster);
         } catch (Exception e) {
-            logger.error("[getOrCreateAdjuster]{}, {}", clusterId, shardId);
+            logger.error("[getOrCreateAdjuster]{}, {}", clusterId, shardId, e);
         }
     }
 
@@ -108,11 +110,6 @@ public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
         return MapUtils.getOrCreate(peerMasterAdjusterMap, Pair.of(clusterId, shardId), () ->
                 new DefaultPeerMasterStateAdjuster(clusterId, shardId, dcMetaCache, currentMetaManager, clientPool, executors, scheduled)
         );
-    }
-
-    @VisibleForTesting
-    protected void setPeerMasterAdjusterMap(Map<Pair<String, String>, PeerMasterStateAdjuster> peerMasterAdjusterMap) {
-        this.peerMasterAdjusterMap = peerMasterAdjusterMap;
     }
 
     @VisibleForTesting
