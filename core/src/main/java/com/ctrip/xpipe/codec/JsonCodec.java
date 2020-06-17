@@ -30,7 +30,7 @@ public class JsonCodec extends AbstractCodec{
 	}
 
 	public JsonCodec(boolean indent, boolean privateVisible){
-		
+
 		objectMapper = new ObjectMapper();
 		objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

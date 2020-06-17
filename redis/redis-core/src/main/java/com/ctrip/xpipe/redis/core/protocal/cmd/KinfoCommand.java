@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.alibaba.fastjson.JSON;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
@@ -52,7 +51,7 @@ public class KinfoCommand extends AbstractRedisCommand<ReplicationStoreMeta> {
 		getLogger().info("[format]{}", buff);
 		
 		ReplicationStoreMeta meta = null;
-		meta = JSON.parseObject(buff, ReplicationStoreMeta.class);
+		meta = Codec.DEFAULT.decode(buff, ReplicationStoreMeta.class);
 		if(valid(meta)){
 			return meta;
 		}else{

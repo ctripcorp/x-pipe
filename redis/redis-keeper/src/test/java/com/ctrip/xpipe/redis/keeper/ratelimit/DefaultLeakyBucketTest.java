@@ -118,6 +118,7 @@ public class DefaultLeakyBucketTest extends AbstractTest {
             });
         }
         latch.await(1000, TimeUnit.MILLISECONDS);
+        sleep(50);
         Assert.assertEquals(newSize, counter.get());
     }
 
