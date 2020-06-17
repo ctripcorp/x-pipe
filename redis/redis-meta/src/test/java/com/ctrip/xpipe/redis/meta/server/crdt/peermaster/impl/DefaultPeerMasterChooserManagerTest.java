@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl;
 
-import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.PeerMasterChooseCommand;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
@@ -22,10 +20,10 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
+public class DefaultPeerMasterChooserManagerTest extends AbstractMetaServerTest {
 
     @InjectMocks
-    PeerMasterChooserManager peerMasterChooserManager;
+    DefaultPeerMasterChooserManager defaultPeerMasterChooserManager;
 
     @Mock
     private XpipeNettyClientKeyedObjectPool clientPool;
@@ -49,7 +47,7 @@ public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
 
     @Before
     public void setupPeerMasterChooserManagerTest() throws Exception {
-        peerMasterChooserManager.initialize();
+        defaultPeerMasterChooserManager.initialize();
     }
 
     @Test
@@ -59,7 +57,7 @@ public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
         current.setDcs("jq, oy");
         future.setDcs("jq");
         ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(current, future);
-        peerMasterChooserManager.handleClusterModified(clusterMetaComparator);
+        defaultPeerMasterChooserManager.handleClusterModified(clusterMetaComparator);
         Mockito.doAnswer(invocation -> {
             String paramDc = invocation.getArgumentAt(0, String.class);
             String paramCluster = invocation.getArgumentAt(0, String.class);
@@ -76,31 +74,21 @@ public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
 
     @Test
     public void testDcMetaDeleted() {
-        peerMasterChooserManager.getPeerMasterChooserMap().put(Pair.of(clusterId, shardId), chooser);
+        defaultPeerMasterChooserManager.getPeerMasterChooserMap().put(Pair.of(clusterId, shardId), chooser);
         ClusterMeta clusterMeta = mockClusterMeta();
-        peerMasterChooserManager.handleClusterDeleted(clusterMeta);
+        defaultPeerMasterChooserManager.handleClusterDeleted(clusterMeta);
 
-        Assert.assertEquals(0, peerMasterChooserManager.getPeerMasterChooserMap().size());
+        Assert.assertEquals(0, defaultPeerMasterChooserManager.getPeerMasterChooserMap().size());
     }
 
     @Test
     public void testDcMetaAdded() {
-        peerMasterChooserManager.getPeerMasterChooserMap().clear();
+        defaultPeerMasterChooserManager.getPeerMasterChooserMap().clear();
         ClusterMeta clusterMeta = mockClusterMeta();
-        peerMasterChooserManager.handleClusterAdd(clusterMeta);
+        defaultPeerMasterChooserManager.handleClusterAdd(clusterMeta);
 
-        Assert.assertEquals(1, peerMasterChooserManager.getPeerMasterChooserMap().size());
-        Assert.assertTrue(peerMasterChooserManager.getPeerMasterChooserMap().containsKey(Pair.of(clusterId, shardId)));
-    }
-
-    @Test
-    public void testHandleRemotePeerMasterChange() {
-        peerMasterChooserManager.getPeerMasterChooserMap().put(Pair.of(clusterId, shardId), chooser);
-        PeerMasterChooseCommand command = Mockito.mock(PeerMasterChooseCommand.class);
-        Mockito.when(chooser.createMasterChooserCommand(Mockito.anyString())).thenReturn(command);
-
-        peerMasterChooserManager.handleRemotePeerMasterChange(dcId, clusterId, shardId);
-        Mockito.verify(command, Mockito.times(1)).execute(Mockito.any());
+        Assert.assertEquals(1, defaultPeerMasterChooserManager.getPeerMasterChooserMap().size());
+        Assert.assertTrue(defaultPeerMasterChooserManager.getPeerMasterChooserMap().containsKey(Pair.of(clusterId, shardId)));
     }
 
     private ClusterMeta mockClusterMeta() {

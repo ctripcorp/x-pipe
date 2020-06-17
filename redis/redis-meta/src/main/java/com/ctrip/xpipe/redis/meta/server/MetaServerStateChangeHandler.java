@@ -22,5 +22,7 @@ public interface MetaServerStateChangeHandler {
 
 	void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster);
 
-	void peerMasterChanged(String clusterId, String shardId);
+	void peerMasterChanged(String dcId, String clusterId, String shardId);
+
+	void upstreamPeerMasterChange(String dcId, String clusterId, String shardId);
 }

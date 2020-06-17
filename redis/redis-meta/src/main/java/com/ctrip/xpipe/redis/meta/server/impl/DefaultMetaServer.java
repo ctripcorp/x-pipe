@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.PeerMasterChooserManager;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooserManager;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
@@ -64,7 +64,7 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	private PrimaryDcPrepareToChange primaryDcPrepareToChange;
 
 	@Autowired
-	private PeerMasterChooserManager peerMasterChooserManager;
+	private DefaultPeerMasterChooserManager defaultPeerMasterChooserManager;
 
 	private String currentDc = FoundationService.DEFAULT.getDataCenter();
 

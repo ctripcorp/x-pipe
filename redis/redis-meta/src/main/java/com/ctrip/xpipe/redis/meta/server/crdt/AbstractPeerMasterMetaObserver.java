@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.meta.server.crdt;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.meta.server.crdt.event.RemotePeerMasterChangeEvent;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
@@ -21,17 +19,6 @@ public abstract class AbstractPeerMasterMetaObserver extends AbstractCurrentMeta
     @Override
     public Set<ClusterType> getSupportClusterTypes() {
         return Collections.singleton(ClusterType.BI_DIRECTION);
-    }
-
-    @Override
-    public void update(Object args, Observable observable) {
-        if (args instanceof RemotePeerMasterChangeEvent) {
-            RemotePeerMasterChangeEvent event = (RemotePeerMasterChangeEvent) args;
-            handleRemotePeerMasterChange(event.getDcId(), event.getClusterId(), event.getShardId());
-            return;
-        }
-
-        super.update(args, observable);
     }
 
     @Override
@@ -64,7 +51,5 @@ public abstract class AbstractPeerMasterMetaObserver extends AbstractCurrentMeta
     protected abstract void handleDcsAdded(String clusterId, String shardId, Set<String> dcsAdded);
 
     protected abstract void handleDcsDeleted(String clusterId, String shardId, Set<String> dcsDeleted);
-
-    protected abstract void handleRemotePeerMasterChange(String dcId, String clusterId, String shardId);
 
 }
