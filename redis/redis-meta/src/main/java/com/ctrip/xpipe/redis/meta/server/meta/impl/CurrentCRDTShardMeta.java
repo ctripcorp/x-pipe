@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.meta.impl;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
@@ -16,19 +15,28 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
     }
 
     public void setPeerMaster(String dcId, RedisMeta peerMaster) {
-        peerMasters.put(dcId, peerMaster);
+        peerMasters.put(dcId.toLowerCase(), clonePeerMaster(peerMaster));
     }
 
     public RedisMeta getPeerMaster(String dcId) {
-        return peerMasters.get(dcId);
+        RedisMeta peerMaster = peerMasters.get(dcId.toLowerCase());
+        return clonePeerMaster(peerMaster);
     }
 
     public void removePeerMaster(String dcId) {
-        peerMasters.remove(dcId);
+        peerMasters.remove(dcId.toLowerCase());
     }
 
-    public Set<String> getRelatedDcs() {
-        return peerMasters.keySet();
+    public Set<String> getKnownDcs() {
+        return new HashSet<>(peerMasters.keySet());
+    }
+
+    public List<RedisMeta> getAllPeerMasters() {
+        return new ArrayList<>(peerMasters.values());
+    }
+
+    private RedisMeta clonePeerMaster(RedisMeta peerMaster) {
+        return new RedisMeta().setGid(peerMaster.getGid()).setIp(peerMaster.getIp()).setPort(peerMaster.getPort());
     }
 
 }

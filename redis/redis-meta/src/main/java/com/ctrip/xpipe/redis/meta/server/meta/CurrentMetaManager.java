@@ -64,6 +64,10 @@ public interface CurrentMetaManager extends Observable {
 
 	RedisMeta getPeerMaster(String dcName, String clusterId, String shardId);
 
+	Set<String> getPeerMasterKnownDcs(String clusterId, String shardId);
+
+	List<RedisMeta> getAllPeerMasters(String clusterId, String shardId);
+
 	void removePeerMaster(String dcName, String clusterId, String shardId);
 
 	void upstreamPeerChange(String dcId, String clusterId, String shardId);

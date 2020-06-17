@@ -437,6 +437,15 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public Set<String> getPeerMasterKnownDcs(String clusterId, String shardId) {
+		return currentMeta.getPeerMasterKnownDcs(clusterId, shardId);
+	}
+
+	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+		return currentMeta.getAllPeerMasters(clusterId, shardId);
+	}
+
+	@Override
 	public void removePeerMaster(String dcName, String clusterId, String shardId) {
 		currentMeta.removePeerMaster(dcName, clusterId, shardId);
 	}

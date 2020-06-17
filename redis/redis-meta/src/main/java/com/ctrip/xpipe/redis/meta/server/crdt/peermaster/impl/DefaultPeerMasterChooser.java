@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
