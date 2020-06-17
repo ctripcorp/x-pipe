@@ -104,6 +104,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<DcTbl> getClusterRelatedDcs(String clusterName) {
+		ClusterTbl clusterTbl = find(clusterName);
+		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+		List<DcTbl> result = Lists.newLinkedList();
+		for(DcClusterTbl dcClusterTbl : dcClusterTbls) {
+			result.add(dcService.find(dcClusterTbl.getDcId()));
+		}
+		return result;
+	}
+
+	@Override
 	public ClusterTbl find(final long clusterId) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override

@@ -124,7 +124,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(true);
         action.doTask();
         waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        waitConditionUntilTimeOut(()->!instance.getRedisInstanceInfo().isMaster(), 200);
+        waitConditionUntilTimeOut(()->!instance.getRedisInstanceInfo().isMaster(), 500);
         Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
         verify(redisService, times(1)).updateBatchMaster(anyList());
         verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());

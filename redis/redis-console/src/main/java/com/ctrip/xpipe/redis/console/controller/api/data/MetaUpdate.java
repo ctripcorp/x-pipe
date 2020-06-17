@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
@@ -64,6 +65,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -141,12 +145,14 @@ public class MetaUpdate extends AbstractConsoleController {
     public RetMessage deleteCluster(@PathVariable String clusterName) {
         logger.info("[deleteCluster]{}", clusterName);
         try {
+            List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
             clusterService.deleteCluster(clusterName);
-            for(DcTbl dcTbl : dcService.findAllDcNames()) {
+            for(DcTbl dcTbl : dcTbls) {
                 try {
                     metaServerConsoleServiceManagerWrapper.get(dcTbl.getDcName()).clusterDeleted(clusterName);
                 } catch (Exception e) {
                     logger.warn("[deleteCluster]", e);
+                    return RetMessage.createFailMessage("[" + dcTbl.getDcName() + "]MetaServer fails" + e.getMessage());
                 }
             }
             return RetMessage.createSuccessMessage();
