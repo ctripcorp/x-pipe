@@ -303,7 +303,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         return new ArrayList<>(clusterIdSet);
     }
 
-    private void notifyClusterUpdate(String dcName, String clusterName) {
+    protected void notifyClusterUpdate(String dcName, String clusterName) {
         ClusterTbl cluster = clusterService.find(clusterName);
         if (null == cluster) throw new IllegalArgumentException("not exist cluster " + clusterName);
 
