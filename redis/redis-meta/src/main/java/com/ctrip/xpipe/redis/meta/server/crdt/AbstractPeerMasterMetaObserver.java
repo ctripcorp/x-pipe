@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.crdt;
 
+import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -14,7 +16,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class AbstractPeerMasterMetaObserver extends AbstractCurrentMetaObserver {
+public abstract class AbstractPeerMasterMetaObserver extends AbstractCurrentMetaObserver implements Observer, TopElement {
 
     @Override
     public Set<ClusterType> getSupportClusterTypes() {
