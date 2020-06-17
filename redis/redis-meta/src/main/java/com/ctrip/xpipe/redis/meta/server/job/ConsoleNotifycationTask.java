@@ -107,7 +107,12 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	}
 
 	@Override
-	public void peerMasterChanged(String clusterId, String shardId) {
+	public void peerMasterChanged(String dcId, String clusterId, String shardId) {
+		//nothing to do
+	}
+
+	@Override
+	public void upstreamPeerMasterChange(String dcId, String clusterId, String shardId) {
 		//nothing to do
 	}
 }

@@ -73,11 +73,22 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 
 	@Override
 	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
-
+		//nothing to do
 	}
 
 	@Override
-	public void peerMasterChanged(String clusterId, String shardId) {
+	public void upstreamPeerMasterChange(String dcId, String clusterId, String shardId) {
+		//nothing to do
+	}
+
+	@Override
+	public void peerMasterChanged(String dcId, String clusterId, String shardId) {
+		if (!dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
+			// nothing to do for remote peer master update
+			return;
+		}
+
+		// notify remote dc for local peer master change
 		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
 		Set<String> relatedDcs = dcMetaCache.getRelatedDcs(clusterId, shardId);
 		logger.info("[peerMasterChanged][notify related dc]{}, {}, {}", clusterId, shardId, relatedDcs);

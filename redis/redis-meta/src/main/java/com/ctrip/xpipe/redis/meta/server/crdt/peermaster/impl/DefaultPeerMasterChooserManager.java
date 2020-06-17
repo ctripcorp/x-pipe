@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.crdt.AbstractPeerMasterMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.PeerMasterChooser;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.PeerMasterChooserManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
@@ -26,7 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Component
-public class PeerMasterChooserManager extends AbstractPeerMasterMetaObserver {
+public class DefaultPeerMasterChooserManager extends AbstractPeerMasterMetaObserver implements PeerMasterChooserManager {
 
     @Resource(name = "clientPool")
     private XpipeNettyClientKeyedObjectPool clientPool;
@@ -83,6 +84,11 @@ public class PeerMasterChooserManager extends AbstractPeerMasterMetaObserver {
         }
     }
 
+    @Override
+    public PeerMasterChooser getChooser(String clusterId, String shardId) {
+        return getOrCreatePeerMasterChooser(clusterId, shardId);
+    }
+
     private void addShard(String clusterId, String shardId) {
         try {
             PeerMasterChooser chooser = getOrCreatePeerMasterChooser(clusterId, shardId);
@@ -108,10 +114,6 @@ public class PeerMasterChooserManager extends AbstractPeerMasterMetaObserver {
 
     protected void handleDcsDeleted(String clusterId, String shardId, Set<String> dcsDeleted) {
         dcsDeleted.forEach(dcId -> currentMetaManager.removePeerMaster(dcId, clusterId, shardId));
-    }
-
-    protected void handleRemotePeerMasterChange(String dcId, String clusterId, String shardId) {
-        getOrCreatePeerMasterChooser(clusterId, shardId).createMasterChooserCommand(dcId).execute(executors);
     }
 
     @VisibleForTesting

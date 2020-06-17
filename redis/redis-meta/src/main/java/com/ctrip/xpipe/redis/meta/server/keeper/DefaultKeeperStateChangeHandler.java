@@ -126,8 +126,13 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	}
 
 	@Override
-	public void peerMasterChanged(String clusterId, String shardId) {
-		// do nothing
+	public void peerMasterChanged(String dcId, String clusterId, String shardId) {
+		//nothing to do
+	}
+
+	@Override
+	public void upstreamPeerMasterChange(String dcId, String clusterId, String shardId) {
+		//nothing to do
 	}
 	
 	public void setcurrentMetaManager(CurrentMetaManager currentMetaManager) {

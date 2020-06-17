@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.crdt.AbstractPeerMasterMetaObserver;
+import com.ctrip.xpipe.redis.meta.server.crdt.manage.PeerMasterAdjusterManager;
 import com.ctrip.xpipe.redis.meta.server.crdt.manage.PeerMasterStateAdjuster;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
@@ -25,7 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Component
-public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
+public class DefaultPeerMasterAdjusterManager extends AbstractPeerMasterMetaObserver implements PeerMasterAdjusterManager {
 
     @Resource(name = "clientPool")
     private XpipeNettyClientKeyedObjectPool clientPool;
@@ -44,6 +45,11 @@ public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
     protected void doInitialize() throws Exception {
         super.doInitialize();
         scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 2), XpipeThreadFactory.create("PeerMasterStateManager"));
+    }
+
+    @Override
+    public PeerMasterStateAdjuster getAdjuster(String clusterId, String shardId) {
+        return getOrCreateAdjuster(clusterId, shardId);
     }
 
     protected void handleClusterModified(ClusterMetaComparator comparator) {
@@ -71,7 +77,7 @@ public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
         }
     }
 
-
+    @Override
     protected void handleDcsAdded(String clusterId, String shardId, Set<String> dcsAdded) {
         if (null == currentMetaManager.getPeerMaster(dcMetaCache.getCurrentDc(), clusterId, shardId)) return;
 
@@ -86,11 +92,8 @@ public class PeerMasterStateManager extends AbstractPeerMasterMetaObserver {
         if (shouldAdjust) getOrCreateAdjuster(clusterId, shardId).adjust();
     }
 
+    @Override
     protected void handleDcsDeleted(String clusterId, String shardId, Set<String> dcsDeleted) {
-        // do nothing
-    }
-
-    protected void handleRemotePeerMasterChange(String dcId, String clusterId, String shardId) {
         // do nothing
     }
 
