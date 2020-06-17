@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.endpoint;
 
-import com.alibaba.fastjson.annotation.JSONField;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
@@ -39,25 +39,25 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 	}
 
 	@Override
-	@JSONField(serialize=false)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public String getScheme() {
 		return uri.getScheme();
 	}
 
 	@Override
-	@JSONField(serialize=false)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public String getHost() {
 		return ip != null ? ip : uri.getHost();
 	}
 
 	@Override
-	@JSONField(serialize=false)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public int getPort() {
 		return port != 0 ? port : uri.getPort();
 	}
 
 	@Override
-	@JSONField(serialize=false)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public String getUser() {
 
 		String []userInfo = getUserInfo();
@@ -78,7 +78,7 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 	}
 
 	@Override
-	@JSONField(serialize=false)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public String getPassword() {
 		
 		String []userInfo = getUserInfo();

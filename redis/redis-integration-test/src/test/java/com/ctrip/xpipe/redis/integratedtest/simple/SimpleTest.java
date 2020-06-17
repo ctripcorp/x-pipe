@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.simple;
 
-import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.dianping.cat.Cat;
 import org.junit.Test;
@@ -37,7 +37,7 @@ public class SimpleTest extends AbstractSimpleTest {
 //        String json = JSON.toJSONString(meta);
         long endJson = System.currentTimeMillis();
         logger.info("[begin]");
-        Files.IO.INSTANCE.writeTo(new File(file), JSON.toJSONString(meta));
+        Files.IO.INSTANCE.writeTo(new File(file), Codec.DEFAULT.encode(meta));
         logger.info("[end]");
 
         long end = System.currentTimeMillis();

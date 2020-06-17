@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.service.sso;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.ctrip.infosec.sso.client.QConfigClient;
 import com.ctrip.infosec.sso.client.principal.Assertion;
 import com.ctrip.infosec.sso.client.principal.AssertionImpl;
@@ -13,6 +11,7 @@ import com.ctrip.infosec.sso.client.util.CommonUtils;
 import com.ctrip.infosec.sso.client.validate.Cas20ServiceTicketValidator;
 import com.ctrip.infosec.sso.client.validate.TicketValidationException;
 import com.ctrip.infosec.sso.client.validate.TicketValidator;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.sso.SsoConfig;
 import com.google.common.base.Strings;
 import org.apache.commons.collections.CollectionUtils;
@@ -387,10 +386,10 @@ public class  CtripSSOFilter implements Filter {
         try {
             CloseableHttpResponse response = httpClient.execute(new HttpGet(casServerUrlPrefix + "/client/principal?principalId=" + memCacheAssertionID + "&callback=" + serverName));
             String result = EntityUtils.toString(response.getEntity(), "utf-8");
-            JSONObject jsonObject = JSON.parseObject(result);
-
-            if (jsonObject.getJSONObject("result") != null) {
-                Map user = jsonObject.getJSONObject("result");
+//            JSONObject jsonObject = JSON.parseObject(result);
+            Map<String, Object> jsonObject = Codec.DEFAULT.decode(result, Map.class);
+            if (jsonObject.get("result") != null) {
+                Map<String, Object> user = Codec.DEFAULT.decode((String)jsonObject.get("result"), Map.class);
                 assertionInCache = new AssertionImpl(new AttributePrincipalImpl((String) user.get("name"), user));
             }
 
@@ -427,18 +426,19 @@ public class  CtripSSOFilter implements Filter {
 
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", uuid);
-                    map.put("principal", JSON.toJSONString(principal.getAttributes()));
+                    map.put("principal", Codec.DEFAULT.encode(principal.getAttributes()));
                     map.put("expire", EXPIRE_TIME_ASSERTION);
 
 
-                    StringEntity entity = new StringEntity(JSON.toJSONString(map), "UTF-8");
+                    StringEntity entity = new StringEntity(Codec.DEFAULT.encode(map), "UTF-8");
                     entity.setContentEncoding("UTF-8");
                     entity.setContentType("application/json");
                     httppost.setEntity(entity);
 
                     CloseableHttpResponse httpResponse = httpClient.execute(httppost);
                     String result = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-                    JSONObject jsonObject = JSON.parseObject(result);
+//                    JSONObject jsonObject = JSON.parseObject(result);
+                    Map<String, Object> jsonObject = Codec.DEFAULT.decode(result, Map.class);
 
                     if ((Integer) jsonObject.get("code") == 0) {
                         Cookie cookie = new Cookie(generateCookieName(request.getContextPath()), uuid);
