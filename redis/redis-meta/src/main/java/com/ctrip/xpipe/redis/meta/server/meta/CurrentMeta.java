@@ -103,25 +103,39 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getKeeperMaster();
 	}
 
-	public void setPeerMaster(String dcName, String clusterId, String shardId, RedisMeta peerMaster) {
+	public void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peerMaster) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
-		currentCRDTShardMeta.setPeerMaster(dcName, peerMaster);
+		currentCRDTShardMeta.setPeerMaster(dcId, peerMaster);
 	}
 
-	public RedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
+	public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
-		return currentCRDTShardMeta.getPeerMaster(dcName);
+		return currentCRDTShardMeta.getPeerMaster(dcId);
 	}
 
-	public void removePeerMaster(String dcName, String clusterId, String shardId) {
+	public void removePeerMaster(String dcId, String clusterId, String shardId) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
-		currentCRDTShardMeta.removePeerMaster(dcName);
+		currentCRDTShardMeta.removePeerMaster(dcId);
+	}
+
+	public Set<String> getPeerMasterKnownDcs(String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getKnownDcs();
+	}
+
+	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getAllPeerMasters();
 	}
 
 	private void checkClusterSupportKeeper(String clusterId) {

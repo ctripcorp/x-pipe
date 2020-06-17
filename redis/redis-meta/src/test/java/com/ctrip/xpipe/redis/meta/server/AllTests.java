@@ -3,8 +3,11 @@ package com.ctrip.xpipe.redis.meta.server;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
+import com.ctrip.xpipe.redis.meta.server.crdt.manage.impl.DefaultPeerMasterStateAdjusterTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.manage.impl.PeerMasterStateManagerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.PeerMasterChooserManagerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.RemoteDcPeerMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
@@ -14,6 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
@@ -80,10 +84,13 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultDcMetaCacheRefreshTest.class,
 	DefaultChangePrimaryDcActionTest.class,
 	DefaultKeeperManagerTest.class,
-	DefaultPeerMasterChooseCommandTest.class,
+	PeerMasterChooserManagerTest.class,
 	DefaultPeerMasterChooserTest.class,
 	DefaultPeerMasterChooseCommandTest.class,
-	RemoteDcPeerMasterChooseCommandTest.class
+	RemoteDcPeerMasterChooseCommandTest.class,
+	PeerMasterAdjustJobTest.class,
+	DefaultPeerMasterStateAdjusterTest.class,
+	PeerMasterStateManagerTest.class
 })
 public class AllTests {
 
