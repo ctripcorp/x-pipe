@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.proxy;
 
-import com.alibaba.fastjson.annotation.JSONField;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.net.InetSocketAddress;
 
@@ -15,6 +15,7 @@ import java.net.InetSocketAddress;
  */
 public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, ProxyEnabled {
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private ProxyConnectProtocol protocol;
 
     public ProxyEnabledEndpoint(String ip, int port, ProxyConnectProtocol protocol) {
@@ -28,7 +29,7 @@ public class ProxyEnabledEndpoint extends DefaultEndPoint implements Endpoint, P
     }
 
     @Override
-    @JSONField(serialize=false)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public ProxyConnectProtocol getProxyProtocol() {
         return protocol;
     }
