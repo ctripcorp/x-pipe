@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
@@ -46,7 +48,8 @@ public class ShardServiceImplTest extends AbstractServiceImplTest{
         setinelTblMap.put(1L, new SetinelTbl().setSetinelAddress(sentinelAddress1));
         setinelTblMap.put(2L, new SetinelTbl().setSetinelAddress(sentinelAddress2));
 
-        ShardEvent shardEvent = shardService.createShardDeleteEvent(clusterName, shardNames[0], shardTbl, setinelTblMap);
+        ShardEvent shardEvent = shardService.createShardDeleteEvent(clusterName,
+                new ClusterTbl().setClusterName(clusterName).setClusterType(ClusterType.ONE_WAY.toString()), shardNames[0], shardTbl, setinelTblMap);
 
         Assert.assertTrue(shardEvent instanceof ShardDeleteEvent);
         Assert.assertEquals(EventType.DELETE, shardEvent.getShardEventType());
@@ -58,5 +61,14 @@ public class ShardServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(sentinelAddress1 + "," + sentinelAddress2, shardEvent.getShardSentinels());
         System.out.println(shardEvent);
 
+    }
+
+    @Test
+    public void testCreateForCRDTCluster() {
+        String clusterId = "test-cluster";
+        String shardId = "test-shard";
+        ShardEvent shardEvent = shardService.createShardDeleteEvent(clusterId,
+                new ClusterTbl().setClusterName(clusterId).setClusterType(ClusterType.BI_DIRECTION.toString()), shardId, new ShardTbl(), null);
+        Assert.assertNull(shardEvent);
     }
 }

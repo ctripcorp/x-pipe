@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.notifier.shard;
 
 import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
 
 /**
@@ -20,6 +21,8 @@ public interface ShardEvent extends Event, Observable {
     String getShardSentinels();
 
     String getShardMonitorName();
+
+    ClusterType getClusterType();
 
     void onEvent();
 }
