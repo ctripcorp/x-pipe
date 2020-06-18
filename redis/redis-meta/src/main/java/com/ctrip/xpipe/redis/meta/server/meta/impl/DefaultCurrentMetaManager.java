@@ -499,6 +499,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@VisibleForTesting
+	protected void setCurrentMeta(CurrentMeta currentMeta) {
+		this.currentMeta = currentMeta;
+	}
+
+	@VisibleForTesting
 	protected void addMetaServerStateChangeHandler(MetaServerStateChangeHandler handler) {
 		if(stateHandlers == null) {
 			stateHandlers = Lists.newArrayList();

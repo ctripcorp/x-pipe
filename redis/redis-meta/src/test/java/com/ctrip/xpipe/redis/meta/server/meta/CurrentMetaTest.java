@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,19 +30,26 @@ import java.util.stream.IntStream;
 public class CurrentMetaTest extends AbstractMetaServerTest{
 	
 	private ClusterMeta clusterMeta;
+	private ClusterMeta biClusterMeta;
 	private CurrentMeta currentMeta;
 	
 	private String clusterId, shardId;
+	private String biClusterId, biShardId;
 	private AtomicInteger releaseCount = new AtomicInteger();
 	
 	@Before
 	public void beforeCurrentMetaTest(){
 		clusterMeta = (ClusterMeta) getDcMeta(getDc()).getClusters().values().toArray()[0];
+		biClusterMeta = (ClusterMeta) getDcMeta(getDc()).getClusters().values().toArray()[1];
 		currentMeta = new CurrentMeta();
 		currentMeta.addCluster(clusterMeta);
+		currentMeta.addCluster(biClusterMeta);
 		
 		clusterId = clusterMeta.getId();
 		shardId = clusterMeta.getShards().keySet().iterator().next();
+
+		biClusterId = biClusterMeta.getId();
+		biShardId = biClusterMeta.getShards().keySet().iterator().next();
 	}
 
 	@Test
@@ -211,5 +220,42 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		Assert.assertFalse(currentMeta.hasShard(clusterId, shardId));
 		Assert.assertTrue(currentMeta.hasShard(clusterId, newShardId));
 	}
+
+	@Test
+	public void testSetInfoForCRDTCluster() {
+
+		Assert.assertEquals(0, currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId).size());
+		Assert.assertEquals(0, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
+		Assert.assertNull(currentMeta.getPeerMaster(getDc(), biClusterId, biShardId));
+
+		// set PeerMaster
+		RedisMeta redisMeta = new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1);
+		currentMeta.setPeerMaster(getDc(), biClusterId, biShardId, redisMeta);
+		redisMeta.setIp("10.0.0.2");
+		currentMeta.setPeerMaster("remote-dc", biClusterId, shardId, redisMeta);
+		Assert.assertEquals(2, currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId).size());
+		Assert.assertEquals(2, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
+		Assert.assertEquals(Sets.newHashSet(getDc(), "remote-dc"), currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1), currentMeta.getPeerMaster(getDc(), biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.2").setPort(6379).setGid(1), currentMeta.getPeerMaster("remote-dc", biClusterId, biShardId));
+
+		// remove PeerMaster
+		currentMeta.removePeerMaster("remote-dc", biClusterId, biShardId);
+		Assert.assertEquals(1, currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId).size());
+		Assert.assertEquals(1, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
+		Assert.assertEquals(Sets.newHashSet(getDc()), currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1), currentMeta.getPeerMaster(getDc(), biClusterId, biShardId));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetPeerMasterWithErrorType() {
+		currentMeta.setPeerMaster(getDc(), clusterId, shardId, new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetKeeperMasterWithErrorType() {
+		currentMeta.setKeeperMaster(biClusterId, biShardId, Pair.of("127.0.0.1", 6379));
+	}
+
 }
 		
