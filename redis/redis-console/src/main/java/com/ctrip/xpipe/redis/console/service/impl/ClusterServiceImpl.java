@@ -320,7 +320,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		final ClusterTbl queryProto = proto;
 
 		// Call cluster delete event
-		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName);
+		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName, proto);
 
 		try {
 			clusterDao.deleteCluster(queryProto);
@@ -328,7 +328,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new ServerException(e.getMessage());
 		}
 
-		clusterEvent.onEvent();
+		if (null != clusterEvent) clusterEvent.onEvent();
 
 		/** Notify meta server **/
 		notifier.notifyClusterDelete(clusterName, relatedDcs);
