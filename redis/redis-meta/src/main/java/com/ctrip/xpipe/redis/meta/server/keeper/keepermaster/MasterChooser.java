@@ -9,6 +9,6 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
  *
  * Nov 4, 2016
  */
-public interface KeeperMasterChooser extends Releasable, Startable, Stoppable{
+public interface MasterChooser extends Releasable, Startable, Stoppable {
 
 }

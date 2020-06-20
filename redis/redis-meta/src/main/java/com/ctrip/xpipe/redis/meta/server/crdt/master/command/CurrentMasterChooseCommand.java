@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl;
+package com.ctrip.xpipe.redis.meta.server.crdt.master.command;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.server.Server;
@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -20,20 +19,20 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class DefaultPeerMasterChooseCommand extends AbstractPeerMasterChooseCommand {
+public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
 
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     private int checkRedisTimeoutSeconds;
 
-    protected DcMetaCache dcMetaCache;
+    protected List<RedisMeta> allRedises;
 
     protected ScheduledExecutorService scheduled;
 
-    public DefaultPeerMasterChooseCommand(String dcId, String clusterId, String shardId, DcMetaCache dcMetaCache, ScheduledExecutorService scheduled,
-                                          XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds) {
-        super(dcId, clusterId, shardId);
-        this.dcMetaCache = dcMetaCache;
+    public CurrentMasterChooseCommand(String clusterId, String shardId, List<RedisMeta> allRedises, ScheduledExecutorService scheduled,
+                                      XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds) {
+        super(clusterId, shardId);
+        this.allRedises = allRedises;
         this.scheduled = scheduled;
         this.keyedObjectPool = keyedObjectPool;
         this.checkRedisTimeoutSeconds = checkRedisTimeoutSeconds;
@@ -41,11 +40,9 @@ public class DefaultPeerMasterChooseCommand extends AbstractPeerMasterChooseComm
 
     @Override
     public RedisMeta choose() throws Exception {
-        List<RedisMeta> allRedises = dcMetaCache.getShardRedises(clusterId, shardId);
-
         List<RedisMeta> redisMasters = getMasters(allRedises);
 
-        if (1 == redisMasters.size()) {
+        if (isMasterExactOne(redisMasters)) {
             RedisMeta peerMaster = redisMasters.get(0);
             peerMaster.setGid(getRedisGid(peerMaster.getIp(), peerMaster.getPort()));
             return peerMaster;
@@ -55,6 +52,10 @@ public class DefaultPeerMasterChooseCommand extends AbstractPeerMasterChooseComm
         }
 
         return null;
+    }
+
+    private boolean isMasterExactOne(List<RedisMeta> redisMasters) {
+        return 1 == redisMasters.size();
     }
 
     protected List<RedisMeta> getMasters(List<RedisMeta> allRedises) {

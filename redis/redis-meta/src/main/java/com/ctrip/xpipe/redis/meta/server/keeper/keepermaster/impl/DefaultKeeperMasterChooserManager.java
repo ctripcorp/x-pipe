@@ -10,12 +10,11 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperMasterElector;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
-import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.KeeperMasterChooser;
+import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.MasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -91,7 +90,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		
 		String shardId = shardMeta.getId();
 		
-		KeeperMasterChooser keeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId, multiDcService, 
+		MasterChooser keeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId, multiDcService,
 				dcMetaCache, currentMetaManager, scheduled, clientPool);
 		
 		

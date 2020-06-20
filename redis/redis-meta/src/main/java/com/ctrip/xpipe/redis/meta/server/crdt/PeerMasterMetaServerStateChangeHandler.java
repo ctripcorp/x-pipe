@@ -1,47 +1,33 @@
 package com.ctrip.xpipe.redis.meta.server.crdt;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
-import com.ctrip.xpipe.redis.meta.server.crdt.manage.PeerMasterAdjusterManager;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.PeerMasterChooserManager;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.PeerMasterAdjustAction;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.concurrent.Executor;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.PEER_MASTER_CHOOSE_EXECUTOR;
 
 @Component
 public class PeerMasterMetaServerStateChangeHandler implements MetaServerStateChangeHandler {
 
-    @Autowired
-    private PeerMasterChooserManager peerMasterChooserManager;
+    @Resource(name = PEER_MASTER_CHOOSE_EXECUTOR)
+    KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor;
 
     @Autowired
-    private PeerMasterAdjusterManager peerMasterAdjusterManager;
-
-    @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
-    private Executor executors;
+    private PeerMasterAdjustAction peerMasterAdjustAction;
 
     @Override
-    public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
-        //nothing to do
-    }
-
-    @Override
-    public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
-        //nothing to do
-    }
-
-    @Override
-    public void upstreamPeerMasterChange(String dcId, String clusterId, String shardId) {
-        peerMasterChooserManager.getChooser(clusterId, shardId).createMasterChooserCommand(dcId).execute(executors);
+    public void currentMasterChanged(String clusterId, String shardId) {
+        peerMasterAdjustAction.adjustPeerMaster(clusterId, shardId);
     }
 
     @Override
     public void peerMasterChanged(String dcId, String clusterId, String shardId) {
-        peerMasterAdjusterManager.getAdjuster(clusterId, shardId).adjust();
+        peerMasterAdjustAction.adjustPeerMaster(clusterId, shardId);
     }
 
 }

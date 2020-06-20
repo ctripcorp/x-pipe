@@ -68,7 +68,7 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 									@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[upstreamPeerChange]{},{}", clusterId, shardId);
-		metaServer.handleUpstreamPeerChange(dcId, clusterId, shardId, forwardInfo);
+		metaServer.upstreamPeerChange(dcId, clusterId, shardId, forwardInfo);
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -92,7 +92,7 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 		return createDeferredResult(new Function<MetaServer, RedisMeta>() {
 			@Override
 			public RedisMeta apply(MetaServer metaServer) {
-				return metaServer.getPeerMaster(clusterId, shardId, forwardInfo);
+				return metaServer.getCurrentMaster(clusterId, shardId, forwardInfo);
 			}
 		}, metaServer);
 	}
