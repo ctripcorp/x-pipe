@@ -1,15 +1,18 @@
-package com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl;
+package com.ctrip.xpipe.redis.meta.server.crdt.master.command;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 
 
-public class RemoteDcPeerMasterChooseCommand extends AbstractPeerMasterChooseCommand {
+public class PeerMasterChooseCommand extends AbstractMasterChooseCommand {
+
+    private String dcId;
 
     private MultiDcService multiDcService;
 
-    public RemoteDcPeerMasterChooseCommand(String dcId, String clusterId, String shardId, MultiDcService multiDcService) {
-        super(dcId, clusterId, shardId);
+    public PeerMasterChooseCommand(String dcId, String clusterId, String shardId, MultiDcService multiDcService) {
+        super(clusterId, shardId);
+        this.dcId = dcId;
         this.multiDcService = multiDcService;
     }
 

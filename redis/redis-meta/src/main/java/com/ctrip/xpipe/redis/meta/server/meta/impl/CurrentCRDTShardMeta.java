@@ -8,28 +8,38 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
 
+    RedisMeta currentMaster;
+
     Map<String, RedisMeta> peerMasters = new ConcurrentHashMap<>();
 
     public CurrentCRDTShardMeta(@JsonProperty("clusterId") String clusterId, @JsonProperty("shardId") String shardId) {
         super(clusterId, shardId);
     }
 
+    public void setCurrentMaster(RedisMeta master) {
+        this.currentMaster = cloneMasterMeta(master);
+    }
+
+    public RedisMeta getCurrentMaster() {
+        return cloneMasterMeta(currentMaster);
+    }
+
     public void setPeerMaster(String dcId, RedisMeta peerMaster) {
         if (null == peerMaster) return;
-        peerMasters.put(dcId.toLowerCase(), clonePeerMaster(peerMaster));
+        peerMasters.put(dcId.toLowerCase(), cloneMasterMeta(peerMaster));
     }
 
     public RedisMeta getPeerMaster(String dcId) {
         RedisMeta peerMaster = peerMasters.get(dcId.toLowerCase());
         if (null == peerMaster) return null;
-        return clonePeerMaster(peerMaster);
+        return cloneMasterMeta(peerMaster);
     }
 
     public void removePeerMaster(String dcId) {
         peerMasters.remove(dcId.toLowerCase());
     }
 
-    public Set<String> getKnownDcs() {
+    public Set<String> getUpstreamPeerDcs() {
         return new HashSet<>(peerMasters.keySet());
     }
 
@@ -37,7 +47,7 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
         return new ArrayList<>(peerMasters.values());
     }
 
-    private RedisMeta clonePeerMaster(RedisMeta peerMaster) {
+    private RedisMeta cloneMasterMeta(RedisMeta peerMaster) {
         return new RedisMeta().setGid(peerMaster.getGid()).setIp(peerMaster.getIp()).setPort(peerMaster.getPort());
     }
 

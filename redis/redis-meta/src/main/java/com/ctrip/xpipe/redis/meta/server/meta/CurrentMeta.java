@@ -103,6 +103,20 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getKeeperMaster();
 	}
 
+	public void setCurrentMaster(String clusterId, String shardId,  RedisMeta peerMaster) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentCRDTShardMeta.setCurrentMaster(peerMaster);
+	}
+
+	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getCurrentMaster();
+	}
+
 	public void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peerMaster) {
 		checkClusterSupportPeerMaster(clusterId);
 
@@ -124,11 +138,11 @@ public class CurrentMeta implements Releasable {
 		currentCRDTShardMeta.removePeerMaster(dcId);
 	}
 
-	public Set<String> getPeerMasterKnownDcs(String clusterId, String shardId) {
+	public Set<String> getUpstreamPeerDcs(String clusterId, String shardId) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
-		return currentCRDTShardMeta.getKnownDcs();
+		return currentCRDTShardMeta.getUpstreamPeerDcs();
 	}
 
 	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {

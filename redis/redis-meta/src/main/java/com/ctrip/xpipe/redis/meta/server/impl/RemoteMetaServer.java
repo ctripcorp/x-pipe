@@ -64,7 +64,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public RedisMeta getPeerMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
 		logger.debug("[getPeerMaster][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
 
@@ -122,9 +122,9 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public void handleUpstreamPeerChange(String dcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
+	public void upstreamPeerChange(String dcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.UPSTREAM_CHANGE.getForwardType());
-		logger.info("[handleUpstreamPeerChange][forward]{},{},{}, {}--> {}", dcId, clusterId, shardId, forwardInfo, this);
+		logger.info("[upstreamPeerChange][forward]{},{},{}, {}--> {}", dcId, clusterId, shardId, forwardInfo, this);
 
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
 		restTemplate.exchange(upstreamPeerChangePath, HttpMethod.PUT, entity, String.class, dcId, clusterId, shardId);

@@ -72,39 +72,25 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	}
 
 	@Override
-	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
-		//nothing to do
-	}
-
-	@Override
-	public void upstreamPeerMasterChange(String dcId, String clusterId, String shardId) {
-		//nothing to do
-	}
-
-	@Override
-	public void peerMasterChanged(String dcId, String clusterId, String shardId) {
-		if (!dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
-			// nothing to do for remote peer master update
-			return;
-		}
-
+	public void currentMasterChanged(String clusterId, String shardId) {
 		// notify remote dc for local peer master change
 		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
 		Set<String> relatedDcs = dcMetaCache.getRelatedDcs(clusterId, shardId);
+		String currentDc = dcMetaCache.getCurrentDc();
 		logger.info("[peerMasterChanged][notify related dc]{}, {}, {}", clusterId, shardId, relatedDcs);
-		for (String dcName : relatedDcs) {
-			if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcName)) {
+		for (String dcId : relatedDcs) {
+			if (currentDc.equalsIgnoreCase(dcId)) {
 				continue;
 			}
-			DcInfo dcInfo = dcInfos.get(dcName);
+			DcInfo dcInfo = dcInfos.get(dcId);
 
 			if (dcInfo == null) {
-				logger.error("[peerMasterChanged][can not find dcinfo]{}, {}", dcName, dcInfos);
+				logger.error("[peerMasterChanged][can not find dcinfo]{}, {}", dcId, dcInfos);
 				continue;
 			}
 			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
 					.getOrCreate(dcInfo.getMetaServerAddress());
-			executors.execute(new PeerDcNotifyTask(metaServerMultiDcService, dcName, clusterId, shardId));
+			executors.execute(new PeerDcNotifyTask(metaServerMultiDcService, currentDc, clusterId, shardId));
 		}
 	}
 

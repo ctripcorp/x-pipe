@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
@@ -43,6 +44,18 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
 
     @Bean(name = CLUSTER_SHARD_ADJUST_EXECUTOR)
     public KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> getClusterShardAdjustExecutor(
+            @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, @Qualifier(SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled) {
+        return new KeyedOneThreadMutexableTaskExecutor<>(executors, scheduled);
+    }
+
+    @Bean(name = PEER_MASTER_CHOOSE_EXECUTOR)
+    public KeyedOneThreadTaskExecutor<Pair<String, String> > getPeerMasterChooseExecutor(
+            @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, @Qualifier(SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled) {
+        return new KeyedOneThreadMutexableTaskExecutor<>(executors, scheduled);
+    }
+
+    @Bean(name = PEER_MASTER_ADJUST_EXECUTOR)
+    public KeyedOneThreadTaskExecutor<Pair<String, String> > getPeerMasterAdjustExecutor(
             @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, @Qualifier(SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled) {
         return new KeyedOneThreadMutexableTaskExecutor<>(executors, scheduled);
     }

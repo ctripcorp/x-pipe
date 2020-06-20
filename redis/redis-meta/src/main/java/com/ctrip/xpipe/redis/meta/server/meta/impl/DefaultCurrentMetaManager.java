@@ -421,8 +421,23 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return currentMeta.watchIfNotWatched(clusterId, shardId);
 	}
 
+	public void setCurrentMaster(String clusterId, String shardId, int gid, String ip, int port) {
+		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
+		currentMeta.setCurrentMaster(clusterId, shardId, peerMaster);
+		notifyCurrentMasterChanged(clusterId, shardId);
+	}
+
+	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+		return currentMeta.getCurrentMaster(clusterId, shardId);
+	}
+
 	@Override
 	public void setPeerMaster(String dcId, String clusterId, String shardId, int gid, String ip, int port) {
+		if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
+			throw new IllegalArgumentException(String.format("peer master must from other dc %s %s %d %s:%d",
+					clusterId, shardId, gid, ip, port));
+		}
+
 		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
 		currentMeta.setPeerMaster(dcId, clusterId, shardId, peerMaster);
 		notifyPeerMasterChange(dcId, clusterId, shardId);
@@ -434,8 +449,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public Set<String> getPeerMasterKnownDcs(String clusterId, String shardId) {
-		return currentMeta.getPeerMasterKnownDcs(clusterId, shardId);
+	public Set<String> getUpstreamPeerDcs(String clusterId, String shardId) {
+		return currentMeta.getUpstreamPeerDcs(clusterId, shardId);
 	}
 
 	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
@@ -447,13 +462,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		currentMeta.removePeerMaster(dcId, clusterId, shardId);
 	}
 
-	@Override
-	public void upstreamPeerChange(String dcId, String clusterId, String shardId) {
-		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+	private void notifyCurrentMasterChanged(String clusterId, String shardId) {
+		for (MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.upstreamPeerMasterChange(dcId, clusterId, shardId);
+				stateHandler.currentMasterChanged(clusterId, shardId);
 			} catch (Exception e) {
-				logger.error("[notifyPeerMasterChange] {}, {}", clusterId, shardId, e);
+				logger.error("[notifyCurrentMasterChanged] {}, {}", clusterId, shardId, e);
 			}
 		}
 	}
@@ -463,7 +477,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			try {
 				stateHandler.peerMasterChanged(dcId, clusterId, shardId);
 			} catch (Exception e) {
-				logger.error("[notifyPeerMasterChange] {}, {}", clusterId, shardId, e);
+				logger.error("[notifyPeerMasterChange] {}, {}, {}", dcId, clusterId, shardId, e);
 			}
 		}
 	}
