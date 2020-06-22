@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.CLIENT_POOL;
+
 @Component
 public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFactory {
 
@@ -40,7 +42,7 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
 
     @Autowired
     public DefaultMasterChooseCommandFactory(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
-                                             @Qualifier("clientPool") XpipeNettyClientKeyedObjectPool keyedObjectPool,
+                                             @Qualifier(CLIENT_POOL) XpipeNettyClientKeyedObjectPool keyedObjectPool,
                                              MultiDcService multiDcService) {
         this.dcMetaCache = dcMetaCache;
         this.currentMetaManager = currentMetaManager;

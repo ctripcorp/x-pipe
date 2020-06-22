@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.meta.server.crdt.replication.PeerMasterStateAdjuste
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -51,10 +50,5 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
         } catch (Exception e) {
             logger.error("[addShard]{}, {}", clusterId, shardId, e);
         }
-    }
-
-    @VisibleForTesting
-    protected void setScheduled(ScheduledExecutorService scheduled) {
-        this.scheduled = scheduled;
     }
 }

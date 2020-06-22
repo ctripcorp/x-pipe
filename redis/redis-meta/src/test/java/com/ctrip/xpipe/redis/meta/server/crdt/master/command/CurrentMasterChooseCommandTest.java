@@ -1,16 +1,13 @@
-package com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl;
+package com.ctrip.xpipe.redis.meta.server.crdt.master.command;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
@@ -18,16 +15,13 @@ import java.util.List;
 import java.util.function.Function;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DefaultPeerMasterChooseCommandTest extends AbstractMetaServerTest {
+public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
 
     private int checkRedisTimeoutSeconds = 1;
 
-    @Mock
-    protected DcMetaCache dcMetaCache;
+    private CurrentMasterChooseCommand chooseCommand;
 
-    private DefaultPeerMasterChooseCommand chooseCommand;
-
-    private String dcId = "dc1", clusterId = "cluster1", shardId = "shard1";
+    private String clusterId = "cluster1", shardId = "shard1";
 
     private List<RedisMeta> redises = new ArrayList<>();
 
@@ -70,11 +64,9 @@ public class DefaultPeerMasterChooseCommandTest extends AbstractMetaServerTest {
 
     @Before
     public void setupDefaultPeerMasterChooseCommandTest() throws Exception {
-        chooseCommand = new DefaultPeerMasterChooseCommand(dcId, clusterId, shardId, dcMetaCache, scheduled,
-                getXpipeNettyClientKeyedObjectPool(), checkRedisTimeoutSeconds);
-
         mockRedises();
-        Mockito.when(dcMetaCache.getShardRedises(Mockito.anyString(), Mockito.anyString())).thenReturn(redises);
+        chooseCommand = new CurrentMasterChooseCommand(clusterId, shardId, redises, scheduled,
+                getXpipeNettyClientKeyedObjectPool(), checkRedisTimeoutSeconds);
     }
 
     @After

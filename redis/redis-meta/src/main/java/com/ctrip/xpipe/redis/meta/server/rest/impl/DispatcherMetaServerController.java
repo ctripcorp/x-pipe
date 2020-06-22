@@ -64,11 +64,11 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_PEER_CHANGE, method = RequestMethod.PUT)
-	public void upstreamPeerChange(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId,
+	public void upstreamPeerChange(@PathVariable String upstreamDcId, @PathVariable String clusterId, @PathVariable String shardId,
 									@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[upstreamPeerChange]{},{}", clusterId, shardId);
-		metaServer.upstreamPeerChange(dcId, clusterId, shardId, forwardInfo);
+		metaServer.upstreamPeerChange(upstreamDcId, clusterId, shardId, forwardInfo);
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.GET_ACTIVE_KEEPER, method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)

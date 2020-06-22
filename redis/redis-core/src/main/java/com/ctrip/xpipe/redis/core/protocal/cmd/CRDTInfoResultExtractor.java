@@ -39,7 +39,7 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
         String gid = extract(String.format(TEMP_PEER_GID, index));
 
         if (null == host || null == port || null == gid) return null;
-        return new RedisMeta().setIp(host).setPort(Integer.parseInt(port)).setGid(Integer.parseInt(gid));
+        return new RedisMeta().setIp(host).setPort(Integer.parseInt(port)).setGid(Long.parseLong(gid));
     }
 
 }

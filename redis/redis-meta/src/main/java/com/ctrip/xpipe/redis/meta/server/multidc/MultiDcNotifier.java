@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +80,7 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 		String currentDc = dcMetaCache.getCurrentDc();
 		logger.info("[peerMasterChanged][notify related dc]{}, {}, {}", clusterId, shardId, relatedDcs);
 		for (String dcId : relatedDcs) {
-			if (currentDc.equalsIgnoreCase(dcId)) {
+			if (currentDc.equalsIgnoreCase(dcId) || StringUtil.isEmpty(dcId)) {
 				continue;
 			}
 			DcInfo dcInfo = dcInfos.get(dcId);

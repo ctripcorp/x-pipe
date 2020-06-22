@@ -83,7 +83,7 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
         return false;
     }
 
-    protected int getRedisGid(String ip, int port) throws Exception {
+    protected long getRedisGid(String ip, int port) throws Exception {
         try {
             SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(ip, port));
             String infoStr = new CRDTInfoCommand(clientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
@@ -93,7 +93,7 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
                 throw new IllegalStateException(String.format("no info gid found for cluster %s shard %s",  clusterId, shardId));
             }
 
-            int gid = Integer.parseInt(rawGid);
+            long gid = Long.parseLong(rawGid);
             if (gid > 0) {
                 return gid;
             } else {

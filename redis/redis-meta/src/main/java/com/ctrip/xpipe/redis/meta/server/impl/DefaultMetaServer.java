@@ -18,7 +18,6 @@ import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.PeerMasterChooseAction;
-import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.DefaultMasterChooserManager;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
@@ -66,8 +65,6 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@Autowired
 	private PeerMasterChooseAction peerMasterChooseAction;
-
-	private String currentDc = FoundationService.DEFAULT.getDataCenter();
 
 	@Override
 	protected void doInitialize() throws Exception {
@@ -186,14 +183,14 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
-	public void upstreamPeerChange(String dcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
+	public void upstreamPeerChange(String upstreamDcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
 		if (null == clusterMeta || !ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
 			logger.info("[upstreamPeerChange] cluster {} not found or not support", clusterId);
 			return;
 		}
 
-		peerMasterChooseAction.choosePeerMaster(dcId, clusterId, shardId);
+		peerMasterChooseAction.choosePeerMaster(upstreamDcId, clusterId, shardId);
 	}
 
 	@Override

@@ -16,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.HashSet;
@@ -45,12 +46,15 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	@Mock
 	private CurrentMeta currentMeta;
 
+	private String upstreamDc = "upstream-dc";
+
 	@Before
 	public void beforeDefaultCurrentMetaServerMetaManagerTest() {
 
 		currentMetaServerMetaManager = getBean(DefaultCurrentMetaManager.class);
 		currentMetaServerMetaManager.setSlotManager(slotManager);
 		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
+		Mockito.when(dcMetaCache.getCurrentDc()).thenReturn(getDc());
 	}
 
 	@Test
@@ -143,12 +147,6 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(handler, times(times)).keeperMasterChanged(eq(clusterId), anyString(), any());
 	}
 
-	@Test
-	public void testHandleUpstreamPeerChange() {
-		currentMetaServerMetaManager.addMetaServerStateChangeHandler(handler);
-		currentMetaServerMetaManager.upstreamPeerChange(getDc(), getClusterId(), getShardId());
-		verify(handler, times(1)).upstreamPeerMasterChange(getDc(), getClusterId(), getShardId());
-	}
 
 	@Test
 	public void testSetPeerMaster() {
@@ -156,21 +154,43 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		currentMetaServerMetaManager.setCurrentMeta(currentMeta);
 
 		doAnswer(invocation -> {
+			String paramClusterId = invocation.getArgumentAt(0, String.class);
+			String paramShardId = invocation.getArgumentAt(1, String.class);
+			RedisMeta paramRedis = invocation.getArgumentAt(2, RedisMeta.class);
+
+			Assert.assertEquals(getClusterId(), paramClusterId);
+			Assert.assertEquals(getShardId(), paramShardId);
+			Assert.assertEquals(new RedisMeta().setGid(1L).setIp("127.0.0.1").setPort(6379), paramRedis);
+
+			return null;
+		}).when(currentMeta).setCurrentMaster(anyString(), anyString(), any());
+
+		doAnswer(invocation -> {
 			String paramDcId = invocation.getArgumentAt(0, String.class);
 			String paramClusterId = invocation.getArgumentAt(1, String.class);
 			String paramShardId = invocation.getArgumentAt(2, String.class);
 			RedisMeta paramRedis = invocation.getArgumentAt(3, RedisMeta.class);
 
-			Assert.assertEquals(getDc(), paramDcId);
+			Assert.assertEquals(upstreamDc, paramDcId);
 			Assert.assertEquals(getClusterId(), paramClusterId);
 			Assert.assertEquals(getShardId(), paramShardId);
-			Assert.assertEquals(new RedisMeta().setGid(1).setIp("127.0.0.1").setPort(6379), paramRedis);
+			Assert.assertEquals(new RedisMeta().setGid(2L).setIp("127.0.0.2").setPort(6379), paramRedis);
 
 			return null;
 		}).when(currentMeta).setPeerMaster(anyString(), anyString(), anyString(), any());
-		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
+
+		currentMetaServerMetaManager.setCurrentMaster(getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
+		verify(currentMeta, times(1)).setCurrentMaster(anyString(), anyString(), any());
+		verify(handler, times(1)).currentMasterChanged(getClusterId(), getShardId());
+
+		currentMetaServerMetaManager.setPeerMaster(upstreamDc, getClusterId(), getShardId(), 2, "127.0.0.2", 6379);
 		verify(currentMeta, times(1)).setPeerMaster(anyString(), anyString(), anyString(), any());
-		verify(handler, times(1)).peerMasterChanged(getDc(), getClusterId(), getShardId());
+		verify(handler, times(1)).peerMasterChanged(upstreamDc, getClusterId(), getShardId());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testSetCurrentDcPeerMaster() {
+		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
 	}
 
 }
