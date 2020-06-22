@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.PostConstruct;
@@ -171,5 +173,13 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
     @VisibleForTesting
     protected CheckMigrationCommandBuilder getBuilder() {
         return builder;
+    }
+
+    @Override
+    protected boolean shouldCheck() {
+        if (!super.shouldCheck()) return false;
+
+        Set<String> ownTypes =  consoleConfig.getOwnClusterType();
+        return null != ownTypes && ownTypes.stream().anyMatch(type -> ClusterType.lookup(type).supportMigration());
     }
 }

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
@@ -229,12 +230,18 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 
 	@Override
 	public RetMessage removeSentinelMonitor(String clusterName) {
+		ClusterTbl clusterTbl = clusterService.find(clusterName);
+		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+		if (null != clusterType && clusterType.supportMultiActiveDC()) {
+			return RetMessage.createFailMessage("cluster type " + clusterType + " not support remove sentinel");
+		}
+
 		long activedcId = clusterService.find(clusterName).getActivedcId();
 		String dcName = dcService.getDcName(activedcId);
 		List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAllByDcCluster(dcName, clusterName);
 		for(DcClusterShardTbl dcClusterShard : dcClusterShardTbls) {
 			try {
-				removeSentinelMonitorByShard(dcName, clusterName, dcClusterShard);
+				removeSentinelMonitorByShard(dcName, clusterName, clusterType, dcClusterShard);
 			} catch (Exception e) {
 				return RetMessage.createFailMessage("[stl-id: " + dcClusterShard.getSetinelId() + "]" + e.getMessage());
 			}
@@ -243,10 +250,11 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 	}
 
 	@VisibleForTesting
-	protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, DcClusterShardTbl dcClusterShard) {
+	protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, ClusterType clusterType, DcClusterShardTbl dcClusterShard) {
 		ShardTbl shardTbl = shardService.find(dcClusterShard.getShardId());
 		RemoveShardSentinelMonitorEvent shardEvent = new RemoveShardSentinelMonitorEvent(clusterName,
 				shardTbl.getShardName(), MoreExecutors.directExecutor());
+		shardEvent.setClusterType(clusterType);
 		shardEvent.setShardSentinels(find(dcClusterShard.getSetinelId()).getSetinelAddress());
 		shardEvent.setShardMonitorName(SentinelUtil.getSentinelMonitorName(clusterName, shardTbl.getSetinelMonitorName(), activeIdc));
 		sentinelManager.removeShardSentinelMonitors(shardEvent);

@@ -57,8 +57,7 @@ public abstract class AbstractServiceImplTest extends AbstractConsoleIntegration
 
         clusterModel.setShards(createShards(shardNames));
 
-        DcTbl slaveDc = new DcTbl().setDcName(dcNames[1]);
-        clusterModel.setSlaveDcs(Lists.newArrayList(slaveDc));
+        clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName(dcNames[0]), new DcTbl().setDcName(dcNames[1])));
 
         clusterService.createCluster(clusterModel);
 

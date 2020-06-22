@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
@@ -17,11 +18,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
+import static com.ctrip.xpipe.redis.console.controller.api.RetMessage.FAIL_STATE;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
@@ -168,7 +171,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         String dc = "SHAJQ", cluster = "cluster-test";
         sentinelService = new SentinelServiceImpl() {
             @Override
-            protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, DcClusterShardTbl dcClusterShard) {
+            protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, ClusterType clusterType, DcClusterShardTbl dcClusterShard) {
                 //do nothing
             }
         };
@@ -177,7 +180,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         sentinelService.setDcService(dcService);
         sentinelService.setSentinelManager(sentinelManager);
         sentinelService.setDcClusterShardService(dcClusterShardService);
-        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1));
+        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1).setClusterType(ClusterType.ONE_WAY.toString()));
         when(dcService.getDcName(anyLong())).thenReturn(dc);
         when(dcClusterShardService.findAllByDcCluster(dc, cluster))
                 .thenReturn(Lists.newArrayList(new DcClusterShardTbl().setShardId(1).setDcId(1L)));
@@ -190,7 +193,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         String dc = "SHAJQ", cluster = "cluster-test";
         sentinelService = new SentinelServiceImpl() {
             @Override
-            protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, DcClusterShardTbl dcClusterShard) {
+            protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, ClusterType clusterType, DcClusterShardTbl dcClusterShard) {
                 throw new XpipeRuntimeException("fake timeout");
             }
         };
@@ -199,12 +202,12 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         sentinelService.setDcService(dcService);
         sentinelService.setSentinelManager(sentinelManager);
         sentinelService.setDcClusterShardService(dcClusterShardService);
-        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1));
+        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1).setClusterType(ClusterType.ONE_WAY.toString()));
         when(dcService.getDcName(anyLong())).thenReturn(dc);
         when(dcClusterShardService.findAllByDcCluster(dc, cluster))
                 .thenReturn(Lists.newArrayList(new DcClusterShardTbl().setShardId(1).setDcId(1L)));
         RetMessage retMessage = sentinelService.removeSentinelMonitor(cluster);
-        Assert.assertEquals(RetMessage.FAIL_STATE, retMessage.getState());
+        Assert.assertEquals(FAIL_STATE, retMessage.getState());
     }
 
     @Test
@@ -215,7 +218,17 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         when(sentinelService.find(anyLong())).thenReturn(new SetinelTbl().setSetinelAddress("10.0.0.1:5555,10.0.0.2:5555"));
         when(shardService.find(anyLong())).thenReturn(new ShardTbl().setShardName(shard).setSetinelMonitorName(shard));
         doNothing().when(sentinelManager).removeShardSentinelMonitors(any(ShardEvent.class));
-        sentinelService.removeSentinelMonitorByShard(dc, cluster, dcClusterShardTbl);
+        sentinelService.removeSentinelMonitorByShard(dc, cluster, ClusterType.ONE_WAY, dcClusterShardTbl);
         verify(sentinelManager, times(1)).removeShardSentinelMonitors(any(ShardEvent.class));
+    }
+
+    @Test
+    public void testRemoveSentinelForCRDTCluster() {
+        String clusterId = "test-cluster";
+        Mockito.when(clusterService.find(clusterId)).thenReturn(new ClusterTbl().setClusterType(ClusterType.BI_DIRECTION.toString()));
+
+        RetMessage retMessage = sentinelService.removeSentinelMonitor(clusterId);
+        Assert.assertEquals(FAIL_STATE, retMessage.getState());
+        logger.info("[testRemoveSentinelForCRDTCluster] response {}", retMessage.getMessage());
     }
 }

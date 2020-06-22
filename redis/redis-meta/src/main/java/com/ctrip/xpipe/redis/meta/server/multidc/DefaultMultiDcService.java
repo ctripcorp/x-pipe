@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
@@ -29,16 +30,29 @@ public class DefaultMultiDcService implements MultiDcService{
 
 	@Override
 	public KeeperMeta getActiveKeeper(String dcName, String clusterId, String shardId) {
+		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
+		if (null == metaServerMultiDcService) return null;
 
+		KeeperMeta keeperMeta = metaServerMultiDcService.getActiveKeeper(clusterId, shardId);
+		return keeperMeta;
+	}
+
+	@Override
+	public RedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
+		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
+		if (null == metaServerMultiDcService) return null;
+
+		return metaServerMultiDcService.getPeerMaster(clusterId, shardId);
+	}
+
+	private MetaServerMultiDcService getMetaServerMultiDcService(String dcName) {
 		dcName = dcName.toLowerCase();
 		DcInfo dcInfo = metaServerConfig.getDcInofs().get(dcName);
 		if(dcInfo == null){
-			logger.error("[doChooseKeeperMaster][dc info null]{}", dcName);
+			logger.error("[getMetaServerMultiDcService][dc info null]{}", dcName);
 			return null;
 		}
-		
-		MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager.getOrCreate(dcInfo.getMetaServerAddress());
-		KeeperMeta keeperMeta = metaServerMultiDcService.getActiveKeeper(clusterId, shardId);
-		return keeperMeta;
+
+		return metaServerMultiDcServiceManager.getOrCreate(dcInfo.getMetaServerAddress());
 	}
 }

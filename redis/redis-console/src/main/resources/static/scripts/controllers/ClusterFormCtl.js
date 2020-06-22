@@ -90,7 +90,7 @@ index_module.controller('ClusterFromCtl',
                                 		shard.shardTbl.setinelMonitorName = shard.setinelMonitorName;
                                 	 });
                                 	 $scope.cluster.clusterType = $scope.selectedType
-                                     ClusterService.createCluster($scope.cluster, $scope.selectedDcs, $scope.shards)
+                                     ClusterService.createCluster($scope.cluster, $scope.clusterRelatedDcs, $scope.shards)
                                          .then(function (result) {
                                              toastr.success("创建成功");
                                              $window.location.href =

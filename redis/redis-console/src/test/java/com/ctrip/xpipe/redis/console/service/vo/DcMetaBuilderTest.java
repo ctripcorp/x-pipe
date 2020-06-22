@@ -96,10 +96,25 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void getOrCreateClusterMeta() throws Exception {
+    public void getOrCreateOneWayClusterMeta() throws Exception {
         builder.getOrCreateClusterMeta(dcClusterShards.get(0).getClusterInfo());
         ClusterMeta clusterMeta = dcMeta.getClusters().get(dcClusterShards.get(0).getClusterInfo().getClusterName());
         Assert.assertNotNull(clusterMeta);
+        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
+        Assert.assertEquals("jq", clusterMeta.getActiveDc());
+        Assert.assertEquals("oy,fra", clusterMeta.getBackupDcs());
+        Assert.assertNull(clusterMeta.getDcs());
+    }
+
+    @Test
+    public void getOrCreateBiDirectionClusterMeta() throws Exception {
+        builder.getOrCreateClusterMeta(clusterService.find("bi-cluster1"));
+        ClusterMeta clusterMeta = dcMeta.getClusters().get("bi-cluster1");
+        Assert.assertNotNull(clusterMeta);
+        Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION));
+        Assert.assertNull(clusterMeta.getActiveDc());
+        Assert.assertNull(clusterMeta.getBackupDcs());
+        Assert.assertEquals("jq,oy", clusterMeta.getDcs());
     }
 
     @Test
@@ -132,7 +147,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         clusterModel.setClusterTbl(clusterTbl);
         clusterModel.setShards(Lists.newArrayList());
         //empty slave idc
-        clusterModel.setSlaveDcs(Lists.newArrayList());
+        clusterModel.setDcs(Lists.newArrayList());
         clusterTbl = clusterService.createCluster(clusterModel);
 
         dcClusterService.addDcCluster(dcService.getDcName(1), "test-one-dc-cluster");
@@ -140,7 +155,6 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Map<Long, List<DcClusterTbl>> map = Maps.newHashMap();
         map.put(clusterTbl.getId(), Lists.newArrayList(new DcClusterTbl().setClusterId(clusterTbl.getId()).setDcId(1)));
         builder.setCluster2DcClusterMap(map);
-        builder.getBackupDcs(clusterTbl, 1);
     }
 
     private void testBuildMetaForClusterType(ClusterType clusterType, int clusterSize) throws Exception {

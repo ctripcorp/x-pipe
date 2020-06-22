@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * Nov 4, 2016
  */
-public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
+public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser {
 	
 	private MultiDcService multiDcService;
 	
@@ -22,13 +22,13 @@ public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser{
 	
 	private KeeperMasterChooserAlgorithm keeperMasterChooserAlgorithm;
 
-	public DefaultDcKeeperMasterChooser(String clusterId, String shardId, MultiDcService multiDcService, 
-			DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+	public DefaultDcKeeperMasterChooser(String clusterId, String shardId, MultiDcService multiDcService,
+										DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool) {
 		this(clusterId, shardId, multiDcService, dcMetaCache, currentMetaManager, scheduled, keyedObjectPool, DEFAULT_KEEPER_MASTER_CHECK_INTERVAL_SECONDS);
 	}
 
 	public DefaultDcKeeperMasterChooser(String clusterId, String shardId, MultiDcService multiDcService,
-			DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkIntervalSeconds) {
+										DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkIntervalSeconds) {
 		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled, checkIntervalSeconds);
 		this.multiDcService = multiDcService;
 		this.keyedObjectPool = keyedObjectPool;

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.notifier.cluster;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
@@ -54,9 +56,12 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
     private MetaCache metaCache;
 
     @Override
-    public ClusterEvent createClusterEvent(String clusterName) {
+    public ClusterEvent createClusterEvent(String clusterName, ClusterTbl clusterTbl) {
         
         ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent(clusterName, executors);
+        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+        if (clusterType.supportMultiActiveDC()) return null;
+
         List<ShardTbl> shardTbls = shardService.findAllByClusterName(clusterName);
         long activeDcId = clusterService.find(clusterName).getActivedcId();
         String activeDcName = dcService.getDcName(activeDcId);
@@ -65,6 +70,7 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
                 logger.info("[createClusterEvent] Create Shard Delete Event: {}", shardTbl);
                 Map<Long, SetinelTbl> sentinelMap = sentinelService.findByShard(shardTbl.getId());
                 ShardDeleteEvent shardEvent = new ShardDeleteEvent(clusterName, shardTbl.getShardName(), executors);
+                shardEvent.setClusterType(clusterType);
                 try {
                     shardEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardTbl.getShardName()));
                 } catch (Exception e) {

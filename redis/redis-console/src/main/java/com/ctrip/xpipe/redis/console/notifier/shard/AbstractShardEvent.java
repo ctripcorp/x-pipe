@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.notifier.shard;
 
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.google.common.collect.Lists;
 
@@ -22,6 +23,8 @@ public abstract class AbstractShardEvent implements ShardEvent {
     private String shardMonitorName;
 
     private String shardSentinels;
+
+    private ClusterType clusterType;
 
     private List<Observer> observers;
 
@@ -72,6 +75,11 @@ public abstract class AbstractShardEvent implements ShardEvent {
         }
     }
 
+    @Override
+    public ClusterType getClusterType() {
+        return this.clusterType;
+    }
+
     public AbstractShardEvent setShardName(String shardName) {
         this.shardName = shardName;
         return this;
@@ -89,6 +97,11 @@ public abstract class AbstractShardEvent implements ShardEvent {
 
     public AbstractShardEvent setShardSentinels(String shardSentinels) {
         this.shardSentinels = shardSentinels;
+        return this;
+    }
+
+    public AbstractShardEvent setClusterType(ClusterType clusterType) {
+        this.clusterType = clusterType;
         return this;
     }
 
