@@ -39,6 +39,8 @@ public abstract class AbstractSpringConfigContext implements ApplicationContextA
 	public static final String SCHEDULED_EXECUTOR = "scheduledExecutor";
 	public static final String GLOBAL_EXECUTOR = "globalExecutor";
 	public static final String CLUSTER_SHARD_ADJUST_EXECUTOR = "clusterShardAdjustExecutor";
+	public static final String PEER_MASTER_CHOOSE_EXECUTOR = "peerMasterChooseExecutor";
+	public static final String PEER_MASTER_ADJUST_EXECUTOR = "peerMasterAdjustExecutor";
 	public static final int maxScheduledCorePoolSize = 8;
 	public static final int THREAD_POOL_TIME_OUT = 5;
 	public static final int GLOBAL_THREAD_MULTI_CORE = 100;

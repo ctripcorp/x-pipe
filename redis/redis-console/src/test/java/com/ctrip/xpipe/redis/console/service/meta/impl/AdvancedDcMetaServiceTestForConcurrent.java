@@ -354,8 +354,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
                             .setClusterAdminEmails("test@ctrip.com").setClusterDescription(clusterMeta.getId());
                     ClusterModel clusterModel = new ClusterModel();
                     clusterModel.setClusterTbl(clusterTbl);
-                    String slaveDc = clusterMeta.getActiveDc().equalsIgnoreCase("NTGXH") ? "UAT" : "NTGXH";
-                    clusterModel.setSlaveDcs(Lists.newArrayList(new DcTbl().setDcName(slaveDc)));
+                    clusterModel.setDcs(Lists.newArrayList(new DcTbl().setDcName("NTGXH"), new DcTbl().setDcName("UAT")));
                     clusterService.createCluster(clusterModel);
                 }
                 for(ShardMeta shardMeta : clusterMeta.getShards().values()) {

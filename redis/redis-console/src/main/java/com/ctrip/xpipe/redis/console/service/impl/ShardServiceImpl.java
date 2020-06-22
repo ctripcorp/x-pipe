@@ -27,6 +27,7 @@ import org.unidal.dal.jdbc.DalException;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Service
 public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implements ShardService {
@@ -146,12 +147,14 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			}
     	});
 
-    	if(null != shard) {
+		final ClusterTbl cluster = clusterService.find(clusterName);
+
+    	if(null != shard && null != cluster) {
     		// Call shard event
 			Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
 			ShardEvent shardEvent = null;
 			if(sentinels != null && !sentinels.isEmpty()) {
-				 shardEvent = createShardDeleteEvent(clusterName, shardName, shard, sentinels);
+				 shardEvent = createShardDeleteEvent(clusterName, cluster, shardName, shard, sentinels);
 
 			}
 			try {
@@ -167,10 +170,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	/** Notify meta server **/
 		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	if(null != relatedDcs) {
-    		for(DcTbl dc : relatedDcs) {
-    			notifier.notifyClusterUpdate(dc.getDcName(), clusterName);
-
-    		}
+    		notifier.notifyClusterUpdate(clusterName, relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
     	}
 	}
 
@@ -215,10 +215,15 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@VisibleForTesting
-	protected ShardDeleteEvent createShardDeleteEvent(String clusterName, String shardName, ShardTbl shardTbl,
+	protected ShardDeleteEvent createShardDeleteEvent(String clusterName, ClusterTbl clusterTbl, String shardName, ShardTbl shardTbl,
 												Map<Long, SetinelTbl> sentinelTblMap) {
 
+		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
 		ShardDeleteEvent shardDeleteEvent = new ShardDeleteEvent(clusterName, shardName, executors);
+		shardDeleteEvent.setClusterType(clusterType);
+		if (null != clusterType && clusterType.supportMultiActiveDC()) {
+			return null;
+		}
 
 		try {
 			shardDeleteEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardTbl.getShardName()));

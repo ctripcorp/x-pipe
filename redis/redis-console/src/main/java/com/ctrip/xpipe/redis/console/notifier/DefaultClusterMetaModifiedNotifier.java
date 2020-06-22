@@ -53,18 +53,22 @@ public class DefaultClusterMetaModifiedNotifier implements ClusterMetaModifiedNo
 	}
 
 	@Override
-	public void notifyClusterUpdate(final String dcName, final String clusterName) {
-		submitNotifyTask(new MetaNotifyTask<Void>("notifyClusterUpdate", config.getConsoleNotifyRetryTimes(),
-				retryPolicy) {
+	public void notifyClusterUpdate(final String clusterName, List<String> dcs) {
+		if (null != dcs) {
+			for (final String dcName : dcs) {
+				submitNotifyTask(new MetaNotifyTask<Void>("notifyClusterUpdate", config.getConsoleNotifyRetryTimes(),
+						retryPolicy) {
 
-			@Override
-			public Void doNotify() {
-				logger.info("[notifyClusterUpdate]{},{}", dcName, clusterName);
-				metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName,
-						clusterMetaService.getClusterMeta(dcName, clusterName));
-				return null;
+					@Override
+					public Void doNotify() {
+						logger.info("[notifyClusterUpdate]{},{}", dcName, clusterName);
+						metaServerConsoleServiceManagerWrapper.get(dcName).clusterModified(clusterName,
+								clusterMetaService.getClusterMeta(dcName, clusterName));
+						return null;
+					}
+				});
 			}
-		});
+		}
 	}
 
 	@Override

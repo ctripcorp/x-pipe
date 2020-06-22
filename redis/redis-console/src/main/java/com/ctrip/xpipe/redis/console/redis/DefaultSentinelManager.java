@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.redis;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -51,6 +52,12 @@ public class DefaultSentinelManager implements SentinelManager {
 
     @Override
     public void removeShardSentinelMonitors(ShardEvent shardEvent) {
+
+        ClusterType clusterType = shardEvent.getClusterType();
+        if (null != clusterType && clusterType.supportMultiActiveDC()) {
+            // not support remove sentinel for multi active dc cluster temporarily
+            return;
+        }
 
         String clusterId = shardEvent.getClusterName(), shardId = shardEvent.getShardName();
 

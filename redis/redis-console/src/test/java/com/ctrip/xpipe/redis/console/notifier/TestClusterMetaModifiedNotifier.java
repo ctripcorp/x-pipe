@@ -11,7 +11,7 @@ import java.util.List;
 @Profile(AbstractProfile.PROFILE_NAME_TEST)
 public class TestClusterMetaModifiedNotifier implements ClusterMetaModifiedNotifier {
     @Override
-    public void notifyClusterUpdate(String dcName, String clusterName) {
+    public void notifyClusterUpdate(final String clusterName, List<String> dcs) {
 
     }
 

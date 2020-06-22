@@ -18,7 +18,12 @@ public interface MetaServerStateChangeHandler {
 	 * @param activeKeeper if activeKeeper == null, means that no keeper is active 
 	 * @throws Exception
 	 */
-	void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper);
+	default void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {}
 
-	void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster);
+	default void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {}
+
+	default void currentMasterChanged(String clusterId, String shardId) {}
+
+	default void peerMasterChanged(String dcId, String clusterId, String shardId) {}
+
 }
