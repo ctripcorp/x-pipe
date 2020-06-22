@@ -188,7 +188,8 @@ import org.junit.runners.Suite.SuiteClasses;
         VariablesCheckerTest.class,
         DBVariablesCheckTest.class,
         DefaultSentinelMonitorsCheckTest.class,
-        DcMetaBuilderTest.class
+        DcMetaBuilderTest.class,
+        DcClusterServiceImplTest.class
 })
 public class AllTests {
 

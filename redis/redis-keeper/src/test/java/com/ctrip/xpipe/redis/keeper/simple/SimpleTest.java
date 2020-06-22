@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.simple;
 
-import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -102,11 +102,12 @@ public class SimpleTest extends AbstractRedisTest {
 		ReplicationStoreMeta meta = new ReplicationStoreMeta();
 		meta.setBeginOffset(100L);
 
-		String json = JSON.toJSONString(meta);
+		String json = Codec.DEFAULT.encode(meta);
 
 		System.out.println(json);
 
-		meta = JSON.parseObject(null, ReplicationStoreMeta.class);
+		String str = null;
+		meta = Codec.DEFAULT.decode(str, ReplicationStoreMeta.class);
 		System.out.println(meta);
 
 	}

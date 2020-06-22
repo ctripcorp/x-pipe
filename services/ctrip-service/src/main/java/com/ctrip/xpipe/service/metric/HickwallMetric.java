@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.service.metric;
 
 import com.ctrip.framework.foundation.Foundation;
-import com.ctrip.hickwall.proxy.HickwallClient;
-import com.ctrip.hickwall.proxy.common.DataPoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
