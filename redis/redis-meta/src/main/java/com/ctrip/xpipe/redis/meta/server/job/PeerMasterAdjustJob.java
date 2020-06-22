@@ -95,6 +95,9 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         sequenceCommandChain.future().addListener(commandFuture -> {
             if (!commandFuture.isSuccess()) {
                 future().setFailure(commandFuture.cause());
+            } else if (peerMasterChanged.isEmpty() && peerMasterAdded.isEmpty() && (!doDelete || peerMasterDeleted.isEmpty())) {
+                getLogger().debug("[doExecute] no need adjust, finish");
+                future().setSuccess();
             } else {
                 doPeerMasterAdjust();
             }
