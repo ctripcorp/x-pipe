@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
@@ -18,6 +19,7 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -89,6 +91,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
                     commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
                     redisClientProtocol = new ArrayParser().setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
                 } else {
+                    getLogger().debug("[subscribe][doReceiveResponse][{}], [{}]", sign, ByteBufUtils.readToString(byteBuf));
                     throw new IllegalArgumentException("subscribe should response with redis array format");
                 }
             case READING_CONTENT:

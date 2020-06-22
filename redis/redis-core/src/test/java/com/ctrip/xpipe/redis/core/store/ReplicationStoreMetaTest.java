@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
-import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -63,7 +63,7 @@ public class ReplicationStoreMetaTest extends AbstractRedisTest{
 			+ "\"rdbEofMark\":\"b0c190f35fd4ed46aaf7df075b4b16fb198e0e8e\","
 			+ "\"rdbFile\":\"rdb_1482676036027_d107ef2f-4a68-4ad7-ad88-b737aab032ce\",\"rdbFileSize\":18,\"rdbLastKeeperOffset\":1}";
 		
-		meta = JSON.parseObject(realData, ReplicationStoreMeta.class);
+		meta = Codec.DEFAULT.decode(realData, ReplicationStoreMeta.class);
 		Assert.assertEquals("b0c190f35fd4ed46aaf7df075b4b16fb198e0e8e", meta.getRdbEofMark());
 		Assert.assertEquals(18, meta.getRdbFileSize());
 		
@@ -104,11 +104,11 @@ public class ReplicationStoreMetaTest extends AbstractRedisTest{
 	}
 	
 	private String metaString(ReplicationStoreMeta meta) {
-		return JSON.toJSONString(meta);
+		return Codec.DEFAULT.encode(meta);
 	}
 
 	private ReplicationStoreMeta fromString(String result) {
-		return JSON.parseObject(result, ReplicationStoreMeta.class);
+		return Codec.DEFAULT.decode(result, ReplicationStoreMeta.class);
 	}
 
 	@Test
