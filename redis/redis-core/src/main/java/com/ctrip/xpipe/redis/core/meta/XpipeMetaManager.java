@@ -93,6 +93,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
+	Set<String> getRelatedDcs(String clusterId, String shardId);
+
 	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);
 
 	DcMeta getDcMeta(String dc);

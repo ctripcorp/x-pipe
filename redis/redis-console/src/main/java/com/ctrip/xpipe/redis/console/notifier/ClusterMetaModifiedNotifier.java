@@ -10,8 +10,8 @@ import java.util.List;
  * Sep 14, 2016
  */
 public interface ClusterMetaModifiedNotifier {
-	public void notifyClusterUpdate(final String dcName, final String clusterName);
-	
-	public void notifyClusterDelete(final String clusterName, List<DcTbl> dcs);
+	void notifyClusterUpdate(final String clusterName, List<String> dcs);
+
+	void notifyClusterDelete(final String clusterName, List<DcTbl> dcs);
 	
 }

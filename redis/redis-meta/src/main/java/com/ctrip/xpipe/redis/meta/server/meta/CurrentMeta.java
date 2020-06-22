@@ -2,25 +2,23 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
-import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentKeeperShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
@@ -33,6 +31,10 @@ public class CurrentMeta implements Releasable {
 	private Logger logger = LoggerFactory.getLogger(CurrentMeta.class);
 
 	private Map<String, CurrentClusterMeta> currentMetas = new ConcurrentHashMap<>();
+
+	private static final String CLUSTER_NOT_SUPPORT_KEEPER_TEMPLATE = "cluster: %s, type: %s not support keeper";
+
+	private static final String CLUSTER_NOT_SUPPORT_PEER_MASTER_TEMPLATE = "cluster: %s, type: %s not support peer master";
 
 	public Set<String> allClusters() {
 		return new HashSet<>(currentMetas.keySet());
@@ -53,8 +55,9 @@ public class CurrentMeta implements Releasable {
 
 	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviveKeepers,
 			KeeperMeta activeKeeper) {
+		checkClusterSupportKeeper(clusterId);
 
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		currentShardMeta.setSurviveKeepers(surviveKeepers, activeKeeper);
 
 	}
@@ -66,31 +69,105 @@ public class CurrentMeta implements Releasable {
 	}
 
 	public List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId) {
+		checkClusterSupportKeeper(clusterId);
 
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.getSurviveKeepers();
 	}
 
 	public boolean setKeeperActive(String clusterId, String shardId, KeeperMeta keeperMeta) {
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		checkClusterSupportKeeper(clusterId);
+
+		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.setActiveKeeper(keeperMeta);
 	}
 
 	public KeeperMeta getKeeperActive(String clusterId, String shardId) {
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		checkClusterSupportKeeper(clusterId);
+
+		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.getActiveKeeper();
 	}
 
 	public boolean setKeeperMaster(String clusterId, String shardId, Pair<String, Integer> keeperMaster) {
+		checkClusterSupportKeeper(clusterId);
 
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.setKeeperMaster(keeperMaster);
 	}
 
 	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
+		checkClusterSupportKeeper(clusterId);
 
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentShardMeta.getKeeperMaster();
+	}
+
+	public void setCurrentMaster(String clusterId, String shardId,  RedisMeta peerMaster) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentCRDTShardMeta.setCurrentMaster(peerMaster);
+	}
+
+	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getCurrentMaster();
+	}
+
+	public void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peerMaster) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentCRDTShardMeta.setPeerMaster(dcId, peerMaster);
+	}
+
+	public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getPeerMaster(dcId);
+	}
+
+	public void removePeerMaster(String dcId, String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		currentCRDTShardMeta.removePeerMaster(dcId);
+	}
+
+	public Set<String> getUpstreamPeerDcs(String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getUpstreamPeerDcs();
+	}
+
+	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+		checkClusterSupportPeerMaster(clusterId);
+
+		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+		return currentCRDTShardMeta.getAllPeerMasters();
+	}
+
+	private void checkClusterSupportKeeper(String clusterId) {
+		if (!currentMetas.containsKey(clusterId)) return;
+
+		String clusterType = currentMetas.get(clusterId).clusterType;
+		if (!ClusterType.lookup(clusterType).supportKeeper()) {
+			throw new IllegalArgumentException(String.format(CLUSTER_NOT_SUPPORT_KEEPER_TEMPLATE, clusterId, clusterType));
+		}
+	}
+
+	private void checkClusterSupportPeerMaster(String clusterId) {
+		if (!currentMetas.containsKey(clusterId)) return;
+
+		String clusterType = currentMetas.get(clusterId).clusterType;
+		if (!ClusterType.lookup(clusterType).supportMultiActiveDC()) {
+			throw new IllegalArgumentException(String.format(CLUSTER_NOT_SUPPORT_PEER_MASTER_TEMPLATE, clusterId, clusterType));
+		}
 	}
 
 	private CurrentShardMeta getCurrentShardMetaOrThrowException(String clusterId, String shardId) {
@@ -129,7 +206,7 @@ public class CurrentMeta implements Releasable {
 					@Override
 					public CurrentClusterMeta create() {
 						logger.info("[addCluster][create]{}", clusterMeta.getId());
-						return new CurrentClusterMeta(clusterMeta.getId());
+						return new CurrentClusterMeta(clusterMeta.getId(), clusterMeta.getType());
 					}
 				});
 
@@ -181,14 +258,16 @@ public class CurrentMeta implements Releasable {
 		private static Logger logger = LoggerFactory.getLogger(CurrentClusterMeta.class);
 
 		private String clusterId;
+		private String clusterType;
 		private Map<String, CurrentShardMeta> clusterMetas = new ConcurrentHashMap<>();
 
 		public CurrentClusterMeta() {
 
 		}
 
-		public CurrentClusterMeta(String clusterId) {
+		public CurrentClusterMeta(String clusterId, String clusterType) {
 			this.clusterId = clusterId;
+			this.clusterType = clusterType;
 		}
 
 		public CurrentShardMeta getShard(String shardId) {
@@ -206,20 +285,25 @@ public class CurrentMeta implements Releasable {
 		}
 
 		public void addShard(final ShardMeta shardMeta) {
+			MapUtils.getOrCreate(clusterMetas, shardMeta.getId(), new ObjectFactory<CurrentShardMeta>() {
+				@Override
+				public CurrentShardMeta create() {
+					logger.info("[addShard][create]{} , {}, {}", clusterId, shardMeta.getId(), clusterType);
 
-			CurrentShardMeta currentShardMeta = MapUtils.getOrCreate(clusterMetas, shardMeta.getId(),
-					new ObjectFactory<CurrentShardMeta>() {
-						@Override
-						public CurrentShardMeta create() {
-
-							logger.info("[addShard][create]{} , {}", clusterId, shardMeta.getId());
-							return new CurrentShardMeta(clusterId, shardMeta.getId());
-						}
-					});
-
-			Pair<String, Integer> inetSocketAddress = getDefaultKeeperMaster(shardMeta);
-			logger.info("[addShard][default keeper master]{}", inetSocketAddress);
-			currentShardMeta.setKeeperMaster(inetSocketAddress);
+					switch (ClusterType.lookup(clusterType)) {
+						case BI_DIRECTION:
+							return new CurrentCRDTShardMeta(clusterId, shardMeta.getId());
+						case ONE_WAY:
+							CurrentKeeperShardMeta currentKeeperShardMeta = new CurrentKeeperShardMeta(clusterId, shardMeta.getId());
+							Pair<String, Integer> inetSocketAddress = getDefaultKeeperMaster(shardMeta);
+							logger.info("[addShard][default keeper master]{}", inetSocketAddress);
+							currentKeeperShardMeta.setKeeperMaster(inetSocketAddress);
+							return currentKeeperShardMeta;
+						default:
+							throw new IllegalArgumentException("unknow type:" + clusterType);
+					}
+				}
+			});
 		}
 
 		private Pair<String, Integer> getDefaultKeeperMaster(ShardMeta shardMeta) {
@@ -260,152 +344,12 @@ public class CurrentMeta implements Releasable {
 			return clusterId;
 		}
 
-	}
-
-	public static class CurrentShardMeta implements Releasable {
-
-		@JsonIgnore
-		private Logger logger = LoggerFactory.getLogger(getClass());
-
-		@JsonIgnore
-		private List<Releasable> resources = new LinkedList<>();
-
-		private AtomicBoolean watched = new AtomicBoolean(false);
-		private String clusterId, shardId;
-		private List<KeeperMeta> surviveKeepers = new LinkedList<>();
-		private Pair<String, Integer> keeperMaster;
-
-		public CurrentShardMeta() {
-
-		}
-
-		public void addResource(Releasable releasable) {
-			synchronized (resources) {
-				resources.add(releasable);
-			}
-		}
-
-		@Override
-		public void release() throws Exception {
-			logger.info("[release]{},{}", clusterId, shardId);
-			for (Releasable resource : resources) {
-				try {
-					resource.release();
-				} catch (Exception e) {
-					logger.error("[release]" + resource, e);
-				}
-			}
-		}
-
-		public boolean watchIfNotWatched() {
-			return watched.compareAndSet(false, true);
-		}
-
-		@JsonIgnore
-		public boolean setActiveKeeper(KeeperMeta activeKeeper) {
-
-			if (!checkIn(surviveKeepers, activeKeeper)) {
-				throw new IllegalArgumentException(
-						"active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
-			}
-			return doSetActive(activeKeeper);
-		}
-
-		public CurrentShardMeta(String clusterId, String shardId) {
-			this.clusterId = clusterId;
-			this.shardId = shardId;
-		}
-
-		@JsonIgnore
-		public KeeperMeta getActiveKeeper() {
-			for (KeeperMeta survive : surviveKeepers) {
-				if (survive.isActive()) {
-					return survive;
-				}
-			}
-			return null;
-		}
-
-		@SuppressWarnings("unchecked")
-		public List<KeeperMeta> getSurviveKeepers() {
-			return (List<KeeperMeta>) MetaClone.clone((Serializable) surviveKeepers);
-		}
-
-		@SuppressWarnings("unchecked")
-		public void setSurviveKeepers(List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
-
-			if (surviveKeepers.size() > 0) {
-				if (!checkIn(surviveKeepers, activeKeeper)) {
-					throw new IllegalArgumentException(
-							"active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
-				}
-				this.surviveKeepers = (List<KeeperMeta>) MetaClone.clone((Serializable) surviveKeepers);
-				logger.info("[setSurviveKeepers]{},{},{}, {}", clusterId, shardId, surviveKeepers, activeKeeper);
-				doSetActive(activeKeeper);
-			} else {
-				logger.info("[setSurviveKeepers][survive keeper none, clear]{},{},{}, {}", clusterId, shardId,
-						surviveKeepers, activeKeeper);
-				this.surviveKeepers.clear();
-			}
-		}
-
-		public boolean doSetActive(KeeperMeta activeKeeper) {
-
-			boolean changed = false;
-			logger.info("[doSetActive]{},{},{}", clusterId, shardId, activeKeeper);
-			for (KeeperMeta survive : this.surviveKeepers) {
-
-				if (MetaUtils.same(survive, activeKeeper)) {
-					if (!survive.isActive()) {
-						survive.setActive(true);
-						changed = true;
-					}
-				} else {
-					if (survive.isActive()) {
-						survive.setActive(false);
-					}
-				}
-			}
-			return changed;
-		}
-
-		private boolean checkIn(List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
-			for (KeeperMeta survive : surviveKeepers) {
-				if (MetaUtils.same(survive, activeKeeper)) {
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public Pair<String, Integer> getKeeperMaster() {
-			
-			if(keeperMaster == null){
-				return null;
-			}
-			return new Pair<String, Integer>(keeperMaster.getKey(), keeperMaster.getValue());
-		}
-
-		public synchronized boolean setKeeperMaster(Pair<String, Integer> keeperMaster) {
-
-			logger.info("[setKeeperMaster]{},{},{}", clusterId, shardId, keeperMaster);
-			if (ObjectUtils.equals(this.keeperMaster, keeperMaster)) {
-				return false;
-			}
-
-			if(keeperMaster == null){
-				this.keeperMaster = null;
-			}else{
-				this.keeperMaster = new Pair<String, Integer>(keeperMaster.getKey(), keeperMaster.getValue());
-			}
-			return true;
-		}
-
-		public String getShardId() {
-			return shardId;
+		public String getClusterType() {
+			return clusterType;
 		}
 
 	}
+
 
 	@Override
 	public String toString() {

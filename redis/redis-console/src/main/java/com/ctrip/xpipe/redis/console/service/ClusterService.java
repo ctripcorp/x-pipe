@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 
 import java.util.List;
@@ -13,6 +14,7 @@ public interface ClusterService {
 	List<ClusterTbl> findAllByNames(List<String> clusterNames);
 	ClusterTbl findClusterAndOrg(String clusterName);
 	ClusterStatus clusterStatus(String clusterName);
+	List<DcTbl> getClusterRelatedDcs(String clusterName);
 
 	ClusterTbl find(long clusterId);
 	List<ClusterTbl> findAllClustersWithOrgInfo();

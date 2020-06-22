@@ -11,7 +11,7 @@ public class ClusterModel implements java.io.Serializable{
 	private static final long serialVersionUID = 1L;
 	
 	private ClusterTbl clusterTbl;
-	private List<DcTbl> slaveDcs;
+	private List<DcTbl> dcs;
 	private List<ShardModel> shards;
 	
 	public ClusterModel() {
@@ -26,14 +26,13 @@ public class ClusterModel implements java.io.Serializable{
 		this.clusterTbl = clusterTbl;
 		return this;
 	}
-	
-	public List<DcTbl> getSlaveDcs() {
-		return this.slaveDcs;
+
+	public List<DcTbl> getDcs() {
+		return dcs;
 	}
-	
-	public ClusterModel setSlaveDcs(List<DcTbl> slaveDcs) {
-		this.slaveDcs = slaveDcs;
-		return this;
+
+	public void setDcs(List<DcTbl> dcs) {
+		this.dcs = dcs;
 	}
 
 	public List<ShardModel> getShards() {

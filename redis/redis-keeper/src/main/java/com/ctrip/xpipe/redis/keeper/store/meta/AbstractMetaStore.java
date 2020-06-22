@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
-import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -62,7 +62,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	protected void saveMetaToFile(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
 		logger.info("[saveMetaToFile]{}, {}", file, replicationStoreMeta);
-		IO.INSTANCE.writeTo(file, JSON.toJSONString(replicationStoreMeta));
+		IO.INSTANCE.writeTo(file, Codec.DEFAULT.encode(replicationStoreMeta));
 	}
 	
 	protected static ReplicationStoreMeta loadMetaFromFile(File file) throws IOException{
@@ -75,7 +75,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 	}
 	
 	public static ReplicationStoreMeta deserializeFromString(String str){
-		return JSON.parseObject(str, ReplicationStoreMeta.class);
+		return Codec.DEFAULT.decode(str, ReplicationStoreMeta.class);
 	}
 
 
