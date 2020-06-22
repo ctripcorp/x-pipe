@@ -216,6 +216,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		return metaManager.getBackupDcs(clusterId, shardId);
 	}
 
+	@Override
+	public Set<String> getRelatedDcs(String clusterId, String shardId) {
+		return metaManager.getRelatedDcs(clusterId, shardId);
+	}
+
 
 	@Override
 	public SentinelMeta getSentinel(String clusterId, String shardId) {

@@ -39,6 +39,7 @@
 	</entity>
 	<entity name="redis" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Redis">
 		<attribute name="offset" value-type="Long" />
+		<attribute name="gid" value-type="Long" />
 		<snippet>
 			public boolean isMaster(){
 			return m_master == null || m_master.trim().length() == 0;

@@ -311,6 +311,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
+	public Set<String> getRelatedDcs(String clusterId, String shardId) {
+		return dcMetaManager.get().getRelatedDcs(clusterId, shardId);
+	}
+
+	@Override
 	public String getPrimaryDc(String clusterId, String shardId) {
 		return dcMetaManager.get().getActiveDc(clusterId, shardId);
 	}

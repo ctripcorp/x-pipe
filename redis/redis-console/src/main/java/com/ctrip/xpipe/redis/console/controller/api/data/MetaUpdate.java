@@ -118,8 +118,6 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createFailMessage(e.getMessage());
         }
         long activeDcId = clusterType.supportMultiActiveDC() ? 0 : dcs.get(0).getId();
-        List<DcTbl> slaveDcs = clusterType.supportMultiActiveDC() ? dcs : dcs.subList(1, dcs.size());
-
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(activeDcId)
                 .setClusterName(clusterCreateInfo.getClusterName())
@@ -132,7 +130,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
 
         try {
-            clusterModel.setSlaveDcs(slaveDcs);
+            clusterModel.setDcs(dcs);
             clusterService.createCluster(clusterModel);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {

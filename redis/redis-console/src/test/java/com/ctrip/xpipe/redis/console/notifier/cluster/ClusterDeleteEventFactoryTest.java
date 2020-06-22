@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.notifier.cluster;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
@@ -34,7 +35,7 @@ public class ClusterDeleteEventFactoryTest extends AbstractConsoleIntegrationTes
     public void createClusterEvent() throws Exception {
 
         List<ClusterTbl> clusters = clusterService.findAllClustersWithOrgInfo();
-        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName());
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName(), clusters.get(0));
 
         Assert.assertTrue(clusterEvent instanceof ClusterDeleteEvent);
 
@@ -50,8 +51,16 @@ public class ClusterDeleteEventFactoryTest extends AbstractConsoleIntegrationTes
         MetaCache metaCache = mock(MetaCache.class);
         clusterDeleteEventFactory.setMetaCache(metaCache);
         when(metaCache.getSentinelMonitorName(anyString(), anyString())).thenThrow(new RuntimeException());
-        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName());
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName(), clusters.get(0));
 
+    }
+
+    @Test
+    public void testCreateForCRDTCluster() {
+        String clusterId = "test-cluster";
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterId,
+                new ClusterTbl().setClusterName(clusterId).setClusterType(ClusterType.BI_DIRECTION.toString()));
+        Assert.assertNull(clusterEvent);
     }
 
     @Override

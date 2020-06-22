@@ -157,7 +157,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@DalTransaction
 	public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
-		List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
+		List<DcTbl> allDcs = clusterModel.getDcs();
 		List<ShardModel> shards = clusterModel.getShards();
 		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
 
@@ -192,8 +192,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 
-		if(slaveDcs != null){
-			for(DcTbl dc : slaveDcs) {
+		if(allDcs != null){
+			for(DcTbl dc : allDcs) {
+				// single active dc cluster bind active dc when create
+				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
 				bindDc(cluster.getClusterName(), dc.getDcName());
 			}
 		}
@@ -329,7 +331,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		final ClusterTbl queryProto = proto;
 
 		// Call cluster delete event
-		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName);
+		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName, proto);
 
 		try {
 			clusterDao.deleteCluster(queryProto);
@@ -337,7 +339,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new ServerException(e.getMessage());
 		}
 
-		clusterEvent.onEvent();
+		if (null != clusterEvent) clusterEvent.onEvent();
 
 		/** Notify meta server **/
 		notifier.notifyClusterDelete(clusterName, relatedDcs);
