@@ -23,19 +23,19 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
 
     protected Server redisServer;
 
-    protected List<String> peerofRequest = new LinkedList<>();
+    protected Set<String> peerofRequest = new HashSet<>();
 
-    protected Map<Integer, Pair<String, Integer> > currentPeerMaster = new HashMap<Integer, Pair<String, Integer> >(){{
-       put(1, Pair.of("10.0.0.1", 6379)); // peer master deleted
-       put(2, Pair.of("10.0.0.2", 6379)); // peer master change
-       put(3, Pair.of("10.0.0.3", 6379)); // peer master unchange
+    protected Map<Long, Pair<String, Integer> > currentPeerMaster = new HashMap<Long, Pair<String, Integer> >(){{
+       put(1L, Pair.of("10.0.0.1", 6379)); // peer master deleted
+       put(2L, Pair.of("10.0.0.2", 6379)); // peer master change
+       put(3L, Pair.of("10.0.0.3", 6379)); // peer master unchange
 
     }};
 
-    protected Map<Integer, Pair<String, Integer> > expectPeerMaster = new HashMap<Integer, Pair<String, Integer> >(){{
-        put(2, Pair.of("10.0.0.2", 7379)); // peer master change
-        put(3, Pair.of("10.0.0.3", 6379)); // peer master unchange
-        put(4, Pair.of("10.0.0.4", 6379)); // peer master added
+    protected Map<Long, Pair<String, Integer> > expectPeerMaster = new HashMap<Long, Pair<String, Integer> >(){{
+        put(2L, Pair.of("10.0.0.2", 7379)); // peer master change
+        put(3L, Pair.of("10.0.0.3", 6379)); // peer master unchange
+        put(4L, Pair.of("10.0.0.4", 6379)); // peer master added
     }};
 
     PeerMasterAdjustJob peerMasterAdjustJob;

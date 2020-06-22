@@ -24,6 +24,8 @@ public class DefaultPeerMasterStateAdjuster extends AbstractClusterShardPeriodic
 
     protected KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutor;
 
+    private int adjustIntervalSeconds;
+
     public DefaultPeerMasterStateAdjuster(String clusterId, String shardId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
                                           PeerMasterAdjustJobFactory peerMasterAdjustJobFactory,
                                           KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutor,
@@ -36,15 +38,21 @@ public class DefaultPeerMasterStateAdjuster extends AbstractClusterShardPeriodic
                                           PeerMasterAdjustJobFactory peerMasterAdjustJobFactory,
                                           KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutor,
                                           ScheduledExecutorService scheduled, int adjustIntervalSeconds) {
-        super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled, adjustIntervalSeconds);
+        super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
         this.peerMasterAdjustJobFactory = peerMasterAdjustJobFactory;
         this.peerMasterAdjustExecutor = peerMasterAdjustExecutor;
+        this.adjustIntervalSeconds = adjustIntervalSeconds;
     }
 
     @Override
     protected void work() {
         PeerMasterAdjustJob adjustJob = peerMasterAdjustJobFactory.buildPeerMasterAdjustJob(clusterId, shardId);
         if (null != adjustJob) peerMasterAdjustExecutor.execute(Pair.of(clusterId, shardId), adjustJob);
+    }
+
+    @Override
+    protected int getWorkIntervalSeconds() {
+        return adjustIntervalSeconds;
     }
 
 }

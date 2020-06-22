@@ -60,18 +60,18 @@ public interface CurrentMetaManager extends Observable {
 
 	void setKeeperMaster(String clusterId, String shardId, String ip, int port);
 
-	void setCurrentMaster(String clusterId, String shardId, int gid, String ip, int port);
+	void setCurrentMaster(String clusterId, String shardId, long gid, String ip, int port);
 
 	RedisMeta getCurrentMaster(String clusterId, String shardId);
 
-	void setPeerMaster(String dcName, String clusterId, String shardId, int gid, String ip, int port);
+	void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port);
 
-	RedisMeta getPeerMaster(String dcName, String clusterId, String shardId);
+	RedisMeta getPeerMaster(String dcId, String clusterId, String shardId);
 
 	Set<String> getUpstreamPeerDcs(String clusterId, String shardId);
 
 	List<RedisMeta> getAllPeerMasters(String clusterId, String shardId);
 
-	void removePeerMaster(String dcName, String clusterId, String shardId);
+	void removePeerMaster(String dcId, String clusterId, String shardId);
 
 }

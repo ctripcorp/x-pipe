@@ -15,13 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.CLIENT_POOL;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 @Component
@@ -37,13 +37,12 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
 
     protected ScheduledExecutorService scheduled;
 
-    @Resource(name = "clientPool")
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
 
     @Autowired
     public DefaultPeerMasterAdjustJobFactory(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
-                                             @Qualifier("clientPool") XpipeNettyClientKeyedObjectPool keyedObjectPool,
+                                             @Qualifier(CLIENT_POOL) XpipeNettyClientKeyedObjectPool keyedObjectPool,
                                              @Qualifier(GLOBAL_EXECUTOR) Executor executors) {
         this.dcMetaCache = dcMetaCache;
         this.currentMetaManager = currentMetaManager;

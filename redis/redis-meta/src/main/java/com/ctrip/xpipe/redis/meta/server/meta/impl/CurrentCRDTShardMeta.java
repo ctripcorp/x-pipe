@@ -17,6 +17,7 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
     }
 
     public void setCurrentMaster(RedisMeta master) {
+        if (null == master) return;
         this.currentMaster = cloneMasterMeta(master);
     }
 
@@ -31,7 +32,6 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
 
     public RedisMeta getPeerMaster(String dcId) {
         RedisMeta peerMaster = peerMasters.get(dcId.toLowerCase());
-        if (null == peerMaster) return null;
         return cloneMasterMeta(peerMaster);
     }
 
@@ -48,6 +48,7 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
     }
 
     private RedisMeta cloneMasterMeta(RedisMeta peerMaster) {
+        if (null == peerMaster) return null;
         return new RedisMeta().setGid(peerMaster.getGid()).setIp(peerMaster.getIp()).setPort(peerMaster.getPort());
     }
 

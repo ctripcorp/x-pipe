@@ -27,10 +27,10 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
     protected DcMetaCache dcMetaCache;
 
     @Autowired
-    MasterChooseCommandFactory chooseCommandFactory;
+    private MasterChooseCommandFactory chooseCommandFactory;
 
     @Resource(name = PEER_MASTER_CHOOSE_EXECUTOR)
-    KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor;
+    private KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor;
 
     @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executors;

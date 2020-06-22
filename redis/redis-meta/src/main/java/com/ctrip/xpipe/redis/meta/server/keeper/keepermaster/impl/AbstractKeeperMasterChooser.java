@@ -17,6 +17,8 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 	public static int DEFAULT_KEEPER_MASTER_CHECK_INTERVAL_SECONDS = Integer
 			.parseInt(System.getProperty("KEEPER_MASTER_CHECK_INTERVAL_SECONDS", "5"));
 
+	protected int checkIntervalSeconds;
+
 	public AbstractKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
 									   CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
 		this(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled,
@@ -25,8 +27,8 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 
 	public AbstractKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
 									   CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, int checkIntervalSeconds) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled,
-				checkIntervalSeconds);
+		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+		this.checkIntervalSeconds = checkIntervalSeconds;
 	}
 
 	@Override
@@ -40,6 +42,11 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 		}
 		logger.debug("[doRun][set]{}, {}, {}", clusterId, shardId, keeperMaster);
 		currentMetaManager.setKeeperMaster(clusterId, shardId, keeperMaster.getKey(), keeperMaster.getValue());
+	}
+
+	@Override
+	protected int getWorkIntervalSeconds() {
+		return checkIntervalSeconds;
 	}
 
 	protected abstract Pair<String, Integer> chooseKeeperMaster();

@@ -50,11 +50,11 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private Executor executors;
 
-    private Map<Integer, Pair<String, Integer> > peerMasterDeleted;
+    private Map<Long, Pair<String, Integer> > peerMasterDeleted;
 
-    private Map<Integer, Pair<String, Integer> > peerMasterAdded;
+    private Map<Long, Pair<String, Integer> > peerMasterAdded;
 
-    private Map<Integer, Pair<String, Integer> > peerMasterChanged;
+    private Map<Long, Pair<String, Integer> > peerMasterChanged;
 
     private boolean doDelete = true;
 
@@ -129,7 +129,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         sequenceCommandChain.execute(executors);
     }
 
-    private void logOperation(String logTemp, Pair<String, Integer> currentMaster, int gid, Pair<String, Integer> peerMaster) {
+    private void logOperation(String logTemp, Pair<String, Integer> currentMaster, long gid, Pair<String, Integer> peerMaster) {
         String logContent = String.format(logTemp, clusterId, shardId, currentMaster.getKey(), currentMaster.getValue(), gid, peerMaster.getKey(), peerMaster.getValue());
         getLogger().info("[PeerMasterAdjustJob]{}", logContent);
         CatEventMonitor.DEFAULT.logEvent(PEER_MASTER_TYPE, logContent);
@@ -176,10 +176,10 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {
-            Map<Integer, Pair<String, Integer> > flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
-            Map<Integer, Pair<String, Integer> > flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
-            Set<Integer> retainGidSet = new HashSet<>(flatExpectedPeerMaster.keySet());
-            Set<Integer> currentGidSet = flatCurrentPeerMaster.keySet();
+            Map<Long, Pair<String, Integer> > flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
+            Map<Long, Pair<String, Integer> > flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
+            Set<Long> retainGidSet = new HashSet<>(flatExpectedPeerMaster.keySet());
+            Set<Long> currentGidSet = flatCurrentPeerMaster.keySet();
             retainGidSet.retainAll(currentGidSet);
 
             makePeerMasterChange(flatExpectedPeerMaster, flatCurrentPeerMaster, retainGidSet);
@@ -189,13 +189,13 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             future().setSuccess();
         }
 
-        private Map<Integer, Pair<String, Integer> > parsePeerMasters(List<RedisMeta> peerMasters) {
-            Map<Integer, Pair<String, Integer> > flatPeerMasterInfo = new HashMap<>();
+        private Map<Long, Pair<String, Integer> > parsePeerMasters(List<RedisMeta> peerMasters) {
+            Map<Long, Pair<String, Integer> > flatPeerMasterInfo = new HashMap<>();
             peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getGid(), Pair.of(peerMaster.getIp(), peerMaster.getPort())));
             return flatPeerMasterInfo;
         }
 
-        private void makePeerMasterChange(Map<Integer, Pair<String, Integer> > expectedPeerMaster, Map<Integer, Pair<String, Integer> > currentPeerMaster, Set<Integer> retainGid) {
+        private void makePeerMasterChange(Map<Long, Pair<String, Integer> > expectedPeerMaster, Map<Long, Pair<String, Integer> > currentPeerMaster, Set<Long> retainGid) {
             peerMasterChanged = new HashMap<>();
 
             retainGid.forEach(gid -> {
@@ -205,7 +205,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             });
         }
 
-        private void makePeerMasterAdded(Map<Integer, Pair<String, Integer> > expectedPeerMaster, Set<Integer> retainGid) {
+        private void makePeerMasterAdded(Map<Long, Pair<String, Integer> > expectedPeerMaster, Set<Long> retainGid) {
             peerMasterAdded = new HashMap<>();
             expectedPeerMaster.forEach((gid, peerMaster) -> {
                 if (!retainGid.contains(gid)) {
@@ -214,7 +214,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             });
         }
 
-        private void makePeerMasterDeleted(Map<Integer, Pair<String, Integer> > currentPeerMaster, Set<Integer> retainGid) {
+        private void makePeerMasterDeleted(Map<Long, Pair<String, Integer> > currentPeerMaster, Set<Long> retainGid) {
             peerMasterDeleted = new HashMap<>();
 
             currentPeerMaster.forEach((gid, peerMaster) -> {

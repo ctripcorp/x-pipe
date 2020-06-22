@@ -10,20 +10,20 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class PeerOfCommand extends AbstractRedisCommand {
 
-    protected int gid;
+    protected long gid;
     protected String ip;
     protected int port;
 
-    public PeerOfCommand(SimpleObjectPool<NettyClient> clientPool, int gid, ScheduledExecutorService scheduled) {
+    public PeerOfCommand(SimpleObjectPool<NettyClient> clientPool, long gid, ScheduledExecutorService scheduled) {
         super(clientPool, scheduled);
         this.gid = gid;
     }
 
-    public PeerOfCommand(SimpleObjectPool<NettyClient> clientPool, int gid, String ip, int port, ScheduledExecutorService scheduled){
+    public PeerOfCommand(SimpleObjectPool<NettyClient> clientPool, long gid, String ip, int port, ScheduledExecutorService scheduled){
         this(clientPool, gid, ip, port, "", scheduled);
     }
 
-    public PeerOfCommand(SimpleObjectPool<NettyClient> clientPool, int gid, String ip, int port, String param, ScheduledExecutorService scheduled) {
+    public PeerOfCommand(SimpleObjectPool<NettyClient> clientPool, long gid, String ip, int port, String param, ScheduledExecutorService scheduled) {
         super(clientPool, scheduled);
         this.gid = gid;
         this.ip = ip;
@@ -39,7 +39,7 @@ public class PeerOfCommand extends AbstractRedisCommand {
     public ByteBuf getRequest() {
 
         RequestStringParser requestString = null;
-        if(ip == null){
+        if(StringUtil.isEmpty(ip)){
             requestString = new RequestStringParser(getName(), String.valueOf(gid), "no", "one");
         }else{
             requestString = new RequestStringParser(getName(), String.valueOf(gid), ip, String.valueOf(port));

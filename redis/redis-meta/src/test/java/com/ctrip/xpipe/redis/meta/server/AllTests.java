@@ -4,17 +4,19 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.crdt.PeerMasterMetaServerStateChangeHandlerTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.manage.impl.DefaultPeerMasterStateAdjusterTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.manage.impl.DefaultPeerMasterAdjusterManagerTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooseCommandTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooserTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.DefaultPeerMasterChooserManagerTest;
-import com.ctrip.xpipe.redis.meta.server.crdt.peermaster.impl.RemoteDcPeerMasterChooseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.DefaultPeerMasterChooseActionTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.MasterChooseCommandFactoryTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.*;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.MasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.PeerMasterChooserManagerTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.PeerMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMasterTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
@@ -85,14 +87,19 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultDcMetaCacheRefreshTest.class,
 	DefaultChangePrimaryDcActionTest.class,
 	DefaultKeeperManagerTest.class,
-	DefaultPeerMasterChooserManagerTest.class,
-	DefaultPeerMasterChooserTest.class,
-	DefaultPeerMasterChooseCommandTest.class,
-	RemoteDcPeerMasterChooseCommandTest.class,
+	PeerMasterChooserManagerTest.class,
+	MasterChooserTest.class,
+	CurrentMasterChooseCommandTest.class,
+	PeerMasterChooseCommandTest.class,
+	DefaultPeerMasterChooseActionTest.class,
+	MasterChooseCommandFactoryTest.class,
 	PeerMasterAdjustJobTest.class,
 	DefaultPeerMasterStateAdjusterTest.class,
-	DefaultPeerMasterAdjusterManagerTest.class,
-	PeerMasterMetaServerStateChangeHandlerTest.class
+	DefaultPeerMasterStateManagerTest.class,
+	PeerMasterAdjustActionTest.class,
+	PeerMasterAdjustJobFactoryTest.class,
+	PeerMasterMetaServerStateChangeHandlerTest.class,
+	DefaultMetaServerRefreshPeerMasterTest.class
 })
 public class AllTests {
 

@@ -224,32 +224,31 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	@Test
 	public void testSetInfoForCRDTCluster() {
 
-		Assert.assertEquals(0, currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId).size());
+		Assert.assertEquals(0, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
 		Assert.assertEquals(0, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
-		Assert.assertNull(currentMeta.getPeerMaster(getDc(), biClusterId, biShardId));
+		Assert.assertNull(currentMeta.getCurrentMaster(biClusterId, biShardId));
 
 		// set PeerMaster
-		RedisMeta redisMeta = new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1);
-		currentMeta.setPeerMaster(getDc(), biClusterId, biShardId, redisMeta);
+		RedisMeta redisMeta = new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L);
+		currentMeta.setCurrentMaster(biClusterId, biShardId, redisMeta);
 		redisMeta.setIp("10.0.0.2");
 		currentMeta.setPeerMaster("remote-dc", biClusterId, shardId, redisMeta);
-		Assert.assertEquals(2, currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId).size());
-		Assert.assertEquals(2, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
-		Assert.assertEquals(Sets.newHashSet(getDc(), "remote-dc"), currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId));
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1), currentMeta.getPeerMaster(getDc(), biClusterId, biShardId));
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.2").setPort(6379).setGid(1), currentMeta.getPeerMaster("remote-dc", biClusterId, biShardId));
+		Assert.assertEquals(1, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
+		Assert.assertEquals(1, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
+		Assert.assertEquals(Sets.newHashSet("remote-dc"), currentMeta.getUpstreamPeerDcs(biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.2").setPort(6379).setGid(1L), currentMeta.getPeerMaster("remote-dc", biClusterId, biShardId));
 
 		// remove PeerMaster
 		currentMeta.removePeerMaster("remote-dc", biClusterId, biShardId);
-		Assert.assertEquals(1, currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId).size());
-		Assert.assertEquals(1, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
-		Assert.assertEquals(Sets.newHashSet(getDc()), currentMeta.getPeerMasterKnownDcs(biClusterId, biShardId));
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1), currentMeta.getPeerMaster(getDc(), biClusterId, biShardId));
+		Assert.assertEquals(0, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
+		Assert.assertEquals(0, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterId, biShardId));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetPeerMasterWithErrorType() {
-		currentMeta.setPeerMaster(getDc(), clusterId, shardId, new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1));
+		currentMeta.setPeerMaster(getDc(), clusterId, shardId, new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L));
 	}
 
 	@Test(expected = IllegalArgumentException.class)

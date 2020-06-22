@@ -421,18 +421,20 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return currentMeta.watchIfNotWatched(clusterId, shardId);
 	}
 
-	public void setCurrentMaster(String clusterId, String shardId, int gid, String ip, int port) {
-		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
-		currentMeta.setCurrentMaster(clusterId, shardId, peerMaster);
+	@Override
+	public void setCurrentMaster(String clusterId, String shardId, long gid, String ip, int port) {
+		RedisMeta currentMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
+		currentMeta.setCurrentMaster(clusterId, shardId, currentMaster);
 		notifyCurrentMasterChanged(clusterId, shardId);
 	}
 
+	@Override
 	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
 		return currentMeta.getCurrentMaster(clusterId, shardId);
 	}
 
 	@Override
-	public void setPeerMaster(String dcId, String clusterId, String shardId, int gid, String ip, int port) {
+	public void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port) {
 		if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
 			throw new IllegalArgumentException(String.format("peer master must from other dc %s %s %d %s:%d",
 					clusterId, shardId, gid, ip, port));
