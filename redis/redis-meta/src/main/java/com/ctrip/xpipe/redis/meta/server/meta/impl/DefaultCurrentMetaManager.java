@@ -201,7 +201,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	private void removeClusterInterested(String clusterId) {
 		//notice
-		removeCluster(new ClusterMeta(clusterId));
+		removeCluster(new ClusterMeta(clusterId).setType(dcMetaCache.getClusterType(clusterId).toString()));
 	}
 
 	@Override
