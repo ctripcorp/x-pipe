@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.*;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.observer.NodeAdded;
+import com.ctrip.xpipe.observer.NodeDeleted;
+import com.ctrip.xpipe.observer.NodeModified;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
@@ -20,15 +25,17 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
-    private static final String PEER_MASTER_TYPE = "peermaster";
+    private static final String PEER_CHANGE_TYPE = "crdt.peerchange";
 
-    private static final String TEMP_SKIP_DELETE = "[%s][%s][skipdelete] master %s:%d has unknow peer master %d %s:%d";
+    private static final String TEMP_PEER_CHANGE = "[%s][%s][%s:%d][%s] peermaster %s, gid: %d";
 
-    private static final String TEMP_DELETE = "[%s][%s][delete] master %s:%d delete unknow peer master %d %s:%d";
+    private static final String PEER_SKIP_DELETE = "skipdelete";
 
-    private static final String TEMP_ADD = "[%s][%s][add] master %s:%d add peer master %d %s:%d";
+    private static final String PEER_DELETE = "delete";
 
-    private static final String TEMP_CHANGE= "[%s][%s][change] master %s:%d has change peer master %d %s:%d";
+    private static final String PEER_ADD = "add";
+
+    private static final String PEER_CHANGE= "change";
 
     private String clusterId;
 
@@ -50,11 +57,11 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private Executor executors;
 
-    private Map<Long, Pair<String, Integer> > peerMasterDeleted;
+    private Map<Long, NodeDeleted<HostPort>> peerMasterDeleted;
 
-    private Map<Long, Pair<String, Integer> > peerMasterAdded;
+    private Map<Long, NodeAdded<HostPort>> peerMasterAdded;
 
-    private Map<Long, Pair<String, Integer> > peerMasterChanged;
+    private Map<Long, NodeModified<HostPort>> peerMasterChanged;
 
     private boolean doDelete = true;
 
@@ -108,20 +115,22 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private void doPeerMasterAdjust() {
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain(true);
-        peerMasterChanged.forEach((gid, peerMaster) -> {
-            logOperation(TEMP_CHANGE, currentMaster, gid, peerMaster);
-            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getKey(), peerMaster.getValue(), scheduled)));
+        peerMasterChanged.forEach((gid, nodeModified) -> {
+            HostPort peerMaster = nodeModified.getNewNode();
+            logOperation(PEER_CHANGE, currentMaster, gid, nodeModified);
+            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getHost(), peerMaster.getPort(), scheduled)));
         });
-        peerMasterAdded.forEach((gid, peerMaster) -> {
-            logOperation(TEMP_ADD, currentMaster, gid, peerMaster);
-            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getKey(), peerMaster.getValue(), scheduled)));
+        peerMasterAdded.forEach((gid, nodeAdded) -> {
+            HostPort peerMaster = nodeAdded.getNode();
+            logOperation(PEER_ADD, currentMaster, gid, nodeAdded);
+            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getHost(), peerMaster.getPort(), scheduled)));
         });
-        peerMasterDeleted.forEach((gid, peerMaster) -> {
+        peerMasterDeleted.forEach((gid, nodeDeleted) -> {
             if (doDelete) {
-                logOperation(TEMP_DELETE, currentMaster, gid, peerMaster);
+                logOperation(PEER_DELETE, currentMaster, gid, nodeDeleted);
                 sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, scheduled)));
             } else {
-                logOperation(TEMP_SKIP_DELETE, currentMaster, gid, peerMaster);
+                logOperation(PEER_SKIP_DELETE, currentMaster, gid, nodeDeleted);
             }
         });
         sequenceCommandChain.future().addListener(commandFuture -> {
@@ -132,10 +141,10 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         sequenceCommandChain.execute(executors);
     }
 
-    private void logOperation(String logTemp, Pair<String, Integer> currentMaster, long gid, Pair<String, Integer> peerMaster) {
-        String logContent = String.format(logTemp, clusterId, shardId, currentMaster.getKey(), currentMaster.getValue(), gid, peerMaster.getKey(), peerMaster.getValue());
-        getLogger().info("[PeerMasterAdjustJob]{}", logContent);
-        CatEventMonitor.DEFAULT.logEvent(PEER_MASTER_TYPE, logContent);
+    private void logOperation(String type, Pair<String, Integer> currentMaster, long gid, Event event) {
+        String logContent = String.format(TEMP_PEER_CHANGE, clusterId, shardId, currentMaster.getKey(), currentMaster.getValue(), type, event, gid);
+        getLogger().info(logContent);
+        CatEventMonitor.DEFAULT.logEvent(PEER_CHANGE_TYPE, logContent);
     }
 
     @Override
@@ -179,8 +188,8 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {
-            Map<Long, Pair<String, Integer> > flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
-            Map<Long, Pair<String, Integer> > flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
+            Map<Long, HostPort> flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
+            Map<Long, HostPort> flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
             Set<Long> retainGidSet = new HashSet<>(flatExpectedPeerMaster.keySet());
             Set<Long> currentGidSet = flatCurrentPeerMaster.keySet();
             retainGidSet.retainAll(currentGidSet);
@@ -192,37 +201,37 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             future().setSuccess();
         }
 
-        private Map<Long, Pair<String, Integer> > parsePeerMasters(List<RedisMeta> peerMasters) {
-            Map<Long, Pair<String, Integer> > flatPeerMasterInfo = new HashMap<>();
-            peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getGid(), Pair.of(peerMaster.getIp(), peerMaster.getPort())));
+        private Map<Long, HostPort> parsePeerMasters(List<RedisMeta> peerMasters) {
+            Map<Long, HostPort> flatPeerMasterInfo = new HashMap<>();
+            peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getGid(), new HostPort(peerMaster.getIp(), peerMaster.getPort())));
             return flatPeerMasterInfo;
         }
 
-        private void makePeerMasterChange(Map<Long, Pair<String, Integer> > expectedPeerMaster, Map<Long, Pair<String, Integer> > currentPeerMaster, Set<Long> retainGid) {
+        private void makePeerMasterChange(Map<Long, HostPort> expectedPeerMaster, Map<Long, HostPort> currentPeerMaster, Set<Long> retainGid) {
             peerMasterChanged = new HashMap<>();
 
             retainGid.forEach(gid -> {
                 if (!expectedPeerMaster.get(gid).equals(currentPeerMaster.get(gid))) {
-                    peerMasterChanged.put(gid, expectedPeerMaster.get(gid));
+                    peerMasterChanged.put(gid, new NodeModified<>(currentPeerMaster.get(gid), expectedPeerMaster.get(gid)));
                 }
             });
         }
 
-        private void makePeerMasterAdded(Map<Long, Pair<String, Integer> > expectedPeerMaster, Set<Long> retainGid) {
+        private void makePeerMasterAdded(Map<Long, HostPort> expectedPeerMaster, Set<Long> retainGid) {
             peerMasterAdded = new HashMap<>();
             expectedPeerMaster.forEach((gid, peerMaster) -> {
                 if (!retainGid.contains(gid)) {
-                    peerMasterAdded.put(gid, peerMaster);
+                    peerMasterAdded.put(gid, new NodeAdded<>(peerMaster));
                 }
             });
         }
 
-        private void makePeerMasterDeleted(Map<Long, Pair<String, Integer> > currentPeerMaster, Set<Long> retainGid) {
+        private void makePeerMasterDeleted(Map<Long, HostPort> currentPeerMaster, Set<Long> retainGid) {
             peerMasterDeleted = new HashMap<>();
 
             currentPeerMaster.forEach((gid, peerMaster) -> {
                 if (!retainGid.contains(gid)) {
-                    peerMasterDeleted.put(gid, peerMaster);
+                    peerMasterDeleted.put(gid, new NodeDeleted<>(peerMaster));
                 }
             });
         }
