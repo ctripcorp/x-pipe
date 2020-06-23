@@ -447,6 +447,26 @@ public class HealthStatusTest extends AbstractRedisTest {
         Assert.assertSame(healthStatus.getState(), HEALTH_STATE.DOWN);
     }
 
+    @Test
+    public void testInitToPingDownShouldNotifyOuterClinet() {
+        when(config.pingDownAfterMilli()).thenReturn(40);
+        when(config.delayDownAfterMilli()).thenReturn(60);
+        when(config.getHealthyDelayMilli()).thenReturn(20);
+        AtomicInteger counter = new AtomicInteger();
+        healthStatus.addObserver(new Observer() {
+            @Override
+            public void update(Object args, Observable observable) {
+                counter.incrementAndGet();
+            }
+        });
+        healthStatus.pongInit();
+        sleep(40 * 2 + 5);
+        healthStatus.healthStatusUpdate();
+        Assert.assertSame(healthStatus.getState(), HEALTH_STATE.DOWN);
+        Assert.assertTrue(counter.get() >= 1);
+    }
+
+
     private void markup() {
         healthStatus.pong();
         healthStatus.delay(config.getHealthyDelayMilli()/2);
