@@ -176,8 +176,13 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
 
         @Override
         public void onAction(PingActionContext pingActionContext) {
+            HealthStatus healthStatus = createOrGetHealthStatus(pingActionContext.instance());
             if (pingActionContext.getResult()) {
-                createOrGetHealthStatus(pingActionContext.instance()).pong();
+                healthStatus.pong();
+            } else {
+                if(healthStatus.getState() == HEALTH_STATE.UNKNOWN) {
+                    healthStatus.pongInit();
+                }
             }
         }
 

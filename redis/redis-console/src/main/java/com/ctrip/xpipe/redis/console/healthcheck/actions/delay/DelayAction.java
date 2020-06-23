@@ -42,6 +42,8 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private final long expireInterval;
 
+    private volatile boolean isContextInited = false;
+
     public DelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                        ExecutorService executors, PingService pingService) {
         super(scheduled, instance, executors);
@@ -68,7 +70,8 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     }
 
     private void reportDelay() {
-        if(INIT_CONTEXT.equals(context.get())) {
+        if(INIT_CONTEXT.equals(context.get()) && !isContextInited) {
+            isContextInited = true;
             return;
         }
         if(isExpired()) {
