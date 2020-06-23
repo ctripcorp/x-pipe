@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -19,6 +20,7 @@ import com.google.common.base.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -42,24 +44,15 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	@Autowired
 	private MigrationService migrationService;
 
+	private static final String DC_NAME_DELIMITER = ",";
+
 	@Override
 	public ClusterMeta loadClusterMeta(DcMeta dcMeta, ClusterTbl clusterTbl, DcMetaQueryVO dcMetaQueryVO) {
 		ClusterMeta clusterMeta = new ClusterMeta();
 		clusterTbl.setActivedcId(getClusterMetaCurrentPrimaryDc(dcMetaQueryVO.getCurrentDc(), clusterTbl));
 		
 		clusterMeta.setId(clusterTbl.getClusterName());
-		for (DcClusterTbl dcCluster : dcMetaQueryVO.getAllDcClusterMap().get(clusterTbl.getId())) {
-			if (dcCluster.getDcId() == clusterTbl.getActivedcId()) {
-				clusterMeta.setActiveDc(dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
-			} else {
-				if (Strings.isNullOrEmpty(clusterMeta.getBackupDcs())) {
-					clusterMeta.setBackupDcs(dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
-				} else {
-					clusterMeta.setBackupDcs(clusterMeta.getBackupDcs() + ","
-							+ dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName());
-				}
-			}
-		}
+		loadDcs(dcMetaQueryVO, clusterTbl, clusterMeta);
 		clusterMeta.setParent(dcMeta);
 
 		for (ShardTbl shard : dcMetaQueryVO.getShardMap().get(clusterTbl.getClusterName())) {
@@ -67,6 +60,28 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 		}
 
 		return clusterMeta;
+	}
+
+	private void loadDcs(DcMetaQueryVO dcMetaQueryVO, ClusterTbl clusterTbl, ClusterMeta clusterMeta) {
+		String activeDc = null;
+		List<String> backupDcs = new ArrayList<>();
+		List<String> allDcs = new ArrayList<>();
+		for (DcClusterTbl dcCluster : dcMetaQueryVO.getAllDcClusterMap().get(clusterTbl.getId())) {
+			String dcName = dcMetaQueryVO.getAllDcs().get(dcCluster.getDcId()).getDcName();
+			allDcs.add(dcName);
+			if (dcCluster.getDcId() == clusterTbl.getActivedcId()) {
+				activeDc = dcName;
+			} else {
+				backupDcs.add(dcName);
+			}
+		}
+
+		if (!ClusterType.lookup(clusterTbl.getClusterType()).supportMultiActiveDC()) {
+			clusterMeta.setActiveDc(activeDc);
+			if (!backupDcs.isEmpty()) clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, backupDcs));
+		} else {
+			clusterMeta.setDcs(String.join(DC_NAME_DELIMITER, allDcs));
+		}
 	}
 
 	@Override
@@ -115,6 +130,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 				return clusterMeta;
 
 			clusterMeta.setId(clusterInfo.getClusterName());
+			clusterMeta.setType(clusterInfo.getClusterType());
 			clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 			
 			for (DcTbl dc : clusterRelatedDc) {

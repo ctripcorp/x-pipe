@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author marsqing
@@ -35,4 +36,8 @@ public interface MetaServerConfig extends CoreConfig {
 	boolean validateDomain();
 
 	int getKeeperInfoCheckInterval();
+
+	int getWaitForMetaSyncDelayMilli();
+
+	Set<String> getOwnClusterType();
 }

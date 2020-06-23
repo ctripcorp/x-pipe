@@ -4,7 +4,7 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 
-import com.alibaba.fastjson.JSON;
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -25,7 +25,7 @@ public class KinfoCommandHandler extends AbstractCommandHandler {
 	protected void doHandle(String[] args, RedisClient redisClient) {
 		RedisKeeperServer keeper = redisClient.getRedisKeeperServer();
 
-		String result = JSON.toJSONString(keeper.getReplicationStore().getMetaStore().dupReplicationStoreMeta());
+		String result = Codec.DEFAULT.encode(keeper.getReplicationStore().getMetaStore().dupReplicationStoreMeta());
 
 		logger.info("[doHandle]{}", result);
 		redisClient.sendMessage(new BulkStringParser(result).format());

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.notifier.cluster;
 
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,5 +13,5 @@ public abstract class AbstractClusterEventFactory {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    public abstract ClusterEvent createClusterEvent(String clusterName);
+    public abstract ClusterEvent createClusterEvent(String clusterName, ClusterTbl clusterTbl);
 }

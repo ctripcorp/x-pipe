@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -15,6 +16,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -25,6 +27,7 @@ import org.unidal.dal.jdbc.DalException;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Service
 public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implements ShardService {
@@ -144,12 +147,14 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			}
     	});
 
-    	if(null != shard) {
+		final ClusterTbl cluster = clusterService.find(clusterName);
+
+    	if(null != shard && null != cluster) {
     		// Call shard event
 			Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
 			ShardEvent shardEvent = null;
 			if(sentinels != null && !sentinels.isEmpty()) {
-				 shardEvent = createShardDeleteEvent(clusterName, shardName, shard, sentinels);
+				 shardEvent = createShardDeleteEvent(clusterName, cluster, shardName, shard, sentinels);
 
 			}
 			try {
@@ -165,10 +170,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
     	/** Notify meta server **/
 		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
     	if(null != relatedDcs) {
-    		for(DcTbl dc : relatedDcs) {
-    			notifier.notifyClusterUpdate(dc.getDcName(), clusterName);
-
-    		}
+    		notifier.notifyClusterUpdate(clusterName, relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
     	}
 	}
 
@@ -188,12 +190,15 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			if (!clusterMap.containsKey(clusterName)) continue;
 
 			ClusterTbl cluster = clusterMap.get(clusterName);
+			if (!ClusterType.lookup(cluster.getClusterType()).supportHealthCheck()) continue;
+
 			Map<String, ShardListModel> shardMap = new HashMap<>();
 			unhealthyInfoModel.getUnhealthyDcShardByCluster(clusterName).forEach(dcShard -> {
 				if (!shardMap.containsKey(dcShard.getValue())) {
 					ShardListModel shardModel = new ShardListModel();
 					shardModel.setShardName(dcShard.getValue())
 							.setActivedcId(cluster.getActivedcId())
+							.setClusterType(cluster.getClusterType())
 							.setClusterName(cluster.getClusterName())
 							.setClusterAdminEmails(cluster.getClusterAdminEmails())
 							.setClusterOrgName(cluster.getClusterOrgName())
@@ -210,16 +215,24 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@VisibleForTesting
-	protected ShardDeleteEvent createShardDeleteEvent(String clusterName, String shardName, ShardTbl shardTbl,
+	protected ShardDeleteEvent createShardDeleteEvent(String clusterName, ClusterTbl clusterTbl, String shardName, ShardTbl shardTbl,
 												Map<Long, SetinelTbl> sentinelTblMap) {
 
+		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
 		ShardDeleteEvent shardDeleteEvent = new ShardDeleteEvent(clusterName, shardName, executors);
+		shardDeleteEvent.setClusterType(clusterType);
+		if (null != clusterType && clusterType.supportMultiActiveDC()) {
+			return null;
+		}
 
 		try {
 			shardDeleteEvent.setShardMonitorName(metaCache.getSentinelMonitorName(clusterName, shardTbl.getShardName()));
 		} catch (Exception e) {
 			logger.warn("[createClusterEvent]", e);
-			shardDeleteEvent.setShardMonitorName(shardTbl.getSetinelMonitorName());
+			long activeDcId = clusterService.find(clusterName).getActivedcId();
+			String activeDcName = dcService.getDcName(activeDcId);
+			shardDeleteEvent.setShardMonitorName(SentinelUtil.getSentinelMonitorName(
+					clusterName, shardTbl.getSetinelMonitorName(), activeDcName));
 		}
 		// Splicing sentinel address as "127.0.0.1:6379,127.0.0.2:6380"
 		StringBuffer sb = new StringBuffer();

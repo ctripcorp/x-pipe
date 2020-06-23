@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.meta;
 
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
@@ -58,6 +59,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	Set<String> getDcClusters(String dc);
 	
 	ClusterMeta getClusterMeta(String dc, String clusterId);
+
+	ClusterType getClusterType(String clusterId);
 	
 	ShardMeta getShardMeta(String dc, String clusterId, String shardId);
 
@@ -89,6 +92,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 	String getActiveDc(String clusterId, String shardId) throws MetaException;
 	
 	Set<String> getBackupDcs(String clusterId, String shardId);
+
+	Set<String> getRelatedDcs(String clusterId, String shardId);
 
 	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);
 

@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.notifier.shard;
 
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -22,15 +24,17 @@ public abstract class AbstractShardEvent implements ShardEvent {
 
     private String shardSentinels;
 
+    private ClusterType clusterType;
+
     private List<Observer> observers;
 
-    private ExecutorService executor;
+    private Executor executor;
 
     protected AbstractShardEvent() {
         this.observers = Lists.newArrayListWithExpectedSize(5);
     }
 
-    protected AbstractShardEvent(String clusterName, String shardName, ExecutorService executor) {
+    protected AbstractShardEvent(String clusterName, String shardName, Executor executor) {
         this.clusterName = clusterName;
         this.shardName = shardName;
         this.executor = executor;
@@ -71,6 +75,11 @@ public abstract class AbstractShardEvent implements ShardEvent {
         }
     }
 
+    @Override
+    public ClusterType getClusterType() {
+        return this.clusterType;
+    }
+
     public AbstractShardEvent setShardName(String shardName) {
         this.shardName = shardName;
         return this;
@@ -88,6 +97,11 @@ public abstract class AbstractShardEvent implements ShardEvent {
 
     public AbstractShardEvent setShardSentinels(String shardSentinels) {
         this.shardSentinels = shardSentinels;
+        return this;
+    }
+
+    public AbstractShardEvent setClusterType(ClusterType clusterType) {
+        this.clusterType = clusterType;
         return this;
     }
 

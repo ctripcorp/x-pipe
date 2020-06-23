@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
@@ -32,13 +33,16 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
 import javax.annotation.Resource;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 
 /**
@@ -145,6 +149,11 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				addKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
 			}
 		}
+	}
+
+	@Override
+	public Set<ClusterType> getSupportClusterTypes() {
+		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
 	protected List<KeeperMeta> getDeadKeepers(List<KeeperMeta> allKeepers, List<KeeperMeta> aliveKeepers) {
@@ -301,6 +310,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		protected void doCheck() {
 			for (String clusterId : currentMetaManager.allClusters()) {
 				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterId);
+				if (!supportCluster(clusterMeta)) continue;
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					doCheckShard(clusterId, shardMeta);
 				}

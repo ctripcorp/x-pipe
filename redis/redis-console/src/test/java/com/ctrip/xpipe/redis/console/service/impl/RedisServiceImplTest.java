@@ -1,11 +1,12 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardModel;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
@@ -17,6 +18,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestOperations;
 import org.unidal.dal.jdbc.DalException;
@@ -367,6 +369,49 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         Assert.assertEquals(1, twoKeeperShardCnt.get());
         Assert.assertEquals(shardNames.length - 1, noKeeperShardCnt.get());
         Assert.assertEquals(0, otherShardCnt.get());
+    }
+
+    @Test
+    public void testNotifyBiDirectionClusterUpdate() {
+        ClusterModel clusterModel = new ClusterModel();
+        clusterModel.setClusterTbl(new ClusterTbl().setClusterName("bi-test")
+                .setClusterType(ClusterType.BI_DIRECTION.toString())
+                .setActivedcId(1)
+                .setClusterDescription("desc")
+                .setClusterAdminEmails("test@ctrip.com"));
+        clusterModel.setDcs(Arrays.asList(new DcTbl().setDcName("jq"), new DcTbl().setDcName("oy")));
+        redisService.clusterService.createCluster(clusterModel);
+
+        ClusterMetaModifiedNotifier notifier = Mockito.mock(ClusterMetaModifiedNotifier.class);
+        redisService.notifier = notifier;
+
+        Mockito.doAnswer(invocation -> {
+            String clusterName = invocation.getArgumentAt(0, String.class);
+            List<String> dcs = invocation.getArgumentAt(1, List.class);
+            Assert.assertEquals("bi-test", clusterName);
+            Assert.assertEquals(2, dcs.size());
+            Assert.assertTrue(dcs.contains("jq") && dcs.contains("oy"));
+            return null;
+        }).when(notifier).notifyClusterUpdate(Mockito.anyString(), Mockito.anyList());
+        redisService.notifyClusterUpdate("jq", "bi-test");
+        Mockito.verify(notifier, Mockito.times(1)).notifyClusterUpdate(Mockito.anyString(), Mockito.anyList());
+    }
+
+    @Test
+    public void testNotifyOneWayClusterUpdate() {
+        ClusterMetaModifiedNotifier notifier = Mockito.mock(ClusterMetaModifiedNotifier.class);
+        redisService.notifier = notifier;
+
+        Mockito.doAnswer(invocation -> {
+            String paramClusterName = invocation.getArgumentAt(0, String.class);
+            List<String> dcs = invocation.getArgumentAt(1, List.class);
+            Assert.assertEquals(clusterName, paramClusterName);
+            Assert.assertEquals(1, dcs.size());
+            Assert.assertTrue(dcs.contains("jq"));
+            return null;
+        }).when(notifier).notifyClusterUpdate(Mockito.anyString(), Mockito.anyList());
+        redisService.notifyClusterUpdate("jq", clusterName);
+        Mockito.verify(notifier, Mockito.times(1)).notifyClusterUpdate(Mockito.anyString(), Mockito.anyList());
     }
 
     private RedisServiceImpl buildLocalRedisService() {

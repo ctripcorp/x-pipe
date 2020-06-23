@@ -1,11 +1,12 @@
-index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'ClusterService','DcService', 'NgTableParams',
-    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, ClusterService, DcService, NgTableParams, $filters) {
+index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil', 'toastr', 'ClusterService','DcService', 'NgTableParams', 'ClusterType',
+    function ($rootScope, $scope, $window, $stateParams, AppUtil, toastr, ClusterService, DcService, NgTableParams, ClusterType) {
 
         $rootScope.currentNav = '1-2';
         $scope.dcs = {};
         $scope.clusterName = $stateParams.clusterName;
         $scope.containerId = $stateParams.keepercontainer;
-        $scope.getDcName = getDcName;
+        $scope.getClusterActiveDc = getClusterActiveDc;
+        $scope.getTypeName = getTypeName;
         $scope.preDeleteCluster = preDeleteCluster;
         $scope.deleteCluster = deleteCluster;
         $scope.showUnhealthyClusterOnly = false;
@@ -40,9 +41,21 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         			$scope.dcs[dc.id] = dc.dcName;
         		}
         	});
-        
-        function getDcName(dcId) {
-        	return $scope.dcs[dcId] || "Unbind";
+
+
+        function getClusterActiveDc(cluster) {
+            var clusterType = ClusterType.lookup(cluster.clusterType)
+            if (clusterType && clusterType.multiActiveDcs) {
+                return "-"
+            }
+
+            return $scope.dcs[cluster.activedcId] || "Unbind";
+        }
+
+        function getTypeName(type) {
+            var clusterType = ClusterType.lookup(type)
+            if (clusterType) return clusterType.name
+            else return '未知类型'
         }
         
         function preDeleteCluster(clusterName) {

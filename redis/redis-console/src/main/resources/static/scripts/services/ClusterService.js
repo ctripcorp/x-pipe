@@ -215,13 +215,13 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
     function createCluster(cluster, selectedDcs, shards) {
         var d = $q.defer();
         resource.create_cluster({}, {
-        	clusterTbl : cluster,
-        	slaveDcs : selectedDcs,
-        	shards : shards
-        	},
-                              function (result) {
-                                  d.resolve(result);
-                              }, function (result) {
+                clusterTbl: cluster,
+                dcs: selectedDcs,
+                shards: shards
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
                 d.reject(result);
             });
         return d.promise;

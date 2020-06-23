@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.vo;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -21,9 +22,7 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -53,14 +52,19 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     private long dcId;
 
+    private Set<String> interestClusterTypes;
+
     private Map<Long, List<DcClusterTbl>> cluster2DcClusterMap;
 
     private List<DcClusterShardTbl> dcClusterShards;
 
-    public DcMetaBuilder(DcMeta dcMeta, long dcId, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
+    private static final String DC_NAME_DELIMITER = ",";
+
+    public DcMetaBuilder(DcMeta dcMeta, long dcId, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
                          ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, RetryCommandFactory factory) {
         this.dcMeta = dcMeta;
         this.dcId = dcId;
+        this.interestClusterTypes = clusterTypes;
         this.executors = executors;
         this.redisMetaService = redisMetaService;
         this.dcClusterService = dcClusterService;
@@ -117,12 +121,19 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             @Override
             public ClusterMeta create() {
                 ClusterMeta clusterMeta = new ClusterMeta(cluster.getClusterName());
-                DcTbl proto = new DcTbl().setId(dcId);
-                long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
-                clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
                 clusterMeta.setParent(dcMeta);
-                clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
+                clusterMeta.setType(cluster.getClusterType());
+
+                if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+                    clusterMeta.setDcs(getDcs(cluster));
+                } else {
+                    DcTbl proto = new DcTbl().setId(dcId);
+                    long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
+                    clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
+                    clusterMeta.setBackupDcs(getBackupDcs(cluster, activeDcId));
+                }
+
                 return clusterMeta;
             }
         });
@@ -141,6 +152,18 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             sb.deleteCharAt(sb.length() - 1);
         }
         return sb.toString();
+    }
+
+    protected String getDcs(ClusterTbl cluster) {
+        List<String> allDcs = new ArrayList<>();
+        List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
+
+        relatedDcClusters.forEach(dcClusterTbl ->
+            allDcs.add(dcNameMap.get(dcClusterTbl.getDcId()))
+        );
+
+        if (!allDcs.isEmpty()) return String.join(DC_NAME_DELIMITER, allDcs);
+        return null;
     }
 
     public ShardMeta getOrCreateShardMeta(String clusterId, ShardTbl shard, long sentinelId) {
@@ -171,7 +194,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         @Override
         protected void doExecute() throws Exception {
             try {
-                dcClusterShards = dcClusterShardService.findAllByDcId(dcId);
+                dcClusterShards = dcClusterShardService.findAllByDcIdAndInClusterTypes(dcId, interestClusterTypes);
                 future().setSuccess();
             } catch (Exception e) {
                 future().setFailure(e);

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.cluster;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
@@ -207,6 +208,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
     private class TestCrossDcLeaderElectionAction extends CrossDcLeaderElectionAction {
 
         public TestCrossDcLeaderElectionAction() {
+            super(null, null, Mockito.mock(ConsoleConfig.class));
         }
 
         protected boolean shouldElect() {

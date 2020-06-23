@@ -1,8 +1,8 @@
 index_module.controller('ClusterFromCtl',
                         ['$rootScope', '$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'ClusterService',
-                         'DcService', 'SentinelService',
+                         'DcService', 'SentinelService', 'ClusterType',
                          function ($rootScope, $scope, $stateParams, $window, toastr, AppUtil, ClusterService,
-                                   DcService, SentinelService) {
+                                   DcService, SentinelService, ClusterType) {
 
                              $rootScope.currentNav = '1-3';
 
@@ -22,6 +22,7 @@ index_module.controller('ClusterFromCtl',
                              $scope.sentinels = {};
                              $scope.organizations = [];
                              $scope.organizationNames = [];
+                             $scope.clusterTypeName = '';
 
                              $scope.doCluster = doCluster;
                              $scope.getDcName = getDcName;
@@ -34,6 +35,11 @@ index_module.controller('ClusterFromCtl',
                              $scope.deleteShard = deleteShard;
                              $scope.activeDcSelected = activeDcSelected;
                              $scope.shardNameChanged = shardNameChanged;
+
+                             $scope.showActiveDc = true
+                             $scope.clusterTypes = ClusterType.values()
+                             $scope.selectedType = ClusterType.default().value
+                             $scope.typeChange = typeChange;
 
                              init();
 
@@ -63,6 +69,10 @@ index_module.controller('ClusterFromCtl',
                                      ClusterService.load_cluster(clusterName)
                                          .then(function (result) {
                                              $scope.cluster = result;
+                                             var clusterType = ClusterType.lookup(result.clusterType)
+                                             $scope.clusterTypeName = clusterType.name
+                                             $scope.selectedType = clusterType.value
+                                             $scope.showActiveDc = !clusterType.multiActiveDcs
                                          }, function (result) {
                                              toastr.error(AppUtil.errorMsg(result));
                                          })
@@ -79,7 +89,8 @@ index_module.controller('ClusterFromCtl',
                                 		shard.shardTbl.shardName = shard.shardName;
                                 		shard.shardTbl.setinelMonitorName = shard.setinelMonitorName;
                                 	 });
-                                     ClusterService.createCluster($scope.cluster, $scope.selectedDcs, $scope.shards)
+                                	 $scope.cluster.clusterType = $scope.selectedType
+                                     ClusterService.createCluster($scope.cluster, $scope.clusterRelatedDcs, $scope.shards)
                                          .then(function (result) {
                                              toastr.success("创建成功");
                                              $window.location.href =
@@ -203,6 +214,22 @@ index_module.controller('ClusterFromCtl',
                             			 }
                             		 }
                             	 }
+                             }
+                             
+                             function typeChange() {
+                                 $scope.showActiveDc = !ClusterType.lookup($scope.selectedType).multiActiveDcs
+                                 if (!$scope.showActiveDc) {
+                                     var activeDc = $scope.allDcs.find(dc => dc.id === $scope.cluster.activedcId)
+                                     var clusterRelatedDcIdx = $scope.clusterRelatedDcs.indexOf(activeDc);
+                                     var selectedDcIdx = $scope.selectedDcs.indexOf(activeDc)
+                                     if(clusterRelatedDcIdx > -1) {
+                                         $scope.clusterRelatedDcs.splice(clusterRelatedDcIdx,1);
+                                     }
+                                     if (selectedDcIdx > -1) {
+                                         $scope.selectedDcs.splice(selectedDcIdx, 1)
+                                     }
+                                     $scope.cluster.activedcId = undefined
+                                 }
                              }
                              
                          }]);

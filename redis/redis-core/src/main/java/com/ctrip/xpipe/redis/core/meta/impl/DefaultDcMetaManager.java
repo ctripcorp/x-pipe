@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
@@ -55,6 +56,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public ClusterMeta getClusterMeta(String clusterId) {
 		
 		return metaManager.getClusterMeta(currentDc, clusterId);
+	}
+
+	@Override
+	public ClusterType getClusterType(String clusterId) {
+		return metaManager.getClusterType(clusterId);
 	}
 
 	@Override
@@ -208,6 +214,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public Set<String> getBackupDcs(String clusterId, String shardId) {
 		
 		return metaManager.getBackupDcs(clusterId, shardId);
+	}
+
+	@Override
+	public Set<String> getRelatedDcs(String clusterId, String shardId) {
+		return metaManager.getRelatedDcs(clusterId, shardId);
 	}
 
 

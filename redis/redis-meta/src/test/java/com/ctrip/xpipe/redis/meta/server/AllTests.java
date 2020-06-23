@@ -3,14 +3,24 @@ package com.ctrip.xpipe.redis.meta.server;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
+import com.ctrip.xpipe.redis.meta.server.crdt.PeerMasterMetaServerStateChangeHandlerTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.DefaultPeerMasterChooseActionTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.MasterChooseCommandFactoryTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.*;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.MasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.PeerMasterChooserManagerTest;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.command.PeerMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
+import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMasterTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
@@ -76,7 +86,20 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultSentinelManagerTest.class,
 	DefaultDcMetaCacheRefreshTest.class,
 	DefaultChangePrimaryDcActionTest.class,
-	DefaultKeeperManagerTest.class
+	DefaultKeeperManagerTest.class,
+	PeerMasterChooserManagerTest.class,
+	MasterChooserTest.class,
+	CurrentMasterChooseCommandTest.class,
+	PeerMasterChooseCommandTest.class,
+	DefaultPeerMasterChooseActionTest.class,
+	MasterChooseCommandFactoryTest.class,
+	PeerMasterAdjustJobTest.class,
+	DefaultPeerMasterStateAdjusterTest.class,
+	DefaultPeerMasterStateManagerTest.class,
+	PeerMasterAdjustActionTest.class,
+	PeerMasterAdjustJobFactoryTest.class,
+	PeerMasterMetaServerStateChangeHandlerTest.class,
+	DefaultMetaServerRefreshPeerMasterTest.class
 })
 public class AllTests {
 

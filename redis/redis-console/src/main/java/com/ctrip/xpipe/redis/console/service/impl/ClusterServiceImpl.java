@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -103,6 +104,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<DcTbl> getClusterRelatedDcs(String clusterName) {
+		ClusterTbl clusterTbl = find(clusterName);
+		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+		List<DcTbl> result = Lists.newLinkedList();
+		for(DcClusterTbl dcClusterTbl : dcClusterTbls) {
+			result.add(dcService.find(dcClusterTbl.getDcId()));
+		}
+		return result;
+	}
+
+	@Override
 	public ClusterTbl find(final long clusterId) {
 		return queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
 			@Override
@@ -145,20 +157,27 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@DalTransaction
 	public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
 		ClusterTbl cluster = clusterModel.getClusterTbl();
-		List<DcTbl> slaveDcs = clusterModel.getSlaveDcs();
+		List<DcTbl> allDcs = clusterModel.getDcs();
 		List<ShardModel> shards = clusterModel.getShards();
+		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
 
 		// ensure active dc assigned
-		if(XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
+		if(!clusterType.supportMultiActiveDC() && XPipeConsoleConstant.NO_ACTIVE_DC_TAG == cluster.getActivedcId()) {
 			throw new BadRequestException("No active dc assigned.");
 		}
 		ClusterTbl proto = dao.createLocal();
 		proto.setClusterName(cluster.getClusterName().trim());
-		proto.setActivedcId(cluster.getActivedcId());
+		proto.setClusterType(cluster.getClusterType());
 		proto.setClusterDescription(cluster.getClusterDescription());
 		proto.setStatus(ClusterStatus.Normal.toString());
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+
+		if (clusterType.supportMultiActiveDC()) {
+			proto.setActivedcId(0L);
+		} else {
+			proto.setActivedcId(cluster.getActivedcId());
+		}
 		if(!checkEmails(cluster.getClusterAdminEmails())) {
 			throw new IllegalArgumentException("Emails should be ctrip emails and separated by comma or semicolon");
 		}
@@ -173,8 +192,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 
-		if(slaveDcs != null){
-			for(DcTbl dc : slaveDcs) {
+		if(allDcs != null){
+			for(DcTbl dc : allDcs) {
+				// single active dc cluster bind active dc when create
+				if (!clusterType.supportMultiActiveDC() && dc.getId() == cluster.getActivedcId()) continue;
 				bindDc(cluster.getClusterName(), dc.getDcName());
 			}
 		}
@@ -220,6 +241,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override public List<ClusterTbl> findAllClustersWithOrgInfo() {
 		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
+		result = fillClusterOrgName(result);
+		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	@Override public List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType) {
+		List<ClusterTbl> result = clusterDao.findClusterWithOrgInfoByClusterType(clusterType);
 		result = fillClusterOrgName(result);
 		return setOrgNullIfNoOrgIdExsits(result);
 	}
@@ -304,7 +331,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		final ClusterTbl queryProto = proto;
 
 		// Call cluster delete event
-		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName);
+		ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusterName, proto);
 
 		try {
 			clusterDao.deleteCluster(queryProto);
@@ -312,7 +339,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			throw new ServerException(e.getMessage());
 		}
 
-		clusterEvent.onEvent();
+		if (null != clusterEvent) clusterEvent.onEvent();
 
 		/** Notify meta server **/
 		notifier.notifyClusterDelete(clusterName, relatedDcs);

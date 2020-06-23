@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -15,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultCurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.crdt.master.PeerMasterChooseAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.AtLeastOneChecker;
@@ -60,6 +63,9 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Autowired
 	private PrimaryDcPrepareToChange primaryDcPrepareToChange;
 
+	@Autowired
+	private PeerMasterChooseAction peerMasterChooseAction;
+
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
@@ -104,6 +110,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 		logger.debug("[getActiveKeeper]{}, {}", clusterId, shardId);
 		return currentMetaManager.getKeeperActive(clusterId, shardId);
+	}
+
+	@Override
+	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		logger.debug("[getPeerMaster]{}, {}", clusterId, shardId);
+		return currentMetaManager.getCurrentMaster(clusterId, shardId);
 	}
 
 	@Override
@@ -171,6 +183,17 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
+	public void upstreamPeerChange(String upstreamDcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
+		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+		if (null == clusterMeta || !ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+			logger.info("[upstreamPeerChange] cluster {} not found or not support", clusterId);
+			return;
+		}
+
+		peerMasterChooseAction.choosePeerMaster(upstreamDcId, clusterId, shardId);
+	}
+
+	@Override
 	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
 			ForwardInfo forwardInfo) {
 		
@@ -218,6 +241,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MetaServerConsoleService.PrimaryDcChangeRequest request,
 			ForwardInfo forwardInfo) {
+		ClusterType clusterType = dcMetaCache.getClusterType(clusterId);
+		if (!clusterType.supportMigration()) {
+			logger.info("[doChangePrimaryDc] cluster {} type {} not support migration", clusterId, clusterType);
+			return new PrimaryDcChangeMessage(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL,
+					"cluster " + clusterId + " not support miggration");
+		}
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
 		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);

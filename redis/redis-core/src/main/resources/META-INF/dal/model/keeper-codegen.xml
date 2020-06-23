@@ -38,6 +38,8 @@
     <attribute name="org-id" value-type="int" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
+    <attribute name="type" value-type="String" />
+    <attribute name="dcs" value-type="String" />
     <entity-ref name="shard" type="list" names="shards" />
   </entity>
   <entity name="shard">
@@ -65,6 +67,7 @@
     <attribute name="master" value-type="String" />
     <attribute name="offset" value-type="int" />
     <attribute name="survive" value-type="boolean" />
+    <attribute name="gid" value-type="int" />
   </entity>
   <entity name="route">
     <attribute name="id" value-type="int" />

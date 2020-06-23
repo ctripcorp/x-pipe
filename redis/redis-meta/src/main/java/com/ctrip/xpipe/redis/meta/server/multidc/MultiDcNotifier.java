@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,8 +73,26 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	}
 
 	@Override
-	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+	public void currentMasterChanged(String clusterId, String shardId) {
+		// notify remote dc for local peer master change
+		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
+		Set<String> relatedDcs = dcMetaCache.getRelatedDcs(clusterId, shardId);
+		String currentDc = dcMetaCache.getCurrentDc();
+		logger.info("[peerMasterChanged][notify related dc]{}, {}, {}", clusterId, shardId, relatedDcs);
+		for (String dcId : relatedDcs) {
+			if (currentDc.equalsIgnoreCase(dcId) || StringUtil.isEmpty(dcId)) {
+				continue;
+			}
+			DcInfo dcInfo = dcInfos.get(dcId);
 
+			if (dcInfo == null) {
+				logger.error("[peerMasterChanged][can not find dcinfo]{}, {}", dcId, dcInfos);
+				continue;
+			}
+			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
+					.getOrCreate(dcInfo.getMetaServerAddress());
+			executors.execute(new PeerDcNotifyTask(metaServerMultiDcService, currentDc, clusterId, shardId));
+		}
 	}
 
 	public class BackupDcNotifyTask extends AbstractExceptionLogTask {
@@ -102,6 +121,32 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 
 		}
 
+	}
+
+	public class PeerDcNotifyTask extends AbstractExceptionLogTask {
+
+		private MetaServerMultiDcService metaServerMultiDcService;
+
+		private String dcId;
+
+		private String clusterId;
+
+		private String shardId;
+
+		public PeerDcNotifyTask(MetaServerMultiDcService metaServerMultiDcService, String dcId, String clusterId, String shardId) {
+			this.metaServerMultiDcService = metaServerMultiDcService;
+			this.dcId = dcId;
+			this.clusterId = clusterId;
+			this.shardId = shardId;
+		}
+
+		@Override
+		protected void doRun() throws Exception {
+
+			logger.info("[doRun]{}, {}, {}", metaServerMultiDcService, clusterId, shardId);
+			metaServerMultiDcService.upstreamPeerChange(dcId, clusterId, shardId);
+
+		}
 	}
 
 }

@@ -4,11 +4,6 @@
             <div class="row">
                 <div class="col-md-6">
                     <span class="col-sm-2"> Shards </span>
-<!--                    <div class="col-sm-4">-->
-<!--                        <input type="checkbox" class="ace ace-checkbox-2"-->
-<!--                               ng-model="showUnhealthyShardOnly" ng-change="refresh()" />-->
-<!--                        <label class="lbl">显示问题Shard</label>-->
-<!--                    </div>-->
                 </div>
             </div>
         </header>
@@ -25,7 +20,8 @@
 						{{dcName}}
 					</span>
                 </td>
-                <td data-title="'主数据中心'" ng-bind="getDcName({{shard.activedcId}})"></td>
+                <td data-title="'主数据中心'" ng-bind="getActiveDcName(shard)"></td>
+                <td data-title="'集群类型'" ng-bind="getTypeName(shard.clusterType)"></td>
                 <td data-title="'描述'" ng-bind="shard.clusterDescription | limitTo:50" ></td>
                 <td data-title="'组织'" ng-bind="shard.clusterOrgName" ></td>
                 <td data-title="'联系人邮箱'" ng-bind="shard.clusterAdminEmails| limitTo:50" ></td>

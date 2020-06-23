@@ -201,7 +201,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	private void removeClusterInterested(String clusterId) {
 		//notice
-		removeCluster(new ClusterMeta(clusterId));
+		removeCluster(new ClusterMeta(clusterId).setType(dcMetaCache.getClusterType(clusterId).toString()));
 	}
 
 	@Override
@@ -420,7 +420,70 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public boolean watchIfNotWatched(String clusterId, String shardId) {
 		return currentMeta.watchIfNotWatched(clusterId, shardId);
 	}
-	
+
+	@Override
+	public void setCurrentMaster(String clusterId, String shardId, long gid, String ip, int port) {
+		RedisMeta currentMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
+		currentMeta.setCurrentMaster(clusterId, shardId, currentMaster);
+		notifyCurrentMasterChanged(clusterId, shardId);
+	}
+
+	@Override
+	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+		return currentMeta.getCurrentMaster(clusterId, shardId);
+	}
+
+	@Override
+	public void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port) {
+		if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
+			throw new IllegalArgumentException(String.format("peer master must from other dc %s %s %d %s:%d",
+					clusterId, shardId, gid, ip, port));
+		}
+
+		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
+		currentMeta.setPeerMaster(dcId, clusterId, shardId, peerMaster);
+		notifyPeerMasterChange(dcId, clusterId, shardId);
+	}
+
+	@Override
+	public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
+		return currentMeta.getPeerMaster(dcId, clusterId, shardId);
+	}
+
+	@Override
+	public Set<String> getUpstreamPeerDcs(String clusterId, String shardId) {
+		return currentMeta.getUpstreamPeerDcs(clusterId, shardId);
+	}
+
+	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+		return currentMeta.getAllPeerMasters(clusterId, shardId);
+	}
+
+	@Override
+	public void removePeerMaster(String dcId, String clusterId, String shardId) {
+		currentMeta.removePeerMaster(dcId, clusterId, shardId);
+	}
+
+	private void notifyCurrentMasterChanged(String clusterId, String shardId) {
+		for (MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.currentMasterChanged(clusterId, shardId);
+			} catch (Exception e) {
+				logger.error("[notifyCurrentMasterChanged] {}, {}", clusterId, shardId, e);
+			}
+		}
+	}
+
+	private void notifyPeerMasterChange(String dcId, String clusterId, String shardId) {
+		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
+			try {
+				stateHandler.peerMasterChanged(dcId, clusterId, shardId);
+			} catch (Exception e) {
+				logger.error("[notifyPeerMasterChange] {}, {}, {}", dcId, clusterId, shardId, e);
+			}
+		}
+	}
+
 	private void notifyKeeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
 		
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
@@ -449,6 +512,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	public void setDcMetaCache(DcMetaCache dcMetaCache) {
 		this.dcMetaCache = dcMetaCache;
+	}
+
+	@VisibleForTesting
+	protected void setCurrentMeta(CurrentMeta currentMeta) {
+		this.currentMeta = currentMeta;
 	}
 
 	@VisibleForTesting

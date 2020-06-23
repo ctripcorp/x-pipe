@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 
 import java.util.List;
@@ -34,6 +35,8 @@ public interface DcMetaManager{
 	boolean hasShard(String clusterId, String shardId);
 	
 	ClusterMeta getClusterMeta(String clusterId);
+
+	ClusterType getClusterType(String clusterId);
 	
 	String getActiveDc(String clusterId, String shardId);
 	
@@ -81,6 +84,8 @@ public interface DcMetaManager{
 	void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers);
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
+
+	Set<String> getRelatedDcs(String clusterId, String shardId);
 
 	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
 

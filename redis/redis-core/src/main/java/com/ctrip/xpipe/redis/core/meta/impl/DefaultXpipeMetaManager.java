@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
@@ -69,6 +70,9 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			if(clusterMeta == null){
 				continue;
 			}
+			if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+				throw new IllegalArgumentException("cluster " + clusterId +" support multi active dc");
+			}
 			String activeDc = clusterMeta.getActiveDc();
 			if(activeDc == null){
 				logger.info("[getActiveDc][activeDc null]{}", clusterMeta);
@@ -98,7 +102,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			}
 			
 			
-			Set<String> backDcs = backupDcs(clusterMeta.getBackupDcs());
+			Set<String> backDcs = expandDcs(clusterMeta.getBackupDcs());
 			backDcs.remove(clusterMeta.getActiveDc().toLowerCase().trim());
 			return backDcs;
 		}
@@ -109,20 +113,46 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		throw new MetaException("clusterId " + clusterId + " not found!");
 	}
 
-	
-	private Set<String> backupDcs(String backupDcsDesc) {
-		
-		Set<String> backDcs = new HashSet<>();
-		if(StringUtil.isEmpty(backupDcsDesc)){
-			return backDcs;
+	@Override
+	public Set<String> getRelatedDcs(String clusterId, String shardId) {
+		boolean found = false;
+
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+
+			found = true;
+
+			if(StringUtil.isEmpty(clusterMeta.getDcs())){
+				logger.info("[getRelatedDcs][dcs empty]{}, {}", dcMeta.getId(), clusterMeta);
+				continue;
+			}
+
+			return expandDcs(clusterMeta.getDcs());
 		}
-		for(String dc : backupDcsDesc.split("\\s*,\\s*")){
+
+		if(found) {
+			return Collections.emptySet();
+		}
+		throw new MetaException("clusterId " + clusterId + " not found!");
+	}
+
+	
+	private Set<String> expandDcs(String dcsDesc) {
+		
+		Set<String> dcs = new HashSet<>();
+		if(StringUtil.isEmpty(dcsDesc)){
+			return dcs;
+		}
+		for(String dc : dcsDesc.split("\\s*,\\s*")){
 			dc = dc.trim();
 			if(!StringUtil.isEmpty(dc)){
-				backDcs.add(dc.toLowerCase());
+				dcs.add(dc.toLowerCase());
 			}
 		}
-		return backDcs;
+		return dcs;
 	}
 
 	@Override
@@ -134,6 +164,19 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	public ClusterMeta getClusterMeta(String dc, String clusterId) {
 		
 		return clone(getDirectClusterMeta(dc, clusterId));
+	}
+
+	@Override
+	public ClusterType getClusterType(String clusterId) {
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+
+			ClusterMeta clusterMeta = dcMeta.findCluster(clusterId);
+			if (clusterMeta == null) {
+				continue;
+			}
+			return ClusterType.lookup(clusterMeta.getType());
+		}
+		throw new MetaException("[getClusterType] unfound cluster for name:" + clusterId);
 	}
 	
 	public ClusterMeta getDirectClusterMeta(String dc, String clusterId) {
@@ -716,7 +759,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(currentPrimaryDc != null){
 			allDcs.add(currentPrimaryDc.trim().toLowerCase());
 		}
-		allDcs.addAll(backupDcs(clusterMeta.getBackupDcs()));
+		allDcs.addAll(expandDcs(clusterMeta.getBackupDcs()));
 		
 		clusterMeta.setActiveDc(newPrimaryDc);
 		
