@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
+import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingService;
@@ -97,6 +99,31 @@ public class DelayActionTest extends AbstractRedisTest {
         Assert.assertFalse(delayHealth.get());
         action.stop();
         action.dispose();
+    }
+
+    @Test
+    public void testConnectTimeoutSinceBeginning() {
+        AtomicBoolean result = new AtomicBoolean(false);
+        action.addListener(new DelayActionListener() {
+            @Override
+            public void onAction(DelayActionContext actionContext) {
+                result.set(true);
+            }
+
+            @Override
+            public boolean worksfor(ActionContext t) {
+                return true;
+            }
+
+            @Override
+            public void stopWatch(HealthCheckAction action) {
+
+            }
+        });
+        action.doTask();
+        action.doTask();
+        action.doTask();
+        Assert.assertTrue(result.get());
     }
 
     private void initSessionPubAndSub() {

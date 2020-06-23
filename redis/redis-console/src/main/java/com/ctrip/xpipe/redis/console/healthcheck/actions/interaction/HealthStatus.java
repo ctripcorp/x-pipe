@@ -107,6 +107,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         setPingUp();
     }
 
+    void pongInit() {
+        if (lastPongTime.get() == UNSET_TIME) {
+            lastPongTime.set(System.currentTimeMillis());
+        }
+    }
+
     void delay(long delayMilli){
 
         //first time
