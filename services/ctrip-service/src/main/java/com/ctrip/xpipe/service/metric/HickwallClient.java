@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.service.metric;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -95,18 +97,18 @@ public class HickwallClient {
     private boolean send(String s) throws IOException {
         HttpURLConnection httpURLConnection = this.connection;
         if(httpURLConnection == null) {
-            httpURLConnection = getConnection();
+            this.connection = httpURLConnection = getConnection();
         }
         boolean isValidConnection = false;
 
         boolean var5 = false;
-        InputStream in;
         OutputStream out = null;
-        label99: {
+        label99:
+        {
             try {
                 isValidConnection = true;
                 out = httpURLConnection.getOutputStream();
-                out.write(s.getBytes("UTF-8"));
+                out.write(s.getBytes(StandardCharsets.UTF_8));
                 out.flush();
                 int code = httpURLConnection.getResponseCode();
                 if (code == 200) {
@@ -124,42 +126,29 @@ public class HickwallClient {
                 } catch (Exception ex) {
                     logger.debug("[send]", ex);
                 }
-            }finally {
+            } finally {
                 if (isValidConnection) {
-                    if (httpURLConnection != null) {
-                        in = httpURLConnection.getErrorStream();
-                        if (in != null) {
-                            in.close();
-                        }
-
-                        httpURLConnection.disconnect();
-                    }
-
+                    closeIfNotValidConnect(httpURLConnection);
                 }
             }
-
-            if (httpURLConnection != null) {
-                in = httpURLConnection.getErrorStream();
-                if (in != null) {
-                    in.close();
-                }
-
-                httpURLConnection.disconnect();
-            }
-
-            return var5;
         }
 
-        if (httpURLConnection != null) {
-            in = httpURLConnection.getErrorStream();
-            if (in != null) {
-                in.close();
-            }
-
-            httpURLConnection.disconnect();
-        }
+        closeIfNotValidConnect(httpURLConnection);
 
         return var5;
+    }
+
+    @VisibleForTesting
+    protected void closeIfNotValidConnect(HttpURLConnection httpURLConnection) throws IOException {
+        if (httpURLConnection == null) {
+            return;
+        }
+        InputStream in = httpURLConnection.getErrorStream();
+        if (in != null) {
+            in.close();
+            httpURLConnection.disconnect();
+            this.connection = null;
+        }
     }
 
 }
