@@ -7,7 +7,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
  */
 public enum HEALTH_STATE {
 
-    UNKNOWN(false, false) {
+    UNKNOWN(false, true) {
         @Override
         protected HEALTH_STATE afterPingSuccess() {
             return INSTANCEUP;
@@ -20,7 +20,7 @@ public enum HEALTH_STATE {
 
         @Override
         protected HEALTH_STATE afterPingFail() {
-            return UNKNOWN;
+            return DOWN;
         }
 
         @Override
