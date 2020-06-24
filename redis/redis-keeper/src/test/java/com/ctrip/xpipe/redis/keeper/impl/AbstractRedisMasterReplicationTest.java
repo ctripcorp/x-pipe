@@ -123,7 +123,7 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
 
     @Test
     public void testCheckKeeperWithTimeout() throws Exception {
-        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint("10.0.0.1", 0));
+        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultProxyEndpoint(getTimeoutIp(), 0));
         Replconf replconf = new Replconf(pool, Replconf.ReplConfType.KEEPER, scheduled, 100);
         replconf.execute().addListener(new CommandFutureListener<Object>() {
             @Override
