@@ -68,7 +68,7 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
 
     @Test
     public void testTimeoutWhenBorrow() {
-        PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint("10.0.0.1", randomPort())), scheduled, CHECK_INTERVAL);
+        PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint(getTimeoutIp(), randomPort())), scheduled, CHECK_INTERVAL);
         command.execute();
         sleep(1000 * 10);
     }
@@ -83,7 +83,7 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint("10.0.0.1", randomPort())), scheduled, CHECK_INTERVAL);
+                PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint(getTimeoutIp(), randomPort())), scheduled, CHECK_INTERVAL);
                 command.execute();
             }
         }, randomInt(1000, 2000), CHECK_INTERVAL, TimeUnit.MILLISECONDS);

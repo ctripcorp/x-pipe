@@ -138,7 +138,7 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 		retryTimes = 5;
 		long start = System.nanoTime();
 		job = new KeeperStateChangeJob(keepers,
-				new Pair<>("10.0.0.1", randomPort()),
+				new Pair<>(getTimeoutIp(), randomPort()),
 				null,
 				getXpipeNettyClientKeyedObjectPool(),
 				delayBaseMilli, retryTimes,
