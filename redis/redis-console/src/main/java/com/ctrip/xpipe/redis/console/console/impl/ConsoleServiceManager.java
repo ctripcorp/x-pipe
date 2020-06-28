@@ -27,6 +27,8 @@ public class ConsoleServiceManager {
 
     private Map<String, ConsoleService> services = Maps.newConcurrentMap();
 
+    private static volatile ConsoleService service;
+
     @Autowired
     private ConsoleConfig consoleConfig;
 
@@ -64,18 +66,19 @@ public class ConsoleServiceManager {
 
     private ConsoleService getServiceByDc(String activeIdc) {
         String dcId = activeIdc.toUpperCase();
-        ConsoleService service = services.get(dcId);
-        if (service == null) {
+        service = services.get(dcId);
+        ConsoleService localService = service;
+        if (localService == null) {
             synchronized (this) {
-                service = services.get(dcId);
+                service = localService = services.get(dcId);
                 if (service == null) {
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(dcId));
-                    services.put(activeIdc, service);
+                    service = localService = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(dcId));
+                    services.put(activeIdc, localService);
                 }
             }
         }
 
-        return service;
+        return localService;
     }
 
     public List<Boolean> allPingStatus(String host, int port) {
