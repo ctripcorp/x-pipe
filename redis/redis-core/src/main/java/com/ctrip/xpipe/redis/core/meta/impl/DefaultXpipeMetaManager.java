@@ -15,7 +15,9 @@ import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Joiner;
+import com.oracle.tools.packager.IOUtils;
 import org.xml.sax.SAXException;
+import sun.nio.ch.IOUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,9 +54,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	public XpipeMeta load(String fileName) {
-		
-		try {
-			InputStream ins = FileUtils.getFileInputStream(fileName);
+		try (InputStream ins = FileUtils.getFileInputStream(fileName)) {
 			return DefaultSaxParser.parse(ins);
 		} catch (SAXException | IOException e) {
 			logger.error("[load]" + fileName, e);
