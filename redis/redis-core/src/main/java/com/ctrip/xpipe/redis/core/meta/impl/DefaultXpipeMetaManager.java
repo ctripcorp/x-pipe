@@ -15,9 +15,7 @@ import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Joiner;
-import com.oracle.tools.packager.IOUtils;
 import org.xml.sax.SAXException;
-import sun.nio.ch.IOUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
