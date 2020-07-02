@@ -4,10 +4,14 @@ import com.google.common.collect.Lists;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -19,6 +23,7 @@ import static org.mockito.Mockito.*;
  */
 public class HickwallClientTest {
 
+    private Logger logger = LoggerFactory.getLogger(HickwallClientTest.class);
     //manually test
     @Ignore
     @Test
@@ -39,31 +44,51 @@ public class HickwallClientTest {
         }
     }
 
-    @Test
-    public void testCloseIfNotValidConnect() throws IOException {
-        HickwallClient hickwallClient = new HickwallClient("10.5.118.70:7576,10.5.118.69:7576");
-        hickwallClient.closeIfNotValidConnect(null);
-    }
+//    @Test
+//    public void testCloseIfNotValidConnect() throws IOException {
+//        HickwallClient hickwallClient = new HickwallClient("10.5.118.70:7576,10.5.118.69:7576");
+//        hickwallClient.closeIfNotValidConnect(null);
+//    }
+//
+//    @Test
+//    public void testCloseIfNotValidConnectWithoutClose() throws IOException {
+//        HickwallClient hickwallClient = new HickwallClient("10.5.118.70:7576,10.5.118.69:7576");
+//        HttpURLConnection httpURLConnection = mock(HttpURLConnection.class);
+//        when(httpURLConnection.getErrorStream()).thenReturn(null);
+//        hickwallClient.closeIfNotValidConnect(httpURLConnection);
+//    }
+//
+//    @Test
+//    public void testCloseIfNotValidConnectWithClose() throws IOException {
+//        HickwallClient hickwallClient = new HickwallClient("10.5.118.70:7576,10.5.118.69:7576");
+//        HttpURLConnection httpURLConnection = mock(HttpURLConnection.class);
+//        InputStream inputStream = mock(InputStream.class);
+//        when(httpURLConnection.getErrorStream()).thenReturn(inputStream);
+//        doNothing().when(inputStream).close();
+//        doNothing().when(httpURLConnection).disconnect();
+//        when(httpURLConnection.getErrorStream()).thenReturn(inputStream);
+//        hickwallClient.closeIfNotValidConnect(httpURLConnection);
+//        verify(inputStream, atLeast(1)).close();
+//        verify(httpURLConnection, atLeast(1)).disconnect();
+//    }
+
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     @Test
-    public void testCloseIfNotValidConnectWithoutClose() throws IOException {
-        HickwallClient hickwallClient = new HickwallClient("10.5.118.70:7576,10.5.118.69:7576");
-        HttpURLConnection httpURLConnection = mock(HttpURLConnection.class);
-        when(httpURLConnection.getErrorStream()).thenReturn(null);
-        hickwallClient.closeIfNotValidConnect(httpURLConnection);
+    public void testOOM() {
+        int size = Integer.MAX_VALUE + 8;
+        logger.info("[num] {}", size);
+        logger.info("[num] {}", size - MAX_ARRAY_SIZE);
+        logger.info("[gt 0] {}", ((size - MAX_ARRAY_SIZE) > 0));
     }
 
+    @Ignore
     @Test
-    public void testCloseIfNotValidConnectWithClose() throws IOException {
-        HickwallClient hickwallClient = new HickwallClient("10.5.118.70:7576,10.5.118.69:7576");
-        HttpURLConnection httpURLConnection = mock(HttpURLConnection.class);
-        InputStream inputStream = mock(InputStream.class);
-        when(httpURLConnection.getErrorStream()).thenReturn(inputStream);
-        doNothing().when(inputStream).close();
-        doNothing().when(httpURLConnection).disconnect();
-        when(httpURLConnection.getErrorStream()).thenReturn(inputStream);
-        hickwallClient.closeIfNotValidConnect(httpURLConnection);
-        verify(inputStream, atLeast(1)).close();
-        verify(httpURLConnection, atLeast(1)).disconnect();
+    public void testOOM2() {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        byte[] bytes = new byte[(Integer.MAX_VALUE >> 1)  + 10];
+        outputStream.write(bytes, 0, bytes.length);
+        outputStream.write(bytes, 0, bytes.length);
     }
+
 }
