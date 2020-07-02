@@ -1,37 +1,33 @@
 package com.ctrip.xpipe.service.metric;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen.zhu
  * <p>
  * May 20, 2020
  */
-public class HickwallClient {
-
-    private static final Logger logger = LoggerFactory.getLogger(HickwallClient.class);
+public class HickwallClient implements Closeable {
+    static final Logger logger = LoggerFactory.getLogger(HickwallClient.class);
     private List<String> address;
     private int index;
     private volatile ArrayBlockingQueue<DataPoint> queue;
     private volatile boolean close;
     private HickwallClientConfig config;
-    private HttpURLConnection connection;
 
     public HickwallClient(String address) throws IOException {
         this(address, 1000, 1000);
@@ -45,7 +41,6 @@ public class HickwallClient {
         this.config.READ_TIMEOUT_MS = readTimeOut;
         this.address = Arrays.asList(this.config.PROXY_ADDRESS.split(","));
         Collections.shuffle(this.address);
-        connection = getConnection();
     }
 
     public HickwallClient(HickwallClientConfig config) throws IOException {
@@ -89,66 +84,80 @@ public class HickwallClient {
         return httpURLConnection;
     }
 
-    public boolean send(ArrayList<DataPoint> datapoints) throws IOException {
+    public Boolean send(ArrayList<DataPoint> datapoints) throws IOException {
         String s = Codec.DEFAULT.encode(datapoints);
         return this.send(s);
     }
 
-    private boolean send(String s) throws IOException {
-        HttpURLConnection httpURLConnection = this.connection;
-        if(httpURLConnection == null) {
-            this.connection = httpURLConnection = getConnection();
-        }
-        boolean isValidConnection = false;
+    private synchronized Boolean send(String s) throws IOException {
+        HttpURLConnection httpURLConnection = this.getConnection();
+        boolean var10 = false;
 
-        boolean var5 = false;
-        OutputStream out = null;
-        label99:
-        {
+        Boolean var5;
+        InputStream in;
+        label99: {
             try {
-                isValidConnection = true;
-                out = httpURLConnection.getOutputStream();
-                out.write(s.getBytes(StandardCharsets.UTF_8));
+                var10 = true;
+                OutputStream out = httpURLConnection.getOutputStream();
+                out.write(s.getBytes("UTF-8"));
                 out.flush();
+                out.close();
                 int code = httpURLConnection.getResponseCode();
                 if (code == 200) {
                     var5 = true;
-                    isValidConnection = false;
+                    var10 = false;
                     break label99;
                 }
 
                 logger.warn("error " + code);
                 var5 = false;
-                isValidConnection = false;
-            } catch (IOException e) {
-                try {
-                    this.connection.disconnect();
-                } catch (Exception ex) {
-                    logger.debug("[send]", ex);
-                }
+                var10 = false;
             } finally {
-                if (isValidConnection) {
-                    closeIfNotValidConnect(httpURLConnection);
+                if (var10) {
+                    if (httpURLConnection != null) {
+                        in = httpURLConnection.getErrorStream();
+                        if (in != null) {
+                            in.close();
+                        }
+
+                        httpURLConnection.disconnect();
+                    }
+
                 }
             }
+
+            if (httpURLConnection != null) {
+                in = httpURLConnection.getErrorStream();
+                if (in != null) {
+                    in.close();
+                }
+
+                httpURLConnection.disconnect();
+            }
+
+            return var5;
         }
 
-        closeIfNotValidConnect(httpURLConnection);
+        if (httpURLConnection != null) {
+            in = httpURLConnection.getErrorStream();
+            if (in != null) {
+                in.close();
+            }
+
+            httpURLConnection.disconnect();
+        }
 
         return var5;
     }
 
-    @VisibleForTesting
-    protected void closeIfNotValidConnect(HttpURLConnection httpURLConnection) throws IOException {
-        if (httpURLConnection == null) {
-            return;
-        }
-        InputStream in = httpURLConnection.getErrorStream();
-        if (in != null) {
-            in.close();
-            httpURLConnection.disconnect();
-            this.connection = null;
-        }
+
+
+    public void close() {
+        this.close = true;
     }
 
+    protected void finalize() throws Throwable {
+        super.finalize();
+        this.close();
+    }
 }
