@@ -67,7 +67,7 @@ public class TestAbstractRedisCommandTest extends AbstractRedisTest {
                 return "+PONG\r\n";
             }
         });
-        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("10.0.0.1", 10010));
+        SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(getTimeoutIp(), 10010));
         pool = spy(pool);
         doAnswer(new Answer() {
             @Override

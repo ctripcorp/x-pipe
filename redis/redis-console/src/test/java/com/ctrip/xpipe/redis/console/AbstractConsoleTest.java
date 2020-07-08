@@ -63,7 +63,7 @@ public abstract class AbstractConsoleTest extends AbstractRedisTest{
 	}
 
 	protected RedisHealthCheckInstance newHangedRedisHealthCheckInstance() throws Exception {
-		RedisMeta redisMeta = newRandomFakeRedisMeta("10.0.0.1", 6379);
+		RedisMeta redisMeta = newRandomFakeRedisMeta(getTimeoutIp(), 6379);
 		DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
 				redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
 				new HostPort(redisMeta.getIp(), redisMeta.getPort()),

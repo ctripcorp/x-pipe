@@ -22,6 +22,7 @@ import com.ctrip.xpipe.testutils.ByteBufReleaseWrapper;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkTestServer;
+import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.ResourceLeakDetector;
@@ -36,11 +37,9 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -835,4 +834,27 @@ public class AbstractTest {
             return this;
         }
     }
+
+    protected String getTimeoutIp() {
+        List<String> ipam = Lists.newArrayList("192.0.0.0", "192.0.0.1", "127.0.0.0", "10.0.0.1", "10.0.0.0");
+        for(String ip : ipam) {
+            Socket socket = new Socket();
+            try {
+                socket.connect(new InetSocketAddress(ip, 6379), 100);
+            } catch (IOException e) {
+                if(e instanceof SocketTimeoutException) {
+                    return ip;
+                }
+            } finally {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+
+                }
+            }
+
+        }
+        return "127.0.0.2";
+    }
+
 }
