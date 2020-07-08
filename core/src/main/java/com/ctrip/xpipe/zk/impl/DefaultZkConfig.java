@@ -23,8 +23,8 @@ public class DefaultZkConfig implements ZkConfig{
 	
 	public static String KEY_ZK_NAMESPACE = "key_zk_namespace";
 	
-	private int zkSessionTimeoutMillis = 5000;
-	private int zkConnectionTimeoutMillis = 3000;
+	private int zkSessionTimeoutMillis = Integer.parseInt(System.getProperty("ZK.SESSION.TIMEOUT", "5000"));
+	private int zkConnectionTimeoutMillis = Integer.parseInt(System.getProperty("ZK.CONN.TIMEOUT", "3000"));
 	private int zkRetries = 3;
 	private String zkNameSpace = System.getProperty(KEY_ZK_NAMESPACE, DEFAULT_ZK_NAMESPACE);
 	
