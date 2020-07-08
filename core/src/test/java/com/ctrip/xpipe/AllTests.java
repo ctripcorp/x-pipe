@@ -20,6 +20,7 @@ import com.ctrip.xpipe.spring.DomainValidateFilterTest;
 import com.ctrip.xpipe.spring.RestTemplateFactoryTest;
 import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
+import com.ctrip.xpipe.zk.impl.DefaultZkConfigTest;
 import com.ctrip.xpipe.zk.impl.TestZkClientTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -79,7 +80,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	MutexableOneThreadTaskExecutorTest.class,
 	KeyedOneThreadMutexableTaskExecutorTest.class,
 	DirectByteBufInStringOutPayloadTest.class,
-	NettyTimeoutTtlListenerTest.class
+	NettyTimeoutTtlListenerTest.class,
+	DefaultZkConfigTest.class
 })
 public class AllTests {
 
