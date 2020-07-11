@@ -3,8 +3,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.ping;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
+import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * Sep 03, 2018
  */
 @Service
-public class DefaultPingService implements PingService, PingActionListener {
+public class DefaultPingService implements PingService, PingActionListener, OneWaySupport, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPingService.class);
 

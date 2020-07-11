@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
@@ -24,6 +25,8 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
 
+    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
+
     public static final String CHECK_CHANNEL = "xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp();
 
     private static final DelayActionContext INIT_CONTEXT = new DelayActionContext(null, HealthStatus.UNSET_TIME);
@@ -34,7 +37,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     private SubscribeCallback callback = new SubscribeCallback();
 
-    private AtomicReference<DelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
+    protected AtomicReference<DelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
 
     private volatile boolean isExpired = false;
 
@@ -57,11 +60,21 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 //        logger.info("[doTask][begin][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
         reportDelay();
         RedisSession session = instance.getRedisSession();
-        session.subscribeIfAbsent(CHECK_CHANNEL, callback);
-        if(instance.getRedisInstanceInfo().isMaster()) {
+        doSubscribe(session, CHECK_CHANNEL, callback);
+
+        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        if (currentDcId.equalsIgnoreCase(info.getDcId()) && info.isMaster()) {
 //            logger.info("[doTask][pub][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
-            session.publish(CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
+            doPublish(session, CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
         }
+    }
+
+    protected void doSubscribe(RedisSession session, String channel, SubscribeCallback callback) {
+        session.subscribeIfAbsent(channel, callback);
+    }
+
+    protected void doPublish(RedisSession session, String channel, String message) {
+        session.publish(channel, message);
     }
 
     @Override
@@ -81,21 +94,29 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
                         DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
             }
 
-            long result = SAMPLE_LOST_AND_NO_PONG;
-            if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
-                result = SAMPLE_LOST_BUT_PONG;
-            }
-            notifyListeners(new DelayActionContext(instance, result));
+            onExpired();
         } else {
             if (isExpired) {
                 isExpired = false;
                 logger.info("[expire][{}] recovery", instance.getRedisInstanceInfo().getHostPort());
             }
-            notifyListeners(context.get());
+            onNotExpired();
         }
     }
 
-    private class SubscribeCallback implements RedisSession.SubscribeCallback {
+    protected void onExpired() {
+        long result = SAMPLE_LOST_AND_NO_PONG;
+        if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
+            result = SAMPLE_LOST_BUT_PONG;
+        }
+        notifyListeners(new DelayActionContext(instance, result));
+    }
+
+    protected void onNotExpired() {
+        notifyListeners(context.get());
+    }
+
+    protected class SubscribeCallback implements RedisSession.SubscribeCallback {
 
         @Override
         public void message(String channel, String message) {

@@ -35,6 +35,10 @@ public enum ClusterType {
         return this.supportMultiActiveDC;
     }
 
+    public boolean supportSingleActiveDC() {
+        return !this.supportMultiActiveDC;
+    }
+
     public static boolean isSameClusterType(String source, ClusterType target) {
         return source.equalsIgnoreCase(target.toString());
     }

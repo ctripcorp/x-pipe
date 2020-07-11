@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -50,6 +51,11 @@ public class ConsoleServiceManager {
     public long getDelay(String ip, int port, String activeIdc) {
         ConsoleService service = getServiceByDc(activeIdc);
         return service.getInstanceDelayStatus(ip, port);
+    }
+
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelay(String sourceIdc, String clusterId, String shardId) {
+        ConsoleService service = getServiceByDc(sourceIdc);
+        return service.getCrossMasterDelay(clusterId, shardId);
     }
 
     public Map<HostPort, Long> getAllDelay(String activeIdc) {

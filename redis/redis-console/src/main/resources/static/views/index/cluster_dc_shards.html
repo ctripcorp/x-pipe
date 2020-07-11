@@ -77,6 +77,18 @@
                             <td></td>
                             <td></td>
                         </tr>
+                        <tr ng-if="showCrossMasterHealthStatus && shard.crossMasterDelay" ng-repeat="delayInfo in shard.crossMasterDelay">
+                            <td>
+                                <span class="label label-info">{{delayInfo.destDc}}</span>  Master
+                            </td>
+                            <td>{{delayInfo.ip || "-"}}</td>
+                            <td>{{delayInfo.port || "-"}}</td>
+                            <td>
+                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(delayInfo.delay < 0 || delayInfo.delay == 99999000000),
+                            					'glyphicon glyphicon-ok-sign green':delayInfo.delay >= 0 && delayInfo.delay != 99999000000}"></span>
+                            </td>
+                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, delayInfo.destDc)"></span></td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

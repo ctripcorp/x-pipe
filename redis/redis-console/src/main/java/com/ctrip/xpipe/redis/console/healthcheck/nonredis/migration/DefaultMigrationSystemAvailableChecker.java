@@ -179,6 +179,7 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
     protected boolean shouldCheck() {
         if (!super.shouldCheck()) return false;
 
+        // only check migration system when the cluster in manage can migrate
         Set<String> ownTypes =  consoleConfig.getOwnClusterType();
         return null != ownTypes && ownTypes.stream().anyMatch(type -> ClusterType.lookup(type).supportMigration());
     }

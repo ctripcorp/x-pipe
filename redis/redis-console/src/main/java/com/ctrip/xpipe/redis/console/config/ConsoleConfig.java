@@ -109,4 +109,6 @@ public interface ConsoleConfig extends CoreConfig {
 	Set<String> getOwnClusterType();
 
 	String getCrossDcLeaderLeaseName();
+
+	boolean isSensitiveForRedundantRedis();
 }
