@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHold
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.controller.api.HealthControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -13,14 +14,20 @@ import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
-import com.ctrip.xpipe.redis.console.health.action.delay.DelayServiceTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayServiceTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionTest;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.RouteHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayActionControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloAggregationCollectorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloCollectorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.controller.CurrentDcSentinelCheckControllerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultSiteReliabilityCheckerTest;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatusTest;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
@@ -189,7 +196,16 @@ import org.junit.runners.Suite.SuiteClasses;
         DBVariablesCheckTest.class,
         DefaultSentinelMonitorsCheckTest.class,
         DcMetaBuilderTest.class,
-        DcClusterServiceImplTest.class
+        DcClusterServiceImplTest.class,
+        MultiMasterDelayListenerTest.class,
+        CrossMasterDelayServiceTest.class,
+        MultiMasterDelayActionControllerTest.class,
+        CurrentDcSentinelHelloAggregationCollectorTest.class,
+        CurrentDcSentinelHelloCollectorTest.class,
+        CurrentDcSentinelCheckControllerTest.class,
+        RedisMasterControllerTest.class,
+        CurrentDcDelayPingActionCollectorTest.class,
+        HealthControllerTest.class
 })
 public class AllTests {
 

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.rewrite;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
@@ -57,7 +58,7 @@ public class ConfigRewriteCheckActionTest extends AbstractTest {
         AlertManager alertManager = mock(AlertManager.class);
         doNothing().when(alertManager).alert(any(DefaultRedisInstanceInfo.class), any(ALERT_TYPE.class), anyString());
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance()
-                .setRedisInstanceInfo(new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort(), "SHAJQ"))
+                .setRedisInstanceInfo(new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort(), "SHAJQ", ClusterType.ONE_WAY))
                 .setSession(new RedisSession(new DefaultEndPoint("localhost", server.getPort()), scheduled, getXpipeNettyClientKeyedObjectPool()));
         try {
             new ConfigRewriteCheckAction(scheduled, instance,

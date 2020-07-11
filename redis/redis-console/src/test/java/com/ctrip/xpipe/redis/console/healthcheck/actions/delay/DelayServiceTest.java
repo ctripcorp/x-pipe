@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.redis.console.health.action.delay;
+package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
@@ -88,7 +89,7 @@ public class DelayServiceTest {
             put(new HostPort("127.0.0.1", 3000), 500L);
         }};
         redisDelay.forEach((redis, delay) -> {
-            RedisInstanceInfo redisInstanceInfo = new DefaultRedisInstanceInfo(null, null, null, redis, null);
+            RedisInstanceInfo redisInstanceInfo = new DefaultRedisInstanceInfo(null, null, null, redis, null, ClusterType.ONE_WAY);
             delayService.onAction(new DelayActionContext(new DefaultRedisHealthCheckInstance().setRedisInstanceInfo(redisInstanceInfo), delay));
         });
 

@@ -1,8 +1,11 @@
-package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
+package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.SentinelCollector4Keeper;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -12,7 +15,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -41,7 +43,7 @@ public class SentinelCollector4KeeperTest {
     private HostPort redisAddr = new HostPort("127.0.0.1", 6380);
     private String monitorName = "xpipe-test";
 
-    private RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", redisAddr, "dc2");
+    private RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", redisAddr, "dc2", ClusterType.ONE_WAY);
     private SentinelHello hello = new SentinelHello(sentinel, masterAddr, monitorName);
 
     @Before

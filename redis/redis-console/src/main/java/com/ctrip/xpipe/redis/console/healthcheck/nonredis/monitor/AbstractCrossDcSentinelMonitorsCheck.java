@@ -65,6 +65,8 @@ public abstract class AbstractCrossDcSentinelMonitorsCheck extends AbstractCross
 
     @Override
     protected boolean shouldCheck() {
+        if (!consoleConfig.isSensitiveForRedundantRedis()) return false;
+
         Set<String> ownClusterType = consoleConfig.getOwnClusterType();
         if (null != ownClusterType
                 && ownClusterType.stream().noneMatch(type -> ClusterType.lookup(type).supportHealthCheck())) {

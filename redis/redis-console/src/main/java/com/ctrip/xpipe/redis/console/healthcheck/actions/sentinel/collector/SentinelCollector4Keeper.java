@@ -1,10 +1,14 @@
-package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
+package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHelloCollector;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
@@ -23,7 +27,7 @@ import java.util.Set;
  * Feb 12, 2018
  */
 @Component
-public class SentinelCollector4Keeper implements SentinelHelloCollector {
+public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWaySupport {
 
     private static Logger logger = LoggerFactory.getLogger(SentinelCollector4Keeper.class);
 

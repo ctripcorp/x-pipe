@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -81,7 +82,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
 
         instance = mock(RedisHealthCheckInstance.class);
-        RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2");
+        RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
         when(instance.getRedisInstanceInfo()).thenReturn(info);
 
         when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
@@ -154,7 +155,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
     private RedisHealthCheckInstance randomInstance(String dc) {
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
-        RedisInstanceInfo info = new DefaultRedisInstanceInfo(dc, "cluster", "shard", localHostport(randomPort()), "dc2");
+        RedisInstanceInfo info = new DefaultRedisInstanceInfo(dc, "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
         when(instance.getRedisInstanceInfo()).thenReturn(info);
         return instance;
     }
