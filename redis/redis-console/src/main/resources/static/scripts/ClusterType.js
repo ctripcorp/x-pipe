@@ -13,7 +13,7 @@ cluster_type.service('ClusterType', [function () {
                     value: 'bi_direction',
                     multiActiveDcs: true,
                     useKeeper: false,
-                    healthCheck: false,
+                    healthCheck: true,
                 }
             },
             lookup(typeName) {

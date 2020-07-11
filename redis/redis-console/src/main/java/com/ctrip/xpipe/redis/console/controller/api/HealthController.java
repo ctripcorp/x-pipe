@@ -5,10 +5,12 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,6 +38,9 @@ public class HealthController extends AbstractConsoleController{
     @Autowired
     private DelayService delayService;
 
+    @Autowired
+    private CrossMasterDelayService crossMasterDelayService;
+
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
 
@@ -62,6 +67,11 @@ public class HealthController extends AbstractConsoleController{
         return delayService.getAllUnhealthyInstance();
     }
 
+    @RequestMapping(value = "/cross-master/delay/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelay(@PathVariable String clusterId, @PathVariable String shardId) {
+        return crossMasterDelayService.getPeerMasterDelayFromCurrentDc(clusterId, shardId);
+    }
+
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)
     public String getHealthCheckInstance(@PathVariable String ip, @PathVariable int port) {
         RedisHealthCheckInstance instance = instanceManager.findRedisHealthCheckInstance(new HostPort(ip, port));
@@ -74,12 +84,15 @@ public class HealthController extends AbstractConsoleController{
             for(Object listener : ((AbstractHealthCheckAction) action).getListeners()) {
                 actionModel.addListener(listener.toString());
             }
+            for(Object controller : ((AbstractHealthCheckAction) action).getControllers()) {
+                actionModel.addController(controller.toString());
+            }
             model.addAction(actionModel);
         }
         return Codec.DEFAULT.encode(model);
     }
 
-    private class RedisHealthCheckInstanceModel {
+    protected class RedisHealthCheckInstanceModel {
 
         private String info;
 
@@ -106,14 +119,20 @@ public class HealthController extends AbstractConsoleController{
     private class HealthCheckActionModel {
         private String name;
         private List<String> listeners;
+        private List<String> controllers;
 
         public HealthCheckActionModel(String name) {
             this.name = name;
             this.listeners = Lists.newArrayList();
+            this.controllers = Lists.newArrayList();
         }
 
         public void addListener(String listener) {
             listeners.add(listener);
+        }
+
+        public void addController(String controller) {
+            controllers.add(controller);
         }
 
         public String getName() {
@@ -122,6 +141,10 @@ public class HealthController extends AbstractConsoleController{
 
         public List<String> getListeners() {
             return listeners;
+        }
+
+        public List<String> getControllers() {
+            return controllers;
         }
     }
 }

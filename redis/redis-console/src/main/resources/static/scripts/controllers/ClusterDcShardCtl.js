@@ -12,6 +12,8 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.gotoHickwall = gotoHickwall;
         $scope.existsRoute = existsRoute;
         $scope.showHealthStatus = true
+        $scope.showCrossMasterHealthStatus = false
+        $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall
         
         if ($scope.clusterName) {
             loadCluster();
@@ -57,6 +59,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
 
                             var type = ClusterType.lookup(cluster.clusterType);
                             $scope.showHealthStatus = type && type.healthCheck;
+                            $scope.showCrossMasterHealthStatus = type && type.multiActiveDcs;
 
                             loadShards($scope.clusterName, $scope.currentDcName);
                         }, function(result) {
@@ -79,6 +82,36 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                 }, function (result) {
                     toastr.error(AppUtil.errorMsg(result));
                 });
+        }
+
+        function checkCrossMasterDelay() {
+            if($scope.showCrossMasterHealthStatus && $scope.shards) {
+                $scope.shards.forEach(function(shard) {
+                    HealthCheckService.getCrossMasterDelay($scope.currentDcName, $scope.clusterName, shard.shardTbl.shardName)
+                        .then(function (result) {
+                            shard.crossMasterDelay = [];
+                            for (dc of $scope.dcs) {
+                                if (dc.dcName === $scope.currentDcName) continue;
+                                if (!result || !result[dc.dcName]) {
+                                    shard.crossMasterDelay.push({
+                                        destDc: dc.dcName,
+                                        delay: -1
+                                    });
+                                    continue;
+                                }
+
+                                var hostPort = Object.keys(result[dc.dcName])[0].split(":")
+                                var delay = Object.values(result[dc.dcName])[0]
+                                shard.crossMasterDelay.push({
+                                    destDc: dc.dcName,
+                                    delay: delay,
+                                    ip: hostPort[0],
+                                    port: hostPort[1]
+                                });
+                            }
+                        })
+                });
+            }
         }
         
         function healthCheck() {
@@ -103,6 +136,15 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         		});
         }
 
+        function gotoCrossMasterHickwall(shardName, destDc) {
+            HealthCheckService.getCrossMasterHickwallAddr($scope.clusterName, shardName, $scope.currentDcName, destDc)
+                .then(function(result) {
+                    if(result.addr) {
+                        $window.open(result.addr, '_blank');
+                    }
+                });
+        }
+
         function existsRoute(activeDcName, backupDcName) {
             ProxyService.existsRouteBetween(activeDcName, backupDcName)
                 .then(function (result) {
@@ -113,7 +155,9 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         }
         
         $scope.refreshHealthStatus = $interval(healthCheck, 2000);
+        $scope.refreshCrossMasterHealthStatus = $interval(checkCrossMasterDelay, 2000);
         $scope.$on('$destroy', function() {
             $interval.cancel($scope.refreshHealthStatus);
+            $interval.cancel($scope.refreshCrossMasterHealthStatus)
           });
     }]);

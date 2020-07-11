@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
+import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -20,31 +24,32 @@ import java.util.List;
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory {
+public class SentinelHelloCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
 
-    @Autowired
-    private List<SentinelHelloCollector> collectors;
+    private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 
-    @Autowired
-    private List<HealthCheckActionController> controllers;
+    private Map<ClusterType, List<SentinelActionController>> controllersByClusterType;
 
-    @Autowired
     private ConsoleDbConfig consoleDbConfig;
 
-    @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    public SentinelHelloCheckActionFactory(List<SentinelHelloCollector> collectors, List<SentinelActionController> controllers,
+                                           ConsoleDbConfig consoleDbConfig, ClusterService clusterService) {
+        this.consoleDbConfig = consoleDbConfig;
+        this.clusterService = clusterService;
+        this.collectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(collectors);
+        this.controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
+    }
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, consoleDbConfig,
                 clusterService);
-
-        for(SentinelHelloCollector collector : collectors) {
-            action.addListener(collector);
-        }
-        for (HealthCheckActionController controller : controllers) {
-            action.addController(controller);
-        }
+        ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+        action.addListeners(collectorsByClusterType.get(clusterType));
+        action.addControllers(controllersByClusterType.get(clusterType));
         return action;
     }
 

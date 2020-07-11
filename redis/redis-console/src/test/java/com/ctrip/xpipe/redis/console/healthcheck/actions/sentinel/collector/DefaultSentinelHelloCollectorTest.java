@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
+package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -6,18 +6,17 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
 import org.junit.*;
-import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 

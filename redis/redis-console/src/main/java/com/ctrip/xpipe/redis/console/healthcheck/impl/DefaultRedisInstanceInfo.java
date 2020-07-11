@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
@@ -26,12 +27,15 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
     private boolean crossRegion;
 
-    public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc) {
+    private ClusterType clusterType;
+
+    public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc, ClusterType clusterType) {
         this.dcId = dcId;
         this.clusterId = clusterId;
         this.shardId = shardId;
         this.hostPort = hostPort;
         this.activeDc = activeDc;
+        this.clusterType = clusterType;
     }
 
     @Override
@@ -42,6 +46,11 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
     @Override
     public String getClusterId() {
         return clusterId;
+    }
+
+    @Override
+    public ClusterType getClusterType() {
+        return clusterType;
     }
 
     @Override
@@ -80,6 +89,7 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
     @Override
     public boolean isInActiveDc() {
+        if (null == activeDc) return false;
         return this.dcId.equalsIgnoreCase(activeDc);
     }
 

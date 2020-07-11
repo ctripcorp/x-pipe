@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.handler;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
@@ -26,7 +27,7 @@ public class DefaultInstanceUpHandlerTest extends AbstractConsoleIntegrationTest
     public void testDoHandle() {
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo("FAT",
-                "cluster_shyin", "shard1", new HostPort("10.3.2.220", 6379), "FAT");
+                "cluster_shyin", "shard1", new HostPort("10.3.2.220", 6379), "FAT", ClusterType.ONE_WAY);
         when(instance.getRedisInstanceInfo()).thenReturn(info);
         handler.doHandle(new InstanceUp(instance));
         sleep(10 * 1000);

@@ -38,6 +38,8 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
     @Autowired
     private AlertManager alertManager;
 
+    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
+
     @Override
     protected void doCheck() {
 
@@ -47,15 +49,21 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
 
         // check for local dc meta only
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (!dcMeta.getId().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
+            if (!dcMeta.getId().equalsIgnoreCase(currentDcId)) {
                 continue;
             }
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                if (!ClusterType.lookup(clusterMeta.getType()).supportHealthCheck()) {
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (clusterType.supportSingleActiveDC()
+                        && !clusterMeta.getActiveDc().equalsIgnoreCase(currentDcId)) {
                     continue;
                 }
-                if (!clusterMeta.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
-                    continue;
+                if (clusterType.supportMultiActiveDC()) {
+                    // only check client config in the first dc for multi active dc cluster
+                    String[] dcs = clusterMeta.getDcs().split("\\s*,\\s*");
+                    if (dcs.length > 0 && !dcs[0].equalsIgnoreCase(currentDcId)) {
+                        continue;
+                    }
                 }
                 try {
                     checkCluster(clusterMeta.getId(), xpipeMeta);
