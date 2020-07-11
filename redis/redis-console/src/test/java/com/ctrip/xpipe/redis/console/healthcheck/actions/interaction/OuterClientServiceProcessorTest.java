@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
@@ -87,7 +88,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         processor.setEventHandlers(Lists.newArrayList(instanceSickHandler, instanceDownHandler, instanceUpHandler));
 
         instance = mock(RedisHealthCheckInstance.class);
-        when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort, dc));
+        when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort, dc, ClusterType.ONE_WAY));
 
         FinalStateSetterManager<ClusterShardHostPort, Boolean> manager = mock(FinalStateSetterManager.class);
         when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(manager);

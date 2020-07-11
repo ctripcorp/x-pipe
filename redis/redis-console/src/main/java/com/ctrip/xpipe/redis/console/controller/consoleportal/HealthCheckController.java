@@ -3,9 +3,11 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.ImmutableMap;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +34,11 @@ public class HealthCheckController extends AbstractConsoleController {
     @Autowired
     private ConsoleConfig config;
 
-    private static final String TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
+    @Autowired
+    private CrossMasterDelayService crossMasterDelayService;
+
+    private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
+    private static final String CROSS_DC_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-source=%s&var-dest=%s";
 
     private static final String ENDCODE_TYPE = "UTF-8";
 
@@ -46,6 +52,11 @@ public class HealthCheckController extends AbstractConsoleController {
         return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
     }
 
+    @RequestMapping(value = "/cross-master/delay/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
+    public Map<String, Pair<HostPort, Long>> getCrossMasterReplHealthStatus(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+        return crossMasterDelayService.getPeerMasterDelayFromSourceDc(dcId, clusterId, shardId);
+    }
+
     @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
         HickwallMetricInfo info = config.getHickwallMetricInfo();
@@ -54,9 +65,26 @@ public class HealthCheckController extends AbstractConsoleController {
         }
         String template = null;
         try {
-            template = String.format(TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort);
+            template = String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort);
         } catch (Exception e) {
             logger.error("[getHickwallAddress]", e);
+            return ImmutableMap.of("addr", "");
+        }
+        String url = info.getDomain() + template;
+        return ImmutableMap.of("addr", url);
+    }
+
+    @RequestMapping(value = "/cross-master/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{sourceDc}/{destDc}", method = RequestMethod.GET)
+    public Map<String, String> getCrossDcDelayHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String sourceDc, @PathVariable String destDc) {
+        HickwallMetricInfo info = config.getHickwallMetricInfo();
+        if (Strings.isEmpty(info.getDomain())) {
+            return ImmutableMap.of("addr", "");
+        }
+        String template;
+        try {
+            template = String.format(CROSS_DC_DELAY_TEMPLATE, info.getCrossDcDelayPanelId(), clusterName, shardName, sourceDc, destDc);
+        } catch (Exception e) {
+            logger.error("[getCrossDcDelayHickwallAddress]", e);
             return ImmutableMap.of("addr", "");
         }
         String url = info.getDomain() + template;

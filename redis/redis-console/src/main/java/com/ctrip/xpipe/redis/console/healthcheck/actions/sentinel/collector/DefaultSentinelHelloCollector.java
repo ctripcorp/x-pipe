@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
+package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
@@ -9,9 +9,11 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelHelloCollector;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.SentinelLeakyBucket;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.redis.SentinelManager;
@@ -24,7 +26,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.LeakyBucket;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -50,7 +51,7 @@ import java.util.stream.Collectors;
  * <p>
  * Oct 09, 2018
  */
-@Component
+@Component("defaultSentinelHelloCollector")
 public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
@@ -58,7 +59,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     private static final String SENTINEL_TYPE = "sentinel";
 
     @Autowired
-    private MetaCache metaCache;
+    protected MetaCache metaCache;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -118,12 +119,12 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         Set<SentinelHello> hellos = context.getResult();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
-        String sentinelMonitorName = metaCache.getSentinelMonitorName(clusterId, shardId);
-        Set<HostPort> masterDcSentinels = metaCache.getActiveDcSentinels(clusterId, shardId);
+        String sentinelMonitorName = getSentinelMonitorName(info);
+        Set<HostPort> sentinels = getSentinels(info);
         QuorumConfig quorumConfig = consoleConfig.getDefaultSentinelQuorumConfig();
         HostPort masterAddr = null;
         try{
-            masterAddr = metaCache.findMaster(clusterId, shardId);
+            masterAddr = getMaster(info);
         } catch (MasterNotFoundException e) {
             logger.error("[collect]" + e.getMessage(), e);
         }
@@ -131,13 +132,25 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
         //check delete
-        Set<SentinelHello> toDelete = checkAndDelete(sentinelMonitorName, masterDcSentinels, hellos, quorumConfig, masterAddr);
+        Set<SentinelHello> toDelete = checkAndDelete(sentinelMonitorName, sentinels, hellos, quorumConfig, masterAddr);
         //checkReset
         checkReset(clusterId, shardId, sentinelMonitorName, hellos);
         //check add
-        Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, masterDcSentinels, hellos, masterAddr, quorumConfig);
+        Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, sentinels, hellos, masterAddr, quorumConfig);
 
         doAction(sentinelMonitorName, masterAddr, toDelete, toAdd, quorumConfig);
+    }
+
+    protected String getSentinelMonitorName(RedisInstanceInfo info) {
+        return metaCache.getSentinelMonitorName(info.getClusterId(), info.getShardId());
+    }
+
+    protected Set<HostPort> getSentinels(RedisInstanceInfo info) {
+        return metaCache.getActiveDcSentinels(info.getClusterId(), info.getShardId());
+    }
+
+    protected HostPort getMaster(RedisInstanceInfo info) throws MasterNotFoundException {
+        return metaCache.findMaster(info.getClusterId(), info.getShardId());
     }
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
@@ -329,7 +342,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return true;
     }
 
-    protected Set<SentinelHello> checkAndDelete(String sentinelMonitorName, Set<HostPort> masterDcSentinels,
+    protected Set<SentinelHello> checkAndDelete(String sentinelMonitorName, Set<HostPort> sentinels,
                                                 Set<SentinelHello> hellos, QuorumConfig quorumConfig, HostPort masterAddr) {
 
         Set<SentinelHello> toDelete = new HashSet<>();
@@ -343,16 +356,14 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         hellos.forEach((hello) -> {
             HostPort sentinel = hello.getSentinelAddr();
-            if (!masterDcSentinels.contains(sentinel)) {
+            if (!sentinels.contains(sentinel)) {
                 toDelete.add(hello);
             }
 
         });
 
-        //add check for master not in primary dc
         hellos.forEach((hello) -> {
-            HostPort hostPort = hello.getMasterAddr();
-            if (metaCache.inBackupDc(hostPort)) {
+            if (isHelloMasterInWrongDc(hello)) {
                 toDelete.add(hello);
             }
         });
@@ -379,8 +390,14 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return toDelete;
     }
 
+    protected boolean isHelloMasterInWrongDc(SentinelHello hello) {
+        // delete check for master not in primary dc
+        HostPort hostPort = hello.getMasterAddr();
+        return metaCache.inBackupDc(hostPort);
+    }
+
     @VisibleForTesting
-    protected Set<SentinelHello> checkToAdd(String clusterId, String shardId, String sentinelMonitorName, Set<HostPort> masterDcSentinels, Set<SentinelHello> hellos, HostPort masterAddr, QuorumConfig quorumConfig) {
+    protected Set<SentinelHello> checkToAdd(String clusterId, String shardId, String sentinelMonitorName, Set<HostPort> sentinels, Set<SentinelHello> hellos, HostPort masterAddr, QuorumConfig quorumConfig) {
 
         if(masterAddr == null){
             logger.warn("[checkToAdd][no monitor name]{}, {}", clusterId, shardId);
@@ -409,7 +426,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         int toAddSize = quorumConfig.getTotal() - hellos.size();
 
         int i = 0;
-        for (HostPort hostPort : masterDcSentinels) {
+        for (HostPort hostPort : sentinels) {
             if (!currentSentinels.contains(hostPort)) {
                 i++;
                 if(i > toAddSize){

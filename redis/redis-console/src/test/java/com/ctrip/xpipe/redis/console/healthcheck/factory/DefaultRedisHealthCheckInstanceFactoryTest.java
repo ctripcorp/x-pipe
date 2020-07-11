@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.factory;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
@@ -86,7 +87,7 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
 
     protected DcMeta newDcMeta(String dcId) {
         DcMeta dcMeta = new DcMeta().setId(dcId);
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta);
+        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString());
         dcMeta.addCluster(clusterMeta);
         ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
         clusterMeta.addShard(shardMeta);
@@ -97,7 +98,7 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
 
     protected RedisMeta normalRedisMeta() {
         DcMeta dcMeta = new DcMeta().setId("dc");
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta);
+        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString());
         ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
         RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
         return redisMeta;

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
@@ -160,6 +161,7 @@ public class DelayActionTest extends AbstractRedisTest {
         Mockito.when(config.checkIntervalMilli()).thenReturn(CHECK_INTERVAL);
         Mockito.when(config.getHealthyDelayMilli()).thenReturn(CHECK_INTERVAL);
         Mockito.when(info.isMaster()).thenReturn(true);
+        Mockito.when(info.getDcId()).thenReturn(FoundationService.DEFAULT.getDataCenter());
     }
 
     private DelayAction mockAction() {

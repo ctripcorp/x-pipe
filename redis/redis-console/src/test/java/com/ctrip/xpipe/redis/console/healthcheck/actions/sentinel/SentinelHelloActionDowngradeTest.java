@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
@@ -56,10 +58,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
     private int sentinelSubTimeout = 200;
 
     @InjectMocks
-    private SentinelHelloCheckActionController checkActionController;
-
-    @Mock
-    private SentinelCheckControllerManager checkControllerManager;
+    private SentinelCheckDowngradeManager checkActionController;
 
     @Mock
     private MetaCache metaCache;
@@ -70,7 +69,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
     @Mock
     private DefaultSentinelHelloCollector sentinelHelloCollector;
 
-    private SentinelCheckDowngradeController downgradeController;
+    private SentinelCheckDowngradeCollectorController downgradeController;
 
     private static final String clusterName = "cluster";
 
@@ -78,10 +77,10 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
 
     @Before
     public void beforeSentinelHelloActionDowngradeTest() throws Exception {
-        downgradeController = new SentinelCheckDowngradeController(metaCache, sentinelHelloCollector, clusterName, shardName);
+        downgradeController = new SentinelCheckDowngradeCollectorController(metaCache, sentinelHelloCollector, clusterName, shardName);
         downgradeController = Mockito.spy(downgradeController);
-        Mockito.when(checkControllerManager.getCheckController(clusterName, shardName)).thenReturn(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
+        checkActionController.addCheckCollectorController(clusterName, shardName, downgradeController);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = sentinelCollectInterval;
         SubscribeCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = sentinelSubTimeout;
         prepareActions();
@@ -311,10 +310,10 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
     }
 
     private void allActionDoTaskWithoutWait() {
-        activeDcMaster.checkAction.doTask();
-        activeDcSlave.checkAction.doTask();
-        backupDcSlave1.checkAction.doTask();
-        backupDcSlave2.checkAction.doTask();
+        activeDcMaster.checkTask.run();
+        activeDcSlave.checkTask.run();
+        backupDcSlave1.checkTask.run();
+        backupDcSlave2.checkTask.run();
     }
 
     private void setSentinelCollectInterval(int interval) {
@@ -359,6 +358,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
 
         public SentinelHelloCheckAction checkAction;
 
+        public AbstractHealthCheckAction.ScheduledHealthCheckTask checkTask;
+
         public volatile boolean errorResp = false;
 
         public volatile boolean serverHang = false;
@@ -377,6 +378,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
             checkAction = new SentinelHelloCheckAction(scheduled, checkInstance, executors, config, clusterService);
             checkAction.addController(checkActionController);
             checkAction.addListener(checkActionController);
+            checkTask = checkAction.new ScheduledHealthCheckTask();
         }
 
         private void initServer() throws Exception {

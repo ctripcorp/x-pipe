@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.metric;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.google.common.collect.Maps;
 
@@ -16,6 +17,7 @@ public class MetricData {
     private String dcName;
     private String clusterName;
     private String shardName;
+    private String clusterType;
     private long timestampMilli;
     private double value;
     private HostPort hostPort;
@@ -38,6 +40,14 @@ public class MetricData {
 
     public void setHostPort(HostPort hostPort) {
         this.hostPort = hostPort;
+    }
+
+    public void setClusterType(ClusterType clusterType) {
+        this.clusterType = clusterType.toString();
+    }
+
+    public String getClusterType() {
+        return clusterType;
     }
 
     public String getClusterName() {

@@ -149,6 +149,10 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
             @Override
             protected void doRun() {
                 AbstractInstanceEvent event = (AbstractInstanceEvent) args;
+                if (event.getInstance().getRedisInstanceInfo().getClusterType().supportMultiActiveDC()) {
+                    // only care about the master status for single active dc cluster
+                    return;
+                }
                 if(!event.getInstance().getRedisInstanceInfo().isMaster()) {
                     return;
                 }
