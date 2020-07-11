@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
@@ -85,7 +86,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
                 .setTunnelStatsResult(new TunnelStatsResult("", "", -1L, -1L, new HostPort("127.0.0.2", 443), new HostPort("127.0.0.2", 2048)))
         );
         proxyChain = new DefaultProxyChain("FRA-AWS", "cluster", "shard", tunnels);
-        when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard", new HostPort("127.0.0.3", 6379), "SHAJQ"));
+        when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard", new HostPort("127.0.0.3", 6379), "SHAJQ", ClusterType.ONE_WAY));
         when(instance.getRedisSession()).thenReturn(redisSession);
         when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
 
@@ -229,7 +230,7 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         RedisHealthCheckInstance instance2 = mock(RedisHealthCheckInstance.class);
         when(instance2.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard",
-                new HostPort("127.0.0.4", 6380), "SHAJQ"));
+                new HostPort("127.0.0.4", 6380), "SHAJQ", ClusterType.ONE_WAY));
         when(instance2.getRedisSession()).thenReturn(redisSession);
         processor.onEvent(new InstanceHalfSick(instance));
         processor.onEvent(new InstanceHalfSick(instance2));

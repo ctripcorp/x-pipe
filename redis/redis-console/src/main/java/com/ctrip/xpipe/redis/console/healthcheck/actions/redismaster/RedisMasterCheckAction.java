@@ -40,11 +40,6 @@ public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction
 
     @Override
     protected void doTask() {
-        RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
-        if(!info.isInActiveDc()) {
-            logger.debug("[doTask] not in backup dc: {}", info);
-            return;
-        }
         CommandFuture<Role> future = getActionInstance().getRedisSession().role(new RedisSession.RollCallback() {
             @Override
             public void role(String role) {

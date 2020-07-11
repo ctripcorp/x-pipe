@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
@@ -135,7 +136,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
         when(action.getIntervalMilli()).thenReturn(500);
         action.lastStartTime = System.currentTimeMillis() - 500;
 
-        ScheduledFuture f = scheduled.scheduleWithFixedDelay(() -> action.doTask(), 0, 200, TimeUnit.MILLISECONDS);
+        ScheduledFuture f = scheduled.scheduleWithFixedDelay(action.new ScheduledHealthCheckTask(), 0, 200, TimeUnit.MILLISECONDS);
 
         sleep(900);
         f.cancel(false);

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.version;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
@@ -15,7 +17,7 @@ import java.util.List;
  * Oct 08, 2018
  */
 @Component
-public class VersionCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory {
+public class VersionCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport {
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {

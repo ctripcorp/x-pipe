@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
+import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
@@ -7,15 +8,21 @@ import com.ctrip.xpipe.utils.StringUtil;
  * <p>
  * Apr 04, 2018
  */
-public interface Subscribe {
+public interface Subscribe extends LoggableRedisCommand<Object> {
 
     String PSUBSCRIBE = "psubscribe";
 
     String SUBSCRIBE = "subscribe";
 
+    String CRDT_SUBSCRIBE = "crdtsubscribe";
+
+    String CRDT_PSUBSCRIBE = "crdtpsubscribe";
+
     void addChannelListener(SubscribeListener listener);
 
     void removeChannelListener(SubscribeListener listener);
+
+    void unSubscribe();
 
     enum SUBSCRIBE_STATE {
         WAITING_RESPONSE,
@@ -33,6 +40,16 @@ public interface Subscribe {
             @Override
             public boolean isFromSubType(String subType) {
                 return StringUtil.trimEquals(PSUBSCRIBE, subType, false);
+            }
+        }, CRDT_MESSAGE {
+            @Override
+            public boolean isFromSubType(String subType) {
+                return StringUtil.trimEquals(CRDT_SUBSCRIBE, subType, false);
+            }
+        }, CRDT_PMESSAGE {
+            @Override
+            public boolean isFromSubType(String subType) {
+                return StringUtil.trimEquals(CRDT_PSUBSCRIBE, subType, false);
             }
         };
 

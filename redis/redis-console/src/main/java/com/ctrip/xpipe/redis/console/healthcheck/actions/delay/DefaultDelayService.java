@@ -1,12 +1,16 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
+import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -24,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * Sep 03, 2018
  */
 @Component
-public class DefaultDelayService implements DelayService, DelayActionListener {
+public class DefaultDelayService implements DelayService, DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDelayService.class);
 
@@ -40,14 +44,28 @@ public class DefaultDelayService implements DelayService, DelayActionListener {
 
     @Override
     public long getDelay(HostPort hostPort) {
-        String dcId = metaCache.getActiveDc(hostPort);
+        Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
+        if (null == clusterShard) return -1L;
+
+        ClusterType clusterType = metaCache.getClusterType(clusterShard.getKey());
+        String dcId = null;
+        if (clusterType.supportSingleActiveDC()) {
+            dcId = metaCache.getActiveDc(hostPort);
+        } else if (clusterType.supportMultiActiveDC()) {
+            dcId = metaCache.getDc(hostPort);
+        }
+
         if (StringUtil.isEmpty(dcId)) {
             return -1L;
         }
 
         long result;
         if (!FoundationService.DEFAULT.getDataCenter().equalsIgnoreCase(dcId)) {
-            result = consoleServiceManager.getDelay(hostPort.getHost(), hostPort.getPort(), dcId);
+            try {
+                result = consoleServiceManager.getDelay(hostPort.getHost(), hostPort.getPort(), dcId);
+            } catch (Exception e) {
+                return -1L;
+            }
         } else {
             result = hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
         }

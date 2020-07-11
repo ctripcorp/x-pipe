@@ -3,11 +3,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -16,8 +14,6 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,8 +38,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private ClusterService clusterService;
 
-    private List<HealthCheckActionController> controllers = new ArrayList<>();
-
     private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
 
     private Throwable subError;
@@ -59,10 +53,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     @Override
     protected void doTask() {
-        if(!shouldStart()) {
-            return;
-        }
-
         lastStartTime = System.currentTimeMillis();
         RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
         if (instance.getRedisInstanceInfo().isInActiveDc()) {
@@ -114,7 +104,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         hellos = Sets.newConcurrentHashSet();
     }
 
-    private boolean shouldStart() {
+    protected boolean shouldCheck() {
         long current = System.currentTimeMillis();
         if( current - lastStartTime < getIntervalMilli()){
             logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
@@ -134,18 +124,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return false;
         }
 
-        for (HealthCheckActionController controller : controllers) {
-            if (!controller.shouldCheck(instance)) {
-                RedisInstanceInfo redisInfo = getActionInstance().getRedisInstanceInfo();
-                logger.debug("[shouldStart][{}-{}] {} {} controller {} refuse check",
-                        redisInfo.getClusterId(), redisInfo.getShardId(),
-                        redisInfo.isInActiveDc() ? "activeDc" : "backupDc", redisInfo.getDcId(),
-                        controller.getClass().getSimpleName());
-                return false;
-            }
-        }
-
-        return consoleDbConfig.isSentinelAutoProcess();
+        return super.shouldCheck() && consoleDbConfig.isSentinelAutoProcess();
     }
 
     @Override
@@ -157,8 +136,4 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
     }
 
-    @Override
-    public void addController(HealthCheckActionController controller) {
-        this.controllers.add(controller);
-    }
 }

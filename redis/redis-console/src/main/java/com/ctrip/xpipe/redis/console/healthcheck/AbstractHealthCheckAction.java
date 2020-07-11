@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
@@ -22,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractHealthCheckAction<T extends ActionContext> extends AbstractLifecycle implements HealthCheckAction {
 
     protected List<HealthCheckActionListener<T>> listeners = Lists.newArrayList();
+
+    protected List<HealthCheckActionController> controllers = Lists.newArrayList();
 
     protected RedisHealthCheckInstance instance;
 
@@ -81,6 +82,21 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         listeners.addAll(list);
     }
 
+    @Override
+    public void addController(HealthCheckActionController controller) {
+        controllers.add(controller);
+    }
+
+    @Override
+    public void addControllers(List list) {
+        controllers.addAll(list);
+    }
+
+    @Override
+    public void removeController(HealthCheckActionController controller) {
+        controllers.remove(controller);
+    }
+
     @SuppressWarnings("unchecked")
     protected void notifyListeners(ActionContext context) {
         for(HealthCheckActionListener listener : listeners) {
@@ -112,6 +128,19 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected abstract Logger getHealthCheckLogger();
 
+    protected boolean shouldCheck() {
+        for (HealthCheckActionController controller : controllers) {
+            if (!controller.shouldCheck(instance)) {
+                RedisInstanceInfo redisInfo = getActionInstance().getRedisInstanceInfo();
+                logger.debug("[doRun][{}][{}][{}] skip check by {}", redisInfo.getClusterId(), redisInfo.getShardId(),
+                        redisInfo.getHostPort(), controller);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     protected int getBaseCheckInterval() {
         return instance.getHealthCheckConfig().checkIntervalMilli();
     }
@@ -121,7 +150,12 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
         return listeners;
     }
 
-    private class ScheduledHealthCheckTask extends AbstractExceptionLogTask {
+    @VisibleForTesting
+    public List<HealthCheckActionController> getControllers() {
+        return controllers;
+    }
+
+    public class ScheduledHealthCheckTask extends AbstractExceptionLogTask {
         @Override
         protected Logger getLogger() {
             return getHealthCheckLogger();
@@ -129,7 +163,9 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
         @Override
         protected void doRun() {
-            doTask();
+            if (shouldCheck()) {
+                doTask();
+            }
         }
     }
 }
