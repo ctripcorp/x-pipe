@@ -41,11 +41,9 @@ import java.util.concurrent.TimeUnit;
  * Sep 06, 2018
  */
 @Component
-public class DefaultDelayPingActionCollector implements DelayPingActionCollector {
+public class DefaultDelayPingActionCollector extends AbstractDelayPingActionCollector implements DelayPingActionCollector, OneWaySupport {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDelayPingActionCollector.class);
-
-    private Map<RedisHealthCheckInstance, HealthStatus> allHealthStatus = Maps.newConcurrentMap();
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -115,6 +113,7 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
         return finalStateSetterManager;
     }
 
+    @Override
     protected HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
 
         return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
@@ -135,13 +134,6 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
         });
     }
 
-    private void removeHealthStatus(HealthCheckAction action) {
-        HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
-        if(healthStatus != null) {
-            healthStatus.stop();
-        }
-    }
-
     private void onInstanceStateChange(Object args) {
 
         logger.info("[onInstanceStateChange]{}", args);
@@ -156,64 +148,4 @@ public class DefaultDelayPingActionCollector implements DelayPingActionCollector
         }
     }
 
-
-    private PingActionListener pingActionListener = new CollectorPingActionListener();
-
-    private DelayActionListener delayActionListener = new CollectorDelayActionListener();
-
-    @Override
-    public PingActionListener createPingActionListener() {
-        return pingActionListener;
-    }
-
-    @Override
-    public DelayActionListener createDelayActionListener() {
-        return delayActionListener;
-    }
-
-
-    private class CollectorPingActionListener implements PingActionListener {
-
-        @Override
-        public void onAction(PingActionContext pingActionContext) {
-            HealthStatus healthStatus = createOrGetHealthStatus(pingActionContext.instance());
-            if (pingActionContext.getResult()) {
-                healthStatus.pong();
-            } else {
-                if(healthStatus.getState() == HEALTH_STATE.UNKNOWN) {
-                    healthStatus.pongInit();
-                }
-            }
-        }
-
-        @Override
-        public boolean worksfor(ActionContext t) {
-            return t instanceof PingActionContext;
-        }
-
-        @Override
-        public void stopWatch(HealthCheckAction action) {
-            removeHealthStatus(action);
-        }
-    }
-
-
-    private class CollectorDelayActionListener implements DelayActionListener {
-
-        @Override
-        public void onAction(DelayActionContext context) {
-            long delayNano = context.getResult();
-            createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
-        }
-
-        @Override
-        public boolean worksfor(ActionContext t) {
-            return t instanceof DelayActionContext;
-        }
-
-        @Override
-        public void stopWatch(HealthCheckAction action) {
-            removeHealthStatus(action);
-        }
-    }
 }

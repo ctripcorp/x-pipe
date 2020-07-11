@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.diskless;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
@@ -16,7 +18,7 @@ import java.util.List;
  */
 
 @Component
-public class DiskLessReplCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory {
+public class DiskLessReplCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport {
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {

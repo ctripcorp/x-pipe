@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.CrdtPublishCommandTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.CrdtSubscribeCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfoTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
@@ -75,7 +77,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	SessionTrafficResultTest.class,
 	TunnelTrafficResultTest.class,
 	DcRouteMetaComparatorTest.class,
-	SentinelUtilTest.class
+	SentinelUtilTest.class,
+	CrdtPublishCommandTest.class,
+	CrdtSubscribeCommandTest.class
 })
 public class AllTests {
 

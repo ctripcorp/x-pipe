@@ -8,18 +8,21 @@ import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
+import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,6 +48,8 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     private AtomicInteger channelResponsed = new AtomicInteger(0);
 
     private List<SubscribeListener> listeners = Lists.newCopyOnWriteArrayList();
+
+    private NettyClient nettyClient;
 
     protected AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled,
                                 Subscribe.MESSAGE_TYPE messageType, String... subscribeChannel) {
@@ -135,13 +140,24 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     }
 
     protected void afterCommandExecute(NettyClient nettyClient) {
+        this.nettyClient = nettyClient;
         future().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
-                if(nettyClient != null) {
-                    getClientPool().returnObject(nettyClient);
+                if(nettyClient != null){
+                    nettyClient.channel().close().addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            try {
+                                getClientPool().returnObject(nettyClient);
+                            } catch (ReturnObjectException e) {
+                                getLogger().error("[doExecute]", e);
+                            }
+                        }
+                    });
                 }
-                if(isPoolCreated()) {
+
+                if(isPoolCreated()){
                     LifecycleHelper.stopIfPossible(getClientPool());
                     LifecycleHelper.disposeIfPossible(getClientPool());
                 }
@@ -176,7 +192,17 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     }
 
 
-    protected abstract void doUnsubscribe();
+    protected void doUnsubscribe() {
+        getLogger().debug("[un-subscribe]close channel: {}",
+                nettyClient == null ? "null - already closed" : ChannelUtil.getDesc(nettyClient.channel()));
+
+        if(nettyClient != null && nettyClient.channel() != null) {
+            nettyClient.channel().close();
+        }
+        if(!future().isDone()) {
+            future().setSuccess();
+        }
+    }
 
     protected void handleMessage(Object response) {
         if(!(response instanceof Object[])) {
@@ -191,7 +217,9 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         }
     }
 
-    protected abstract SubscribeMessageHandler getSubscribeMessageHandler();
+    protected SubscribeMessageHandler getSubscribeMessageHandler() {
+        return new DefaultSubscribeMessageHandler();
+    }
 
     private void notifyListeners(Pair<String, String> channelAndMessage) {
         for(SubscribeListener listener : listeners) {
@@ -232,6 +260,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         this.subscribeState = state;
     }
 
+    @Override
     public void unSubscribe() {
         setSubscribeState(SUBSCRIBE_STATE.UNSUBSCRIBE);
         doUnsubscribe();

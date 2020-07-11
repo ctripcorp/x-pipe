@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +15,7 @@ import org.springframework.stereotype.Component;
  * Aug 29, 2018
  */
 @Component
-public class MetricDelayListener implements DelayActionListener {
+public class MetricDelayListener implements DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(MetricDelayListener.class);
 
@@ -35,6 +32,7 @@ public class MetricDelayListener implements DelayActionListener {
         data.setValue(context.getResult() / THOUSAND);
         data.setTimestampMilli(context.getRecvTimeMilli());
         data.setHostPort(info.getHostPort());
+        data.setClusterType(info.getClusterType());
         return data;
     }
 

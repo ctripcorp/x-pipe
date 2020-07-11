@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.service.metric;
 
 import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
@@ -40,6 +41,8 @@ public class HickwallMetric implements MetricProxy {
 	private static final int NUM_MESSAGES_PER_SEND = 100;
 
 	private static final int HICKWALL_SEND_INTERVAL = 2000;
+
+	private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 	
 	public HickwallMetric() {
 		start();
@@ -126,6 +129,8 @@ public class HickwallMetric implements MetricProxy {
 		dp.getTag().put("srcaddr", localIp);
 		dp.getTag().put("app", "fx");
 		dp.getTag().put("dc", md.getDcName());
+		dp.getTag().put("source", currentDcId);
+		dp.getTag().put("clustertype", md.getClusterType());
 		addOtherTags(dp, md);
 		return dp;
 	}

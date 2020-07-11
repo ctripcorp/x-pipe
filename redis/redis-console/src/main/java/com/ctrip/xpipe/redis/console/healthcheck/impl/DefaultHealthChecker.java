@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
-import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -110,11 +109,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
-                if (!ClusterType.lookup(cluster.getType()).supportHealthCheck()) {
-                    continue;
-                }
                 // console monitors only cluster with active idc in current idc
-                if (!isClusterActiveIdcCurrentIdc(cluster)) {
+                if (ClusterType.lookup(cluster.getType()).supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
                 }
                 for(ShardMeta shard : cluster.getShards().values()) {

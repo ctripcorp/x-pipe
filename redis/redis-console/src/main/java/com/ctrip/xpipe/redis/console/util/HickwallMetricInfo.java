@@ -10,6 +10,8 @@ public class HickwallMetricInfo {
 
     private int delayPanelId;
 
+    private int crossDcDelayPanelId;
+
     private int proxyPingPanelId;
 
     private int proxyTrafficPanelId;
@@ -54,5 +56,13 @@ public class HickwallMetricInfo {
 
     public void setProxyCollectionPanelId(int proxyCollectionPanelId) {
         this.proxyCollectionPanelId = proxyCollectionPanelId;
+    }
+
+    public int getCrossDcDelayPanelId() {
+        return crossDcDelayPanelId;
+    }
+
+    public void setCrossDcDelayPanelId(int crossDcDelayPanelId) {
+        this.crossDcDelayPanelId = crossDcDelayPanelId;
     }
 }

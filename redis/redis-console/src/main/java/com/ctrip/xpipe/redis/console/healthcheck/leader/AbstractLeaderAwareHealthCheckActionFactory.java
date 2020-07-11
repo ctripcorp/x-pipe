@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.leader;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +69,11 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
         new SafeLoop<RedisHealthCheckInstance>(executors, healthCheckInstanceManager.getAllRedisInstance()) {
             @Override
             public void doRun0(RedisHealthCheckInstance instance) {
-                registerTo(instance);
+                ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+                if ((clusterType.equals(ClusterType.BI_DIRECTION) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof BiDirectionSupport)
+                        || clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport) {
+                    registerTo(instance);
+                }
             }
         }.run();
     }

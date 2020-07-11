@@ -5,8 +5,10 @@ import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
@@ -30,8 +32,13 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String unhealthyInstanceUrl;
 
+    private final String crossMasterDelayUrl;
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
+
+    private static final ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>> crossMasterDelayDef =
+            new ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>>(){};
 
     public DefaultConsoleService(String address){
 
@@ -44,6 +51,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         delayStatusUrl = String.format("%s/api/redis/inner/delay/{ip}/{port}", this.address);
         allDelayStatusUrl = String.format("%s/api/redis/inner/delay/all", this.address);
         unhealthyInstanceUrl = String.format("%s/api/redis/inner/unhealthy", this.address);
+        crossMasterDelayUrl = String.format("%s/api/cross-master/delay/{cluster}/{shard}", this.address);
     }
 
     @Override
@@ -71,6 +79,13 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public UnhealthyInfoModel getActiveClusterUnhealthyInstance() {
         return restTemplate.getForObject(unhealthyInstanceUrl, UnhealthyInfoModel.class);
+    }
+
+    @Override
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelay(String clusterId, String shardId) {
+        ResponseEntity<Map<String, Pair<HostPort, Long>>> response = restTemplate.exchange(crossMasterDelayUrl, HttpMethod.GET,
+                null, crossMasterDelayDef, clusterId, shardId);
+        return response.getBody();
     }
 
     @Override

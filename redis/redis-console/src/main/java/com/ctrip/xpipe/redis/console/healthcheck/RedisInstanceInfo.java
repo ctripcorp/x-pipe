@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 
@@ -13,6 +14,8 @@ public interface RedisInstanceInfo {
     ClusterShardHostPort getClusterShardHostport();
 
     String getClusterId();
+
+    ClusterType getClusterType();
 
     String getShardId();
 

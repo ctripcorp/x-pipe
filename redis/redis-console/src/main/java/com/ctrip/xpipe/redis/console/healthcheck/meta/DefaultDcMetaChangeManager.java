@@ -49,10 +49,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void visitAdded(ClusterMeta added) {
-        if (!ClusterType.lookup(added.getType()).supportHealthCheck()) {
-            return;
-        }
-        if (!added.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
+        ClusterType clusterType = ClusterType.lookup(added.getType());
+        if (!clusterType.supportMultiActiveDC() && !added.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
             return;
         }
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
@@ -62,10 +60,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     @Override
     public void visitModified(MetaComparator comparator) {
         ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
-        if (!ClusterType.lookup(clusterMetaComparator.getCurrent().getType()).supportHealthCheck()) {
-            return;
-        }
-        updateActiveDc(clusterMetaComparator);
+        ClusterType clusterType = ClusterType.lookup(clusterMetaComparator.getCurrent().getType());
+        if (clusterType.supportSingleActiveDC()) updateActiveDc(clusterMetaComparator);
         clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged));
     }
 
@@ -106,9 +102,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void visitRemoved(ClusterMeta removed) {
-        if (!ClusterType.lookup(removed.getType()).supportHealthCheck()) {
-            return;
-        }
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
         clusterMetaVisitor.accept(removed);
     }
@@ -124,7 +117,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private Consumer<RedisMeta> addConsumer = new Consumer<RedisMeta>() {
         @Override
         public void accept(RedisMeta redisMeta) {
-            if (!redisMeta.parent().getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
+            if (ClusterType.lookup(redisMeta.parent().parent().getType()).supportSingleActiveDC()
+                    && !redisMeta.parent().getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
                 return;
             }
             logger.info("[Redis-Add] {}", redisMeta);
@@ -135,7 +129,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
         @Override
         public void accept(RedisMeta redisMeta) {
-            if (!redisMeta.parent().getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
+            if (ClusterType.lookup(redisMeta.parent().parent().getType()).supportSingleActiveDC()
+                    && !redisMeta.parent().getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter())) {
                 return;
             }
             logger.info("[Redis-Change] {}, master: {}", redisMeta, redisMeta.isMaster());

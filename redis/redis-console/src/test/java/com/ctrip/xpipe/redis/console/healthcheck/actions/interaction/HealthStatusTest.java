@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
@@ -41,7 +42,7 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Before
     public void beforeHealthStatusTest() {
         instance = mock(RedisHealthCheckInstance.class);
-        RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2");
+        RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
         when(instance.getRedisInstanceInfo()).thenReturn(info);
 
         config = mock(HealthCheckConfig.class);
