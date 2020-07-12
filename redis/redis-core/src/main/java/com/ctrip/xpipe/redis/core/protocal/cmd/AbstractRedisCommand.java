@@ -37,7 +37,7 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 
 	private boolean logRequest = true;
 
-	private InOutPayloadFactory inOutPayloadFactory;
+	protected InOutPayloadFactory inOutPayloadFactory;
 
 	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port, scheduled);
