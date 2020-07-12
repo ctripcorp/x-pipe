@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.CrdtPublishCommandTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.CrdtSubscribeCommandTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.TestAbstractSubscribeTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfoTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRoleTest;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
@@ -79,7 +80,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DcRouteMetaComparatorTest.class,
 	SentinelUtilTest.class,
 	CrdtPublishCommandTest.class,
-	CrdtSubscribeCommandTest.class
+	CrdtSubscribeCommandTest.class,
+	TestAbstractSubscribeTest.class
 })
 public class AllTests {
 
