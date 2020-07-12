@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
@@ -56,6 +58,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         super(host, port, scheduled);
         this.subscribeChannel = subscribeChannel;
         this.messageType = messageType;
+        this.inOutPayloadFactory = new InOutPayloadFactory.DirectByteBufInOutPayloadFactory();
     }
 
     public AbstractSubscribe(String host, int port, ScheduledExecutorService scheduled, int commandTimeoutMilli,
@@ -63,6 +66,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         super(host, port, scheduled, commandTimeoutMilli);
         this.messageType = messageType;
         this.subscribeChannel = subscribeChannel;
+        this.inOutPayloadFactory = new InOutPayloadFactory.DirectByteBufInOutPayloadFactory();
     }
 
     public AbstractSubscribe(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,
@@ -70,6 +74,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         super(clientPool, scheduled);
         this.messageType = messageType;
         this.subscribeChannel = subscribeChannel;
+        this.inOutPayloadFactory = new InOutPayloadFactory.DirectByteBufInOutPayloadFactory();
     }
 
     @Override
@@ -85,35 +90,14 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
     @Override
     protected Object doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
 
-        switch(commandResponseState){
-            case READING_SIGN:
-                if(!hasDataRead(byteBuf)){
-                    return null;
-                }
-                int readIndex = byteBuf.readerIndex();
-                byte sign = byteBuf.getByte(readIndex);
-                if(sign == RedisClientProtocol.ASTERISK_BYTE){
-                    commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
-                    redisClientProtocol = new ArrayParser().setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
-                } else {
-                    getLogger().debug("[subscribe][doReceiveResponse][{}], [{}]", sign, ByteBufUtils.readToString(byteBuf));
-                    throw new IllegalArgumentException("subscribe should response with redis array format");
-                }
-            case READING_CONTENT:
-                RedisClientProtocol<?> resultParser = redisClientProtocol.read(byteBuf);
-                if(resultParser == null){
-                    return null;
-                }
-
-                Object result = resultParser.getPayload();
-                if(result == null){
-                    return new String[0];
-                }
-                return processResponse(channel, result);
-            default:
-                throw new IllegalStateException("unkonwn state:" + commandResponseState);
+        if(!hasDataRead(byteBuf)){
+            return null;
         }
-
+        Object response = super.doReceiveResponse(channel, byteBuf);
+        if (response == null) {
+            return null;
+        }
+        return processResponse(channel, response);
     }
 
     private Object processResponse(Channel channel, Object response) {
@@ -187,7 +171,7 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         }
 
         if(logRequest()) {
-            getLogger().info("[handleResponse][subscribe success]channel[{}]{}", channel, channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
+            getLogger().info("[handleResponse][subscribe success]channel[{}]{}", channel, channel == null ? "unknown" : channel.attr(NettyClientHandler.KEY_CLIENT).get().toString());
         }
     }
 
@@ -252,7 +236,8 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         return subscribeState;
     }
 
-    private synchronized void setSubscribeState(SUBSCRIBE_STATE state) {
+    @VisibleForTesting
+    protected synchronized void setSubscribeState(SUBSCRIBE_STATE state) {
         // WAITING_RESPONSE -> SUBSCRIBING means that subscriber has received subscribe header
         if (SUBSCRIBE_STATE.WAITING_RESPONSE == this.subscribeState && SUBSCRIBE_STATE.SUBSCRIBING == state) {
             cancelTimeout();
