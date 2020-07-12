@@ -3,19 +3,27 @@ package com.ctrip.xpipe.redis.core.protocal.cmd.pubsub;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.simpleserver.Server;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.jboss.netty.util.internal.ByteBufferUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -76,7 +84,7 @@ public class TestAbstractSubscribeTest extends AbstractRedisTest {
         subscribe.handleResponse(null, response);
     }
 
-    @Test(expected = RedisRuntimeException.class)
+    @Test
     public void testHandleResponse4() throws IOException {
         Object[] response = new Object[]{new ByteArrayOutputStreamPayload(Subscribe.SUBSCRIBE), new ByteArrayOutputStreamPayload("channel"), (Long) 2L};
         subscribe.handleResponse(null, response);
@@ -113,6 +121,24 @@ public class TestAbstractSubscribeTest extends AbstractRedisTest {
             command.execute();
         }
         server.stop();
+    }
+
+    @Test
+    public void testSubscribeWithCRLFBegin() throws Exception {
+        String message = "message";
+        Object[] response = new Object[]{new ByteArrayOutputStreamPayload(Subscribe.MESSAGE_TYPE.MESSAGE.desc()),
+                new ByteArrayOutputStreamPayload(channel), new ByteArrayOutputStreamPayload(message)};
+        subscribe.setSubscribeState(Subscribe.SUBSCRIBE_STATE.SUBSCRIBING);
+        subscribe.addChannelListener((ch, msg) -> {Assert.assertEquals(channel, ch); Assert.assertEquals(message, msg);});
+        ByteBuf byteBuf = new ArrayParser(response).format();
+        CompositeByteBuf result = (CompositeByteBuf) byteBuf;
+        result.addComponent(0, Unpooled.copiedBuffer("\r\n".getBytes()));
+        subscribe.doReceiveResponse(new EmbeddedChannel(), byteBuf);
+    }
+
+    @Test
+    public void testSubscribeWithEmptyByteBuf() throws Exception {
+        Assert.assertNull(subscribe.doReceiveResponse(new EmbeddedChannel(), Unpooled.buffer()));
     }
 
     class TestNettyClientNoDupCommand extends AbstractSubscribe {
