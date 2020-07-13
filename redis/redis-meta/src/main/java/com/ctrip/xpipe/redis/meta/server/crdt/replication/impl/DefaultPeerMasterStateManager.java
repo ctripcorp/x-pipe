@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.crdt.replication.impl;
 
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.crdt.AbstractCurrentPeerMasterMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.crdt.replication.PeerMasterAdjustJobFactory;
 import com.ctrip.xpipe.redis.meta.server.crdt.replication.PeerMasterStateManager;
@@ -27,6 +28,9 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
     @Autowired
     PeerMasterAdjustJobFactory peerMasterAdjustJobFactory;
 
+    @Autowired
+    MetaServerConfig metaServerConfig;
+
     @Resource(name = PEER_MASTER_ADJUST_EXECUTOR)
     KeyedOneThreadTaskExecutor<Pair<String, String>> peerMasterAdjustExecutor;
 
@@ -41,8 +45,8 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
     @Override
     protected void addShard(String clusterId, String shardId) {
         try {
-            PeerMasterStateAdjuster adjuster = new DefaultPeerMasterStateAdjuster(clusterId, shardId,
-                    dcMetaCache, currentMetaManager, peerMasterAdjustJobFactory, peerMasterAdjustExecutor, scheduled);
+            PeerMasterStateAdjuster adjuster = new DefaultPeerMasterStateAdjuster(clusterId, shardId, dcMetaCache,
+                    currentMetaManager, metaServerConfig, peerMasterAdjustJobFactory, peerMasterAdjustExecutor, scheduled);
             logger.info("[addShard]{}, {}, {}", clusterId, shardId, adjuster);
             adjuster.start();
             //release resources
