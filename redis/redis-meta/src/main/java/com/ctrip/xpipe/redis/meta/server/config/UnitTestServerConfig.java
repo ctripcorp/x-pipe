@@ -155,4 +155,9 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public Set<String> getOwnClusterType() {
 		return Collections.singleton(ClusterType.ONE_WAY.toString());
 	}
+
+	@Override
+	public boolean shouldCorrectPeerMasterPeriodically() {
+		return true;
+	}
 }
