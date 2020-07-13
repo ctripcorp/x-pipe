@@ -40,4 +40,6 @@ public interface MetaServerConfig extends CoreConfig {
 	int getWaitForMetaSyncDelayMilli();
 
 	Set<String> getOwnClusterType();
+
+	boolean shouldCorrectPeerMasterPeriodically();
 }
