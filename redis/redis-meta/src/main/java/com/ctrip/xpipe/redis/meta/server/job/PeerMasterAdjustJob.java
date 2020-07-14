@@ -11,17 +11,17 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.PeerOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
@@ -37,6 +37,10 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private static final String PEER_CHANGE= "change";
 
+    private static final String CRDT_REDIS_VERSION_KEY = "xredis_crdt_version";
+
+    private static final String VERSION_SUPPORT_STRICTLY_CHECK = "1.0.4";
+
     private String clusterId;
 
     private String shardId;
@@ -44,6 +48,8 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     private List<RedisMeta> upstreamPeerMasters;
 
     private Pair<String, Integer> currentMaster;
+
+    private String masterVersion;
 
     private List<RedisMeta> currentPeerMasters;
 
@@ -96,11 +102,13 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     @Override
     protected void doExecute() throws CommandExecutionException {
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain();
+        sequenceCommandChain.add(retryCommandWrap(new MasterVersionCheckCommand()));
         sequenceCommandChain.add(retryCommandWrap(new GetCurrentMasterCommand()));
         sequenceCommandChain.add(retryCommandWrap(new PeerMasterCompareCommand()));
 
         sequenceCommandChain.future().addListener(commandFuture -> {
             if (!commandFuture.isSuccess()) {
+                getLogger().info("[{}][{}] fail", clusterId, shardId, commandFuture.cause());
                 future().setFailure(commandFuture.cause());
             } else if (peerMasterChanged.isEmpty() && peerMasterAdded.isEmpty() && (!doDelete || peerMasterDeleted.isEmpty())) {
                 getLogger().debug("[doExecute] no need adjust, finish");
@@ -160,7 +168,39 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     }
 
     private Command<?> retryCommandWrap(Command<?> command) {
-        return CommandRetryWrapper.buildCountRetry(retryTimes, new RetryDelay(delayBaseMilli), command, scheduled);
+        return CommandRetryWrapper.buildCountRetry(retryTimes, new RetryDelay(delayBaseMilli) {
+
+            @Override
+            public boolean retry(Throwable th) {
+                if (th instanceof BadRedisVersionException) return false;
+                return true;
+            }
+
+        }, command, scheduled);
+    }
+
+    class MasterVersionCheckCommand extends AbstractCommand<Void> {
+        @Override
+        protected void doExecute() throws InterruptedException, ExecutionException, BadRedisVersionException {
+            InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SERVER.cmd(), scheduled, delayBaseMilli);
+            String rawInfo = infoCommand.execute().get();
+            InfoResultExtractor extractor = new InfoResultExtractor(rawInfo);
+            masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
+            if (StringUtil.isEmpty(masterVersion)) {
+                throw new BadRedisVersionException(String.format("master %s:%d is not crdt redis", currentMaster.getKey(), currentMaster.getValue()));
+            }
+            future().setSuccess();
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
     }
 
     class GetCurrentMasterCommand extends AbstractCommand<Void> {
@@ -185,6 +225,61 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     }
 
     class PeerMasterCompareCommand extends AbstractCommand<Void> {
+        @Override
+        protected void doExecute() throws Exception {
+            if (StringUtil.compareVersion(masterVersion, VERSION_SUPPORT_STRICTLY_CHECK) >= 0) {
+                new PeerMasterStrictlyCompareCommand().execute().get();
+            } else {
+                new PeerMasterNormallyCompareCommand().execute().get();
+            }
+
+            future().setSuccess();
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
+    }
+
+    class PeerMasterNormallyCompareCommand extends AbstractCommand<Void> {
+        @Override
+        protected void doExecute() throws Exception {
+            // can not filter peer master change and delete in normal compare
+            peerMasterChanged = new HashMap<>();
+            peerMasterDeleted = new HashMap<>();
+            peerMasterAdded = new HashMap<>();
+            Set<HostPort> currentPeerMasterAddrSet = currentPeerMasters.stream()
+                    .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
+                    .collect(Collectors.toSet());
+
+            upstreamPeerMasters.forEach(redisMeta -> {
+                HostPort peerMaster = new HostPort(redisMeta.getIp(), redisMeta.getPort());
+                if (!currentPeerMasterAddrSet.contains(peerMaster)) {
+                    peerMasterAdded.put(redisMeta.getGid(), new NodeAdded<>(peerMaster));
+                }
+            });
+
+            future().setSuccess();
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
+    }
+
+    class PeerMasterStrictlyCompareCommand extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {
