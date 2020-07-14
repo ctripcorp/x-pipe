@@ -133,6 +133,12 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         Assert.assertEquals(0, peerofRequest.size());
     }
 
+    @Test
+    public void testForTestVersion() throws Exception {
+        version = "1.0.5-beta";
+        testPeerMasterChange();
+    }
+
     @After
     public void afterPeerMasterChangeJobTest() throws Exception {
         redisServer.stop();
