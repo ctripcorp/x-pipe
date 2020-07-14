@@ -227,7 +227,15 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     class PeerMasterCompareCommand extends AbstractCommand<Void> {
         @Override
         protected void doExecute() throws Exception {
-            if (StringUtil.compareVersion(masterVersion, VERSION_SUPPORT_STRICTLY_CHECK) >= 0) {
+            boolean canCompareStrictly;
+            try {
+                canCompareStrictly = StringUtil.compareVersion(masterVersion, VERSION_SUPPORT_STRICTLY_CHECK) >= 0;
+            } catch (NumberFormatException e) {
+                canCompareStrictly = masterVersion.compareTo(VERSION_SUPPORT_STRICTLY_CHECK) >= 0;
+            }
+
+            if (canCompareStrictly) {
+
                 new PeerMasterStrictlyCompareCommand().execute().get();
             } else {
                 new PeerMasterNormallyCompareCommand().execute().get();
