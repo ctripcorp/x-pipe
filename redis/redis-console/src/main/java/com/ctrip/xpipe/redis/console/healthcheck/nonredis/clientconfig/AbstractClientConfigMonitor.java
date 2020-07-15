@@ -60,10 +60,12 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
                 }
                 if (clusterType.supportMultiActiveDC()) {
                     // only check client config in the first dc for multi active dc cluster
-                    String[] dcs = clusterMeta.getDcs().split("\\s*,\\s*");
-                    if (dcs.length > 0 && !dcs[0].equalsIgnoreCase(currentDcId)) {
-                        continue;
-                    }
+//                    String[] dcs = clusterMeta.getDcs().split("\\s*,\\s*");
+//                    if (dcs.length > 0 && !dcs[0].equalsIgnoreCase(currentDcId)) {
+//                        continue;
+//                    }
+                    // TODO: recovery check after crdt redis stable
+                    continue;
                 }
                 try {
                     checkCluster(clusterMeta.getId(), xpipeMeta);
