@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.After;
@@ -20,6 +22,8 @@ import java.util.function.Function;
 public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
 
     protected String clusterId = "cluster1", shardId = "shard1";
+
+    private String version = "1.0.4";
 
     protected Server redisServer;
 
@@ -99,6 +103,42 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         Assert.assertTrue(peerofRequest.contains("peerof 4 10.0.0.4 6379"));
     }
 
+    @Test
+    public void testNotCRDTRedis() {
+        version = null;
+        try {
+            peerMasterAdjustJob.execute().get();
+        } catch (Exception e) {
+            Assert.assertTrue(ExceptionUtils.getRootCause(e) instanceof BadRedisVersionException);
+            Assert.assertEquals(0, peerofRequest.size());
+            return;
+        }
+
+        Assert.fail();
+    }
+
+    @Test
+    public void testJobInLowVersion() throws Exception {
+        version = "1.0.3";
+        peerMasterAdjustJob.execute().get();
+        Assert.assertEquals(2, peerofRequest.size());
+        Assert.assertTrue(peerofRequest.contains("peerof 2 10.0.0.2 7379"));
+        Assert.assertTrue(peerofRequest.contains("peerof 4 10.0.0.4 6379"));
+    }
+
+    @Test
+    public void testNoChange() throws Exception {
+        currentPeerMaster = new HashMap<>(expectPeerMaster);
+        peerMasterAdjustJob.execute().get();
+        Assert.assertEquals(0, peerofRequest.size());
+    }
+
+    @Test
+    public void testForTestVersion() throws Exception {
+        version = "1.0.5-beta";
+        testPeerMasterChange();
+    }
+
     @After
     public void afterPeerMasterChangeJobTest() throws Exception {
         redisServer.stop();
@@ -124,6 +164,14 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         return String.format("$%d\r\n%s", content.length(), content);
     }
 
+    private String mockInfoServerResp() {
+        String content = "";
+        if (null != version) {
+            content = "xredis_crdt_version:" + version;
+        }
+        return String.format("$%d\r\n%s", content.length(), content);
+    }
+
     private void mockMaster() throws Exception {
         redisServer = startServer(randomPort(), new Function<String, String>() {
             @Override
@@ -132,6 +180,8 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
                     return mockCRDTInfoResp();
                 } else if (s.startsWith("peerof")) {
                     peerofRequest.add(s.trim());
+                } else if (s.startsWith("info server")) {
+                    return mockInfoServerResp();
                 }
 
                 return "+OK\r\n";

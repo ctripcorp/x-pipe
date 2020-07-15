@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.crdt.replication.impl;
 
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.crdt.replication.PeerMasterAdjustJobFactory;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -37,12 +38,16 @@ public class DefaultPeerMasterStateAdjusterTest extends AbstractMetaServerTest {
     @Mock
     private PeerMasterAdjustJob job;
 
+    @Mock
+    private MetaServerConfig metaServerConfig;
+
     @Before
     public void setupDefaultPeerMasterStateAdjusterTest() throws Exception {
-        adjuster = new DefaultPeerMasterStateAdjuster(clusterId, shardId, dcMetaCache, currentMetaManager, peerMasterAdjustJobFactory,
-                peerMasterAdjustExecutor, scheduled);
+        adjuster = new DefaultPeerMasterStateAdjuster(clusterId, shardId, dcMetaCache, currentMetaManager, metaServerConfig,
+                peerMasterAdjustJobFactory, peerMasterAdjustExecutor, scheduled);
 
         Mockito.when(peerMasterAdjustJobFactory.buildPeerMasterAdjustJob(clusterId, shardId)).thenReturn(job);
+        Mockito.when(metaServerConfig.shouldCorrectPeerMasterPeriodically()).thenReturn(true);
     }
 
     @Test
@@ -50,6 +55,14 @@ public class DefaultPeerMasterStateAdjusterTest extends AbstractMetaServerTest {
         adjuster.work();
         Mockito.verify(peerMasterAdjustJobFactory, Mockito.times(1)).buildPeerMasterAdjustJob(clusterId, shardId);
         Mockito.verify(peerMasterAdjustExecutor, Mockito.times(1)).execute(Pair.of(clusterId, shardId), job);
+    }
+
+    @Test
+    public void testForNotDoAdjust() {
+        Mockito.when(metaServerConfig.shouldCorrectPeerMasterPeriodically()).thenReturn(false);
+        adjuster.work();
+        Mockito.verify(peerMasterAdjustJobFactory, Mockito.never()).buildPeerMasterAdjustJob(clusterId, shardId);
+        Mockito.verify(peerMasterAdjustExecutor, Mockito.never()).execute(Pair.of(clusterId, shardId), job);
     }
 
 }

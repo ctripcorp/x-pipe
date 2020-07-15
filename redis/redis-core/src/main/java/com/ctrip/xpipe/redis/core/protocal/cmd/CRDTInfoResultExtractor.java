@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -38,8 +39,15 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
         String port = extract(String.format(TEMP_PEER_PORT, index));
         String gid = extract(String.format(TEMP_PEER_GID, index));
 
-        if (null == host || null == port || null == gid) return null;
-        return new RedisMeta().setIp(host).setPort(Integer.parseInt(port)).setGid(Long.parseLong(gid));
+        if (null == host || null == port) return null;
+
+        RedisMeta peerMaster = new RedisMeta().setIp(host).setPort(Integer.parseInt(port));
+        if (!StringUtil.isEmpty(gid)) {
+            // allow gid missing for low version crdt redis
+            peerMaster.setGid(Long.parseLong(gid));
+        }
+
+        return peerMaster;
     }
 
 }
