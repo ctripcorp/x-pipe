@@ -47,6 +47,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private static final String KEY_WAIT_FOR_META_SYNC_MILLI = "meta.sync.delay.milli";
 
 	private static final String KEY_OWN_CLUSTER_TYPES = "meta.cluster.types";
+
+	private static final String KEY_CORRECT_PEER_MASTER_PERIODICALLY = "meta.cluster.peermaster.correct.periodically";
 	
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 	
@@ -155,6 +157,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 		String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
 		String[] split = clusterTypes.split("\\s*(,|;)\\s*");
 		return Arrays.stream(split).filter(sp -> !StringUtil.isEmpty(sp)).collect(Collectors.toSet());
+	}
+
+	@Override
+	public boolean shouldCorrectPeerMasterPeriodically() {
+		return getBooleanProperty(KEY_CORRECT_PEER_MASTER_PERIODICALLY, true);
 	}
 
 	//from local config file
