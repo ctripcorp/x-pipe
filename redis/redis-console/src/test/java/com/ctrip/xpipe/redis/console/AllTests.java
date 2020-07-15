@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.Curr
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.controller.CurrentDcSentinelCheckControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
@@ -205,7 +206,8 @@ import org.junit.runners.Suite.SuiteClasses;
         CurrentDcSentinelCheckControllerTest.class,
         RedisMasterControllerTest.class,
         CurrentDcDelayPingActionCollectorTest.class,
-        HealthControllerTest.class
+        HealthControllerTest.class,
+        DefaultHealthCheckerMockTest.class
 })
 public class AllTests {
 

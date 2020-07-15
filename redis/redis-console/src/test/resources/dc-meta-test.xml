@@ -14,6 +14,11 @@
 				<redis ip="127.0.0.1" port="8001" master="127.0.0.1:6000"  />
 			</shard>
 		</cluster>
+		<cluster id="cluster3" type="bi_direction" dcs="jq,oy">
+			<shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+				<redis ip="10.0.0.1" port="6379" master="true" />
+			</shard>
+		</cluster>
 	</dc>
 	<dc id="oy" zone="SHA">
 		<zkServer address="127.0.0.1:2281"/>
@@ -34,6 +39,16 @@
                 <redis ip="127.0.0.2" port="8101" master="127.0.0.1:6100" />
             </shard>
         </cluster>
+		<cluster id="cluster3" type="bi_direction" dcs="jq,oy">
+			<shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+				<redis ip="10.0.0.2" port="6379" master="true" />
+			</shard>
+		</cluster>
+		<cluster id="cluster4" type="bi_direction" dcs="oy">
+			<shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+				<redis ip="10.0.0.2" port="6479" master="true" />
+			</shard>
+		</cluster>
 	</dc>
 	<dc id="fra-aws" zone="FRA">
 

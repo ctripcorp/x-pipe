@@ -82,7 +82,8 @@ public class MultiMasterDelayListener implements DelayActionListener, BiDirectio
         String targetDcId = info.getDcId();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
-        Long delayMilli = delayActionContext.getResult();
+        Long delayNano = delayActionContext.getResult();
+        long delayMilli = TimeUnit.NANOSECONDS.toMillis(delayNano);
 
         CrossMasterHealthStatus crossMasterLastHealthDelays = getOrCreateCrossMasterHealthStatus(clusterId, shardId);
         crossMasterLastHealthDelays.updateTargetMasterDelay(targetDcId, delayMilli, instance);
@@ -118,7 +119,7 @@ public class MultiMasterDelayListener implements DelayActionListener, BiDirectio
 
     protected void onCurrentMasterHealthy(String clusterId, String shardId) {
         logger.info("[onCurrentMasterHealthy] cluster {}, shard {} become healthy", clusterId, shardId);
-        alertManager.alert(clusterId, shardId, null, CRDT_CROSS_DC_REPLICATION_UP, "replication become healthy");
+        alertManager.alert(clusterId, shardId, null, CRDT_CROSS_DC_REPLICATION_UP, "replication become healthy from " + currentDcId);
     }
 
     protected void onCurrentMasterUnhealthy(String clusterId, String shardId, Set<String> unhealthyDcIds) {
@@ -195,11 +196,11 @@ public class MultiMasterDelayListener implements DelayActionListener, BiDirectio
         }
 
         private void updateCurrentMasterHealthStatus(String clusterId, String shardId, Set<String> unhealthyTargetDcIds) {
-            boolean currentHealthStatus = unhealthyTargetDcIds.isEmpty();
+            boolean healthCheckResult = unhealthyTargetDcIds.isEmpty();
 
-            if (currentHealthStatus && health.compareAndSet(false, true)) {
+            if (healthCheckResult && health.compareAndSet(false, true)) {
                 onCurrentMasterHealthy(clusterId, shardId);
-            } else if (!currentHealthStatus && health.compareAndSet(true, false)) {
+            } else if (!healthCheckResult && health.compareAndSet(true, false)) {
                 onCurrentMasterUnhealthy(clusterId, shardId, unhealthyTargetDcIds);
             }
         }
