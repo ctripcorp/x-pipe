@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
+
+    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     @PostConstruct
     public void postConstruct() {
@@ -109,8 +112,12 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
+                ClusterType clusterType = ClusterType.lookup(cluster.getType());
                 // console monitors only cluster with active idc in current idc
-                if (ClusterType.lookup(cluster.getType()).supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
+                if (clusterType.supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
+                    continue;
+                }
+                if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
                     continue;
                 }
                 for(ShardMeta shard : cluster.getShards().values()) {
@@ -123,7 +130,18 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
-        return cluster.getActiveDc().equalsIgnoreCase(FoundationService.DEFAULT.getDataCenter());
+        return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
+    }
+
+    private boolean isClusterInCurrentIdc(ClusterMeta cluster) {
+        if (StringUtil.isEmpty(cluster.getDcs())) return false;
+
+        String[] dcs = cluster.getDcs().split("\\s*,\\s*");
+        for (String dc : dcs) {
+            if (dc.equalsIgnoreCase(currentDcId)) return true;
+        }
+
+        return false;
     }
 
 }
