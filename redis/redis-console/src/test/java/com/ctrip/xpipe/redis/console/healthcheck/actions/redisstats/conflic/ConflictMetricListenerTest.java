@@ -1,0 +1,75 @@
+package com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic;
+
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.metric.MetricData;
+import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+public class ConflictMetricListenerTest extends AbstractConsoleTest {
+
+    private static final double DOUBLE_DELTA = 0.000001;
+
+    private ConflictMetricListener listener;
+
+    private RedisHealthCheckInstance instance;
+
+    private CrdtConflictCheckContext context;
+
+    private CrdtConflictStats stats;
+
+    private MetricProxy proxy;
+
+    @Before
+    public void setupConflictMetricListenerTest() throws Exception {
+        listener = new ConflictMetricListener();
+        instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, 6379);
+        stats = new CrdtConflictStats(Math.abs(randomInt()), Math.abs(randomInt()), Math.abs(randomInt()), Math.abs(randomInt()));
+        context = new CrdtConflictCheckContext(instance, stats);
+
+        proxy = Mockito.mock(MetricProxy.class);
+        listener.setMetricProxy(proxy);
+    }
+
+    @Test
+    public void testOnAction() throws Exception {
+        Mockito.doAnswer(invocation -> {
+            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            Assert.assertEquals(instance.getRedisInstanceInfo().getClusterId(), point.getClusterName());
+            Assert.assertEquals(instance.getRedisInstanceInfo().getShardId(), point.getShardName());
+            Assert.assertEquals(instance.getRedisInstanceInfo().getClusterType().toString(), point.getClusterType());
+            Assert.assertEquals(instance.getRedisInstanceInfo().getDcId(), point.getDcName());
+            Assert.assertEquals(instance.getRedisInstanceInfo().getHostPort(), point.getHostPort());
+            Assert.assertEquals(context.getRecvTimeMilli(), point.getTimestampMilli());
+
+            switch (point.getMetricType()) {
+                case ConflictMetricListener.METRIC_TYPE_CONFLICT:
+                    Assert.assertEquals(stats.getTypeConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
+                case ConflictMetricListener.METRIC_NON_TYPE_CONFLICT:
+                    Assert.assertEquals(stats.getNonTypeConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
+                case ConflictMetricListener.METRIC_MODIFY_CONFLICT:
+                    Assert.assertEquals(stats.getModifyConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
+                case ConflictMetricListener.METRIC_MERGE_CONFLICT:
+                    Assert.assertEquals(stats.getMergeConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
+                default:
+                    Assert.fail();
+            }
+
+            return null;
+        }).when(proxy).writeBinMultiDataPoint(Mockito.any());
+
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Mockito.verify(proxy, Mockito.times(4)).writeBinMultiDataPoint(Mockito.any());
+    }
+
+}
