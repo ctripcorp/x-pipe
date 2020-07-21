@@ -21,6 +21,13 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayA
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.*;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictMetricListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.expiresize.ExpireSizeCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.expiresize.ExpireSizeMetricListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeCheckActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeMetricListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloAggregationCollectorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
@@ -207,7 +214,14 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisMasterControllerTest.class,
         CurrentDcDelayPingActionCollectorTest.class,
         HealthControllerTest.class,
-        DefaultHealthCheckerMockTest.class
+        DefaultHealthCheckerMockTest.class,
+        ConflictMetricListenerTest.class,
+        ConflictCheckActionTest.class,
+        ConflictCheckActionFactoryTest.class,
+        ExpireSizeMetricListenerTest.class,
+        ExpireSizeCheckActionTest.class,
+        TombstoneSizeCheckActionTest.class,
+        TombstoneSizeMetricListenerTest.class
 })
 public class AllTests {
 
