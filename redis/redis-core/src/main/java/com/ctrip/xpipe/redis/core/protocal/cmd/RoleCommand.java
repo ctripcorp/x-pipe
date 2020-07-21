@@ -2,11 +2,13 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,13 +22,17 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 	
 	private boolean log = true;
 
+	@VisibleForTesting
 	public RoleCommand(String host, int port, ScheduledExecutorService scheduled) {
 		this(host, port, true, scheduled);
+		setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
 	}
 
+	//TODO: make me called by test only
 	public RoleCommand(String host, int port, boolean log, ScheduledExecutorService scheduled) {
 		super(host, port, scheduled);
 		this.log = log;
+		setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
 	}
 
 	public RoleCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
@@ -37,7 +43,7 @@ public class RoleCommand extends AbstractRedisCommand<Role>{
 		super(clientPool, scheduled);
 		this.log = log;
 		setCommandTimeoutMilli(timeoutMilli);
-		
+		setInOutPayloadFactory(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
 	}
 
 	@Override
