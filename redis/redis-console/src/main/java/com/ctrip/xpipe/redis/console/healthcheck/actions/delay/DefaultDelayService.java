@@ -42,6 +42,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
     @Autowired
     private ConsoleServiceManager consoleServiceManager;
 
+    @Autowired
+    private CrossMasterDelayService crossMasterDelayService;
+
     @Override
     public long getDelay(HostPort hostPort) {
         Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
@@ -122,7 +125,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
 
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentIdc)) continue;
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equalsIgnoreCase(currentIdc)) continue;
+                if (clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(currentIdc)) continue;
 
                 for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 
@@ -137,6 +142,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
                 }
             }
         }
+
+        UnhealthyInfoModel unhealthyMaster = crossMasterDelayService.getCurrentDcUnhealthyMasters();
+        unhealthyInfo.merge(unhealthyMaster);
 
         return unhealthyInfo;
     }
@@ -154,6 +162,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
             if (null == unhealthyInfo) infoAggregation.getAttachFailDc().add(dcId);
             else infoAggregation.merge(unhealthyInfo);
         }
+
+        UnhealthyInfoModel parallelUnhealthyInfo = consoleServiceManager.getUnhealthyInstanceFromParallelService();
+        if (null != parallelUnhealthyInfo) infoAggregation.merge(parallelUnhealthyInfo);
 
         return infoAggregation;
     }

@@ -39,6 +39,9 @@ public class DelayServiceTest {
     @Mock
     private ConsoleServiceManager consoleServiceManager;
 
+    @Mock
+    private CrossMasterDelayService crossMasterDelayService;
+
     private final HashMap<String, DcMeta> dcs = new HashMap<String, DcMeta>() {{
         put("jq", new DcMeta().setId("jq"));
         put("oy", new DcMeta().setId("oy"));
@@ -47,6 +50,7 @@ public class DelayServiceTest {
 
     @Before
     public void DefaultDelayServiceTestSetUp() {
+        Mockito.when(crossMasterDelayService.getCurrentDcUnhealthyMasters()).thenReturn(new UnhealthyInfoModel());
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         Mockito.when(xpipeMeta.getDcs()).thenReturn(dcs);
         Mockito.when(metaCache.getAllRedisOfDc(Mockito.anyString(), Mockito.anyString()))
@@ -104,6 +108,7 @@ public class DelayServiceTest {
         List<HostPort> redisList = new ArrayList<>();
         for (DcMeta dcMeta : dcs.values()) {
             ClusterMeta clusterMeta = new ClusterMeta();
+            clusterMeta.setType(ClusterType.ONE_WAY.toString());
             clusterMeta.setId("cluster");
             clusterMeta.setActiveDc(FoundationService.DEFAULT.getDataCenter());
             ShardMeta shardMeta = new ShardMeta();

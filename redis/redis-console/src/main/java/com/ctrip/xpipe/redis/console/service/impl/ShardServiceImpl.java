@@ -190,8 +190,6 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			if (!clusterMap.containsKey(clusterName)) continue;
 
 			ClusterTbl cluster = clusterMap.get(clusterName);
-			if (!ClusterType.lookup(cluster.getClusterType()).supportHealthCheck()) continue;
-
 			Map<String, ShardListModel> shardMap = new HashMap<>();
 			unhealthyInfoModel.getUnhealthyDcShardByCluster(clusterName).forEach(dcShard -> {
 				if (!shardMap.containsKey(dcShard.getValue())) {

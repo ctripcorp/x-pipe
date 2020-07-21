@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
