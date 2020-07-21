@@ -208,14 +208,12 @@ public class RedisSession {
 
     }
 
-    public CommandFuture info(final String infoSection, Callbackable<String> callback) {
-
-        InfoCommand command = new InfoCommand(clientPool, infoSection, scheduled, commandTimeOut);
+    private <V> CommandFuture<V>  addHookAndExecute(AbstractRedisCommand<V> command, Callbackable<V> callback) {
         silentCommand(command);
-        CommandFuture<String> future = command.execute();
-        future.addListener(new CommandFutureListener<String>() {
+        CommandFuture<V> future = command.execute();
+        future.addListener(new CommandFutureListener<V>() {
             @Override
-            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+            public void operationComplete(CommandFuture<V> commandFuture) throws Exception {
                 if(!commandFuture.isSuccess()) {
                     callback.fail(commandFuture.cause());
                 } else {
@@ -226,10 +224,39 @@ public class RedisSession {
         return future;
     }
 
+    public CommandFuture<Long> expireSize(Callbackable<Long> callback) {
+        ExpireSizeCommand command = new ExpireSizeCommand(clientPool, scheduled, commandTimeOut);
+        return addHookAndExecute(command, callback);
+    }
+
+    public CommandFuture<Long> tombstoneSize(Callbackable<Long> callback) {
+        TombstoneSizeCommand command = new TombstoneSizeCommand(clientPool, scheduled, commandTimeOut);
+        return addHookAndExecute(command, callback);
+    }
+
+    public CommandFuture<String> info(final String infoSection, Callbackable<String> callback) {
+
+        InfoCommand command = new InfoCommand(clientPool, infoSection, scheduled, commandTimeOut);
+        return addHookAndExecute(command, callback);
+    }
+
+    public CommandFuture<String> crdtInfo(final String infoSection, Callbackable<String> callback) {
+
+        InfoCommand command = new CRDTInfoCommand(clientPool, infoSection, scheduled, commandTimeOut);
+        return addHookAndExecute(command, callback);
+    }
+
+    public CommandFuture<String> infoStats(Callbackable<String> callback) {
+        return info(InfoCommand.INFO_TYPE.STATS.cmd(), callback);
+    }
 
     public CommandFuture infoServer(Callbackable<String> callback) {
         String section = "server";
         return info(section, callback);
+    }
+
+    public CommandFuture<String> crdtInfoStats(Callbackable<String> callback) {
+        return crdtInfo(InfoCommand.INFO_TYPE.STATS.cmd(), callback);
     }
 
     public void infoReplication(Callbackable<String> callback) {
