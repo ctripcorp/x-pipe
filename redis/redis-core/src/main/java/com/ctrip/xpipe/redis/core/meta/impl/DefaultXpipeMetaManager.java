@@ -52,9 +52,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	public XpipeMeta load(String fileName) {
-		
-		try {
-			InputStream ins = FileUtils.getFileInputStream(fileName);
+		try (InputStream ins = FileUtils.getFileInputStream(fileName)) {
 			return DefaultSaxParser.parse(ins);
 		} catch (SAXException | IOException e) {
 			logger.error("[load]" + fileName, e);
