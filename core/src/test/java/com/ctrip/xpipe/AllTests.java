@@ -81,7 +81,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	KeyedOneThreadMutexableTaskExecutorTest.class,
 	DirectByteBufInStringOutPayloadTest.class,
 	NettyTimeoutTtlListenerTest.class,
-	DefaultZkConfigTest.class
+	DefaultZkConfigTest.class,
+	AbstractQueuedSynchronizerTest.class
 })
 public class AllTests {
 
