@@ -129,6 +129,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 
 	}
 
+
 	@Test
 	public void testFailTimeout() throws Exception{
 
