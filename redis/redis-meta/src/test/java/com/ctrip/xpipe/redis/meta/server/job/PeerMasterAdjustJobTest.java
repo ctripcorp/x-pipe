@@ -2,11 +2,23 @@ package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientHandler;
+import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.logging.LoggingHandler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -15,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -139,9 +152,26 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         testPeerMasterChange();
     }
 
+    @Test
+    public void testHangWhenConnectCloseOnSendRequest() throws Exception {
+        scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("PeerMasterAdjustJobSchedule"));
+        Bootstrap b = initBootstrap();
+        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+                Pair.of("127.0.0.1", redisServer.getPort()), true,
+                new FixedObjectPool<>(new ConnectionClosedNettyClient(b.connect("127.0.0.1", redisServer.getPort()))),
+                100, 3, scheduled,  executors);
+
+        try {
+            peerMasterAdjustJob.execute().get();
+        } catch (Exception e) {
+            logger.info("[testConnectCloseHang] peerMasterAdjustJob fail", e);
+        }
+        Assert.assertEquals(0, peerofRequest.size());
+    }
+
     @After
     public void afterPeerMasterChangeJobTest() throws Exception {
-        redisServer.stop();
+        if (null != redisServer) redisServer.stop();
     }
 
     private List<RedisMeta> mockUpstreamPeerMaster() {
@@ -187,6 +217,42 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
                 return "+OK\r\n";
             }
         });
+    }
+
+    private Bootstrap initBootstrap() {
+        Bootstrap b = new Bootstrap();
+        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(2, XpipeThreadFactory.create("NettyKeyedPoolClientFactory"));
+        b.group(eventLoopGroup).channel(NioSocketChannel.class)
+                .option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(512))
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) {
+                        ChannelPipeline p = ch.pipeline();
+                        p.addLast(new LoggingHandler());
+                        p.addLast(new NettySimpleMessageHandler());
+                        p.addLast(new NettyClientHandler());
+                    }
+                });
+        return b;
+    }
+
+    private static class ConnectionClosedNettyClient extends DefaultNettyClient {
+
+        private ChannelFuture future;
+
+        public ConnectionClosedNettyClient(ChannelFuture future) {
+            super(future.channel());
+            this.future = future;
+        }
+
+        @Override
+        public void sendRequest(ByteBuf byteBuf) {
+            future.channel().close();
+            super.sendRequest(byteBuf);
+        }
+
     }
 
 }
