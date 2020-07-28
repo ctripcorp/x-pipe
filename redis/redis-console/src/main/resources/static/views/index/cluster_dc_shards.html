@@ -41,10 +41,10 @@
                             <th>
                                 端口
                             </th>
-                            <th ng-if="showHealthStatus">
+                            <th>
                             	状态
                             </th>
-                            <th ng-if="showHealthStatus">
+                            <th>
                             	Hickwall
                             </th>
                         </tr>
@@ -59,11 +59,8 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
-                            <td ng-if="showHealthStatus">
-                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(redis.delay < 0 || redis.delay == 99999), 
-                            					'glyphicon glyphicon-ok-sign green':redis.delay >= 0 && redis.delay != 99999}"></span>
-                            </td>
-                            <td ng-if="showHealthStatus"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td><span ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></span></td>
+                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
@@ -77,15 +74,24 @@
                             <td></td>
                             <td></td>
                         </tr>
-                        <tr ng-if="showCrossMasterHealthStatus && shard.crossMasterDelay" ng-repeat="delayInfo in shard.crossMasterDelay">
-                            <td>
-                                <span class="label label-info">{{delayInfo.destDc}}</span>  Master
+                        <tr ng-if="showCrossMasterHealthStatus">
+                            <td class="accordion-style2 ui-accordion ui-widget ui-helper-reset ui-sortable" colspan="5"
+                                ng-click="shard.showCrossMasters = !shard.showCrossMasters" style="padding: 0;">
+                                <div class="accordion-header ui-accordion-header ui-state-default ui-accordion-icons ui-sortable-handle ui-corner-all"
+                                     ng-class="{'ui-state-active': shard.showCrossMasters}" style="position: relative; text-align: left;">
+                                    <span class="ui-accordion-header-icon ui-icon ui-icon-triangle-1-e"></span>
+                                    跨机房下游Master复制详情
+                                </div>
                             </td>
-                            <td>{{delayInfo.ip || "-"}}</td>
-                            <td>{{delayInfo.port || "-"}}</td>
+                        </tr>
+                        <tr ng-show="shard.showCrossMasters && showCrossMasterHealthStatus && shard.crossMasters" ng-repeat="redis in shard.crossMasters">
                             <td>
-                            <span ng-class="{'glyphicon glyphicon-remove-sign red':(delayInfo.delay < 0 || delayInfo.delay == 99999000000),
-                            					'glyphicon glyphicon-ok-sign green':delayInfo.delay >= 0 && delayInfo.delay != 99999000000}"></span>
+                                <span class="label label-info">{{redis.redisDc}}</span>  Master
+                            </td>
+                            <td>{{redis.redisIp || "-"}}</td>
+                            <td>{{redis.redisPort || "-"}}</td>
+                            <td>
+                            <span ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></span>
                             </td>
                             <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, delayInfo.destDc)"></span></td>
                         </tr>

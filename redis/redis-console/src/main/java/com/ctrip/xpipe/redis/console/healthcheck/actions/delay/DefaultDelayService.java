@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
@@ -45,6 +46,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
     @Autowired
     private CrossMasterDelayService crossMasterDelayService;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     @Override
     public long getDelay(HostPort hostPort) {
         Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
@@ -73,6 +77,16 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
             result = hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
         }
         return TimeUnit.NANOSECONDS.toMillis(result);
+    }
+
+    @Override
+    public long getDelay(ClusterType clusterType, HostPort hostPort) {
+        if (consoleConfig.getOwnClusterType().contains(clusterType.toString())) {
+            return getDelay(hostPort);
+        } else {
+            return consoleServiceManager.getDelayFromParallelService(hostPort.getHost(), hostPort.getPort());
+        }
+
     }
 
     @Override
@@ -163,10 +177,12 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
             else infoAggregation.merge(unhealthyInfo);
         }
 
-        UnhealthyInfoModel parallelUnhealthyInfo = consoleServiceManager.getUnhealthyInstanceFromParallelService();
-        if (null != parallelUnhealthyInfo) infoAggregation.merge(parallelUnhealthyInfo);
-
         return infoAggregation;
+    }
+
+    @Override
+    public UnhealthyInfoModel getAllUnhealthyInstanceFromParallelService() {
+        return consoleServiceManager.getAllUnhealthyInstanceFromParallelService();
     }
 
     @Override
