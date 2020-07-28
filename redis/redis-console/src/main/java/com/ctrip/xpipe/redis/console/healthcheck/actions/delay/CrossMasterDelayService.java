@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class CrossMasterDelayService implements DelayActionListener, BiDirectionSupport {
@@ -32,6 +35,9 @@ public class CrossMasterDelayService implements DelayActionListener, BiDirection
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     @Override
     public void onAction(DelayActionContext context) {
@@ -60,7 +66,14 @@ public class CrossMasterDelayService implements DelayActionListener, BiDirection
     }
 
     public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromCurrentDc(String clusterId, String shardId) {
-        return crossMasterDelays.get(new DcClusterShard(currentDcId, clusterId, shardId));
+        Map<String, Pair<HostPort, Long>> peerMasterDelays = crossMasterDelays.get(new DcClusterShard(currentDcId, clusterId, shardId));
+        if (null != peerMasterDelays) {
+            peerMasterDelays.forEach((key, delay) -> {
+                if (delay.getValue() > 0) delay.setValue(TimeUnit.NANOSECONDS.toMillis(delay.getValue()));
+            });
+        }
+
+        return peerMasterDelays;
     }
 
     public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromSourceDc(String sourceDcId, String clusterId, String shardId) {
@@ -72,6 +85,14 @@ public class CrossMasterDelayService implements DelayActionListener, BiDirection
             } catch (Exception e) {
                 return Collections.emptyMap();
             }
+        }
+    }
+
+    public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromSourceDc(ClusterType clusterType, String sourceDcId, String clusterId, String shardId) {
+        if (consoleConfig.getOwnClusterType().contains(clusterType.toString())) {
+            return getPeerMasterDelayFromSourceDc(sourceDcId, clusterId, shardId);
+        } else {
+            return consoleServiceManager.getCrossMasterDelayFromParallelService(sourceDcId, clusterId, shardId);
         }
     }
 

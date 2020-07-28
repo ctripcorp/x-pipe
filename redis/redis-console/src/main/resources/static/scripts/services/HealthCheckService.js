@@ -6,7 +6,7 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		},
 		get_repl_delay: {
 			method: 'GET',
-			url: '/console/redis/delay/:redisIp/:redisPort'
+			url: '/console/redis/delay/:clusterType/:redisIp/:redisPort'
 		},
 		get_hickwall_addr: {
 			method: 'GET',
@@ -14,7 +14,7 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		},
 		get_cross_master_delay: {
 			method: 'GET',
-			url: '/console/cross-master/delay/:dc/:cluster/:shard'
+			url: '/console/cross-master/delay/:clusterType/:dc/:cluster/:shard'
 		},
 		get_cross_master_hickwall_addr: {
 			method: 'GET',
@@ -36,9 +36,10 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		return d.promise;
 	}
 	
-	function getReplDelay(ip, port) {
+	function getReplDelay(ip, port, clusterType) {
 		var d = $q.defer();
 		resource.get_repl_delay({
+			clusterType,
 			redisIp : ip,
 			redisPort : port
 		}, function(result) {
@@ -65,10 +66,10 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		return d.promise;
 	}
 
-	function getCrossMasterDelay(dc, cluster, shard) {
+	function getCrossMasterDelay(dc, cluster, shard, clusterType) {
 		var d = $q.defer();
 		resource.get_cross_master_delay({
-				dc, cluster, shard,
+				dc, cluster, shard, clusterType
 			},
 			function(result) {
 				d.resolve(result);

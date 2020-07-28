@@ -177,6 +177,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	@Override
 	public List<ShardListModel> findAllUnhealthy() {
 		UnhealthyInfoModel unhealthyInfoModel = delayService.getAllUnhealthyInstance();
+		UnhealthyInfoModel parallelUnhealthyInfoModel = delayService.getAllUnhealthyInstanceFromParallelService();
+		if (null != parallelUnhealthyInfoModel) unhealthyInfoModel.merge(parallelUnhealthyInfoModel);
 
 		Set<String> unhealthyClusterNames = unhealthyInfoModel.getUnhealthyClusterNames();
 		if (unhealthyClusterNames.isEmpty()) return Collections.emptyList();

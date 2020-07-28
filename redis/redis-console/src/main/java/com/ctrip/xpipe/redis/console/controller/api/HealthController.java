@@ -47,6 +47,12 @@ public class HealthController extends AbstractConsoleController{
         return defaultDelayPingActionCollector.getState(new HostPort(ip, port));
     }
 
+    @RequestMapping(value = "/redis/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Long getReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
+        return delayService.getDelay(new HostPort(redisIp, redisPort));
+    }
+
+
     @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Long getInnerReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
         return delayService.getLocalCachedDelay(new HostPort(redisIp, redisPort));
@@ -67,8 +73,13 @@ public class HealthController extends AbstractConsoleController{
         return delayService.getAllUnhealthyInstance();
     }
 
-    @RequestMapping(value = "/cross-master/delay/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
-    public Map<String, Pair<HostPort, Long>> getCrossMasterDelay(@PathVariable String clusterId, @PathVariable String shardId) {
+    @RequestMapping(value = "/cross-master/delay/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelay(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+        return crossMasterDelayService.getPeerMasterDelayFromSourceDc(dcId, clusterId, shardId);
+    }
+
+    @RequestMapping(value = "/cross-master/inner/delay/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
+    public Map<String, Pair<HostPort, Long>> getInnerCrossMasterDelay(@PathVariable String clusterId, @PathVariable String shardId) {
         return crossMasterDelayService.getPeerMasterDelayFromCurrentDc(clusterId, shardId);
     }
 

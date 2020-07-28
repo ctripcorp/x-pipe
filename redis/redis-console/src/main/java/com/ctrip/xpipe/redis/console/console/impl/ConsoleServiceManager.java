@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.function.Function;
 
@@ -81,17 +80,17 @@ public class ConsoleServiceManager {
 
     public long getDelayFromParallelService(String ip, int port) {
         if (null == parallelService) return -1L;
-        return parallelService.getInstanceDelayStatus(ip, port);
+        return parallelService.getInstanceDelayStatusFromParallelService(ip, port);
     }
 
-    public Map<String, Pair<HostPort, Long>> getCrossMasterDelayFromParallelService(String clusterId, String shardId) {
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelayFromParallelService(String sourceDcId, String clusterId, String shardId) {
         if (null == parallelService) return Collections.emptyMap();
-        return parallelService.getCrossMasterDelay(clusterId, shardId);
+        return parallelService.getCrossMasterDelayFromParallelService(sourceDcId, clusterId, shardId);
     }
 
-    public UnhealthyInfoModel getUnhealthyInstanceFromParallelService() {
+    public UnhealthyInfoModel getAllUnhealthyInstanceFromParallelService() {
         if (null == parallelService) return null;
-        return parallelService.getActiveClusterUnhealthyInstance();
+        return parallelService.getAllUnhealthyInstance();
     }
 
     private ConsoleService getServiceByDc(String activeIdc) {
