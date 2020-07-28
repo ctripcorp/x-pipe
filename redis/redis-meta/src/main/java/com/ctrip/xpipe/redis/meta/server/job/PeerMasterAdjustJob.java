@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.*;
@@ -104,7 +106,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain();
         sequenceCommandChain.add(retryCommandWrap(new MasterVersionCheckCommand()));
         sequenceCommandChain.add(retryCommandWrap(new GetCurrentMasterCommand()));
-        sequenceCommandChain.add(retryCommandWrap(new PeerMasterCompareCommand()));
+        sequenceCommandChain.add(new PeerMasterCompareCommand());
 
         sequenceCommandChain.future().addListener(commandFuture -> {
             if (!commandFuture.isSuccess()) {
@@ -183,13 +185,36 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         @Override
         protected void doExecute() throws InterruptedException, ExecutionException, BadRedisVersionException {
             InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SERVER.cmd(), scheduled, delayBaseMilli);
-            String rawInfo = infoCommand.execute().get();
-            InfoResultExtractor extractor = new InfoResultExtractor(rawInfo);
-            masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
-            if (StringUtil.isEmpty(masterVersion)) {
-                throw new BadRedisVersionException(String.format("master %s:%d is not crdt redis", currentMaster.getKey(), currentMaster.getValue()));
+            infoCommand.future().addListener(new CommandFutureListener<String>() {
+                @Override
+                public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                    if (commandFuture.isSuccess()) {
+                        handleResult(commandFuture.get());
+                    } else {
+                        future().setFailure(commandFuture.cause());
+                    }
+                }
+            });
+
+            infoCommand.execute(executors);
+        }
+
+        protected void handleResult(String rawInfo) {
+            try {
+                InfoResultExtractor extractor = new InfoResultExtractor(rawInfo);
+                masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
+
+                if (StringUtil.isEmpty(masterVersion)) {
+                    future().setFailure(new BadRedisVersionException(String.format("master %s:%d is not crdt redis",
+                            currentMaster.getKey(), currentMaster.getValue())));
+                    return;
+                }
+
+                future().setSuccess();
+            } catch (Exception e) {
+                getLogger().info("[handleResult] parse master version fail", e);
+                future().setFailure(e);
             }
-            future().setSuccess();
         }
 
         @Override
@@ -207,10 +232,30 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         @Override
         protected void doExecute() throws Exception {
             CRDTInfoCommand crdtInfoCommand = new CRDTInfoCommand(clientPool, InfoCommand.INFO_TYPE.REPLICATION.cmd(), scheduled, delayBaseMilli);
-            String rawInfo = crdtInfoCommand.execute().get();
-            CRDTInfoResultExtractor extractor = new CRDTInfoResultExtractor(rawInfo);
-            currentPeerMasters = extractor.extractPeerMasters();
-            future().setSuccess();
+            crdtInfoCommand.future().addListener(new CommandFutureListener<String>() {
+                @Override
+                public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                    if (commandFuture.isSuccess()) {
+                        String rawInfo = commandFuture.get();
+                        handleResult(rawInfo);
+                    } else {
+                        future().setFailure(commandFuture.cause());
+                    }
+                }
+            });
+
+            crdtInfoCommand.execute(executors);
+        }
+
+        protected void handleResult(String rawInfo) {
+            try {
+                CRDTInfoResultExtractor extractor = new CRDTInfoResultExtractor(rawInfo);
+                currentPeerMasters = extractor.extractPeerMasters();
+                future().setSuccess();
+            } catch (Exception e) {
+                getLogger().info("[handleResult] parse current peermaster fail", e);
+                future().setFailure(e);
+            }
         }
 
         @Override
