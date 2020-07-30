@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.ping;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
@@ -41,11 +40,6 @@ public class DefaultPingService implements PingService, PingActionListener, OneW
         if(pingActionContext.getResult()) {
             hostPort2LastPong.put(pingActionContext.instance().getRedisInstanceInfo().getHostPort(), System.currentTimeMillis());
         }
-    }
-
-    @Override
-    public boolean worksfor(ActionContext t) {
-        return t instanceof PingActionContext;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -24,6 +25,8 @@ public interface MetaServer extends ClusterServer, TopElement{
 	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MetaServerConsoleService.PrimaryDcChangeRequest request, ForwardInfo forwardInfo);
 
 	KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo);
+
+	RedisMeta getCurrentCRDTMaster(String clusterId, String shardId, ForwardInfo forwardInfo);
 
 	RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo);
 
