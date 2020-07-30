@@ -49,7 +49,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
     @Before
     public void setupMasterChooseCommandFactoryTest() throws Exception {
         factory = new DefaultMasterChooseCommandFactory(dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), multiDcService);
-        Mockito.doAnswer(invocation -> currentMasterMeta).when(currentMetaManager).getCurrentMaster(clusterId, shardId);
+        Mockito.doAnswer(invocation -> currentMasterMeta).when(currentMetaManager).getCurrentCRDTMaster(clusterId, shardId);
         Mockito.doAnswer(invocation -> peerMasterMeta).when(currentMetaManager).getPeerMaster(dcId, clusterId, shardId);
     }
 
@@ -135,7 +135,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         factory.wrapCurrentMasterChooseCommand(clusterId, shardId, currentMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
-        Mockito.verify(currentMetaManager, Mockito.never()).setCurrentMaster(Mockito.anyString(),
+        Mockito.verify(currentMetaManager, Mockito.never()).setCurrentCRDTMaster(Mockito.anyString(),
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
 
         // redis meta same
@@ -145,7 +145,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         factory.wrapCurrentMasterChooseCommand(clusterId, shardId, currentMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
-        Mockito.verify(currentMetaManager, Mockito.never()).setCurrentMaster(Mockito.anyString(),
+        Mockito.verify(currentMetaManager, Mockito.never()).setCurrentCRDTMaster(Mockito.anyString(),
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
 
         // new redis meta
@@ -155,7 +155,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         factory.wrapCurrentMasterChooseCommand(clusterId, shardId, currentMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
-        Mockito.verify(currentMetaManager, Mockito.times(1)).setCurrentMaster(Mockito.anyString(),
+        Mockito.verify(currentMetaManager, Mockito.times(1)).setCurrentCRDTMaster(Mockito.anyString(),
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
 
         // redis meta change
@@ -165,7 +165,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         factory.wrapCurrentMasterChooseCommand(clusterId, shardId, currentMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
-        Mockito.verify(currentMetaManager, Mockito.times(2)).setCurrentMaster(Mockito.anyString(),
+        Mockito.verify(currentMetaManager, Mockito.times(2)).setCurrentCRDTMaster(Mockito.anyString(),
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
     }
 

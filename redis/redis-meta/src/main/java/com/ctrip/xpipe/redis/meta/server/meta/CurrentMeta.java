@@ -103,18 +103,31 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getKeeperMaster();
 	}
 
-	public void setCurrentMaster(String clusterId, String shardId,  RedisMeta peerMaster) {
+	public void setCurrentCRDTMaster(String clusterId, String shardId,  RedisMeta peerMaster) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		currentCRDTShardMeta.setCurrentMaster(peerMaster);
 	}
 
-	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+	public RedisMeta getCurrentCRDTMaster(String clusterId, String shardId) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
 		return currentCRDTShardMeta.getCurrentMaster();
+	}
+
+	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterId, shardId);
+		if (currentShardMeta instanceof CurrentCRDTShardMeta) {
+			return ((CurrentCRDTShardMeta) currentShardMeta).getCurrentMaster();
+		} else if (currentShardMeta instanceof CurrentKeeperShardMeta) {
+			Pair<String, Integer> master = ((CurrentKeeperShardMeta) currentShardMeta).getKeeperMaster();
+			if (null == master) return null;
+			return new RedisMeta().setIp(master.getKey()).setPort(master.getValue());
+		}
+
+		return null;
 	}
 
 	public void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peerMaster) {

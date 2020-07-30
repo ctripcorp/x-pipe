@@ -1,27 +1,16 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.simpleserver.Server;
-import com.google.common.collect.Lists;
 import org.junit.*;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.*;
-
 
 /**
  * @author chen.zhu
@@ -38,12 +27,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
     private RedisMasterCheckAction action;
 
     @Mock
-    private MetaCache metaCache;
-
-    @Mock
-    private RedisService redisService;
-
-    private RedisTbl redisTbl;
+    private RedisMasterActionListener listener;
 
     private RedisHealthCheckInstance instance;
 
@@ -51,10 +35,18 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
 
     private Supplier<String> result;
 
+    private RedisMasterActionContext context = null;
+
     @SuppressWarnings("unchecked")
     @Before
     public void beforeRedisMasterCheckActionTest() throws Exception {
         MockitoAnnotations.initMocks(this);
+        Mockito.when(listener.worksfor(Mockito.any())).thenReturn(true);
+        Mockito.doAnswer(invocation -> {
+            context = invocation.getArgumentAt(0, RedisMasterActionContext.class);
+            return null;
+        }).when(listener).onAction(Mockito.any());
+
         server = startServerWithFlexibleResult(new Callable<String>() {
             @Override
             public String call() throws Exception {
@@ -63,13 +55,8 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         });
         instance = newRandomRedisHealthCheckInstance(server.getPort());
         RedisInstanceInfo info = instance.getRedisInstanceInfo();
-        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
-        redisTbl = new RedisTbl().setRedisIp(info.getHostPort().getHost())
-                .setRedisPort(info.getHostPort().getPort());
-        when(redisService.findRedisesByDcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()))
-                .thenReturn(Lists.newArrayList(redisTbl));
-        doNothing().when(redisService).updateBatchMaster(anyList());
-        action = new RedisMasterCheckAction(scheduled, instance, executors, redisService);
+        action = new RedisMasterCheckAction(scheduled, instance, executors);
+        action.addListener(listener);
     }
 
     @After
@@ -80,59 +67,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testRedisMasterRoleCorrect() throws ResourceNotFoundException, TimeoutException {
-        result = new Supplier<String>() {
-            @Override
-            public String get() {
-                return ROLE_MASTER;
-            }
-        };
-        instance.getRedisInstanceInfo().isMaster(true);
-        action.doTask();
-        waitConditionUntilTimeOut(()->server.getConnected() == 1, 2000);
-        waitConditionUntilTimeOut(()->instance.getRedisInstanceInfo().isMaster(), 100);
-        Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
-        verify(redisService, never()).updateBatchMaster(anyList());
-        verify(redisService, never()).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    public void testRedisSlaveRoleCorrect() throws ResourceNotFoundException, TimeoutException {
-        result = new Supplier<String>() {
-            @Override
-            public String get() {
-                return ROLE_SLAVE;
-            }
-        };
-        instance.getRedisInstanceInfo().isMaster(false);
-        action.doTask();
-        waitConditionUntilTimeOut(()->server.getConnected() == 1, 500);
-        waitConditionUntilTimeOut(()->!instance.getRedisInstanceInfo().isMaster(), 500);
-        Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
-        verify(redisService, never()).updateBatchMaster(anyList());
-        verify(redisService, never()).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    public void testRedisMasterRoleInCorrect() throws ResourceNotFoundException, TimeoutException {
-        result = new Supplier<String>() {
-            @Override
-            public String get() {
-                return ROLE_SLAVE;
-            }
-        };
-        instance.getRedisInstanceInfo().isMaster(true);
-        action.doTask();
-        waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        waitConditionUntilTimeOut(()->!instance.getRedisInstanceInfo().isMaster(), 500);
-        Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
-        verify(redisService, times(1)).updateBatchMaster(anyList());
-        verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    @Ignore //manually
-    public void testRedisSlaveRoleInCorrect() throws Exception {
+    public void testRedisMaster() throws Exception {
         result = new Supplier<String>() {
             @Override
             public String get() {
@@ -141,27 +76,38 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
         };
         instance.getRedisInstanceInfo().isMaster(false);
         action.doTask();
-        waitConditionUntilTimeOut(()->server.getConnected() == 1, 200);
-        waitConditionUntilTimeOut(()->instance.getRedisInstanceInfo().isMaster(), 500);
-        Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
-        verify(redisService, times(1)).updateBatchMaster(anyList());
-        verify(redisService, times(1)).findRedisesByDcClusterShard(anyString(), anyString(), anyString());
+
+        waitConditionUntilTimeOut(() -> null != context, 1000);
+        Assert.assertFalse(context.instance().getRedisInstanceInfo().isMaster());
+        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.MASTER, context.getResult());
     }
 
     @Test
-    public void testRedisRoleUnknownShouldNotChange() throws Exception {
+    public void testRedisSlave() throws Exception {
+        result = new Supplier<String>() {
+            @Override
+            public String get() {
+                return ROLE_SLAVE;
+            }
+        };
+        instance.getRedisInstanceInfo().isMaster(true);
+        action.doTask();
+
+        waitConditionUntilTimeOut(() -> null != context, 1000);
+        Assert.assertTrue(context.instance().getRedisInstanceInfo().isMaster());
+        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.SLAVE, context.getResult());
+    }
+
+    @Test
+    public void testRedisHang() throws Exception {
         instance = newHangedRedisHealthCheckInstance();
         instance.getRedisInstanceInfo().isMaster(true);
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
-        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
-        redisTbl = new RedisTbl().setRedisIp(info.getHostPort().getHost())
-                .setRedisPort(info.getHostPort().getPort());
-        when(redisService.findRedisesByDcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId()))
-                .thenReturn(Lists.newArrayList(redisTbl));
-        doNothing().when(redisService).updateBatchMaster(anyList());
-        action = new RedisMasterCheckAction(scheduled, instance, executors, redisService);
+        action = new RedisMasterCheckAction(scheduled, instance, executors);
+        action.addListener(listener);
         action.doTask();
-        sleep(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI + 15);
-        verify(redisService, never()).updateBatchMaster(anyList());
+
+        waitConditionUntilTimeOut(() -> null != context, 1000);
+        Assert.assertTrue(context.instance().getRedisInstanceInfo().isMaster());
+        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.UNKNOWN, context.getResult());
     }
 }

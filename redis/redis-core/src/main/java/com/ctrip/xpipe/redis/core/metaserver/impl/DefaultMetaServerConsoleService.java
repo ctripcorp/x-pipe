@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import org.springframework.http.HttpEntity;
@@ -26,6 +27,7 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	private String  changePrimaryDcCheckPath; 
 	private String  makeMasterReadonlyPath;
 	private String  changePrimaryDcPath;
+	private String  getCurrentMasterPath;
 
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
@@ -34,6 +36,7 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
 		makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(metaServerAddress);
 		changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(metaServerAddress);
+		getCurrentMasterPath = META_SERVER_SERVICE.GET_CURRENT_MASTER.getRealPath(metaServerAddress);
 	}
 
 	@Override
@@ -90,6 +93,13 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 				entity,
 				PrimaryDcChangeMessage.class,
 				clusterId, shardId, newPrimaryDc).getBody();
+	}
+
+	@Override
+	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
+
+		return restTemplate.getForObject(getCurrentMasterPath, RedisMeta.class, clusterId, shardId);
+
 	}
 
 	@Override

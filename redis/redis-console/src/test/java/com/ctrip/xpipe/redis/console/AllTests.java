@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayActionControllerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.DefaultRedisMasterActionListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterControllerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
@@ -221,7 +222,8 @@ import org.junit.runners.Suite.SuiteClasses;
         ExpireSizeMetricListenerTest.class,
         ExpireSizeCheckActionTest.class,
         TombstoneSizeCheckActionTest.class,
-        TombstoneSizeMetricListenerTest.class
+        TombstoneSizeMetricListenerTest.class,
+        DefaultRedisMasterActionListenerTest.class
 })
 public class AllTests {
 

@@ -422,10 +422,15 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public void setCurrentMaster(String clusterId, String shardId, long gid, String ip, int port) {
+	public void setCurrentCRDTMaster(String clusterId, String shardId, long gid, String ip, int port) {
 		RedisMeta currentMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
-		currentMeta.setCurrentMaster(clusterId, shardId, currentMaster);
+		currentMeta.setCurrentCRDTMaster(clusterId, shardId, currentMaster);
 		notifyCurrentMasterChanged(clusterId, shardId);
+	}
+
+	@Override
+	public RedisMeta getCurrentCRDTMaster(String clusterId, String shardId) {
+		return currentMeta.getCurrentCRDTMaster(clusterId, shardId);
 	}
 
 	@Override
