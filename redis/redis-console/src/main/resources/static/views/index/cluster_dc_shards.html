@@ -8,16 +8,21 @@
     	<span>详情</span>
     </h3>
     <div>
-        <ul class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
-            <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}">
-                <a ng-click="switchDc(dc)" data-toggle="tab">
-                    {{dc.dcName}}
-                </a>
-            </li>
-        </ul>
+        <div style="height:35px">
+            <ul style="float:left" class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+                <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}">
+                    <a ng-click="switchDc(dc)" data-toggle="tab">
+                        {{dc.dcName}}
+                    </a>
+                </li>
+            </ul>
+            <button ng-if="showCrossMasterHealthStatus" style="float:right; margin:8px 5px 0 0" class="btn btn-xs btn-white btn-info btn-bold" ng-click="unfoldAllUnhealthyDelay()">
+                展开问题延迟
+            </button>
+        </div>
 
-        <div ng-if="dcs && dcs.length">
-            <div class="col-xs-12">
+        <div class="tab-content" ng-if="dcs && dcs.length">
+            <div>
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
                         <div class="row">
@@ -59,7 +64,14 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
-                            <td><span ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></span></td>
+                            <td>
+                                <span style="position: relative" ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
+                                    <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"
+                                            ng-click="shard.showCrossMasters = !shard.showCrossMasters">
+                                        {{shard.showCrossMasters ? '折叠延迟' : '展开延迟'}}
+                                </button>
+                                </span>
+                            </td>
                             <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
@@ -74,17 +86,7 @@
                             <td></td>
                             <td></td>
                         </tr>
-                        <tr ng-if="showCrossMasterHealthStatus">
-                            <td class="accordion-style2 ui-accordion ui-widget ui-helper-reset ui-sortable" colspan="5"
-                                ng-click="shard.showCrossMasters = !shard.showCrossMasters" style="padding: 0;">
-                                <div class="accordion-header ui-accordion-header ui-state-default ui-accordion-icons ui-sortable-handle ui-corner-all"
-                                     ng-class="{'ui-state-active': shard.showCrossMasters}" style="position: relative; text-align: left;">
-                                    <span class="ui-accordion-header-icon ui-icon ui-icon-triangle-1-e"></span>
-                                    跨机房下游Master复制详情
-                                </div>
-                            </td>
-                        </tr>
-                        <tr ng-show="shard.showCrossMasters && showCrossMasterHealthStatus && shard.crossMasters" ng-repeat="redis in shard.crossMasters">
+                        <tr ng-show="showCrossMasterHealthStatus && false === shard.healthy && shard.showCrossMasters" ng-repeat="redis in shard.crossMasters">
                             <td>
                                 <span class="label label-info">{{redis.redisDc}}</span>  Master
                             </td>
