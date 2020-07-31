@@ -14,6 +14,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.showCrossMasterHealthStatus = false;
         $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall;
         $scope.clusterType = ClusterType.default();
+        $scope.unfoldAllUnhealthyDelay = unfoldAllUnhealthyDelay;
         
         if ($scope.clusterName) {
             loadCluster();
@@ -129,6 +130,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         						redis.delay = result.delay;
         						if (redis.master && $scope.showCrossMasterHealthStatus) {
                                     redis.healthy = isRedisHealthy(redis) && isCrossMasterHealthy(shard);
+                                    shard.healthy = redis.healthy
                                 } else {
                                     redis.healthy = isRedisHealthy(redis);
                                 }
@@ -178,6 +180,16 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
             if (redis.delay === null || redis.delay === undefined) return false;
 
             return redis.delay >= 0 && redis.delay !== 99999;
+        }
+
+        function unfoldAllUnhealthyDelay() {
+            if (!$scope.showCrossMasterHealthStatus || !$scope.shards) return;
+
+            $scope.shards.forEach(function(shard) {
+                if (false === shard.healthy) {
+                    shard.showCrossMasters = true;
+                }
+            })
         }
 
         $scope.refreshCrossMasterHealthStatus = $interval(checkCrossMasterDelay, 2000);
