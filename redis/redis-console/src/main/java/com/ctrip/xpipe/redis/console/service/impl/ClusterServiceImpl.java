@@ -540,7 +540,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			ClusterListUnhealthyClusterModel cluster = clusters.get(clusterTbl.getClusterName());
 			cluster.setActivedcId(clusterTbl.getActivedcId())
 					.setClusterAdminEmails(clusterTbl.getClusterAdminEmails())
-					.setClusterDescription(clusterTbl.getClusterDescription());
+					.setClusterDescription(clusterTbl.getClusterDescription())
+					.setClusterType(clusterTbl.getClusterType());
 			result.add(cluster);
 		}
 		return result;
