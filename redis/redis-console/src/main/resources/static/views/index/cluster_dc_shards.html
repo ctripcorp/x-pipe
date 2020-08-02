@@ -95,7 +95,7 @@
                             <td>
                             <span ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></span>
                             </td>
-                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, delayInfo.destDc)"></span></td>
+                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, redis.redisDc)"></span></td>
                         </tr>
                         </tbody>
                     </table>
