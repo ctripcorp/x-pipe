@@ -21,7 +21,7 @@
 					</span>
                 </td>
                 <td data-title="'主数据中心'" ng-bind="getActiveDcName(shard)"></td>
-                <td data-title="'集群类型'" ng-bind="getTypeName(shard.clusterType)"></td>
+                <td data-title="'集群类型'" filter="{clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(shard.clusterType)"></td>
                 <td data-title="'描述'" ng-bind="shard.clusterDescription | limitTo:50" ></td>
                 <td data-title="'组织'" ng-bind="shard.clusterOrgName" ></td>
                 <td data-title="'联系人邮箱'" ng-bind="shard.clusterAdminEmails| limitTo:50" ></td>

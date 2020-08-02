@@ -130,7 +130,7 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         						redis.delay = result.delay;
         						if (redis.master && $scope.showCrossMasterHealthStatus) {
                                     redis.healthy = isRedisHealthy(redis) && isCrossMasterHealthy(shard);
-                                    shard.healthy = redis.healthy
+                                    shard.healthy = isShardHealthy(shard);
                                 } else {
                                     redis.healthy = isRedisHealthy(redis);
                                 }
@@ -138,6 +138,18 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         			});
         		});
         	}
+        }
+
+        function isShardHealthy(shard) {
+            if (!shard.redises) return true;
+
+            for (var redis of shard.redises) {
+                if (redis.master && undefined !== redis.healthy && !redis.healthy) {
+                    return false
+                }
+            }
+
+            return true;
         }
 
         function gotoHickwall(clusterName, shardName, redisIp, redisPort) {
