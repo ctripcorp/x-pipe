@@ -55,7 +55,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
         listener = Mockito.spy(listener);
         instance = newRandomRedisHealthCheckInstance(6379);
 
-        Mockito.when(metaServerConsoleServiceManagerWrapper.get(Mockito.anyString())).thenReturn(metaServerConsoleService);
+        Mockito.when(metaServerConsoleServiceManagerWrapper.getFastService(Mockito.anyString())).thenReturn(metaServerConsoleService);
         Mockito.doAnswer((invocation) -> mockXpipeMeta()).when(metaCache).getXpipeMeta();
         Mockito.doAnswer((invocation) -> redisTbls).when(redisService).findRedisesByDcClusterShard(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
         Mockito.doAnswer(invocation -> {
@@ -131,18 +131,20 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
         instance.getRedisInstanceInfo().isMaster(false);
         redisTbls.get(0).setMaster(false);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        sleep(30);
         Mockito.verify(listener, Mockito.times(1)).handleUnknownRole(Mockito.any());
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
         Mockito.verify(metaCache, Mockito.never()).getXpipeMeta();
-        Mockito.verify(metaServerConsoleServiceManagerWrapper, Mockito.never()).get(Mockito.anyString());
+        Mockito.verify(metaServerConsoleServiceManagerWrapper, Mockito.never()).getFastService(Mockito.anyString());
     }
 
     @Test
     public void testUnknownAndMaster() {
         instance.getRedisInstanceInfo().isMaster(true);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        sleep(30);
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
-        Mockito.verify(metaServerConsoleServiceManagerWrapper, Mockito.never()).get(Mockito.anyString());
+        Mockito.verify(metaServerConsoleServiceManagerWrapper, Mockito.never()).getFastService(Mockito.anyString());
     }
 
     @Test
@@ -152,6 +154,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
         Mockito.when(metaServerConsoleService.getCurrentMaster(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(new RedisMeta().setIp("127.0.0.1").setPort(6379));
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        sleep(30);
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
     }
 
@@ -162,6 +165,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
         Mockito.when(metaServerConsoleService.getCurrentMaster(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(new RedisMeta().setIp("127.0.0.1").setPort(6479));
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        sleep(30);
         Mockito.verify(redisService, Mockito.times(1)).updateBatchMaster(Mockito.anyList());
         Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
         Assert.assertEquals(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(false).toString(), updatedRedisTbls.get(0).toString());
@@ -174,6 +178,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
         Mockito.when(metaServerConsoleService.getCurrentMaster(Mockito.anyString(), Mockito.anyString()))
                 .thenThrow(new RuntimeException());
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        sleep(30);
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
     }
 

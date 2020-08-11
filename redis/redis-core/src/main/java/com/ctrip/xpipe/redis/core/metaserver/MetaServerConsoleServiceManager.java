@@ -9,4 +9,6 @@ package com.ctrip.xpipe.redis.core.metaserver;
 public interface MetaServerConsoleServiceManager{
 
 	MetaServerConsoleService getOrCreate(String metaServerAddress);
+
+	MetaServerConsoleService getOrCreateFastService(String metaServerAddress);
 }

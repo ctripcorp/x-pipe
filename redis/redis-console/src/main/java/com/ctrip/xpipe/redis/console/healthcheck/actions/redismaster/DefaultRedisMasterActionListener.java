@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
@@ -9,6 +12,7 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +21,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Component
 public class DefaultRedisMasterActionListener implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport {
@@ -29,12 +35,15 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultRedisMasterActionListener.class);
 
+    private ExecutorService executors;
+
     @Autowired
     public DefaultRedisMasterActionListener(RedisService redisService, MetaCache metaCache,
                                             MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper) {
         this.redisService = redisService;
         this.metaCache = metaCache;
         this.metaServerConsoleServiceManagerWrapper = metaServerConsoleServiceManagerWrapper;
+        executors = Executors.newFixedThreadPool(100, XpipeThreadFactory.create("RedisMasterJudgement"));
     }
 
     @Override
@@ -76,15 +85,23 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
             return;
         }
 
-        HostPort finalMaster = findMasterFromMetaServer(dcId, clusterId, shardId);
-        if (null == finalMaster) return;
+        new FinalMasterJudgeCommand(dcId, clusterId, shardId).execute(executors).addListener(new CommandFutureListener<HostPort>() {
+            @Override
+            public void operationComplete(CommandFuture<HostPort> commandFuture) throws Exception {
+                if (commandFuture.isSuccess()) {
+                    HostPort finalMaster = commandFuture.get();
 
-        if (finalMaster.equals(info.getHostPort())) {
-            logger.info("[handleUnknownRole] meta server consider master this master {}", finalMaster);
-        } else {
-            logger.info("[handleUnknownRole] meta server consider {} as master, not {}", finalMaster, info.getHostPort());
-            updateRedisRoleInDB(instance, RedisRoleState.EXPECT_SLAVE_ACTUAL_MASTER);
-        }
+                    if (finalMaster.equals(info.getHostPort())) {
+                        logger.info("[handleUnknownRole] meta server consider master this master {}", finalMaster);
+                    } else {
+                        logger.info("[handleUnknownRole] meta server consider {} as master, not {}", finalMaster, info.getHostPort());
+                        updateRedisRoleInDB(instance, RedisRoleState.EXPECT_SLAVE_ACTUAL_MASTER);
+                    }
+                } else {
+                    logger.info("[FinalMasterJudgeCommand][{}-{}-{}] get master from meta server fail", dcId, clusterId, shardId, commandFuture.cause());
+                }
+            }
+        });
     }
 
     private List<HostPort> findMasterInDcClusterShard(String dcId, String clusterId, String shardId) {
@@ -107,17 +124,6 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
         });
 
         return masters;
-    }
-
-    private HostPort findMasterFromMetaServer(String dcId, String clusterId, String shardId) {
-        try {
-            RedisMeta master = metaServerConsoleServiceManagerWrapper.get(dcId).getCurrentMaster(clusterId, shardId);
-            return new HostPort(master.getIp(), master.getPort());
-        } catch (Exception e) {
-            logger.info("[findMasterFromMetaServer][{}-{}-{}] get master from meta server fail", dcId, clusterId, shardId, e);
-        }
-
-        return null;
     }
 
     protected void updateRedisRoleInDB(RedisHealthCheckInstance instance, RedisRoleState state) {
@@ -169,6 +175,35 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
             } else {
                 return EXPECT_SLAVE_ACTUAL_MASTER;
             }
+        }
+    }
+
+    class FinalMasterJudgeCommand extends AbstractCommand<HostPort> {
+
+        private String dcId;
+        private String clusterId;
+        private String shardId;
+
+        public FinalMasterJudgeCommand(String dcId, String clusterId, String shardId) {
+            this.dcId = dcId;
+            this.clusterId = clusterId;
+            this.shardId = shardId;
+        }
+
+        @Override
+        protected void doExecute() throws Exception {
+            RedisMeta master = metaServerConsoleServiceManagerWrapper.getFastService(dcId).getCurrentMaster(clusterId, shardId);
+            future().setSuccess(new HostPort(master.getIp(), master.getPort()));
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
         }
     }
 
