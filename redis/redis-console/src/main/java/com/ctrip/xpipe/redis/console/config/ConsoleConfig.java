@@ -111,4 +111,6 @@ public interface ConsoleConfig extends CoreConfig {
 	String getCrossDcLeaderLeaseName();
 
 	boolean isSensitiveForRedundantRedis();
+
+	String getParallelConsoleDomain();
 }

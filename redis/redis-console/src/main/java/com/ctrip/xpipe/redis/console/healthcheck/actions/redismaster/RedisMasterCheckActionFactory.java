@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.util.ClusterTypeSupporterSeparator;
-import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,21 +23,22 @@ import java.util.Map;
 @Component
 public class RedisMasterCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
 
-    private RedisService redisService;
-
     private Map<ClusterType, List<RedisMasterController>> controllersByClusterType;
 
+    private Map<ClusterType, List<RedisMasterActionListener>> listenersByClusterType;
+
     @Autowired
-    public RedisMasterCheckActionFactory(RedisService redisService, List<RedisMasterController> controllers) {
-        this.redisService = redisService;
+    public RedisMasterCheckActionFactory(List<RedisMasterController> controllers, List<RedisMasterActionListener> listeners) {
         this.controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
+        this.listenersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(listeners);
     }
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
-        RedisMasterCheckAction action = new RedisMasterCheckAction(scheduled, instance, executors, redisService);
+        RedisMasterCheckAction action = new RedisMasterCheckAction(scheduled, instance, executors);
         ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
         action.addControllers(controllersByClusterType.get(clusterType));
+        action.addListeners(listenersByClusterType.get(clusterType));
 
         return action;
     }

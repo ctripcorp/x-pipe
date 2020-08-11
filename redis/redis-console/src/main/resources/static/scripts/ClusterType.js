@@ -22,6 +22,17 @@ cluster_type.service('ClusterType', [function () {
             values() {
                 return Object.values(this._values)
             },
+            selectData() {
+                var data = [{id: "", title: ""}];
+                for (var key in this._values) {
+                    data.push({
+                        id: this._values[key].value,
+                        title: this._values[key].name
+                    });
+                }
+
+                return data;
+            },
             default() {
                 return this._values.one_way
             }

@@ -88,11 +88,11 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
             logger.debug("[currentMasterChooseComplete]{}, {}", clusterId, shardId);
             if (commandFuture.isSuccess()) {
                 RedisMeta master = commandFuture.get();
-                RedisMeta currentMaster = currentMetaManager.getCurrentMaster(clusterId, shardId);
+                RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterId, shardId);
 
                 if (checkMasterChange(master, currentMaster)) {
                     logger.info("[operationComplete][setCurrentMaster]{}, {}, {}", clusterId, shardId, master);
-                    currentMetaManager.setCurrentMaster(clusterId, shardId, master.getGid(), master.getIp(), master.getPort());
+                    currentMetaManager.setCurrentCRDTMaster(clusterId, shardId, master.getGid(), master.getIp(), master.getPort());
                 }
             }
         });
