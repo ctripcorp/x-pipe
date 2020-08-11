@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
@@ -52,9 +53,22 @@ public class HealthCheckController extends AbstractConsoleController {
         return ImmutableMap.of("delay", delayService.getDelay(new HostPort(redisIp, redisPort)));
     }
 
+    @RequestMapping(value = "/redis/delay/{clusterType}/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, Long> getReplDelayMillis(@PathVariable String clusterType, @PathVariable String redisIp, @PathVariable int redisPort) {
+        ClusterType type = ClusterType.lookup(clusterType);
+        return ImmutableMap.of("delay", delayService.getDelay(type, new HostPort(redisIp, redisPort)));
+    }
+
     @RequestMapping(value = "/cross-master/delay/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public Map<String, Pair<HostPort, Long>> getCrossMasterReplHealthStatus(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
         return crossMasterDelayService.getPeerMasterDelayFromSourceDc(dcId, clusterId, shardId);
+    }
+
+    @RequestMapping(value = "/cross-master/delay/{clusterType}/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
+    public Map<String, Pair<HostPort, Long>> getCrossMasterReplHealthStatus(@PathVariable String clusterType, @PathVariable String dcId,
+                                                                            @PathVariable String clusterId, @PathVariable String shardId) {
+        ClusterType type = ClusterType.lookup(clusterType);
+        return crossMasterDelayService.getPeerMasterDelayFromSourceDc(type, dcId, clusterId, shardId);
     }
 
     @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)

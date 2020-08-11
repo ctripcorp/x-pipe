@@ -16,7 +16,7 @@ public class UnhealthyInfoModel {
 
     private List<String> attachFailDc;
 
-    private Map<String, Map<String, List<HostPort>>> unhealthyInstance;
+    private Map<String, Map<String, Set<HostPort>>> unhealthyInstance;
 
     public UnhealthyInfoModel() {
         this.attachFailDc = new ArrayList<>();
@@ -24,16 +24,25 @@ public class UnhealthyInfoModel {
     }
 
     public UnhealthyInfoModel merge(UnhealthyInfoModel other) {
-        this.unhealthyCluster += other.unhealthyCluster;
-        this.unhealthyShard += other.unhealthyShard;
-        this.unhealthyRedis += other.unhealthyRedis;
+        if (null == other) return this;
 
-        other.unhealthyInstance.forEach((k, v) -> {this.unhealthyInstance.put(k, v);});
+        other.unhealthyInstance.forEach((cluster, shards) -> {
+            shards.forEach((dcShardName, instances) -> {
+                instances.forEach(redis -> {
+                    this.addUnhealthyInstance(cluster, dcShardName, redis);
+                });
+            });
+        });
+
         return this;
     }
 
     public void addUnhealthyInstance(String cluster, String dc, String shard, HostPort redis) {
         String dcShardName = dc + " " + shard;
+        addUnhealthyInstance(cluster, dcShardName, redis);
+    }
+
+    private void addUnhealthyInstance(String cluster, String dcShardName, HostPort redis) {
         if (!unhealthyInstance.containsKey(cluster)) {
             unhealthyCluster++;
             this.unhealthyInstance.put(cluster, new HashMap<>());
@@ -41,11 +50,12 @@ public class UnhealthyInfoModel {
 
         if (!unhealthyInstance.get(cluster).containsKey(dcShardName)) {
             unhealthyShard++;
-            this.unhealthyInstance.get(cluster).put(dcShardName, new ArrayList<>());
+            this.unhealthyInstance.get(cluster).put(dcShardName, new HashSet<>());
         }
 
-        this.unhealthyRedis++;
-        this.unhealthyInstance.get(cluster).get(dcShardName).add(redis);
+        if (this.unhealthyInstance.get(cluster).get(dcShardName).add(redis)) {
+            unhealthyRedis++;
+        }
     }
 
     @JsonIgnore
@@ -70,7 +80,7 @@ public class UnhealthyInfoModel {
         if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
         List<String> messages = new ArrayList<>();
 
-        for (Map.Entry<String, List<HostPort> > shard : unhealthyInstance.get(clusterName).entrySet()) {
+        for (Map.Entry<String, Set<HostPort> > shard : unhealthyInstance.get(clusterName).entrySet()) {
             StringBuilder sb = new StringBuilder();
             sb.append(shard.getKey()).append(":");
             for (HostPort redis : shard.getValue()) {
@@ -91,7 +101,7 @@ public class UnhealthyInfoModel {
 
     public int countUnhealthyRedisByCluster(String clusterName) {
         if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return 0;
-        return unhealthyInstance.get(clusterName).values().stream().mapToInt(List::size).sum();
+        return unhealthyInstance.get(clusterName).values().stream().mapToInt(Set::size).sum();
     }
 
     public int getUnhealthyCluster() {
@@ -114,11 +124,11 @@ public class UnhealthyInfoModel {
         this.attachFailDc = attachFailDc;
     }
 
-    public Map<String, Map<String, List<HostPort>>> getUnhealthyInstance() {
+    public Map<String, Map<String, Set<HostPort>>> getUnhealthyInstance() {
         return unhealthyInstance;
     }
 
-    public void setUnhealthyInstance(Map<String, Map<String, List<HostPort>>> unhealthyInstance) {
+    public void setUnhealthyInstance(Map<String, Map<String, Set<HostPort>>> unhealthyInstance) {
         this.unhealthyInstance = unhealthyInstance;
     }
 }

@@ -11,9 +11,10 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         $scope.loadShards = loadShards;
         $scope.gotoHickwall = gotoHickwall;
         $scope.existsRoute = existsRoute;
-        $scope.showHealthStatus = true
-        $scope.showCrossMasterHealthStatus = false
-        $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall
+        $scope.showCrossMasterHealthStatus = false;
+        $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall;
+        $scope.clusterType = ClusterType.default();
+        $scope.unfoldAllUnhealthyDelay = unfoldAllUnhealthyDelay;
         
         if ($scope.clusterName) {
             loadCluster();
@@ -58,8 +59,10 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                             }
 
                             var type = ClusterType.lookup(cluster.clusterType);
-                            $scope.showHealthStatus = type && type.healthCheck;
-                            $scope.showCrossMasterHealthStatus = type && type.multiActiveDcs;
+                            if (null != type) {
+                                $scope.clusterType = type.value;
+                                $scope.showCrossMasterHealthStatus = type.multiActiveDcs;
+                            }
 
                             loadShards($scope.clusterName, $scope.currentDcName);
                         }, function(result) {
@@ -87,27 +90,31 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         function checkCrossMasterDelay() {
             if($scope.showCrossMasterHealthStatus && $scope.shards) {
                 $scope.shards.forEach(function(shard) {
-                    HealthCheckService.getCrossMasterDelay($scope.currentDcName, $scope.clusterName, shard.shardTbl.shardName)
+                    HealthCheckService.getCrossMasterDelay($scope.currentDcName, $scope.clusterName, shard.shardTbl.shardName, $scope.clusterType)
                         .then(function (result) {
-                            shard.crossMasterDelay = [];
+                            shard.crossMasters = [];
                             for (dc of $scope.dcs) {
                                 if (dc.dcName === $scope.currentDcName) continue;
                                 if (!result || !result[dc.dcName]) {
-                                    shard.crossMasterDelay.push({
-                                        destDc: dc.dcName,
-                                        delay: -1
+                                    shard.crossMasters.push({
+                                        redisDc: dc.dcName,
+                                        delay: -1,
+                                        healthy: false
                                     });
                                     continue;
                                 }
 
                                 var hostPort = Object.keys(result[dc.dcName])[0].split(":")
                                 var delay = Object.values(result[dc.dcName])[0]
-                                shard.crossMasterDelay.push({
-                                    destDc: dc.dcName,
+                                var crossMaster = {
+                                    redisDc: dc.dcName,
                                     delay: delay,
-                                    ip: hostPort[0],
-                                    port: hostPort[1]
-                                });
+                                    redisIp: hostPort[0],
+                                    redisPort: hostPort[1]
+                                };
+
+                                crossMaster.healthy = isRedisHealthy(crossMaster);
+                                shard.crossMasters.push(crossMaster);
                             }
                         })
                 });
@@ -115,16 +122,34 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
         }
         
         function healthCheck() {
-        	if($scope.showHealthStatus && $scope.shards) {
+        	if($scope.shards) {
         		$scope.shards.forEach(function(shard) {
         			shard.redises.forEach(function(redis) {
-        				HealthCheckService.getReplDelay(redis.redisIp, redis.redisPort)
+        				HealthCheckService.getReplDelay(redis.redisIp, redis.redisPort, $scope.clusterType)
         					.then(function(result) {
         						redis.delay = result.delay;
+        						if (redis.master && $scope.showCrossMasterHealthStatus) {
+                                    redis.healthy = isRedisHealthy(redis) && isCrossMasterHealthy(shard);
+                                    shard.healthy = isShardHealthy(shard);
+                                } else {
+                                    redis.healthy = isRedisHealthy(redis);
+                                }
         					});
         			});
         		});
         	}
+        }
+
+        function isShardHealthy(shard) {
+            if (!shard.redises) return true;
+
+            for (var redis of shard.redises) {
+                if (redis.master && undefined !== redis.healthy && !redis.healthy) {
+                    return false
+                }
+            }
+
+            return true;
         }
 
         function gotoHickwall(clusterName, shardName, redisIp, redisPort) {
@@ -153,9 +178,34 @@ index_module.controller('ClusterCtl', ['$rootScope', '$scope', '$stateParams', '
                     $scope.routeAvail = false;
                 });
         }
-        
-        $scope.refreshHealthStatus = $interval(healthCheck, 2000);
+
+        function isCrossMasterHealthy(shard) {
+            if (!shard.crossMasters) return true;
+
+            var unhealthyCrossMaster = shard.crossMasters.find(function (crossMaster) {
+                return !isRedisHealthy(crossMaster);
+            })
+            return undefined === unhealthyCrossMaster;
+        }
+
+        function isRedisHealthy(redis) {
+            if (redis.delay === null || redis.delay === undefined) return false;
+
+            return redis.delay >= 0 && redis.delay !== 99999;
+        }
+
+        function unfoldAllUnhealthyDelay() {
+            if (!$scope.showCrossMasterHealthStatus || !$scope.shards) return;
+
+            $scope.shards.forEach(function(shard) {
+                if (false === shard.healthy) {
+                    shard.showCrossMasters = true;
+                }
+            })
+        }
+
         $scope.refreshCrossMasterHealthStatus = $interval(checkCrossMasterDelay, 2000);
+        $scope.refreshHealthStatus = $interval(healthCheck, 2000);
         $scope.$on('$destroy', function() {
             $interval.cancel($scope.refreshHealthStatus);
             $interval.cancel($scope.refreshCrossMasterHealthStatus)

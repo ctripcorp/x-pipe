@@ -6,6 +6,7 @@ index_module.controller('ShardListCtl', ['$rootScope', '$scope', '$window', '$st
         $scope.getActiveDcName = getActiveDcName;
         $scope.getTypeName = getTypeName
         $scope.showUnhealthyShardOnly = true;
+        $scope.clusterTypes = ClusterType.selectData()
 
         $scope.sourceClusters = [];
         showClusters();

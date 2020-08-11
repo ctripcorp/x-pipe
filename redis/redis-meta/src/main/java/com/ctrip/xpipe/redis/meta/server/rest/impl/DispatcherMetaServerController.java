@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -89,6 +90,18 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 													  @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 
 		logger.debug("[getPeerMaster] {},{}", clusterId, shardId);
+		return createDeferredResult(new Function<MetaServer, RedisMeta>() {
+			@Override
+			public RedisMeta apply(MetaServer metaServer) {
+				return metaServer.getCurrentCRDTMaster(clusterId, shardId, forwardInfo);
+			}
+		}, metaServer);
+	}
+
+	@GetMapping(path = META_SERVER_SERVICE.PATH.PATH_GET_CURRENT_MASTER, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	public DeferredResult<RedisMeta> getCurrentMaster(@PathVariable String clusterId, @PathVariable String shardId,
+											  @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+		logger.debug("[getCurrentMaster] {},{}", clusterId, shardId);
 		return createDeferredResult(new Function<MetaServer, RedisMeta>() {
 			@Override
 			public RedisMeta apply(MetaServer metaServer) {

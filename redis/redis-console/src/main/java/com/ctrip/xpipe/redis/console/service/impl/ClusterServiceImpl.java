@@ -506,6 +506,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 			Map<String, ClusterListUnhealthyClusterModel> result = Maps.newHashMap();
 			UnhealthyInfoModel unhealthyInfo = delayService.getAllUnhealthyInstance();
+			UnhealthyInfoModel parallelUnhealthyInfo = delayService.getAllUnhealthyInstanceFromParallelService();
+			if (null != parallelUnhealthyInfo) unhealthyInfo.merge(parallelUnhealthyInfo);
 
 			for (String unhealthyCluster : unhealthyInfo.getUnhealthyClusterNames()) {
 				ClusterListUnhealthyClusterModel cluster = new ClusterListUnhealthyClusterModel(unhealthyCluster);
@@ -538,7 +540,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			ClusterListUnhealthyClusterModel cluster = clusters.get(clusterTbl.getClusterName());
 			cluster.setActivedcId(clusterTbl.getActivedcId())
 					.setClusterAdminEmails(clusterTbl.getClusterAdminEmails())
-					.setClusterDescription(clusterTbl.getClusterDescription());
+					.setClusterDescription(clusterTbl.getClusterDescription())
+					.setClusterType(clusterTbl.getClusterType());
 			result.add(cluster);
 		}
 		return result;

@@ -59,7 +59,7 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
             return null;
         }
 
-        RedisMeta currentMaster = currentMetaManager.getCurrentMaster(clusterId, shardId);
+        RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterId, shardId);
         if (null == currentMaster) {
             logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown current master, skip adjust", clusterId, shardId);
             return null;

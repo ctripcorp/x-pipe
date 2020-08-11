@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
@@ -113,8 +112,14 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
+	public RedisMeta getCurrentCRDTMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		logger.debug("[getCurrentCRDTMaster]{}, {}", clusterId, shardId);
+		return currentMetaManager.getCurrentCRDTMaster(clusterId, shardId);
+	}
+
+	@Override
 	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
-		logger.debug("[getPeerMaster]{}, {}", clusterId, shardId);
+		logger.debug("[getCurrentMaster]{}, {}", clusterId, shardId);
 		return currentMetaManager.getCurrentMaster(clusterId, shardId);
 	}
 

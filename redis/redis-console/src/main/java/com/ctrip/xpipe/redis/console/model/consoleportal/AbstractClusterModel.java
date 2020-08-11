@@ -9,6 +9,8 @@ public class AbstractClusterModel {
 
     protected String clusterName;
 
+    private String clusterType;
+
     protected String clusterAdminEmails;
 
     protected String clusterDescription;
@@ -64,6 +66,15 @@ public class AbstractClusterModel {
 
     public AbstractClusterModel setClusterOrgName(String clusterOrgName) {
         this.clusterOrgName = clusterOrgName;
+        return this;
+    }
+
+    public String getClusterType() {
+        return clusterType;
+    }
+
+    public AbstractClusterModel setClusterType(String clusterType) {
+        this.clusterType = clusterType;
         return this;
     }
 }

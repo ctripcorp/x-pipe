@@ -17,6 +17,8 @@ public class DefaultMetaServerConsoleServiceManager implements MetaServerConsole
 
 	private Map<String, MetaServerConsoleService> services = new ConcurrentHashMap<>();
 
+	private Map<String, MetaServerConsoleService> fastServices = new ConcurrentHashMap<>();
+
 	@Override
 	public MetaServerConsoleService getOrCreate(final String metaServerAddress) {
 
@@ -26,6 +28,19 @@ public class DefaultMetaServerConsoleServiceManager implements MetaServerConsole
 			public MetaServerConsoleService create() {
 
 				return new DefaultMetaServerConsoleService(metaServerAddress);
+			}
+		});
+	}
+
+	@Override
+	public MetaServerConsoleService getOrCreateFastService(final String metaServerAddress) {
+
+		return MapUtils.getOrCreate(fastServices, metaServerAddress, new ObjectFactory<MetaServerConsoleService>() {
+
+			@Override
+			public MetaServerConsoleService create() {
+
+				return new FastMetaServerConsoleService(metaServerAddress);
 			}
 		});
 	}

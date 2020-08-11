@@ -28,8 +28,18 @@ public class ConsoleServiceManager {
 
     private Map<String, ConsoleService> services = Maps.newConcurrentMap();
 
-    @Autowired
+    private ConsoleService parallelService = null;
+
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    public ConsoleServiceManager(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
+        String parallelConsoleDomain = consoleConfig.getParallelConsoleDomain();
+        if (!StringUtil.isEmpty(parallelConsoleDomain)) {
+            parallelService = new DefaultConsoleService(parallelConsoleDomain);
+        }
+    }
 
     public List<HEALTH_STATE> allHealthStatus(String ip, int port){
 
@@ -66,6 +76,21 @@ public class ConsoleServiceManager {
     public UnhealthyInfoModel getUnhealthyInstanceByIdc(String activeIdc) {
         ConsoleService service = getServiceByDc(activeIdc);
         return service.getActiveClusterUnhealthyInstance();
+    }
+
+    public long getDelayFromParallelService(String ip, int port) {
+        if (null == parallelService) return -1L;
+        return parallelService.getInstanceDelayStatusFromParallelService(ip, port);
+    }
+
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelayFromParallelService(String sourceDcId, String clusterId, String shardId) {
+        if (null == parallelService) return Collections.emptyMap();
+        return parallelService.getCrossMasterDelayFromParallelService(sourceDcId, clusterId, shardId);
+    }
+
+    public UnhealthyInfoModel getAllUnhealthyInstanceFromParallelService() {
+        if (null == parallelService) return null;
+        return parallelService.getAllUnhealthyInstance();
     }
 
     private ConsoleService getServiceByDc(String activeIdc) {
@@ -148,9 +173,5 @@ public class ConsoleServiceManager {
         }
         logger.debug("{}", consoleUrls);
         return consoleUrls;
-    }
-
-    public void setConsoleConfig(ConsoleConfig consoleConfig) {
-        this.consoleConfig = consoleConfig;
     }
 }
