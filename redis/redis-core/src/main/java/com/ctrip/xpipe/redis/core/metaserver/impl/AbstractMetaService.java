@@ -21,7 +21,10 @@ public abstract class AbstractMetaService extends AbstractService implements Met
 
 	public AbstractMetaService(int retryTimes, int retryIntervalMilli) {
 		super(retryTimes, retryIntervalMilli);
+	}
 
+	public AbstractMetaService(int retryTimes, int retryIntervalMilli, int connectTimeout, int soTimout) {
+		super(retryTimes, retryIntervalMilli, connectTimeout, soTimout);
 	}
 
 	protected <T> T pollMetaServer(Function<String, T> fun) {

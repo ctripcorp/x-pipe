@@ -29,8 +29,16 @@ public class DefaultMetaServerConsoleService extends AbstractMetaService impleme
 	private String  changePrimaryDcPath;
 	private String  getCurrentMasterPath;
 
+	protected DefaultMetaServerConsoleService(String metaServerAddress, int retryTimes, int retryIntervalMilli, int connectTimeout, int soTimout) {
+		super(retryTimes, retryIntervalMilli, connectTimeout, soTimout);
+		initService(metaServerAddress);
+	}
 	
 	public DefaultMetaServerConsoleService(String metaServerAddress) {
+		initService(metaServerAddress);
+	}
+
+	private void initService(String metaServerAddress) {
 		this.metaServerAddress = metaServerAddress;
 		changeClusterPath = META_SERVER_SERVICE.CLUSTER_CHANGE.getRealPath(metaServerAddress);
 		changePrimaryDcCheckPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC_CHECK.getRealPath(metaServerAddress);
