@@ -54,7 +54,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
         instance = mock(RedisHealthCheckInstance.class);
         info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort("localhost", 1234), "dc", ClusterType.ONE_WAY);
         when(instance.getRedisInstanceInfo()).thenReturn(info);
-        when(metaCache.getAllRedisOfDc(anyString(), anyString())).thenReturn(Lists.newArrayList(info.getHostPort(), new HostPort("localhost", 5678)));
+        when(metaCache.getAllActiveRedisOfDc(anyString(), anyString())).thenReturn(Lists.newArrayList(info.getHostPort(), new HostPort("localhost", 5678)));
     }
 
     @Test
@@ -86,7 +86,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
                 return HEALTH_STATE.HEALTHY;
             }
         });
-        when(metaCache.getAllRedisOfDc(anyString(), eq("dc"))).thenReturn(dcHostPort);
+        when(metaCache.getAllActiveRedisOfDc(anyString(), eq("dc"))).thenReturn(dcHostPort);
         checker.setMetaCache(metaCache);
         boolean result;
         for(int i = 0; i < N/2 - 1; i++) {
