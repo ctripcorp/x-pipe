@@ -75,6 +75,7 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
@@ -223,7 +224,8 @@ import org.junit.runners.Suite.SuiteClasses;
         ExpireSizeCheckActionTest.class,
         TombstoneSizeCheckActionTest.class,
         TombstoneSizeMetricListenerTest.class,
-        DefaultRedisMasterActionListenerTest.class
+        DefaultRedisMasterActionListenerTest.class,
+        DefaultMetaCacheTest.class
 })
 public class AllTests {
 
