@@ -26,15 +26,27 @@ public class ConflictCheckActionTest extends AbstractConsoleTest {
 
     private AtomicInteger redisCallCnt = new AtomicInteger(0);
 
+    private AtomicInteger listenerCallCnt = new AtomicInteger(0);
+
+    AtomicReference<ActionContext> contextRef = new AtomicReference();
+
     private long typeConflict = 0L;
     private long nonTypeConflict = 0L;
     private long modifyConflict = 0L;
     private long mergeConflict = 0L;
+    private long setConflict = 0L;
+    private long delConflict = 0L;
+    private long setDelConflict = 0L;
 
-    private String TEMP_STATS_RESP = "crdt_type_conflict:%d\r\n" +
+    private boolean lowVersion = true;
+
+    private String TEMP_OLD_STATS_RESP = "crdt_type_conflict:%d\r\n" +
             "crdt_non_type_conflict:%d\r\n" +
             "crdt_modify_conflict:%d\r\n" +
             "crdt_merge_conflict:%d\r\n";
+
+    private String TEMP_STATS_RESP ="crdt_conflict:type=%d,set=%d,del=%d,set_del=%d\r\n" +
+            "crdt_conflict_op:modify=%d,merge=%d\r\n";
 
     @Before
     public void setupConflictCheckActionTest() throws Exception {
@@ -54,26 +66,11 @@ public class ConflictCheckActionTest extends AbstractConsoleTest {
 
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, redis.getPort());
         action = new ConflictCheckAction(scheduled, instance, executors);
-    }
-
-    @After
-    public void afterConflictCheckActionTest() throws Exception {
-        if (null != redis) redis.stop();
-    }
-
-    @Test
-    public void testDoTask() throws Exception {
-        AtomicInteger callCnt = new AtomicInteger(0);
-        AtomicReference<ActionContext> contextRef = new AtomicReference();
-        typeConflict = Math.abs(randomInt());
-        nonTypeConflict = Math.abs(randomInt());
-        mergeConflict = Math.abs(randomInt());
-        modifyConflict = Math.abs(randomInt());
 
         action.addListener(new HealthCheckActionListener() {
             @Override
             public void onAction(ActionContext actionContext) {
-                callCnt.incrementAndGet();
+                listenerCallCnt.incrementAndGet();
                 contextRef.set(actionContext);
             }
 
@@ -87,23 +84,69 @@ public class ConflictCheckActionTest extends AbstractConsoleTest {
 
             }
         });
+    }
+
+    @After
+    public void afterConflictCheckActionTest() throws Exception {
+        if (null != redis) redis.stop();
+    }
+
+    @Test
+    public void testDoTaskWithLowVersion() throws Exception {
+        typeConflict = Math.abs(randomInt());
+        nonTypeConflict = Math.abs(randomInt());
+        mergeConflict = Math.abs(randomInt());
+        modifyConflict = Math.abs(randomInt());
+
         AbstractHealthCheckAction.ScheduledHealthCheckTask task = action.new ScheduledHealthCheckTask();
         task.run();
 
-        waitConditionUntilTimeOut(() -> callCnt.get() == 1, 1000);
+        waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
 
         CrdtConflictCheckContext context = (CrdtConflictCheckContext) contextRef.get();
-        Assert.assertEquals(1, callCnt.get());
-        Assert.assertEquals(typeConflict, context.getResult().getTypeConflict());
-        Assert.assertEquals(nonTypeConflict, context.getResult().getNonTypeConflict());
-        Assert.assertEquals(mergeConflict, context.getResult().getMergeConflict());
-        Assert.assertEquals(modifyConflict, context.getResult().getModifyConflict());
+        Assert.assertEquals(1, listenerCallCnt.get());
+        Assert.assertEquals(new Long(typeConflict), context.getResult().getTypeConflict());
+        Assert.assertEquals(new Long(nonTypeConflict), context.getResult().getNonTypeConflict());
+        Assert.assertEquals(new Long(mergeConflict), context.getResult().getMergeConflict());
+        Assert.assertEquals(new Long(modifyConflict), context.getResult().getModifyConflict());
+        Assert.assertNull(context.getResult().getSetConflict());
+        Assert.assertNull(context.getResult().getDelConflict());
+        Assert.assertNull(context.getResult().getSetDelConflict());
+    }
 
-        // test redis time out
+    @Test
+    public void testDoTask() throws Exception {
+        typeConflict = Math.abs(randomInt());
+        setConflict = Math.abs(randomInt());
+        delConflict = Math.abs(randomInt());
+        setDelConflict = Math.abs(randomInt());
+        mergeConflict = Math.abs(randomInt());
+        modifyConflict = Math.abs(randomInt());
+        lowVersion = false;
+
+        AbstractHealthCheckAction.ScheduledHealthCheckTask task = action.new ScheduledHealthCheckTask();
+        task.run();
+
+        waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
+
+        CrdtConflictCheckContext context = (CrdtConflictCheckContext) contextRef.get();
+        Assert.assertEquals(1, listenerCallCnt.get());
+        Assert.assertEquals(new Long(typeConflict), context.getResult().getTypeConflict());
+        Assert.assertEquals(new Long(setConflict), context.getResult().getSetConflict());
+        Assert.assertEquals(new Long(delConflict), context.getResult().getDelConflict());
+        Assert.assertEquals(new Long(setDelConflict), context.getResult().getSetDelConflict());
+        Assert.assertEquals(new Long(setConflict + delConflict + setDelConflict), context.getResult().getNonTypeConflict());
+        Assert.assertEquals(new Long(mergeConflict), context.getResult().getMergeConflict());
+        Assert.assertEquals(new Long(modifyConflict), context.getResult().getModifyConflict());
+    }
+
+    @Test
+    public void testRedisHang() {
         redisDelay = 510;
+        AbstractHealthCheckAction.ScheduledHealthCheckTask task = action.new ScheduledHealthCheckTask();
         task.run();
         sleep(redisDelay + 200);
-        Assert.assertEquals(1, callCnt.get());
+        Assert.assertEquals(0, listenerCallCnt.get());
     }
 
     @Test
@@ -119,7 +162,12 @@ public class ConflictCheckActionTest extends AbstractConsoleTest {
     }
 
     private String mockConflictResponse() {
-        String content = String.format(TEMP_STATS_RESP, typeConflict, nonTypeConflict, modifyConflict, mergeConflict);
+        String content;
+        if (lowVersion) {
+            content = String.format(TEMP_OLD_STATS_RESP, typeConflict, nonTypeConflict, modifyConflict, mergeConflict);
+        } else {
+            content = String.format(TEMP_STATS_RESP, typeConflict, setConflict, delConflict, setDelConflict, modifyConflict, mergeConflict);
+        }
         return String.format("$%d\r\n%s", content.length(), content);
     }
 

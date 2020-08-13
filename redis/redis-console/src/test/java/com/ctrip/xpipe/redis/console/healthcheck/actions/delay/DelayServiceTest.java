@@ -53,7 +53,7 @@ public class DelayServiceTest {
         Mockito.when(crossMasterDelayService.getCurrentDcUnhealthyMasters()).thenReturn(new UnhealthyInfoModel());
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         Mockito.when(xpipeMeta.getDcs()).thenReturn(dcs);
-        Mockito.when(metaCache.getAllRedisOfDc(Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(metaCache.getAllActiveRedisOfDc(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(Arrays.asList(new HostPort("127.0.0.1", 1000),
                         new HostPort("127.0.0.1", 2000),
                         new HostPort("127.0.0.1", 3000),
@@ -126,7 +126,7 @@ public class DelayServiceTest {
             dcMeta.addCluster(clusterMeta);
         }
 
-        Mockito.when(metaCache.getAllRedisOfDc(Mockito.anyString(), Mockito.anyString())).thenReturn(redisList);
+        Mockito.when(metaCache.getAllActiveRedisOfDc(Mockito.anyString(), Mockito.anyString())).thenReturn(redisList);
 
     }
 
