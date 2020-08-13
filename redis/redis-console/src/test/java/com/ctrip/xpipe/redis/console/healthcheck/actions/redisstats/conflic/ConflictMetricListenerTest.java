@@ -34,10 +34,7 @@ public class ConflictMetricListenerTest extends AbstractConsoleTest {
 
         proxy = Mockito.mock(MetricProxy.class);
         listener.setMetricProxy(proxy);
-    }
 
-    @Test
-    public void testOnAction() throws Exception {
         Mockito.doAnswer(invocation -> {
             MetricData point = invocation.getArgumentAt(0, MetricData.class);
             Assert.assertEquals(instance.getRedisInstanceInfo().getClusterId(), point.getClusterName());
@@ -60,16 +57,37 @@ public class ConflictMetricListenerTest extends AbstractConsoleTest {
                 case ConflictMetricListener.METRIC_MERGE_CONFLICT:
                     Assert.assertEquals(stats.getMergeConflict(), point.getValue(), DOUBLE_DELTA);
                     break;
+                case ConflictMetricListener.METRIC_SET_CONFLICT:
+                    Assert.assertEquals(stats.getSetConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
+                case ConflictMetricListener.METRIC_DEL_CONFLICT:
+                    Assert.assertEquals(stats.getDelConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
+                case ConflictMetricListener.METRIC_SET_DEL_CONFLICT:
+                    Assert.assertEquals(stats.getSetDelConflict(), point.getValue(), DOUBLE_DELTA);
+                    break;
                 default:
                     Assert.fail();
             }
 
             return null;
         }).when(proxy).writeBinMultiDataPoint(Mockito.any());
+    }
 
+    @Test
+    public void testOnActionWithOldStats() throws Exception {
         listener.onAction(context);
         Assert.assertTrue(listener.worksfor(context));
         Mockito.verify(proxy, Mockito.times(4)).writeBinMultiDataPoint(Mockito.any());
+    }
+
+    @Test
+    public void testOnAction() throws Exception {
+        stats = new CrdtConflictStats(Math.abs(randomInt()), Math.abs(randomInt()), Math.abs(randomInt()), Math.abs(randomInt()), Math.abs(randomInt()), Math.abs(randomInt()));
+        context = new CrdtConflictCheckContext(instance, stats);
+        listener.onAction(context);
+        Assert.assertTrue(listener.worksfor(context));
+        Mockito.verify(proxy, Mockito.times(7)).writeBinMultiDataPoint(Mockito.any());
     }
 
 }

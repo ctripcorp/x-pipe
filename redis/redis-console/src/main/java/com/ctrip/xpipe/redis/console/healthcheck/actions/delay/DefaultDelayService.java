@@ -109,7 +109,7 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
 
         Map<HostPort, Long> localDelayMap = new HashMap<>(hostPort2Delay);
         for (String dcId : xpipeMeta.getDcs().keySet()) {
-            for (HostPort redis : metaCache.getAllRedisOfDc(currentDcId, dcId)) {
+            for (HostPort redis : metaCache.getAllActiveRedisOfDc(currentDcId, dcId)) {
                 if (!localDelayMap.containsKey(redis)) localDelayMap.put(redis, DelayAction.SAMPLE_LOST_AND_NO_PONG);
             }
         }

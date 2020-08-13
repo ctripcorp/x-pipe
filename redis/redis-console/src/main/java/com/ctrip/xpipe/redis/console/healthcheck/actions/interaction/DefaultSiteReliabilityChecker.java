@@ -28,7 +28,7 @@ public class DefaultSiteReliabilityChecker implements SiteReliabilityChecker {
     @Override
     public boolean isSiteHealthy(AbstractInstanceEvent event) {
         RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
-        List<HostPort> totalRedis = metaCache.getAllRedisOfDc(FoundationService.DEFAULT.getDataCenter(), info.getDcId());
+        List<HostPort> totalRedis = metaCache.getAllActiveRedisOfDc(FoundationService.DEFAULT.getDataCenter(), info.getDcId());
         int errorRedis = getErrorRedis(totalRedis);
         return errorRedis < totalRedis.size()/2;
     }
