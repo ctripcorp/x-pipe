@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
@@ -93,15 +94,20 @@ public class ConsoleServiceManager {
         return parallelService.getAllUnhealthyInstance();
     }
 
-    private ConsoleService getServiceByDc(String activeIdc) {
-        String dcId = activeIdc.toUpperCase();
-        ConsoleService service = services.get(dcId);
+    private ConsoleService getServiceByDc(String dcId) {
+        String upperCaseDcId = dcId.toUpperCase();
+        ConsoleService service = services.get(upperCaseDcId);
         if (service == null) {
             synchronized (this) {
-                service = services.get(dcId);
+                service = services.get(upperCaseDcId);
                 if (service == null) {
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(dcId));
-                    services.put(activeIdc, service);
+                    Optional<String> optionalKey = consoleConfig.getConsoleDomains().keySet().stream().filter(dcId::equalsIgnoreCase).findFirst();
+                    if (!optionalKey.isPresent()) {
+                        throw new XpipeRuntimeException("unknown dc id " + dcId);
+                    }
+
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()));
+                    services.put(upperCaseDcId, service);
                 }
             }
         }

@@ -54,7 +54,7 @@ public class CrossMasterDelayServiceTest extends AbstractConsoleTest {
 
     @Test
     public void testOnAction() {
-        service.onAction(new DelayActionContext(instance, 10L));
+        service.onAction(new DelayActionContext(instance, 10 * 1000 * 1000L));
         Assert.assertEquals(Collections.singletonMap(remoteDcId, Pair.of(new HostPort(), 10L)), service.getPeerMasterDelayFromCurrentDc(clusterId, shardId));
         Assert.assertEquals(Collections.singletonMap(remoteDcId, Pair.of(new HostPort(), 10L)), service.getPeerMasterDelayFromSourceDc(dcId, clusterId, shardId));
     }

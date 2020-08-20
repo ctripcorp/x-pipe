@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.election;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
@@ -146,6 +147,8 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
 
     private float calculateActiveClusterRatio() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (null == xpipeMeta) return 1L;
+
         long count;
         long totalCluster = 0;
         long activeClusterCount = 0;
@@ -153,7 +156,11 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             count = 0;
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                if (!clusterMeta.getActiveDc().equals(dcMeta.getId())) {
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
+                    continue;
+                }
+                if (clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(dataCenter)) {
                     continue;
                 }
 

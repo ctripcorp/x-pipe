@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHold
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.HealthControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
@@ -225,7 +226,8 @@ import org.junit.runners.Suite.SuiteClasses;
         TombstoneSizeCheckActionTest.class,
         TombstoneSizeMetricListenerTest.class,
         DefaultRedisMasterActionListenerTest.class,
-        DefaultMetaCacheTest.class
+        DefaultMetaCacheTest.class,
+        ConsoleServiceManagerTest.class
 })
 public class AllTests {
 
