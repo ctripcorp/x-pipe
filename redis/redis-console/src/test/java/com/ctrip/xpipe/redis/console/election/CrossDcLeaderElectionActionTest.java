@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.console.election;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.exception.DalInsertException;
@@ -153,18 +154,21 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
             xpipeMeta.addDc(dcMeta);
         });
 
-        ClusterMeta oyClusterMeta = new ClusterMeta();
-        ClusterMeta oyClusterMeta2 = new ClusterMeta();
-        ClusterMeta rbClusterMeta = new ClusterMeta();
+        ClusterMeta oyClusterMeta = new ClusterMeta("oyCluster");
+        ClusterMeta oyClusterMeta2 = new ClusterMeta("oyCluster2");
+        ClusterMeta rbClusterMeta = new ClusterMeta("rbCluster");
+        ClusterMeta biClusterMeta = new ClusterMeta("bi-cluster");
         oyClusterMeta.setActiveDc("oy");
         oyClusterMeta2.setActiveDc("oy");
         rbClusterMeta.setActiveDc("rb");
-        oyClusterMeta.setId("oyCluster");
-        oyClusterMeta2.setId("oyCluster2");
-        rbClusterMeta.setId("rbCluster");
+        oyClusterMeta.setType(ClusterType.ONE_WAY.toString());
+        oyClusterMeta2.setType(ClusterType.ONE_WAY.toString());
+        rbClusterMeta.setType(ClusterType.ONE_WAY.toString());
+        biClusterMeta.setType(ClusterType.BI_DIRECTION.toString());
 
-        xpipeMeta.getDcs().get("oy").addCluster(oyClusterMeta).addCluster(rbClusterMeta).addCluster(oyClusterMeta2);
-        xpipeMeta.getDcs().get("rb").addCluster(oyClusterMeta).addCluster(rbClusterMeta).addCluster(oyClusterMeta2);
+        xpipeMeta.getDcs().get("fq").addCluster(biClusterMeta);
+        xpipeMeta.getDcs().get("oy").addCluster(oyClusterMeta).addCluster(rbClusterMeta).addCluster(oyClusterMeta2).addCluster(biClusterMeta);
+        xpipeMeta.getDcs().get("rb").addCluster(oyClusterMeta).addCluster(rbClusterMeta).addCluster(oyClusterMeta2).addCluster(biClusterMeta);
         return xpipeMeta;
     }
 
