@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -67,13 +68,18 @@ public class CrossMasterDelayService implements DelayActionListener, BiDirection
 
     public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromCurrentDc(String clusterId, String shardId) {
         Map<String, Pair<HostPort, Long>> peerMasterDelays = crossMasterDelays.get(new DcClusterShard(currentDcId, clusterId, shardId));
-        if (null != peerMasterDelays) {
-            peerMasterDelays.forEach((key, delay) -> {
-                if (delay.getValue() > 0) delay.setValue(TimeUnit.NANOSECONDS.toMillis(delay.getValue()));
-            });
-        }
+        if (null == peerMasterDelays) return null;
 
-        return peerMasterDelays;
+        Map<String, Pair<HostPort, Long>> result = new HashMap<>(peerMasterDelays.size());
+        peerMasterDelays.forEach((targetDc, delay) -> {
+            if (delay.getValue() > 0) {
+                result.put(targetDc, Pair.of(delay.getKey(), TimeUnit.NANOSECONDS.toMillis(delay.getValue())));
+            } else {
+                result.put(targetDc, Pair.of(delay.getKey(), delay.getValue()));
+            }
+        });
+
+        return result;
     }
 
     public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromSourceDc(String sourceDcId, String clusterId, String shardId) {
