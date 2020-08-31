@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
+import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.HealthControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
@@ -227,7 +228,8 @@ import org.junit.runners.Suite.SuiteClasses;
         TombstoneSizeMetricListenerTest.class,
         DefaultRedisMasterActionListenerTest.class,
         DefaultMetaCacheTest.class,
-        ConsoleServiceManagerTest.class
+        ConsoleServiceManagerTest.class,
+        ChangeConfigTest.class
 })
 public class AllTests {
 
