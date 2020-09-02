@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
@@ -28,8 +29,18 @@ public class ConsoleServiceManager {
 
     private Map<String, ConsoleService> services = Maps.newConcurrentMap();
 
-    @Autowired
+    private ConsoleService parallelService = null;
+
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    public ConsoleServiceManager(ConsoleConfig consoleConfig) {
+        this.consoleConfig = consoleConfig;
+        String parallelConsoleDomain = consoleConfig.getParallelConsoleDomain();
+        if (!StringUtil.isEmpty(parallelConsoleDomain)) {
+            parallelService = new DefaultConsoleService(parallelConsoleDomain);
+        }
+    }
 
     public List<HEALTH_STATE> allHealthStatus(String ip, int port){
 
@@ -68,15 +79,35 @@ public class ConsoleServiceManager {
         return service.getActiveClusterUnhealthyInstance();
     }
 
-    private ConsoleService getServiceByDc(String activeIdc) {
-        String dcId = activeIdc.toUpperCase();
-        ConsoleService service = services.get(dcId);
+    public long getDelayFromParallelService(String ip, int port) {
+        if (null == parallelService) return -1L;
+        return parallelService.getInstanceDelayStatusFromParallelService(ip, port);
+    }
+
+    public Map<String, Pair<HostPort, Long>> getCrossMasterDelayFromParallelService(String sourceDcId, String clusterId, String shardId) {
+        if (null == parallelService) return Collections.emptyMap();
+        return parallelService.getCrossMasterDelayFromParallelService(sourceDcId, clusterId, shardId);
+    }
+
+    public UnhealthyInfoModel getAllUnhealthyInstanceFromParallelService() {
+        if (null == parallelService) return null;
+        return parallelService.getAllUnhealthyInstance();
+    }
+
+    private ConsoleService getServiceByDc(String dcId) {
+        String upperCaseDcId = dcId.toUpperCase();
+        ConsoleService service = services.get(upperCaseDcId);
         if (service == null) {
             synchronized (this) {
-                service = services.get(dcId);
+                service = services.get(upperCaseDcId);
                 if (service == null) {
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(dcId));
-                    services.put(activeIdc, service);
+                    Optional<String> optionalKey = consoleConfig.getConsoleDomains().keySet().stream().filter(dcId::equalsIgnoreCase).findFirst();
+                    if (!optionalKey.isPresent()) {
+                        throw new XpipeRuntimeException("unknown dc id " + dcId);
+                    }
+
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()));
+                    services.put(upperCaseDcId, service);
                 }
             }
         }
@@ -148,9 +179,5 @@ public class ConsoleServiceManager {
         }
         logger.debug("{}", consoleUrls);
         return consoleUrls;
-    }
-
-    public void setConsoleConfig(ConsoleConfig consoleConfig) {
-        this.consoleConfig = consoleConfig;
     }
 }

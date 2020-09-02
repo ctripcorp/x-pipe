@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -17,6 +18,8 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException
 import com.ctrip.xpipe.rest.ForwardType;
 import org.springframework.http.*;
 
+import static com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE.GET_CURRENT_MASTER;
+
 /**
  * @author wenchao.meng
  *
@@ -29,6 +32,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	private String upstreamPeerChangePath;
 	private String getActiveKeeperPath;
 	private String getPeerMasterPath;
+	private String getCurrentMasterPath;
 	private String changePrimaryDcCheckPath;
 	private String makeMasterReadonlyPath;
 	private String changePrimaryDcPath;
@@ -49,6 +53,7 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 			makeMasterReadonlyPath = META_SERVER_SERVICE.MAKE_MASTER_READONLY.getRealPath(getHttpHost());
 			changePrimaryDcPath = META_SERVER_SERVICE.CHANGE_PRIMARY_DC.getRealPath(getHttpHost());
 			getPeerMasterPath = META_SERVER_SERVICE.GET_PEER_MASTER.getRealPath(getHttpHost());
+			getCurrentMasterPath = GET_CURRENT_MASTER.getRealPath(getHttpHost());
 		}
 	}
 
@@ -64,12 +69,22 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+	public RedisMeta getCurrentCRDTMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
-		logger.debug("[getPeerMaster][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+		logger.debug("[getCurrentCRDTMaster][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
 
 		HttpEntity<Void> entity = new HttpEntity<>(headers);
 		ResponseEntity<RedisMeta> response = restTemplate.exchange(getPeerMasterPath, HttpMethod.GET, entity, RedisMeta.class, clusterId, shardId);
+		return response.getBody();
+	}
+
+	@Override
+	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
+		logger.debug("[getCurrentMaster][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
+
+		HttpEntity<Void> entity = new HttpEntity<>(headers);
+		ResponseEntity<RedisMeta> response = restTemplate.exchange(getCurrentMasterPath, HttpMethod.GET, entity, RedisMeta.class, clusterId, shardId);
 		return response.getBody();
 	}
 

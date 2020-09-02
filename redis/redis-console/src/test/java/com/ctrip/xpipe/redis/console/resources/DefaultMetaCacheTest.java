@@ -16,9 +16,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class DefaultMetaCacheTest extends AbstractRedisTest {
@@ -32,12 +32,16 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     @Mock
     private ConsoleConfig consoleConfig;
 
+    @Mock
+    private XpipeMetaManager xpipeMetaManager;
+
     @InjectMocks
     private DefaultMetaCache metaCache = new DefaultMetaCache();
 
     @Before
     public void beforeDefaultMetaCacheTest() {
         MockitoAnnotations.initMocks(this);
+        metaCache.setMeta(Pair.of(getXpipeMeta(), xpipeMetaManager));
     }
 
 
@@ -54,6 +58,26 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     public void testIsCrossRegion() {
         Map<String, DcMeta> dcs = getXpipeMeta().getDcs();
         Assert.assertFalse(dcs.get("jq").getZone().equalsIgnoreCase(dcs.get("fra-aws").getZone()));
+    }
+
+    @Test
+    public void testGetAllActiveRedisOfDc() {
+        List<HostPort> redises = metaCache.getAllActiveRedisOfDc("jq", "jq");
+        Assert.assertEquals(4, redises.size());
+        Assert.assertTrue(redises.contains(new HostPort("10.0.0.1", 6379)));
+        Assert.assertTrue(redises.contains(new HostPort("127.0.0.1", 6379)));
+
+        redises = metaCache.getAllActiveRedisOfDc("jq", "oy");
+        Assert.assertEquals(2, redises.size());
+        Assert.assertTrue(redises.contains(new HostPort("127.0.0.1", 8100)));
+        Assert.assertTrue(redises.contains(new HostPort("127.0.0.1", 8101)));
+
+        redises = metaCache.getAllActiveRedisOfDc("oy", "oy");
+        Assert.assertEquals(4, redises.size());
+        Assert.assertTrue(redises.contains(new HostPort("127.0.0.2", 8100)));
+        Assert.assertTrue(redises.contains(new HostPort("127.0.0.2", 8101)));
+        Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6379)));
+        Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6479)));
     }
 
     protected String getXpipeMetaConfigFile() {

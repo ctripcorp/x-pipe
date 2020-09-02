@@ -12,6 +12,7 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         $scope.showUnhealthyClusterOnly = false;
         $scope.dcName = $stateParams.dcName;
         $scope.type = $stateParams.type;
+        $scope.clusterTypes = ClusterType.selectData()
 
         $scope.sourceClusters = [];
         if($scope.clusterName) {

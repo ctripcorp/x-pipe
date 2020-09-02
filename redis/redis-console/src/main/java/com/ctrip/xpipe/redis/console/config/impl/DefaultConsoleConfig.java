@@ -99,6 +99,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_SENTINEL_REDUNDANT_REDIS_SENSITIVE = "console.health.sentinel.monitor.redundant.sensitive";
 
+    private static final String KEY_PARALLEL_CONSOLE_DOMAIN = "console.parallel.domain";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -405,5 +407,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public boolean isSensitiveForRedundantRedis() {
         return getBooleanProperty(KEY_SENTINEL_REDUNDANT_REDIS_SENSITIVE, false);
+    }
+
+    @Override
+    public String getParallelConsoleDomain() {
+        return getProperty(KEY_PARALLEL_CONSOLE_DOMAIN, "");
     }
 }

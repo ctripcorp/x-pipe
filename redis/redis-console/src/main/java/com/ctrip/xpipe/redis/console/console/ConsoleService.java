@@ -20,10 +20,16 @@ public interface ConsoleService {
 
     Long getInstanceDelayStatus(String ip, int port);
 
+    Long getInstanceDelayStatusFromParallelService(String ip, int port);
+
     Map<HostPort, Long> getAllInstanceDelayStatus();
 
     UnhealthyInfoModel getActiveClusterUnhealthyInstance();
 
+    UnhealthyInfoModel getAllUnhealthyInstance();
+
     Map<String, Pair<HostPort, Long>> getCrossMasterDelay(String clusterId, String shardId);
+
+    Map<String, Pair<HostPort, Long>> getCrossMasterDelayFromParallelService(String sourceDcId, String clusterId, String shardId);
 
 }

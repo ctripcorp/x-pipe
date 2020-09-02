@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
@@ -42,6 +43,12 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
     @Autowired
     private ConsoleServiceManager consoleServiceManager;
 
+    @Autowired
+    private CrossMasterDelayService crossMasterDelayService;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     @Override
     public long getDelay(HostPort hostPort) {
         Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
@@ -73,6 +80,16 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
     }
 
     @Override
+    public long getDelay(ClusterType clusterType, HostPort hostPort) {
+        if (consoleConfig.getOwnClusterType().contains(clusterType.toString())) {
+            return getDelay(hostPort);
+        } else {
+            return consoleServiceManager.getDelayFromParallelService(hostPort.getHost(), hostPort.getPort());
+        }
+
+    }
+
+    @Override
     public long getLocalCachedDelay(HostPort hostPort) {
         return hostPort2Delay.getOrDefault(hostPort, DelayAction.SAMPLE_LOST_AND_NO_PONG);
     }
@@ -92,7 +109,7 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
 
         Map<HostPort, Long> localDelayMap = new HashMap<>(hostPort2Delay);
         for (String dcId : xpipeMeta.getDcs().keySet()) {
-            for (HostPort redis : metaCache.getAllRedisOfDc(currentDcId, dcId)) {
+            for (HostPort redis : metaCache.getAllActiveRedisOfDc(currentDcId, dcId)) {
                 if (!localDelayMap.containsKey(redis)) localDelayMap.put(redis, DelayAction.SAMPLE_LOST_AND_NO_PONG);
             }
         }
@@ -122,7 +139,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
 
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentIdc)) continue;
+                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equalsIgnoreCase(currentIdc)) continue;
+                if (clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(currentIdc)) continue;
 
                 for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 
@@ -137,6 +156,9 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
                 }
             }
         }
+
+        UnhealthyInfoModel unhealthyMaster = crossMasterDelayService.getCurrentDcUnhealthyMasters();
+        unhealthyInfo.merge(unhealthyMaster);
 
         return unhealthyInfo;
     }
@@ -156,6 +178,11 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
         }
 
         return infoAggregation;
+    }
+
+    @Override
+    public UnhealthyInfoModel getAllUnhealthyInstanceFromParallelService() {
+        return consoleServiceManager.getAllUnhealthyInstanceFromParallelService();
     }
 
     @Override

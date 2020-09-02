@@ -40,12 +40,4 @@ public class ShardListModel extends AbstractClusterModel {
         return this;
     }
 
-    public String getClusterType() {
-        return clusterType;
-    }
-
-    public ShardListModel setClusterType(String clusterType) {
-        this.clusterType = clusterType;
-        return this;
-    }
 }

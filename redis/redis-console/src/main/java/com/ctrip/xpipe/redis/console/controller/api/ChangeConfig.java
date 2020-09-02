@@ -90,12 +90,17 @@ public class ChangeConfig extends AbstractConsoleController{
         return RetMessage.createSuccessMessage("success");
     }
 
-    @RequestMapping(value = "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/stop", method = RequestMethod.POST)
-    public RetMessage stopSentinelCheck(HttpServletRequest request, @PathVariable String clusterName) throws DalException {
+    @RequestMapping(value = {"/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/stop/{maintainMinutes}",
+            "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/stop"}, method = RequestMethod.POST)
+    public RetMessage stopSentinelCheck(HttpServletRequest request, @PathVariable String clusterName,
+                                        @PathVariable(required = false) Integer maintainMinutes) throws DalException {
+        if (null == maintainMinutes || maintainMinutes <= 0) maintainMinutes = consoleConfig.getNoAlarmMinutesForClusterUpdate();
+        maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
+
         checkClusterName(clusterName);
         ConfigModel config = configModel(request, null);
         config.setSubKey(clusterName);
-        configService.stopSentinelCheck(config, consoleConfig.getNoAlarmMinutesForClusterUpdate());
+        configService.stopSentinelCheck(config, maintainMinutes);
         return RetMessage.createSuccessMessage("success");
     }
 

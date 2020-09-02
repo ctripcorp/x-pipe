@@ -53,7 +53,7 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
         Mockito.when(dcMetaCache.getCurrentDc()).thenReturn(currentDc);
         Mockito.doAnswer(invocation -> relatedDcs).when(dcMetaCache).getRelatedDcs(Mockito.anyString(), Mockito.anyString());
         Mockito.doAnswer(invocation -> upstreamDcs).when(currentMetaManager).getUpstreamPeerDcs(Mockito.anyString(), Mockito.anyString());
-        Mockito.doAnswer(invocation -> currentMaster).when(currentMetaManager).getCurrentMaster(clusterId, shardId);
+        Mockito.doAnswer(invocation -> currentMaster).when(currentMetaManager).getCurrentCRDTMaster(clusterId, shardId);
         Mockito.doAnswer(invocation -> allPeerMasters).when(currentMetaManager).getAllPeerMasters(clusterId, shardId);
     }
 

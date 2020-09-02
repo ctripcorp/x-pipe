@@ -5,12 +5,15 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.ByteBufUtils;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerService;
+import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.util.concurrent.SettableFuture;
 import org.junit.Assert;
@@ -48,7 +51,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		
 		KeeperMeta keeperMeta = new KeeperMeta();
 		keeperMeta.setPort(keeperPort);
-		keeperMeta.setIp("localhost");
+		keeperMeta.setIp("127.0.0.1");
 		
 		keeperTransMeta  = new KeeperTransMeta("clusterId", "shardId", keeperMeta);
 		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
@@ -58,7 +61,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 	public void testCheckStateCommandNoDelay() throws Exception {
 
 		int sleepTime = 2000;
-		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
+		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
 		Server server = startServer(keeperPort, new Callable<String>() {
 			@Override
 			public String call() throws Exception {
@@ -87,18 +90,50 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 	@Test
 	public void testSuccess() throws Exception{
 
-		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
+		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
 		Server server = startServer(keeperPort, ByteBufUtils.readToString(keeperRole.format()));
-		
+
+		long before = Runtime.getRuntime().freeMemory();
 		SlaveRole real = addKeeperCommand.execute().get();
+		logger.info("[memory] {}", Runtime.getRuntime().freeMemory());
 		Assert.assertEquals(keeperRole, real);
 		
 	}
 
+	@SuppressWarnings("unused")
+	@Test
+	public void testSuccessMemoryUsed() throws Exception{
+
+		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
+		Server server = startServer(keeperPort, ByteBufUtils.readToString(keeperRole.format()));
+		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
+		SlaveRole real = addKeeperCommand.execute().get();
+		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
+		real = addKeeperCommand.execute().get();
+
+		long total = 0L;
+		int tasks = 10;
+		for(int i = 0; i < tasks; i++) {
+			System.gc();
+			sleep(1000);
+			System.gc();
+			sleep(1000);
+			long before = Runtime.getRuntime().freeMemory();
+//			addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
+//			real = addKeeperCommand.execute().get();
+			byte[] bytes = new byte[1024];
+			long delta = before - Runtime.getRuntime().freeMemory();
+			total += delta;
+		}
+		logger.info("[avg-mem] {}", total / tasks);
+
+	}
+
+
 	@Test
 	public void testFailTimeout() throws Exception{
 
-		SlaveRole slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
+		SlaveRole slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
 		startServer(keeperPort, ByteBufUtils.readToString(slaveRole.format()));
 		
 		long begin = System.currentTimeMillis();
@@ -119,7 +154,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 	@Test
 	public void testIoExceptionNotRetry() throws Exception{
 
-		SlaveRole slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
+		SlaveRole slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
 		final Server server = startServer(keeperPort, ByteBufUtils.readToString(slaveRole.format()));
 				
 		new Thread(new Runnable() {
@@ -157,9 +192,9 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 				
 				SlaveRole slaveRole = null;
 				if(System.currentTimeMillis() - startTime <= timeoutMilli/2){
-					slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
+					slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECT, 0);
 				}else{
-					slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "localhost", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
+					slaveRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
 				}
 				return ByteBufUtils.readToString(slaveRole.format());
 			}

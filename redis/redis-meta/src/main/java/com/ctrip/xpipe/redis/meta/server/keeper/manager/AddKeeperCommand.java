@@ -39,7 +39,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 
 	@Override
 	protected void doKeeperContainerOperation() {
-		keeperContainerService.addOrStartKeeper(keeperTransMeta);		
+		keeperContainerService.addOrStartKeeper(keeperTransMeta);
 	}
 
 	@Override
