@@ -226,24 +226,24 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 
 		Assert.assertEquals(0, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
 		Assert.assertEquals(0, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
-		Assert.assertNull(currentMeta.getCurrentMaster(biClusterId, biShardId));
+		Assert.assertNull(currentMeta.getCurrentCRDTMaster(biClusterId, biShardId));
 
 		// set PeerMaster
 		RedisMeta redisMeta = new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L);
-		currentMeta.setCurrentMaster(biClusterId, biShardId, redisMeta);
+		currentMeta.setCurrentCRDTMaster(biClusterId, biShardId, redisMeta);
 		redisMeta.setIp("10.0.0.2");
 		currentMeta.setPeerMaster("remote-dc", biClusterId, shardId, redisMeta);
 		Assert.assertEquals(1, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
 		Assert.assertEquals(1, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
 		Assert.assertEquals(Sets.newHashSet("remote-dc"), currentMeta.getUpstreamPeerDcs(biClusterId, biShardId));
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentCRDTMaster(biClusterId, biShardId));
 		Assert.assertEquals(new RedisMeta().setIp("10.0.0.2").setPort(6379).setGid(1L), currentMeta.getPeerMaster("remote-dc", biClusterId, biShardId));
 
 		// remove PeerMaster
 		currentMeta.removePeerMaster("remote-dc", biClusterId, biShardId);
 		Assert.assertEquals(0, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
 		Assert.assertEquals(0, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
-		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterId, biShardId));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentCRDTMaster(biClusterId, biShardId));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -254,6 +254,15 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetKeeperMasterWithErrorType() {
 		currentMeta.setKeeperMaster(biClusterId, biShardId, Pair.of("127.0.0.1", 6379));
+	}
+
+	@Test
+	public void testGetCurrentMaster() {
+		Assert.assertEquals(new RedisMeta().setIp("127.0.0.1").setPort(6379), currentMeta.getCurrentMaster(clusterId, shardId));
+		Assert.assertNull(currentMeta.getCurrentMaster(biClusterId, biShardId));
+
+		currentMeta.setCurrentCRDTMaster(biClusterId, biShardId, new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L));
+		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterId, biShardId));
 	}
 
 }

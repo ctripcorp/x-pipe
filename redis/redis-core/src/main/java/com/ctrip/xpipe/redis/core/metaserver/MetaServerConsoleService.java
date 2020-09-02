@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 
 /**
@@ -49,6 +50,8 @@ public interface MetaServerConsoleService extends MetaServerService{
 	 * @return
 	 */
 	PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, PrimaryDcChangeRequest request);
+
+	RedisMeta getCurrentMaster(String clusterId, String shardId);
 
 	DcMeta getDynamicInfo();
 	

@@ -39,6 +39,11 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 	public MetaServerConsoleService get(String dcName) {
 		return metaServerConsoleServiceManager.getOrCreate(fetchMetaServerAddress(dcName));
 	}
+
+	@Override
+	public MetaServerConsoleService getFastService(String dcName) {
+		return metaServerConsoleServiceManager.getOrCreateFastService(fetchMetaServerAddress(dcName));
+	}
 	
 	private List<String> fetchMetaServerAddress(List<String> dcNames) {
 		List<String> result = new ArrayList<String>(dcNames.size());

@@ -13,4 +13,5 @@ public interface MetaServerConsoleServiceManagerWrapper {
 
 	List<MetaServerConsoleService> get(List<String> dcNames);
 	MetaServerConsoleService get(String dcName);
+	MetaServerConsoleService getFastService(String dcName);
 }

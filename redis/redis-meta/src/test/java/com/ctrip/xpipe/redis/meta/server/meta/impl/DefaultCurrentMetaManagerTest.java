@@ -163,7 +163,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 			Assert.assertEquals(new RedisMeta().setGid(1L).setIp("127.0.0.1").setPort(6379), paramRedis);
 
 			return null;
-		}).when(currentMeta).setCurrentMaster(anyString(), anyString(), any());
+		}).when(currentMeta).setCurrentCRDTMaster(anyString(), anyString(), any());
 
 		doAnswer(invocation -> {
 			String paramDcId = invocation.getArgumentAt(0, String.class);
@@ -179,8 +179,8 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 			return null;
 		}).when(currentMeta).setPeerMaster(anyString(), anyString(), anyString(), any());
 
-		currentMetaServerMetaManager.setCurrentMaster(getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
-		verify(currentMeta, times(1)).setCurrentMaster(anyString(), anyString(), any());
+		currentMetaServerMetaManager.setCurrentCRDTMaster(getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
+		verify(currentMeta, times(1)).setCurrentCRDTMaster(anyString(), anyString(), any());
 		verify(handler, times(1)).currentMasterChanged(getClusterId(), getShardId());
 
 		currentMetaServerMetaManager.setPeerMaster(upstreamDc, getClusterId(), getShardId(), 2, "127.0.0.2", 6379);

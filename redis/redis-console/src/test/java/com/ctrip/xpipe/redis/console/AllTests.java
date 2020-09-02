@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHold
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
+import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.HealthControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
@@ -20,6 +22,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayActionControllerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.DefaultRedisMasterActionListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterControllerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
@@ -74,6 +77,7 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
@@ -221,7 +225,11 @@ import org.junit.runners.Suite.SuiteClasses;
         ExpireSizeMetricListenerTest.class,
         ExpireSizeCheckActionTest.class,
         TombstoneSizeCheckActionTest.class,
-        TombstoneSizeMetricListenerTest.class
+        TombstoneSizeMetricListenerTest.class,
+        DefaultRedisMasterActionListenerTest.class,
+        DefaultMetaCacheTest.class,
+        ConsoleServiceManagerTest.class,
+        ChangeConfigTest.class
 })
 public class AllTests {
 

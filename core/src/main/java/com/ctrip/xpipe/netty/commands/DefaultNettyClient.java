@@ -10,6 +10,7 @@ import io.netty.channel.DefaultChannelPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,6 +66,9 @@ public class DefaultNettyClient implements NettyClient{
 					receivers.offer(byteBufReceiver);
 				}else{
 					logger.error("[sendRequest][fail]" + channel, future.cause());
+					if (future.cause() instanceof ClosedChannelException) {
+						byteBufReceiver.clientClosed(DefaultNettyClient.this);
+					}
 				}
 			}
 		});
@@ -123,7 +127,11 @@ public class DefaultNettyClient implements NettyClient{
 			if(byteBufReceiver == null){
 				break;
 			}
-			byteBufReceiver.clientClosed(this);
+			try {
+				byteBufReceiver.clientClosed(this);
+			} catch (Exception e) {
+				// do nothing
+			}
 		}
 	}
 
