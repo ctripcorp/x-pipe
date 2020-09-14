@@ -28,6 +28,7 @@ public class DefaultClusterArrangerTest extends AbstractMetaServerContextTest{
 	public void testInitArrange() throws Exception{
 		
 		CuratorFramework client = getCurator();
+		logger.info("[break point]");
 		client.createContainers(MetaZkConfig.getMetaServerSlotsPath());
 		
 		List<String> children = client.getChildren().forPath(MetaZkConfig.getMetaServerSlotsPath());
