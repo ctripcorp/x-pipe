@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
 import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayActionTest;
@@ -229,7 +230,9 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultRedisMasterActionListenerTest.class,
         DefaultMetaCacheTest.class,
         ConsoleServiceManagerTest.class,
-        ChangeConfigTest.class
+        ChangeConfigTest.class,
+        NettyKeyedPoolClientFactoryTest.class,
+
 })
 public class AllTests {
 

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
@@ -22,13 +23,15 @@ import javax.annotation.Resource;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.CLIENT_POOL;
+
 /**
  * @author wenchao.meng
  *
  * Aug 5, 2016
  */
 public class DefaultKeeperStateController extends AbstractLifecycle implements KeeperStateController, TopElement{
-	
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private int addKeeperSuccessTimeoutMilli =    180000;
@@ -44,6 +47,9 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 
 	@Resource( name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
+
+	@Resource(name = CLIENT_POOL)
+	private XpipeNettyClientKeyedObjectPool clientKeyedObjectPool;
 	
 	private KeyedOneThreadTaskExecutor<Pair<String, String>> shardExecutor;
 	
@@ -66,7 +72,7 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 
 	protected Command<?> createAddKeeperCommand(KeeperContainerService keeperContainerService,
 			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled, int addKeeperSuccessTimeoutMilli) {
-		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, addKeeperSuccessTimeoutMilli);
+		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, clientKeyedObjectPool, scheduled, addKeeperSuccessTimeoutMilli);
 	}
 
 	@Override

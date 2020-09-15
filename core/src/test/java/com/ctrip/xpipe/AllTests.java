@@ -7,9 +7,11 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.*;
+import com.ctrip.xpipe.netty.NettyPoolUtilTest;
 import com.ctrip.xpipe.netty.NettyTimeoutTtlListenerTest;
 import com.ctrip.xpipe.netty.TcpPortCheckCommandTest;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClientTest;
+import com.ctrip.xpipe.netty.commands.NettyClientFactoryTest;
 import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
@@ -84,7 +86,10 @@ import org.junit.runners.Suite.SuiteClasses;
 	NettyTimeoutTtlListenerTest.class,
 	DefaultZkConfigTest.class,
 	AbstractQueuedSynchronizerTest.class,
-	DefaultNettyClientTest.class
+	DefaultNettyClientTest.class,
+	NettyClientFactoryTest.class,
+	NettyPoolUtilTest.class,
+	ThreadUtilsTest.class
 })
 public class AllTests {
 
