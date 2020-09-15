@@ -46,15 +46,15 @@ public class MemoryPrinter extends AbstractStartStoppable {
 		logger.info("max:{}, total:{}, free:{}", getMb(getMaxMemory()), getMb(getTotalMemory()), getMb(getFreeMemory()));
 	}
 
-	protected long getFreeMemory() {
+	public static long getFreeMemory() {
 		return Runtime.getRuntime().freeMemory();
 	}
 
-	protected long getTotalMemory() {
+	public static long getTotalMemory() {
 		return Runtime.getRuntime().totalMemory();
 	}
 
-	protected long getMaxMemory() {
+	public static long getMaxMemory() {
 		return Runtime.getRuntime().maxMemory();
 	}
 

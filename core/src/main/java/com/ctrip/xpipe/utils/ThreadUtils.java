@@ -14,4 +14,8 @@ public class ThreadUtils {
 		return thread;
 	}
 
+	public static int bestEffortThreadNums() {
+		return Math.min(OsUtils.getCpuCount(), 8);
+	}
+
 }

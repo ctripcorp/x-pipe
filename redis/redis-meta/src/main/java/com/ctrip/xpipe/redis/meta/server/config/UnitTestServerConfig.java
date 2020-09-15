@@ -20,9 +20,9 @@ import java.util.Set;
  */
 public class UnitTestServerConfig implements MetaServerConfig{
 
-	private String zkAddress = "localhost:2181";
+	private String zkAddress = "127.0.0.1:2181";
 
-	private String consoleAddress = "http://localhost:9000";
+	private String consoleAddress = "http://127.0.0.1:9000";
 	
 	private String zkNameSpace = ZkConfig.DEFAULT_ZK_NAMESPACE;
 

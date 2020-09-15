@@ -1,6 +1,5 @@
-package com.ctrip.xpipe.redis.proxy.concurrent;
+package com.ctrip.xpipe.utils;
 
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.util.concurrent.FastThreadLocalThread;
 
 import java.util.concurrent.ThreadFactory;
