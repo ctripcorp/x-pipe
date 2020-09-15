@@ -4,6 +4,9 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.ThreadUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -25,7 +28,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class NettyClientFactory extends AbstractStartStoppable implements PooledObjectFactory<NettyClient> {
 
-	private NioEventLoopGroup eventLoopGroup;
+	private static final NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(ThreadUtils.bestEffortThreadNums(),
+			XpipeThreadFactory.create("NettyClientFactory"));
 	private Bootstrap b = new Bootstrap();
 	private int connectTimeoutMilli = 5000;
 	private static Logger logger = LoggerFactory.getLogger(NettyClientFactory.class);
@@ -37,8 +41,7 @@ public class NettyClientFactory extends AbstractStartStoppable implements Pooled
 
 	@Override
 	protected void doStart() throws Exception {
-		
-		eventLoopGroup = new NioEventLoopGroup(1);
+
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.handler(new ChannelInitializer<SocketChannel>() {
 					@Override
