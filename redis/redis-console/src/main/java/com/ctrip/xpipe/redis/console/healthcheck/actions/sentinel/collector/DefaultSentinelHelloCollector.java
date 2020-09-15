@@ -4,8 +4,10 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -75,6 +77,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
+
+    @Resource(name = ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL)
+    private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     private SentinelLeakyBucket leakyBucket;
 
@@ -321,7 +326,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     private boolean checkMasterConsistent(HostPort masterAddr, Set<SentinelHello> hellos) {
 
         if (hellos.isEmpty()) {
-            RoleCommand roleCommand = new RoleCommand(masterAddr.getHost(), masterAddr.getPort(), false, scheduled);
+            RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(masterAddr.getHost(), masterAddr.getPort())), scheduled);
             try {
                 Role role = roleCommand.execute().get(2, TimeUnit.SECONDS);
                 if (!(role instanceof MasterRole)) {

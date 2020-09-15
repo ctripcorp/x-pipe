@@ -65,6 +65,8 @@ public class AbstractTest {
 
     private ComponentRegistry componentRegistry;
 
+    public static final String LOCAL_HOST = "127.0.0.1";
+
     @Rule
     public TestName name = new TestName();
 

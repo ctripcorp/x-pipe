@@ -3,6 +3,7 @@ package com.ctrip.xpipe.netty.commands;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
+import com.ctrip.xpipe.utils.FastThreadLocalThreadFactory;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -42,7 +43,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 	@Override
 	protected void doStart() throws Exception {
 		
-		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, XpipeThreadFactory.create("NettyKeyedPoolClientFactory"));
+		eventLoopGroup = new NioEventLoopGroup(eventLoopThreads, FastThreadLocalThreadFactory.create("NettyKeyedPoolClientFactory"));
 		initBootstrap();
 	}
 

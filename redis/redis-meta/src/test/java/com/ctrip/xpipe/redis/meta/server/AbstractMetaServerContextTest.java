@@ -47,7 +47,7 @@ public class AbstractMetaServerContextTest extends AbstractMetaServerTest{
 			startZk(zkPort);
 		}
 		
-		zkAddress = String.format("localhost:%d", zkPort);
+		zkAddress = String.format("127.0.0.1:%d", zkPort);
 		try{
 			TestZkClient client = getBean(TestZkClient.class);
 			client.setZkAddress(zkAddress);
