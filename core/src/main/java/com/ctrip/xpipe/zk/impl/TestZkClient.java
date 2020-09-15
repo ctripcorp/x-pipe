@@ -20,7 +20,7 @@ public class TestZkClient extends AbstractLifecycle implements ZkClient, TopElem
 	
 	public static final String ZK_ADDRESS_KEY = "zkAddress";
 	
-	private String address = System.getProperty(ZK_ADDRESS_KEY, "localhost:2181");
+	private String address = System.getProperty(ZK_ADDRESS_KEY, "127.0.0.1:2181");
 	
 	protected void doInitialize() throws Exception {
 		
