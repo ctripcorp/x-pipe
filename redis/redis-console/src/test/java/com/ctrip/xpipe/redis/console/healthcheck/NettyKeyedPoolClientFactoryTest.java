@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -17,15 +18,22 @@ import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.util.concurrent.FastThreadLocal;
+import io.netty.util.internal.InternalThreadLocalMap;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.commons.pool2.PooledObject;
+import org.junit.*;
 
+import java.lang.reflect.Field;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.OK;
 
@@ -44,17 +52,68 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
 
     private static final int CHECK_INTERVAL = 100;
 
+    private Server server;
+
+    private Endpoint endpoint;
+
+    @BeforeClass
+    public static void beforeNettyClientFactoryTestClass() {
+        System.setProperty("io.netty.allocator.useCacheForAllThreads", "false");
+    }
+
     @Before
-    public void beforeNettyKeyedPoolClientFactoryTest() throws Exception {
+    public void beforeNettyClientFactoryTest() throws Exception {
+        if(server == null) {
+            server = startServer("+OK\r\n");
+            endpoint = new DefaultEndPoint(LOCAL_HOST, server.getPort());
+        }
         objectPool = new XpipeNettyClientKeyedObjectPool(factory);
         objectPool.initialize();
         objectPool.start();
     }
 
     @Test
+    public void testMakeObjectWithFastThreadLocalCache() throws Exception {
+
+        PooledObject<NettyClient> pooledObject = factory.makeObject(endpoint);
+        NettyClient client = pooledObject.getObject();
+        OkCommand command = new OkCommand(objectPool.getKeyPool(endpoint), scheduled, CHECK_INTERVAL);
+        command.execute().get();
+
+        PooledByteBufAllocator allocator = (PooledByteBufAllocator)client.channel().alloc();
+        AtomicReference<Object> freeSweepAllocationThreshold = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        client.channel().eventLoop().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Field field = FieldUtils.getDeclaredField(allocator.getClass(), "threadCache", true);
+                    Object threadCache = field.get(allocator);
+                    logger.info("[class]{}", threadCache.getClass());
+                    FastThreadLocal fastThreadLocal = (FastThreadLocal) threadCache;
+
+                    Object poolThreadCache = fastThreadLocal.get();
+                    logger.info("[class]{}", poolThreadCache.getClass());
+                    Field param = FieldUtils.getField(poolThreadCache.getClass(), "freeSweepAllocationThreshold", true);
+                    logger.info("[{}]", param.get(poolThreadCache));
+                    freeSweepAllocationThreshold.set(param.get(poolThreadCache));
+                } catch (IllegalAccessException e) {
+                    logger.error("", e);
+                }
+                latch.countDown();
+            }
+        });
+        latch.await();
+        Assert.assertNotNull(freeSweepAllocationThreshold.get());
+        Assert.assertNotEquals(0, freeSweepAllocationThreshold.get());
+    }
+
+    //manual
+    @Ignore
+    @Test
     public void preTest() throws Exception {
         Server server = startServer("+OK\r\n");
-        Endpoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort());
+        Endpoint endpoint = new DefaultEndPoint(LOCAL_HOST, server.getPort());
         OkCommand command = new OkCommand(objectPool.getKeyPool(endpoint), scheduled, CHECK_INTERVAL);
         command.future().addListener(new CommandFutureListener<String>() {
             @Override
@@ -66,6 +125,8 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
         sleep(100);
     }
 
+    //manual
+    @Ignore
     @Test
     public void testTimeoutWhenBorrow() {
         PingCommand command = new PingCommand(objectPool.getKeyPool(new DefaultEndPoint(getTimeoutIp(), randomPort())), scheduled, CHECK_INTERVAL);
@@ -73,10 +134,12 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
         sleep(1000 * 10);
     }
 
+    //manual
+    @Ignore
     @Test
-    public void testMakeObject() throws Exception {
+    public void testMakeObjectManual() throws Exception {
         Server server = startServer("+OK\r\n");
-        Endpoint endpoint = new DefaultEndPoint("127.0.0.1", server.getPort());
+        Endpoint endpoint = new DefaultEndPoint(LOCAL_HOST, server.getPort());
         AtomicBoolean result = new AtomicBoolean(true);
 
         AtomicLong lastUpdateMilli = new AtomicLong(-1);
@@ -103,7 +166,7 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
                         }
                     }
                 });
-                command.execute();
+                command.execute(executors);
             }
         }, 0, CHECK_INTERVAL, TimeUnit.MILLISECONDS);
 

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.proxy;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.proxy.concurrent.FastThreadLocalThreadFactory;
+import com.ctrip.xpipe.utils.FastThreadLocalThreadFactory;
 import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
 import com.ctrip.xpipe.redis.proxy.handler.InternalNetworkHandler;
 import com.ctrip.xpipe.redis.proxy.handler.ProxyProtocolDecoder;
