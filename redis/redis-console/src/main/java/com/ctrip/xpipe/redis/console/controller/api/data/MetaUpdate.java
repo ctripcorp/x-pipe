@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
@@ -41,6 +42,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     protected ClusterService clusterService;
+
+    @Autowired
+    private ClusterMetaService clusterMetaService;
 
     @Autowired
     protected DcService dcService;
@@ -396,6 +400,35 @@ public class MetaUpdate extends AbstractConsoleController {
                 RetMessage.createSuccessMessage("Shard already not exist");
             }
             shardService.deleteShard(clusterName, shardName);
+            return RetMessage.createSuccessMessage("Successfully deleted shard");
+        } catch (Exception e) {
+            logger.error("[deleteShard] {}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/sync",
+            method = RequestMethod.DELETE)
+    public RetMessage syncDeleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
+        logger.info("[deleteShard] Delete Shard {} - {}", clusterName, shardName);
+        try {
+            if (clusterService.find(clusterName) == null) {
+                RetMessage.createSuccessMessage("Cluster already not exist");
+            }
+            if (shardService.find(clusterName, shardName) == null) {
+                RetMessage.createSuccessMessage("Shard already not exist");
+            }
+            shardService.deleteShard(clusterName, shardName);
+            List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+            for (DcTbl dcTbl : dcTbls) {
+                try {
+                    metaServerConsoleServiceManagerWrapper.get(dcTbl.getDcName()).clusterModified(clusterName,
+                            clusterMetaService.getClusterMeta(dcTbl.getDcName(), clusterName));
+                } catch (Exception e) {
+                    logger.warn("[modifiedCluster]", e);
+                    return RetMessage.createFailMessage("[" + dcTbl.getDcName() + "]MetaServer fails" + e.getMessage());
+                }
+            }
             return RetMessage.createSuccessMessage("Successfully deleted shard");
         } catch (Exception e) {
             logger.error("[deleteShard] {}", e);

@@ -94,8 +94,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
 /**
  * @author wenchao.meng
- *         <p>
- *         Jun 23, 2016
+ * <p>
+ * Jun 23, 2016
  */
 @RunWith(Suite.class)
 @SuiteClasses(value = {
@@ -147,6 +147,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MetaUpdateTest.class,
         MetaUpdateTest2.class,
         MetaUpdateTest3.class,
+        MetaUpdateTest4.class,
         AlertPolicyManagerTest.class,
 
         ProxyDaoTest.class,
