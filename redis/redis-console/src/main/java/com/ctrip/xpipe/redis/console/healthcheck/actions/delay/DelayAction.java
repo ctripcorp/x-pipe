@@ -96,6 +96,11 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
             onExpired();
         } else {
+            if (INIT_CONTEXT.equals(context.get())) {
+                // no receive any messages but not expire just on init time
+                logger.info("[expire][{}] init but not expire", instance.getRedisInstanceInfo().getHostPort());
+                return;
+            }
             if (isExpired) {
                 isExpired = false;
                 logger.info("[expire][{}] recovery", instance.getRedisInstanceInfo().getHostPort());
