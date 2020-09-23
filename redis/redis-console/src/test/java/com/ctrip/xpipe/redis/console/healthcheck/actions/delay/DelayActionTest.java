@@ -56,6 +56,8 @@ public class DelayActionTest extends AbstractRedisTest {
 
     private AtomicBoolean delayHealth;
 
+    private AtomicBoolean instanceNull = new AtomicBoolean(false);
+
     @Before
     public void beforeDelayActionTest() {
         initSessionPubAndSub();
@@ -74,6 +76,8 @@ public class DelayActionTest extends AbstractRedisTest {
         futureMap.forEach((key, future) -> {
             future.cancel(false);
         });
+
+        Assert.assertFalse(instanceNull.get());
     }
 
     @Test
@@ -103,11 +107,30 @@ public class DelayActionTest extends AbstractRedisTest {
     }
 
     @Test
+    public void testRedisUpAfterDown() throws Exception {
+        delayHealth.set(true);
+        redisDelay = 10 * CHECK_INTERVAL;
+        action.initialize();
+        action.start();
+        sleep(3 * CHECK_INTERVAL);
+        Assert.assertFalse(delayHealth.get());
+        redisDelay = 10;
+        sleep(2 * CHECK_INTERVAL);
+        Assert.assertTrue(delayHealth.get());
+        action.stop();
+        action.dispose();
+    }
+
+    @Test
     public void testConnectTimeoutSinceBeginning() {
         AtomicBoolean result = new AtomicBoolean(false);
         action.addListener(new DelayActionListener() {
             @Override
             public void onAction(DelayActionContext actionContext) {
+                if (null == actionContext.instance()) {
+                    instanceNull.set(true);
+                    Assert.fail();
+                }
                 result.set(true);
             }
 
@@ -123,6 +146,8 @@ public class DelayActionTest extends AbstractRedisTest {
         });
         action.doTask();
         action.doTask();
+        action.doTask();
+        sleep(2 * CHECK_INTERVAL);
         action.doTask();
         Assert.assertTrue(result.get());
     }
@@ -172,6 +197,10 @@ public class DelayActionTest extends AbstractRedisTest {
 
         Mockito.doAnswer(invocationOnMock -> {
             DelayActionContext context = invocationOnMock.getArgumentAt(0, DelayActionContext.class);
+            if (null == context.instance()) {
+                instanceNull.set(true);
+                Assert.fail();
+            }
             Long result = context.getResult();
             delayHealth.set(result > 0 && result < DelayAction.SAMPLE_LOST_BUT_PONG);
             return null;
