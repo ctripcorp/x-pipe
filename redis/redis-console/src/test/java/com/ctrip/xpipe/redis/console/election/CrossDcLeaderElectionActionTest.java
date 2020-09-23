@@ -78,6 +78,18 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
     }
 
     @Test
+    public void onlyBiDirectionClusterTest() throws Exception {
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockBiDirectionXpipeMeta());
+        normalTest();
+    }
+
+    @Test
+    public void onlyOneWayClusterTest() throws Exception {
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockBiDirectionXpipeMeta());
+        normalTest();
+    }
+
+    @Test
     public void leaderNetworkBrokenTest() throws Exception {
         startAllElection();
         waitConditionUntilTimeOut(() -> configUpdateTimes.get() >= 2, CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 2);
@@ -144,6 +156,48 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
         Assert.assertEquals(fqLeaderDc, fqDc.electionResult);
         Assert.assertEquals(oyLeaderDc, oyDc.electionResult);
         Assert.assertEquals(rbLeaderDc, rbDc.electionResult);
+    }
+
+    private XpipeMeta mockOneWayXpipeMeta() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        Arrays.asList("fq", "oy", "rb").stream().forEach(dc -> {
+            DcMeta dcMeta = new DcMeta();
+            dcMeta.setId(dc);
+            xpipeMeta.addDc(dcMeta);
+        });
+
+        ClusterMeta oyClusterMeta = new ClusterMeta("oyCluster");
+        ClusterMeta oyClusterMeta2 = new ClusterMeta("oyCluster2");
+        ClusterMeta rbClusterMeta = new ClusterMeta("rbCluster");
+        oyClusterMeta.setActiveDc("oy");
+        oyClusterMeta2.setActiveDc("oy");
+        rbClusterMeta.setActiveDc("rb");
+        oyClusterMeta.setType(ClusterType.ONE_WAY.toString());
+        oyClusterMeta2.setType(ClusterType.ONE_WAY.toString());
+        rbClusterMeta.setType(ClusterType.ONE_WAY.toString());
+
+        xpipeMeta.getDcs().get("oy").addCluster(oyClusterMeta).addCluster(rbClusterMeta).addCluster(oyClusterMeta2);
+        xpipeMeta.getDcs().get("rb").addCluster(oyClusterMeta).addCluster(rbClusterMeta).addCluster(oyClusterMeta2);
+        return xpipeMeta;
+    }
+
+    private XpipeMeta mockBiDirectionXpipeMeta() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        Arrays.asList("fq", "oy", "rb").stream().forEach(dc -> {
+            DcMeta dcMeta = new DcMeta();
+            dcMeta.setId(dc);
+            xpipeMeta.addDc(dcMeta);
+        });
+
+        ClusterMeta biClusterMeta = new ClusterMeta("bi-cluster");
+        ClusterMeta biClusterMeta2 = new ClusterMeta("bi-cluster2");
+        biClusterMeta.setType(ClusterType.BI_DIRECTION.toString());
+        biClusterMeta2.setType(ClusterType.BI_DIRECTION.toString());
+
+        xpipeMeta.getDcs().get("fq").addCluster(biClusterMeta);
+        xpipeMeta.getDcs().get("oy").addCluster(biClusterMeta).addCluster(biClusterMeta2);
+        xpipeMeta.getDcs().get("rb").addCluster(biClusterMeta).addCluster(biClusterMeta2);
+        return xpipeMeta;
     }
 
     private XpipeMeta mockXpipeMeta() {
