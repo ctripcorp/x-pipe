@@ -160,9 +160,6 @@ public class CrossDcLeaderElectionAction extends AbstractPeriodicElectionAction 
                 if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
                     continue;
                 }
-                if (clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(dataCenter)) {
-                    continue;
-                }
 
                 count++;
             }
