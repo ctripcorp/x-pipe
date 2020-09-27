@@ -262,16 +262,17 @@ public class DefaultMetaCache implements MetaCache {
         if (allKeepers == null) {
             synchronized (this) {
                 if (allKeepers == null) {
-                    allKeepers = Sets.newHashSetWithExpectedSize(allKeeperSize);
+                    Set<HostPort> localKeepers = Sets.newHashSetWithExpectedSize(allKeeperSize);
                     xpipeMeta.getDcs().forEach((dcName, dcMeta) -> {
                         dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
                             clusterMeta.getShards().forEach((shardName, shardMeta) -> {
                                 shardMeta.getKeepers().forEach(keeperMeta -> {
-                                    allKeepers.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+                                    localKeepers.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
                                 });
                             });
                         });
                     });
+                    allKeepers = localKeepers;
                 }
             }
         }

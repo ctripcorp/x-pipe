@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +19,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.Mockito.*;
 
@@ -78,6 +80,18 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertTrue(redises.contains(new HostPort("127.0.0.2", 8101)));
         Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6379)));
         Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6479)));
+    }
+
+    @Test
+    public void testGetAllKeepers() {
+        Set<HostPort> allKeepers = metaCache.getAllKeepers();
+        Assert.assertEquals(6, allKeepers.size());
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 6000),
+                new HostPort("127.0.0.1", 6001),
+                new HostPort("127.0.0.1", 6100),
+                new HostPort("127.0.0.1", 6101),
+                new HostPort("127.0.0.2", 6100),
+                new HostPort("127.0.0.2", 6101)), allKeepers);
     }
 
     protected String getXpipeMetaConfigFile() {
