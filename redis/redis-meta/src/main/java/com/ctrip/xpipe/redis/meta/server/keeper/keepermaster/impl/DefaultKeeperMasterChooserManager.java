@@ -98,7 +98,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 			logger.info("[addShard]{}, {}, {}", clusterId, shardId, keeperMasterChooser);
 			keeperMasterChooser.start();
 			//release resources
-			currentMetaManager.addResource(clusterId, shardId, keeperMasterChooser);
+			registerJob(clusterId, shardId, keeperMasterChooser);
 		} catch (Exception e) {
 			logger.error("[addShard]{}, {}", clusterId, shardId);
 		}
