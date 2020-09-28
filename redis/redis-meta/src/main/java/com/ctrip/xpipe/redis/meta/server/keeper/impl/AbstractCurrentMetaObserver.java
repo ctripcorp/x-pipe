@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.impl;
 
+import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -74,6 +76,21 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		}
 		
 		throw new IllegalArgumentException("unknown argument:" + args);
+	}
+
+	protected boolean registerJob(String clusterId, String shardId, Releasable releasable) {
+		try {
+			currentMetaManager.addResource(clusterId, shardId, releasable);
+		} catch (Exception e) {
+			try {
+				logger.info("[registerJob][{}][{}] cancel job registration", clusterId, shardId, e);
+				releasable.release();
+			} catch (Throwable t) {
+				logger.warn("[registerJob][{}][{}]", clusterId, shardId, t);
+			}
+			return false;
+		}
+		return true;
 	}
 
 	protected boolean supportCluster(ClusterMeta clusterMeta) {

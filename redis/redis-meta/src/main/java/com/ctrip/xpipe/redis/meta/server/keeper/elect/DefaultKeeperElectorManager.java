@@ -89,19 +89,19 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
                         updateShardLeader(leaderLatchPath, pathChildrenCache.getCurrentData(), clusterId, shardId);
                     }
                 });
-				currentMetaManager.addResource(clusterId, shardId, new Releasable() {
-                    @Override
-                    public void release() throws Exception {
+                pathChildrenCache.start();
 
-                    	try{
+                registerJob(clusterId, shardId, new Releasable() {
+					@Override
+					public void release() throws Exception {
+						try{
 							logger.info("[release][release children cache]{}, {}", clusterId, shardId);
 							pathChildrenCache.close();
 						}catch (Exception e){
 							logger.error(String.format("[release][release children cache]%s, %s", clusterId, shardId), e);
 						}
-                    }
-                });
-                pathChildrenCache.start();
+					}
+				});
 			} catch (Exception e) {
 				logger.error("[observerShardLeader]" + clusterId + " " + shardId, e);
 			}
