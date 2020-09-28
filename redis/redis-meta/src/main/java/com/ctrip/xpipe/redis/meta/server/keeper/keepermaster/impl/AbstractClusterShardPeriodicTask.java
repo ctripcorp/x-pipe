@@ -7,6 +7,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,7 @@ public abstract class AbstractClusterShardPeriodicTask extends AbstractStartStop
         if (future != null) {
             logger.info("[doStop]");
             future.cancel(true);
+            future = null;
         }
 
     }
@@ -80,4 +82,20 @@ public abstract class AbstractClusterShardPeriodicTask extends AbstractStartStop
         return DEFAULT_WORK_INTERVAL_SECONDS;
     }
 
+    @VisibleForTesting
+    protected ScheduledFuture<?> future() {
+        return future;
+    }
+
+    @VisibleForTesting
+    protected AbstractClusterShardPeriodicTask setScheduled(ScheduledExecutorService scheduled) {
+        this.scheduled = scheduled;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected AbstractClusterShardPeriodicTask setFuture(ScheduledFuture<?> future) {
+        this.future = future;
+        return this;
+    }
 }

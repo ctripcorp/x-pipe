@@ -50,7 +50,7 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
             logger.info("[addShard]{}, {}, {}", clusterId, shardId, adjuster);
             adjuster.start();
             //release resources
-            currentMetaManager.addResource(clusterId, shardId, adjuster);
+            registerJob(clusterId, shardId, adjuster);
         } catch (Exception e) {
             logger.error("[addShard]{}, {}", clusterId, shardId, e);
         }
