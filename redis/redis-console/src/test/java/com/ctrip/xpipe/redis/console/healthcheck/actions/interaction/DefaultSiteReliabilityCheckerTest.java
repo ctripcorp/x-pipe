@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceDown;
@@ -42,6 +43,9 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
     @Mock
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
+    @Mock
+    private ConsoleConfig consoleConfig;
+
     private RedisHealthCheckInstance instance;
 
     private RedisInstanceInfo info;
@@ -64,6 +68,14 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
         boolean result = checker.isSiteHealthy(new InstanceDown(instance));
         Assert.assertFalse(result);
 
+    }
+
+    @Test
+    public void testConfigSetConsoleSiteUnstable() {
+        when(defaultDelayPingActionCollector.getState(any(HostPort.class))).thenReturn(HEALTH_STATE.INSTANCEUP);
+        when(consoleConfig.isConsoleSiteUnstable()).thenReturn(true).thenReturn(false);
+        Assert.assertFalse(checker.isSiteHealthy(new InstanceDown(instance)));
+        Assert.assertTrue(checker.isSiteHealthy(new InstanceDown(instance)));
     }
 
     @Test

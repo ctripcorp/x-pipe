@@ -53,4 +53,9 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest{
 
     }
 
+    @Test
+    public void testIsConsoleSiteUnstableDefault() {
+        Assert.assertFalse(consoleConfig.isConsoleSiteUnstable());
+    }
+
 }

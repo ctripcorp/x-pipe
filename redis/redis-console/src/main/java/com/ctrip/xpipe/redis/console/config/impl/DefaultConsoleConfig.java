@@ -101,6 +101,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_PARALLEL_CONSOLE_DOMAIN = "console.parallel.domain";
 
+    private static final String KEY_CONSOLE_SITE_STABLE = "console.site.stable";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -412,5 +414,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getParallelConsoleDomain() {
         return getProperty(KEY_PARALLEL_CONSOLE_DOMAIN, "");
+    }
+
+    @Override
+    public boolean isConsoleSiteUnstable() {
+        return !getBooleanProperty(KEY_CONSOLE_SITE_STABLE, true);
     }
 }
