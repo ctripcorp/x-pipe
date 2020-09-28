@@ -56,8 +56,8 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
                     chooseCommandFactory, executors, peerMasterChooseExecutor, scheduled);
             peerMasterChooser.start();
 
-            currentMetaManager.addResource(clusterId, shardId, currentMasterChooser);
-            currentMetaManager.addResource(clusterId, shardId, peerMasterChooser);
+            registerJob(clusterId, shardId, currentMasterChooser);
+            registerJob(clusterId, shardId, peerMasterChooser);
 
         } catch (Exception e) {
             logger.error("[addShard]{}, {}", clusterId, shardId, e);
