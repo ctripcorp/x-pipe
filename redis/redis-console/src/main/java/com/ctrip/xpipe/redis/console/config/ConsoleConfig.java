@@ -113,4 +113,6 @@ public interface ConsoleConfig extends CoreConfig {
 	boolean isSensitiveForRedundantRedis();
 
 	String getParallelConsoleDomain();
+
+	boolean isConsoleSiteUnstable();
 }

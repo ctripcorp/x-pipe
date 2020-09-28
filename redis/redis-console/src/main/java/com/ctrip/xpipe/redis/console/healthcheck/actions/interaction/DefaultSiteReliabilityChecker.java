@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -23,10 +25,16 @@ public class DefaultSiteReliabilityChecker implements SiteReliabilityChecker {
     private MetaCache metaCache;
 
     @Autowired
+    private ConsoleConfig config;
+
+    @Autowired
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
     @Override
     public boolean isSiteHealthy(AbstractInstanceEvent event) {
+        if(config.isConsoleSiteUnstable()) {
+            return false;
+        }
         RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
         List<HostPort> totalRedis = metaCache.getAllActiveRedisOfDc(FoundationService.DEFAULT.getDataCenter(), info.getDcId());
         int errorRedis = getErrorRedis(totalRedis);
