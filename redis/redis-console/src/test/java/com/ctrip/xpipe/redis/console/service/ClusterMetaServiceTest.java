@@ -7,10 +7,13 @@ import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+
+import static org.junit.Assert.fail;
 
 public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	
@@ -20,6 +23,8 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 	private ClusterMetaService clusterMetaService;
 	@Autowired
 	private ClusterService clusterService;
+	@Autowired
+	private ShardService shardService;
 	
 	private String clusterName1 = "cluster1";
 	private String clusterName2 = "cluster2";
@@ -78,6 +83,20 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
 		Assert.assertEquals(dcA, dcBMeta.findCluster(clusterName1).getActiveDc());
 		Assert.assertEquals(dcA, dcAMeta.findCluster(clusterName2).getActiveDc());
 		Assert.assertEquals(dcB, dcBMeta.findCluster(clusterName2).getActiveDc());
-		
+
 	}
+
+    @Test
+    public void testGetNullShardClusterMeta() throws Exception {
+        shardService.deleteShard(clusterName1, "shard1");
+        shardService.deleteShard(clusterName1, "shard2");
+
+        try {
+            ClusterMeta clusterMeta = clusterMetaService.getClusterMeta(dcA, clusterName1);
+            ObjectMapper objectMapper = new ObjectMapper();
+            logger.info("{}", objectMapper.writeValueAsString(clusterMeta));
+        } catch (Throwable t) {
+            fail();
+        }
+    }
 }
