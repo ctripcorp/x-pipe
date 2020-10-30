@@ -49,6 +49,9 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
     private String shardName = "shard";
 
+    private String shardName1 = "shard1";
+    private String shardName2 = "shard2";
+
     @Before
     public void beforeMetaUpdateTest3() throws Exception {
         createCluster();
@@ -249,5 +252,14 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
             }
         }
         return true;
+    }
+
+
+    @Test
+    public void syncBatchDeleteShardsWhenNullShard() {
+        shardService.deleteShard(clusterName, shardName1);
+        shardService.deleteShard(clusterName, shardName2);
+
+        metaUpdate.syncBatchDeleteShards(clusterName, Lists.newArrayList(shardName1, shardName2));
     }
 }

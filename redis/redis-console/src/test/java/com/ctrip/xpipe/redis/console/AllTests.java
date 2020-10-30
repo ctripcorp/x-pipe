@@ -80,6 +80,8 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
+import com.ctrip.xpipe.redis.console.service.ShardServiceTest;
+import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
@@ -109,6 +111,7 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerServiceImplTest.class,
         ShardServiceImplTest.class,
         ShardServiceImplTest2.class,
+        ShardServiceTest2.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
         DcServiceImplTest.class,
