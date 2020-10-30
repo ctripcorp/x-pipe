@@ -442,6 +442,7 @@
 
 	<entity name="shard-tbl" table="SHARD_TBL" alias="st2">
 		<var name="cluster-name" value-type="String"/>
+		<var name="shard-names" value-type="java.util.List&lt;String&gt;"/>
 
 		<relation name="cluster-info" entity-name="cluster-tbl" entity-alias="ct"/>
 
@@ -453,6 +454,11 @@
 				<member name="setinel-monitor-name"/>
 			</readset>
 			<readset name="NAME_AND_MONITOR_NAME">
+				<member name="shard-name"/>
+				<member name="setinel-monitor-name"/>
+			</readset>
+			<readset name="ID_NAME_AND_MONITOR_NAME">
+				<member name="id"/>
 				<member name="shard-name"/>
 				<member name="setinel-monitor-name"/>
 			</readset>
@@ -491,6 +497,21 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>, <TABLE name='cluster-info'/>
 					WHERE <FIELD name='shard-name'/> = ${shard-name}
+					AND <FIELD name='cluster-id'/> = ct.id
+					AND ct.cluster_name = ${cluster-name}
+					AND ct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-shard-names" type="SELECT" multiple="true">
+				<param name="cluster-name"/>
+				<param name="shard-names"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='cluster-info'/>
+					WHERE <FIELD name='shard-name'/> IN <IN>${shard-names}</IN>
 					AND <FIELD name='cluster-id'/> = ct.id
 					AND ct.cluster_name = ${cluster-name}
 					AND ct.deleted = 0
