@@ -125,7 +125,7 @@ public class HickwallMetric implements MetricProxy {
 		dp.getMeta().put("measurement", String.format("fx.xpipe.%s", md.getMetricType()));
 		dp.getTag().put("cluster", md.getClusterName());
 		dp.getTag().put("shard", md.getShardName());
-		dp.getTag().put("address", md.getHostPort().toString());
+		if (null != md.getHostPort()) dp.getTag().put("address", md.getHostPort().toString());
 		dp.getTag().put("srcaddr", localIp);
 		dp.getTag().put("app", "fx");
 		dp.getTag().put("dc", md.getDcName());
