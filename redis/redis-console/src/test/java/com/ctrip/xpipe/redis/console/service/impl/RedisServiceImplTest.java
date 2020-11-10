@@ -14,10 +14,7 @@ import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestOperations;
@@ -55,15 +52,22 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     private String dcName;
     private String shardName;
 
+    private ClusterMetaModifiedNotifier tmpNotifier;
+
     @Before
     public void beforeRedisServiceImplTest() {
         dcName = dcNames[0];
         shardName = shardNames[0];
-
+        tmpNotifier = redisService.notifier;
     }
 
     {
         shardNames = new String[]{"shard1", "shard2", "shard3", "shard4"};
+    }
+
+    @After
+    public void afterRedisServiceImplTest() {
+        if (null != tmpNotifier) redisService.notifier = tmpNotifier;
     }
 
     @Test
