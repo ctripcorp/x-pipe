@@ -163,9 +163,13 @@ public class HickwallMetric implements MetricProxy {
 	}
 
 	private String getEndpoint(MetricData md) {
-		String redisToPattern = getFormattedRedisAddr(md.getHostPort());
-		String srcConsoleIpToPattern = srcConsoleIpTag;
-		return String.format("%s.%s.%s.%s", md.getClusterName(), md.getShardName(), redisToPattern, srcConsoleIpToPattern);
+		if (null != md.getHostPort()) {
+			String redisToPattern = getFormattedRedisAddr(md.getHostPort());
+			String srcConsoleIpToPattern = srcConsoleIpTag;
+			return String.format("%s.%s.%s.%s", md.getClusterName(), md.getShardName(), redisToPattern, srcConsoleIpToPattern);
+		} else {
+			return String.format("%s.%s.%s", md.getClusterName(), md.getShardName(), srcConsoleIpTag);
+		}
 	}
 
 	@VisibleForTesting

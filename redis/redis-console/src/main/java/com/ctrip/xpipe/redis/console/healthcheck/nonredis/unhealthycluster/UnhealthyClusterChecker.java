@@ -69,6 +69,7 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
     }
 
     private void metricUnhealthyClusters(ClusterType clusterType, int unhealthyClusters) {
+        logger.debug("[metricUnhealthyClusters] metric {} {}", clusterType, unhealthyClusters);
         MetricData data = new MetricData(METRIC_TYPE, "-", "-", "-");
         data.setValue(unhealthyClusters);
         data.setTimestampMilli(System.currentTimeMillis());
