@@ -125,7 +125,7 @@ public class HickwallMetric implements MetricProxy {
 		dp.getMeta().put("measurement", String.format("fx.xpipe.%s", md.getMetricType()));
 		dp.getTag().put("cluster", md.getClusterName());
 		dp.getTag().put("shard", md.getShardName());
-		dp.getTag().put("address", md.getHostPort().toString());
+		if (null != md.getHostPort()) dp.getTag().put("address", md.getHostPort().toString());
 		dp.getTag().put("srcaddr", localIp);
 		dp.getTag().put("app", "fx");
 		dp.getTag().put("dc", md.getDcName());
@@ -163,9 +163,13 @@ public class HickwallMetric implements MetricProxy {
 	}
 
 	private String getEndpoint(MetricData md) {
-		String redisToPattern = getFormattedRedisAddr(md.getHostPort());
-		String srcConsoleIpToPattern = srcConsoleIpTag;
-		return String.format("%s.%s.%s.%s", md.getClusterName(), md.getShardName(), redisToPattern, srcConsoleIpToPattern);
+		if (null != md.getHostPort()) {
+			String redisToPattern = getFormattedRedisAddr(md.getHostPort());
+			String srcConsoleIpToPattern = srcConsoleIpTag;
+			return String.format("%s.%s.%s.%s", md.getClusterName(), md.getShardName(), redisToPattern, srcConsoleIpToPattern);
+		} else {
+			return String.format("%s.%s.%s", md.getClusterName(), md.getShardName(), srcConsoleIpTag);
+		}
 	}
 
 	@VisibleForTesting
