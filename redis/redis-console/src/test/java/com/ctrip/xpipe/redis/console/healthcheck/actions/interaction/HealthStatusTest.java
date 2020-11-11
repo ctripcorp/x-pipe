@@ -413,9 +413,9 @@ public class HealthStatusTest extends AbstractRedisTest {
 
     @Test
     public void testNewAddedRedisUnHealthy() {
-        when(config.pingDownAfterMilli()).thenReturn(40);
-        when(config.delayDownAfterMilli()).thenReturn(60);
-        when(config.getHealthyDelayMilli()).thenReturn(20);
+        when(config.pingDownAfterMilli()).thenReturn(80);
+        when(config.delayDownAfterMilli()).thenReturn(120);
+        when(config.getHealthyDelayMilli()).thenReturn(40);
 
         Assert.assertEquals(HEALTH_STATE.UNKNOWN, healthStatus.getState());
         healthStatus.pong();
@@ -431,7 +431,7 @@ public class HealthStatusTest extends AbstractRedisTest {
             sleep(10);
         }
 
-        sleep(20);
+        sleep(40);
         healthStatus.healthStatusUpdate();
         Assert.assertEquals(HEALTH_STATE.UNHEALTHY, healthStatus.getState());
 

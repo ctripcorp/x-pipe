@@ -54,9 +54,11 @@ public class DashBoardMetric implements MetricProxy{
         List<String> tagVals = Lists.newArrayList(FoundationService.DEFAULT.getDataCenter(),
                 metricData.getDcName(),
                 metricData.getClusterName(),
-                metricData.getShardName(),
-                metricData.getHostPort().getHost(),
-                String.valueOf(metricData.getHostPort().getPort()));
+                metricData.getShardName());
+        if (null != metricData.getHostPort()) {
+            tagVals.add(metricData.getHostPort().getHost());
+            tagVals.add(String.valueOf(metricData.getHostPort().getPort()));
+        }
         Map<String, String> metricDataTags = metricData.getTags();
         if(metricDataTags != null && !metricDataTags.isEmpty()) {
             for (String tag : aggregator.getTags()) {
@@ -76,7 +78,12 @@ public class DashBoardMetric implements MetricProxy{
 
     private MetricsAggregator createAggregator(MetricData metricData) {
         String mesurement = String.format("fx.xpipe.%s", metricData.getMetricType());
-        List<String> metrics = Lists.newArrayList("console-dc", "dc", "cluster", "shard", "ip", "port");
+        List<String> metrics;
+        if (null == metricData.getHostPort()) {
+            metrics = Lists.newArrayList("console-dc", "dc", "cluster", "shard");
+        } else {
+            metrics = Lists.newArrayList("console-dc", "dc", "cluster", "shard", "ip", "port");
+        }
         if(metricData.getTags() != null && !metricData.getTags().isEmpty()) {
             metrics.addAll(metricData.getTags().keySet());
         }

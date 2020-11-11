@@ -476,4 +476,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         this.scheduled = scheduled;
         return this;
     }
+
+    @VisibleForTesting
+    protected DefaultSentinelHelloCollector setKeyedObjectPool(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+        this.keyedObjectPool = keyedObjectPool;
+        return this;
+    }
 }
