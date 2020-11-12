@@ -105,7 +105,7 @@ Redis 也可能会挂，Redis 本身提供哨兵 (Sentinel) 机制保证集群�
 
 <a name="跨公网部署及架构"></a>
 ## 跨公网部署及架构
-[详情参考 -- 跨公网部署及架构](https://raw.github.com/ctripcorp/x-pipe/master/doc/Proxy.md)
+[详情参考 -- 跨公网部署及架构](https://github.com/ctripcorp/x-pipe/blob/master/doc/proxy.md)
 
 <a name="深入了解"></a>
 # 深入了解
