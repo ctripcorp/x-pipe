@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.testutils;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.sun.javafx.collections.UnmodifiableObservableMap;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
-import org.springframework.core.env.PropertySource;
 import org.springframework.web.context.support.StandardServletEnvironment;
 
 import java.util.HashMap;

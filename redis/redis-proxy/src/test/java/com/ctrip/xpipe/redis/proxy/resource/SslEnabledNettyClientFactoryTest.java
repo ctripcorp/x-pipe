@@ -76,6 +76,11 @@ public class SslEnabledNettyClientFactoryTest extends AbstractProxyIntegrationTe
                     public void clientClosed(NettyClient nettyClient) {
 
                     }
+
+                    @Override
+                    public void clientClosed(NettyClient nettyClient, Throwable th) {
+
+                    }
                 });
         sleep(1000);
     }
@@ -94,6 +99,11 @@ public class SslEnabledNettyClientFactoryTest extends AbstractProxyIntegrationTe
 
                     @Override
                     public void clientClosed(NettyClient nettyClient) {
+
+                    }
+
+                    @Override
+                    public void clientClosed(NettyClient nettyClient, Throwable th) {
 
                     }
                 });

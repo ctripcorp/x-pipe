@@ -163,6 +163,11 @@ public class AsyncNettyClientTest extends AbstractTest {
                 public void clientClosed(NettyClient nettyClient) {
 
                 }
+
+                @Override
+                public void clientClosed(NettyClient nettyClient, Throwable th) {
+
+                }
             });
             expected.append(i);
         }

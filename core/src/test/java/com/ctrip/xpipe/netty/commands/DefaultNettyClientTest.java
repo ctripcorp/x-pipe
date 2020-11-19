@@ -69,7 +69,7 @@ public class DefaultNettyClientTest extends AbstractTest {
 
         sleep(1000);
         Mockito.verify(receiver, Mockito.never()).receive(Mockito.any(), Mockito.any());
-        Mockito.verify(receiver, Mockito.times(1)).clientClosed(nettyClient);
+        Mockito.verify(receiver, Mockito.times(1)).clientClosed(Mockito.any(DefaultNettyClient.class), Mockito.any(Throwable.class));
     }
 
     private void initBootstrap() {
