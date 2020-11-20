@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.ObjectPoolException;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -27,6 +28,10 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 		this(target, createDefaultPoolConfig());
 	}
 
+	public XpipeNettyClientPool(Endpoint target, PooledObjectFactory<NettyClient> factory) {
+		this(target, createDefaultPoolConfig(), factory);
+	}
+
 	public XpipeNettyClientPool(Endpoint target, GenericObjectPoolConfig  config) {
 		this.target = target;
 		this.config = config;
@@ -41,7 +46,7 @@ public class XpipeNettyClientPool extends AbstractLifecycle implements SimpleObj
 	@Override
 	protected void doInitialize() throws Exception {
 		if(factory == null) {
-			NettyClientFactory factory = new NettyClientFactory(target);
+			NettyClientFactory factory = new NettyClientFactory(target, false);
 			factory.start();
 			this.factory = factory;
 		}
