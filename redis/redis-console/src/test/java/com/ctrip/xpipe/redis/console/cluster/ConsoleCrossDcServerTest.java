@@ -51,6 +51,7 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
     public void beforeConsoleCrossDcServerTest() throws Exception {
         crossDcClusterServer = new ConsoleCrossDcServer();
 
+        electInterval = 10;
         consoleLeaderElector = mock(ConsoleLeaderElector.class);
         crossDcClusterServer.setConsoleLeaderElector(consoleLeaderElector);
         crossDcClusterServer.setCrossDcLeaderElectionAction(new TestCrossDcLeaderElectionAction());
@@ -148,7 +149,12 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
         ConfigModel config = new ConfigModel();
         config.setVal(currentDc);
 
+        // no handle force set leader on election handling
+        int originInterval = electInterval;
+        electInterval = 100;
+
         try {
+            sleep(originInterval); // wait for current election done
             crossDcClusterServer.forceSetCrossLeader(config, DateTimeUtils.getSecondsLaterThan(new Date(), 100));
         } catch (Exception e) {
             e.printStackTrace();
@@ -156,6 +162,8 @@ public class ConsoleCrossDcServerTest extends AbstractConsoleTest{
 
         sleep(2 * electInterval);
         Assert.assertTrue(crossDcClusterServer.amILeader());
+
+        electInterval = originInterval;
     }
 
     @Test

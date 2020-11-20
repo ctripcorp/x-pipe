@@ -37,8 +37,6 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId)) return;
         if (!shouldCheckFromRedis(context.instance())) return;
 
-        collectHello(context);
-
         // only deal with success result when downgrade
         if (!context.isFail() && needDowngrade.compareAndSet(true, false)) {
             logger.info("[{}-{}][onAction] sub from active dc redis {}", clusterId, shardId, info.getHostPort());
@@ -46,9 +44,9 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
             return;
         }
 
+        // handle backup dc hello when all right
         if (info.isInActiveDc()) return;
-
-        if (checkFinishedInstance.size() >= countBackDcRedis()) {
+        if (collectHello(context) >= countBackDcRedis()) {
             if (checkFinishedInstance.size() == checkFailInstance.size()) {
                 logger.warn("[{}-{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", clusterId, shardId);
                 beginDowngrade();
