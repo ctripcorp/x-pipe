@@ -25,6 +25,7 @@ import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfigTest;
 import com.ctrip.xpipe.zk.impl.TestZkClientTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -92,5 +93,10 @@ import org.junit.runners.Suite.SuiteClasses;
 	ThreadUtilsTest.class
 })
 public class AllTests {
+
+	@BeforeClass
+	public static void beforeAllTests() {
+		System.setProperty("io.netty.allocator.useCacheForAllThreads", "false");
+	}
 
 }
