@@ -2,7 +2,6 @@ package com.ctrip.xpipe.netty.commands;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
-import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.utils.ThreadUtils;
@@ -20,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class NettyClientFactory extends AbstractStartStoppable implements PooledObjectFactory<NettyClient> {
 
+	private static final AtomicInteger poolId = new AtomicInteger();
 	private NioEventLoopGroup eventLoopGroup;
 	private final boolean useGlobalResources;
 	private Bootstrap b = new Bootstrap();
@@ -49,7 +50,7 @@ public class NettyClientFactory extends AbstractStartStoppable implements Pooled
 		if (useGlobalResources) {
 			eventLoopGroup = NettyClientResource.getGlobalEventLoopGroup();
 		} else {
-			eventLoopGroup = new NioEventLoopGroup(1);
+			eventLoopGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("NettyClientFactory-" + poolId.incrementAndGet()));
 		}
 
 		b.group(eventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
@@ -128,7 +129,7 @@ public class NettyClientFactory extends AbstractStartStoppable implements Pooled
 			synchronized(NettyClientResource.class) {
 				if (null == globalEventLoopGroup) {
 					globalEventLoopGroup = new NioEventLoopGroup(ThreadUtils.bestEffortThreadNums(),
-							XpipeThreadFactory.create("NettyClientFactory"));
+							XpipeThreadFactory.create("NettyClientFactory-Global"));
 				}
 			}
 
