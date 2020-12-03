@@ -6,7 +6,9 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -18,10 +20,20 @@ import java.util.concurrent.TimeUnit;
  */
 public class KeeperCommandTest extends AbstractRedisTest {
 
+    private Server server;
+
+    @Before
+    public void setupKeeperCommandTest() throws Exception {
+        server = startServer("+OK\r\n");
+    }
+
+    @After
+    public void afterKeeperCommandTest() throws Exception {
+        server.stop();
+    }
+
     @Test
     public void testSetState() throws Exception {
-
-        Server server = startServer("+OK\r\n");
 
         String result = new AbstractKeeperCommand.KeeperSetStateCommand(
                 new KeeperMeta().setIp("localhost").setPort(server.getPort()),
@@ -33,8 +45,6 @@ public class KeeperCommandTest extends AbstractRedisTest {
 
     @Test
     public void testSetStateRoute() throws Exception {
-
-        Server server = startServer("+OK\r\n");
 
         String result = new AbstractKeeperCommand.KeeperSetStateCommand(
                 new KeeperMeta().setIp("localhost").setPort(server.getPort()),

@@ -43,6 +43,11 @@ public class ProxyRelatedResourceManagerTest extends AbstractProxySpringEnabledT
             public void clientClosed(NettyClient nettyClient) {
 
             }
+
+            @Override
+            public void clientClosed(NettyClient nettyClient, Throwable th) {
+
+            }
         });
         sleep(1000 * 10);
     }

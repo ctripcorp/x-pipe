@@ -67,7 +67,7 @@ public class DefaultNettyClient implements NettyClient{
 				}else{
 					logger.error("[sendRequest][fail]" + channel, future.cause());
 					if (future.cause() instanceof ClosedChannelException) {
-						byteBufReceiver.clientClosed(DefaultNettyClient.this);
+						byteBufReceiver.clientClosed(DefaultNettyClient.this, future.cause());
 					}
 				}
 			}

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
+import java.io.IOException;
 import java.net.SocketException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -142,6 +143,13 @@ public abstract class AbstractNettyRequestResponseCommand<V> extends AbstractNet
 	public void clientClosed(NettyClient nettyClient) {
 		if(!future().isDone()){
 			future().setFailure(new SocketException("remote closed:" + nettyClient));
+		}
+	}
+
+	@Override
+	public void clientClosed(NettyClient nettyClient, Throwable th) {
+		if(!future().isDone()){
+			future().setFailure(new IOException("remote closed:" + nettyClient, th));
 		}
 	}
 
