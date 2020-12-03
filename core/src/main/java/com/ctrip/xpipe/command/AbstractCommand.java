@@ -60,11 +60,11 @@ public abstract class AbstractCommand<V> implements Command<V>{
 			public void run() {
 				try{
 					doExecute();
-				}catch(Exception e){
+				}catch(Throwable th){
 					if(!future().isDone()){
-						future().setFailure(e);
+						future().setFailure(th);
 					}else {
-						getLogger().error("[execute][done, but exception]" + this, e);
+						getLogger().error("[execute][done, but exception]" + this, th);
 					}
 				}
 			}
@@ -82,7 +82,7 @@ public abstract class AbstractCommand<V> implements Command<V>{
 		
 	}
 
-	protected abstract void doExecute() throws Exception;
+	protected abstract void doExecute() throws Throwable;
 
 	protected void fail(Throwable ex) {
 		

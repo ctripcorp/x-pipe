@@ -14,6 +14,8 @@ public interface ByteBufReceiver {
 	
 	void clientClosed(NettyClient nettyClient);
 
+	void clientClosed(NettyClient nettyClient, Throwable th);
+
 
 	public static enum RECEIVER_RESULT{
 

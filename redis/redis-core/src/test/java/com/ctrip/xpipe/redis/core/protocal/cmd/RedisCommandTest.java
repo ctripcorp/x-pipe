@@ -22,7 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class RedisCommandTest extends AbstractRedisTest{
 
-    private int timeoutMilli = 50;
+    private int timeoutMilli = 100;
 
     @Test
     public void testTimeoutNext() throws Exception {
