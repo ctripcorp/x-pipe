@@ -131,11 +131,19 @@
 		<var name="cluster-names" value-type="java.util.List&lt;String&gt;" />
 		<var name="dc-id" value-type="long"/>
 		<var name="ids" value-type="java.util.List&lt;Long&gt;" />
+		<var name="origin-status" value-type="String"/>
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt" multiple="true"/>
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" multiple="true"/>
 		<relation name="organization-info" entity-name="organization-tbl" entity-alias="ot"/>
+
+		<updatesets>
+			<updateset name="MIGRATION_STATUS" >
+				<member name="status" />
+				<member name="migration-event-id" />
+			</updateset>
+		</updatesets>
 
 		<readsets>
 			<readset name="COUNT">
@@ -163,6 +171,17 @@
 		</readsets>
 		
 		<query-defs>
+			<query name="atomic-set-status" type="UPDATE" batch='false'>
+				<param name="id" />
+				<param name="origin-status" />
+				<statement><![CDATA[
+					UPDATE <TABLE />
+					SET <FIELDS />
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='status' /> = ${origin-status}
+					AND <FIELD name='deleted'/> = 0
+				]]></statement>
+			</query>
 			<query name="find-clusters-with-org-info-by-id" type="SELECT" multiple="true">
 				<param name="ids" />
 				<statement>
@@ -1236,12 +1255,21 @@
 	</entity>
 
 	<entity name="migration-event-tbl" table="migration_event_tbl" alias="met">
+		<var name="current" value-type="long" />
+
 		<relation name="migration-clusters" entity-name="migration-cluster-tbl" entity-alias="mct" multiple="true"/>
 		
 		<relation name="redundant-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
 		<relation name="redundant-shards" entity-name="migration-shard-tbl" entity-alias="mst"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+
+		<updatesets>
+			<updateset name="LOCK_STATUS" >
+				<member name="exec-lock" />
+				<member name="lock-until" />
+			</updateset>
+		</updatesets>
 
 		<readsets>
 			<readset name="COUNT">
@@ -1255,6 +1283,30 @@
 		</readsets>
 		
 		<query-defs>
+			<query name="update-exec-lock" type="UPDATE" batch="false">
+				<param name="id" />
+				<param name="current" />
+				<param name="exec-lock" />
+				<statement><![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELDS />
+					WHERE <FIELD name='id'/> = ${id}
+					AND (<FIELD name='lock-until'/> < ${current} OR <FIELD name='exec-lock' /> = ${exec-lock})
+					AND <FIELD name='deleted'/> = 0
+				]]></statement>
+			</query>
+			<query name="release-exec-lock" type="UPDATE" batch="false">
+				<param name="id" />
+				<param name="exec-lock" />
+				<param name="lock-until" />
+				<statement><![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='exec-lock' />='', <FIELD name='lock-until' />=0
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='exec-lock' />=${exec-lock}
+					AND <FIELD name='lock-until'/>=${lock-until}
+				]]></statement>
+			</query>
 			<query name="find-by-tag" type="SELECT">
 				<param name="event-tag"/>
 				<statement>

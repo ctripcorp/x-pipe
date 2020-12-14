@@ -258,7 +258,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public void continueMigrationCluster(final long eventId, final long clusterId) {
 
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).process();
+            try {
+                migrationEventManager.getEvent(eventId).processCluster(clusterId);
+            } catch (ClusterNotFoundException e) {
+                // do nothing
+            }
         } else {
             throw new IllegalArgumentException(String.format("event %d, cluster:%d not found", eventId, clusterId));
         }
@@ -306,7 +310,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Override
     public void cancelMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).cancel();
+            try {
+                migrationEventManager.getEvent(eventId).cancelCluster(clusterId);
+            } catch (ClusterNotFoundException e) {
+                // do nothing
+            }
         }
     }
 
@@ -318,14 +326,22 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Override
     public void forcePublishMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).forcePublish();
+            try {
+                migrationEventManager.getEvent(eventId).forceClusterPublish(clusterId);
+            } catch (Exception e) {
+                // do nothing
+            }
         }
     }
 
     @Override
     public void forceEndMigrationClsuter(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).forceEnd();
+            try {
+                migrationEventManager.getEvent(eventId).forceClusterEnd(clusterId);
+            } catch (Exception e) {
+                // do nothing
+            }
         }
     }
 

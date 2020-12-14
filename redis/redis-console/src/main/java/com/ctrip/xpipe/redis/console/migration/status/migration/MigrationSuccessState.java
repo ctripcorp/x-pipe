@@ -24,8 +24,10 @@ public class MigrationSuccessState extends AbstractMigrationState {
 	@Override
 	public void doAction() {
 		try{
-			getHolder().update(getHolder(), getHolder());
-		}finally {
+			getHolder().stop();
+		} catch (Exception e) {
+			logger.info("[doAction][{}] stop fail", getHolder().clusterName());
+		} finally {
 			markDone();
 		}
 	}

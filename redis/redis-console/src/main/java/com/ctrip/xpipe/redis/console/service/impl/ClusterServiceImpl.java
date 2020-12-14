@@ -313,12 +313,23 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setId(id);
 		clusterTbl.setStatus(clusterStatus.toString());
 
-		queryHandler.handleUpdate(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return dao.updateStatusById(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
-			}
-		});
+		if (clusterStatus.equals(ClusterStatus.Normal)) {
+			// reset migration id when exit migration
+			clusterTbl.setMigrationEventId(0);
+			queryHandler.handleUpdate(new DalQuery<Integer>() {
+				@Override
+				public Integer doQuery() throws DalException {
+					return dao.updateByPK(clusterTbl, ClusterTblEntity.UPDATESET_MIGRATION_STATUS);
+				}
+			});
+		} else {
+			queryHandler.handleUpdate(new DalQuery<Integer>() {
+				@Override
+				public Integer doQuery() throws DalException {
+					return dao.updateStatusById(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
+				}
+			});
+		}
 	}
 
 	@Override

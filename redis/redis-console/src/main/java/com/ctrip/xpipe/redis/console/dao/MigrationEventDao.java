@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationLock;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -176,12 +177,36 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		}
 		return result;
 	}
+
+	public void updateMigrationEventLock(long eventId, String lock, long lockUntil) {
+		MigrationEventTbl migrationEventTbl = migrationEventTblDao.createLocal();
+		migrationEventTbl.setId(eventId).setExecLock(lock).setLockUntil(lockUntil).setCurrent(System.currentTimeMillis());
+
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return migrationEventTblDao.updateExecLock(migrationEventTbl, MigrationEventTblEntity.UPDATESET_LOCK_STATUS);
+			}
+		});
+	}
+
+	public void releaseMigrationEventLock(long eventId, String lock, long lockUntil) {
+		MigrationEventTbl migrationEventTbl = migrationEventTblDao.createLocal();
+		migrationEventTbl.setId(eventId).setExecLock(lock).setLockUntil(lockUntil);
+
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return migrationEventTblDao.releaseExecLock(migrationEventTbl, MigrationEventTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
 	
 	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
 
 		if(!CollectionUtils.isEmpty(details)) {
 
-			MigrationEvent event = new DefaultMigrationEvent(details.get(0));
+			MigrationEvent event = new DefaultMigrationEvent(details.get(0), new DefaultMigrationLock(details.get(0).getId(), 300000, this));
 			for(MigrationEventTbl detail : details) {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();
@@ -208,7 +233,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		if (null != migrationClusters) {
 			for (MigrationRequest.ClusterInfo migrationCluster : migrationClusters) {
 
-				lockCluster(migrationCluster.getClusterId());
+				lockCluster(migrationCluster.getClusterId(), eventId);
 				MigrationClusterTbl proto = migrationClusterTblDao.createLocal();
 				proto.setMigrationEventId(eventId).
 						setClusterId(migrationCluster.getClusterId()).
@@ -228,30 +253,44 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		});
 	}
 	
-	private void lockCluster(final long clusterId) {
+	private void lockCluster(final long clusterId, final long eventId) {
 
-		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
-			@Override
-			public ClusterTbl doQuery() throws DalException {
-				return clusterTblDao.findByPK(clusterId, ClusterTblEntity.READSET_FULL);
-			}
-		});
-		if(null == cluster) throw new BadRequestException(String.format("Cluster:%s do not exist!", clusterId));
-		
-		if(!cluster.getStatus().toLowerCase().equals(ClusterStatus.Normal.toString().toLowerCase())) {
-			throw new BadRequestException(String.format("Cluster:%s already under migrating tasks!Please verify it first!", cluster.getClusterName()));
-		} else {
-			cluster.setStatus(ClusterStatus.Lock.toString());
-		}
-		
-		final ClusterTbl proto = cluster;
+//		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+//			@Override
+//			public ClusterTbl doQuery() throws DalException {
+//				return clusterTblDao.findByPK(clusterId, ClusterTblEntity.READSET_FULL);
+//			}
+//		});
+//		if(null == cluster) throw new BadRequestException(String.format("Cluster:%s do not exist!", clusterId));
+//
+//		if(!cluster.getStatus().toLowerCase().equals(ClusterStatus.Normal.toString().toLowerCase())) {
+//			throw new BadRequestException(String.format("Cluster:%s already under migrating tasks!Please verify it first!", cluster.getClusterName()));
+//		} else {
+//			cluster.setStatus(ClusterStatus.Lock.toString());
+//		}
+//
+//		final ClusterTbl proto = cluster;
+//		queryHandler.handleUpdate(new DalQuery<Integer>() {
+//			@Override
+//			public Integer doQuery() throws DalException {
+//				return clusterTblDao.updateByPK(proto, ClusterTblEntity.UPDATESET_FULL);
+//			}
+//
+//		});
+
+		ClusterTbl clusterTbl = new ClusterTbl();
+		clusterTbl.setId(clusterId);
+		clusterTbl.setOriginStatus(ClusterStatus.Normal.toString());
+		clusterTbl.setStatus(ClusterStatus.Lock.toString());
+		clusterTbl.setMigrationEventId(eventId);
+
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterTblDao.updateByPK(proto, ClusterTblEntity.UPDATESET_FULL);
+				return clusterTblDao.atomicSetStatus(clusterTbl, ClusterTblEntity.UPDATESET_MIGRATION_STATUS);
 			}
-			
 		});
+
 	}
 
 	private void createMigrationShards(List<MigrationClusterTbl> migrationClusters) {

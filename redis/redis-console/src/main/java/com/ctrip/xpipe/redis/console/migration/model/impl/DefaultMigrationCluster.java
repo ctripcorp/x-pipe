@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author shyin
@@ -35,6 +36,8 @@ import java.util.concurrent.TimeoutException;
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
 
     private volatile MigrationState currentState;
+    private AtomicBoolean isStarted = new AtomicBoolean(false);
+    private volatile boolean execChance = false;
 
     private MigrationEvent event;
     private MigrationClusterTbl migrationCluster;
@@ -140,6 +143,37 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @Override
     public void addNewMigrationShard(MigrationShard migrationShard) {
         migrationShards.add(migrationShard);
+    }
+
+    public void allowStart() {
+        this.execChance = true;
+        this.isStarted.set(false);
+    }
+
+    @Override
+    public void start() {
+        if(execChance && isStarted.compareAndSet(false, true)) {
+            execChance = false;
+            logger.info("[start]{}-{}", migrationCluster.getMigrationEventId(), clusterName());
+            process();
+        } else {
+            logger.info("[start]{}-{} already start", migrationCluster.getMigrationEventId(), clusterName());
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (isStarted.compareAndSet(true, false)) {
+            logger.info("[stop]{}-{}, {}", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+            notifyObservers(this);
+        } else {
+            logger.info("[stop]{}-{} already stop", migrationCluster.getMigrationEventId(), clusterName());
+        }
+    }
+
+    @Override
+    public boolean isStarted() {
+        return isStarted.get();
     }
 
     @Override

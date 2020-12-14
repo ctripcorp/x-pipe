@@ -63,6 +63,7 @@ create table CLUSTER_TBL
 	cluster_description varchar(1024) not null default 'nothing',
     cluster_last_modified_time varchar(40) not null default '',
     status varchar(24) not null default 'normal',
+    migration_event_id bigint unsigned not null default 0 COMMENT 'related migration event on processing',
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
 	is_xpipe_interested tinyint(1) default 0,
@@ -153,8 +154,11 @@ create table MIGRATION_EVENT_TBL
 (
 	id bigint unsigned not null auto_increment primary key,
 	start_time timestamp default CURRENT_TIMESTAMP,
+	break tinyint(1) not null default 0 COMMENT 'break or not',
 	operator varchar(128) not null default 'xpipe',
 	event_tag varchar(150) not null,
+	exec_lock varchar(128) not null default '' COMMENT 'idc which hold migration exec lock',
+    lock_until bigint not null default 0 COMMENT 'hold migration exec lock until',
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
