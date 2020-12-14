@@ -179,6 +179,12 @@ public abstract class AbstractMigrationState implements ActionMigrationState {
             getHolder().updateStat(stat);
             if (process) {
                 getHolder().process();
+            } else {
+                try {
+                    getHolder().stop();
+                } catch (Exception e) {
+                    logger.info("[updateAndProcess]{} stop fail", getHolder().clusterName(), e);
+                }
             }
         } else {
             logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, process);

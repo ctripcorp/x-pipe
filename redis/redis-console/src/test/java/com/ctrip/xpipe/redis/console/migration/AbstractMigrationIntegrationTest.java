@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationLock;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
@@ -180,7 +181,17 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
     }
 
     protected MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
-        MigrationEvent event = new DefaultMigrationEvent(details.get(0));
+        MigrationEvent event = new DefaultMigrationEvent(details.get(0), new MigrationLock() {
+            @Override
+            public boolean updateLock() {
+                return true;
+            }
+
+            @Override
+            public void releaseLock() {
+
+            }
+        });
         List<ShardTbl> shards = Lists.newArrayListWithCapacity(10);
         for(MigrationEventTbl detail : details) {
             MigrationShardTbl shard = detail.getRedundantShards();
