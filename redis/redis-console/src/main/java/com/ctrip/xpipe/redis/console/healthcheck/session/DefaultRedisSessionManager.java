@@ -55,6 +55,9 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
+	@VisibleForTesting
+	public static long checkUnusedRedisDelaySeconds = 5;
+
 	@PostConstruct
 	public void postConstruct(){
 		scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
@@ -74,7 +77,7 @@ public class DefaultRedisSessionManager implements RedisSessionManager {
 					}
 				}
 			}
-		}, 5, 5, TimeUnit.SECONDS);
+		}, checkUnusedRedisDelaySeconds, checkUnusedRedisDelaySeconds, TimeUnit.SECONDS);
 	}
 
     @Override
