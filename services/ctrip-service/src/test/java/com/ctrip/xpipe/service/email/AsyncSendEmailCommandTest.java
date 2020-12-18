@@ -17,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Matchers.any;
@@ -57,6 +58,7 @@ public class AsyncSendEmailCommandTest extends AbstractTest {
     public void testAsyncSendEmailCommand2() throws Exception {
 
         SendEmailResponse response = new SendEmailResponse();
+        response.setEmailIDList(Collections.emptyList());
         response.setResultCode(1);
         when(client.sendEmail(any())).thenReturn(response);
 

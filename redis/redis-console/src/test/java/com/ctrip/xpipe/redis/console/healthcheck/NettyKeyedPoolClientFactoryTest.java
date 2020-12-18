@@ -50,7 +50,7 @@ public class NettyKeyedPoolClientFactoryTest extends AbstractRedisTest {
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("scheduled"));
 
-    private static final int CHECK_INTERVAL = 100;
+    private static final int CHECK_INTERVAL = 1000;
 
     private Server server;
 

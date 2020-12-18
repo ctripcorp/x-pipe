@@ -3,11 +3,16 @@ package com.ctrip.xpipe.redis.console.health;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
+import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
 
     private DefaultRedisSessionManager redisSessionManager;
+    private DefaultHealthCheckEndpointFactory endpointFactory;
 
     private String host = "127.0.0.1";
     private int port = 6379;
@@ -28,9 +34,17 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
     private int channels = 3;
 
     @Before
-    public void beforeDefaultRedisSessionManagerTest(){
+    public void beforeDefaultRedisSessionManagerTest() throws Exception {
 
         redisSessionManager = new DefaultRedisSessionManager();
+        endpointFactory = new DefaultHealthCheckEndpointFactory();
+        MetaCache metaCache = Mockito.mock(MetaCache.class);
+        Mockito.when(metaCache.getRouteIfPossible(Mockito.any())).thenReturn(null);
+
+        endpointFactory.setMetaCache(metaCache);
+        redisSessionManager.setScheduled(scheduled);
+        redisSessionManager.setEndpointFactory(endpointFactory);
+        redisSessionManager.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool());
         redisSessionManager.postConstruct();
         System.setProperty(RedisSession.KEY_SUBSCRIBE_TIMEOUT_SECONDS, String.valueOf(subscribeTimeoutSeconds));
     }
