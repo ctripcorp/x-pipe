@@ -25,11 +25,10 @@ public class MigrationAbortedState extends AbstractMigrationState implements Mig
 	@Override
 	public void doAction() {
 		try{
+			markDone();
 			getHolder().stop();
 		} catch (Exception e) {
 			logger.info("[doAction][{}] stop fail", getHolder().clusterName());
-		} finally {
-			markDone();
 		}
 	}
 	

@@ -66,6 +66,7 @@ import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
+import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationLockTest;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
@@ -81,7 +82,6 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
-import com.ctrip.xpipe.redis.console.service.ShardServiceTest;
 import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
@@ -89,6 +89,7 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ShardMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationExecuteLockTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import org.junit.runner.RunWith;
@@ -237,7 +238,11 @@ import org.junit.runners.Suite.SuiteClasses;
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,
         NettyKeyedPoolClientFactoryTest.class,
-        UnhealthyClusterCheckerTest.class
+        UnhealthyClusterCheckerTest.class,
+
+        DefaultMigrationLockTest.class,
+        MigrationEventConcurrentCreateTest.class,
+        MigrationExecuteLockTest.class
 
 })
 public class AllTests {

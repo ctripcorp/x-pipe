@@ -30,6 +30,7 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
         final int migrationShardsSize = migrationShards.size();
 
         for (MigrationShard migrationShard : migrationShards) {
+            logger.info("[refresh] {}", migrationShard);
             if (migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
                 if (migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
                     ++setUpNewSuccessCnt;
@@ -39,7 +40,9 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
             }
         }
 
+        logger.info("[refresh] currentlyWorkingCnt {}", currentlyWorkingCnt);
         if (currentlyWorkingCnt == 0) {
+            logger.info("[refresh] {} {} {}", this, setUpNewSuccessCnt, migrationShardsSize);
             if (setUpNewSuccessCnt == migrationShardsSize) {
                 // all success
                 int finishedCnt = 0;
