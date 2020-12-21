@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -254,30 +255,6 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	}
 	
 	private void lockCluster(final long clusterId, final long eventId) {
-
-//		ClusterTbl cluster = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
-//			@Override
-//			public ClusterTbl doQuery() throws DalException {
-//				return clusterTblDao.findByPK(clusterId, ClusterTblEntity.READSET_FULL);
-//			}
-//		});
-//		if(null == cluster) throw new BadRequestException(String.format("Cluster:%s do not exist!", clusterId));
-//
-//		if(!cluster.getStatus().toLowerCase().equals(ClusterStatus.Normal.toString().toLowerCase())) {
-//			throw new BadRequestException(String.format("Cluster:%s already under migrating tasks!Please verify it first!", cluster.getClusterName()));
-//		} else {
-//			cluster.setStatus(ClusterStatus.Lock.toString());
-//		}
-//
-//		final ClusterTbl proto = cluster;
-//		queryHandler.handleUpdate(new DalQuery<Integer>() {
-//			@Override
-//			public Integer doQuery() throws DalException {
-//				return clusterTblDao.updateByPK(proto, ClusterTblEntity.UPDATESET_FULL);
-//			}
-//
-//		});
-
 		ClusterTbl clusterTbl = new ClusterTbl();
 		clusterTbl.setId(clusterId);
 		clusterTbl.setOriginStatus(ClusterStatus.Normal.toString());
@@ -324,4 +301,10 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 			}
 		});
 	}
+
+	@VisibleForTesting
+	protected void setClusterTblDao(ClusterTblDao clusterTblDao) {
+		this.clusterTblDao = clusterTblDao;
+	}
+
 }

@@ -6,7 +6,7 @@ package com.ctrip.xpipe.redis.console.migration.model;
  */
 public interface MigrationLock {
 
-    boolean updateLock();
+    void updateLock();
 
     void releaseLock();
 

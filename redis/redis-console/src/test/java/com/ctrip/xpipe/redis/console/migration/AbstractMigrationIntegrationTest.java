@@ -183,8 +183,7 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
     protected MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
         MigrationEvent event = new DefaultMigrationEvent(details.get(0), new MigrationLock() {
             @Override
-            public boolean updateLock() {
-                return true;
+            public void updateLock() {
             }
 
             @Override

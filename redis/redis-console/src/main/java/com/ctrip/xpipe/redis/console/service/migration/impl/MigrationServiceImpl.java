@@ -490,6 +490,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @VisibleForTesting
+    public MigrationEventManager getMigrationEventManager() {
+        return migrationEventManager;
+    }
+
+    @VisibleForTesting
     public MigrationServiceImpl setClusterService(ClusterService clusterService) {
         this.clusterService = clusterService;
         return this;

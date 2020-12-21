@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.ActionMigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Doing;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Inited;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateActionState;
 import org.slf4j.Logger;
@@ -86,6 +87,21 @@ public abstract class AbstractMigrationState implements ActionMigrationState {
     public void action() {
         hasContine.set(false);
         doAction();
+
+//        hasContine.set(false);
+//        try {
+//            doAction();
+//        } catch (Throwable th) {
+//            MigrationCluster cluster = getHolder();
+//            if (null == cluster) {
+//                logger.info("[action][unknown] action fail, stop");
+//            } else {
+//                logger.info("[action][{}] action fail, stop", cluster.clusterName());
+//                if (cluster.isStarted()) updateAndStop(nextAfterFail());
+//            }
+//
+//            throw th;
+//        }
     }
 
     @Override

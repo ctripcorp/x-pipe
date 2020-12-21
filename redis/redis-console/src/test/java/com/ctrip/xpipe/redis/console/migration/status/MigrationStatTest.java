@@ -63,10 +63,11 @@ public class MigrationStatTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testInitiatedToChecking() {
+    public void testInitiatedToChecking() throws Exception {
         Assert.assertEquals(MigrationStatus.Initiated, migrationCluster.getStatus());
 
-        migrationCluster.process();
+        migrationCluster.allowStart(true);
+        migrationCluster.start();
         sleep(100);
 
         verify(mockedMigrationShard, times(1)).doCheck();
@@ -74,14 +75,15 @@ public class MigrationStatTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testCheckingToMigrating() {
+    public void testCheckingToMigrating() throws Exception {
     	when(mockedMigrationShard.getCurrentShard()).thenReturn((new ShardTbl()).setShardName("test-shard"));
     	
         Assert.assertEquals(MigrationStatus.Initiated, migrationCluster.getStatus());
 
         migrationCluster.updateStat(new MigrationMigratingState(migrationCluster));
         Assert.assertEquals(MigrationStatus.Migrating, migrationCluster.getStatus());
-        migrationCluster.process();
+        migrationCluster.allowStart(true);
+        migrationCluster.start();
         sleep(100);
 
         verify(mockedMigrationShard, times(1)).doMigrate();
