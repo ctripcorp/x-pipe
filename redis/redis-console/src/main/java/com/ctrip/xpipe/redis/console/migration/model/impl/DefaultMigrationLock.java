@@ -42,14 +42,17 @@ public class DefaultMigrationLock implements MigrationLock {
     @Override
     @DalTransaction
     public synchronized void updateLock() {
+        logger.debug("[updateLock][{}] timeout:{}", eventId, lockTimeout);
         long lockUntil = System.currentTimeMillis() + lockTimeout;
         migrationEventDao.updateMigrationEventLock(eventId, currentIdc, lockUntil);
+        logger.debug("[updateLock][{}] lockUntil:{}", eventId, lockUntil);
         lastLockUntil = lockUntil;
     }
 
     @Override
     public void releaseLock() {
         try {
+            logger.debug("[releaseLock][{}] {}", eventId, lastLockUntil);
             migrationEventDao.releaseMigrationEventLock(eventId, currentIdc, lastLockUntil);
         } catch (Throwable th) {
             logger.info("[releaseLock][{}] release lock fail", eventId, th);
