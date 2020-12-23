@@ -115,4 +115,7 @@ public interface ConsoleConfig extends CoreConfig {
 	String getParallelConsoleDomain();
 
 	boolean isConsoleSiteUnstable();
+
+	int getMigrationExecLockTimeoutMilli();
+
 }

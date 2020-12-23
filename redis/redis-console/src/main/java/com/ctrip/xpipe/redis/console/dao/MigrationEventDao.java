@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
@@ -49,6 +50,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private RedisService redisService;
 	@Autowired
 	private MigrationService migrationService;
+	@Autowired
+	private ConsoleConfig config;
 
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
@@ -207,7 +210,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 
 		if(!CollectionUtils.isEmpty(details)) {
 
-			MigrationEvent event = new DefaultMigrationEvent(details.get(0), new DefaultMigrationLock(details.get(0).getId(), 300000, this));
+			MigrationEvent event = new DefaultMigrationEvent(details.get(0), new DefaultMigrationLock(details.get(0).getId(),
+					config.getMigrationExecLockTimeoutMilli(), this));
 			for(MigrationEventTbl detail : details) {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();

@@ -103,6 +103,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CONSOLE_SITE_STABLE = "console.site.stable";
 
+    private static final String KEY_MIGRATION_EXEC_LOCK_TIMEOUT = "console.migration.exec.lock.timeout";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -420,4 +422,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public boolean isConsoleSiteUnstable() {
         return !getBooleanProperty(KEY_CONSOLE_SITE_STABLE, true);
     }
+
+    @Override
+    public int getMigrationExecLockTimeoutMilli() {
+        return getIntProperty(KEY_MIGRATION_EXEC_LOCK_TIMEOUT, 300000);
+    }
+
 }
