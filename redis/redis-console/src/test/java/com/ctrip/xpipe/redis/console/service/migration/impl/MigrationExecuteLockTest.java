@@ -48,7 +48,7 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
 
     private Map<Long, MigrationCluster> originClusters;
 
-    private Map<Long, MigrationCluster> migrationClusters;
+    private Map<Long, MigrationCluster> originClustersForOtherDc;
 
     private MigrationEventTblDao migrationEventTblDao;
 
@@ -56,8 +56,10 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
     public void setupMigrationExecuteLockTest() throws Exception {
         migrationEventManager = migrationService.getMigrationEventManager();
         event = (DefaultMigrationEvent) migrationEventManager.getEvent(1);
-        hackMigrationClusters();
         otherEvent = (DefaultMigrationEvent) migrationEventDao.buildMigrationEvent(1);
+
+        originClusters = hackMigrationClusters(event);
+        originClustersForOtherDc = hackMigrationClusters(otherEvent);
 
         event.setMigrationLock(new DefaultMigrationLock(1, 1000, migrationEventDao, "jq"));
         otherEvent.setMigrationLock(new DefaultMigrationLock(1, 1000, migrationEventDao, "oy"));
@@ -403,53 +405,402 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
 
         Assert.assertEquals("", getExecLock());
     }
+    
+    // Test migration from multi dc
+    
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessInitiatedFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(2, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollbackInitiatedFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(2, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelInitiatedFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(2, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishInitiatedFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(2, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndInitiatedFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(2, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessCheckingFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(3, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollbackCheckingFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(3, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelCheckingFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(3, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishCheckingFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(3, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndCheckingFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(3, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessCheckingFailFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(4,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackCheckingFailFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(4, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelCheckingFailFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(4, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishCheckingFailFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(4, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndCheckingFailFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(4, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessMigratingFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(5,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackMigratingFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(5, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelMigratingFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(5, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishMigratingFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(5, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndMigratingFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(5, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessPublishFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(6,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackPublishFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(6, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelPublishFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(6, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishPublishFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(6, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndPublishFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(6, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessPartialSuccessFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(1,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackPartialSuccessFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(1, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelPartialSuccessFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(1, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishPartialSuccessFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(1, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndPartialSuccessFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(1, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessRollBackFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(7,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackRollBackFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(7, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelRollBackFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(7, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishRollBackFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(7, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndRollBackFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(7, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessAbortedFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(8,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackAbortedFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(8, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelAbortedFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(8, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishAbortedFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(8, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndAbortedFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(8, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessSuccessFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(9,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackSuccessFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(9, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelSuccessFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(9, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishSuccessFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(9, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndSuccessFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(9, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentProcessForceEndFromMultiDc() throws Exception {
+        testConcurrentProcessLockReleaseFromMultiDc(10,10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentRollBackForceEndFromMultiDc() throws Exception {
+        testConcurrentRollbackLockReleaseFromMultiDc(10, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentCancelForceEndFromMultiDc() throws Exception {
+        testConcurrentCancelLockReleaseFromMultiDc(10, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForcePublishForceEndFromMultiDc() throws Exception {
+        testConcurrentForcePublishLockReleaseFromMultiDc(10, 10);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testConcurrentForceEndForceEndFromMultiDc() throws Exception {
+        testConcurrentForceEndLockReleaseFromMultiDc(10, 10);
+    }
+
+
+    // internal functions
 
     private void testConcurrentProcessExecuteOneTimeAndLockRelease(long clusterId, int concurrent) throws Exception {
         concurrentProcessCluster(clusterId, concurrent);
 
+        Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
         MigrationCluster cluster = migrationClusters.get(clusterId);
         Mockito.verify(cluster, Mockito.atLeast(1)).start();
-        checkAllMigrationOver();
-        Assert.assertEquals("", getExecLock());
+        checkAllMigrationOver(migrationClusters);
+        checkLockRelease();
+    }
+
+    private void testConcurrentProcessLockReleaseFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentProcessClusterFromMultiDc(clusterId, concurrent);
+        checkMultiDcMigrationExecAndOver(clusterId);
     }
 
     private void testConcurrentRollbackExecuteOneTimeAndLockRelease(long clusterId, int concurrent) throws Exception {
         concurrentRollback(clusterId, concurrent);
 
+        Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
         MigrationCluster cluster = migrationClusters.get(clusterId);
         Mockito.verify(cluster, Mockito.atLeast(1)).rollback();
-        checkAllMigrationOver();
-        Assert.assertEquals("", getExecLock());
+        checkAllMigrationOver(migrationClusters);
+        checkLockRelease();
+    }
+
+    private void testConcurrentRollbackLockReleaseFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentRollbackFromMultiDc(clusterId, concurrent);
+        checkMultiDcMigrationExecAndOver(clusterId);
     }
 
     private void testConcurrentCancelExecuteOneTimeAndLockRelease(long clusterId, int concurrent) throws Exception {
         concurrentCancel(clusterId, concurrent);
 
+        Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
         MigrationCluster cluster = migrationClusters.get(clusterId);
         Mockito.verify(cluster, Mockito.atLeast(1)).cancel();
-        checkAllMigrationOver();
-        Assert.assertEquals("", getExecLock());
+        checkAllMigrationOver(migrationClusters);
+        checkLockRelease();
+    }
+
+    private void testConcurrentCancelLockReleaseFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentCancelFromMultiDc(clusterId, concurrent);
+        checkMultiDcMigrationExecAndOver(clusterId);
     }
 
     private void testConcurrentForcePublishExecuteOneTimeAndLockRelease(long clusterId, int concurrent) throws Exception {
         concurrentForcePublish(clusterId, concurrent);
 
+        Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
         MigrationCluster cluster = migrationClusters.get(clusterId);
         Mockito.verify(cluster, Mockito.atLeast(1)).forcePublish();
-        checkAllMigrationOver();
-        Assert.assertEquals("", getExecLock());
+        checkAllMigrationOver(migrationClusters);
+        checkLockRelease();
+    }
+
+    private void testConcurrentForcePublishLockReleaseFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentForcePublishFromMultiDc(clusterId, concurrent);
+        checkMultiDcMigrationExecAndOver(clusterId);
     }
 
     private void testConcurrentForceEndExecuteOneTimeAndLockRelease(long clusterId, int concurrent) throws Exception {
         concurrentForceEnd(clusterId, concurrent);
 
+        Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
         MigrationCluster cluster = migrationClusters.get(clusterId);
         Mockito.verify(cluster, Mockito.atLeast(1)).forceEnd();
-        checkAllMigrationOver();
-        Assert.assertEquals("", getExecLock());
+        checkAllMigrationOver(migrationClusters);
+        checkLockRelease();
     }
 
-    private void checkAllMigrationOver() {
+    private void testConcurrentForceEndLockReleaseFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentForceEndFromMultiDc(clusterId, concurrent);
+        checkMultiDcMigrationExecAndOver(clusterId);
+    }
+
+    private void checkMultiDcMigrationExecAndOver(long clusterId) throws Exception {
+        Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
+        Map<Long, MigrationCluster> otherMigrationClusters = otherEvent.getMigrationClustersMap();
+
+        MigrationCluster cluster = migrationClusters.get(clusterId);
+        MigrationCluster otherCluster = otherMigrationClusters.get(clusterId);
+        Assert.assertTrue((Mockito.mockingDetails(cluster).getInvocations().stream().anyMatch(invocation -> invocation.getMethod().getName().equals("allowStart")))
+                ^ (Mockito.mockingDetails(otherCluster).getInvocations().stream().anyMatch(invocation -> invocation.getMethod().getName().equals("allowStart"))));
+
+        checkAllMigrationOver(migrationClusters);
+        checkAllMigrationOver(otherMigrationClusters);
+        checkLockRelease();
+    }
+
+    private void checkAllMigrationOver(Map<Long, MigrationCluster> migrationClusters) {
         migrationClusters.values().forEach(migrationCluster -> {
             logger.info("[checkAllMigrationOver] {}-{}", migrationCluster, ((DefaultMigrationCluster) migrationCluster).getMigrationState().getStateActionState());
             Assert.assertTrue(!migrationCluster.isStarted() || migrationCluster.getStatus().isTerminated());
@@ -457,24 +808,75 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
         });
     }
 
+    private void checkLockRelease() throws Exception {
+        Assert.assertEquals("", getExecLock());
+    }
+
     private void concurrentProcessCluster(long clusterId, int concurrent) throws Exception {
         concurrentHandleMigration(clusterId, concurrent, migrationService::continueMigrationCluster);
+    }
+
+    private void concurrentProcessClusterFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::processCluster);
     }
 
     private void concurrentRollback(long clusterId, int concurrent) throws Exception {
         concurrentHandleMigration(clusterId, concurrent, migrationService::rollbackMigrationCluster);
     }
 
+    private void concurrentRollbackFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::rollbackCluster);
+    }
+
     private void concurrentCancel(long clusterId, int concurrent) throws Exception {
         concurrentHandleMigration(clusterId, concurrent, migrationService::cancelMigrationCluster);
+    }
+
+    private void concurrentCancelFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::cancelCluster);
     }
 
     private void concurrentForcePublish(long clusterId, int concurrent) throws Exception {
         concurrentHandleMigration(clusterId, concurrent, migrationService::forcePublishMigrationCluster);
     }
 
+    private void concurrentForcePublishFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::forceClusterPublish);
+    }
+
     private void concurrentForceEnd(long clusterId, int concurrent) throws Exception {
         concurrentHandleMigration(clusterId, concurrent, migrationService::forceEndMigrationClsuter);
+    }
+
+    private void concurrentForceEndFromMultiDc(long clusterId, int concurrent) throws Exception {
+        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::forceClusterEnd);
+    }
+
+    private void concurrentHandleMigrationForMultiDc(long clusterId, int concurrent, MigrationEventHandler eventHandler) throws Exception {
+        CyclicBarrier barrier = new CyclicBarrier(concurrent);
+        CountDownLatch countDownLatch = new CountDownLatch(concurrent);
+
+        IntStream.range(0, concurrent).forEach(i -> {
+            executors.submit(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    logger.info("[concurrentHandleMigrationForMultiDc] barrier fail", e);
+                }
+
+                try {
+                    if (0 == i % 2) eventHandler.handle(event, clusterId);
+                    else eventHandler.handle(otherEvent, clusterId);
+                } catch (Exception e) {
+                    logger.info("[concurrentHandleMigrationForMultiDc] handle fail", e);
+                }
+                countDownLatch.countDown();
+            });
+        });
+
+        countDownLatch.await(5000, TimeUnit.MILLISECONDS);
+        waitConditionUntilTimeOut(() -> !event.isRunning(), 5000);
+        waitConditionUntilTimeOut(() -> !otherEvent.isRunning(), 5000);
     }
 
     private void concurrentHandleMigration(long clusterId, int concurrent, MigrationHandler handler) throws Exception {
@@ -486,7 +888,7 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
                 try {
                     barrier.await();
                 } catch (Exception e) {
-                    logger.info("[testConcurrentProcess] barrier fail", e);
+                    logger.info("[concurrentHandleMigration] barrier fail", e);
                 }
 
                 try {
@@ -512,21 +914,29 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
         return eventTbl.getExecLock();
     }
 
-    private void hackMigrationClusters() {
-        originClusters = event.getMigrationClustersMap();
-        migrationClusters = new HashMap<>();
-        originClusters.forEach((id, cluster) -> migrationClusters.put(id, Mockito.spy(cluster)));
-        event.setMigrationClustersMap(migrationClusters);
+    private Map<Long, MigrationCluster> hackMigrationClusters(DefaultMigrationEvent migrationEvent) {
+        Map<Long, MigrationCluster> origin = migrationEvent.getMigrationClustersMap();
+        Map<Long, MigrationCluster> migrationClusters = new HashMap<>();
+        origin.forEach((id, cluster) -> migrationClusters.put(id, Mockito.spy(cluster)));
+        migrationEvent.setMigrationClustersMap(migrationClusters);
+
+        return origin;
     }
 
     private void restoreMigrationClusters() {
         event.setMigrationClustersMap(originClusters);
+        otherEvent.setMigrationClustersMap(originClustersForOtherDc);
     }
 
 
     @FunctionalInterface
     private interface MigrationHandler {
         void handle(long eventId, long clusterId) throws Exception;
+    }
+
+    @FunctionalInterface
+    private interface MigrationEventHandler {
+        void handle(DefaultMigrationEvent migrationEvent, long cluster) throws Exception;
     }
 
 }
