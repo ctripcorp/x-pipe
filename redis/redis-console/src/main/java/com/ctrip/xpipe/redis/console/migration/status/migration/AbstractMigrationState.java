@@ -159,7 +159,12 @@ public abstract class AbstractMigrationState implements ActionMigrationState {
     }
 
     protected void updateAndForceProcess(MigrationState state) {
-        markDone();
+        try {
+            markDone();
+        } catch (Throwable th) {
+            logger.info("[updateAndForceProcess] ignore mark done fail", th);
+        }
+
         updateAndProcess(state, true, true);
     }
 
