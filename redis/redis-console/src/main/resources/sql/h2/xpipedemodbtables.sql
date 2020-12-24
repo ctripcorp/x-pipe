@@ -157,7 +157,7 @@ create table MIGRATION_EVENT_TBL
 	break tinyint(1) not null default 0 COMMENT 'break or not',
 	operator varchar(128) not null default 'xpipe',
 	event_tag varchar(150) not null,
-	exec_lock varchar(128) default '' COMMENT 'idc which hold migration exec lock',
+	exec_lock varchar(128) not null default '' COMMENT 'idc which hold migration exec lock',
     lock_until bigint not null default 0 COMMENT 'hold migration exec lock until',
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0

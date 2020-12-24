@@ -134,7 +134,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		if (null != migrationRequest) {
 			/** Create event **/
 			MigrationEventTbl migrationEvent = migrationEventTblDao.createLocal();
-			migrationEvent.setOperator(migrationRequest.getUser()).setEventTag(migrationRequest.getTag());
+			migrationEvent.setOperator(migrationRequest.getUser()).setEventTag(migrationRequest.getTag()).setExecLock("");
 
 			queryHandler.handleQuery(new DalQuery<MigrationEventTbl>() {
 				@Override
