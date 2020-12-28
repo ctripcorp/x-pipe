@@ -260,8 +260,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if (isMigrationClusterExist(eventId, clusterId)) {
             try {
                 migrationEventManager.getEvent(eventId).processCluster(clusterId);
-            } catch (ClusterNotFoundException e) {
-                // do nothing
+            } catch (Exception e) {
+                logger.info("[continueMigrationCluster][{}][{}] fail", eventId, clusterId, e);
             }
         } else {
             throw new IllegalArgumentException(String.format("event %d, cluster:%d not found", eventId, clusterId));
@@ -312,8 +312,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if (isMigrationClusterExist(eventId, clusterId)) {
             try {
                 migrationEventManager.getEvent(eventId).cancelCluster(clusterId);
-            } catch (ClusterNotFoundException e) {
-                // do nothing
+            } catch (Exception e) {
+                logger.info("[cancelMigrationCluster][{}][{}] fail", eventId, clusterId, e);
             }
         }
     }
@@ -329,7 +329,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             try {
                 migrationEventManager.getEvent(eventId).forceClusterPublish(clusterId);
             } catch (Exception e) {
-                // do nothing
+                logger.info("[forcePublishMigrationCluster][{}][{}] fail", eventId, clusterId, e);
             }
         }
     }
@@ -340,7 +340,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             try {
                 migrationEventManager.getEvent(eventId).forceClusterEnd(clusterId);
             } catch (Exception e) {
-                // do nothing
+                logger.info("[forceEndMigrationClsuter][{}][{}] fail", eventId, clusterId, e);
             }
         }
     }
