@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.alert.AlertEntity;
 import com.ctrip.xpipe.redis.console.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.console.alert.sender.email.listener.AsyncEmailSenderCallback;
 import com.ctrip.xpipe.redis.console.alert.sender.email.listener.CompositeEmailSenderCallback;
+import com.ctrip.xpipe.redis.console.alert.sender.email.listener.EmailSendErrorReporter;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,10 +29,7 @@ public class AsyncEmailSenderTest extends AbstractConsoleIntegrationTest {
     public void testInitListeners() throws Exception {
         AsyncEmailSenderCallback callbackFunction = sender.getCallbackFunction();
         Assert.assertNotNull(callbackFunction);
-        Assert.assertTrue(callbackFunction instanceof CompositeEmailSenderCallback);
-        List<AsyncEmailSenderCallback> callbacks = ((CompositeEmailSenderCallback) callbackFunction).getCallbacks();
-
-        logger.info("{}", callbacks);
+        Assert.assertTrue(callbackFunction instanceof EmailSendErrorReporter);
     }
 
     @Test

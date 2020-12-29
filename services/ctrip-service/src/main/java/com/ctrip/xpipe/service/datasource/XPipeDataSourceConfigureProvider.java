@@ -3,7 +3,6 @@ package com.ctrip.xpipe.service.datasource;
 import com.ctrip.platform.dal.dao.configure.AbstractDataSourceConfigure;
 import com.ctrip.platform.dal.dao.configure.IDataSourceConfigure;
 import com.ctrip.platform.dal.dao.configure.IDataSourceConfigureProvider;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;

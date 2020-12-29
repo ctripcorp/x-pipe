@@ -23,6 +23,14 @@ public interface MigrationEvent extends Observable {
 
     MigrationCluster getMigrationCluster(String clusterName);
 
+    void processCluster(long clusterId) throws ClusterNotFoundException;
+
+    void cancelCluster(long clusterId) throws ClusterNotFoundException;
+
+    void forceClusterPublish(long clusterId) throws ClusterNotFoundException;
+
+    void forceClusterEnd(long clusterId) throws ClusterNotFoundException;
+
     MigrationCluster rollbackCluster(long clusterId) throws ClusterNotFoundException;
 
     MigrationCluster rollbackCluster(String clusterName) throws ClusterNotFoundException;
