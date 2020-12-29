@@ -90,6 +90,6 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 
 	@Override
 	public void forceEnd() {
-		updateAndProcess(new MigrationForceEndState(getHolder()));
+		updateAndForceProcess(new MigrationForceEndState(getHolder()));
 	}
 }
