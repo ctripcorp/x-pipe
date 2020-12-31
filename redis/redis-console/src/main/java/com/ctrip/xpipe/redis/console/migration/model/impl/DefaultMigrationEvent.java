@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.model.impl;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.observer.AbstractObservable;
+import com.ctrip.xpipe.redis.console.migration.exception.MigrationUnderProcessingException;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationLock;
@@ -12,7 +13,6 @@ import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFound
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,14 +40,14 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
     }
 
     @Override
-    public void process() {
-        List<MigrationCluster> migrationClusters = getMigrationClusters();
-        if (migrationClusters.size() == 0) {
-            logger.info("[process][{}][no cluster]{}", event.getId(), migrationClusters);
+    public void process() throws Exception {
+        List<MigrationCluster> localMigrationClusters = getMigrationClusters();
+        if (localMigrationClusters.isEmpty()) {
+            logger.info("[process][{}][no cluster]{}", event.getId(), localMigrationClusters);
             return;
         }
 
-        processCluster(migrationClusters.get(0));
+        processCluster(localMigrationClusters.get(0));
     }
 
     private boolean lockBeforeProcess() {
@@ -118,8 +118,8 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
         migrationClusters.forEach((id, cluster) -> cluster.allowStart(id.equals(clusterId)));
     }
 
-    private void processCluster(MigrationCluster migrationCluster) {
-        if (!lockBeforeProcess()) return;
+    private void processCluster(MigrationCluster migrationCluster) throws Exception {
+        if (!lockBeforeProcess()) throw new MigrationUnderProcessingException(getMigrationEventId());
 
         allowAllClustersStart();
         try {
@@ -127,11 +127,12 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
         } catch (Exception e) {
             logger.info("[processCluster][{}] {} start fail", getMigrationEventId(), migrationCluster.clusterName(), e);
             unlockAfterProcess();
+            throw e;
         }
     }
 
     @Override
-    public void processCluster(long clusterId) throws ClusterNotFoundException {
+    public void processCluster(long clusterId) throws Exception {
         MigrationCluster migrationCluster = tryGetMigrationCluster(clusterId);
         processCluster(migrationCluster);
     }
@@ -281,6 +282,7 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
         return false;
     }
 
+    @Override
     public boolean isRunning() {
         return running.get();
     }

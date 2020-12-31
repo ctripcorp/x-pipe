@@ -269,7 +269,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public void continueMigrationEvent(long id) {
+    public void continueMigrationEvent(long id) throws Exception {
 
         logger.info("[continueMigrationEvent]{}", id);
         MigrationEvent event = getEvent(id);
