@@ -12,7 +12,7 @@ public interface BeaconMigrationService {
 
     long buildMigration(BeaconMigrationRequest migrationRequest) throws ClusterNotFoundException, WrongClusterMetaException,
             NoAvailableDcException, MigrationNotSupportException, MigrationSystemNotHealthyException,
-            MigrationNoNeedException, UnknownTargetDcException, MigrationConflictException;
+            MigrationNoNeedException, UnknownTargetDcException, MigrationConflictException, MigrationCrossZoneException;
 
     CommandFuture<Boolean> doMigration(long eventId, long clusterId) throws Exception;
 
