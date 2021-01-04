@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
+import com.ctrip.xpipe.redis.console.model.beacon.BeaconGroupModel;
+
 import java.util.*;
+
+import static com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService.BEACON_GROUP_SEPARATOR_REGEX;
 
 /**
  * @author lishanglin
@@ -12,11 +16,11 @@ public class BeaconMigrationRequest {
 
     private long clusterId;
 
-    private List<String> failoverGroups;
+    private Set<String> failoverGroups;
 
-    private List<String> recoverGroups;
+    private Set<String> recoverGroups;
 
-    private List<GroupStatusVO> groups;
+    private Set<BeaconGroupModel> groups;
 
     private List<Map<String, Map<String, String>>> checkResults;
 
@@ -40,15 +44,15 @@ public class BeaconMigrationRequest {
         this.clusterName = clusterName;
     }
 
-    public void setFailoverGroups(List<String> failoverGroups) {
+    public void setFailoverGroups(Set<String> failoverGroups) {
         this.failoverGroups = failoverGroups;
     }
 
-    public void setRecoverGroups(List<String> recoverGroups) {
+    public void setRecoverGroups(Set<String> recoverGroups) {
         this.recoverGroups = recoverGroups;
     }
 
-    public void setGroups(List<GroupStatusVO> groups) {
+    public void setGroups(Set<BeaconGroupModel> groups) {
         this.groups = groups;
     }
 
@@ -72,15 +76,15 @@ public class BeaconMigrationRequest {
         return clusterId;
     }
 
-    public List<String> getFailoverGroups() {
+    public Set<String> getFailoverGroups() {
         return failoverGroups;
     }
 
-    public List<String> getRecoverGroups() {
+    public Set<String> getRecoverGroups() {
         return recoverGroups;
     }
 
-    public List<GroupStatusVO> getGroups() {
+    public Set<BeaconGroupModel> getGroups() {
         return groups;
     }
 
@@ -103,7 +107,7 @@ public class BeaconMigrationRequest {
     public Set<String> getAvailableDcs() {
         if (null != this.availableDcs) return this.availableDcs;
 
-        Set<String> availables = new HashSet<>();
+        Set<String> availableDcs = new HashSet<>();
         Map<String, Boolean> dcHealthMap = new HashMap<>();
 
         groups.forEach(group -> {
@@ -116,10 +120,10 @@ public class BeaconMigrationRequest {
         });
 
         dcHealthMap.forEach((dc, health) -> {
-            if (null != health && health) availables.add(dc);
+            if (null != health && health) availableDcs.add(dc);
         });
 
-        this.availableDcs = availables;
+        this.availableDcs = availableDcs;
         return this.availableDcs;
     }
 
@@ -128,7 +132,7 @@ public class BeaconMigrationRequest {
 
         Set<String> failDcs = new HashSet<>();
         failoverGroups.forEach(groupName -> {
-            String[] infos = groupName.split("\\+");
+            String[] infos = groupName.split(BEACON_GROUP_SEPARATOR_REGEX);
             failDcs.add(infos[1]);
         });
 
@@ -153,5 +157,20 @@ public class BeaconMigrationRequest {
     @Override
     public int hashCode() {
         return Objects.hash(clusterName, failoverGroups, recoverGroups, groups, checkResults, extra, isForced, targetIDC);
+    }
+
+    @Override
+    public String toString() {
+        return "BeaconMigrationRequest{" +
+                "clusterName='" + clusterName + '\'' +
+                ", clusterId=" + clusterId +
+                ", failoverGroups=" + failoverGroups +
+                ", recoverGroups=" + recoverGroups +
+                ", groups=" + groups +
+                ", checkResults=" + checkResults +
+                ", extra=" + extra +
+                ", isForced=" + isForced +
+                ", targetIDC='" + targetIDC + '\'' +
+                '}';
     }
 }

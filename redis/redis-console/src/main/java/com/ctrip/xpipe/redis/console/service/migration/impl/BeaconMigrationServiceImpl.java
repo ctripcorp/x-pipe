@@ -12,12 +12,14 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.migration.BeaconMetaComparator;
+import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.BeaconMigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -43,11 +45,13 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private ClusterService clusterService;
 
+    private DcClusterService dcClusterService;
+
     private MigrationEventDao migrationEventDao;
 
     private MigrationClusterDao migrationClusterDao;
 
-    private BeaconMetaComparator metaComparator;
+    private BeaconMetaService beaconMetaService;
 
     private DcService dcService;
 
@@ -58,22 +62,23 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     @Autowired
     public BeaconMigrationServiceImpl(MigrationSystemAvailableChecker checker, MigrationEventManager migrationEventManager,
                                       ConfigService configService, DcService dcService, ClusterService clusterService,
-                                      MigrationEventDao migrationEventDao, MigrationClusterDao migrationClusterDao,
-                                      BeaconMetaComparator metaComparator) {
+                                      DcClusterService dcClusterService, MigrationEventDao migrationEventDao,
+                                      MigrationClusterDao migrationClusterDao, BeaconMetaService beaconMetaService) {
         this.checker = checker;
         this.migrationEventManager = migrationEventManager;
         this.configService = configService;
         this.dcService = dcService;
         this.clusterService = clusterService;
+        this.dcClusterService = dcClusterService;
         this.migrationEventDao = migrationEventDao;
         this.migrationClusterDao = migrationClusterDao;
-        this.metaComparator = metaComparator;
+        this.beaconMetaService = beaconMetaService;
     }
 
     @Override
     public long buildMigration(BeaconMigrationRequest migrationRequest) throws ClusterNotFoundException, WrongClusterMetaException,
             NoAvailableDcException, MigrationNotSupportException, MigrationSystemNotHealthyException,
-            MigrationNoNeedException, UnknownTargetDcException, MigrationConflictException {
+            MigrationNoNeedException, UnknownTargetDcException, MigrationConflictException, MigrationCrossZoneException {
 
         if(!checker.getResult().isAvaiable() && !configService.ignoreMigrationSystemAvailability()) {
             throw new MigrationSystemNotHealthyException(checker.getResult().getMessage());
@@ -81,18 +86,10 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
         String clusterName = migrationRequest.getClusterName();
         ClusterTbl clusterTbl = tryGetMigrationCluster(clusterName);
+        DcTbl activeDcTbl = dcService.find(clusterTbl.getActivedcId());
         migrationRequest.setClusterId(clusterTbl.getId());
 
-        // check cluster meta consistent
-        if (!metaComparator.compareWithXPipe(clusterName, migrationRequest.getGroups())) {
-            throw new WrongClusterMetaException(clusterName);
-        }
-
-        DcTbl activeDcTbl = dcService.find(clusterTbl.getActivedcId());
-        Set<String> failDcs = migrationRequest.getFailDcs();
-        if (!failDcs.contains(activeDcTbl.getDcName())) {
-            throw new MigrationNoNeedException(clusterName);
-        }
+        checkMetaAndFailDcs(clusterName, activeDcTbl.getDcName(), migrationRequest);
 
         DcTbl unfinishedTargetIdc = tryGetUnfinishedTargetDc(clusterTbl.getId(), clusterTbl.getMigrationEventId());
         if (null != unfinishedTargetIdc) {
@@ -132,6 +129,24 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         return migrationFuture;
     }
 
+    private void checkMetaAndFailDcs(String clusterName, String activeDcName, BeaconMigrationRequest migrationRequest)
+            throws ClusterNotFoundException, WrongClusterMetaException, MigrationNoNeedException  {
+        if (isForcedMigration(migrationRequest)) {
+            logger.info("[checkMetaAndAvailableDcs][{}] skip for forced migration", clusterName);
+            return;
+        }
+
+        // check cluster meta consistent
+        if (!beaconMetaService.compareMetaWithXPipe(clusterName, migrationRequest.getGroups())) {
+            throw new WrongClusterMetaException(clusterName);
+        }
+
+        Set<String> failDcs = migrationRequest.getFailDcs();
+        if (!failDcs.contains(activeDcName)) {
+            throw new MigrationNoNeedException(clusterName);
+        }
+    }
+
     private ClusterTbl tryGetMigrationCluster(String clusterName) throws MigrationNotSupportException, ClusterNotFoundException {
         // cluster exist
         if (StringUtil.isEmpty(clusterName)) {
@@ -162,11 +177,10 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     }
 
     private DcTbl tryChooseTargetDc(DcTbl currentDc, BeaconMigrationRequest migrationRequest)
-            throws NoAvailableDcException, MigrationNoNeedException, UnknownTargetDcException {
-        Boolean forced = migrationRequest.getForced();
-        String clusterName = migrationRequest.getClusterName();
+            throws NoAvailableDcException, MigrationNoNeedException, UnknownTargetDcException, MigrationCrossZoneException {
 
-        if (null == forced || !forced || StringUtil.isEmpty(migrationRequest.getTargetIDC())) {
+        String clusterName = migrationRequest.getClusterName();
+        if (!isForcedMigration(migrationRequest)) {
             Set<String> availableDcs = migrationRequest.getAvailableDcs();
             if (null == availableDcs || availableDcs.isEmpty()) {
                 throw new NoAvailableDcException(clusterName);
@@ -179,6 +193,11 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
         DcTbl targetDcTbl = dcService.findByDcName(migrationRequest.getTargetIDC());
         if (null == targetDcTbl) throw new UnknownTargetDcException(clusterName, migrationRequest.getTargetIDC());
+
+        DcClusterTbl dcClusterTbl = dcClusterService.find(targetDcTbl.getId(), migrationRequest.getClusterId());
+        if (null == dcClusterTbl) throw new UnknownTargetDcException(clusterName, migrationRequest.getTargetIDC());
+
+        if (targetDcTbl.getZoneId() != currentDc.getZoneId()) throw new MigrationCrossZoneException(clusterName, currentDc.getDcName(), targetDcTbl.getDcName());
         if (currentDc.getId() == targetDcTbl.getId()) throw new MigrationNoNeedException(clusterName);
 
         return targetDcTbl;
@@ -186,9 +205,18 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private void checkMigrationConflict(DcTbl unfinishedTargetDc, BeaconMigrationRequest migrationRequest) throws MigrationConflictException {
         Set<String> availableDcs = migrationRequest.getAvailableDcs();
-        if (!availableDcs.contains(unfinishedTargetDc.getDcName())) {
+        String currentTargetDc = unfinishedTargetDc.getDcName();
+        boolean forced = isForcedMigration(migrationRequest);
+
+        if ((forced && !currentTargetDc.equals(migrationRequest.getTargetIDC()))
+                || (!forced && !availableDcs.contains(currentTargetDc))) {
             throw new MigrationConflictException(migrationRequest.getClusterName(), availableDcs.iterator().next(), unfinishedTargetDc.getDcName());
         }
+    }
+
+    private boolean isForcedMigration(BeaconMigrationRequest migrationRequest) {
+        Boolean forced = migrationRequest.getForced();
+        return null != forced && forced && !StringUtil.isEmpty(migrationRequest.getTargetIDC());
     }
 
     private MigrationRequest buildXPipeMigrationRequest(ClusterTbl cluster, DcTbl currentDcTbl, DcTbl targetDcTbl) {

@@ -46,7 +46,7 @@ public class MigrationApi4Beacon {
         } catch (MigrationNoNeedException e) {
             logger.info("[syncMigrate][{}] no need and success", migrationRequest.getClusterName(), e);
             response.setResult(BeaconMigrationResponse.success());
-        } catch (MigrationNotSupportException | UnknownTargetDcException e) {
+        } catch (MigrationNotSupportException | UnknownTargetDcException | MigrationCrossZoneException e) {
             logger.warn("[syncMigrate][{}] unexpect migration", migrationRequest.getClusterName(), e);
             response.setResult(BeaconMigrationResponse.skip(e.getMessage()));
         } catch (Throwable th) {
