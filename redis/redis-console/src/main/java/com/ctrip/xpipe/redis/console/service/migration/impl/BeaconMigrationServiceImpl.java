@@ -215,7 +215,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     }
 
     private boolean isForcedMigration(BeaconMigrationRequest migrationRequest) {
-        Boolean forced = migrationRequest.getForced();
+        Boolean forced = migrationRequest.getIsForced();
         return null != forced && forced && !StringUtil.isEmpty(migrationRequest.getTargetIDC());
     }
 

@@ -64,7 +64,7 @@ public class BeaconMigrationRequest {
         this.extra = extra;
     }
 
-    public void setForced(Boolean forced) {
+    public void setIsForced(Boolean forced) {
         isForced = forced;
     }
 
@@ -96,7 +96,7 @@ public class BeaconMigrationRequest {
         return extra;
     }
 
-    public Boolean getForced() {
+    public Boolean getIsForced() {
         return isForced;
     }
 
