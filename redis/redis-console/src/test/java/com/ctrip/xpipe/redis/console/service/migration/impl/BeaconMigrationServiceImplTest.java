@@ -122,7 +122,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testForceMigration() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet());
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("oy");
 
         long eventId = migrationService.buildMigration(request);
@@ -132,7 +132,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test(expected = UnknownTargetDcException.class)
     public void testForceMigrationToUnknownDc() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet());
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("fq");
 
         migrationService.buildMigration(request);
@@ -141,7 +141,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test(expected = MigrationCrossZoneException.class)
     public void testForceMigrationCrossZone() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet());
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("fra");
 
         migrationService.buildMigration(request);
@@ -150,7 +150,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test(expected = MigrationNoNeedException.class)
     public void testForceMigrationToActiveDc() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet("jq"));
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("jq");
         migrationService.buildMigration(request);
     }
@@ -159,7 +159,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     public void testForceMigrationWithErrMeta() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet());
         request.getGroups().iterator().next().getNodes().iterator().next().setPort(1111);
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("oy");
 
         // ignore meta wrong in force migration
@@ -170,7 +170,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testForceMigrationWithoutAvailableDc() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet("jq", "oy"));
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("oy");
 
         // ignore available dc check in force migration
@@ -181,7 +181,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testForceMigrationWithExistMigration() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster2", Sets.newHashSet());
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("oy");
 
         long eventId = migrationService.buildMigration(request);
@@ -191,7 +191,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test(expected = MigrationConflictException.class)
     public void testForceMigrationWithConflictMigration() throws Exception {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster4", Sets.newHashSet());
-        request.setForced(true);
+        request.setIsForced(true);
         request.setTargetIDC("oy");
 
         migrationService.buildMigration(request);
