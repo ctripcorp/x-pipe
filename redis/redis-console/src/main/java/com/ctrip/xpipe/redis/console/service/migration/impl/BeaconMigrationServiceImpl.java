@@ -168,6 +168,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         if (unfinishedEventId <= 0) return null;
 
         MigrationClusterTbl unfinishedMigration = migrationClusterDao.findByEventIdAndClusterId(unfinishedEventId, clusterId);
+        if (null == unfinishedMigration) return null;
+
         String status = unfinishedMigration.getStatus();
         if (!MigrationStatus.TYPE_SUCCESS.equals(status) && !MigrationStatus.TYPE_FAIL.equals(status)) {
             return dcService.find(unfinishedMigration.getDestinationDcId());
