@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
 import com.ctrip.xpipe.redis.console.model.beacon.BeaconGroupModel;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
 
@@ -104,6 +105,7 @@ public class BeaconMigrationRequest {
         return targetIDC;
     }
 
+    @JsonIgnore
     public Set<String> getAvailableDcs() {
         if (null != this.availableDcs) return this.availableDcs;
 
@@ -127,6 +129,7 @@ public class BeaconMigrationRequest {
         return this.availableDcs;
     }
 
+    @JsonIgnore
     public Set<String> getFailDcs() {
         if (failoverGroups.isEmpty()) return Collections.emptySet();
 
