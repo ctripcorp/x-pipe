@@ -125,7 +125,11 @@ public class DoMigrationIntegrationTest extends AbstractMigrationIntegrationTest
             tomcatSimulator.execute(new Runnable() {
                 @Override
                 public void run() {
-                    migrationService.continueMigrationEvent(eventId);
+                    try {
+                        migrationService.continueMigrationEvent(eventId);
+                    } catch (Exception e) {
+                        logger.info("[test500Clusters] run {} fail", eventId, e);
+                    }
                 }
             });
         }

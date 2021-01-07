@@ -84,10 +84,8 @@ import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
-import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
-import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
-import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
-import com.ctrip.xpipe.redis.console.service.meta.impl.ShardMetaServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.*;
+import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationExecuteLockTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
@@ -242,7 +240,9 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DefaultMigrationLockTest.class,
         MigrationEventConcurrentCreateTest.class,
-        MigrationExecuteLockTest.class
+        MigrationExecuteLockTest.class,
+        BeaconMetaServiceImplTest.class,
+        BeaconMigrationServiceImplTest.class
 
 })
 public class AllTests {

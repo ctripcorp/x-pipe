@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+    <dc id="jq" zone="SHA">
+        <cluster id="cluster1" active-dc="jq" phase ="1" type="one_way">
+            <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="127.0.0.1" port="6379" master="true" />
+                <redis ip="127.0.0.1" port="6479" master="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6000" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6001" active="false" />
+            </shard>
+        </cluster>
+        <cluster id="cluster3" type="bi_direction" dcs="jq,oy">
+            <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="10.0.0.1" port="6379" master="true" />
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="oy" zone="SHA">
+        <cluster id="cluster1" active-dc="jq" phase = "1" type="one_way">
+            <shard id="shard1" upstream="127.0.0.1:6000" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="127.0.0.1" port="7379" master="127.0.0.1:6100" />
+                <redis ip="127.0.0.1" port="7479" master="127.0.0.1:6100" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6100" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100" ip="127.0.0.1" port="6101" active="false" />
+            </shard>
+        </cluster>
+        <cluster id="cluster2" active-dc="oy" phase = "1" type="one_way">
+            <shard id="shard2" sentinelId="2" sentinelMonitorName="shard2">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.2" port="6100" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100" ip="127.0.0.2" port="6101" active="false" />
+                <redis ip="127.0.0.2" port="8100" master="127.0.0.1:6100" />
+                <redis ip="127.0.0.2" port="8101" master="127.0.0.1:6100" />
+            </shard>
+        </cluster>
+        <cluster id="cluster3" type="bi_direction" dcs="jq,oy">
+            <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="10.0.0.2" port="6379" master="true" />
+            </shard>
+        </cluster>
+        <cluster id="cluster4" type="bi_direction" dcs="oy">
+            <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="10.0.0.2" port="6479" master="true" />
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="fra-aws" zone="FRA">
+        <cluster id="cluster1" active-dc="jq" phase ="1" type="one_way">
+            <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="127.0.0.1" port="8379" master="127.0.0.1:6200" />
+                <redis ip="127.0.0.1" port="8479" master="127.0.0.1:6200" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6200" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6201" active="false" />
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>
