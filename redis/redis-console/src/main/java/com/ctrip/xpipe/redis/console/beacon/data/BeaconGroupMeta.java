@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.model.beacon;
+package com.ctrip.xpipe.redis.console.beacon.data;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 
@@ -9,13 +9,13 @@ import java.util.Set;
  * @author lishanglin
  * date 2020/12/31
  */
-public class BeaconGroupModel {
+public class BeaconGroupMeta {
 
-    public BeaconGroupModel() {
+    public BeaconGroupMeta() {
 
     }
 
-    public BeaconGroupModel(String name, String idc, Set<HostPort> nodes, boolean masterGroup) {
+    public BeaconGroupMeta(String name, String idc, Set<HostPort> nodes, boolean masterGroup) {
         this.name = name;
         this.idc = idc;
         this.nodes = nodes;
@@ -76,7 +76,7 @@ public class BeaconGroupModel {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BeaconGroupModel that = (BeaconGroupModel) o;
+        BeaconGroupMeta that = (BeaconGroupMeta) o;
         return Objects.equals(name, that.name) &&
                 Objects.equals(idc, that.idc) &&
                 Objects.equals(nodes, that.nodes);

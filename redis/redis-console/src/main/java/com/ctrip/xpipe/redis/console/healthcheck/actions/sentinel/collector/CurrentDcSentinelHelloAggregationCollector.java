@@ -23,7 +23,7 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
 
     @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId)) return;
 
         if (collectHello(context) >= getRedisCntInCurrentDc() - 1) {

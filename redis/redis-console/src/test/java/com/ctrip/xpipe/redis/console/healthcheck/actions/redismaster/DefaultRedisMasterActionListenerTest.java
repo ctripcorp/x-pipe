@@ -66,7 +66,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
 
     @Test
     public void testExpectMasterAndMaster() {
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.MASTER));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
@@ -74,7 +74,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
 
     @Test
     public void testExpectSlaveAndSlave() {
-        instance.getRedisInstanceInfo().isMaster(false);
+        instance.getCheckInfo().isMaster(false);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.SLAVE));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
@@ -82,23 +82,23 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
 
     @Test
     public void testExpectMasterButSlave() {
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.SLAVE));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(listener, Mockito.times(1)).updateRedisRoleInDB(Mockito.any(), Mockito.any());
-        Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
+        Assert.assertFalse(instance.getCheckInfo().isMaster());
         Assert.assertEquals(1, updatedRedisTbls.size());
         Assert.assertEquals(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(false).toString(), updatedRedisTbls.get(0).toString());
     }
 
     @Test
     public void testExpectSlaveButMaster() {
-        instance.getRedisInstanceInfo().isMaster(false);
+        instance.getCheckInfo().isMaster(false);
         redisTbls.get(0).setMaster(false);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.MASTER));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(listener, Mockito.times(1)).updateRedisRoleInDB(Mockito.any(), Mockito.any());
-        Assert.assertTrue(instance.getRedisInstanceInfo().isMaster());
+        Assert.assertTrue(instance.getCheckInfo().isMaster());
         Assert.assertEquals(1, updatedRedisTbls.size());
         Assert.assertEquals(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(true).toString(), updatedRedisTbls.get(0).toString());
     }
@@ -128,7 +128,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
 
     @Test
     public void testUnknownAndSlave() {
-        instance.getRedisInstanceInfo().isMaster(false);
+        instance.getCheckInfo().isMaster(false);
         redisTbls.get(0).setMaster(false);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
         sleep(30);
@@ -140,7 +140,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
 
     @Test
     public void testUnknownAndMaster() {
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
         sleep(30);
         Mockito.verify(listener, Mockito.never()).updateRedisRoleInDB(Mockito.any(), Mockito.any());
@@ -150,7 +150,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
     @Test
     public void testUnknownAndMasterAndMetaServerTakeThis() {
         redisTbls.get(1).setMaster(true); // multi master
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         Mockito.when(metaServerConsoleService.getCurrentMaster(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(new RedisMeta().setIp("127.0.0.1").setPort(6379));
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
@@ -161,20 +161,20 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
     @Test
     public void testUnknownAndMasterButMetaServerTakeTheOther() {
         redisTbls.get(1).setMaster(true);
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         Mockito.when(metaServerConsoleService.getCurrentMaster(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(new RedisMeta().setIp("127.0.0.1").setPort(6479));
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
         sleep(30);
         Mockito.verify(redisService, Mockito.times(1)).updateBatchMaster(Mockito.anyList());
-        Assert.assertFalse(instance.getRedisInstanceInfo().isMaster());
+        Assert.assertFalse(instance.getCheckInfo().isMaster());
         Assert.assertEquals(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(false).toString(), updatedRedisTbls.get(0).toString());
     }
 
     @Test
     public void testUnknownAndMasterButMetaServerFail() {
         redisTbls.get(1).setMaster(true); // multi master
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         Mockito.when(metaServerConsoleService.getCurrentMaster(Mockito.anyString(), Mockito.anyString()))
                 .thenThrow(new RuntimeException());
         listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
@@ -183,7 +183,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractConsoleTest {
     }
 
     private XpipeMeta mockXpipeMeta() {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         String dcId = info.getDcId();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();

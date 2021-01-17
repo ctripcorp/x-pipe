@@ -374,7 +374,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
         private void initMeta(String currentDc, String activeDc, boolean isMaster) throws Exception {
             checkInstance = newRandomRedisHealthCheckInstance(currentDc, activeDc, redisServer.getPort());
             ((DefaultRedisHealthCheckInstance)checkInstance).setHealthCheckConfig(healthCheckConfig);
-            checkInstance.getRedisInstanceInfo().isMaster(isMaster);
+            checkInstance.getCheckInfo().isMaster(isMaster);
             checkAction = new SentinelHelloCheckAction(scheduled, checkInstance, executors, config, clusterService);
             checkAction.addController(checkActionController);
             checkAction.addListener(checkActionController);

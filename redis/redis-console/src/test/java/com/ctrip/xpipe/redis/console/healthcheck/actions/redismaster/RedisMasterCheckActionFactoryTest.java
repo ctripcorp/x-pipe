@@ -35,8 +35,8 @@ public class RedisMasterCheckActionFactoryTest extends AbstractConsoleIntegratio
     public void testCreate() throws Exception {
         RedisHealthCheckInstance instance = instanceManager.getOrCreate(newRandomFakeRedisMeta());
         RedisMasterCheckAction action = (RedisMasterCheckAction) factory.create(instance);
-        logger.info("[isMaster] {}", instance.getRedisInstanceInfo().isMaster());
-        logger.info("[activeDc] {}", instance.getRedisInstanceInfo().getActiveDc());
+        logger.info("[isMaster] {}", instance.getCheckInfo().isMaster());
+        logger.info("[activeDc] {}", instance.getCheckInfo().getActiveDc());
         checkActionController(action, ClusterType.ONE_WAY);
         action.doTask();
     }

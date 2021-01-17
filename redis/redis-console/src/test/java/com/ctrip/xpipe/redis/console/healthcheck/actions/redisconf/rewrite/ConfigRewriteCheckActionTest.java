@@ -57,9 +57,9 @@ public class ConfigRewriteCheckActionTest extends AbstractTest {
         Server server = startServer("-ERR Only CONFIG GET is allowed during loading\r\n");
         AlertManager alertManager = mock(AlertManager.class);
         doNothing().when(alertManager).alert(any(DefaultRedisInstanceInfo.class), any(ALERT_TYPE.class), anyString());
-        DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance()
-                .setRedisInstanceInfo(new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort(), "SHAJQ", ClusterType.ONE_WAY))
-                .setSession(new RedisSession(new DefaultEndPoint("localhost", server.getPort()), scheduled, getXpipeNettyClientKeyedObjectPool()));
+        DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
+        instance.setSession(new RedisSession(new DefaultEndPoint("localhost", server.getPort()), scheduled, getXpipeNettyClientKeyedObjectPool()))
+                .setInstanceInfo(new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort(), "SHAJQ", ClusterType.ONE_WAY));
         try {
             new ConfigRewriteCheckAction(scheduled, instance,
                     executors, alertManager).doTask();

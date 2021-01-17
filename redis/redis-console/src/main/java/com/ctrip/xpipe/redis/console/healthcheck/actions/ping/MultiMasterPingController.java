@@ -10,7 +10,7 @@ public class MultiMasterPingController extends CurrentDcCheckController implemen
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        return super.shouldCheck(instance) || instance.getRedisInstanceInfo().isMaster();
+        return super.shouldCheck(instance) || instance.getCheckInfo().isMaster();
     }
 
 }

@@ -48,7 +48,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMaster
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterCheckActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.*;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
-import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultRedisHealthCheckInstanceFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.factory.DefaultHealthCheckInstanceFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
@@ -165,7 +165,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         HealthCheckEndpointFactoryTest.class,
         DefaultHealthCheckEndpointFactoryTest.class,
-        DefaultRedisHealthCheckInstanceFactoryTest.class,
+        DefaultHealthCheckInstanceFactoryTest.class,
         DcIgnoredConfigListenerTest.class,
 
         DefaultSiteReliabilityCheckerTest.class,

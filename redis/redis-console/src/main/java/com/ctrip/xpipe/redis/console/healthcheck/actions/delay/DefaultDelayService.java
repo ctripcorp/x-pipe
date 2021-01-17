@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -187,12 +188,12 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
 
     @Override
     public void onAction(DelayActionContext delayActionContext) {
-        hostPort2Delay.put(delayActionContext.instance().getRedisInstanceInfo().getHostPort(),
+        hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
                 delayActionContext.getResult());
     }
 
     @Override
-    public void stopWatch(HealthCheckAction action) {
-        hostPort2Delay.remove(action.getActionInstance().getRedisInstanceInfo().getHostPort());
+    public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
+        hostPort2Delay.remove(action.getActionInstance().getCheckInfo().getHostPort());
     }
 }

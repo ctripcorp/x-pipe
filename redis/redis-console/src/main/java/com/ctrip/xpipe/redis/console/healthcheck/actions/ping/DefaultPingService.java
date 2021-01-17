@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
+import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,12 +39,12 @@ public class DefaultPingService implements PingService, PingActionListener, OneW
     @Override
     public void onAction(PingActionContext pingActionContext) {
         if(pingActionContext.getResult()) {
-            hostPort2LastPong.put(pingActionContext.instance().getRedisInstanceInfo().getHostPort(), System.currentTimeMillis());
+            hostPort2LastPong.put(pingActionContext.instance().getCheckInfo().getHostPort(), System.currentTimeMillis());
         }
     }
 
     @Override
-    public void stopWatch(HealthCheckAction action) {
-        hostPort2LastPong.remove(action.getActionInstance().getRedisInstanceInfo().getHostPort());
+    public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
+        hostPort2LastPong.remove(action.getActionInstance().getCheckInfo().getHostPort());
     }
 }

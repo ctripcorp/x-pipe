@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ import java.util.List;
  * Oct 08, 2018
  */
 @Component
-public class VersionCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport {
+public class VersionCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport {
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {

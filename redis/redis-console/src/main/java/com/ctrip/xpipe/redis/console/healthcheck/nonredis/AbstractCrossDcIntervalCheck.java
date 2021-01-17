@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
+import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 
@@ -13,6 +14,9 @@ public abstract class AbstractCrossDcIntervalCheck extends AbstractIntervalCheck
 
     @Autowired(required = false)
     private CrossDcClusterServer clusterServer;
+
+    @Autowired
+    private BeaconServiceManager beaconServiceManager;
 
     @Override
     protected boolean shouldCheck() {

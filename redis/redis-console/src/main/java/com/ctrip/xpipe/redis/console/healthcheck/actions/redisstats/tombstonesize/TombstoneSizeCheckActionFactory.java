@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.RedisStatsCheckController;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class TombstoneSizeCheckActionFactory  extends AbstractLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
+public class TombstoneSizeCheckActionFactory  extends AbstractRedisLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
 
     @Autowired
     private List<TombstoneSizeMetricListener> listeners;

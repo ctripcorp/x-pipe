@@ -120,11 +120,13 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
                     continue;
                 }
+                // TODO: add cluster checker
                 for(ShardMeta shard : cluster.getShards().values()) {
                     for(RedisMeta redis : shard.getRedises()) {
                         instanceManager.getOrCreate(redis);
                     }
                 }
+                instanceManager.getOrCreate(cluster);
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 
@@ -9,13 +8,9 @@ import com.ctrip.xpipe.endpoint.HostPort;
  * <p>
  * Aug 23, 2018
  */
-public interface RedisInstanceInfo {
+public interface RedisInstanceInfo extends CheckInfo {
 
     ClusterShardHostPort getClusterShardHostport();
-
-    String getClusterId();
-
-    ClusterType getClusterType();
 
     String getShardId();
 
@@ -26,10 +21,6 @@ public interface RedisInstanceInfo {
     boolean isMaster();
 
     void isMaster(boolean master);
-
-    String getActiveDc();
-
-    void setActiveDc(String activeDc);
 
     boolean isInActiveDc();
 

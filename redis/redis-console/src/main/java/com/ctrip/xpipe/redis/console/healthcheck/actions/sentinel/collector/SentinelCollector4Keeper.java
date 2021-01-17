@@ -41,7 +41,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
     private MetaCache metaCache;
 
     private void doCollect(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         Set<SentinelHello> hellos = context.getResult();
 
         for(SentinelHello hello : hellos) {
@@ -63,7 +63,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
     @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         if(!info.isInActiveDc() && !context.isFail()) {
             doCollect(context);
         }

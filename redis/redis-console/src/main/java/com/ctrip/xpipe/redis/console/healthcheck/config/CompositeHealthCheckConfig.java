@@ -43,6 +43,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int clusterCheckIntervalMilli() {
+        return config.clusterCheckIntervalMilli();
+    }
+
+    @Override
     public int getHealthyDelayMilli() {
         return config.getHealthyDelayMilli();
     }
