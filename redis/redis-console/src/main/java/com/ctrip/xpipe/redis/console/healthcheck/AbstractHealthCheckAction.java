@@ -18,13 +18,13 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Sep 06, 2018
  */
-public abstract class AbstractHealthCheckAction<T extends ActionContext> extends AbstractLifecycle implements HealthCheckAction {
+public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> extends AbstractLifecycle implements HealthCheckAction<T> {
 
-    protected List<HealthCheckActionListener<T>> listeners = Lists.newArrayList();
+    protected List<HealthCheckActionListener> listeners = Lists.newArrayList();
 
     protected List<HealthCheckActionController> controllers = Lists.newArrayList();
 
-    protected RedisHealthCheckInstance instance;
+    protected T instance;
 
     protected ScheduledExecutorService scheduled;
 
@@ -36,7 +36,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     protected static int DELTA = 500;
 
-    public AbstractHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
+    public AbstractHealthCheckAction(ScheduledExecutorService scheduled, T instance,
                                      ExecutorService executors) {
         this.scheduled = scheduled;
         this.instance = instance;
@@ -45,7 +45,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
 
     @Override
     public void doStart() {
-        logger.debug("[started][{}][{}]", getClass().getSimpleName(), instance.getRedisInstanceInfo());
+        logger.debug("[started][{}][{}]", getClass().getSimpleName(), instance.getCheckInfo());
         scheduleTask(getBaseCheckInterval());
     }
 
@@ -62,7 +62,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
     @Override
-    public RedisHealthCheckInstance getActionInstance() {
+    public T getActionInstance() {
         return instance;
     }
 
@@ -131,9 +131,15 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     protected boolean shouldCheck() {
         for (HealthCheckActionController controller : controllers) {
             if (!controller.shouldCheck(instance)) {
-                RedisInstanceInfo redisInfo = getActionInstance().getRedisInstanceInfo();
-                logger.debug("[doRun][{}][{}][{}] skip check by {}", redisInfo.getClusterId(), redisInfo.getShardId(),
-                        redisInfo.getHostPort(), controller);
+                CheckInfo checkInfo = getActionInstance().getCheckInfo();
+                if (checkInfo instanceof RedisInstanceInfo) {
+                    RedisInstanceInfo redisInfo = (RedisInstanceInfo) checkInfo;
+                    logger.debug("[doRun][{}][{}][{}] skip check by {}", redisInfo.getClusterId(), redisInfo.getShardId(),
+                            redisInfo.getHostPort(), controller);
+                } else {
+                    logger.debug("[doRun][{}] skip check by {}", checkInfo.getClusterId(), controller);
+                }
+
                 return false;
             }
         }
@@ -146,7 +152,7 @@ public abstract class AbstractHealthCheckAction<T extends ActionContext> extends
     }
 
     @VisibleForTesting
-    public List<HealthCheckActionListener<T>> getListeners() {
+    public List<HealthCheckActionListener> getListeners() {
         return listeners;
     }
 

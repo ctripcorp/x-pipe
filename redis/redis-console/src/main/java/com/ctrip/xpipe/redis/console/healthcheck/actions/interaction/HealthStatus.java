@@ -117,7 +117,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         //first time
         lastHealthDelayTime.compareAndSet(UNSET_TIME, System.currentTimeMillis());
 
-        delayLogger.debug("{}, {}", instance.getRedisInstanceInfo().getHostPort(), delayMilli);
+        delayLogger.debug("{}, {}", instance.getCheckInfo().getHostPort(), delayMilli);
         if(delayMilli >= 0 && delayMilli <= healthyDelayMilli.getAsInt()){
             lastHealthDelayTime.set(System.currentTimeMillis());
             setDelayUp();
@@ -232,7 +232,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     @Override
     public String toString() {
-        return String.format("%s lastPong:%s lastHealthDelay:%s", instance.getRedisInstanceInfo(),
+        return String.format("%s lastPong:%s lastHealthDelay:%s", instance.getCheckInfo(),
                 DateTimeUtils.timeAsString(lastPongTime.get()),
                 DateTimeUtils.timeAsString(lastHealthDelayTime.get()));
     }

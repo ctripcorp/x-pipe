@@ -43,7 +43,7 @@ public class HealthStatusTest extends AbstractRedisTest {
     public void beforeHealthStatusTest() {
         instance = mock(RedisHealthCheckInstance.class);
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
 
         config = mock(HealthCheckConfig.class);
         when(config.getHealthyDelayMilli()).thenReturn(2000);

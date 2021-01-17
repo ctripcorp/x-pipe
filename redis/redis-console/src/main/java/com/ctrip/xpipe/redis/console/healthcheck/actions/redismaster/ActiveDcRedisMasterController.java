@@ -14,7 +14,7 @@ public class ActiveDcRedisMasterController implements RedisMasterController, One
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         if(!info.isInActiveDc()) {
             logger.debug("[doTask] not in backup dc: {}", info);
             return false;

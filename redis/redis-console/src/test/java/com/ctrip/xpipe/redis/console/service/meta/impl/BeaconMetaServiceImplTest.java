@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.model.beacon.BeaconGroupModel;
+import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.google.common.collect.Sets;
@@ -43,7 +43,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleTest {
 
     @Test
     public void testBuildBeaconGroups() {
-        Set<BeaconGroupModel> groups = beaconMetaService.buildBeaconGroups("cluster1");
+        Set<BeaconGroupMeta> groups = beaconMetaService.buildBeaconGroups("cluster1");
         logger.info("[testBuildBeaconGroups] {}", groups);
         Assert.assertEquals(2, groups.size());
         Assert.assertEquals(expectedBeaconGroups(), groups);
@@ -59,10 +59,10 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleTest {
         return "multi-zone-meta.xml";
     }
 
-    private Set<BeaconGroupModel> expectedBeaconGroups() {
+    private Set<BeaconGroupMeta> expectedBeaconGroups() {
         return Sets.newHashSet(
-                new BeaconGroupModel("shard1+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6379"), HostPort.fromString("127.0.0.1:6479")), true),
-                new BeaconGroupModel("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:7379"), HostPort.fromString("127.0.0.1:7479")), false)
+                new BeaconGroupMeta("shard1+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6379"), HostPort.fromString("127.0.0.1:6479")), true),
+                new BeaconGroupMeta("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:7379"), HostPort.fromString("127.0.0.1:7479")), false)
         );
     }
 

@@ -7,9 +7,9 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
  * <p>
  * Oct 11, 2018
  */
-public interface HealthCheckActionFactory<T extends HealthCheckAction> {
+public interface HealthCheckActionFactory<T extends HealthCheckAction, V extends HealthCheckInstance> {
 
-    T create(RedisHealthCheckInstance instance);
+    T create(V instance);
 
     default void destroy(T t) throws Exception {
         LifecycleHelper.stopIfPossible(t);

@@ -37,11 +37,11 @@ public class ConflictMetricListenerTest extends AbstractConsoleTest {
 
         Mockito.doAnswer(invocation -> {
             MetricData point = invocation.getArgumentAt(0, MetricData.class);
-            Assert.assertEquals(instance.getRedisInstanceInfo().getClusterId(), point.getClusterName());
-            Assert.assertEquals(instance.getRedisInstanceInfo().getShardId(), point.getShardName());
-            Assert.assertEquals(instance.getRedisInstanceInfo().getClusterType().toString(), point.getClusterType());
-            Assert.assertEquals(instance.getRedisInstanceInfo().getDcId(), point.getDcName());
-            Assert.assertEquals(instance.getRedisInstanceInfo().getHostPort(), point.getHostPort());
+            Assert.assertEquals(instance.getCheckInfo().getClusterId(), point.getClusterName());
+            Assert.assertEquals(instance.getCheckInfo().getShardId(), point.getShardName());
+            Assert.assertEquals(instance.getCheckInfo().getClusterType().toString(), point.getClusterType());
+            Assert.assertEquals(instance.getCheckInfo().getDcId(), point.getDcName());
+            Assert.assertEquals(instance.getCheckInfo().getHostPort(), point.getHostPort());
             Assert.assertEquals(context.getRecvTimeMilli(), point.getTimestampMilli());
 
             switch (point.getMetricType()) {

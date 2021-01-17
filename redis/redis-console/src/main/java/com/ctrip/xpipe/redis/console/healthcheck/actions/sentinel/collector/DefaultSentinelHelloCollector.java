@@ -120,7 +120,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     private void collect(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         Set<SentinelHello> hellos = context.getResult();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();

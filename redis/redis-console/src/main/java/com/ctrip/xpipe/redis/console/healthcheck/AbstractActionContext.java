@@ -9,24 +9,24 @@ import java.util.Objects;
  * <p>
  * Sep 06, 2018
  */
-public abstract class AbstractActionContext<C> implements ActionContext<C> {
+public abstract class AbstractActionContext<C, T extends HealthCheckInstance> implements ActionContext<C, T> {
 
     protected C c;
 
     private long recvTimeMilli;
 
-    protected RedisHealthCheckInstance instance;
+    protected T instance;
 
     protected Throwable cause;
 
-    public AbstractActionContext(RedisHealthCheckInstance instance, C c) {
+    public AbstractActionContext(T instance, C c) {
         this.instance = instance;
         this.c = c;
         this.cause = null;
         this.recvTimeMilli = System.currentTimeMillis();
     }
 
-    public AbstractActionContext(RedisHealthCheckInstance instance, Throwable t) {
+    public AbstractActionContext(T instance, Throwable t) {
         this.instance = instance;
         this.c = null;
         this.cause = t;
@@ -34,7 +34,7 @@ public abstract class AbstractActionContext<C> implements ActionContext<C> {
     }
 
     @Override
-    public RedisHealthCheckInstance instance() {
+    public T instance() {
         return instance;
     }
 
@@ -67,7 +67,7 @@ public abstract class AbstractActionContext<C> implements ActionContext<C> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AbstractActionContext<?> that = (AbstractActionContext<?>) o;
+        AbstractActionContext<?,?> that = (AbstractActionContext<?,?>) o;
         return recvTimeMilli == that.recvTimeMilli &&
                 Objects.equals(c, that.c) &&
                 Objects.equals(cause, that.cause) &&

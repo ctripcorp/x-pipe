@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
+import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -29,6 +30,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_METASERVERS = "metaservers";
     public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
     public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
+    public static final String KEY_CLUSTER_HEALTH_CHECK_INTERVAL = "cluster.health.check.interval";
     public static final String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
     public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
     public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
@@ -104,6 +106,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CONSOLE_SITE_STABLE = "console.site.stable";
 
     private static final String KEY_MIGRATION_EXEC_LOCK_TIMEOUT = "console.migration.exec.lock.timeout";
+
+    private static final String KEY_BEACON_DEFAULT_HOST = "beacon.host.default";
+
+    private static final String KEY_BEACON_HOST_BY_ORG = "beacon.host.org";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -181,6 +187,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getRedisReplicationHealthCheckInterval() {
         return getIntProperty(KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL, 2000);
+    }
+
+    @Override
+    public int getClusterHealthCheckInterval() {
+        return getIntProperty(KEY_CLUSTER_HEALTH_CHECK_INTERVAL, 300000);
     }
 
     private String hickwallInfo;
@@ -426,6 +437,17 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int getMigrationExecLockTimeoutMilli() {
         return getIntProperty(KEY_MIGRATION_EXEC_LOCK_TIMEOUT, 300000);
+    }
+
+    @Override
+    public String getDefaultBeaconHost() {
+        return getProperty(KEY_BEACON_DEFAULT_HOST);
+    }
+
+    @Override
+    public Map<Long, String> getBeaconHosts() {
+        String property = getProperty(KEY_BEACON_HOST_BY_ORG, "{}");
+        return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<Map<Long, String>>() {});
     }
 
 }

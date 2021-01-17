@@ -28,7 +28,7 @@ public class ConflictCheckAction extends RedisStatsCheckAction<String, CrdtConfl
     }
 
     @Override
-    protected ActionContext<CrdtConflictStats> generateActionContext(String result) {
+    protected ActionContext<CrdtConflictStats, RedisHealthCheckInstance> generateActionContext(String result) {
         InfoResultExtractor extractor = new InfoResultExtractor(result);
         return new CrdtConflictCheckContext(instance, new CrdtConflictStats(extractor));
     }

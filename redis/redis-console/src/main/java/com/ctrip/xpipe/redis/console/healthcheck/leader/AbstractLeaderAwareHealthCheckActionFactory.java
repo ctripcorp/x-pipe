@@ -23,7 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Oct 07, 2018
  */
-public abstract class AbstractLeaderAwareHealthCheckActionFactory implements SiteLeaderAwareHealthCheckActionFactory {
+public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends HealthCheckInstance> implements SiteLeaderAwareHealthCheckActionFactory<V> {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,9 +41,6 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
 
     @Autowired
     private ConsoleConfig consoleConfig;
-
-    @Autowired
-    private HealthCheckInstanceManager healthCheckInstanceManager;
 
     @PostConstruct
     public void registerAlertTypes() {
@@ -64,12 +61,14 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
 
     protected abstract List<ALERT_TYPE> alertTypes();
 
+    protected abstract List<V> getAllInstances();
+
     @Override
     public void isleader() {
-        new SafeLoop<RedisHealthCheckInstance>(executors, healthCheckInstanceManager.getAllRedisInstance()) {
+        new SafeLoop<V>(executors, getAllInstances()) {
             @Override
-            public void doRun0(RedisHealthCheckInstance instance) {
-                ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+            public void doRun0(V instance) {
+                ClusterType clusterType = instance.getCheckInfo().getClusterType();
                 if ((clusterType.equals(ClusterType.BI_DIRECTION) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof BiDirectionSupport)
                         || clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport) {
                     registerTo(instance);
@@ -80,15 +79,15 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
 
     @Override
     public void notLeader() {
-        new SafeLoop<RedisHealthCheckInstance>(executors, healthCheckInstanceManager.getAllRedisInstance()) {
+        new SafeLoop<V>(executors, getAllInstances()) {
             @Override
-            public void doRun0(RedisHealthCheckInstance instance) {
+            public void doRun0(V instance) {
                 removeFrom(instance);
             }
         }.run();
     }
 
-    private void registerTo(RedisHealthCheckInstance instance) {
+    private void registerTo(V instance) {
         SiteLeaderAwareHealthCheckAction action = create(instance);
         instance.register(action);
         try {
@@ -101,11 +100,11 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory implements Sit
 
     }
 
-    private void removeFrom(RedisHealthCheckInstance instance) {
+    private void removeFrom(V instance) {
         HealthCheckAction target = null;
-        for(HealthCheckAction action : instance.getHealthCheckActions()) {
+        for(Object action : instance.getHealthCheckActions()) {
             if(action.getClass().isAssignableFrom(support())) {
-                target = action;
+                target = (HealthCheckAction) action;
                 break;
             }
         }

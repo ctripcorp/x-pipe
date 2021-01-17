@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.RedisConfigCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.session.Callbackable;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -36,7 +35,7 @@ public class VersionCheckAction extends RedisConfigCheckAction {
 
     @Override
     protected void doTask() {
-        RedisInstanceInfo instanceInfo = getActionInstance().getRedisInstanceInfo();
+        RedisInstanceInfo instanceInfo = getActionInstance().getCheckInfo();
         if(instanceInfo.isInActiveDc()) {
             checkPassed();
             return;
@@ -53,7 +52,7 @@ public class VersionCheckAction extends RedisConfigCheckAction {
 
             @Override
             public void fail(Throwable throwable) {
-                logger.error("[VersionCheckAction] redis: {}", getActionInstance().getRedisInstanceInfo(), throwable);
+                logger.error("[VersionCheckAction] redis: {}", getActionInstance().getCheckInfo(), throwable);
             }
         });
     }
@@ -73,7 +72,7 @@ public class VersionCheckAction extends RedisConfigCheckAction {
         if(version == null || StringUtil.compareVersion(version, targetVersion) < 0) {
             String alertMessage = String.format("Redis %s should be XRedis 0.0.3 or above", getActionInstance().getEndpoint().toString());
             logger.warn("{}", alertMessage);
-            alertManager.alert(getActionInstance().getRedisInstanceInfo(), ALERT_TYPE.XREDIS_VERSION_NOT_VALID, alertMessage);
+            alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.XREDIS_VERSION_NOT_VALID, alertMessage);
             return false;
         }
         return true;

@@ -94,7 +94,9 @@ public class DelayServiceTest {
         }};
         redisDelay.forEach((redis, delay) -> {
             RedisInstanceInfo redisInstanceInfo = new DefaultRedisInstanceInfo(null, null, null, redis, null, ClusterType.ONE_WAY);
-            delayService.onAction(new DelayActionContext(new DefaultRedisHealthCheckInstance().setRedisInstanceInfo(redisInstanceInfo), delay));
+            DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
+            instance.setInstanceInfo(redisInstanceInfo);
+            delayService.onAction(new DelayActionContext(instance, delay));
         });
 
         UnhealthyInfoModel unhealthyInfo = delayService.getDcActiveClusterUnhealthyInstance(FoundationService.DEFAULT.getDataCenter());

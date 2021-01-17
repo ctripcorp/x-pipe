@@ -145,7 +145,7 @@ public class SentinelHelloCheckActionTest extends AbstractConsoleTest {
 
     @Test
     public void testDoScheduleTaskWithSentinelHello() throws Exception {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         logger.info("{}: {}", info.getActiveDc(), info.isInActiveDc());
         when(metaCache.getSentinelMonitorName(anyString(), anyString())).thenReturn(info.getShardId());
         when(metaCache.findMasterInSameShard(any(HostPort.class))).thenReturn(info.getHostPort());

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta;
 
-import com.ctrip.xpipe.redis.console.model.beacon.BeaconGroupModel;
+import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 
 import java.util.Set;
@@ -15,8 +15,8 @@ public interface BeaconMetaService {
 
     String BEACON_GROUP_SEPARATOR = "+";
 
-    Set<BeaconGroupModel> buildBeaconGroups(String cluster);
+    Set<BeaconGroupMeta> buildBeaconGroups(String cluster);
 
-    boolean compareMetaWithXPipe(String clusterName, Set<BeaconGroupModel> beaconGroups) throws ClusterNotFoundException;
+    boolean compareMetaWithXPipe(String clusterName, Set<BeaconGroupMeta> beaconGroups) throws ClusterNotFoundException;
 
 }

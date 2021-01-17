@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Oct 09, 2018
  */
-public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckAction {
+public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckAction<RedisHealthCheckInstance> {
 
     private static final Logger logger = LoggerFactory.getLogger(SentinelHelloCheckAction.class);
 
@@ -54,8 +54,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @Override
     protected void doTask() {
         lastStartTime = System.currentTimeMillis();
-        RedisInstanceInfo info = getActionInstance().getRedisInstanceInfo();
-        if (instance.getRedisInstanceInfo().isInActiveDc()) {
+        RedisInstanceInfo info = getActionInstance().getCheckInfo();
+        if (instance.getCheckInfo().isInActiveDc()) {
             logger.info("[doTask][{}-{}] in active dc, redis {}", info.getClusterId(), info.getShardId(), instance.getEndpoint());
         }
 
@@ -75,9 +75,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             @Override
             public void fail(Throwable e) {
                 if (ExceptionUtils.isStackTraceUnnecessary(e)) {
-                    logger.error("[sub-failed][{}] {}", getActionInstance().getRedisInstanceInfo().getHostPort(), e.getMessage());
+                    logger.error("[sub-failed][{}] {}", getActionInstance().getCheckInfo().getHostPort(), e.getMessage());
                 } else {
-                    logger.error("[sub-failed][{}]", getActionInstance().getRedisInstanceInfo().getHostPort(), e);
+                    logger.error("[sub-failed][{}]", getActionInstance().getCheckInfo().getHostPort(), e);
                 }
                 subError = e;
             }
@@ -111,16 +111,16 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return false;
         }
 
-        String cluster = getActionInstance().getRedisInstanceInfo().getClusterId();
+        String cluster = getActionInstance().getCheckInfo().getClusterId();
         if (!consoleDbConfig.shouldSentinelCheck(cluster, false)) {
             logger.warn("[doTask][BackupDc] cluster is in sentinel check whitelist, quit");
 
             return false;
         }
 
-        String clusterStatus = clusterService.find(getActionInstance().getRedisInstanceInfo().getClusterId()).getStatus();
+        String clusterStatus = clusterService.find(getActionInstance().getCheckInfo().getClusterId()).getStatus();
         if (!ClusterStatus.isSameClusterStatus(clusterStatus, ClusterStatus.Normal)) {
-            logger.warn("[shouldStart][{}] in migration, stop check", getActionInstance().getRedisInstanceInfo().getClusterId());
+            logger.warn("[shouldStart][{}] in migration, stop check", getActionInstance().getCheckInfo().getClusterId());
             return false;
         }
 

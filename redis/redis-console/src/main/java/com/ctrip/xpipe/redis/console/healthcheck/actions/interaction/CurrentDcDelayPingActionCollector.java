@@ -70,7 +70,7 @@ public class CurrentDcDelayPingActionCollector extends AbstractDelayPingActionCo
     }
 
     private void setInstanceUp(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         ClusterShardHostPort key = new ClusterShardHostPort(info.getClusterId(), info.getShardId(), info.getHostPort());
         Boolean pre = instanceHealthStatusMap.put(key, true);
 
@@ -81,7 +81,7 @@ public class CurrentDcDelayPingActionCollector extends AbstractDelayPingActionCo
     }
 
     private void setInstanceDown(RedisHealthCheckInstance instance, AbstractInstanceEvent event) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         ClusterShardHostPort key = new ClusterShardHostPort(info.getClusterId(), info.getShardId(), info.getHostPort());
         Boolean pre = instanceHealthStatusMap.put(key, false);
 
@@ -93,7 +93,7 @@ public class CurrentDcDelayPingActionCollector extends AbstractDelayPingActionCo
 
     @Override
     public boolean supportInstance(RedisHealthCheckInstance instance) {
-        return currentDcId.equalsIgnoreCase(instance.getRedisInstanceInfo().getDcId());
+        return currentDcId.equalsIgnoreCase(instance.getCheckInfo().getDcId());
     }
 
     @VisibleForTesting

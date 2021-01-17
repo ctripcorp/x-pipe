@@ -28,7 +28,7 @@ public class DefaultInstanceUpHandlerTest extends AbstractConsoleIntegrationTest
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo("FAT",
                 "cluster_shyin", "shard1", new HostPort("10.3.2.220", 6379), "FAT", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
         handler.doHandle(new InstanceUp(instance));
         sleep(10 * 1000);
     }
