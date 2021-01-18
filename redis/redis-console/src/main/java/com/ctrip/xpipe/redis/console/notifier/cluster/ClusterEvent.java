@@ -20,6 +20,8 @@ public interface ClusterEvent extends Event, Observable {
 
     String getClusterName();
 
+    long getOrgId();
+
     void addShardEvent(ShardEvent shardEvent);
 
     void onEvent();

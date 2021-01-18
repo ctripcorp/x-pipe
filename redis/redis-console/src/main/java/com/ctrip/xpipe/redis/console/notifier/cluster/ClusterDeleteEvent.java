@@ -11,8 +11,8 @@ import java.util.concurrent.ExecutorService;
  */
 public class ClusterDeleteEvent extends AbstractClusterEvent {
 
-    protected ClusterDeleteEvent(String clusterName, ExecutorService executor) {
-        super(clusterName, executor);
+    protected ClusterDeleteEvent(String clusterName, long orgId, ExecutorService executor) {
+        super(clusterName, orgId, executor);
     }
 
     @Override

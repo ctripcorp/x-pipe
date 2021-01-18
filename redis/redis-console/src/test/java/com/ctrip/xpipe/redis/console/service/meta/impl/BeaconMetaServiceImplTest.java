@@ -4,6 +4,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -26,6 +28,12 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleTest {
     @Mock
     private MetaCache metaCache;
 
+    @Mock
+    private DcService dcService;
+
+    @Mock
+    private ClusterMetaService clusterMetaService;
+
     private BeaconMetaServiceImpl beaconMetaService;
 
     @Before
@@ -38,7 +46,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleTest {
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
-        beaconMetaService = new BeaconMetaServiceImpl(metaCache);
+        beaconMetaService = new BeaconMetaServiceImpl(metaCache, dcService, clusterMetaService);
     }
 
     @Test
