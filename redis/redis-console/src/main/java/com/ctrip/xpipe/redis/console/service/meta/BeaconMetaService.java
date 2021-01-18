@@ -17,6 +17,8 @@ public interface BeaconMetaService {
 
     Set<BeaconGroupMeta> buildBeaconGroups(String cluster);
 
+    Set<BeaconGroupMeta> buildCurrentBeaconGroups(String cluster);
+
     boolean compareMetaWithXPipe(String clusterName, Set<BeaconGroupMeta> beaconGroups) throws ClusterNotFoundException;
 
 }

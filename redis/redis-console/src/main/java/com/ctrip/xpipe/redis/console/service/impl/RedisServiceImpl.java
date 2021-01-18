@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -37,6 +38,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected KeeperContainerService keeperContainerService;
     @Autowired
     protected ClusterMetaModifiedNotifier notifier;
+    @Autowired
+    protected ClusterMonitorModifiedNotifier monitorNotifier;
     @Autowired
     protected DcService dcService;
 
@@ -314,6 +317,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         } else {
             notifier.notifyClusterUpdate(clusterName, Collections.singletonList(dcName));
         }
+
+        monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
     }
 
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
