@@ -19,8 +19,8 @@ import java.util.Set;
  */
 public class DefaultBeaconService extends AbstractService implements BeaconService {
 
-    private static final String PATH_GET_CLUSTERS = "/api/v1/monitor/xpipe/clusters";
-    private static final String PATH_CLUSTER = "/api/v1/monitor/xpipe/{cluster}";
+    protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/xpipe/clusters";
+    protected static final String PATH_CLUSTER = "/api/v1/monitor/xpipe/{cluster}";
 
     private String getAllClustersPath;
     private String clusterPath;
@@ -34,6 +34,11 @@ public class DefaultBeaconService extends AbstractService implements BeaconServi
         this.host = host;
         getAllClustersPath = host + PATH_GET_CLUSTERS;
         clusterPath = host + PATH_CLUSTER;
+    }
+
+    @Override
+    public String getHost() {
+        return this.host;
     }
 
     @Override

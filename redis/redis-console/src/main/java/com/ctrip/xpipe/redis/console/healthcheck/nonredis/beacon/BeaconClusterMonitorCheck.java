@@ -34,7 +34,7 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
     @Autowired
     private AlertManager alertManager;
 
-    public static int MONITOR_UNREGISTER_PROTECT_COUNT = 10;
+    protected static int MONITOR_UNREGISTER_PROTECT_COUNT = 10;
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -55,7 +55,7 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalCheck {
         }
 
         clustersByOrg.forEach((orgId, clusters) -> {
-            new UnknownClusterExcludeJob(clusters, services.get(orgId), MONITOR_UNREGISTER_PROTECT_COUNT).execute(executors)
+            new UnknownClusterExcludeJob(clusters, services.get(orgId), MONITOR_UNREGISTER_PROTECT_COUNT).execute()
                 .addListener(commandFuture -> {
                     if (commandFuture.isSuccess()) {
                         logger.info("[doCheck][{}] unregister clusters {}", orgId, commandFuture.get());

@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderTest;
+import com.ctrip.xpipe.redis.console.beacon.impl.DefaultBeaconServiceManagerTest;
+import com.ctrip.xpipe.redis.console.beacon.impl.DefaultBeaconServiceTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
@@ -37,8 +39,11 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.Curr
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel.controller.CurrentDcSentinelCheckControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.clusteractions.beacon.BeaconActiveDcControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.clusteractions.beacon.BeaconMetaCheckActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DefaultDcMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
@@ -77,6 +82,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublish
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
+import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
@@ -242,7 +248,14 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationEventConcurrentCreateTest.class,
         MigrationExecuteLockTest.class,
         BeaconMetaServiceImplTest.class,
-        BeaconMigrationServiceImplTest.class
+        BeaconMigrationServiceImplTest.class,
+
+        BeaconMetaCheckActionTest.class,
+        BeaconActiveDcControllerTest.class,
+        DefaultBeaconServiceManagerTest.class,
+        DefaultBeaconServiceTest.class,
+        BeaconClusterMonitorCheckTest.class,
+        DefaultClusterMonitorModifiedNotifierTest.class
 
 })
 public class AllTests {

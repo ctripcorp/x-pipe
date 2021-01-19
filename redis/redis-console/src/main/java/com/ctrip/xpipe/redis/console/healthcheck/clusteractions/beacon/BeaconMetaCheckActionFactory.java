@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractClusterLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
@@ -39,7 +38,7 @@ public class BeaconMetaCheckActionFactory extends AbstractClusterLeaderAwareHeal
 
     @Override
     public Class<? extends SiteLeaderAwareHealthCheckAction> support() {
-        return RedisMasterCheckAction.class;
+        return BeaconMetaCheckAction.class;
     }
 
     @Override
