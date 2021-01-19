@@ -20,7 +20,7 @@ import java.util.Set;
 public class DefaultBeaconService extends AbstractService implements BeaconService {
 
     protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/xpipe/clusters";
-    protected static final String PATH_CLUSTER = "/api/v1/monitor/xpipe/{cluster}";
+    protected static final String PATH_CLUSTER = "/api/v1/monitor/xpipe/cluster/{cluster}";
 
     private String getAllClustersPath;
     private String clusterPath;
