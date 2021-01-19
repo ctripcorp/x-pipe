@@ -310,7 +310,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         ClusterTbl cluster = clusterService.find(clusterName);
         if (null == cluster) throw new IllegalArgumentException("not exist cluster " + clusterName);
 
-        if (ClusterType.lookup(cluster.getClusterType()).supportMultiActiveDC()) {
+        ClusterType type = ClusterType.lookup(cluster.getClusterType());
+        if (type.supportMultiActiveDC()) {
             List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
             if (null != dcTbls) notifier.notifyClusterUpdate(clusterName,
                     dcTbls.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
@@ -318,7 +319,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             notifier.notifyClusterUpdate(clusterName, Collections.singletonList(dcName));
         }
 
-        monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
+        if (type.supportMigration()) {
+            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
+        }
     }
 
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {

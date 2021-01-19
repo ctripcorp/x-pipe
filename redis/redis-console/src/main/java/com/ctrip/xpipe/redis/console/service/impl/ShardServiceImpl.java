@@ -340,7 +340,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 		List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
 		notifier.notifyClusterUpdate(clusterName, dcs);
-		if (null != cluster) {
+		if (null != cluster && ClusterType.lookup(cluster.getClusterType()).supportMigration()) {
 			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}
 	}
