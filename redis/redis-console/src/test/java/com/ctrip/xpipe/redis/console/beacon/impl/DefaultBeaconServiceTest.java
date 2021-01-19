@@ -74,7 +74,7 @@ public class DefaultBeaconServiceTest extends AbstractTest {
         beaconService.registerCluster("cluster1", groups);
 
         RecordedRequest request = webServer.takeRequest();
-        Assert.assertEquals("/api/v1/monitor/xpipe/cluster1", request.getPath());
+        Assert.assertEquals("/api/v1/monitor/xpipe/cluster/cluster1", request.getPath());
         Assert.assertEquals("POST", request.getMethod());
         BeaconClusterMeta clusterMeta = Codec.DEFAULT.decode(request.getBody().readByteArray(), BeaconClusterMeta.class);
         Assert.assertEquals(groups, clusterMeta.getNodeGroups());
@@ -92,7 +92,7 @@ public class DefaultBeaconServiceTest extends AbstractTest {
         beaconService.unregisterCluster("cluster1");
 
         RecordedRequest request = webServer.takeRequest();
-        Assert.assertEquals("/api/v1/monitor/xpipe/cluster1", request.getPath());
+        Assert.assertEquals("/api/v1/monitor/xpipe/cluster/cluster1", request.getPath());
         Assert.assertEquals("DELETE", request.getMethod());
     }
 

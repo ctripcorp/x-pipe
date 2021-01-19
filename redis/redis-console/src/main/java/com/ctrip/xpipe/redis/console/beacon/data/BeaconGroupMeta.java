@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.console.beacon.data;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.util.Converter;
+import com.fasterxml.jackson.databind.util.StdConverter;
 
 import java.util.Objects;
 import java.util.Set;
@@ -44,6 +47,7 @@ public class BeaconGroupMeta {
         return down;
     }
 
+    @JsonSerialize(contentConverter = NodeSerializeConverter.class)
     public Set<HostPort> getNodes() {
         return nodes;
     }
@@ -96,5 +100,15 @@ public class BeaconGroupMeta {
                 ", down=" + down +
                 ", masterGroup=" + masterGroup +
                 '}';
+    }
+
+    public static class NodeSerializeConverter extends StdConverter<HostPort, String> implements Converter<HostPort, String> {
+
+        @Override
+        public String convert(HostPort addr) {
+            if (null == addr) return null;
+            return addr.toString();
+        }
+
     }
 }
