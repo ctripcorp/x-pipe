@@ -10,6 +10,8 @@ import java.util.Set;
  */
 public interface BeaconService {
 
+    String getHost();
+
     Set<String> fetchAllClusters();
 
     void registerCluster(String clusterName, Set<BeaconGroupMeta> groups);
