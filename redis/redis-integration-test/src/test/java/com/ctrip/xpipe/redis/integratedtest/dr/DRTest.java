@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.dr;
 
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
@@ -11,6 +12,9 @@ import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.integratedtest.dr.app.ConsoleApp;
 import com.ctrip.xpipe.redis.integratedtest.dr.app.MetaserverApp;
 import com.ctrip.xpipe.redis.integratedtest.dr.cmd.RedisKillCmd;
@@ -21,6 +25,7 @@ import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.FileUtils;
+import com.lambdaworks.redis.models.role.RedisInstance;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -95,7 +100,51 @@ public class DRTest extends AbstractConsoleH2DbTest {
     }
 
     @Test
-    public void startSimpleXPipeDR() throws Exception {
+    public void testNormalMigration() throws Exception {
+        startSimpleXPipeDR();
+
+        // check migration system
+        waitForServerRespAsExpected("http://localhost:8080/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
+
+        // do migration
+        tryMigration("http://localhost:8080", "cluster-dr", "jq", "oy");
+
+        // check result
+        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 30000);
+    }
+
+    @Test
+    public void testMigrationOnOriginDcMetaserverDown() throws Exception {
+        startSimpleXPipeDR();
+
+        // check migration system
+        waitForServerRespAsExpected("http://localhost:8081/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
+
+        Optional<ForkProcessCmd> jqMetaserver = subProcessCmds.stream().filter(subProcess -> {
+            return subProcess instanceof ServerStartCmd && ((ServerStartCmd) subProcess).getId().equals("jq" + IdcUtil.JQ_METASERVER_PORT);
+        }).findFirst();
+        if (!jqMetaserver.isPresent()) Assert.fail("no sub process for jq metaserver");
+
+        subProcessCmds.remove(jqMetaserver.get());
+        jqMetaserver.get().killProcess();
+
+        if (jqMetaserver.get().isProcessAlive()) Assert.fail("jq metaserver is still alive after kill");
+
+        // do migration
+        tryMigration("http://localhost:8081", "cluster-dr", "jq", "oy");
+
+        // check primary dc up
+        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/7379", String.class, "\"HEALTHY\"", 30000);
+        waitForRedisRole("127.0.0.1", 7379, Server.SERVER_ROLE.MASTER, 15000);
+
+        // recover origin primary dc metaserver
+        subProcessCmds.add(startMetaServer("jq", "http://127.0.0.1:8080", zkJQ, IdcUtil.JQ_METASERVER_PORT, dcInfos));
+
+        // wait for repl recover
+        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 120000);
+    }
+
+    protected void startSimpleXPipeDR() throws Exception {
         startZk(IdcUtil.JQ_ZK_PORT);
         startZk(IdcUtil.OY_ZK_PORT);
 
@@ -126,15 +175,6 @@ public class DRTest extends AbstractConsoleH2DbTest {
         waitForServerRespAsExpected("http://localhost:8080/api/health/127.0.0.1/7379", String.class, "\"HEALTHY\"", 120000);
 
         checkAllProcessAlive();
-
-        // check migration system
-        waitForServerRespAsExpected("http://localhost:8080/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
-
-        // do migration
-        tryMigration("http://localhost:8080", "cluster-dr", "jq", "oy");
-
-        // check result
-        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 30000);
     }
 
     protected RedisStartCmd startRedis(int port) {
@@ -217,6 +257,25 @@ public class DRTest extends AbstractConsoleH2DbTest {
         return keepercontainer;
     }
 
+    protected void tryMigration(String console, String cluster, String src, String dest) {
+        CheckPrepareRequest prepareRequest = new CheckPrepareRequest();
+        prepareRequest.setClusters(Collections.singletonList(cluster));
+        prepareRequest.setFromIdc(src);
+        prepareRequest.setToIdc(dest);
+        prepareRequest.setIsForce(false);
+
+        CheckPrepareResponse prepareResp = restTemplate.postForObject(console + "/api/migration/checkandprepare", prepareRequest, CheckPrepareResponse.class);
+        if (!prepareResp.getResults().get(0).isSuccess()) Assert.fail("migration prepare fail " + prepareResp.getResults().get(0).getFailReason());
+
+        DoRequest doRequest = new DoRequest();
+        doRequest.setTicketId(prepareResp.getTicketId());
+        DoResponse doResp = restTemplate.postForObject(console + "/api/migration/domigration", doRequest, DoResponse.class);
+
+        if (!doResp.isSuccess()) Assert.fail("do migration fail " + doResp.getMsg());
+    }
+
+    /* --------- wait condition --------- */
+
     protected void waitForServerInit(String healthUrl, Class<?> respType, int waitTimeMilli) throws Exception {
         waitConditionUntilTimeOut(() -> {
             try {
@@ -241,22 +300,20 @@ public class DRTest extends AbstractConsoleH2DbTest {
         }, waitTimeMilli, 2000);
     }
 
-    protected void tryMigration(String console, String cluster, String src, String dest) {
-        CheckPrepareRequest prepareRequest = new CheckPrepareRequest();
-        prepareRequest.setClusters(Collections.singletonList(cluster));
-        prepareRequest.setFromIdc(src);
-        prepareRequest.setToIdc(dest);
-        prepareRequest.setIsForce(false);
-
-        CheckPrepareResponse prepareResp = restTemplate.postForObject(console + "/api/migration/checkandprepare", prepareRequest, CheckPrepareResponse.class);
-        if (!prepareResp.getResults().get(0).isSuccess()) Assert.fail("migration prepare fail " + prepareResp.getResults().get(0).getFailReason());
-
-        DoRequest doRequest = new DoRequest();
-        doRequest.setTicketId(prepareResp.getTicketId());
-        DoResponse doResp = restTemplate.postForObject(console + "/api/migration/domigration", doRequest, DoResponse.class);
-
-        if (!doResp.isSuccess()) Assert.fail("do migration fail " + doResp.getMsg());
+    protected void waitForRedisRole(String host, int port, Server.SERVER_ROLE expected, int waitTimeMilli) throws Exception {
+        waitConditionUntilTimeOut(() -> {
+            try {
+                Role current = new RoleCommand(host, port, scheduled).execute().get();
+                logger.info("[waitForRedisRole][{}][{}] current role {}", host, port, current);
+                return current.getServerRole().equals(expected);
+            } catch (Throwable th) {
+                logger.info("[waitForRedisRole][{}][{}] role cmd fail", host, port, th);
+                return false;
+            }
+        }, waitTimeMilli, 2000);
     }
+
+    /* --------- cleanup --------- */
 
     protected void cleanupKeeper() {
         String userDir = System.getProperty("user.dir");
@@ -311,6 +368,15 @@ public class DRTest extends AbstractConsoleH2DbTest {
         }
     }
 
+    protected void checkAllProcessAlive() {
+        for (ForkProcessCmd subProcess: subProcessCmds) {
+            logger.info("[checkAllProcessAlive][{}]", subProcess);
+            if (!subProcess.isProcessAlive()) {
+                throw new IllegalStateException("sub process " + subProcess + " is down");
+            }
+        }
+    }
+
     protected void killRedisServers() {
         IntStream.of(6379, 7379).forEach(port -> {
             try {
@@ -319,15 +385,6 @@ public class DRTest extends AbstractConsoleH2DbTest {
                 logger.info("[killRedisServers][{}] fail", port, th);
             }
         });
-    }
-
-    protected void checkAllProcessAlive() {
-        for (ForkProcessCmd subProcess: subProcessCmds) {
-            logger.info("[checkAllProcessAlive][{}]", subProcess);
-            if (!subProcess.isProcessAlive()) {
-                throw new IllegalStateException("sub process " + subProcess + " is down");
-            }
-        }
     }
 
 }
