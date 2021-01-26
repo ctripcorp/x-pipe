@@ -6,14 +6,15 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestOperations;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -62,8 +63,11 @@ public class BeaconService implements MonitorService {
 
     @Override
     public void registerCluster(String clusterName, Set<MonitorGroupMeta> groups) {
-        HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups), headers);
         ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.POST, entity, BeaconResp.class, clusterName);
+
         BeaconResp beaconResp = respResponseEntity.getBody();
         if (!beaconResp.isSuccess()) {
             logger.info("[registerCluster] fail, {}", beaconResp.getMsg());
