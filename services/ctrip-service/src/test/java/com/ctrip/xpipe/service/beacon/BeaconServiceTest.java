@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.service.beacon;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;

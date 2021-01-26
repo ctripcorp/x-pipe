@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
@@ -51,6 +53,8 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
     private MetaCache metaCache;
     @Mock
     private List<ShardEventListener> shardEventListeners;
+    @Mock
+    private ClusterMonitorModifiedNotifier monitorNotifier;
     private String clusterName = "clusterName";
 
     String shardName1 = "shard1";
@@ -91,10 +95,12 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
     @Test
     public void deleteShards() throws DalException {
         when(clusterTbl.getClusterName()).thenReturn(clusterName);
+        when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.name());
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         shardService.deleteShards(clusterTbl, shardNames);
         verify(shardDao).deleteShardsBatch(shardTbls);
+        verify(monitorNotifier).notifyClusterUpdate(anyString(), anyLong());
     }
 
     @Test
