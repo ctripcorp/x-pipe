@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.clusteractions.beacon;
 
-import com.ctrip.xpipe.redis.console.beacon.BeaconService;
-import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
 
 import com.ctrip.xpipe.redis.console.healthcheck.ClusterInstanceInfo;
@@ -20,13 +20,13 @@ public class BeaconMetaCheckAction extends AbstractLeaderAwareHealthCheckAction<
 
     private BeaconMetaService beaconMetaService;
 
-    private BeaconServiceManager beaconServiceManager;
+    private MonitorServiceManager monitorServiceManager;
 
     public BeaconMetaCheckAction(ScheduledExecutorService scheduled, ClusterHealthCheckInstance instance, ExecutorService executors,
-                                 BeaconMetaService beaconMetaService, BeaconServiceManager beaconServiceManager) {
+                                 BeaconMetaService beaconMetaService, MonitorServiceManager monitorServiceManager) {
         super(scheduled, instance, executors);
         this.beaconMetaService = beaconMetaService;
-        this.beaconServiceManager = beaconServiceManager;
+        this.monitorServiceManager = monitorServiceManager;
     }
 
     @Override
@@ -35,7 +35,7 @@ public class BeaconMetaCheckAction extends AbstractLeaderAwareHealthCheckAction<
         String clusterId = info.getClusterId();
         int orgId = info.getOrgId();
 
-        BeaconService service = beaconServiceManager.getOrCreate(orgId);
+        MonitorService service = monitorServiceManager.getOrCreate(orgId);
         if (null == service) {
             logger.debug("[doTask][{}] no beacon service for org {}, skip", clusterId, orgId);
             return;

@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.clusteractions.beacon;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.beacon.BeaconService;
-import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
-import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultClusterInstanceInfo;
@@ -34,28 +34,28 @@ public class BeaconMetaCheckActionTest extends AbstractConsoleTest {
     private BeaconMetaService beaconMetaService;
 
     @Mock
-    private BeaconServiceManager beaconServiceManager;
+    private MonitorServiceManager monitorServiceManager;
 
     @Mock
-    private BeaconService beaconService;
+    private MonitorService monitorService;
 
     @Mock
     private ClusterHealthCheckInstance instance;
 
     private ClusterInstanceInfo info;
 
-    private Set<BeaconGroupMeta> groups;
+    private Set<MonitorGroupMeta> groups;
 
     @Before
     public void setupBeaconMetaCheckActionTest() {
-        action = new BeaconMetaCheckAction(scheduled, instance, executors, beaconMetaService, beaconServiceManager);
+        action = new BeaconMetaCheckAction(scheduled, instance, executors, beaconMetaService, monitorServiceManager);
 
         int orgId = 1;
         String cluster = "cluster1";
         info = new DefaultClusterInstanceInfo(cluster, "jq", ClusterType.ONE_WAY, orgId);
-        groups = Sets.newHashSet(new BeaconGroupMeta("shard1", "jq", Collections.singleton(new HostPort("127.0.0.1", 6379)), true));
+        groups = Sets.newHashSet(new MonitorGroupMeta("shard1", "jq", Collections.singleton(new HostPort("127.0.0.1", 6379)), true));
 
-        Mockito.when(beaconServiceManager.getOrCreate(orgId)).thenReturn(beaconService);
+        Mockito.when(monitorServiceManager.getOrCreate(orgId)).thenReturn(monitorService);
         Mockito.when(instance.getCheckInfo()).thenReturn(info);
         Mockito.when(beaconMetaService.buildBeaconGroups(cluster)).thenReturn(groups);
     }
@@ -63,7 +63,7 @@ public class BeaconMetaCheckActionTest extends AbstractConsoleTest {
     @Test
     public void testDoTask() {
         action.doTask();
-        Mockito.verify(beaconService).registerCluster(info.getClusterId(), groups);
+        Mockito.verify(monitorService).registerCluster(info.getClusterId(), groups);
     }
 
 }

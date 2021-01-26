@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
-import com.ctrip.xpipe.redis.console.beacon.BeaconService;
-import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -25,7 +25,7 @@ import java.util.concurrent.Executors;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModifiedNotifier {
 
-    private BeaconServiceManager beaconServiceManager;
+    private MonitorServiceManager monitorServiceManager;
 
     private BeaconMetaService beaconMetaService;
 
@@ -37,8 +37,8 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
     private KeyedOneThreadTaskExecutor<String> keyedExecutor;
 
     @Autowired
-    public DefaultClusterMonitorModifiedNotifier(BeaconMetaService beaconMetaService, BeaconServiceManager beaconServiceManager) {
-        this.beaconServiceManager = beaconServiceManager;
+    public DefaultClusterMonitorModifiedNotifier(BeaconMetaService beaconMetaService, MonitorServiceManager monitorServiceManager) {
+        this.monitorServiceManager = monitorServiceManager;
         this.beaconMetaService = beaconMetaService;
         this.executors = Executors.newFixedThreadPool(MONITOR_NOTIFIER_THREAD_CNT, XpipeThreadFactory.create("ClusterMonitorNotifier"));
         this.keyedExecutor = new KeyedOneThreadTaskExecutor<>(executors);
@@ -56,8 +56,8 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     @Override
     public void notifyClusterUpdate(final String clusterName, long orgId) {
-        BeaconService beaconService = beaconServiceManager.getOrCreate(orgId);
-        if (null == beaconService) {
+        MonitorService monitorService = monitorServiceManager.getOrCreate(orgId);
+        if (null == monitorService) {
             logger.info("[notifyClusterUpdate][{}] no beacon for {}, skip", clusterName, orgId);
             return;
         }
@@ -70,7 +70,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
             @Override
             protected void doExecute() {
-                beaconService.registerCluster(clusterName, beaconMetaService.buildCurrentBeaconGroups(clusterName));
+                monitorService.registerCluster(clusterName, beaconMetaService.buildCurrentBeaconGroups(clusterName));
                 future().setSuccess();
             }
 
@@ -83,8 +83,8 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
     @Override
     public void notifyClusterDelete(String clusterName, long orgId) {
-        BeaconService beaconService = beaconServiceManager.getOrCreate(orgId);
-        if (null == beaconService) {
+        MonitorService monitorService = monitorServiceManager.getOrCreate(orgId);
+        if (null == monitorService) {
             logger.info("[notifyClusterDelete][{}] no beacon for {}, skip", clusterName, orgId);
             return;
         }
@@ -97,7 +97,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
             @Override
             protected void doExecute() {
-                beaconService.unregisterCluster(clusterName);
+                monitorService.unregisterCluster(clusterName);
                 future().setSuccess();
             }
 

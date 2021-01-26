@@ -1,7 +1,8 @@
-package com.ctrip.xpipe.redis.console.beacon.impl;
+package com.ctrip.xpipe.redis.console.beacon;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.redis.console.beacon.BeaconService;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,12 +22,12 @@ import static com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant.DEFAUL
  * date 2021/1/18
  */
 @RunWith(MockitoJUnitRunner.class)
-public class DefaultBeaconServiceManagerTest extends AbstractTest {
+public class DefaultMonitorServiceManagerTest extends AbstractTest {
 
     @Mock
     private ConsoleConfig config;
 
-    private DefaultBeaconServiceManager beaconServiceManager;
+    private DefaultMonitorServiceManager beaconServiceManager;
 
     private String defaultBeaconHost = "http://127.0.0.1:8080";
 
@@ -37,26 +38,26 @@ public class DefaultBeaconServiceManagerTest extends AbstractTest {
 
     @Before
     public void setupDefaultBeaconServiceManagerTest() {
-        beaconServiceManager = new DefaultBeaconServiceManager(config);
+        beaconServiceManager = new DefaultMonitorServiceManager(config);
         Mockito.when(config.getDefaultBeaconHost()).thenReturn(defaultBeaconHost);
         Mockito.when(config.getBeaconHosts()).thenReturn(beacons);
     }
 
     @Test
     public void testGetHostByOrg() {
-        BeaconService beaconService = beaconServiceManager.getOrCreate(2);
-        Assert.assertEquals(beacons.get(2L), beaconService.getHost());
+        MonitorService monitorService = beaconServiceManager.getOrCreate(2);
+        Assert.assertEquals(beacons.get(2L), monitorService.getHost());
     }
 
     @Test
     public void testGetHostByUnknownOrg() {
-        BeaconService beaconService = beaconServiceManager.getOrCreate(3);
-        Assert.assertEquals(defaultBeaconHost, beaconService.getHost());
+        MonitorService monitorService = beaconServiceManager.getOrCreate(3);
+        Assert.assertEquals(defaultBeaconHost, monitorService.getHost());
     }
 
     @Test
     public void testGetAllBeacons() {
-        Map<Long, BeaconService> beaconServices = beaconServiceManager.getAllServices();
+        Map<Long, MonitorService> beaconServices = beaconServiceManager.getAllServices();
         Assert.assertEquals(3, beaconServices.size());
         Assert.assertEquals(defaultBeaconHost, beaconServices.get(DEFAULT_ORG_ID).getHost());
         Assert.assertEquals(beacons.get(1L), beaconServices.get(1L).getHost());

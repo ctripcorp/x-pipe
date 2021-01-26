@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.beacon.data;
+package com.ctrip.xpipe.service.beacon.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
