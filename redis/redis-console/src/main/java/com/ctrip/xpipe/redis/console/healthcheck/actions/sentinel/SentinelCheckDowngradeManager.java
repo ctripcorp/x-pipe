@@ -29,13 +29,13 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         return getCheckCollectorController(info.getClusterId(), info.getShardId()).shouldCheck(instance);
     }
 
     @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         getCheckCollectorController(info.getClusterId(), info.getShardId())
                 .onAction(context);
     }

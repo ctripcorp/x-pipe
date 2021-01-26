@@ -58,7 +58,7 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
     @Override
     public ClusterEvent createClusterEvent(String clusterName, ClusterTbl clusterTbl) {
         
-        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent(clusterName, executors);
+        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent(clusterName, clusterTbl.getClusterOrgId(), executors);
         ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
         if (clusterType.supportMultiActiveDC()) return null;
 

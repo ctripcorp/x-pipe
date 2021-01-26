@@ -11,7 +11,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractMetricListener<V extends ActionContext> implements HealthCheckActionListener<V> {
+public abstract class AbstractMetricListener<T extends ActionContext,  V extends HealthCheckAction> implements HealthCheckActionListener<T, V> {
 
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 

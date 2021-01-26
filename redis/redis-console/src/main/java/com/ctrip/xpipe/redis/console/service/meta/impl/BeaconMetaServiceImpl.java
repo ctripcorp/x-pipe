@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.model.beacon.BeaconGroupModel;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
+import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -22,43 +25,71 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     private MetaCache metaCache;
 
+    private DcService dcService;
+
+    private ClusterMetaService clusterMetaService;
+
     @Autowired
-    public BeaconMetaServiceImpl(MetaCache metaCache) {
+    public BeaconMetaServiceImpl(MetaCache metaCache, DcService dcService, ClusterMetaService clusterMetaService) {
         this.metaCache = metaCache;
+        this.dcService = dcService;
+        this.clusterMetaService = clusterMetaService;
     }
 
     @Override
-    public Set<BeaconGroupModel> buildBeaconGroups(String cluster) {
+    public Set<MonitorGroupMeta> buildBeaconGroups(String cluster) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta) return Collections.emptySet();
 
-        Set<BeaconGroupModel> groups = new HashSet<>();
+        Map<String, ClusterMeta> dcClusterMetas = new HashMap<>();
         xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
             ClusterMeta clusterMeta = dcMeta.getClusters().get(cluster);
-            if (null == clusterMeta) return;
+            if (null != clusterMeta) {
+                dcClusterMetas.put(dc, clusterMeta);
+            }
+        });
 
-            String activeDc = dcMeta.getClusters().get(cluster).getActiveDc();
+        return buildBeaconGroups(dcClusterMetas);
+    }
+
+    @Override
+    public Set<MonitorGroupMeta> buildCurrentBeaconGroups(String cluster) {
+        List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(cluster);
+        if (null == relatedDcs) throw new IllegalArgumentException("no related dcs found for " + cluster);
+
+        List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
+        Map<String, ClusterMeta> dcClusters = dcs.stream().collect(Collectors.toMap(
+                dc -> dc,
+                dc -> clusterMetaService.getClusterMeta(dc, cluster)
+        ));
+        return buildBeaconGroups(dcClusters);
+    }
+
+    @Override
+    public boolean compareMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) {
+        Set<MonitorGroupMeta> metaFromXPipe = buildBeaconGroups(clusterName);
+        if (metaFromXPipe.isEmpty()) return false;
+
+        return metaFromXPipe.equals(beaconGroups);
+    }
+
+    private Set<MonitorGroupMeta> buildBeaconGroups(Map<String, ClusterMeta> dcClusterMetas) {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        dcClusterMetas.forEach((dc, clusterMeta) -> {
+            String activeDc = clusterMeta.getActiveDc();
             // no register cross region dcs to beacon
-            if (!metaCache.isCrossRegion(dc, activeDc)) {
+            if (!metaCache.isCrossRegion(activeDc, dc)) {
                 clusterMeta.getShards().forEach((shard, shardMeta) -> {
                     Set<HostPort> nodes = shardMeta.getRedises().stream()
                             .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
                             .collect(Collectors.toSet());
                     String groupName = String.join(BEACON_GROUP_SEPARATOR, shard, dc);
-                    groups.add(new BeaconGroupModel(groupName, dc, nodes, activeDc.equals(dc)));
+                    groups.add(new MonitorGroupMeta(groupName, dc, nodes, activeDc.equals(dc)));
                 });
             }
         });
 
         return groups;
-    }
-
-    @Override
-    public boolean compareMetaWithXPipe(String clusterName, Set<BeaconGroupModel> beaconGroups) {
-        Set<BeaconGroupModel> metaFromXPipe = buildBeaconGroups(clusterName);
-        if (metaFromXPipe.isEmpty()) return false;
-
-        return metaFromXPipe.equals(beaconGroups);
     }
 
     @VisibleForTesting

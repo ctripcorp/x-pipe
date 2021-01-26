@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
@@ -9,6 +8,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
@@ -38,6 +38,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private ShardDao shardDao;
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
+
+	@Autowired
+	private ClusterMonitorModifiedNotifier monitorNotifier;
 
 	@Autowired
 	private DelayService delayService;
@@ -167,11 +170,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			}
     	}
 
-    	/** Notify meta server **/
-		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
-    	if(null != relatedDcs) {
-    		notifier.notifyClusterUpdate(clusterName, relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
-    	}
+		clusterModifyNotify(clusterName, cluster);
 	}
 
 	@Override
@@ -205,11 +204,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 					}
 				}
 
-				/** Notify meta server **/
-				List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
-				if (null != relatedDcs) {
-					notifier.notifyClusterUpdate(clusterName, relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
-				}
+				clusterModifyNotify(clusterName, cluster);
 			}
 		}
 	}
@@ -336,6 +331,17 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 						monitorName, dupShardTbl.getSetinelMonitorName()));
 			}
 			return dupShardTbl;
+		}
+	}
+
+	private void clusterModifyNotify(String clusterName, ClusterTbl cluster) {
+		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
+		if(null == relatedDcs) return;
+
+		List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
+		notifier.notifyClusterUpdate(clusterName, dcs);
+		if (null != cluster && ClusterType.lookup(cluster.getClusterType()).supportMigration()) {
+			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}
 	}
 

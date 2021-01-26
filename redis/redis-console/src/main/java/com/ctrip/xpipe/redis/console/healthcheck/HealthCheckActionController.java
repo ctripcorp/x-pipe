@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
-public interface HealthCheckActionController {
+public interface HealthCheckActionController<T extends HealthCheckInstance> {
 
-    boolean shouldCheck(RedisHealthCheckInstance instance);
+    boolean shouldCheck(T instance);
 
 }

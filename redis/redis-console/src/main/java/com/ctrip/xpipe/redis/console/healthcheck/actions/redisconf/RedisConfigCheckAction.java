@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * Oct 06, 2018
  */
-public abstract class RedisConfigCheckAction extends AbstractLeaderAwareHealthCheckAction {
+public abstract class RedisConfigCheckAction  extends AbstractLeaderAwareHealthCheckAction<RedisHealthCheckInstance> {
 
     private AtomicBoolean pass = new AtomicBoolean(false);
 

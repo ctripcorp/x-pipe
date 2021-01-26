@@ -56,6 +56,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         if (!isInterestedInCluster(added)) {
             return;
         }
+
+        instanceManager.getOrCreate(added);
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
         clusterMetaVisitor.accept(added);
     }
@@ -77,6 +79,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         if (futureInterested) {
             logger.info("[updateDcInterested] become interested {}", comparator.getFuture());
+            instanceManager.getOrCreate(comparator.getFuture());
             for (ShardMeta shardMeta : comparator.getFuture().getShards().values()) {
                 for (RedisMeta redisMeta : shardMeta.getRedises()) {
                     instanceManager.getOrCreate(redisMeta);
@@ -84,6 +87,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             }
         } else {
             logger.info("[updateDcInterested] loss interested {}", comparator.getFuture());
+            instanceManager.remove(comparator.getCurrent().getId());
             for (ShardMeta shardMeta : comparator.getCurrent().getShards().values()) {
                 for (RedisMeta redisMeta : shardMeta.getRedises()) {
                     instanceManager.remove(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
@@ -94,6 +98,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void visitRemoved(ClusterMeta removed) {
+        instanceManager.remove(removed.getId());
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
         clusterMetaVisitor.accept(removed);
     }
@@ -138,7 +143,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
                 return;
             }
             logger.info("[Redis-Change] {}, master: {}", redisMeta, redisMeta.isMaster());
-            instanceManager.getOrCreate(redisMeta).getRedisInstanceInfo().isMaster(redisMeta.isMaster());
+            instanceManager.getOrCreate(redisMeta).getCheckInfo().isMaster(redisMeta.isMaster());
         }
     };
 

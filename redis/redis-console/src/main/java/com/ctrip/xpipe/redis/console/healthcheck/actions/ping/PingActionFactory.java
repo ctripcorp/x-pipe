@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.ping;
 
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionFactory;
-import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.util.ClusterTypeSupporterSeparator;
@@ -26,7 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Oct 11, 2018
  */
 @Component
-public class PingActionFactory implements HealthCheckActionFactory<PingAction>, OneWaySupport, BiDirectionSupport {
+public class PingActionFactory implements RedisHealthCheckActionFactory<PingAction>, OneWaySupport, BiDirectionSupport {
 
     @Resource(name = ConsoleContextConfig.PING_DELAY_SCHEDULED)
     private ScheduledExecutorService scheduled;
@@ -59,7 +56,7 @@ public class PingActionFactory implements HealthCheckActionFactory<PingAction>, 
     @Override
     public PingAction create(RedisHealthCheckInstance instance) {
         PingAction pingAction = new PingAction(scheduled, instance, executors);
-        ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+        ClusterType clusterType = instance.getCheckInfo().getClusterType();
 
         pingAction.addListeners(listenerByClusterType.get(clusterType));
         pingAction.addControllers(controllersByClusterType.get(clusterType));

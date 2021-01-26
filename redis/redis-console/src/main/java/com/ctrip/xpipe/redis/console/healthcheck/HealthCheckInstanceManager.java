@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 import java.util.List;
@@ -14,9 +15,16 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
+    ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster);
+
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
     void remove(HostPort hostPort);
 
+    void remove(String cluster);
+
     List<RedisHealthCheckInstance> getAllRedisInstance();
+
+    List<ClusterHealthCheckInstance> getAllClusterInstance();
+
 }

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class MultiMasterDelayActionController extends CurrentDcCheckController implements DelayActionController, BiDirectionSupport {
 
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        return super.shouldCheck(instance) || instance.getRedisInstanceInfo().isMaster();
+        return super.shouldCheck(instance) || instance.getCheckInfo().isMaster();
     }
 
 }

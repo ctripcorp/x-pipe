@@ -54,7 +54,7 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
             }
         });
         instance = newRandomRedisHealthCheckInstance(server.getPort());
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         action = new RedisMasterCheckAction(scheduled, instance, executors);
         action.addListener(listener);
     }
@@ -74,11 +74,11 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
                 return ROLE_MASTER;
             }
         };
-        instance.getRedisInstanceInfo().isMaster(false);
+        instance.getCheckInfo().isMaster(false);
         action.doTask();
 
         waitConditionUntilTimeOut(() -> null != context, 1000);
-        Assert.assertFalse(context.instance().getRedisInstanceInfo().isMaster());
+        Assert.assertFalse(context.instance().getCheckInfo().isMaster());
         Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.MASTER, context.getResult());
     }
 
@@ -90,24 +90,24 @@ public class RedisMasterCheckActionTest extends AbstractConsoleTest {
                 return ROLE_SLAVE;
             }
         };
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         action.doTask();
 
         waitConditionUntilTimeOut(() -> null != context, 1000);
-        Assert.assertTrue(context.instance().getRedisInstanceInfo().isMaster());
+        Assert.assertTrue(context.instance().getCheckInfo().isMaster());
         Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.SLAVE, context.getResult());
     }
 
     @Test
     public void testRedisHang() throws Exception {
         instance = newHangedRedisHealthCheckInstance();
-        instance.getRedisInstanceInfo().isMaster(true);
+        instance.getCheckInfo().isMaster(true);
         action = new RedisMasterCheckAction(scheduled, instance, executors);
         action.addListener(listener);
         action.doTask();
 
         waitConditionUntilTimeOut(() -> null != context, 1000);
-        Assert.assertTrue(context.instance().getRedisInstanceInfo().isMaster());
+        Assert.assertTrue(context.instance().getCheckInfo().isMaster());
         Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.UNKNOWN, context.getResult());
     }
 }

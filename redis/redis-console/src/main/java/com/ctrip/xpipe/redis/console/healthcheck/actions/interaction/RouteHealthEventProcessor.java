@@ -72,7 +72,7 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         }
         //only deal with sick instance
         if (event instanceof InstanceHalfSick) {
-            RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+            RedisInstanceInfo info = event.getInstance().getCheckInfo();
             Pair<String, String> pair = Pair.from(info.getDcId(), info.getShardId());
             // duplicate reduction
             if (events.add(pair)) {
@@ -94,7 +94,7 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
 
     @VisibleForTesting
     protected void doOnEvent(InstanceHalfSick instanceSick) {
-        RedisInstanceInfo instanceInfo = instanceSick.getInstance().getRedisInstanceInfo();
+        RedisInstanceInfo instanceInfo = instanceSick.getInstance().getCheckInfo();
         ProxyChain proxyChain = proxyService.getProxyChain(instanceInfo.getDcId(),
                 instanceInfo.getClusterId(), instanceInfo.getShardId());
         if (proxyChain == null) {
@@ -153,8 +153,8 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         }
 
         private boolean bgSaveOverDue() {
-            String clusterId = instance.getRedisInstanceInfo().getClusterId();
-            String shardId = instance.getRedisInstanceInfo().getShardId();
+            String clusterId = instance.getCheckInfo().getClusterId();
+            String shardId = instance.getCheckInfo().getShardId();
             try {
                 HostPort hostPort = metaCache.findMaster(clusterId, shardId);
                 RedisSession redisSession = redisSessionManager.findOrCreateSession(hostPort);
@@ -200,7 +200,7 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
 
     protected void closeProxyChain(RedisHealthCheckInstance instance, ProxyChain proxyChain) {
         EventMonitor.DEFAULT.logEvent("XPIPE.PROXY.CHAIN", String.format("[CLOSE]%s: %s",
-                instance.getRedisInstanceInfo().getDcId(), instance.getRedisInstanceInfo().getShardId()));
+                instance.getCheckInfo().getDcId(), instance.getCheckInfo().getShardId()));
 
         List<TunnelInfo> tunnelInfos = proxyChain.getTunnels();
         List<HostPort> backends = Lists.newArrayList();

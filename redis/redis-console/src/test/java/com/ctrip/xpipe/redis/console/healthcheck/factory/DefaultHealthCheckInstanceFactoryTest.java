@@ -7,9 +7,8 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.config.ProxyEnabledHealthCheckConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstanceFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultHealthCheckInstanceFactory;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -28,10 +27,10 @@ import static org.mockito.Mockito.when;
  * <p>
  * Sep 04, 2018
  */
-public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleIntegrationTest {
+public class DefaultHealthCheckInstanceFactoryTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    protected DefaultRedisHealthCheckInstanceFactory factory;
+    protected DefaultHealthCheckInstanceFactory factory;
 
     @Autowired
     private DefaultHealthCheckEndpointFactory endpointFactory;
@@ -51,7 +50,7 @@ public class DefaultRedisHealthCheckInstanceFactoryTest extends AbstractConsoleI
 
         Assert.assertNotNull(instance.getEndpoint());
         Assert.assertNotNull(instance.getHealthCheckConfig());
-        Assert.assertNotNull(instance.getRedisInstanceInfo());
+        Assert.assertNotNull(instance.getCheckInfo());
         Assert.assertNotNull(instance.getRedisSession());
 
         Assert.assertEquals(instance.getEndpoint(), new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));

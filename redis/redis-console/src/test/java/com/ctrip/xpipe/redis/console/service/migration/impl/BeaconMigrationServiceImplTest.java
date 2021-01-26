@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.migration.exception.MigrationUnderProcessingException;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import com.ctrip.xpipe.redis.console.model.beacon.BeaconGroupModel;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
@@ -210,7 +210,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
 
     private BeaconMigrationRequest buildBeaconMigrationRequest(String clusterName, Set<String> failDcs) {
         BeaconMigrationRequest request = new BeaconMigrationRequest();
-        Set<BeaconGroupModel> groups = beaconMetaService.buildBeaconGroups(clusterName);
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildBeaconGroups(clusterName);
         Set<String> failoverGroups = new HashSet<>();
 
         request.setClusterName(clusterName);

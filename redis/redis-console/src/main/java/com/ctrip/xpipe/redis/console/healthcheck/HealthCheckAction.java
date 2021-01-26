@@ -9,13 +9,13 @@ import java.util.List;
  * <p>
  * Sep 06, 2018
  */
-public interface HealthCheckAction<T extends ActionContext> extends Lifecycle {
+public interface HealthCheckAction<T extends HealthCheckInstance> extends Lifecycle {
 
-    void addListener(HealthCheckActionListener<T> listener);
+    void addListener(HealthCheckActionListener listener);
 
-    void removeListener(HealthCheckActionListener<T> listener);
+    void removeListener(HealthCheckActionListener listener);
 
-    void addListeners(List<HealthCheckActionListener<T>> listeners);
+    void addListeners(List<HealthCheckActionListener> listeners);
 
     void addController(HealthCheckActionController controller);
 
@@ -23,6 +23,6 @@ public interface HealthCheckAction<T extends ActionContext> extends Lifecycle {
 
     void removeController(HealthCheckActionController controller);
 
-    RedisHealthCheckInstance getActionInstance();
+    T getActionInstance();
 
 }

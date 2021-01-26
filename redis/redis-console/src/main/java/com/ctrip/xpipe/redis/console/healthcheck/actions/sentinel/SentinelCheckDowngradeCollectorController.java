@@ -33,7 +33,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId)) return;
         if (!shouldCheckFromRedis(context.instance())) return;
 
@@ -63,8 +63,8 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     }
 
     private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
-        return !instance.getRedisInstanceInfo().isMaster()
-                && instance.getRedisInstanceInfo().isInActiveDc() == needDowngrade.get();
+        return !instance.getCheckInfo().isMaster()
+                && instance.getCheckInfo().isInActiveDc() == needDowngrade.get();
     }
 
     private boolean tooLongNoCollect(RedisHealthCheckInstance instance) {

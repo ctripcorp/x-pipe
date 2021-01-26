@@ -35,7 +35,7 @@ public class DefaultSiteReliabilityChecker implements SiteReliabilityChecker {
         if(config.isConsoleSiteUnstable()) {
             return false;
         }
-        RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+        RedisInstanceInfo info = event.getInstance().getCheckInfo();
         List<HostPort> totalRedis = metaCache.getAllActiveRedisOfDc(FoundationService.DEFAULT.getDataCenter(), info.getDcId());
         int errorRedis = getErrorRedis(totalRedis);
         return errorRedis < totalRedis.size()/2;

@@ -57,14 +57,14 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
         }
 
         boolean actualMaster = redisRole.equals(Server.SERVER_ROLE.MASTER);
-        RedisRoleState state = RedisRoleState.getFrom(instance.getRedisInstanceInfo().isMaster(), actualMaster);
+        RedisRoleState state = RedisRoleState.getFrom(instance.getCheckInfo().isMaster(), actualMaster);
         if(state.shouldBeCorrect()) {
             updateRedisRoleInDB(instance, state);
         }
     }
 
     protected void handleUnknownRole(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         String dcId = info.getDcId();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
@@ -127,7 +127,7 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
     }
 
     protected void updateRedisRoleInDB(RedisHealthCheckInstance instance, RedisRoleState state) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         try {
             List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId());
             for(RedisTbl redis : redises) {

@@ -31,6 +31,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int clusterCheckIntervalMilli() {
+        return consoleConfig.getClusterHealthCheckInterval();
+    }
+
+    @Override
     public int getHealthyDelayMilli() {
         return consoleConfig.getHealthyDelayMilli();
     }
