@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.clusteractions.beacon;
 
 import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractClusterLeaderAwareHealthCheckActionFactory;
@@ -24,14 +24,14 @@ public class BeaconMetaCheckActionFactory extends AbstractClusterLeaderAwareHeal
     private BeaconMetaService beaconMetaService;
 
     @Autowired
-    private BeaconServiceManager beaconServiceManager;
+    private MonitorServiceManager monitorServiceManager;
 
     @Autowired
     private List<BeaconMetaController> controllers;
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
-        BeaconMetaCheckAction action = new BeaconMetaCheckAction(scheduled, instance, executors, beaconMetaService, beaconServiceManager);
+        BeaconMetaCheckAction action = new BeaconMetaCheckAction(scheduled, instance, executors, beaconMetaService, monitorServiceManager);
         action.addControllers(controllers);
         return action;
     }

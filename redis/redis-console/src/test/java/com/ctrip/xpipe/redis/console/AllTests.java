@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.console.alert.message.holder.DefaultAlertEntityHolderTest;
-import com.ctrip.xpipe.redis.console.beacon.impl.DefaultBeaconServiceManagerTest;
-import com.ctrip.xpipe.redis.console.beacon.impl.DefaultBeaconServiceTest;
+import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
@@ -252,8 +251,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         BeaconMetaCheckActionTest.class,
         BeaconActiveDcControllerTest.class,
-        DefaultBeaconServiceManagerTest.class,
-        DefaultBeaconServiceTest.class,
+        DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class
 

@@ -2,8 +2,7 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
@@ -12,10 +11,7 @@ import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -59,7 +55,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBuildBeaconGroups() {
-        Set<BeaconGroupMeta> groups = beaconMetaService.buildBeaconGroups("cluster1");
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildBeaconGroups("cluster1");
         logger.info("[testBuildBeaconGroups] {}", groups);
         Assert.assertEquals(expectedBeaconGroups(), groups);
     }
@@ -71,7 +67,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBuildCurrentBeaconGroups() {
-        Set<BeaconGroupMeta> groups = beaconMetaService.buildCurrentBeaconGroups("cluster1");
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildCurrentBeaconGroups("cluster1");
         logger.info("[testBuildCurrentBeaconGroups] {}", groups);
         Assert.assertEquals(expectedBeaconGroups(), groups);
     }
@@ -81,12 +77,12 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
         return "multi-zone-meta.xml";
     }
 
-    private Set<BeaconGroupMeta> expectedBeaconGroups() {
+    private Set<MonitorGroupMeta> expectedBeaconGroups() {
         return Sets.newHashSet(
-                new BeaconGroupMeta("shard1+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6379"), HostPort.fromString("127.0.0.1:6380")), true),
-                new BeaconGroupMeta("shard2+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6381"), HostPort.fromString("127.0.0.1:6382")), true),
-                new BeaconGroupMeta("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6383"), HostPort.fromString("127.0.0.1:6384")), false),
-                new BeaconGroupMeta("shard2+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6385"), HostPort.fromString("127.0.0.1:6386")), false)
+                new MonitorGroupMeta("shard1+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6379"), HostPort.fromString("127.0.0.1:6380")), true),
+                new MonitorGroupMeta("shard2+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6381"), HostPort.fromString("127.0.0.1:6382")), true),
+                new MonitorGroupMeta("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6383"), HostPort.fromString("127.0.0.1:6384")), false),
+                new MonitorGroupMeta("shard2+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6385"), HostPort.fromString("127.0.0.1:6386")), false)
         );
     }
 

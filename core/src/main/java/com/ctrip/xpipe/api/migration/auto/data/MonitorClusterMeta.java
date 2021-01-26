@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.beacon.data;
+package com.ctrip.xpipe.api.migration.auto.data;
 
 import java.util.Collections;
 import java.util.Map;
@@ -8,26 +8,26 @@ import java.util.Set;
  * @author lishanglin
  * date 2021/1/15
  */
-public class BeaconClusterMeta {
+public class MonitorClusterMeta {
 
-    private Set<BeaconGroupMeta> nodeGroups;
+    private Set<MonitorGroupMeta> nodeGroups;
 
     private Map<String, String> extra;
 
-    public BeaconClusterMeta() {
+    public MonitorClusterMeta() {
         this.extra = Collections.emptyMap();
     }
 
-    public BeaconClusterMeta(Set<BeaconGroupMeta> nodeGroups) {
+    public MonitorClusterMeta(Set<MonitorGroupMeta> nodeGroups) {
         this();
         this.nodeGroups = nodeGroups;
     }
 
-    public Set<BeaconGroupMeta> getNodeGroups() {
+    public Set<MonitorGroupMeta> getNodeGroups() {
         return nodeGroups;
     }
 
-    public void setNodeGroups(Set<BeaconGroupMeta> nodeGroups) {
+    public void setNodeGroups(Set<MonitorGroupMeta> nodeGroups) {
         this.nodeGroups = nodeGroups;
     }
 

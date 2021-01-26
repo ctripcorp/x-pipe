@@ -1,11 +1,12 @@
-package com.ctrip.xpipe.redis.console.beacon.impl;
+package com.ctrip.xpipe.service.beacon;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.beacon.data.BeaconClusterMeta;
-import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
-import com.ctrip.xpipe.redis.console.beacon.exception.BeaconServiceException;
+import com.ctrip.xpipe.service.AbstractServiceTest;
+import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.google.common.collect.Sets;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -20,15 +21,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.ctrip.xpipe.redis.console.beacon.impl.DefaultBeaconService.PATH_GET_CLUSTERS;
+import static com.ctrip.xpipe.service.beacon.BeaconService.PATH_GET_CLUSTERS;
 
 /**
  * @author lishanglin
- * date 2021/1/18
+ * date 2021/1/26
  */
-public class DefaultBeaconServiceTest extends AbstractTest {
+public class BeaconServiceTest extends AbstractServiceTest {
 
-    private DefaultBeaconService beaconService;
+    private BeaconService beaconService;
 
     private MockWebServer webServer;
 
@@ -36,7 +37,7 @@ public class DefaultBeaconServiceTest extends AbstractTest {
     public void setupDefaultBeaconServiceTest() throws Exception {
         webServer = new MockWebServer();
         webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
-        beaconService = new DefaultBeaconService("http://127.0.0.1:" + webServer.getPort());
+        beaconService = new BeaconService("http://127.0.0.1:" + webServer.getPort());
     }
 
     @After
@@ -51,7 +52,7 @@ public class DefaultBeaconServiceTest extends AbstractTest {
                 "    \"msg\": \"success\",\n" +
                 "    \"data\": [\"cluster1\", \"cluster2\"]\n" +
                 "}")
-        .setHeader("Content-Type", "application/json"));
+                .setHeader("Content-Type", "application/json"));
 
         Set<String> clusters = beaconService.fetchAllClusters();
         Assert.assertEquals(Sets.newHashSet("cluster1", "cluster2"), clusters);
@@ -69,14 +70,14 @@ public class DefaultBeaconServiceTest extends AbstractTest {
 
     @Test
     public void testRegisterCluster() throws Exception {
-        Set<BeaconGroupMeta> groups = mockGroups();
+        Set<MonitorGroupMeta> groups = mockGroups();
         enqueueServerSuccess();
         beaconService.registerCluster("cluster1", groups);
 
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/v1/monitor/xpipe/cluster/cluster1", request.getPath());
         Assert.assertEquals("POST", request.getMethod());
-        BeaconClusterMeta clusterMeta = Codec.DEFAULT.decode(request.getBody().readByteArray(), BeaconClusterMeta.class);
+        MonitorClusterMeta clusterMeta = Codec.DEFAULT.decode(request.getBody().readByteArray(), MonitorClusterMeta.class);
         Assert.assertEquals(groups, clusterMeta.getNodeGroups());
     }
 
@@ -118,10 +119,10 @@ public class DefaultBeaconServiceTest extends AbstractTest {
                 .setHeader("Content-Type", "application/json"));
     }
 
-    Set<BeaconGroupMeta> mockGroups() {
-        Set<BeaconGroupMeta> groups = new HashSet<>();
-        groups.add(new BeaconGroupMeta("shard1", "oy", Collections.singleton(new HostPort("10.0.0.1", 6379)), true));
-        groups.add(new BeaconGroupMeta("shard1", "rb", Collections.singleton(new HostPort("10.0.0.2", 6379)), false));
+    Set<MonitorGroupMeta> mockGroups() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(new MonitorGroupMeta("shard1", "oy", Collections.singleton(new HostPort("10.0.0.1", 6379)), true));
+        groups.add(new MonitorGroupMeta("shard1", "rb", Collections.singleton(new HostPort("10.0.0.2", 6379)), false));
 
         return groups;
     }

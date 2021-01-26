@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -37,7 +37,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @Override
-    public Set<BeaconGroupMeta> buildBeaconGroups(String cluster) {
+    public Set<MonitorGroupMeta> buildBeaconGroups(String cluster) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta) return Collections.emptySet();
 
@@ -53,7 +53,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @Override
-    public Set<BeaconGroupMeta> buildCurrentBeaconGroups(String cluster) {
+    public Set<MonitorGroupMeta> buildCurrentBeaconGroups(String cluster) {
         List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(cluster);
         if (null == relatedDcs) throw new IllegalArgumentException("no related dcs found for " + cluster);
 
@@ -66,15 +66,15 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @Override
-    public boolean compareMetaWithXPipe(String clusterName, Set<BeaconGroupMeta> beaconGroups) {
-        Set<BeaconGroupMeta> metaFromXPipe = buildBeaconGroups(clusterName);
+    public boolean compareMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) {
+        Set<MonitorGroupMeta> metaFromXPipe = buildBeaconGroups(clusterName);
         if (metaFromXPipe.isEmpty()) return false;
 
         return metaFromXPipe.equals(beaconGroups);
     }
 
-    private Set<BeaconGroupMeta> buildBeaconGroups(Map<String, ClusterMeta> dcClusterMetas) {
-        Set<BeaconGroupMeta> groups = new HashSet<>();
+    private Set<MonitorGroupMeta> buildBeaconGroups(Map<String, ClusterMeta> dcClusterMetas) {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
         dcClusterMetas.forEach((dc, clusterMeta) -> {
             String activeDc = clusterMeta.getActiveDc();
             // no register cross region dcs to beacon
@@ -84,7 +84,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
                             .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
                             .collect(Collectors.toSet());
                     String groupName = String.join(BEACON_GROUP_SEPARATOR, shard, dc);
-                    groups.add(new BeaconGroupMeta(groupName, dc, nodes, activeDc.equals(dc)));
+                    groups.add(new MonitorGroupMeta(groupName, dc, nodes, activeDc.equals(dc)));
                 });
             }
         });

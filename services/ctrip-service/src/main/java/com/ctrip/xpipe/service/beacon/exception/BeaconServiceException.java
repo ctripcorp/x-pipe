@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.beacon.exception;
+package com.ctrip.xpipe.service.beacon.exception;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 

@@ -1,7 +1,7 @@
-package com.ctrip.xpipe.redis.console.beacon.impl;
+package com.ctrip.xpipe.redis.console.migration.auto;
 
-import com.ctrip.xpipe.redis.console.beacon.BeaconService;
-import com.ctrip.xpipe.redis.console.beacon.BeaconServiceManager;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -18,20 +18,20 @@ import java.util.Map;
  * date 2021/1/15
  */
 @Service
-public class DefaultBeaconServiceManager implements BeaconServiceManager {
+public class DefaultMonitorServiceManager implements MonitorServiceManager {
 
     private ConsoleConfig config;
 
-    private Map<String, BeaconService> beaconServiceMap;
+    private Map<String, MonitorService> beaconServiceMap;
 
     @Autowired
-    public DefaultBeaconServiceManager(ConsoleConfig config) {
+    public DefaultMonitorServiceManager(ConsoleConfig config) {
         this.config = config;
         this.beaconServiceMap = Maps.newHashMap();
     }
 
     @Override
-    public BeaconService getOrCreate(long orgId) {
+    public MonitorService getOrCreate(long orgId) {
         String host = getAddrByOrgId(orgId);
         if (StringUtil.isEmpty(host)) return null;
 
@@ -39,10 +39,10 @@ public class DefaultBeaconServiceManager implements BeaconServiceManager {
     }
 
     @Override
-    public Map<Long, BeaconService> getAllServices() {
+    public Map<Long, MonitorService> getAllServices() {
         Map<Long, String> hostsByOrg = config.getBeaconHosts();
         String defaultHost = config.getDefaultBeaconHost();
-        Map<Long, BeaconService> services = new HashMap<>(hostsByOrg.size() + 1);
+        Map<Long, MonitorService> services = new HashMap<>(hostsByOrg.size() + 1);
 
         if (!StringUtil.isEmpty(defaultHost)) services.put(XPipeConsoleConstant.DEFAULT_ORG_ID, getOrCreate(defaultHost));
         hostsByOrg.forEach((orgId, host) -> services.put(orgId, getOrCreate(host)));
@@ -50,8 +50,8 @@ public class DefaultBeaconServiceManager implements BeaconServiceManager {
         return services;
     }
 
-    private BeaconService getOrCreate(String host) {
-        return MapUtils.getOrCreate(beaconServiceMap, host, () -> new DefaultBeaconService(host));
+    private MonitorService getOrCreate(String host) {
+        return MapUtils.getOrCreate(beaconServiceMap, host, () -> MonitorServiceFactory.DEFAULT.build(host));
     }
 
     private String getAddrByOrgId(long orgId) {

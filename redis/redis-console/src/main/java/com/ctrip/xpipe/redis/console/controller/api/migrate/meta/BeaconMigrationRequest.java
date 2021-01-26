@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
-import com.ctrip.xpipe.redis.console.beacon.data.BeaconGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
@@ -21,7 +21,7 @@ public class BeaconMigrationRequest {
 
     private Set<String> recoverGroups;
 
-    private Set<BeaconGroupMeta> groups;
+    private Set<MonitorGroupMeta> groups;
 
     private List<Map<String, Map<String, String>>> checkResults;
 
@@ -53,7 +53,7 @@ public class BeaconMigrationRequest {
         this.recoverGroups = recoverGroups;
     }
 
-    public void setGroups(Set<BeaconGroupMeta> groups) {
+    public void setGroups(Set<MonitorGroupMeta> groups) {
         this.groups = groups;
     }
 
@@ -85,7 +85,7 @@ public class BeaconMigrationRequest {
         return recoverGroups;
     }
 
-    public Set<BeaconGroupMeta> getGroups() {
+    public Set<MonitorGroupMeta> getGroups() {
         return groups;
     }
 
