@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-sources>
+    <data-source id="fxxpipe" type="xpipe">
+        <maximum-pool-size>100</maximum-pool-size>
+        <connection-timeout>1s</connection-timeout>
+        <idle-timeout>1m</idle-timeout>
+        <statement-cache-size>1000</statement-cache-size>
+        <properties>
+            <driver>org.h2.Driver</driver>
+            <url><![CDATA[jdbc:h2:tcp://127.0.0.1:9123/~/fxxpipe;DB_CLOSE_DELAY=-1;MV_STORE=FALSE]]></url>
+            <!--
+            <url>jdbc:h2:~/fxxpipedb;MV_STORE=FALSE</url>
+            -->
+            <user>sa</user>
+            <password></password>
+            <connectionProperties>
+            </connectionProperties>
+        </properties>
+    </data-source>
+</data-sources>
