@@ -76,8 +76,8 @@ public class MultiMasterDelayListener implements DelayActionListener, BiDirectio
     public void onAction(DelayActionContext delayActionContext) {
         // only care about delay between dc master
         RedisHealthCheckInstance instance = delayActionContext.instance();
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
-        if (currentDcId.equalsIgnoreCase(delayActionContext.instance().getRedisInstanceInfo().getDcId())) return;
+        RedisInstanceInfo info = instance.getCheckInfo();
+        if (currentDcId.equalsIgnoreCase(delayActionContext.instance().getCheckInfo().getDcId())) return;
 
         String targetDcId = info.getDcId();
         String clusterId = info.getClusterId();

@@ -69,7 +69,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected void quorumMarkInstanceDown(AbstractInstanceEvent event) {
-        RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+        RedisInstanceInfo info = event.getInstance().getCheckInfo();
         boolean quorum = quorumState(getSatisfiedStates(), info.getHostPort());
 
         if (quorum) {
@@ -82,7 +82,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
 
     @VisibleForTesting
     protected void markdown(final AbstractInstanceEvent event) {
-        final RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+        final RedisInstanceInfo info = event.getInstance().getCheckInfo();
         boolean siteReliable = checker.isSiteHealthy(event);
         if(siteReliable) {
             doMarkDown(event);
@@ -97,26 +97,26 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected void doRealMarkUp(final AbstractInstanceEvent event) {
-        getHealthStateSetterManager().set(event.getInstance().getRedisInstanceInfo().getClusterShardHostport(), true);
+        getHealthStateSetterManager().set(event.getInstance().getCheckInfo().getClusterShardHostport(), true);
     }
 
     protected void doRealMarkDown(final AbstractInstanceEvent event) {
-        final RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+        final RedisInstanceInfo info = event.getInstance().getCheckInfo();
         if(stateUpNow(event)) {
             logger.warn("[markdown] instance state up now, do not mark down, {}", info);
         } else {
-            logger.info("[markdown] mark down redis, {}", event.getInstance().getRedisInstanceInfo());
+            logger.info("[markdown] mark down redis, {}", event.getInstance().getCheckInfo());
             getHealthStateSetterManager().set(info.getClusterShardHostport(), false);
         }
     }
 
     private boolean stateUpNow(AbstractInstanceEvent event) {
-        return defaultDelayPingActionCollector.getState(event.getInstance().getRedisInstanceInfo().getHostPort())
+        return defaultDelayPingActionCollector.getState(event.getInstance().getCheckInfo().getHostPort())
                 .equals(HEALTH_STATE.HEALTHY);
     }
 
     protected boolean masterUp(AbstractInstanceEvent instanceEvent) {
-        RedisInstanceInfo info = instanceEvent.getInstance().getRedisInstanceInfo();
+        RedisInstanceInfo info = instanceEvent.getInstance().getCheckInfo();
         HostPort redisMaster = metaCache.findMasterInSameShard(info.getHostPort());
         boolean masterUp = defaultDelayPingActionCollector.getState(redisMaster) == HEALTH_STATE.HEALTHY;
         if (!masterUp) {

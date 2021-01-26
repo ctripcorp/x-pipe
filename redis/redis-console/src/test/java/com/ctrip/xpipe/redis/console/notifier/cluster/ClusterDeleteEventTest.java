@@ -27,7 +27,7 @@ public class ClusterDeleteEventTest {
 
     @Test
     public void testOnEvent() throws InterruptedException {
-        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent("cluster", Executors.newScheduledThreadPool(1));
+        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent("cluster", 0, Executors.newScheduledThreadPool(1));
         shardDeleteEvent.setClusterName("cluster").addObserver(new ShardDeleteEventListener4Sentinel());
         clusterDeleteEvent.addShardEvent(shardDeleteEvent);
 

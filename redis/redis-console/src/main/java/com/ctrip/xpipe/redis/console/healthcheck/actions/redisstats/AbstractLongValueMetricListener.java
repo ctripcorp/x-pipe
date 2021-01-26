@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats;
 
-import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 
-public abstract class AbstractLongValueMetricListener<T extends ActionContext<Long>> extends AbstractMetricListener<T> implements HealthCheckActionListener<T> {
+public abstract class AbstractLongValueMetricListener<T extends ActionContext<Long, RedisHealthCheckInstance>>
+        extends AbstractMetricListener<T, HealthCheckAction> implements HealthCheckActionListener<T, HealthCheckAction> {
 
     protected abstract String getMetricType();
 
@@ -13,7 +12,7 @@ public abstract class AbstractLongValueMetricListener<T extends ActionContext<Lo
         Long value = context.getResult();
 
         long recvTimeMilli = context.getRecvTimeMilli();
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         tryWriteMetric(getPoint(getMetricType(), value, recvTimeMilli, info));
     }
 

@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class DefaultRedisHealthCheckInstanceTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
-    private RedisHealthCheckInstanceFactory factory;
+    private HealthCheckInstanceFactory factory;
 
     @Test
     public void testDoStop() throws Exception {

@@ -52,7 +52,7 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractConsoleTest {
 
     @Before
     public void setupCurrentDcDelayPingActionCollectorTest() {
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(remoteMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(remoteMaster);
         Mockito.when(instance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
         Mockito.when(healthCheckConfig.pingDownAfterMilli()).thenReturn(downAfterMilli);
         Mockito.when(healthCheckConfig.delayDownAfterMilli()).thenReturn(downAfterMilli);
@@ -65,9 +65,9 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractConsoleTest {
 
     @Test
     public void testSupportInstance() {
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(currentMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(currentMaster);
         Assert.assertTrue(collector.supportInstance(instance));
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(remoteMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(remoteMaster);
         Assert.assertFalse(collector.supportInstance(instance));
     }
 

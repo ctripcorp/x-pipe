@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 
 /**
@@ -8,7 +9,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
  * <p>
  * Oct 09, 2018
  */
-public interface SentinelHelloCollector extends HealthCheckActionListener<SentinelActionContext> {
+public interface SentinelHelloCollector extends HealthCheckActionListener<SentinelActionContext, HealthCheckAction> {
 
     @Override
     default boolean worksfor(ActionContext t) {

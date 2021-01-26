@@ -42,7 +42,7 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
     }
 
     protected DcClusterDelayMarkDown getDelayMarkDownIfConfiged(AbstractInstanceEvent event) {
-        RedisInstanceInfo info = event.getInstance().getRedisInstanceInfo();
+        RedisInstanceInfo info = event.getInstance().getCheckInfo();
         Set<DcClusterDelayMarkDown> dcClusters = consoleConfig.getDelayedMarkDownDcClusters();
         if(dcClusters != null) {
             for(DcClusterDelayMarkDown config : dcClusters) {

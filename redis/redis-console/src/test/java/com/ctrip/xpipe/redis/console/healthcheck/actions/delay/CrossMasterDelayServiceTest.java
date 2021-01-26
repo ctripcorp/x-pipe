@@ -47,7 +47,7 @@ public class CrossMasterDelayServiceTest extends AbstractConsoleTest {
     @Before
     public void setupCrossMasterDelayServiceTest() {
         Mockito.when(consoleServiceManager.getCrossMasterDelay(remoteDcId, clusterId, shardId)).thenReturn(Collections.singletonMap(dcId, Pair.of(new HostPort(), 10L)));
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(remoteDcId, clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
+        Mockito.when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo(remoteDcId, clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
         Mockito.when(action.getActionInstance()).thenReturn(instance);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
     }
@@ -70,7 +70,7 @@ public class CrossMasterDelayServiceTest extends AbstractConsoleTest {
         service.stopWatch(action);
         Assert.assertEquals(Collections.EMPTY_MAP, service.getPeerMasterDelayFromCurrentDc(clusterId, shardId));
 
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(dcId, clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
+        Mockito.when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo(dcId, clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
         service.stopWatch(action);
         Assert.assertEquals(null, service.getPeerMasterDelayFromCurrentDc(clusterId, shardId));
     }
@@ -80,9 +80,9 @@ public class CrossMasterDelayServiceTest extends AbstractConsoleTest {
         UnhealthyInfoModel infoModel = service.getCurrentDcUnhealthyMasters();
         Assert.assertEquals(0, infoModel.getUnhealthyClusterNames().size());
 
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("oy", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
+        Mockito.when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("oy", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
         service.onAction(new DelayActionContext(instance, 10L));
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("rb", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
+        Mockito.when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("rb", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
         service.onAction(new DelayActionContext(instance, 10L));
 
         infoModel = service.getCurrentDcUnhealthyMasters();
@@ -93,7 +93,7 @@ public class CrossMasterDelayServiceTest extends AbstractConsoleTest {
     @Test
     public void testCrossMasterReplicationUnhealthy() {
         HostPort expectedMaster = new HostPort("127.0.0.1", 6379);
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo("oy", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
+        Mockito.when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("oy", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
 
         service.onAction(new DelayActionContext(instance, DelayAction.SAMPLE_LOST_BUT_PONG));
         UnhealthyInfoModel infoModel = service.getCurrentDcUnhealthyMasters();

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Sep 06, 2018
  */
-public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
+public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInstance> {
 
     private static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
 
@@ -57,14 +57,14 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
     @Override
     protected void doTask() {
         //TODO: log only when it's too long to not execute
-//        logger.info("[doTask][begin][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
+//        logger.info("[doTask][begin][{}]", instance.getCheckInfo().getClusterShardHostport());
         reportDelay();
         RedisSession session = instance.getRedisSession();
         doSubscribe(session, CHECK_CHANNEL, callback);
 
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         if (currentDcId.equalsIgnoreCase(info.getDcId()) && info.isMaster()) {
-//            logger.info("[doTask][pub][{}]", instance.getRedisInstanceInfo().getClusterShardHostport());
+//            logger.info("[doTask][pub][{}]", instance.getCheckInfo().getClusterShardHostport());
             doPublish(session, CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
         }
     }
@@ -90,7 +90,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         if(isExpired()) {
             if (!isExpired) {
                 isExpired = true;
-                logger.warn("[expire][{}] last update time: {}", instance.getRedisInstanceInfo().getHostPort(),
+                logger.warn("[expire][{}] last update time: {}", instance.getCheckInfo().getHostPort(),
                         DateTimeUtils.timeAsString(context.get().getRecvTimeMilli()));
             }
 
@@ -98,12 +98,12 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
         } else {
             if (INIT_CONTEXT.equals(context.get())) {
                 // no receive any messages but not expire just on init time
-                logger.info("[expire][{}] init but not expire", instance.getRedisInstanceInfo().getHostPort());
+                logger.info("[expire][{}] init but not expire", instance.getCheckInfo().getHostPort());
                 return;
             }
             if (isExpired) {
                 isExpired = false;
-                logger.info("[expire][{}] recovery", instance.getRedisInstanceInfo().getHostPort());
+                logger.info("[expire][{}] recovery", instance.getCheckInfo().getHostPort());
             }
             onNotExpired();
         }
@@ -111,7 +111,7 @@ public class DelayAction extends AbstractHealthCheckAction<DelayActionContext> {
 
     protected void onExpired() {
         long result = SAMPLE_LOST_AND_NO_PONG;
-        if(pingService.isRedisAlive(instance.getRedisInstanceInfo().getHostPort())) {
+        if(pingService.isRedisAlive(instance.getCheckInfo().getHostPort())) {
             result = SAMPLE_LOST_BUT_PONG;
         }
         notifyListeners(new DelayActionContext(instance, result));

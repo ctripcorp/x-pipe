@@ -5,9 +5,9 @@ package com.ctrip.xpipe.redis.console.healthcheck;
  * <p>
  * Sep 06, 2018
  */
-public interface ActionContext<C> {
+public interface ActionContext<C, T extends HealthCheckInstance> {
 
-    RedisHealthCheckInstance instance();
+    T instance();
 
     C getResult();
 

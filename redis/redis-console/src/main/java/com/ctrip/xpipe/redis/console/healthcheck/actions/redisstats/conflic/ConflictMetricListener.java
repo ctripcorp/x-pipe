@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic;
 
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.AbstractMetricListener;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ConflictMetricListener extends AbstractMetricListener<CrdtConflictCheckContext> implements ConflictCheckListener, BiDirectionSupport {
+public class ConflictMetricListener extends AbstractMetricListener<CrdtConflictCheckContext, HealthCheckAction> implements ConflictCheckListener, BiDirectionSupport {
 
     protected static final String METRIC_TYPE_CONFLICT = "crdt.conflict.type";
     protected static final String METRIC_NON_TYPE_CONFLICT = "crdt.conflict.nontype";
@@ -21,7 +22,7 @@ public class ConflictMetricListener extends AbstractMetricListener<CrdtConflictC
         CrdtConflictStats conflictStats = context.getResult();
 
         long recvTimeMilli = context.getRecvTimeMilli();
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
 
         doConflictMetric(METRIC_TYPE_CONFLICT, conflictStats.getTypeConflict(), recvTimeMilli, info);
         doConflictMetric(METRIC_NON_TYPE_CONFLICT, conflictStats.getNonTypeConflict(), recvTimeMilli, info);

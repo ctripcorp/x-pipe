@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import java.util.Objects;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -63,5 +65,20 @@ public class RetMessage {
     public void setState(int state) {
         this.state = state;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RetMessage that = (RetMessage) o;
+        return state == that.state &&
+                Objects.equals(message, that.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(state, message);
+    }
+
 }
 

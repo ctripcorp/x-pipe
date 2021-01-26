@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.leader;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.healthcheck.AbstractHealthCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstance;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,11 +12,11 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Oct 06, 2018
  */
-public abstract class AbstractLeaderAwareHealthCheckAction extends AbstractHealthCheckAction implements SiteLeaderAwareHealthCheckAction {
+public abstract class AbstractLeaderAwareHealthCheckAction<T extends HealthCheckInstance> extends AbstractHealthCheckAction<T> implements SiteLeaderAwareHealthCheckAction<T> {
 
     private static final int START_TIME_INTERVAL_MILLI = 5 * 60 * 1000;
 
-    public AbstractLeaderAwareHealthCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
+    public AbstractLeaderAwareHealthCheckAction(ScheduledExecutorService scheduled, T instance, ExecutorService executors) {
         super(scheduled, instance, executors);
     }
 

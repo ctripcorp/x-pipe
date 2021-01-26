@@ -67,7 +67,7 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
         ContainerLoader.destroy();
     }
 
-    private void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
+    protected void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
 
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
         DataSource dataSource = dsManager.getDataSource(DATA_SOURCE);

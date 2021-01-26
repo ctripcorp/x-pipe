@@ -10,7 +10,7 @@ import java.util.Set;
  * <p>
  * Oct 09, 2018
  */
-public class SentinelActionContext extends AbstractActionContext<Set<SentinelHello>> {
+public class SentinelActionContext extends AbstractActionContext<Set<SentinelHello>, RedisHealthCheckInstance> {
 
     public SentinelActionContext(RedisHealthCheckInstance instance, Throwable t) {
         super(instance, t);

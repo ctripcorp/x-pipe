@@ -9,7 +9,7 @@ public class TpsMasterCheckController extends CurrentDcCheckController implement
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        return super.shouldCheck(instance) && instance.getRedisInstanceInfo().isMaster();
+        return super.shouldCheck(instance) && instance.getCheckInfo().isMaster();
     }
 
 }

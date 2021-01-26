@@ -51,7 +51,7 @@ public class DiskLessReplCheckAction extends RedisConfigCheckAction {
             @Override
             public void fail(Throwable throwable) {
                 logger.error("[DiskLessReplCheckAction][{}]{}",
-                        getActionInstance().getRedisInstanceInfo().getHostPort(), throwable);
+                        getActionInstance().getCheckInfo().getHostPort(), throwable);
             }
         });
         getActionInstance().getRedisSession().isDiskLessSync(new Callbackable<Boolean>() {
@@ -64,7 +64,7 @@ public class DiskLessReplCheckAction extends RedisConfigCheckAction {
             @Override
             public void fail(Throwable throwable) {
                 logger.error("[DiskLessReplCheckAction][{}]{}",
-                        getActionInstance().getRedisInstanceInfo().getHostPort(), throwable);
+                        getActionInstance().getCheckInfo().getHostPort(), throwable);
             }
         });
     }
@@ -87,7 +87,7 @@ public class DiskLessReplCheckAction extends RedisConfigCheckAction {
         String targetVersion = getActionInstance().getHealthCheckConfig().getMinDiskLessReplVersion();
         if(version != null && StringUtil.compareVersion(version, targetVersion) < 1) {
             String message = String.format("Redis should not set %s as YES", REPL_DISKLESS_SYNC);
-            alertManager.alert(getActionInstance().getRedisInstanceInfo(), ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, message);
+            alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_REPL_DISKLESS_SYNC_ERROR, message);
             return false;
         }
         return true;
