@@ -25,6 +25,10 @@ public class ServerStartCmd extends AbstractForkProcessCmd {
         this.args = args;
     }
 
+    public String getId() {
+        return id;
+    }
+
     @Override
     protected void doExecute() throws Exception {
         String javaHome = System.getProperty("java.home");

@@ -27,9 +27,7 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
     @Override
     protected void doExecute() throws Exception {
         String redisPath = null;
-        if (os.startsWith("Linux") || arch.startsWith("arm")) {
-            redisPath = "src/test/resources/redis/Linux/redis-server";
-        } else if (os.startsWith("Mac")) {
+        if (os.startsWith("Mac")) {
             redisPath = "src/test/resources/redis/Mac/redis-server";
         }
 
