@@ -234,6 +234,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("crdt cross dc replication down", "crdt replication between cross dc master is unhealthy");
         }
     },
+    CRDT_BACKSTREAMING("crdt instance is on back streaming", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return true;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("crdt instance is on back streaming", "instance on back streaming can't read/write");
+        }
+    },
     ALERT_SYSTEM_OFF("alert system is turning off", EMAIL_DBA | EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
