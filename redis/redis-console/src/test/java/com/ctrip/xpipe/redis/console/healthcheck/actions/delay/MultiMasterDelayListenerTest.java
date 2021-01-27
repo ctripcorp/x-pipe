@@ -62,7 +62,7 @@ public class MultiMasterDelayListenerTest extends AbstractConsoleTest {
 
     @Before
     public void setupCrossMasterHealthStatusTest() {
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(currentMasterInfo);
+        Mockito.when(instance.getCheckInfo()).thenReturn(currentMasterInfo);
         Mockito.when(instance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.when(healthCheckConfig.getHealthyDelayMilli()).thenReturn(healthDelayMilli);
@@ -123,9 +123,9 @@ public class MultiMasterDelayListenerTest extends AbstractConsoleTest {
 
     @Test
     public void testAllDelayHealth() {
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(rbMasterInfo);
+        Mockito.when(instance.getCheckInfo()).thenReturn(rbMasterInfo);
         multiMasterDelayListener.onAction(new DelayActionContext(instance, 0L));
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(oyMasterInfo);
+        Mockito.when(instance.getCheckInfo()).thenReturn(oyMasterInfo);
         multiMasterDelayListener.onAction(new DelayActionContext(instance, 0L));
         multiMasterDelayListener.checkAllHealthStatus();
         Mockito.verify(alertManager, Mockito.times(0)).alert(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyString());
@@ -134,7 +134,7 @@ public class MultiMasterDelayListenerTest extends AbstractConsoleTest {
     @Test
     public void testAllDelayKeepHealthy() {
         long healthDelayNano = TimeUnit.MILLISECONDS.toNanos(healthDelayMilli/10);
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(rbMasterInfo);
+        Mockito.when(instance.getCheckInfo()).thenReturn(rbMasterInfo);
         multiMasterDelayListener.onAction(new DelayActionContext(instance, healthDelayNano));
         multiMasterDelayListener.checkAllHealthStatus();
 
@@ -160,11 +160,11 @@ public class MultiMasterDelayListenerTest extends AbstractConsoleTest {
     @Test
     public void testDelayRecovery() {
         testDelayUnhealthy();
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(rbMasterInfo);
+        Mockito.when(instance.getCheckInfo()).thenReturn(rbMasterInfo);
         multiMasterDelayListener.onAction(new DelayActionContext(instance, 0L));
         Mockito.verify(alertManager, Mockito.times(1)).alert(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyString());
 
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(oyMasterInfo);
+        Mockito.when(instance.getCheckInfo()).thenReturn(oyMasterInfo);
         multiMasterDelayListener.onAction(new DelayActionContext(instance, 0L));
         Mockito.verify(alertManager, Mockito.times(2)).alert(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyString());
         Mockito.verify(alertManager, Mockito.times(1)).alert("cluster1", "shard1", null, CRDT_CROSS_DC_REPLICATION_UP, "replication become healthy from jq");

@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -24,7 +25,7 @@ import java.util.Map;
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
+public class SentinelHelloCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
 
     private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 
@@ -47,7 +48,7 @@ public class SentinelHelloCheckActionFactory extends AbstractLeaderAwareHealthCh
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, consoleDbConfig,
                 clusterService);
-        ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+        ClusterType clusterType = instance.getCheckInfo().getClusterType();
         action.addListeners(collectorsByClusterType.get(clusterType));
         action.addControllers(controllersByClusterType.get(clusterType));
         return action;

@@ -59,6 +59,7 @@ public class MigrationPartialSuccessRollBackState extends AbstractMigrationState
 		}
         
         String error = errorMessage.toString();
+        logger.info("[doAction] {}", error);
         if(StringUtil.isEmpty(error)){
         	updateAndProcess(nextAfterSuccess());
         }else{

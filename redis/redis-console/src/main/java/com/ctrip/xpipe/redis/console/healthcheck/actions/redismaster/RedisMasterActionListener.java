@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionListener;
 
-public interface RedisMasterActionListener extends HealthCheckActionListener<RedisMasterActionContext> {
+public interface RedisMasterActionListener extends HealthCheckActionListener<RedisMasterActionContext, HealthCheckAction> {
 
     @Override
     default boolean worksfor(ActionContext t) {

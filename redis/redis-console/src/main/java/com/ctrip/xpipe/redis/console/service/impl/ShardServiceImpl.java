@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
@@ -9,6 +8,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
@@ -31,13 +31,16 @@ import java.util.stream.Collectors;
 
 @Service
 public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implements ShardService {
-	
+
 	@Autowired
 	private DcService dcService;
 	@Autowired
 	private ShardDao shardDao;
 	@Autowired
 	private ClusterMetaModifiedNotifier notifier;
+
+	@Autowired
+	private ClusterMonitorModifiedNotifier monitorNotifier;
 
 	@Autowired
 	private DelayService delayService;
@@ -56,7 +59,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
 	private ExecutorService executors;
-	
+
 	@Override
 	public ShardTbl find(final long shardId) {
 		return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
@@ -166,12 +169,44 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 				shardEvent.onEvent();
 			}
     	}
-    	
-    	/** Notify meta server **/
-		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
-    	if(null != relatedDcs) {
-    		notifier.notifyClusterUpdate(clusterName, relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
-    	}
+
+		clusterModifyNotify(clusterName, cluster);
+	}
+
+	@Override
+	public void deleteShards(ClusterTbl cluster, List<String> shardNames) {
+		if(cluster != null) {
+			String clusterName = cluster.getClusterName();
+			List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
+				@Override
+				public List<ShardTbl> doQuery() throws DalException {
+					return dao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME);
+				}
+			});
+
+			if (null != shards && !shards.isEmpty()) {
+				try {
+					shardDao.deleteShardsBatch(shards);
+				} catch (Exception e) {
+					throw new ServerException(e.getMessage());
+				}
+
+				for (ShardTbl shard : shards) {
+					// Call shard event
+					Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
+					ShardEvent shardEvent = null;
+					if (sentinels != null && !sentinels.isEmpty()) {
+						shardEvent = createShardDeleteEvent(clusterName, cluster, shard.getShardName(), shard, sentinels);
+					}
+					if (shardEvent != null) {
+						// RejectedExecutionException
+						shardEvent.onEvent();
+					}
+				}
+
+				clusterModifyNotify(clusterName, cluster);
+			}
+		}
 	}
 
 	@Override
@@ -296,6 +331,17 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 						monitorName, dupShardTbl.getSetinelMonitorName()));
 			}
 			return dupShardTbl;
+		}
+	}
+
+	private void clusterModifyNotify(String clusterName, ClusterTbl cluster) {
+		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
+		if(null == relatedDcs) return;
+
+		List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
+		notifier.notifyClusterUpdate(clusterName, dcs);
+		if (null != cluster && ClusterType.lookup(cluster.getClusterType()).supportMigration()) {
+			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}
 	}
 

@@ -13,6 +13,8 @@ public interface HealthCheckConfig {
 
     int checkIntervalMilli();
 
+    int clusterCheckIntervalMilli();
+
     int getHealthyDelayMilli();
 
     int getRedisConfCheckIntervalMilli();

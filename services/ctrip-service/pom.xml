@@ -112,7 +112,7 @@
         <dependency>
             <groupId>com.ctrip.platform</groupId>
             <artifactId>ctrip-datasource</artifactId>
-            <version>2.0.18</version>
+            <version>2.1.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.tomcat</groupId>
@@ -165,6 +165,13 @@
                     <artifactId>javax.servlet-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>mockwebserver</artifactId>
+            <version>3.12.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

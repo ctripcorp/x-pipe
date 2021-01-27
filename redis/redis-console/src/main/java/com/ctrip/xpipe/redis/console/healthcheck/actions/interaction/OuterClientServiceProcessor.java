@@ -34,7 +34,7 @@ public class OuterClientServiceProcessor implements HealthEventProcessor {
     @Override
     public void onEvent(AbstractInstanceEvent instanceEvent) {
 
-        RedisInstanceInfo info = instanceEvent.getInstance().getRedisInstanceInfo();
+        RedisInstanceInfo info = instanceEvent.getInstance().getCheckInfo();
         if(!instanceInBackupDc(info.getHostPort())) {
             logger.info("[onEvent][instance not in backupDc] {}, {}", instanceEvent.getClass().getSimpleName(), info);
             return;

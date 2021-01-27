@@ -44,6 +44,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
     @Before
     public void beforeDefaultSentinelCollectorTest() throws Exception {
         sentinelCollector = new DefaultSentinelHelloCollector();
+        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 500;
         HealthCheckEndpointFactory endpointFactory = mock(HealthCheckEndpointFactory.class);
         when(endpointFactory.getOrCreateEndpoint(any(HostPort.class))).thenAnswer(new Answer<Endpoint>() {
             @Override
@@ -55,6 +56,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractConsoleTest {
         sentinelCollector.setSessionManager(new DefaultRedisSessionManager()
                 .setExecutors(executors).setScheduled(scheduled).setEndpointFactory(endpointFactory)
                 .setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()));
+        sentinelCollector.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
         masterSentinels = Sets.newHashSet(
                 new HostPort("127.0.0.1", 5000),
                 new HostPort("127.0.0.1", 5001),

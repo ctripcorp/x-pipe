@@ -83,7 +83,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         instance = mock(RedisHealthCheckInstance.class);
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
 
         when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
@@ -99,7 +99,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         verify(finalStateSetterManager, never()).set(any(ClusterShardHostPort.class), anyBoolean());
 
         when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         when(consoleConfig.getDelayedMarkDownDcClusters()).thenReturn(Sets.newHashSet(new DcClusterDelayMarkDown()
                 .setDcId(info.getDcId()).setClusterId(info.getClusterId()).setDelaySecond(1)));
         sickHandler.markdown(new InstanceSick(instance));
@@ -132,7 +132,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         future.setSuccess(true);
         when(consoleServiceManager.quorumSatisfy(anyList(), any())).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
-        when(defaultDelayPingActionCollector.getState(instance.getRedisInstanceInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
+        when(defaultDelayPingActionCollector.getState(instance.getCheckInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
 
         AbstractInstanceEvent event = new InstanceUp(instance);
         upHandler.handle(event);
@@ -156,7 +156,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     private RedisHealthCheckInstance randomInstance(String dc) {
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
         RedisInstanceInfo info = new DefaultRedisInstanceInfo(dc, "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
         return instance;
     }
 

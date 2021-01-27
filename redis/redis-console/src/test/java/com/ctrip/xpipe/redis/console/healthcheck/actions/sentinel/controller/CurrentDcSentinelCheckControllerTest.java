@@ -39,7 +39,7 @@ public class CurrentDcSentinelCheckControllerTest extends AbstractConsoleTest {
     public void setupCurrentDcSentinelCheckControllerTest() {
         dcId = FoundationService.DEFAULT.getDataCenter();
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta(2));
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(info);
+        Mockito.when(instance.getCheckInfo()).thenReturn(info);
         Mockito.when(info.getDcId()).thenReturn(dcId);
         Mockito.when(info.getClusterId()).thenReturn(clusterId);
         Mockito.when(info.getShardId()).thenReturn(shardId);

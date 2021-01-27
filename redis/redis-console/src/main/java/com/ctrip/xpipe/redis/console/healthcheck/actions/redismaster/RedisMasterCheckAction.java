@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Oct 08, 2018
  */
-public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction {
+public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction<RedisHealthCheckInstance> {
 
     public RedisMasterCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);

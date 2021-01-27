@@ -8,6 +8,7 @@
     <member name="cluster-description" field="cluster_description" value-type="String" length="1024" nullable="false" />
     <member name="cluster-last-modified-time" field="cluster_last_modified_time" value-type="String" length="40" nullable="false" />
     <member name="status" field="status" value-type="String" length="24" nullable="false" />
+    <member name="migration-event-id" field="migration_event_id" value-type="long" length="20" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
@@ -573,8 +574,11 @@
   <entity name="migration-event-tbl" table="migration_event_tbl" alias="met">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="start-time" field="start_time" value-type="Date" nullable="false" />
+    <member name="break" field="break" value-type="boolean" nullable="false" />
     <member name="operator" field="operator" value-type="String" length="128" nullable="false" />
     <member name="event-tag" field="event_tag" value-type="String" length="150" nullable="false" />
+    <member name="exec-lock" field="exec_lock" value-type="String" length="128" nullable="false" />
+    <member name="lock-until" field="lock_until" value-type="long" length="19" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

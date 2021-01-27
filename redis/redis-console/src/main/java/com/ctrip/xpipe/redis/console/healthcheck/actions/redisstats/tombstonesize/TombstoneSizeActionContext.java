@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.tombstonesi
 import com.ctrip.xpipe.redis.console.healthcheck.AbstractActionContext;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 
-public class TombstoneSizeActionContext extends AbstractActionContext<Long> {
+public class TombstoneSizeActionContext extends AbstractActionContext<Long, RedisHealthCheckInstance> {
 
     public TombstoneSizeActionContext(RedisHealthCheckInstance instance, Long result) {
         super(instance, result);

@@ -75,8 +75,8 @@ public class RedisPromotor {
 		SimpleObjectPool<NettyClient> fsyncPool = null;
 		SimpleObjectPool<NettyClient> clientPool = null;
 		try{
-			fsyncPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint(promoteServerIp, promoteServerPort));
-			clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint(promoteServerIp, promoteServerPort));
+			fsyncPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(promoteServerIp, promoteServerPort));
+			clientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(promoteServerIp, promoteServerPort));
 			waitUntilSlaveSync(redisSlave, this.promoteServerIp, this.promoteServerPort, waitTimeoutMilli);
 			
 			try{

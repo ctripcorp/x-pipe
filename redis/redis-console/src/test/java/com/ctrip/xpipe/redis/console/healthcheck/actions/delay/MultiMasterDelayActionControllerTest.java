@@ -35,7 +35,7 @@ public class MultiMasterDelayActionControllerTest {
     private RedisHealthCheckInstance mockInstance(String dcId, boolean isMaster) {
         RedisInstanceInfo info = new DefaultRedisInstanceInfo(dcId, "cluster", "shard", new HostPort(), null, ClusterType.BI_DIRECTION);
         info.isMaster(isMaster);
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(info);
+        Mockito.when(instance.getCheckInfo()).thenReturn(info);
         return instance;
     }
 

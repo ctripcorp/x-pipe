@@ -95,8 +95,7 @@ public class CtripPlatformEmailServiceTest {
         String text = IOUtils.toString(ins);
         Email email = new Email();
         email.setBodyContent(text);
-        email.addRecipient("zhuchen@ctrip.com");
-        email.addRecipient("tt.tu@ctrip.com");
+        email.addRecipient("sl_li@ctrip.com");
         email.setSender("xpipe@test.com");
         email.setSubject("XPipe Test");
         return email;

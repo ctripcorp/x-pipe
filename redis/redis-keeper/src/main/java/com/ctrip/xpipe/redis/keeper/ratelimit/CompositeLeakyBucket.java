@@ -185,6 +185,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
                 }
                 if(closed.get() == keeperConfig.isKeeperRateLimitOpen()) {
                     logger.warn("[checkKeeperConfigChange][close-state-change]{} -> {}", closed.get(), !keeperConfig.isKeeperRateLimitOpen());
+                    origin.reset();
                     if(closed.get()) {
                         EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_CLOSE);
                     } else {

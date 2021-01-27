@@ -46,13 +46,13 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractConsoleTest {
     private DelayActionListener delayActionListener;
     private PingActionListener pingActionListener;
 
-    private int downAfterMilli = 200;
+    private int downAfterMilli = 400;
     private int healthyDelayMilli = 100;
     private int checkIntervalMilli = 100;
 
     @Before
     public void setupCurrentDcDelayPingActionCollectorTest() {
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(remoteMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(remoteMaster);
         Mockito.when(instance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
         Mockito.when(healthCheckConfig.pingDownAfterMilli()).thenReturn(downAfterMilli);
         Mockito.when(healthCheckConfig.delayDownAfterMilli()).thenReturn(downAfterMilli);
@@ -65,9 +65,9 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractConsoleTest {
 
     @Test
     public void testSupportInstance() {
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(currentMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(currentMaster);
         Assert.assertTrue(collector.supportInstance(instance));
-        Mockito.when(instance.getRedisInstanceInfo()).thenReturn(remoteMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(remoteMaster);
         Assert.assertFalse(collector.supportInstance(instance));
     }
 
@@ -91,7 +91,7 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractConsoleTest {
         pingActionListener.onAction(new PingActionContext(instance, false));
         delayActionListener.onAction(new DelayActionContext(instance, healthyDelayMilli * 2L));
 
-        sleep(downAfterMilli + checkIntervalMilli);
+        sleep(downAfterMilli + checkIntervalMilli + 10);
         Mockito.verify(alertManager, Mockito.times(1)).alert(Mockito.any(RedisInstanceInfo.class), Mockito.any(), Mockito.anyString());
 
         // no repeat alert
@@ -107,6 +107,7 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractConsoleTest {
             pingActionListener.onAction(new PingActionContext(instance, false));
             delayActionListener.onAction(new DelayActionContext(instance, healthyDelayMilli * 2L));
             ALERT_TYPE type = invocation.getArgumentAt(1, ALERT_TYPE.class);
+            logger.info("[testInstanceUpAfterDown][doAlert] {}", type);
             Assert.assertEquals(ALERT_TYPE.CRDT_INSTANCE_UP, type);
 
             return null;

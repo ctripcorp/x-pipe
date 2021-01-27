@@ -51,7 +51,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
     @Mock
     protected ClusterService clusterService;
 
-    private int sentinelCollectInterval = 300;
+    private int sentinelCollectInterval = 600;
 
     private int sentinelCheckInterval = 2000;
 
@@ -141,16 +141,16 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
         allActionDoTask();
 
         assertServerCalled(false, true, false, false);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
 
         setServerErrResp(false, false, false, false);
         resetCalled();
         allActionDoTask();
 
         assertServerCalled(false, false, true, true);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
+        Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
     }
 
     @Test
@@ -169,8 +169,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
         allActionDoTask();
 
         assertServerCalled(false, true, false, false);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
+        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
 
         setServerHang(false, false, false, false);
         resetCalled();
@@ -178,8 +178,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
 
 
         assertServerCalled(false, false, true, true);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(5)).onAction(Mockito.any());
+        Mockito.verify(sentinelHelloCollector, Mockito.times(2)).onAction(Mockito.any());
     }
 
     @Test
@@ -304,9 +304,9 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
     }
 
     private void allActionDoTask() {
-        sleep(sentinelCheckInterval);
+        sleep(sentinelCheckInterval); // wait for check interval
         allActionDoTaskWithoutWait();
-        sleep(sentinelCollectInterval * 2);
+        sleep(sentinelCollectInterval + 100); // wait for hello collect
     }
 
     private void allActionDoTaskWithoutWait() {
@@ -374,7 +374,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractConsoleTest {
         private void initMeta(String currentDc, String activeDc, boolean isMaster) throws Exception {
             checkInstance = newRandomRedisHealthCheckInstance(currentDc, activeDc, redisServer.getPort());
             ((DefaultRedisHealthCheckInstance)checkInstance).setHealthCheckConfig(healthCheckConfig);
-            checkInstance.getRedisInstanceInfo().isMaster(isMaster);
+            checkInstance.getCheckInfo().isMaster(isMaster);
             checkAction = new SentinelHelloCheckAction(scheduled, checkInstance, executors, config, clusterService);
             checkAction.addController(checkActionController);
             checkAction.addListener(checkActionController);

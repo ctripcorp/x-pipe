@@ -394,6 +394,22 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("DB variables not as expected", "XPipe need some special DB variables");
         }
+    },
+    TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON("beacon meta change too much", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("unregister cluster monitor too many", "too many clusters need to be excluded one round, skip");
+        }
     };
 
     private String simpleDesc;

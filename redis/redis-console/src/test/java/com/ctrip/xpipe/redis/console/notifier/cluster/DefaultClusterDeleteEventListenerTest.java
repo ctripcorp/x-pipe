@@ -36,7 +36,7 @@ public class DefaultClusterDeleteEventListenerTest {
 
     @Test
     public void update() throws Exception {
-        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent("cluster", Executors.newScheduledThreadPool(1));
+        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent("cluster", 0, Executors.newScheduledThreadPool(1));
 
         shardDeleteEvent.addObserver(shardDeleteEventListener);
 

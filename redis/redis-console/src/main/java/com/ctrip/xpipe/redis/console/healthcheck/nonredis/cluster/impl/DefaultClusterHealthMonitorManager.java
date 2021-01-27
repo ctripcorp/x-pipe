@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.LeveledEmbededSet;
-import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyMonitorCollectorManager;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -55,18 +54,18 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
 
     @Override
     public void healthCheckMasterDown(RedisHealthCheckInstance instance) {
-        DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
-        monitor.healthCheckMasterDown(instance.getRedisInstanceInfo().getShardId());
+        DefaultClusterHealthMonitor monitor = getOrCreate(instance.getCheckInfo().getClusterId());
+        monitor.healthCheckMasterDown(instance.getCheckInfo().getShardId());
     }
 
     @Override
     public void healthCheckMasterUp(RedisHealthCheckInstance instance) {
-        if(!monitors.containsKey(instance.getRedisInstanceInfo().getClusterId())) {
-            logger.debug("[healthCheckMasterUp] Cluster is not warned before: {}", instance.getRedisInstanceInfo().getClusterId());
+        if(!monitors.containsKey(instance.getCheckInfo().getClusterId())) {
+            logger.debug("[healthCheckMasterUp] Cluster is not warned before: {}", instance.getCheckInfo().getClusterId());
             return;
         }
-        DefaultClusterHealthMonitor monitor = getOrCreate(instance.getRedisInstanceInfo().getClusterId());
-        monitor.healthCheckMasterUp(instance.getRedisInstanceInfo().getShardId());
+        DefaultClusterHealthMonitor monitor = getOrCreate(instance.getCheckInfo().getClusterId());
+        monitor.healthCheckMasterUp(instance.getCheckInfo().getShardId());
     }
 
     @Override
@@ -149,11 +148,11 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
             @Override
             protected void doRun() {
                 AbstractInstanceEvent event = (AbstractInstanceEvent) args;
-                if (event.getInstance().getRedisInstanceInfo().getClusterType().supportMultiActiveDC()) {
+                if (event.getInstance().getCheckInfo().getClusterType().supportMultiActiveDC()) {
                     // only care about the master status for single active dc cluster
                     return;
                 }
-                if(!event.getInstance().getRedisInstanceInfo().isMaster()) {
+                if(!event.getInstance().getCheckInfo().isMaster()) {
                     return;
                 }
                 if(event instanceof InstanceSick || event instanceof InstanceDown) {

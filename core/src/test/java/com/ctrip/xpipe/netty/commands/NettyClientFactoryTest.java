@@ -30,17 +30,12 @@ public class NettyClientFactoryTest extends AbstractTest {
 
     private Server server;
 
-    @BeforeClass
-    public static void beforeNettyClientFactoryTestClass() {
-        System.setProperty("io.netty.allocator.useCacheForAllThreads", "false");
-    }
-
     @Before
     public void beforeNettyClientFactoryTest() throws Exception {
         if(server == null) {
             server = startServer("+PONG");
         }
-        factory = new NettyClientFactory(new DefaultEndPoint(LOCAL_HOST, server.getPort()));
+        factory = new NettyClientFactory(new DefaultEndPoint(LOCAL_HOST, server.getPort()), false);
         factory.start();
     }
 
@@ -56,6 +51,7 @@ public class NettyClientFactoryTest extends AbstractTest {
             @Override
             public void run() {
                 try {
+                    logger.info("[thread] {}", Thread.currentThread().getClass());
                     Field field = FieldUtils.getDeclaredField(allocator.getClass(), "threadCache", true);
                     Object threadCache = field.get(allocator);
                     logger.info("[class]{}", threadCache.getClass());

@@ -11,11 +11,9 @@ import com.ctrip.xpipe.utils.StringUtil;
  * <p>
  * Sep 06, 2018
  */
-public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
+public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements RedisInstanceInfo {
 
     private String dcId;
-
-    private String clusterId;
 
     private String shardId;
 
@@ -23,13 +21,10 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
     private boolean isMaster;
 
-    private String activeDc;
-
     private boolean crossRegion;
 
-    private ClusterType clusterType;
-
     public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc, ClusterType clusterType) {
+        super(clusterId, activeDc, clusterType);
         this.dcId = dcId;
         this.clusterId = clusterId;
         this.shardId = shardId;
@@ -41,16 +36,6 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
     @Override
     public ClusterShardHostPort getClusterShardHostport() {
         return new ClusterShardHostPort(clusterId, shardId, hostPort);
-    }
-
-    @Override
-    public String getClusterId() {
-        return clusterId;
-    }
-
-    @Override
-    public ClusterType getClusterType() {
-        return clusterType;
     }
 
     @Override
@@ -75,16 +60,6 @@ public class DefaultRedisInstanceInfo implements RedisInstanceInfo {
 
     public void isMaster(boolean master) {
         isMaster = master;
-    }
-
-    @Override
-    public String getActiveDc() {
-        return activeDc;
-    }
-
-    @Override
-    public void setActiveDc(String activeDc) {
-        this.activeDc = activeDc;
     }
 
     @Override

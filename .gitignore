@@ -19,6 +19,7 @@ reports
 # local files
 .DS_Store
 datasources.xml
+!redis/redis-integration-test/src/test/resources/datasources.xml
 !redis/redis-console/src/test/resources/datasources.xml
 config-cache/*
 

@@ -1,17 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckActionFactory;
-import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.*;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DelayPingActionCollector;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -27,7 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Oct 11, 2018
  */
 @Component
-public class DelayActionFactory implements HealthCheckActionFactory<DelayAction>, OneWaySupport, BiDirectionSupport {
+public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAction>, OneWaySupport, BiDirectionSupport {
 
     @Autowired
     private PingService pingService;
@@ -63,7 +59,7 @@ public class DelayActionFactory implements HealthCheckActionFactory<DelayAction>
     @Override
     public DelayAction create(RedisHealthCheckInstance instance) {
         DelayAction delayAction;
-        ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+        ClusterType clusterType = instance.getCheckInfo().getClusterType();
         if (clusterType.supportMultiActiveDC()) {
             delayAction = new MultiDcDelayAction(scheduled, instance, executors, pingService);
         } else {

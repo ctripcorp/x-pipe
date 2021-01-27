@@ -28,7 +28,7 @@ public class CurrentDcHelloCollector implements BiDirectionSupport, SentinelHell
 
     @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         getCheckCollectorController(info.getClusterId(), info.getShardId()).onAction(context);
     }
 

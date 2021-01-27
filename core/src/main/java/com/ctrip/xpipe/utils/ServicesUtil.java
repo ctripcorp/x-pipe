@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.api.migration.DcMapper;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
@@ -67,6 +68,10 @@ public class ServicesUtil {
 
 	public static EmailService getEmailService() {
 		return load(EmailService.class);
+	}
+
+	public static MonitorServiceFactory getMonitorServiceFactory() {
+		return load(MonitorServiceFactory.class);
 	}
 
 	@SuppressWarnings("unchecked")
