@@ -23,12 +23,10 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
 
     @Override
     public void onAction(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId)) return;
 
-        collectHello(context);
-
-        if (checkFinishedInstance.size() >= getRedisCntInCurrentDc() - 1) {
+        if (collectHello(context) >= getRedisCntInCurrentDc() - 1) {
             if (checkFinishedInstance.size() == checkFailInstance.size()) {
                 logger.info("[{}-{}][onAction] sentinel hello all fail, skip sentinel adjust", clusterId, shardId);
                 resetCheckResult();

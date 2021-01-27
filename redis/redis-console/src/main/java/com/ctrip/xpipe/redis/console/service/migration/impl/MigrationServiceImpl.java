@@ -258,14 +258,18 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public void continueMigrationCluster(final long eventId, final long clusterId) {
 
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).process();
+            try {
+                migrationEventManager.getEvent(eventId).processCluster(clusterId);
+            } catch (Exception e) {
+                logger.info("[continueMigrationCluster][{}][{}] fail", eventId, clusterId, e);
+            }
         } else {
             throw new IllegalArgumentException(String.format("event %d, cluster:%d not found", eventId, clusterId));
         }
     }
 
     @Override
-    public void continueMigrationEvent(long id) {
+    public void continueMigrationEvent(long id) throws Exception {
 
         logger.info("[continueMigrationEvent]{}", id);
         MigrationEvent event = getEvent(id);
@@ -306,7 +310,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Override
     public void cancelMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).cancel();
+            try {
+                migrationEventManager.getEvent(eventId).cancelCluster(clusterId);
+            } catch (Exception e) {
+                logger.info("[cancelMigrationCluster][{}][{}] fail", eventId, clusterId, e);
+            }
         }
     }
 
@@ -318,14 +326,22 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Override
     public void forcePublishMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).forcePublish();
+            try {
+                migrationEventManager.getEvent(eventId).forceClusterPublish(clusterId);
+            } catch (Exception e) {
+                logger.info("[forcePublishMigrationCluster][{}][{}] fail", eventId, clusterId, e);
+            }
         }
     }
 
     @Override
     public void forceEndMigrationClsuter(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
-            migrationEventManager.getEvent(eventId).getMigrationCluster(clusterId).forceEnd();
+            try {
+                migrationEventManager.getEvent(eventId).forceClusterEnd(clusterId);
+            } catch (Exception e) {
+                logger.info("[forceEndMigrationClsuter][{}][{}] fail", eventId, clusterId, e);
+            }
         }
     }
 
@@ -471,6 +487,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     public MigrationServiceImpl setMigrationEventManager(MigrationEventManager migrationEventManager) {
         this.migrationEventManager = migrationEventManager;
         return this;
+    }
+
+    @VisibleForTesting
+    public MigrationEventManager getMigrationEventManager() {
+        return migrationEventManager;
     }
 
     @VisibleForTesting

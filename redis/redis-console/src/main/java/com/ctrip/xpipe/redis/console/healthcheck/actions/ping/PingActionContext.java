@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
  * <p>
  * Sep 06, 2018
  */
-public class PingActionContext extends AbstractActionContext<Boolean> {
+public class PingActionContext extends AbstractActionContext<Boolean, RedisHealthCheckInstance> {
 
     public PingActionContext(RedisHealthCheckInstance instance, Boolean pong) {
         super(instance, pong);

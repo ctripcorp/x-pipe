@@ -8,6 +8,7 @@ import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import java.util.Set;
 public class GroupedAlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
+    @Qualifier(GroupedAlertMessageDecorator.ID)
     private GroupedAlertMessageDecorator decorator;
 
     @Test

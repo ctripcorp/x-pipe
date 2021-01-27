@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+    <dc id="jq" lastModifiedTime="0000000000000000" zone="SHA">
+        <keeperContainers>
+            <keeperContainer id="1" ip="127.0.0.1" port="7080"/>
+            <keeperContainer id="2" ip="127.0.0.1" port="7081"/>
+            <keeperContainer id="3" ip="127.0.0.1" port="7082"/>
+        </keeperContainers>
+        <sentinel id="1" address="127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"/>
+        <cluster id="cluster1" active-dc="jq" backup-dcs="oy,fra" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1+shard1+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6379" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6380" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster1+shard2+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6381" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6382" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster2" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster2+shard1+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6479" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6480" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster2+shard2+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6481" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6482" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster3" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster3+shard2+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6387" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6388" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster3+shard1+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6389" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6390" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster4" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster4+shard2+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6395" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6396" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster4+shard1+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6397" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6398" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="oy" lastModifiedTime="0000000000000000" zone="SHA">
+        <keeperContainers>
+            <keeperContainer id="4" ip="127.0.0.1" port="7180"/>
+            <keeperContainer id="5" ip="127.0.0.1" port="7181"/>
+            <keeperContainer id="6" ip="127.0.0.1" port="7182"/>
+        </keeperContainers>
+        <sentinel id="2" address="127.0.0.1:17172,127.0.0.1:17172"/>
+        <cluster id="cluster1" active-dc="jq" backup-dcs="oy,fra" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1+shard1+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6383" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6384" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster1+shard2+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6385" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6386" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster2" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster2+shard1+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6483" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6484" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster2+shard2+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6485" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6486" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster3" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster3+shard2+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6391" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6392" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster3+shard1+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6393" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6394" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster4" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster4+shard2+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6399" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6400" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster4+shard1+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6401" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6402" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="fra" lastModifiedTime="0000000000000000" zone="FRA">
+        <sentinel id="3" address="127.0.0.1:32222,127.0.0.1:32223"/>
+        <cluster id="cluster1" active-dc="jq" backup-dcs="oy,fra" org-id="1" type="ONE_WAY">
+            <shard id="shard1" sentinelId="3" sentinelMonitorName="cluster1+shard1+fra">
+                <redis id="unknown" ip="127.0.0.1" port="6579" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard2" sentinelId="3" sentinelMonitorName="cluster1+shard2+fra">
+                <redis id="unknown" ip="127.0.0.1" port="6580" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>

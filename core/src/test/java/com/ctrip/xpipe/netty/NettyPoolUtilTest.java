@@ -33,7 +33,7 @@ public class NettyPoolUtilTest extends AbstractTest {
         Server server = startServer("+PONG");
         int beforeSize = Thread.getAllStackTraces().size();
         for(int i = 0; i < tasks; i++) {
-            SimpleObjectPool<NettyClient> pool = NettyPoolUtil.createNettyPool(new DefaultEndPoint(LOCAL_HOST, server.getPort()));
+            SimpleObjectPool<NettyClient> pool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(LOCAL_HOST, server.getPort()));
             pool.borrowObject().sendRequest(Unpooled.copiedBuffer("+PING\r\n".getBytes()));
         }
         int afterSize = Thread.getAllStackTraces().size();

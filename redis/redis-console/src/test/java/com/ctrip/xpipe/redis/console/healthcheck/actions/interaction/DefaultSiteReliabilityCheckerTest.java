@@ -57,7 +57,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
         instance = mock(RedisHealthCheckInstance.class);
         info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort("localhost", 1234), "dc", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
         when(metaCache.getAllActiveRedisOfDc(anyString(), anyString())).thenReturn(Lists.newArrayList(info.getHostPort(), new HostPort("localhost", 5678)));
     }
 
@@ -111,7 +111,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
         }
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc2", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
         result = checker.isSiteHealthy(new InstanceDown(instance));
         Assert.assertTrue(result);
     }
@@ -127,7 +127,7 @@ public class DefaultSiteReliabilityCheckerTest extends AbstractRedisTest {
     private RedisHealthCheckInstance relatedInstance(HostPort hostPort) {
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", hostPort, "dc", ClusterType.ONE_WAY);
-        when(instance.getRedisInstanceInfo()).thenReturn(info);
+        when(instance.getCheckInfo()).thenReturn(info);
         return instance;
     }
 }

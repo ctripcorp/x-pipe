@@ -55,8 +55,8 @@ public class ConfigRewriteCheckAction extends RedisConfigCheckAction {
                 return;
             }
         }
-        alertManager.alert(getActionInstance().getRedisInstanceInfo(), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE,
+        alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE,
                 throwable.getClass().getSimpleName());
-        logger.error("[configRewrite] Redis:{}", instance.getRedisInstanceInfo(), throwable);
+        logger.error("[configRewrite] Redis:{}", instance.getCheckInfo(), throwable);
     }
 }

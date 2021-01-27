@@ -26,7 +26,7 @@ public class MetricDelayListener implements DelayActionListener, OneWaySupport, 
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
     private MetricData getPoint(DelayActionContext context) {
-        RedisInstanceInfo info = context.instance().getRedisInstanceInfo();
+        RedisInstanceInfo info = context.instance().getCheckInfo();
 
         MetricData data = new MetricData(TYPE, info.getDcId(), info.getClusterId(), info.getShardId());
         data.setValue(context.getResult() / THOUSAND);

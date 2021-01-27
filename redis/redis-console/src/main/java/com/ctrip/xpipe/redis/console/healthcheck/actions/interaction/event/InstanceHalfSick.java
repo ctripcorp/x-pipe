@@ -11,7 +11,7 @@ public class InstanceHalfSick extends AbstractInstanceEvent {
 
     @Override
     public int hashCode() {
-        return ObjectUtils.hashCode(instance.getRedisInstanceInfo().getHostPort());
+        return ObjectUtils.hashCode(instance.getCheckInfo().getHostPort());
     }
 
     @Override
@@ -23,6 +23,6 @@ public class InstanceHalfSick extends AbstractInstanceEvent {
             return false;
         }
         InstanceHalfSick other = (InstanceHalfSick) obj;
-        return other.instance.getRedisInstanceInfo().getHostPort().equals(this.instance.getRedisInstanceInfo().getHostPort());
+        return other.instance.getCheckInfo().getHostPort().equals(this.instance.getCheckInfo().getHostPort());
     }
 }

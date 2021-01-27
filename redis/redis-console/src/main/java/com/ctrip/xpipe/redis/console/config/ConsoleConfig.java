@@ -30,6 +30,8 @@ public interface ConsoleConfig extends CoreConfig {
 	
 	int getRedisReplicationHealthCheckInterval();
 
+	int getClusterHealthCheckInterval();
+
 	HickwallMetricInfo getHickwallMetricInfo();
 
 	int getHealthyDelayMilli();
@@ -115,4 +117,11 @@ public interface ConsoleConfig extends CoreConfig {
 	String getParallelConsoleDomain();
 
 	boolean isConsoleSiteUnstable();
+
+	int getMigrationExecLockTimeoutMilli();
+
+	String getDefaultBeaconHost();
+
+	Map<Long, String> getBeaconHosts();
+
 }

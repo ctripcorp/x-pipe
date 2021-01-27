@@ -66,7 +66,7 @@ public class DelayActionTest extends AbstractRedisTest {
         instance = new DefaultRedisHealthCheckInstance();
         instance.setSession(session);
         instance.setHealthCheckConfig(config);
-        instance.setRedisInstanceInfo(info);
+        instance.setInstanceInfo(info);
 
         action = mockAction();
     }
@@ -191,7 +191,7 @@ public class DelayActionTest extends AbstractRedisTest {
 
     private DelayAction mockAction() {
         DelayAction action = new DelayAction(scheduled, instance, executors, pingService);
-        HealthCheckActionListener<DelayActionContext> listener = Mockito.mock(HealthCheckActionListener.class);
+        HealthCheckActionListener<DelayActionContext, HealthCheckAction> listener = Mockito.mock(HealthCheckActionListener.class);
         action.addListener(listener);
         delayHealth = new AtomicBoolean(false);
 

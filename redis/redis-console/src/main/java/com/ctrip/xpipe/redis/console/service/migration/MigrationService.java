@@ -49,7 +49,7 @@ public interface MigrationService {
 
     void continueMigrationCluster(long eventId, long clusterId);
 
-    void continueMigrationEvent(long eventId);
+    void continueMigrationEvent(long eventId) throws Exception;
 
     MigrationEvent getMigrationEvent(long eventId);
 

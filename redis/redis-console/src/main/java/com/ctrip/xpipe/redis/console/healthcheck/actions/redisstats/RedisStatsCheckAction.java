@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.session.Callbackable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-public abstract class RedisStatsCheckAction<T, K> extends AbstractLeaderAwareHealthCheckAction {
+public abstract class RedisStatsCheckAction<T, K> extends AbstractLeaderAwareHealthCheckAction<RedisHealthCheckInstance> {
 
     protected CommandFuture<T> commandFuture;
 
@@ -48,6 +48,6 @@ public abstract class RedisStatsCheckAction<T, K> extends AbstractLeaderAwareHea
 
     protected abstract CommandFuture<T> executeRedisCommandForStats(Callbackable<T> callback);
 
-    protected abstract ActionContext<K> generateActionContext(T result);
+    protected abstract ActionContext<K, RedisHealthCheckInstance> generateActionContext(T result);
 
 }

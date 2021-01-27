@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.impl;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Lists;
@@ -29,18 +31,21 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<HostPort, RedisHealthCheckInstance> instances = Maps.newConcurrentMap();
 
+    private ConcurrentMap<String, ClusterHealthCheckInstance> clusterHealthCheckerInstances = Maps.newConcurrentMap();
+
     @Autowired
-    private RedisHealthCheckInstanceFactory instanceFactory;
+    private HealthCheckInstanceFactory instanceFactory;
 
     @Override
     public RedisHealthCheckInstance getOrCreate(RedisMeta redis) {
         HostPort key = new HostPort(redis.getIp(), redis.getPort());
-        return MapUtils.getOrCreate(instances, key, new ObjectFactory<RedisHealthCheckInstance>() {
-            @Override
-            public RedisHealthCheckInstance create() {
-                return instanceFactory.create(redis);
-            }
-        });
+        return MapUtils.getOrCreate(instances, key, () -> instanceFactory.create(redis));
+    }
+
+    @Override
+    public ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster) {
+        String key = cluster.getId().toLowerCase();
+        return MapUtils.getOrCreate(clusterHealthCheckerInstances, key, () -> instanceFactory.create(cluster));
     }
 
     @Override
@@ -51,16 +56,31 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public void remove(HostPort hostPort) {
         RedisHealthCheckInstance instance = instances.remove(hostPort);
-        try {
-            LifecycleHelper.stopIfPossible(instance);
-        } catch (Exception e) {
-            logger.error("[remove]", e);
-        }
+        stopCheck(instance);
+    }
+
+    @Override
+    public void remove(String cluster) {
+        ClusterHealthCheckInstance instance = clusterHealthCheckerInstances.remove(cluster.toLowerCase());
+        stopCheck(instance);
     }
 
     @Override
     public List<RedisHealthCheckInstance> getAllRedisInstance() {
         return Lists.newLinkedList(instances.values());
+    }
+
+    @Override
+    public List<ClusterHealthCheckInstance> getAllClusterInstance() {
+        return Lists.newLinkedList(clusterHealthCheckerInstances.values());
+    }
+
+    private void stopCheck(HealthCheckInstance instance) {
+        try {
+            LifecycleHelper.stopIfPossible(instance);
+        } catch (Exception e) {
+            logger.error("[stopCheck]", e);
+        }
     }
 
 }

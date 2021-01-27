@@ -43,20 +43,20 @@ public class CrossMasterDelayService implements DelayActionListener, BiDirection
     @Override
     public void onAction(DelayActionContext context) {
         RedisHealthCheckInstance instance = context.instance();
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         String targetDcId = info.getDcId();
         DcClusterShard key = new DcClusterShard(currentDcId, info.getClusterId(), info.getShardId());
 
         if (!currentDcId.equalsIgnoreCase(targetDcId)) {
             if (!crossMasterDelays.containsKey(key)) crossMasterDelays.put(key, Maps.newConcurrentMap());
-            crossMasterDelays.get(key).put(targetDcId, Pair.of(context.instance().getRedisInstanceInfo().getHostPort(), context.getResult()));
+            crossMasterDelays.get(key).put(targetDcId, Pair.of(context.instance().getCheckInfo().getHostPort(), context.getResult()));
         }
     }
 
     @Override
-    public void stopWatch(HealthCheckAction action) {
+    public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
         RedisHealthCheckInstance instance = action.getActionInstance();
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         DcClusterShard key = new DcClusterShard(currentDcId, info.getClusterId(), info.getShardId());
 
         if (currentDcId.equalsIgnoreCase(info.getDcId())) {

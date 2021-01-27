@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.ActionMigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Doing;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Inited;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateActionState;
 import org.slf4j.Logger;
@@ -158,7 +159,12 @@ public abstract class AbstractMigrationState implements ActionMigrationState {
     }
 
     protected void updateAndForceProcess(MigrationState state) {
-        markDone();
+        try {
+            markDone();
+        } catch (Throwable th) {
+            logger.info("[updateAndForceProcess] ignore mark done fail", th);
+        }
+
         updateAndProcess(state, true, true);
     }
 
@@ -179,6 +185,12 @@ public abstract class AbstractMigrationState implements ActionMigrationState {
             getHolder().updateStat(stat);
             if (process) {
                 getHolder().process();
+            } else {
+                try {
+                    getHolder().stop();
+                } catch (Exception e) {
+                    logger.info("[updateAndProcess]{} stop fail", getHolder().clusterName(), e);
+                }
             }
         } else {
             logger.info("[updateAndProcess][already continue]{}, {}, {}", getHolder().clusterName(), stat, process);

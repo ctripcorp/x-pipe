@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
+import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -37,6 +38,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected KeeperContainerService keeperContainerService;
     @Autowired
     protected ClusterMetaModifiedNotifier notifier;
+    @Autowired
+    protected ClusterMonitorModifiedNotifier monitorNotifier;
     @Autowired
     protected DcService dcService;
 
@@ -307,12 +310,17 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         ClusterTbl cluster = clusterService.find(clusterName);
         if (null == cluster) throw new IllegalArgumentException("not exist cluster " + clusterName);
 
-        if (ClusterType.lookup(cluster.getClusterType()).supportMultiActiveDC()) {
+        ClusterType type = ClusterType.lookup(cluster.getClusterType());
+        if (type.supportMultiActiveDC()) {
             List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
             if (null != dcTbls) notifier.notifyClusterUpdate(clusterName,
                     dcTbls.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
         } else {
             notifier.notifyClusterUpdate(clusterName, Collections.singletonList(dcName));
+        }
+
+        if (type.supportMigration()) {
+            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
         }
     }
 

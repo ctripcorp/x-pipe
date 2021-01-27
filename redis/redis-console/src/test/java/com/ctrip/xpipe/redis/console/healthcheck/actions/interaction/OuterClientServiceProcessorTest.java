@@ -88,7 +88,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         processor.setEventHandlers(Lists.newArrayList(instanceSickHandler, instanceDownHandler, instanceUpHandler));
 
         instance = mock(RedisHealthCheckInstance.class);
-        when(instance.getRedisInstanceInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort, dc, ClusterType.ONE_WAY));
+        when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo(dc, cluster, shard, hostPort, dc, ClusterType.ONE_WAY));
 
         FinalStateSetterManager<ClusterShardHostPort, Boolean> manager = mock(FinalStateSetterManager.class);
         when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(manager);
@@ -103,7 +103,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(metaCache.inBackupDc(hostPort)).thenReturn(true);
         when(checker.isSiteHealthy(any())).thenReturn(true);
         processor.onEvent(new InstanceSick(instance));
-        verify(alertManager, atLeastOnce()).alert(instance.getRedisInstanceInfo(), ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
+        verify(alertManager, atLeastOnce()).alert(instance.getCheckInfo(), ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
     }
 
     @Test

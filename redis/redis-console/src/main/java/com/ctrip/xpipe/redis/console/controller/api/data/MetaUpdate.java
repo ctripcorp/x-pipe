@@ -5,7 +5,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
@@ -21,7 +20,6 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
@@ -394,10 +393,10 @@ public class MetaUpdate extends AbstractConsoleController {
         logger.info("[deleteShard] Delete Shard {} - {}", clusterName, shardName);
         try {
             if(clusterService.find(clusterName) == null) {
-                RetMessage.createSuccessMessage("Cluster already not exist");
+                return RetMessage.createSuccessMessage("Cluster already not exist");
             }
             if(shardService.find(clusterName, shardName) == null) {
-                RetMessage.createSuccessMessage("Shard already not exist");
+                return RetMessage.createSuccessMessage("Shard already not exist");
             }
             shardService.deleteShard(clusterName, shardName);
             return RetMessage.createSuccessMessage("Successfully deleted shard");
@@ -407,31 +406,38 @@ public class MetaUpdate extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/sync",
-            method = RequestMethod.DELETE)
-    public RetMessage syncDeleteShard(@PathVariable String clusterName, @PathVariable String shardName) {
-        logger.info("[deleteShard] Delete Shard {} - {}", clusterName, shardName);
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/sync", method = RequestMethod.DELETE)
+    public RetMessage syncBatchDeleteShards(@PathVariable String clusterName, @RequestBody List<String> shardNames) {
+        logger.info("[deleteShard] Delete Shards {} - {}", clusterName, shardNames);
         try {
-            if (clusterService.find(clusterName) == null) {
-                RetMessage.createSuccessMessage("Cluster already not exist");
+            ClusterTbl clusterTbl = clusterService.find(clusterName);
+            if (clusterTbl == null) {
+                return RetMessage.createSuccessMessage("Cluster already not exist");
             }
-            if (shardService.find(clusterName, shardName) == null) {
-                RetMessage.createSuccessMessage("Shard already not exist");
+            List<ShardTbl> allShards = shardService.findAllByClusterName(clusterName);
+            if(!allShards.isEmpty()){
+                // some already deleted, some not
+                Set<String> allShardNames = allShards.stream().map(ShardTbl::getShardName).collect(Collectors.toSet());
+                if(!allShardNames.containsAll(shardNames)){
+                    return RetMessage.createSuccessMessage("Some shard already not exist");
+                }
+            }else {
+                return RetMessage.createSuccessMessage("Shard already not exist");
             }
-            shardService.deleteShard(clusterName, shardName);
+            shardService.deleteShards(clusterTbl, shardNames);
             List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
             for (DcTbl dcTbl : dcTbls) {
                 try {
                     metaServerConsoleServiceManagerWrapper.get(dcTbl.getDcName()).clusterModified(clusterName,
                             clusterMetaService.getClusterMeta(dcTbl.getDcName(), clusterName));
                 } catch (Exception e) {
-                    logger.warn("[modifiedCluster]", e);
+                    logger.warn("[modifiedCluster] notify dc {} MetaServer fail", dcTbl.getDcName(), e);
                     return RetMessage.createFailMessage("[" + dcTbl.getDcName() + "]MetaServer fails" + e.getMessage());
                 }
             }
             return RetMessage.createSuccessMessage("Successfully deleted shard");
         } catch (Exception e) {
-            logger.error("[deleteShard] {}", e);
+            logger.error("[deleteShard]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

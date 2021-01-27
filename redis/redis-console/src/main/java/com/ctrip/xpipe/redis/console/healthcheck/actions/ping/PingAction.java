@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>
  * Sep 06, 2018
  */
-public class PingAction extends AbstractHealthCheckAction<PingActionContext> {
+public class PingAction extends AbstractHealthCheckAction<RedisHealthCheckInstance> {
 
     private static final Logger logger = LoggerFactory.getLogger(PingAction.class);
 

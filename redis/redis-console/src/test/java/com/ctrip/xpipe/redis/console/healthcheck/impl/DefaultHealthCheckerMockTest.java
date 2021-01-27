@@ -58,7 +58,7 @@ public class DefaultHealthCheckerMockTest extends AbstractConsoleTest {
             Assert.assertTrue(expectedRedises.contains(redisHostPort));
             loadedRedises.add(redisHostPort);
             return null;
-        }).when(instanceManager).getOrCreate(Mockito.any());
+        }).when(instanceManager).getOrCreate(Mockito.any(RedisMeta.class));
         checker.doInitialize();
 
         Assert.assertEquals(expectedRedises, loadedRedises);

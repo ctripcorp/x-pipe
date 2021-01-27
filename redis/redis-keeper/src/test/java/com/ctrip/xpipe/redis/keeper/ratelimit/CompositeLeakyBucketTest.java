@@ -16,6 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
@@ -262,13 +263,12 @@ public class CompositeLeakyBucketTest extends AbstractTest {
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
         leakyBucket.setScheduled(scheduled);
         leakyBucket.checkKeeperConfigChange();
-        sleep(110);
+        sleep(200);
         AtomicInteger counter = new AtomicInteger();
         int task = 3 * 100, newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);
         CyclicBarrier barrier = new CyclicBarrier(task + 1);
 
-        sleep(110);
         executors.execute(new Runnable() {
             @Override
             public void run() {
@@ -295,13 +295,12 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             });
         }
 
-        latch.await(1000, TimeUnit.MILLISECONDS);
-        Assert.assertTrue(3 >= counter.get());
+        latch.await(5000, TimeUnit.MILLISECONDS);
+        Assert.assertEquals(3, counter.get());
 
         // second, close
         counter.set(0);
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
-        leakyBucket.checkKeeperConfigChange();
         sleep(200);
         CountDownLatch latch2 = new CountDownLatch(task);
         CyclicBarrier barrier2 = new CyclicBarrier(task + 1);
@@ -331,8 +330,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             });
         }
 
-        latch2.await(2000, TimeUnit.MILLISECONDS);
-        sleep(50);
+        latch2.await(5000, TimeUnit.MILLISECONDS);
         Assert.assertTrue(3 < counter.get());
 
         //third, open again
@@ -367,7 +365,27 @@ public class CompositeLeakyBucketTest extends AbstractTest {
             });
         }
 
-        latch3.await(1000, TimeUnit.MILLISECONDS);
-        Assert.assertTrue(3 < counter.get());
+        latch3.await(5000, TimeUnit.MILLISECONDS);
+        Assert.assertEquals(3, counter.get());
+    }
+
+    @Test
+    public void testReleaseAfterCloseLimit() {
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        leakyBucket.setScheduled(scheduled);
+        leakyBucket.checkKeeperConfigChange();
+        sleep(200);
+
+        int cnt = 0;
+        while(leakyBucket.tryAcquire()) cnt++;
+
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
+        sleep(200);
+
+        IntStream.range(0, cnt).forEach(i -> leakyBucket.release());
+        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        sleep(200);
+
+        Assert.assertTrue(leakyBucket.tryAcquire());
     }
 }

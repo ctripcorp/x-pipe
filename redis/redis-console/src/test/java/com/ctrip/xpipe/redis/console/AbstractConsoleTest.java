@@ -65,7 +65,7 @@ public abstract class AbstractConsoleTest extends AbstractRedisTest{
 
 	protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(RedisInstanceInfo info) throws Exception {
 		DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
-		instance.setRedisInstanceInfo(info);
+		instance.setInstanceInfo(info);
 		instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
 		instance.setHealthCheckConfig(new DefaultHealthCheckConfig(new DefaultConsoleConfig()));
 		instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool()));

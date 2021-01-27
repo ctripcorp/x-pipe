@@ -77,7 +77,7 @@ public class DelayPingActionCollectorTest extends AbstractConsoleIntegrationTest
         LifecycleHelper.startIfPossible(action);
         while(!Thread.currentThread().isInterrupted()) {
             sleep(1000);
-            HostPort hostPort = action.getActionInstance().getRedisInstanceInfo().getHostPort();
+            HostPort hostPort = action.getActionInstance().getCheckInfo().getHostPort();
             HEALTH_STATE health_state = collector.createOrGetHealthStatus(instance).getState();
             logger.info("[{}]", health_state);
             logger.info("[Health State][{}] {}", hostPort, collector.getState(hostPort));

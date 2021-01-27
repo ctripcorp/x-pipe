@@ -45,7 +45,7 @@ public class CurrentDcSentinelHelloAggregationCollectorTest extends AbstractCons
     public void setupCurrentDcSentinelHelloAggregationCollectorTest() {
         dcId = FoundationService.DEFAULT.getDataCenter();
         collector = new CurrentDcSentinelHelloAggregationCollector(metaCache, sentinelHelloCollector, clusterId, shardId);
-        Mockito.when(instance.getRedisInstanceInfo())
+        Mockito.when(instance.getCheckInfo())
                 .thenReturn(new DefaultRedisInstanceInfo(dcId, clusterId, shardId, slaveAddr, null, ClusterType.BI_DIRECTION));
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockMeta());
     }

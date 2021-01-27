@@ -20,7 +20,7 @@ public class CurrentDcSentinelCheckController extends CurrentDcCheckController i
     private MetaCache metaCache;
 
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        RedisInstanceInfo info = instance.getRedisInstanceInfo();
+        RedisInstanceInfo info = instance.getCheckInfo();
         return super.shouldCheck(instance)
                 && !(getRedisCntInCurrentDc(info.getClusterId(), info.getShardId()) > 1 && info.isMaster());
     }

@@ -196,7 +196,7 @@ public class CtripPlatformEmailService implements EmailService {
         for(String str : strs) {
             sb.append(str).append(",");
         }
-        sb.deleteCharAt(sb.length() - 1);
+        if (sb.length() > 0) sb.deleteCharAt(sb.length() - 1);
         return sb.toString();
     }
 

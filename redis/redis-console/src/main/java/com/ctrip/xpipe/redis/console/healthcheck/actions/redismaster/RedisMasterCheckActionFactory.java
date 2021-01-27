@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.console.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.google.common.collect.Lists;
@@ -21,7 +22,7 @@ import java.util.Map;
  * Oct 09, 2018
  */
 @Component
-public class RedisMasterCheckActionFactory extends AbstractLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
+public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
 
     private Map<ClusterType, List<RedisMasterController>> controllersByClusterType;
 
@@ -36,7 +37,7 @@ public class RedisMasterCheckActionFactory extends AbstractLeaderAwareHealthChec
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         RedisMasterCheckAction action = new RedisMasterCheckAction(scheduled, instance, executors);
-        ClusterType clusterType = instance.getRedisInstanceInfo().getClusterType();
+        ClusterType clusterType = instance.getCheckInfo().getClusterType();
         action.addControllers(controllersByClusterType.get(clusterType));
         action.addListeners(listenersByClusterType.get(clusterType));
 
