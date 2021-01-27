@@ -4,9 +4,6 @@ import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.RedisStatsCheckController;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckAction;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckListener;
-import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.console.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.google.common.collect.Lists;
@@ -23,7 +20,7 @@ import java.util.List;
 public class BackStreamingActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
 
     @Autowired
-    private List<ConflictCheckListener> listeners;
+    private List<BackStreamingListener> listeners;
 
     @Autowired
     private RedisStatsCheckController checkController;
