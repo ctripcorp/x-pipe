@@ -26,6 +26,9 @@ import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.MultiMasterDelayL
 import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.*;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.DefaultRedisMasterActionListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redismaster.RedisMasterControllerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.backstreaming.BackStreamingActionFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.backstreaming.BackStreamingActionTest;
+import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.backstreaming.BackStreamingAlertListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.actions.redisstats.conflic.ConflictMetricListenerTest;
@@ -253,7 +256,11 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconActiveDcControllerTest.class,
         DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
-        DefaultClusterMonitorModifiedNotifierTest.class
+        DefaultClusterMonitorModifiedNotifierTest.class,
+
+        BackStreamingActionTest.class,
+        BackStreamingAlertListenerTest.class,
+        BackStreamingActionFactoryTest.class
 
 })
 public class AllTests {

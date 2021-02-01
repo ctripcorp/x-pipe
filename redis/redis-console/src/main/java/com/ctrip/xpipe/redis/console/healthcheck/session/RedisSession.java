@@ -259,6 +259,10 @@ public class RedisSession {
         return crdtInfo(InfoCommand.INFO_TYPE.STATS.cmd(), callback);
     }
 
+    public CommandFuture<String> crdtInfoReplication(Callbackable<String> callback) {
+        return crdtInfo(InfoCommand.INFO_TYPE.REPLICATION.cmd(), callback);
+    }
+
     public void infoReplication(Callbackable<String> callback) {
         String infoReplicationSection = "replication";
         info(infoReplicationSection, callback);
