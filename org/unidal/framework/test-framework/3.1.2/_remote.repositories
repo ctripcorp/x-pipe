@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed Dec 16 14:32:50 CST 2020
+test-framework-3.1.2.jar>nexus=
+test-framework-3.1.2.pom>nexus=
