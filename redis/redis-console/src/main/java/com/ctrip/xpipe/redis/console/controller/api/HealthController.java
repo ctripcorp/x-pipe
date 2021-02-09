@@ -103,11 +103,14 @@ public class HealthController extends AbstractConsoleController{
         return Codec.DEFAULT.encode(model);
     }
 
-    protected class RedisHealthCheckInstanceModel {
+    public static class RedisHealthCheckInstanceModel {
 
         private String info;
 
         private List<HealthCheckActionModel> actions;
+
+        public RedisHealthCheckInstanceModel() {
+        }
 
         public RedisHealthCheckInstanceModel(String info) {
             this.info = info;
@@ -127,10 +130,13 @@ public class HealthController extends AbstractConsoleController{
         }
     }
 
-    private class HealthCheckActionModel {
+    public static class HealthCheckActionModel {
         private String name;
         private List<String> listeners;
         private List<String> controllers;
+
+        public HealthCheckActionModel() {
+        }
 
         public HealthCheckActionModel(String name) {
             this.name = name;
