@@ -89,6 +89,7 @@ import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
+import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
@@ -114,6 +115,7 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelCollector4KeeperTest.class,
         ConsoleCrossDcServerTest.class,
 
+        BasicServiceTest.class,
         ClusterServiceImplTest.class,
         RedisServiceImplTest.class,
         KeeperContainerServiceImplTest.class,
