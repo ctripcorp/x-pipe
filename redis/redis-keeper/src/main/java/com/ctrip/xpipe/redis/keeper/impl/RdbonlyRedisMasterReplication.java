@@ -1,15 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncConnectMasterFailException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -46,7 +48,6 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 	}
 
-
 	@Override
 	protected void doConnect(Bootstrap b) {
 
@@ -56,7 +57,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(!future.isSuccess()){
 					logger.info("[operationComplete][fail]", future.cause());
-					dumpFail(future.cause());
+					dumpFail(new PsyncConnectMasterFailException(future.cause()));
 				}
 			}
 		});
@@ -101,8 +102,17 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void doOnFullSync() {
-		
+	protected void doOnFullSync(long masterRdbOffset) {
+		long firstAvailable = redisMaster.getCurrentReplicationStore().firstAvailableOffset();
+		if (firstAvailable > masterRdbOffset + 1) {
+			dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
+			stopReplication();
+			try {
+				redisMaster.getReplicationStoreManager().create();
+			} catch (IOException e) {
+				throw new XpipeRuntimeException("[doOnFullSync]" + redisMaster.getReplicationStoreManager(), e);
+			}
+		}
 	}
 
 	@Override
