@@ -17,13 +17,19 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
         this.orgId = orgId;
     }
 
+    @Override
+    public ClusterInstanceInfo setOrgId(int orgId) {
+        this.orgId = orgId;
+        return this;
+    }
+
     public int getOrgId() {
         return orgId;
     }
 
     @Override
     public String toString() {
-        return StringUtil.join(", ", clusterId, orgId);
+        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId);
     }
 
 }

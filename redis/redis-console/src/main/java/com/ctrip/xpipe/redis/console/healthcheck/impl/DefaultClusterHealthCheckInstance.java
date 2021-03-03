@@ -9,4 +9,9 @@ import com.ctrip.xpipe.redis.console.healthcheck.ClusterInstanceInfo;
  */
 public class DefaultClusterHealthCheckInstance extends AbstractHealthCheckInstance<ClusterInstanceInfo> implements ClusterHealthCheckInstance {
 
+    @Override
+    public String toString() {
+        return String.format("ClusterHealthCheckInstance[InstanceInfo: [%s]]", getCheckInfo().toString());
+    }
+
 }

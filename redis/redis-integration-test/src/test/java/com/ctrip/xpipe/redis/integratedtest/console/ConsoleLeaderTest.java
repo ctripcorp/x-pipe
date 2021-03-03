@@ -77,8 +77,8 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
         Assert.assertTrue(isLeader(newLeaderPort));
         Assert.assertFalse(isLeader(newFollowerPort));
 
-        HealthController.RedisHealthCheckInstanceModel checkInstanceOfLeader = getCheckInstance(newLeaderPort);
-        HealthController.RedisHealthCheckInstanceModel checkInstanceOfFollower = getCheckInstance(newFollowerPort);
+        HealthController.HealthCheckInstanceModel checkInstanceOfLeader = getCheckInstance(newLeaderPort);
+        HealthController.HealthCheckInstanceModel checkInstanceOfFollower = getCheckInstance(newFollowerPort);
 
         Assert.assertTrue(checkInstanceOfLeader.getActions().size() > checkInstanceOfFollower.getActions().size());
     }
@@ -90,10 +90,10 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
         return (Boolean) healthState.get("isLeader");
     }
 
-    private HealthController.RedisHealthCheckInstanceModel getCheckInstance(int port) throws Exception {
+    private HealthController.HealthCheckInstanceModel getCheckInstance(int port) throws Exception {
         String url = String.format("http://localhost:%d/api/health/check/instance/127.0.0.1/6379", port);
-        waitForServerAck(url, HealthController.RedisHealthCheckInstanceModel.class, 30000);
-        return restTemplate.getForObject(url, HealthController.RedisHealthCheckInstanceModel.class);
+        waitForServerAck(url, HealthController.HealthCheckInstanceModel.class, 30000);
+        return restTemplate.getForObject(url, HealthController.HealthCheckInstanceModel.class);
     }
 
     private void startJqConsoleClusters() throws Exception {
