@@ -166,6 +166,7 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			public Integer doQuery() throws DalException {
 				return dao.insertWithPartField(dao.createLocal().setZoneId(zoneId)
 						.setDcName(dcName).setDcDescription(description)
+						.setDataChangeLastTime(new Date()).setDcLastModifiedTime("")
 				);
 			}
 		});

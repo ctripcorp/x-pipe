@@ -6,6 +6,8 @@ package com.ctrip.xpipe.redis.console.healthcheck;
  */
 public interface ClusterInstanceInfo extends CheckInfo {
 
+    ClusterInstanceInfo setOrgId(int orgId);
+
     int getOrgId();
 
 }

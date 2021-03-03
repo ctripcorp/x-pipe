@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -51,6 +52,12 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort) {
         return instances.get(hostPort);
+    }
+
+    @Override
+    public ClusterHealthCheckInstance findClusterHealthCheckInstance(String clusterId) {
+        if (StringUtil.isEmpty(clusterId)) return null;
+        return clusterHealthCheckerInstances.get(clusterId.toLowerCase());
     }
 
     @Override

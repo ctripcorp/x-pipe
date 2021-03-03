@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultClusterHealthCheckInstance;
+import com.ctrip.xpipe.redis.console.healthcheck.impl.DefaultClusterInstanceInfo;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
@@ -215,6 +219,21 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     @Test
+    public void testClusterOrgChange() {
+        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster3");
+        ClusterMeta newCluster = MetaClone.clone(cluster);
+        cluster.setOrgId(1);
+        newCluster.setOrgId(2);
+
+        ClusterHealthCheckInstance instance = mockClusterHealthCheckInstance(cluster.getId(), cluster.getActiveDc(), ClusterType.lookup(cluster.getType()), 1);
+        Mockito.when(instanceManager.findClusterHealthCheckInstance(Mockito.anyString())).thenReturn(instance);
+
+        Assert.assertEquals(1, instance.getCheckInfo().getOrgId());
+        manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
+        Assert.assertEquals(2, instance.getCheckInfo().getOrgId());
+    }
+
+    @Test
     public void visitRemoved() {
         manager = spy(manager);
         manager.compare(getDcMeta("oy"));
@@ -236,6 +255,13 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         verify(manager, atLeastOnce()).visitRemoved(any());
         verify(manager, atLeastOnce()).visitAdded(any());
         verify(manager, never()).visitModified(any());
+    }
+
+    private ClusterHealthCheckInstance mockClusterHealthCheckInstance(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
+        DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
+        DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterId, activeDc, clusterType, orgId);
+        instance.setInstanceInfo(info);
+        return instance;
     }
 
 
