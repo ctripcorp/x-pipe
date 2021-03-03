@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
+import com.ctrip.xpipe.redis.console.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -66,6 +67,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     public void visitModified(MetaComparator comparator) {
         ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
         updateDcInterested(clusterMetaComparator);
+        updateClusterMeta(clusterMetaComparator.getFuture());
         clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged));
     }
 
@@ -93,6 +95,14 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
                     instanceManager.remove(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
                 }
             }
+        }
+    }
+
+    private void updateClusterMeta(ClusterMeta future) {
+        ClusterHealthCheckInstance checkInstance = instanceManager.findClusterHealthCheckInstance(future.getId());
+
+        if (null != checkInstance) {
+            checkInstance.getCheckInfo().setOrgId(future.getOrgId());
         }
     }
 

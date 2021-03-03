@@ -89,7 +89,22 @@ public class HealthController extends AbstractConsoleController{
         if(instance == null) {
             return "Not found";
         }
-        RedisHealthCheckInstanceModel model = new RedisHealthCheckInstanceModel(instance.toString());
+        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
+        return Codec.DEFAULT.encode(model);
+    }
+
+    @RequestMapping(value = "/health/check/cluster/{clusterId}", method = RequestMethod.GET)
+    public String getClusterHealthCheckInstance(@PathVariable String clusterId) {
+        ClusterHealthCheckInstance instance = instanceManager.findClusterHealthCheckInstance(clusterId);
+        if(instance == null) {
+            return "Not found";
+        }
+        HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
+        return Codec.DEFAULT.encode(model);
+    }
+
+    private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {
+        HealthCheckInstanceModel model = new HealthCheckInstanceModel(instance.toString());
         for(HealthCheckAction action : instance.getHealthCheckActions()) {
             HealthCheckActionModel actionModel = new HealthCheckActionModel(action.toString());
             for(Object listener : ((AbstractHealthCheckAction) action).getListeners()) {
@@ -100,19 +115,20 @@ public class HealthController extends AbstractConsoleController{
             }
             model.addAction(actionModel);
         }
-        return Codec.DEFAULT.encode(model);
+
+        return model;
     }
 
-    public static class RedisHealthCheckInstanceModel {
+    public static class HealthCheckInstanceModel {
 
         private String info;
 
         private List<HealthCheckActionModel> actions;
 
-        public RedisHealthCheckInstanceModel() {
+        public HealthCheckInstanceModel() {
         }
 
-        public RedisHealthCheckInstanceModel(String info) {
+        public HealthCheckInstanceModel(String info) {
             this.info = info;
             this.actions = Lists.newArrayList();
         }

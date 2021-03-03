@@ -19,6 +19,8 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
+    ClusterHealthCheckInstance findClusterHealthCheckInstance(String clusterId);
+
     void remove(HostPort hostPort);
 
     void remove(String cluster);
