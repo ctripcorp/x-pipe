@@ -8,7 +8,9 @@ import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +47,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     public void beforeDefaultMetaCacheTest() {
         MockitoAnnotations.initMocks(this);
         metaCache.setMeta(Pair.of(getXpipeMeta(), xpipeMetaManager));
+        metaCache.setMonitor2ClusterShard(Maps.newHashMap());
     }
 
 
@@ -92,6 +96,22 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
                 new HostPort("127.0.0.1", 6101),
                 new HostPort("127.0.0.2", 6100),
                 new HostPort("127.0.0.2", 6101)), allKeepers);
+    }
+
+    @Test
+    public void testFindBiClusterShardBySentinelMonitor() {
+        String monitorNameOY = SentinelUtil.getSentinelMonitorName("cluster3", "shard1", "oy");
+        String monitorNameJQ = SentinelUtil.getSentinelMonitorName("cluster3", "shard1", "jq");
+        Assert.assertEquals(Pair.of("cluster3", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameOY));
+        Assert.assertEquals(Pair.of("cluster3", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameJQ));
+    }
+
+    @Test
+    public void testFindOneWayClusterShardBySentinelMonitor() {
+        String monitorNameOY = SentinelUtil.getSentinelMonitorName("cluster1", "shard1", "oy");
+        String monitorNameJQ = SentinelUtil.getSentinelMonitorName("cluster1", "shard1", "jq");
+        Assert.assertNull(metaCache.findClusterShardBySentinelMonitor(monitorNameOY));
+        Assert.assertEquals(Pair.of("cluster1", "shard1"), metaCache.findClusterShardBySentinelMonitor(monitorNameJQ));
     }
 
     protected String getXpipeMetaConfigFile() {
