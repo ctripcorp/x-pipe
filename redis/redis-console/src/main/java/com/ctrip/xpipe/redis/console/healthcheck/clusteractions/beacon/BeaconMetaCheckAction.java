@@ -42,6 +42,7 @@ public class BeaconMetaCheckAction extends AbstractLeaderAwareHealthCheckAction<
         }
 
         try {
+            logger.debug("[doTask][{}] register to {}", clusterId, service.getHost());
             service.registerCluster(clusterId, beaconMetaService.buildBeaconGroups(clusterId));
         } catch (Throwable th) {
             logger.info("[doTask][{}] register meta fail", clusterId, th);
