@@ -346,20 +346,20 @@ public class DefaultMetaCache implements MetaCache {
             XpipeMeta xpipeMeta = meta.getKey();
             for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
                 for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-                    // pass by non-active dc meta
-                    if (!clusterMeta.getActiveDc().equals(dcMeta.getId())) {
+                    ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                    if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equals(dcMeta.getId())) {
                         continue;
                     }
-                    for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 
+                    for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                         monitor2ClusterShard.put(shardMeta.getSentinelMonitorName(),
                                 new Pair<>(clusterMeta.getId(), shardMeta.getId()));
-
                     }
                 }
             }
         } catch (Exception e) {
-            logger.error("[findClusterShardBySentinelMonitor]", e);
+            logger.error("[loadSentinelMonitorInfo]", e);
+            throw e;
         }
     }
 
@@ -383,6 +383,12 @@ public class DefaultMetaCache implements MetaCache {
     @VisibleForTesting
     protected DefaultMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected DefaultMetaCache setMonitor2ClusterShard(Map<String, Pair<String, String>> monitorMap) {
+        this.monitor2ClusterShard = monitorMap;
         return this;
     }
 }
