@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -191,8 +192,10 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		String conf = getRedisConfig(redis, master, dataDir);
 
 		File dstFile = new File(destDir, redis.getPort() + ".conf");
-		try (FileOutputStream fous = new FileOutputStream(dstFile)) {
-			IOUtils.write(conf, fous);
+		if (!dstFile.exists()) {
+			try (FileOutputStream fous = new FileOutputStream(dstFile)) {
+				IOUtils.write(conf, fous);
+			}
 		}
 		return dstFile;
 	}
@@ -396,6 +399,26 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected String getRedisTemplate() {
 		return "conf/redis_raw.conf";
+	}
+
+	protected String getCasePath(String caseName) {
+		String path = "cases/" + caseName;
+		URL url = getClass().getResource(path);
+		if (url == null) {
+		    url = getClass().getClassLoader().getResource(path);
+		}
+		if (url == null) {
+		    return null;
+		} else {
+			return url.getPath();
+		}
+	}
+
+	protected void prepareCaseIfExist() throws IOException {
+		String casePath = getCasePath(getClass().getSimpleName() + "-" + getTestName());
+		if (casePath != null) {
+			executeCommands("cp", "-rf", casePath + "/.", getTestFileDir());
+		}
 	}
 
 

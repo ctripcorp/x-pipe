@@ -114,7 +114,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 
 	protected void reconnectMaster(){
 		logger.info("[reconnectMaster]{}", redisKeeperServer);
-		this.redisKeeperServer.reconnectMaster();
+		this.redisKeeperServer.reconnectMaster(false);
 	}
 	
 	@Override

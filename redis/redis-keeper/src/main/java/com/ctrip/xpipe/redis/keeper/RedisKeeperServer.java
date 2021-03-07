@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
@@ -41,8 +40,6 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	Set<RedisSlave> slaves();
 
-	@VisibleForTesting void recreateReplicationStore() throws IOException;
-
 	ReplicationStore getReplicationStore();
 		
 	String getClusterId();
@@ -57,7 +54,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	KeeperMeta getCurrentKeeperMeta();
 	
-	void reconnectMaster();
+	void reconnectMaster(boolean force);
 	
 	void stopAndDisposeMaster();
 	

@@ -49,6 +49,12 @@ public class InMemoryPsync extends AbstractPsync{
 	}
 
 	@Override
+	protected void endReadRdb() {
+		super.endReadRdb();
+		future().setSuccess();
+	}
+
+	@Override
 	protected BulkStringParser createRdbReader() {
 		return new BulkStringParser(rdb);
 	}

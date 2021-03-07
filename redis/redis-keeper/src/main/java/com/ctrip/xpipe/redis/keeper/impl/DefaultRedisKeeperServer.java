@@ -247,12 +247,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	
 	@Override
-	public synchronized void reconnectMaster() {
+	public synchronized void reconnectMaster(boolean force) {
 		
 		Endpoint target = redisKeeperServerState.getMaster();
 		logger.info("[reconnectMaster]{} -> {}", this, target);
 
-		if(keeperRedisMaster != null && target != null && keeperRedisMaster.getLifecycleState().isStarted()){
+		if(!force && keeperRedisMaster != null && target != null && keeperRedisMaster.getLifecycleState().isStarted()){
 			Endpoint current = keeperRedisMaster.masterEndPoint();
 			if(current != null && isMasterSame(current, target)) {
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
@@ -420,11 +420,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			}
 		}
 		return slaves;
-	}
-
-	@Override
-	public void recreateReplicationStore() throws IOException {
-		replicationStoreManager.create();
 	}
 
    public ReplicationStore getReplicationStore() {

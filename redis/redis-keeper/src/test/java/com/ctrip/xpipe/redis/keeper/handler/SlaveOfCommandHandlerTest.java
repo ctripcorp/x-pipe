@@ -46,13 +46,13 @@ public class SlaveOfCommandHandlerTest extends AbstractRedisKeeperTest{
 
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
         slaveOfCommandHandler.doHandle(args, redisClient);
-        verify(redisKeeperServer).reconnectMaster();
+        verify(redisKeeperServer).reconnectMaster(false);
 
         reset(redisKeeperServer);
 
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateBackup(redisKeeperServer));
         slaveOfCommandHandler.doHandle(args, redisClient);
-        verify(redisKeeperServer, never()).reconnectMaster();
+        verify(redisKeeperServer, never()).reconnectMaster(false);
 
     }
 }

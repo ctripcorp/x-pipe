@@ -109,6 +109,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			stopReplication();
 			try {
 				redisMaster.getReplicationStoreManager().create();
+				redisKeeperServer.reconnectMaster(true);
 			} catch (IOException e) {
 				throw new XpipeRuntimeException("[doOnFullSync]" + redisMaster.getReplicationStoreManager(), e);
 			}
