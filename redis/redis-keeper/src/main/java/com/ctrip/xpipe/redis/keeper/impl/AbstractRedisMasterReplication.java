@@ -26,7 +26,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -34,6 +33,8 @@ import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncCommandFailException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterDisconnectedException;
 import com.ctrip.xpipe.redis.keeper.netty.NettySlaveHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListener;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -211,6 +212,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		}
 	}
 
+	@Override
+	public void reconnectMaster() {
+		throw new UnsupportedOperationException();
+	}
+
 	@VisibleForTesting
 	protected boolean isMasterConnectThroughProxy() {
 		return redisMaster.masterEndPoint() instanceof ProxyEnabled;
@@ -314,12 +320,12 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 						}
 					}
 		}, replTimeoutMilli, replTimeoutMilli, TimeUnit.MILLISECONDS);
-		
+
 		channel.closeFuture().addListener(new ChannelFutureListener() {
-			
+
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception {
-				
+
 				logger.info("[cancelTimeout]{}ms, {}", replTimeoutMilli, channel);
 				repliTimeoutCheckFuture.cancel(true);
 			}
@@ -327,10 +333,10 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	@Override
-	public void masterDisconntected(Channel channel) {
+	public void masterDisconnected(Channel channel) {
 
-		logger.info("[masterDisconntected]{}", channel);
-		dumpFail(new IOException("master closed:" + channel));
+		logger.info("[masterDisconnected]{}", channel);
+		dumpFail(new PsyncMasterDisconnectedException(channel));
 	}
 
 	@Override
@@ -384,7 +390,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 				if (!commandFuture.isSuccess()) {
 					logger.error("[operationComplete][psyncCommand][fail]" + AbstractRedisMasterReplication.this, commandFuture.cause());
 
-					dumpFail(commandFuture.cause());
+					dumpFail(new PsyncCommandFailException(commandFuture.cause()));
 					psyncFail(commandFuture.cause());
 				}
 			}
@@ -417,8 +423,12 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected void stopReplication() {
 
 		logger.info("[stopReplication]{}", redisMaster.masterEndPoint());
+		disconnectWithMaster();
+	}
+
+	protected void disconnectWithMaster() {
 		if (masterChannel != null && masterChannel.isOpen()) {
-			logger.info("[stopReplication][doStop]{}", masterChannel);
+			logger.info("[disconnectWithMaster]{}", masterChannel);
 			masterChannel.close();
 		}
 	}
@@ -430,11 +440,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	}
 
 	@Override
-	public void onFullSync() {
-		doOnFullSync();
+	public void onFullSync(long masterRdbOffset) {
+		doOnFullSync(masterRdbOffset);
 	}
 
-	protected abstract void doOnFullSync();
+	protected abstract void doOnFullSync(long masterRdbOffset);
 
 	@Override
 	public void reFullSync() {
@@ -478,7 +488,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected void dumpFail(Throwable th) {
 		if (replicationObserver != null) {
-			replicationObserver.onDumpFail();
+			replicationObserver.onDumpFail(th);
 		}
 		RdbDumper dumper = rdbDumper.get();
 		if (dumper != null) {

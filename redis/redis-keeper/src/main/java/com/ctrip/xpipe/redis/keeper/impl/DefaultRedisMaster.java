@@ -92,6 +92,10 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		return redisKeeperServer.getReplicationStore();
 	}
 
+	@Override
+	public void reconnect() {
+	    redisMasterReplication.reconnectMaster();
+	}
 
 	@Override
 	public Endpoint masterEndPoint() {
