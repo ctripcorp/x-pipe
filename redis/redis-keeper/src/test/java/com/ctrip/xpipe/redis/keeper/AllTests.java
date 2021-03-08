@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.*;
 import com.ctrip.xpipe.redis.keeper.impl.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
+import com.ctrip.xpipe.redis.keeper.monitor.PsyncFailReasonTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStatsTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucketTest;
@@ -56,7 +57,8 @@ import org.junit.runners.Suite.SuiteClasses;
         CompositeLeakyBucketTest.class,
         RedisMasterReplicationTrafficRateLimitTest.class,
         LeakyBucketBasedMasterReplicationListenerTest.class,
-        TestAbstractMetaStoreTest.class
+        TestAbstractMetaStoreTest.class,
+        PsyncFailReasonTest.class
 })
 public class AllTests {
 
