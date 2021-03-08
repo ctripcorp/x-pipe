@@ -35,7 +35,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		sleep(3000);
 	}
 
-	private void setKeeperActive() {
+	protected void setKeeperActive() {
 		
 		for(DcMeta dcMeta : getDcMetas()){
 			ClusterMeta clusterMeta = dcMeta.getClusters().get(getClusterId());

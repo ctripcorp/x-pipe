@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -52,7 +51,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected void doConnect(Bootstrap b) {
-		
+
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);
 
 		tryConnect(b).addListener(new ChannelFutureListener() {
@@ -90,15 +89,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 	
 	@Override
-	public void masterDisconntected(Channel channel) {
-		super.masterDisconntected(channel);
+	public void masterDisconnected(Channel channel) {
+		super.masterDisconnected(channel);
 		refreshReplDownSince();
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
 		if (scheduleTime < 0) {
 			scheduleTime = 0;
 		}
-		logger.info("[masterDisconntected][reconnect after {} ms]", scheduleTime);
+		logger.info("[masterDisconnected][reconnect after {} ms]", scheduleTime);
 		scheduled.schedule(new AbstractExceptionLogTask() {
 
 			@Override
@@ -190,6 +189,10 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		return partialState;
 	}
 
+	@Override
+	public void reconnectMaster() {
+	    disconnectWithMaster(); //DefaultRedisMasterReplication will reconnect master automatically.
+	}
 
 	@Override
 	protected void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
@@ -232,7 +235,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void doOnFullSync() {
+	protected void doOnFullSync(long masterRdbOffset) {
 		
 		try {
 			logger.info("[doOnFullSync]{}", this);
