@@ -300,7 +300,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
                 keeperMonitor.getKeeperStats().increaseFullSync();
                 return null;
             }
-        }).when(redisKeeperServer).onFullSync();
+        }).when(redisKeeperServer).onFullSync(anyLong());
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
@@ -365,7 +365,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
                 keeperMonitor.getKeeperStats().increaseFullSync();
                 return null;
             }
-        }).when(redisKeeperServer).onFullSync();
+        }).when(redisKeeperServer).onFullSync(anyLong());
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
@@ -433,7 +433,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
                 keeperMonitor.getKeeperStats().increaseFullSync();
                 return null;
             }
-        }).when(redisKeeperServer).onFullSync();
+        }).when(redisKeeperServer).onFullSync(anyLong());
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
@@ -509,7 +509,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
                 keeperMonitor.getKeeperStats().increaseFullSync();
                 return null;
             }
-        }).when(redisKeeperServer).onFullSync();
+        }).when(redisKeeperServer).onFullSync(anyLong());
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
@@ -669,8 +669,8 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         }
 
         @Override
-        public void masterDisconntected(Channel channel) {
-            super.masterDisconntected(channel);
+        public void masterDisconnected(Channel channel) {
+            super.masterDisconnected(channel);
 
             redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
             long interval = System.currentTimeMillis() - connectedTime;
@@ -678,7 +678,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
             if (scheduleTime < 0) {
                 scheduleTime = 0;
             }
-            logger.info("[masterDisconntected][reconnect after {} ms]", scheduleTime);
+            logger.info("[masterDisconnected][reconnect after {} ms]", scheduleTime);
             scheduled.schedule(new AbstractExceptionLogTask() {
 
                 @Override
@@ -701,7 +701,7 @@ public class RedisMasterReplicationTrafficRateLimitTest extends AbstractRedisKee
         }
 
         @Override
-        protected void doOnFullSync() {
+        protected void doOnFullSync(long masterRdbOffset) {
             setRdbDumper(new RedisMasterReplicationRdbDumper(this, redisKeeperServer, resourceManager));
             redisKeeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
         }
