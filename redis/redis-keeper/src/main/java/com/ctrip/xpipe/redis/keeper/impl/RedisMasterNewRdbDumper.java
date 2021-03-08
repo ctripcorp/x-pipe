@@ -3,12 +3,14 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +62,16 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper{
 			@Override
 			public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
 				releaseResource();
+				if (!commandFuture.isSuccess()) {
+				    if (commandFuture.cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException) {
+						try {
+							redisMaster.getReplicationStoreManager().create();
+						} catch (IOException e) {
+							throw new XpipeRuntimeException("[RedisMasterNewRdbDumper][RdbOffsetNotContinuous][RecreateStore]" + redisMaster.getReplicationStoreManager(), e);
+						}
+						redisMaster.reconnect();
+					}
+				}
 			}
 		});
 		
