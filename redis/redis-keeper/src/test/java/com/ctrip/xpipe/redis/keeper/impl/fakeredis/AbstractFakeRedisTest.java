@@ -135,7 +135,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				}
 				
 				@Override
-				public void onFullSync() {
+				public void onFullSync(long masterRdbOffset) {
 					
 				}
 				

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
-import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
@@ -139,7 +138,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     @Override
-    public void onFullSync() {
+    public void onFullSync(long masterRdbOffset) {
         setPsyncSucceed();
     }
 
@@ -153,10 +152,10 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     @Override
-    public void onDumpFail() {
+    public void onDumpFail(Throwable th) {
         if (holdToken.compareAndSet(true, false)) {
             releaseToken();
-            setPsyncFailed();
+            setPsyncFailed(th);
         }
     }
 
@@ -252,8 +251,8 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
         return trafficSafeCounter.get() > 2;
     }
 
-    private void setPsyncFailed() {
-        redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.MASTER_DISCONNECTED);
+    private void setPsyncFailed(Throwable th) {
+        redisKeeperServer.getKeeperMonitor().getKeeperStats().setLastPsyncFailReason(PsyncFailReason.from(th));
         if(!isPsyncEverSucceed()) {
             psyncEverSucceed.set(KEEP_FAIL);
         }

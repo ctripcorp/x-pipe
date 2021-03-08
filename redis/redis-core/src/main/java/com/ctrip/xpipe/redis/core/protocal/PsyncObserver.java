@@ -13,8 +13,9 @@ public interface PsyncObserver {
 	
 	/**
 	 * get FULLSYNC response
+	 * @param masterRdbOffset
 	 */
-	void onFullSync();
+	void onFullSync(long masterRdbOffset);
 
 	void reFullSync();
 
