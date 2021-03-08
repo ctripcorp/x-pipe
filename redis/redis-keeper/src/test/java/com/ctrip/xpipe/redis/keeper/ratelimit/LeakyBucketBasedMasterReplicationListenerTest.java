@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -109,9 +110,9 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         Assert.assertTrue(listener.canSendPsync());
-        listener.onDumpFail();
+        listener.onDumpFail(new Exception());
         Assert.assertTrue(listener.canSendPsync());
-        listener.onDumpFail();
+        listener.onDumpFail(new Exception());
         Assert.assertTrue(listener.canSendPsync());
         verify(leakyBucket, times(1)).tryAcquire();
     }
@@ -385,7 +386,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     public void testOnDumpFail() {
         listener = spy(listener);
         listener.holdToken.set(true);
-        listener.onDumpFail();
+        listener.onDumpFail(new Exception());
         verify(leakyBucket, times(1)).release();
         int KEEP_FAIL = 3;
         Assert.assertEquals(KEEP_FAIL, listener.psyncEverSucceed.get());

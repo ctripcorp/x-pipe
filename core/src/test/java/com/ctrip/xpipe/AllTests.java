@@ -86,11 +86,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	DirectByteBufInStringOutPayloadTest.class,
 	NettyTimeoutTtlListenerTest.class,
 	DefaultZkConfigTest.class,
-	AbstractQueuedSynchronizerTest.class,
 	DefaultNettyClientTest.class,
 	NettyClientFactoryTest.class,
 	NettyPoolUtilTest.class,
-	ThreadUtilsTest.class
 })
 public class AllTests {
 

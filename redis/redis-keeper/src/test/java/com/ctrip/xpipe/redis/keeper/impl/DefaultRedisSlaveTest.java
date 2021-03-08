@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import sun.java2d.SurfaceDataProxy;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;

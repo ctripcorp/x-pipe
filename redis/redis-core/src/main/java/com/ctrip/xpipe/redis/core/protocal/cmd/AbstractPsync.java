@@ -228,7 +228,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	private void notifyFullSync() {
 		getLogger().debug("[notifyFullSync]");
 		for (PsyncObserver observer : observers) {
-			observer.onFullSync();
+			observer.onFullSync(masterRdbOffset);
 		}
 	}
 	
