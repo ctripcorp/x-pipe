@@ -13,6 +13,14 @@ import java.util.List;
  */
 public interface ConfigService {
 
+    String KEY_SENTINEL_AUTO_PROCESS = "sentinel.auto.process";
+
+    String KEY_ALERT_SYSTEM_ON = "alert.system.on";
+
+    String KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY = "ignore.migration.system.avail";
+
+    String KEY_SENTINEL_CHECK_EXCLUDE = "sentinel.check.exclude";
+
     void startAlertSystem(ConfigModel config) throws DalException;
 
     void stopAlertSystem(ConfigModel config, int hours) throws DalException;

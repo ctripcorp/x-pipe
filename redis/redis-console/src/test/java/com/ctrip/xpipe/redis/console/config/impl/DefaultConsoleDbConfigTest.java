@@ -13,6 +13,9 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.Set;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_AUTO_PROCESS;
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_CHECK_EXCLUDE;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -39,7 +42,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
     @Test
     public void test() throws DalException {
 
-        String key = DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS;
+        String key = KEY_SENTINEL_AUTO_PROCESS;
 
         configModel.setKey(key).setVal("true");
         configDao.setConfig(configModel);
@@ -62,7 +65,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
     @Test
     public void testShouldSentinelCheck() throws DalException {
-        String key = DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE;
+        String key = KEY_SENTINEL_CHECK_EXCLUDE;
         String mockCluster = "test-cluster";
         configModel.setKey(key).setSubKey(mockCluster);
         configModel.setVal("true");
@@ -80,7 +83,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
     @Test
     public void testShouldSentinelCheckWithCache() throws DalException {
-        String key = DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE;
+        String key = KEY_SENTINEL_CHECK_EXCLUDE;
         String mockCluster = "test-cluster";
         configModel.setKey(key).setSubKey(mockCluster);
         configModel.setVal("true");
@@ -94,7 +97,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
     @Test
     public void testSentinelCheckWhiteList() throws DalException {
-        String key = DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE;
+        String key = KEY_SENTINEL_CHECK_EXCLUDE;
         String mockCluster1 = "test-cluster1";
         String mockCluster2 = "test-cluster2";
         String mockCluster3 = "test-cluster3";

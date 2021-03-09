@@ -13,6 +13,18 @@
          <artifactId>redis-core</artifactId>
       </dependency>
       <dependency>
+         <groupId>com.ctrip.framework.xpipe.redis</groupId>
+         <artifactId>redis-checker</artifactId>
+         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>com.ctrip.framework.xpipe.redis</groupId>
+         <artifactId>redis-checker</artifactId>
+         <version>${project.version}</version>
+         <type>test-jar</type>
+         <scope>test</scope>
+      </dependency>
+      <dependency>
          <groupId>org.springframework.boot</groupId>
          <artifactId>spring-boot-starter-web</artifactId>
       </dependency>
@@ -23,11 +35,6 @@
       <dependency>
          <groupId>dnsjava</groupId>
          <artifactId>dnsjava</artifactId>
-      </dependency>
-      <dependency>
-         <groupId>org.springframework.boot</groupId>
-         <artifactId>spring-boot-starter-test</artifactId>
-         <scope>test</scope>
       </dependency>
       <dependency>
          <groupId>redis.clients</groupId>

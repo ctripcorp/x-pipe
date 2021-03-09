@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.console;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 
 import java.util.Set;

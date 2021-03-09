@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_ALERT_SYSTEM_ON;
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_AUTO_PROCESS;
+
 /**
  * @author chen.zhu
  * <p>
@@ -72,13 +75,13 @@ public class ConfigController extends AbstractConsoleController{
         logger.info("[changeConfig] Config changed by user: {} and ip: {}", userId, uri);
         try {
             boolean target = Boolean.parseBoolean(val);
-            if(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON.equalsIgnoreCase(key)) {
+            if(KEY_ALERT_SYSTEM_ON.equalsIgnoreCase(key)) {
                 if(target) {
                     configService.startAlertSystem(configModel);
                 } else {
                     configService.stopAlertSystem(configModel, consoleConfig.getConfigDefaultRestoreHours());
                 }
-            } else if(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS.equalsIgnoreCase(key)) {
+            } else if(KEY_SENTINEL_AUTO_PROCESS.equalsIgnoreCase(key)) {
                 if(target) {
                     configService.startSentinelAutoProcess(configModel);
                 } else {

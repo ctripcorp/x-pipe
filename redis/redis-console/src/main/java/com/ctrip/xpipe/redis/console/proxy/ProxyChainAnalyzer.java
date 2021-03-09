@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.proxy;
 
 import com.ctrip.xpipe.api.cluster.LeaderAware;
-import com.ctrip.xpipe.redis.console.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 
 import java.util.List;
 import java.util.Map;

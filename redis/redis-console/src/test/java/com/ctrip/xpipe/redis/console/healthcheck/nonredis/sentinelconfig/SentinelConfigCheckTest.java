@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.google.common.collect.Sets;
 import org.junit.Assert;

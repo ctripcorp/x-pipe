@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -18,6 +17,8 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 /**
  * @author chen.zhu
@@ -34,7 +35,7 @@ public class DataObjectAssemblyTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private DcClusterShardService dcClusterShardService;
 
-    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executor;
 
     private long dcId;

@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;

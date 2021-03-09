@@ -4,7 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -138,7 +138,7 @@ public class ConsoleServiceManager {
 
         for(T t : results){
             if(predicate.apply(t)){
-                count++;
+                    count++;
             }
         }
         return count >= quorum();

@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.console.config.impl;
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -29,53 +29,15 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_CONSOLE_NOTIFY_RETRY_INTERVAL = "console.notify.retry.interval";
     public static final String KEY_METASERVERS = "metaservers";
     public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
-    public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
-    public static final String KEY_CLUSTER_HEALTH_CHECK_INTERVAL = "cluster.health.check.interval";
-    public static final String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
     public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
-    public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
-    public static final String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
     public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
-    public static final String KEY_ALERT_WHITE_LIST = "console.alert.whitelist";
     public static final String KEY_ALL_CONSOLES = "console.all.addresses";
-    public static final String KEY_QUORUM = "console.quorum";
-    public static final String KEY_DOMAIN = "console.domain";
-
-    public static final String KEY_SENTINEL_QUORUM = "console.sentinel.quorum";
-
-    private static final String KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION = "redis.repl.diskless.minimum.version";
-    private static final String KEY_XREDIS_REQUEST_MINI_VERSION = "xredis.minimum.request.version";
-
-    private static final String KEY_DBA_EMAILS = "redis.dba.emails";
-    private static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
-    private static final String KEY_XPIPE_RUNTIME_ENVIRONMENT = "xpipe.runtime.environment";
-    private static final String KEY_XPIPE_ADMIN_EMAILS = "xpipe.admin.emails";
-
-    private static final String KEY_ALERT_MESSAGE_SUSPEND_TIME = "alert.message.suspend.time";
-
-    private static final String KEY_ALERT_MESSAGE_RECOVER_TIME = "alert.message.recover.time";
 
     private static final String KEY_CONFIG_DEFAULT_RESTORE_HOUR = "console.config.default.restore.hour";
 
     private static final String KEY_REBALANCE_SENTINEL_INTERVAL = "rebalance.sentinel.interval.second";
 
     private static final String KEY_REBALANCE_SENTINEL_MAX_NUM_ONCE = "rebalance.sentinel.max.num.once";
-
-    private static final String KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE = "no.alarm.minute.for.cluster.update";
-
-    public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
-
-    public static final String KEY_DC_CLUSTER_WONT_MARK_DOWN = "console.dc.cluster.pairs.delay.mark.down";
-
-    private static final String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
-
-    private static final String KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY = "console.down.after.checknums.through.proxy";
-
-    private static final String KEY_PING_DOWN_AFTER_MILLI = "console.ping.down.after.milli";
-
-    private static final String KEY_PING_DOWN_AFTER_MILLI_THROUGH_PROXY = "console.ping.down.after.milli.through.proxy";
-
-    private static final String KEY_DEFAULT_MARK_DOWN_DELAY_SEC = "console.default.mark.down.delay.sec";
 
     public static final String KEY_SOCKET_STATS_ANALYZERS = "console.socket.stats.analyzers";
 
@@ -84,14 +46,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_PROXY_INFO_CHECK_INTERVAL = "console.proxy.info.collector.check.interval";
 
     private static final String KEY_OUTTER_CLIENT_CHECK_INTERVAL = "console.outter.client.check.interval";
-
-    private static final String KEY_CONSOLE_DOMAINS = "console.domains";
-
-    private static final String KEY_SENTINEL_CHECK_INTERVAL = "console.health.sentinel.interval";
-
-    private static final String KEY_SENTINEL_RATE_LIMIT_OPEN = "console.sentinel.rate.limit.open";
-
-    private static final String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
     private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
@@ -239,19 +193,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
         return getSplitStringSet(whitelist);
 
-    }
-
-    private Set<String> getSplitStringSet(String str) {
-        HashSet result = new HashSet();
-
-        String[] split = str.split("\\s*(,|;)\\s*");
-
-        for(String sp : split){
-            if(!StringUtil.isEmpty(sp)){
-                result.add(sp);
-            }
-        }
-        return result;
     }
 
     @Override

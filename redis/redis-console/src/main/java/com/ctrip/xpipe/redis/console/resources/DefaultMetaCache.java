@@ -11,9 +11,10 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -24,9 +25,6 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -40,9 +38,6 @@ import java.util.concurrent.TimeUnit;
  *         <p>
  *         Mar 31, 2017
  */
-@Component
-@Lazy
-@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultMetaCache implements MetaCache {
 
     private int refreshIntervalMilli = 2000, DEFAULT_KEEPER_NUMBERS = 3 * 10000;

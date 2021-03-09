@@ -37,6 +37,11 @@ public class CtripFoundationService implements FoundationService{
 		return Foundation.net().getHostAddress();
 	}
 
+	@Override
+	public String getGroupId() {
+		return Foundation.group().getId();
+	}
+
 	public String getEnvironment() {
 		return Foundation.server().getEnv().getName();
 	}

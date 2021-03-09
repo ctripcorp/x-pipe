@@ -16,8 +16,6 @@ import javax.annotation.PreDestroy;
  *         <p>
  *         Jun 12, 2017
  */
-@Component
-@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class ConsoleLeaderElector extends AbstractLeaderElector implements ClusterServer{
 
     public static String KEY_CONSOLE_ID = "CONSOLE_ID";

@@ -26,8 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +35,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
+
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable implements ProxyMonitorCollectorManager {
@@ -45,10 +46,10 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
 
     private Map<ProxyModel, ProxyMonitorCollector> proxySamples = Maps.newConcurrentMap();
 
-    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
-    @Resource(name = ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL)
+    @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     @Autowired
