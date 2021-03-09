@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig;
 
-import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

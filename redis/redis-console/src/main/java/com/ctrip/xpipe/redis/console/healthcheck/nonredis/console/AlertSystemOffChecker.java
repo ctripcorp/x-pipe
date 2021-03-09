@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.console;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_ALERT_SYSTEM_ON;
 
 /**
  * @author chen.zhu
@@ -23,7 +25,7 @@ public class AlertSystemOffChecker extends AbstractConsoleHealthChecker {
     @Override
     void alert() {
         logger.info("[alert] Alert System Off");
-        ConfigModel config = configService.getConfig(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON);
+        ConfigModel config = configService.getConfig(KEY_ALERT_SYSTEM_ON);
         String user = config.getUpdateUser() == null ? "unkown" : config.getUpdateUser();
         String ip = config.getUpdateIP() == null ? "unkown" : config.getUpdateIP();
         String message = String.format("Alert System will be online %s, </br> Recent update by： %s <br/> and from IP： %s",

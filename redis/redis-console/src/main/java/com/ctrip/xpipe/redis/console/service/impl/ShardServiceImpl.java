@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
+import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -13,9 +13,9 @@ import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -28,6 +28,8 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 @Service
 public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implements ShardService {
@@ -57,7 +59,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	@Autowired
 	private List<ShardEventListener> shardEventListeners;
 
-	@Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
 
 	@Override

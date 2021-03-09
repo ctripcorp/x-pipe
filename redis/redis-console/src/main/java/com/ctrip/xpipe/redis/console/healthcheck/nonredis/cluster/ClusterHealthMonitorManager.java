@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster;
 
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 
 import java.util.Set;
 

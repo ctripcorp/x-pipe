@@ -8,8 +8,9 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
+import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
@@ -28,7 +29,8 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 
 /**
  * @author chen.zhu
@@ -38,7 +40,7 @@ import static com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.KEYED_NE
 
 @Component
 @Lazy
-public class DefaultSentinelManager implements SentinelManager {
+public class DefaultSentinelManager implements SentinelManager, ShardEventHandler {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -47,11 +49,12 @@ public class DefaultSentinelManager implements SentinelManager {
     @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedClientPool;
 
-    @Resource(name = ConsoleContextConfig.REDIS_COMMAND_EXECUTOR)
+    @Resource(name = REDIS_COMMAND_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
     @Override
-    public void removeShardSentinelMonitors(ShardEvent shardEvent) {
+    public void handleShardDelete(ShardEvent shardEvent) {
+        // remove shard sentinel monitors
 
         ClusterType clusterType = shardEvent.getClusterType();
         if (null != clusterType && clusterType.supportMultiActiveDC()) {

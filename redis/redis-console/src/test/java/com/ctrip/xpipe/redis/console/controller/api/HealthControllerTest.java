@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.healthcheck.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

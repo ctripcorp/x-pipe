@@ -69,6 +69,11 @@ public class DefaultFoundationService implements FoundationService {
 	}
 
 	@Override
+	public String getGroupId() {
+		return "group1";
+	}
+
+	@Override
 	public int getOrder() {
 		return LOWEST_PRECEDENCE;
 	}

@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static com.ctrip.xpipe.redis.console.alert.ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON;
+import static com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON;
 import static com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant.DEFAULT_ORG_ID;
 
 /**

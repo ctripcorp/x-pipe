@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Sets;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 

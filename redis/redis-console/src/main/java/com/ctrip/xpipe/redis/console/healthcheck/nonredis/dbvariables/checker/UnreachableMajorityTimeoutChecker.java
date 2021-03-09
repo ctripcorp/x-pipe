@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker;
 
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

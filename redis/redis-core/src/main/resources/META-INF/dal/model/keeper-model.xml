@@ -4,7 +4,7 @@
 	<entity name="xpipe" implements="java.io.Serializable">
 		<entity-ref name="dc" type="map" />
 	</entity>
-	<entity name="metaServer" implements="java.io.Serializable">
+	<entity name="metaServerManager" implements="java.io.Serializable">
 	</entity>
 	<entity name="zkServer" implements="java.io.Serializable">
 	</entity>

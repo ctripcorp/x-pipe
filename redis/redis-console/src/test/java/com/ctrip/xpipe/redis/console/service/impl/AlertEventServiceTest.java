@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.model.EventModel;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;

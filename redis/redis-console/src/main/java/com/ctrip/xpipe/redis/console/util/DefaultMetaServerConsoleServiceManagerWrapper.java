@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.util;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.redis.checker.MetaServerManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerConsoleServiceManager;
@@ -18,7 +20,7 @@ import java.util.Map;
  *
  * Sep 9, 2016
  */
-public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServerConsoleServiceManagerWrapper{
+public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServerConsoleServiceManagerWrapper, MetaServerManager {
 	private Codec codec = Codec.DEFAULT;
 
 	private ConsoleConfig config = new DefaultConsoleConfig();
@@ -44,7 +46,15 @@ public class DefaultMetaServerConsoleServiceManagerWrapper implements MetaServer
 	public MetaServerConsoleService getFastService(String dcName) {
 		return metaServerConsoleServiceManager.getOrCreateFastService(fetchMetaServerAddress(dcName));
 	}
-	
+
+	@Override
+	public RedisMeta getCurrentMaster(String dcId, String clusterId, String shardId) {
+		MetaServerConsoleService metaServerConsoleService = getFastService(dcId);
+		if (null == metaServerConsoleService) throw new IllegalArgumentException("unknown dc " + dcId);
+
+		return metaServerConsoleService.getCurrentMaster(clusterId, shardId);
+	}
+
 	private List<String> fetchMetaServerAddress(List<String> dcNames) {
 		List<String> result = new ArrayList<String>(dcNames.size());
 		

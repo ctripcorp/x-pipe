@@ -2,9 +2,8 @@ package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.healthcheck.session.PingCallback;
-import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSession;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -14,6 +13,8 @@ import org.junit.Test;
 import javax.annotation.Resource;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest {
 
@@ -27,7 +28,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
 
     private static final String CHECK_CHANNEL = "xpipe-health-check";
 
-    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executors;
 
     @Before

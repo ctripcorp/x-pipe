@@ -3,12 +3,12 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.healthcheck.*;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.CrossMasterDelayService;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
+import com.ctrip.xpipe.redis.console.service.DelayService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
@@ -39,7 +39,7 @@ public class HealthController extends AbstractConsoleController{
     private DelayService delayService;
 
     @Autowired
-    private CrossMasterDelayService crossMasterDelayService;
+    private DefaultCrossMasterDelayService crossMasterDelayService;
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {

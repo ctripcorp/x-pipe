@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;

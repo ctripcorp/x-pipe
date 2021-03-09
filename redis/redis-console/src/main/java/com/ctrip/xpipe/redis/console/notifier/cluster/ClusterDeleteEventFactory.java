@@ -6,12 +6,11 @@ import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEventListener;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
+
 /**
  * @author chen.zhu
  * <p>
@@ -31,7 +32,7 @@ import java.util.concurrent.ExecutorService;
 @Component
 public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
 
-    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executors;
     
     @Autowired

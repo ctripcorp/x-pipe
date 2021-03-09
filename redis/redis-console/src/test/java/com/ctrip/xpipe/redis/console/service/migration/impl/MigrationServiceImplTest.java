@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.DefaultMigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

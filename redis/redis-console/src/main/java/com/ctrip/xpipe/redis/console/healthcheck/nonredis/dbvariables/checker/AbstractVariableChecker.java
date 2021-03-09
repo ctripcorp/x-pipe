@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.VariableChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
