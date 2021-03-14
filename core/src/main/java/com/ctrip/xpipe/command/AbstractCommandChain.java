@@ -87,9 +87,11 @@ public abstract class AbstractCommandChain extends AbstractCommand<Object> imple
 		}
 		current.set(-1);
 	}
-	
-	public void addResult(CommandFuture<?> future){
-		result.add(future);
+
+	public void addResult(CommandFuture<?> future) {
+		synchronized (result) {
+			result.add(future);
+		}
 	}
 	
 	public List<CommandFuture<?>> getResult() {
