@@ -96,19 +96,24 @@ public class ParallelCommandChainTest extends AbstractCommandChainTest{
 
 	@Test
 	public void testCompleteAllCommands() throws Exception {
-		AtomicBoolean result = new AtomicBoolean(false);
-		ExecutorService executorService = Executors.newFixedThreadPool(1);
-		ParallelCommandChain chain = new ParallelCommandChain(executorService);
-		int taskSize = 5;
-		for(int i = 0; i < taskSize; i++) {
-			chain.add(retry3Times(new TestCompleteCommand("success"+i, 100)));
+		int times = 0;
+		while (times < 10) {
+			AtomicBoolean result = new AtomicBoolean(false);
+			ExecutorService executorService = Executors.newFixedThreadPool(5);
+			ParallelCommandChain chain = new ParallelCommandChain(executorService, false);
+			int taskSize = 50;
+			for (int i = 0; i < taskSize; i++) {
+				chain.add(new TestCompleteCommand("success" + i, 1));
+			}
+			chain.future().addListener(commandFuture -> {
+				logger.info("{}", chain.getResult().size());
+				result.getAndSet(taskSize == chain.getResult().size());
+			});
+			chain.execute().get();
+			Assert.assertTrue(result.get());
+			executorService.shutdownNow();
+			times++;
 		}
-		chain.future().addListener(commandFuture -> {
-			logger.info("{}", chain.getResult().size());
-			result.getAndSet(taskSize == chain.getResult().size());
-		});
-		chain.execute().get();
-		Assert.assertTrue(result.get());
 	}
 
 	private <T> Command<T> retry3Times(Command<T> command) {
