@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -49,7 +50,7 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
     private ConsoleServiceManager consoleServiceManager;
 
     @Autowired
-    private DefaultCrossMasterDelayService crossMasterDelayService;
+    private CrossMasterDelayService crossMasterDelayService;
 
     @Autowired
     private ConsoleConfig consoleConfig;

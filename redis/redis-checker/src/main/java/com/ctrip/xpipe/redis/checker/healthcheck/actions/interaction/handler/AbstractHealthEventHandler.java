@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.SiteReliabilityChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -47,8 +46,8 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @Autowired
     private CheckerConfig checkerConfig;
 
-    @Autowired
-    private SiteReliabilityChecker checker;
+//    @Autowired
+//    private SiteReliabilityChecker checker;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -90,7 +89,8 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @VisibleForTesting
     protected void markdown(final AbstractInstanceEvent event) {
         final RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        boolean siteReliable = checker.isSiteHealthy(event);
+//        boolean siteReliable = checker.isSiteHealthy(event);
+        boolean siteReliable = !checkerConfig.isConsoleSiteUnstable();
         if(siteReliable) {
             doMarkDown(event);
         } else {
@@ -140,11 +140,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         List<HEALTH_STATE> health_states = remoteCheckerManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
         long matchStates = health_states.stream().filter(healthStates::contains).count();
         return matchStates >= checkerConfig.getQuorum();
-    }
-
-    @VisibleForTesting
-    public void setChecker(SiteReliabilityChecker checker) {
-        this.checker = checker;
     }
 
     private FinalStateSetterManager<ClusterShardHostPort, Boolean> getHealthStateSetterManager() {

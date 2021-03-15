@@ -42,20 +42,23 @@ public class BeaconMetaCheckActionTest extends AbstractCheckerTest {
 
     private Set<MonitorGroupMeta> groups;
 
+    int orgId = 1;
+
     @Before
     public void setupBeaconMetaCheckActionTest() {
         action = new BeaconMetaCheckAction(scheduled, instance, executors, beaconManager);
 
-        int orgId = 1;
         String cluster = "cluster1";
         info = new DefaultClusterInstanceInfo(cluster, "jq", ClusterType.ONE_WAY, orgId);
         groups = Sets.newHashSet(new MonitorGroupMeta("shard1", "jq", Collections.singleton(new HostPort("127.0.0.1", 6379)), true));
+
+        Mockito.when(instance.getCheckInfo()).thenReturn(info);
     }
 
     @Test
     public void testDoTask() {
         action.doTask();
-        Mockito.verify(monitorService).registerCluster(info.getClusterId(), groups);
+        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), orgId);
     }
 
 }

@@ -7,14 +7,14 @@
     <attribute name="id" value-type="String" />
     <attribute name="lastModifiedTime" value-type="String" />
     <attribute name="zone" value-type="String" />
-    <entity-ref name="metaServerManager" type="list" names="metaServers" />
+    <entity-ref name="metaServer" type="list" names="metaServers" />
     <entity-ref name="zkServer" />
     <entity-ref name="keeperContainer" type="list" names="keeperContainers" xml-indent="true" />
     <entity-ref name="sentinel" type="list" names="sentinels" />
     <entity-ref name="cluster" type="list" names="clusters" />
     <entity-ref name="route" type="list" names="routes" xml-indent="true" />
   </entity>
-  <entity name="metaServerManager">
+  <entity name="metaServer">
     <attribute name="ip" value-type="String" />
     <attribute name="port" value-type="int" />
     <attribute name="master" value-type="boolean" />

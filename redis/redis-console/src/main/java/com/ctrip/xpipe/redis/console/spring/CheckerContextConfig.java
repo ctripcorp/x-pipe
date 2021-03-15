@@ -3,9 +3,7 @@ package com.ctrip.xpipe.redis.console.spring;
 import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
 import com.ctrip.xpipe.redis.checker.Persistence;
-import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.cluster.CheckerLeaderElector;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.impl.CheckerMetaCache;
@@ -60,16 +58,6 @@ public class CheckerContextConfig {
     @Bean
     public DefaultConsoleConfig consoleConfig() {
         return new DefaultConsoleConfig();
-    }
-
-    @Bean
-    public CheckerConfig checkerConfig(DefaultConsoleConfig consoleConfig) {
-        return consoleConfig;
-    }
-
-    @Bean
-    public AlertConfig alertConfig(DefaultConsoleConfig consoleConfig) {
-        return consoleConfig;
     }
 
     @Bean

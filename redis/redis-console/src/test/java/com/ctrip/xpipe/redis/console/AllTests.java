@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console;
 
 
-import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
-import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
@@ -20,41 +18,8 @@ import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayActionControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.DefaultRedisMasterActionListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingAlertListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictMetricListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeMetricListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeMetricListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloAggregationCollectorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloCollectorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CurrentDcSentinelCheckControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconActiveDcControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconMetaCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterCheckActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInstanceFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
@@ -108,8 +73,6 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses(value = {
-        DefaultSentinelHelloCollectorTest.class,
-        SentinelCollector4KeeperTest.class,
         ConsoleCrossDcServerTest.class,
 
         BasicServiceTest.class,
@@ -158,7 +121,6 @@ import org.junit.runners.Suite.SuiteClasses;
         MetaUpdateTest2.class,
         MetaUpdateTest3.class,
         MetaUpdateTest4.class,
-        AlertPolicyManagerTest.class,
 
         ProxyDaoTest.class,
         RouteDaoTest.class,
@@ -170,18 +132,8 @@ import org.junit.runners.Suite.SuiteClasses;
         AdvancedDcMetaServiceTest.class,
         ClusterMetaServiceImplTest.class,
 
-        HealthCheckEndpointFactoryTest.class,
-        DefaultHealthCheckEndpointFactoryTest.class,
-        DefaultHealthCheckInstanceFactoryTest.class,
         DcIgnoredConfigListenerTest.class,
 
-
-        TestAbstractHealthEventHandlerTest.class,
-        VersionCheckActionTest.class,
-        DiskLessReplCheckActionTest.class,
-        RedisMasterCheckActionTest.class,
-        RedisMasterCheckActionFactoryTest.class,
-        VersionCheckActionFactoryTest.class,
         DefaultProxyMonitorCollectorManagerTest.class,
         DefaultProxyChainAnalyzerTest.class,
         ProxyPingRecorderTest.class,
@@ -196,15 +148,12 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultClusterHealthMonitorManagerTest.class,
         MigrationSystemAvailableCheckTest.class,
         DefaultCheckMigrationCommandBuilderTest.class,
-        DefaultAlertEntityHolderTest.class,
         SentinelUpdateControllerTest.class,
-        DefaultDcMetaChangeManagerTest.class,
         MetaCacheCheckTest.class,
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
         SentinelConfigCheckTest.class,
         ClusterServiceImplTest4.class,
-        DelayActionTest.class,
         DelayServiceTest.class,
         ShardMetaServiceImplTest.class,
         CrossDcLeaderElectionActionTest.class,
@@ -214,23 +163,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultSentinelMonitorsCheckTest.class,
         DcMetaBuilderTest.class,
         DcClusterServiceImplTest.class,
-        MultiMasterDelayListenerTest.class,
         CrossMasterDelayServiceTest.class,
-        MultiMasterDelayActionControllerTest.class,
-        CurrentDcSentinelHelloAggregationCollectorTest.class,
-        CurrentDcSentinelHelloCollectorTest.class,
-        CurrentDcSentinelCheckControllerTest.class,
-        RedisMasterControllerTest.class,
         HealthControllerTest.class,
-        DefaultHealthCheckerMockTest.class,
-        ConflictMetricListenerTest.class,
-        ConflictCheckActionTest.class,
-        ConflictCheckActionFactoryTest.class,
-        ExpireSizeMetricListenerTest.class,
-        ExpireSizeCheckActionTest.class,
-        TombstoneSizeCheckActionTest.class,
-        TombstoneSizeMetricListenerTest.class,
-        DefaultRedisMasterActionListenerTest.class,
         DefaultMetaCacheTest.class,
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,
@@ -243,16 +177,9 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconMetaServiceImplTest.class,
         BeaconMigrationServiceImplTest.class,
 
-        BeaconMetaCheckActionTest.class,
-        BeaconActiveDcControllerTest.class,
         DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
-        DefaultClusterMonitorModifiedNotifierTest.class,
-
-        BackStreamingActionTest.class,
-        BackStreamingAlertListenerTest.class,
-        BackStreamingActionFactoryTest.class
-
+        DefaultClusterMonitorModifiedNotifierTest.class
 })
 public class AllTests {
 

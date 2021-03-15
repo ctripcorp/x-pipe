@@ -98,7 +98,7 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testStateSwitchFromUpToUnhealthyToSick() throws Exception {
         markup();
-        when(config.delayDownAfterMilli()).thenReturn(10);
+        when(config.delayDownAfterMilli()).thenReturn(100);
 
         healthStatus.delay(config.getHealthyDelayMilli()/2);
         Thread.sleep(config.delayDownAfterMilli()/2);
