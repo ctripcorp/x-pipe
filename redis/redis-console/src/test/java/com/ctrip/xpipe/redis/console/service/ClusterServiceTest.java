@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterTblDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTblEntity;
@@ -23,7 +24,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class ClusterServiceTest extends AbstractConsoleTest {
 	@Mock
-	private ClusterTblDao mockedClusterTblDao;
+	private ClusterDao mockClusterDao;
 	@InjectMocks
 	private ClusterServiceImpl clusterService;
 
@@ -38,7 +39,7 @@ public class ClusterServiceTest extends AbstractConsoleTest {
 
 	@Before
 	public void initMockData() throws Exception {
-		when(mockedClusterTblDao.findClusterByClusterName("cluster1", ClusterTblEntity.READSET_FULL))
+		when(mockClusterDao.findClusterByClusterName("cluster1"))
 				.thenReturn(new ClusterTbl().setId(1).setClusterName("cluster1").setClusterLastModifiedTime("1234567"));
 	}
 }

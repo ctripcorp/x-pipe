@@ -46,9 +46,6 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
     private AlertManager alertManager;
 
     @Mock
-    private SiteReliabilityChecker checker;
-
-    @Mock
     private RemoteCheckerManager remoteCheckerManager;
 
     @Mock
@@ -76,7 +73,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
         CommandFuture<Boolean> future = new DefaultCommandFuture<>();
         future.setSuccess(true);
-        when(checker.isSiteHealthy(any())).thenReturn(true);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
         HostPort master = localHostport(randomPort());
         when(defaultDelayPingActionCollector.getState(master)).thenReturn(HEALTH_STATE.HEALTHY);
@@ -100,7 +97,7 @@ public class OuterClientServiceProcessorTest extends AbstractRedisTest {
         when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(
                 Sets.newHashSet(new DcClusterDelayMarkDown().setDcId(dc).setClusterId(cluster)));
         when(metaCache.inBackupDc(hostPort)).thenReturn(true);
-        when(checker.isSiteHealthy(any())).thenReturn(true);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
         processor.onEvent(new InstanceSick(instance));
         verify(alertManager, atLeastOnce()).alert(instance.getCheckInfo(), ALERT_TYPE.INSTANCE_SICK_BUT_DELAY_MARK_DOWN, dc);
     }

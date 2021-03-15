@@ -4,11 +4,10 @@ import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
-import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
@@ -83,17 +82,7 @@ public class ConsoleContextConfig {
 	}
 
 	@Bean
-	public CheckerConfig checkerConfig(ConsoleConfig consoleConfig) {
-		return consoleConfig;
-	}
-
-	@Bean
-	public AlertConfig alertConfig(ConsoleConfig consoleConfig) {
-		return consoleConfig;
-	}
-
-	@Bean
-	public CheckerDbConfig checkerDbConfig() {
+	public ConsoleDbConfig consoleDbConfig() {
 		return new DefaultConsoleDbConfig();
 	}
 

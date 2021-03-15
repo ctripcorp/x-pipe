@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.SiteReliabilityChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
@@ -65,8 +64,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     @Mock
     private CheckerConfig checkerConfig;
 
-    @Mock
-    private SiteReliabilityChecker checker;
+//    @Mock
+//    private SiteReliabilityChecker checker;
 
     @Mock
     private FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
@@ -85,7 +84,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
         when(instance.getCheckInfo()).thenReturn(info);
 
-        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
         when(defaultDelayPingActionCollector.getHealthStateSetterManager()).thenReturn(finalStateSetterManager);
         doNothing().when(finalStateSetterManager).set(any(ClusterShardHostPort.class), anyBoolean());
@@ -94,11 +93,11 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
     @Test
     public void testMarkDown() {
-        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(false);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(true);
         sickHandler.markdown(new InstanceSick(instance));
         verify(finalStateSetterManager, never()).set(any(ClusterShardHostPort.class), anyBoolean());
 
-        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
         RedisInstanceInfo info = instance.getCheckInfo();
         when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(Sets.newHashSet(new DcClusterDelayMarkDown()
                 .setDcId(info.getDcId()).setClusterId(info.getClusterId()).setDelaySecond(1)));
@@ -107,18 +106,18 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         verify(finalStateSetterManager, times(1)).set(any(), any());
 
         when(checkerConfig.getDelayedMarkDownDcClusters()).thenReturn(null);
-        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
         sickHandler.markdown(new InstanceSick(instance));
         verify(finalStateSetterManager, times(2)).set(any(ClusterShardHostPort.class), anyBoolean());
     }
 
     @Test
     public void testMarkDownForInstanceDown() {
-        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(false);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(true);
         downHandler.markdown(new InstanceDown(instance));
         verify(finalStateSetterManager, never()).set(any(), anyBoolean());
 
-        when(checker.isSiteHealthy(any(AbstractInstanceEvent.class))).thenReturn(true);
+        when(checkerConfig.isConsoleSiteUnstable()).thenReturn(false);
 
         downHandler.markdown(new InstanceDown(instance));
         verify(finalStateSetterManager, times(1)).set(any(), anyBoolean());

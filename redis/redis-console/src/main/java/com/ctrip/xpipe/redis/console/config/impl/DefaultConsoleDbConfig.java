@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
  *         <p>
  *         Jun 15, 2017
  */
-@Component
 public class DefaultConsoleDbConfig extends AbstractConfigBean implements ConsoleDbConfig{
 
     private Pair<Set<String>, Long> sentinelCheckWhitelistCache = null;

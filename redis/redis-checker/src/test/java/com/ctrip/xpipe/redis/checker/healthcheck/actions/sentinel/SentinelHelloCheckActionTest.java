@@ -81,6 +81,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         });
         instance = newRandomRedisHealthCheckInstance("dc2", server.getPort());
         when(config.isSentinelAutoProcess()).thenReturn(true);
+        when(config.shouldSentinelCheck(anyString())).thenReturn(true);
 //        when(config.shouldSentinelCheck(Mockito.anyString(), Mockito.anyBoolean())).thenReturn(true);
 //        when(clusterService.find(anyString())).thenReturn(clusterTbl);
         when(persistence.isClusterOnMigration(anyString())).thenReturn(false);

@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,17 +18,17 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public String getXpipeRuntimeEnvironment() {
-        return null;
+        return "";
     }
 
     @Override
     public Set<String> getAlertWhileList() {
-        return null;
+        return new HashSet<>();
     }
 
     @Override
     public int getNoAlarmMinutesForClusterUpdate() {
-        return 0;
+        return 15;
     }
 
     @Override
@@ -36,7 +38,7 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public Map<String, String> getConsoleDomains() {
-        return null;
+        return new HashMap<>();
     }
 
     @Override
@@ -56,32 +58,32 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public String getRedisAlertSenderEmail() {
-        return null;
+        return "";
     }
 
     @Override
     public String getConsoleDomain() {
-        return null;
+        return "127.0.0.1";
     }
 
     @Override
     public int getRedisReplicationHealthCheckInterval() {
-        return 0;
+        return 2000;
     }
 
     @Override
     public int getClusterHealthCheckInterval() {
-        return 0;
+        return 300000;
     }
 
     @Override
     public int getDownAfterCheckNums() {
-        return 0;
+        return 5;
     }
 
     @Override
     public int getDownAfterCheckNumsThroughProxy() {
-        return 0;
+        return 10;
     }
 
     @Override
@@ -91,42 +93,42 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public int getSentinelCheckIntervalMilli() {
-        return 0;
+        return 300000;
     }
 
     @Override
     public int getHealthyDelayMilli() {
-        return 0;
+        return 2000;
     }
 
     @Override
     public int getHealthyDelayMilliThroughProxy() {
-        return 0;
+        return 30 * 1000;
     }
 
     @Override
     public String getReplDisklessMinRedisVersion() {
-        return null;
+        return "2.8.22";
     }
 
     @Override
     public String getXRedisMinimumRequestVersion() {
-        return null;
+        return "0.0.3";
     }
 
     @Override
     public int getPingDownAfterMilli() {
-        return 0;
+        return 12000;
     }
 
     @Override
     public int getPingDownAfterMilliThroughProxy() {
-        return 0;
+        return 30000;
     }
 
     @Override
     public int getSentinelRateLimitSize() {
-        return 0;
+        return 3;
     }
 
     @Override
@@ -136,26 +138,26 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public QuorumConfig getDefaultSentinelQuorumConfig() {
-        return null;
+        return new QuorumConfig();
     }
 
     @Override
     public Set<DcClusterDelayMarkDown> getDelayedMarkDownDcClusters() {
-        return null;
+        return new HashSet<>();
     }
 
     @Override
     public boolean isConsoleSiteUnstable() {
-        return false;
+        return true;
     }
 
     @Override
     public int getQuorum() {
-        return 0;
+        return 1;
     }
 
     @Override
     public Set<String> getIgnoredHealthCheckDc() {
-        return null;
+        return new HashSet<>();
     }
 }

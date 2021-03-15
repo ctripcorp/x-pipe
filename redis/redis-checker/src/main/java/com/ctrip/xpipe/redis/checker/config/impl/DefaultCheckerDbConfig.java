@@ -27,15 +27,18 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig {
 
     private TimeBoundCache<Boolean> alertSystemOn;
 
-    @Autowired
-    public DefaultCheckerDbConfig(Persistence persistence) {
+    public DefaultCheckerDbConfig(Persistence persistence, long cacheExpired) {
         this.persistence = persistence;
 
-        long cacheExpired = Integer.parseInt(System.getProperty(KEY_CACHE_EXPIRED, DEFAULT_CACHE_EXPIRED));
         sentinelCheckWhiteListCache = new TimeBoundCache<>(cacheExpired, () ->
                 this.persistence.sentinelCheckWhiteList().stream().map(String::toLowerCase).collect(Collectors.toSet()));
         alertSystemOn = new TimeBoundCache<>(cacheExpired, this.persistence::isAlertSystemOn);
         sentinelAutoProcessCache = new TimeBoundCache<>(cacheExpired, this.persistence::isSentinelAutoProcess);
+    }
+
+    @Autowired
+    public DefaultCheckerDbConfig(Persistence persistence) {
+        this(persistence, Integer.parseInt(System.getProperty(KEY_CACHE_EXPIRED, DEFAULT_CACHE_EXPIRED)));
     }
 
     @Override
