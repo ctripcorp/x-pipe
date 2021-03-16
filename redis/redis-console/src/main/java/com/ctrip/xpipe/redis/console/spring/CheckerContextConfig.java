@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.spring;
 
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.cluster.CheckerLeaderElector;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
-import com.ctrip.xpipe.redis.checker.impl.CheckerMetaCache;
+import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistence;
@@ -44,8 +46,8 @@ public class CheckerContextConfig {
 
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-    public MetaCache metaCache() {
-        return new CheckerMetaCache();
+    public MetaCache metaCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
+        return new CheckerMetaCache(checkerConfig, checkerConsoleService);
     }
 
     @Bean

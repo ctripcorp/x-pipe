@@ -27,6 +27,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -36,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
@@ -601,6 +603,24 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				return dao.findClustersWithOrgInfoById(clusterIds, ClusterTblEntity.READSET_FULL_WITH_ORG);
 			}
 		});
+	}
+
+	@Override
+	public List<Set<String>> divideClusters(int partsCnt) {
+		List<ClusterTbl> allClusters = queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return dao.findAllClusters(ClusterTblEntity.READSET_NAME);
+			}
+		});
+
+		if (null == allClusters) return Collections.emptyList();
+
+		List<Set<String>> parts = new ArrayList<>(partsCnt);
+		IntStream.range(0, partsCnt).forEach(i -> parts.add(new HashSet<>()));
+
+		allClusters.forEach(clusterTbl -> parts.get((int) (clusterTbl.getId() % partsCnt)).add(clusterTbl.getClusterName()));
+		return parts;
 	}
 
 	private List<String> findActiveClustersNameByDcName(String dcName) {

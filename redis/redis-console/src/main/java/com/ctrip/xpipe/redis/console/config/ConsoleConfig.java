@@ -126,4 +126,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Map<Long, String> getBeaconHosts();
 
+	int getClusterDividedParts();
+
+	int getCheckerAckTimeoutMilli();
+
 }
