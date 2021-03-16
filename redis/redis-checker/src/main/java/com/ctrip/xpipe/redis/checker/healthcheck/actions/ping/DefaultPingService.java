@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -34,6 +35,11 @@ public class DefaultPingService implements PingService, PingActionListener, OneW
         Long lastPongTime = hostPort2LastPong.get(hostPort);
         long maxNoPongTime = 2 * config.getRedisReplicationHealthCheckInterval();
         return lastPongTime != null && System.currentTimeMillis() - lastPongTime < maxNoPongTime;
+    }
+
+    @Override
+    public Map<HostPort, Long> getAllPongTimes() {
+        return null;
     }
 
     @Override

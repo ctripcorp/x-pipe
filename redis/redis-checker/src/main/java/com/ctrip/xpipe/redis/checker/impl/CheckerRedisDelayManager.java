@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -19,9 +19,11 @@ public class CheckerRedisDelayManager implements RedisDelayManager, OneWaySuppor
 
     private ConcurrentMap<HostPort, Long> hostPort2Delay = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    public void postConstruct() {
-        // TODO: report delay to consoles
+    // TODO: report delay to consoles
+
+    @Override
+    public Map<HostPort, Long> getAllDelays() {
+        return null;
     }
 
     @Override
