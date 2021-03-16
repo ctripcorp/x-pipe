@@ -13,6 +13,16 @@ import org.junit.Test;
 public class StringUtilTest extends AbstractTest{
 
 	@Test
+	public void testMakeSimpleName(){
+
+		Assert.assertEquals("[a.b]", StringUtil.makeSimpleName("a","b"));
+		Assert.assertEquals("[a.b]", StringUtil.makeSimpleName("a","a.b"));
+		Assert.assertEquals("[a.b]", StringUtil.makeSimpleName(null,"a.b"));
+		Assert.assertEquals("[a]", StringUtil.makeSimpleName("a",null));
+		Assert.assertEquals("[null]", StringUtil.makeSimpleName(null,null));
+	}
+
+	@Test
 	public void testSubHead(){
 
 		Assert.assertEquals("12345", StringUtil.subHead("12345", 5));
