@@ -47,13 +47,19 @@ public class OneKeeper extends AbstractKeeperIntegratedSingleDc{
 		
 		waitForAnyKeyToExit();
 	}
-	
+
 	@Test
 	public void testRedis() throws Exception{
 		
 		waitForAnyKeyToExit();
 	}
-	
+
+	@Override
+	public String getShardId() {
+		return "cluster1.shard1";
+	}
+
+
 	@Override
 	protected String getXpipeMetaConfigFile() {
 		return "one_keeper.xml";
