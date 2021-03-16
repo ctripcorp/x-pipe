@@ -57,13 +57,15 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_PARALLEL_CONSOLE_DOMAIN = "console.parallel.domain";
 
-    private static final String KEY_CONSOLE_SITE_STABLE = "console.site.stable";
-
     private static final String KEY_MIGRATION_EXEC_LOCK_TIMEOUT = "console.migration.exec.lock.timeout";
 
     private static final String KEY_BEACON_DEFAULT_HOST = "beacon.host.default";
 
     private static final String KEY_BEACON_HOST_BY_ORG = "beacon.host.org";
+
+    private static final String KEY_CLUSTER_DIVIDED_PARTS = "console.cluster.divide.parts";
+
+    private static final String KEY_CHECKER_ACK_TIMEOUT_MILLI = "checker.ack.timeout.milli";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -389,6 +391,36 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public Map<Long, String> getBeaconHosts() {
         String property = getProperty(KEY_BEACON_HOST_BY_ORG, "{}");
         return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<Map<Long, String>>() {});
+    }
+
+    @Override
+    public int getClusterDividedParts() {
+        return getIntProperty(KEY_CLUSTER_DIVIDED_PARTS, 1);
+    }
+
+    @Override
+    public int getClustersPartIndex() {
+        return getIntProperty(KEY_CLUSTERS_PART_INDEX, 0);
+    }
+
+    @Override
+    public int getCheckerAckTimeoutMilli() {
+        return getIntProperty(KEY_CHECKER_ACK_TIMEOUT_MILLI, 60000);
+    }
+
+    @Override
+    public int getCheckerReportIntervalMilli() {
+        return getIntProperty(KEY_CHECKER_REPORT_INTERVAL, 10000);
+    }
+
+    @Override
+    public int getCheckerMetaRefreshIntervalMilli() {
+        return getIntProperty(KEY_CHECKER_META_REFRESH_INTERVAL, 30000);
+    }
+
+    @Override
+    public String getConsoleAddress() {
+        return getProperty(KEY_CONSOLE_ADDRESS, "http://localhost:8080");
     }
 
 }

@@ -19,6 +19,8 @@ public interface MetaCache {
 
     XpipeMeta getXpipeMeta();
 
+    XpipeMeta getDividedXpipeMeta(int partIndex);
+
     boolean inBackupDc(HostPort hostPort);
 
     HostPort findMasterInSameShard(HostPort hostPort);

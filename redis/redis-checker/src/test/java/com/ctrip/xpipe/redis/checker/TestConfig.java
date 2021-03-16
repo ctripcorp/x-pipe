@@ -160,4 +160,24 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public Set<String> getIgnoredHealthCheckDc() {
         return new HashSet<>();
     }
+
+    @Override
+    public int getClustersPartIndex() {
+        return 0;
+    }
+
+    @Override
+    public int getCheckerReportIntervalMilli() {
+        return 10000;
+    }
+
+    @Override
+    public int getCheckerMetaRefreshIntervalMilli() {
+        return 30000;
+    }
+
+    @Override
+    public String getConsoleAddress() {
+        return "http://localhost:8080";
+    }
 }

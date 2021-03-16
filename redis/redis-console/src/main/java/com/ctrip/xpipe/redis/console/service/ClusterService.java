@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ClusterService {
 
@@ -40,5 +41,7 @@ public interface ClusterService {
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
 
 	List<ClusterTbl> findAllClusterByKeeperContainer(long keeperContainerId);
+
+	List<Set<String>> divideClusters(int parts);
 
 }

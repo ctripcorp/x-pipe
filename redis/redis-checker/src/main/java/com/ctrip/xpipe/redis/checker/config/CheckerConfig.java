@@ -51,6 +51,14 @@ public interface CheckerConfig {
 
     String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
+    String KEY_CLUSTERS_PART_INDEX = "checker.clusters.part.index";
+
+    String KEY_CHECKER_REPORT_INTERVAL = "checker.report.interval.milli";
+
+    String KEY_CHECKER_META_REFRESH_INTERVAL = "checker.meta.refresh.interval.milli";
+
+    String KEY_CONSOLE_ADDRESS = "console.address";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -88,5 +96,13 @@ public interface CheckerConfig {
     int getQuorum();
 
     Set<String> getIgnoredHealthCheckDc();
+
+    int getClustersPartIndex();
+
+    int getCheckerReportIntervalMilli();
+
+    int getCheckerMetaRefreshIntervalMilli();
+
+    String getConsoleAddress();
 
 }

@@ -29,6 +29,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public XpipeMeta getDividedXpipeMeta(int partIndex) {
+        return xpipeMeta;
+    }
+
+    @Override
     public boolean inBackupDc(HostPort hostPort) {
         return true;
     }
