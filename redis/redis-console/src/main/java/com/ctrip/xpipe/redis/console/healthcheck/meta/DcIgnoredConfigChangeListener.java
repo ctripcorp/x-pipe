@@ -16,7 +16,6 @@ import java.util.Set;
  * <p>
  * Sep 12, 2018
  */
-@Component
 public class DcIgnoredConfigChangeListener extends AbstractHealthCheckConfigChangeListener<String[]> {
 
     @Autowired

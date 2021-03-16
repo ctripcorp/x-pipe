@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.console;
 
-import com.ctrip.xpipe.redis.console.controller.api.HealthController;
+import com.ctrip.xpipe.redis.checker.controller.CheckerController;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.integratedtest.dr.AbstractXPipeClusterTest;
 import com.ctrip.xpipe.redis.integratedtest.dr.ForkProcessCmd;
@@ -77,8 +77,8 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
         Assert.assertTrue(isLeader(newLeaderPort));
         Assert.assertFalse(isLeader(newFollowerPort));
 
-        HealthController.HealthCheckInstanceModel checkInstanceOfLeader = getCheckInstance(newLeaderPort);
-        HealthController.HealthCheckInstanceModel checkInstanceOfFollower = getCheckInstance(newFollowerPort);
+        CheckerController.HealthCheckInstanceModel checkInstanceOfLeader = getCheckInstance(newLeaderPort);
+        CheckerController.HealthCheckInstanceModel checkInstanceOfFollower = getCheckInstance(newFollowerPort);
 
         Assert.assertTrue(checkInstanceOfLeader.getActions().size() > checkInstanceOfFollower.getActions().size());
     }
@@ -90,10 +90,10 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
         return (Boolean) healthState.get("isLeader");
     }
 
-    private HealthController.HealthCheckInstanceModel getCheckInstance(int port) throws Exception {
+    private CheckerController.HealthCheckInstanceModel getCheckInstance(int port) throws Exception {
         String url = String.format("http://localhost:%d/api/health/check/instance/127.0.0.1/6379", port);
-        waitForServerAck(url, HealthController.HealthCheckInstanceModel.class, 30000);
-        return restTemplate.getForObject(url, HealthController.HealthCheckInstanceModel.class);
+        waitForServerAck(url, CheckerController.HealthCheckInstanceModel.class, 30000);
+        return restTemplate.getForObject(url, CheckerController.HealthCheckInstanceModel.class);
     }
 
     private void startJqConsoleClusters() throws Exception {

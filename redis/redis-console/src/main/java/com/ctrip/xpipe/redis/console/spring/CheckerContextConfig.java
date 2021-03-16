@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.spring;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.cluster.CheckerLeaderElector;
@@ -77,7 +76,7 @@ public class CheckerContextConfig {
 
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-    public ClusterServer clusterServer() {
+    public CheckerLeaderElector checkerLeaderElector() {
         return new CheckerLeaderElector();
     }
 

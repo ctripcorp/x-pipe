@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console.spring;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import com.ctrip.xpipe.redis.checker.MetaServerManager;
-import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
@@ -16,7 +15,6 @@ import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerMode;
 import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
-import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
@@ -30,13 +28,13 @@ import org.springframework.context.annotation.*;
  */
 @Configuration
 @EnableAspectJAutoProxy
-@ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console"})
+@ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"})
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class ConsoleContextConfig {
 
 	@Bean
-	public MetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
+	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
 		return new DefaultMetaServerConsoleServiceManagerWrapper();
 	}
 
@@ -87,14 +85,14 @@ public class ConsoleContextConfig {
 	}
 
 	@Bean
-	public MetaServerManager metaServerManager() {
-		return new DefaultMetaServerConsoleServiceManagerWrapper();
+	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+	public ConsoleLeaderElector consoleLeaderElector() {
+		return new ConsoleLeaderElector();
 	}
 
 	@Bean
-	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-	public ClusterServer clusterServer() {
-		return new ConsoleLeaderElector();
+	public PingService pingService() {
+		return new DefaultPingService();
 	}
 
 }

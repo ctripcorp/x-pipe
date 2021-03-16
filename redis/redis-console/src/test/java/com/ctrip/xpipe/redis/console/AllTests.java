@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
-import com.ctrip.xpipe.redis.console.controller.api.HealthControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -164,7 +163,6 @@ import org.junit.runners.Suite.SuiteClasses;
         DcMetaBuilderTest.class,
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
-        HealthControllerTest.class,
         DefaultMetaCacheTest.class,
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,
