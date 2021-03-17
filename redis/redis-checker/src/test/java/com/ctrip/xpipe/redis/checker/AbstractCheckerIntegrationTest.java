@@ -3,9 +3,14 @@ package com.ctrip.xpipe.redis.checker;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
+import com.ctrip.xpipe.redis.checker.impl.DefaultRemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
@@ -18,6 +23,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -80,14 +86,30 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
             return new TestSentinelManager();
         }
 
+        @Bean
+        public PingService pingService() {
+            return new DefaultPingService();
+        }
+
+        @Bean
+        public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
+            return new DefaultRemoteCheckerManager(checkerConfig);
+        }
+
+        @Bean
+        public ClusterHealthManager clusterHealthManager(@Qualifier(GLOBAL_EXECUTOR) ExecutorService executorService) {
+            return new CheckerClusterHealthManager(executorService);
+        }
+
+        @Bean
+        public BeaconManager beaconManager() {
+            return new TestBeaconManager();
+        }
+
         @Bean(name = REDIS_COMMAND_EXECUTOR)
         public ScheduledExecutorService getRedisCommandExecutor() {
-            int corePoolSize = OsUtils.getCpuCount();
-            if (corePoolSize > maxScheduledCorePoolSize) {
-                corePoolSize = maxScheduledCorePoolSize;
-            }
             return MoreExecutors.getExitingScheduledExecutorService(
-                    new ScheduledThreadPoolExecutor(corePoolSize, XpipeThreadFactory.create(REDIS_COMMAND_EXECUTOR)),
+                    new ScheduledThreadPoolExecutor(2, XpipeThreadFactory.create(REDIS_COMMAND_EXECUTOR)),
                     THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
             );
         }
@@ -115,7 +137,7 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
 
         @Bean(name = PING_DELAY_SCHEDULED)
         public ScheduledExecutorService getDelayPingScheduled() {
-            ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4),
+            ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2,
                     XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
             ((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
             ((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);

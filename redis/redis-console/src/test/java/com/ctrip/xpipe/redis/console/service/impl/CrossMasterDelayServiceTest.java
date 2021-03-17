@@ -29,7 +29,7 @@ import java.util.Collections;
 public class CrossMasterDelayServiceTest extends AbstractCheckerTest {
 
     @InjectMocks
-    private CrossMasterDelayService service;
+    private DefaultCrossMasterDelayService service;
 
     @Mock
     private ConsoleServiceManager consoleServiceManager;

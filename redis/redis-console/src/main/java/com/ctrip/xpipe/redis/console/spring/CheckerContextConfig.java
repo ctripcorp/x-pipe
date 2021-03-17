@@ -27,11 +27,16 @@ import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManager
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Autowire;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+
+import java.util.concurrent.ExecutorService;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 /**
  * @author lishanglin
@@ -106,8 +111,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public ClusterHealthManager clusterHealthManager() {
-        return new CheckerClusterHealthManager();
+    public ClusterHealthManager clusterHealthManager(@Qualifier(GLOBAL_EXECUTOR) ExecutorService executorService) {
+        return new CheckerClusterHealthManager(executorService);
     }
 
     @Bean
@@ -131,8 +136,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public RemoteCheckerManager remoteCheckerManager() {
-        return new DefaultRemoteCheckerManager();
+    public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
+        return new DefaultRemoteCheckerManager(checkerConfig);
     }
 
     @Bean

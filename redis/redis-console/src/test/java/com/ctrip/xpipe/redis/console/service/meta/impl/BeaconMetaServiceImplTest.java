@@ -50,7 +50,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
-        beaconMetaService = new BeaconMetaServiceImpl(metaCache, dcService, clusterMetaService);
+        beaconMetaService = new BeaconMetaServiceImpl(metaCache);
     }
 
     @Test

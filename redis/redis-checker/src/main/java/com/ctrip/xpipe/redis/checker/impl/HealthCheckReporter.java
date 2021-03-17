@@ -132,7 +132,7 @@ public class HealthCheckReporter implements LeaderAware {
             result.setRedisDelays(redisDelayManager.getAllDelays());
             result.setCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
             result.setRedisAlives(pingService.getAllRedisAlives());
-            result.setWarningClusterShards(clusterHealthManager.getAllWarningShards());
+            result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
 
             checkerConsoleService.report(result);
         } catch (Throwable th) {

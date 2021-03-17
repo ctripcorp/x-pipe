@@ -16,7 +16,7 @@ public interface ClusterHealthManager {
 
     void healthCheckMasterUp(RedisHealthCheckInstance instance);
 
-    Map<String, Set<String>> getAllWarningShards();
+    Map<String, Set<String>> getAllClusterWarningShards();
 
     Observer createHealthStatusObserver();
 

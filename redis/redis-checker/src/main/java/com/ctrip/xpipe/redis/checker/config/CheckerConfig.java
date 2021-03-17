@@ -61,6 +61,8 @@ public interface CheckerConfig {
 
     String KEY_CHECKER_ACK_INTERVAL = "checker.ack.interval.milli";
 
+    String KEY_CHECKER_ADDRESS_ALL = "checker.address.all";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -108,5 +110,7 @@ public interface CheckerConfig {
     String getConsoleAddress();
 
     int getCheckerAckIntervalMilli();
+
+    Set<String> getAllCheckerAddress();
 
 }
