@@ -12,15 +12,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Insta
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.collect.Sets;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 /**
  * @author lishanglin
@@ -32,8 +28,7 @@ public class CheckerClusterHealthManager implements ClusterHealthManager {
 
     private ExecutorService executors;
 
-    @Autowired
-    public CheckerClusterHealthManager(@Qualifier(GLOBAL_EXECUTOR) ExecutorService executorService) {
+    public CheckerClusterHealthManager(ExecutorService executorService) {
         this.clusterWarningShards = new ConcurrentHashMap<>();
         this.executors = executorService;
     }

@@ -97,17 +97,6 @@ public class DefaultClusterHealthMonitorManager extends CheckerClusterHealthMana
         return warningClusters.getThrough(state.getLevel()).getCurrentSet();
     }
 
-    @Override
-    public Observer createHealthStatusObserver() {
-
-        return new Observer() {
-            @Override
-            public void update(Object args, Observable observable) {
-                onInstanceStateChange((AbstractInstanceEvent) args);
-            }
-        };
-    }
-
     private DefaultClusterHealthMonitor getOrCreate(String clusterId) {
         return MapUtils.getOrCreate(monitors, clusterId, new ObjectFactory<DefaultClusterHealthMonitor>() {
             @Override

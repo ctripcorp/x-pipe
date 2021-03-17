@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
+import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
@@ -8,13 +9,12 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestOperations;
 
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,16 +34,14 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
 
     private CheckerConfig config;
 
+    private ClusterServer clusterServer;
+
     private DynamicDelayPeriodTask proxyTunnelsRefreshTask;
 
     private ScheduledExecutorService scheduled;
 
-    private volatile boolean isLeader = false;
-
-    private Logger logger = LoggerFactory.getLogger(CheckerProxyManager.class);
-
-    @Autowired
-    public CheckerProxyManager(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
+    public CheckerProxyManager(ClusterServer clusterServer, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
+        this.clusterServer = clusterServer;
         this.checkerConsoleService = checkerConsoleService;
         this.config = checkerConfig;
         this.proxyTunnelInfos = new HashMap<>();
@@ -51,7 +49,8 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
         this.proxyTunnelsRefreshTask = new DynamicDelayPeriodTask("ProxyTunnelsRefresher", this::refreshProxyTunnels, config::getCheckerMetaRefreshIntervalMilli, scheduled);
     }
 
-    private void refreshProxyTunnels() {
+    @VisibleForTesting
+    protected void refreshProxyTunnels() {
         try {
             logger.debug("[refreshProxyTunnels] start");
             List<ProxyTunnelInfo> tunnelInfos = checkerConsoleService.getProxyTunnelInfos(config.getConsoleAddress());
@@ -65,6 +64,16 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
         }
     }
 
+    @PreDestroy
+    public void preDestroy() {
+        try {
+            this.proxyTunnelsRefreshTask.stop();
+            this.scheduled.shutdownNow();
+        } catch (Throwable th) {
+            logger.info("[preDestroy] fail", th);
+        }
+    }
+
     @Override
     public List<ProxyTunnelInfo> getAllProxyTunnels() {
         return new ArrayList<>(proxyTunnelInfos.values());
@@ -72,7 +81,7 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
 
     @Override
     public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId) {
-        if (!isLeader) return null;
+        if (!clusterServer.amILeader()) return null;
         return proxyTunnelInfos.get(new DcClusterShard(backupDcId, clusterId, shardId));
     }
 
@@ -94,7 +103,6 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
     public void isleader() {
         try {
             logger.info("[isleader] become leader");
-            isLeader = true;
             proxyTunnelsRefreshTask.start();
         } catch (Throwable th) {
             logger.info("[isleader] refresh task start fail", th);
@@ -105,10 +113,16 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
     public void notLeader() {
         try {
             logger.info("[isleader] loss leader");
-            isLeader = false;
+            this.proxyTunnelInfos = new HashMap<>();
             proxyTunnelsRefreshTask.stop();
         } catch (Throwable th) {
             logger.info("[notLeader] refresh task stop fail", th);
         }
     }
+
+    @VisibleForTesting
+    protected void setRestOperations(RestOperations restOperations) {
+        this.restTemplate = restOperations;
+    }
+
 }
