@@ -1,11 +1,15 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster;
 
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 
+import java.util.Map;
 import java.util.Set;
 
-public interface ClusterHealthMonitorManager {
+public interface ClusterHealthMonitorManager extends ClusterHealthManager {
+
+    void updateHealthCheckWarningShards(Map<String, Set<String>> warningClusterShards);
 
     void healthCheckMasterDown(RedisHealthCheckInstance instance);
 

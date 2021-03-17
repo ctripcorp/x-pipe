@@ -180,4 +180,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public String getConsoleAddress() {
         return "http://localhost:8080";
     }
+
+    @Override
+    public int getCheckerAckIntervalMilli() {
+        return 10000;
+    }
 }

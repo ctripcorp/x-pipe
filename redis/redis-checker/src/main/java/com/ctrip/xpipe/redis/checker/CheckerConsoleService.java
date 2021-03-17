@@ -1,6 +1,11 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
+import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+
+import java.util.List;
 
 /**
  * @author lishanglin
@@ -9,5 +14,11 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 public interface CheckerConsoleService {
 
     XpipeMeta getXpipeMeta(String console, int clusterPartIndex);
+
+    List<ProxyTunnelInfo> getProxyTunnelInfos(String console);
+
+    void ack(CheckerStatus checkerStatus);
+
+    void report(HealthCheckResult result);
 
 }

@@ -4,8 +4,9 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
-import org.springframework.stereotype.Component;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -14,16 +15,13 @@ import java.util.concurrent.ConcurrentMap;
  * @author lishanglin
  * date 2021/3/12
  */
-@Component
-public class CheckerRedisDelayManager implements RedisDelayManager, OneWaySupport, BiDirectionSupport {
+public class CheckerRedisDelayManager implements RedisDelayManager, DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     private ConcurrentMap<HostPort, Long> hostPort2Delay = new ConcurrentHashMap<>();
 
-    // TODO: report delay to consoles
-
     @Override
     public Map<HostPort, Long> getAllDelays() {
-        return null;
+        return new HashMap<>(hostPort2Delay);
     }
 
     @Override

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
@@ -27,8 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-@Component
-public class DefaultCrossMasterDelayService implements CrossMasterDelayService, BiDirectionSupport {
+public class DefaultCrossMasterDelayService implements CrossMasterDelayService, DelayActionListener, BiDirectionSupport {
 
     private Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> crossMasterDelays = Maps.newConcurrentMap();
 
@@ -141,6 +141,16 @@ public class DefaultCrossMasterDelayService implements CrossMasterDelayService, 
         RedisMeta masterMeta = masterOptional.get();
 
         return new HostPort(masterMeta.getIp(), masterMeta.getPort());
+    }
+
+    @Override
+    public Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> getAllCrossMasterDelays() {
+        throw new UnsupportedOperationException("getAllCrossMasterDelays not support");
+    }
+
+    @Override
+    public void updateCrossMasterDelays(Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> delays) {
+        this.crossMasterDelays.putAll(delays);
     }
 
 }

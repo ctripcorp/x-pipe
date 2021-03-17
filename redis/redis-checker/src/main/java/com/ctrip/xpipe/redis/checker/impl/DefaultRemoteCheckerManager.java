@@ -10,7 +10,6 @@ import java.util.List;
  * @author lishanglin
  * date 2021/3/12
  */
-@Component
 public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
 
     @Override

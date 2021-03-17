@@ -13,6 +13,8 @@ import java.util.Map;
  */
 public interface DelayService {
 
+    void updateRedisDelays(Map<HostPort, Long> redisDelays);
+
     long getDelay(HostPort hostPort);
 
     long getDelay(ClusterType clusterType, HostPort hostPort);

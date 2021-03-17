@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
@@ -23,7 +24,7 @@ import java.util.function.Function;
  *         Jun 07, 2017
  */
 @Component
-public class ConsoleServiceManager {
+public class ConsoleServiceManager implements RemoteCheckerManager {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 

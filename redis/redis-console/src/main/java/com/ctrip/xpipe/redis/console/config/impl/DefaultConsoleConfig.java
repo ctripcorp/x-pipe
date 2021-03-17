@@ -404,6 +404,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getCheckerAckIntervalMilli() {
+        return getIntProperty(KEY_CHECKER_ACK_INTERVAL, 10000);
+    }
+
+    @Override
     public int getCheckerAckTimeoutMilli() {
         return getIntProperty(KEY_CHECKER_ACK_TIMEOUT_MILLI, 60000);
     }
