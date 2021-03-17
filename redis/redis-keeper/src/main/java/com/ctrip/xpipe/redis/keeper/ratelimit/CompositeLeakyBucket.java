@@ -83,6 +83,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     @Override
     public boolean tryAcquire() {
         if(closed.get()) {
+            logger.info("[tryAcquire]closed always return true");
             return true;
         }
         return origin.tryAcquire();

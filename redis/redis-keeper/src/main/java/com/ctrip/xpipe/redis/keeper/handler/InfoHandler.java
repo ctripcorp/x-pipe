@@ -208,6 +208,7 @@ public class InfoHandler extends AbstractCommandHandler{
 			sb.append("master:" + RedisProtocol.CRLF);
 			sb.append("commands_instantaneous_ops_per_sec:" + masterStats.getCommandBPS() + RedisProtocol.CRLF);
 			sb.append("commands_total_length:" + masterStats.getCommandTotalLength() + RedisProtocol.CRLF);
+			sb.append("last_master_role:" + masterStats.lastMasterRole() + RedisProtocol.CRLF);
 			return sb.toString();
 		}
 

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.monitor;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 
 /**
  * @author wenchao.meng
@@ -12,8 +14,14 @@ public interface MasterStats {
 
     void setMasterState(MASTER_STATE masterState);
 
+    void setMasterRole(Endpoint endpoint, SERVER_TYPE serverType);
+
+    SERVER_TYPE lastMasterRole();
+
     long getCommandBPS();
 
     long getCommandTotalLength();
+
+
 
 }

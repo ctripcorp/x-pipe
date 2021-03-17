@@ -1,7 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +19,11 @@ public class DefaultMasterStats implements MasterStats {
     private long commandsLength;
     private long durationMilli;
     private MASTER_STATE masterState;
+
+    private SERVER_TYPE lastMasterType;
+    private Endpoint lastMasterEndPoint;
+    private SERVER_TYPE currentMasterType;
+    private Endpoint currentMasterEndPoint;
 
     private long lastCommandStartTime;
 
@@ -40,7 +49,29 @@ public class DefaultMasterStats implements MasterStats {
         }
         this.masterState = masterState;
         logger.debug("[setMasterState]{}, {}", this.masterState, masterState);
+    }
 
+    @Override
+    public void setMasterRole(Endpoint endpoint, SERVER_TYPE serverType) {
+
+        if (!ObjectUtils.equals(endpoint, currentMasterEndPoint)) {
+            logger.info("[setMasterRole][endpoint change]{}({})->{}({})", this.currentMasterEndPoint, this.currentMasterType, endpoint, serverType);
+            this.lastMasterEndPoint = this.currentMasterEndPoint;
+            this.lastMasterType = this.currentMasterType;
+
+            this.currentMasterEndPoint = endpoint;
+            this.currentMasterType = serverType;
+        } else {
+            if (serverType != currentMasterType) {
+                logger.info("[setMasterRole][endpoint role change]{}({})->({})", this.currentMasterEndPoint, this.currentMasterType, serverType);
+                this.currentMasterType = serverType;
+            }
+        }
+    }
+
+    @Override
+    public SERVER_TYPE lastMasterRole() {
+        return lastMasterType == null ? SERVER_TYPE.UNKNOWN : lastMasterType;
     }
 
     @Override
