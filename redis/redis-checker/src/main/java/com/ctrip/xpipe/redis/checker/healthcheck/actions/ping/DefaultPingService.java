@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -20,7 +21,6 @@ import java.util.concurrent.ConcurrentMap;
  * <p>
  * Sep 03, 2018
  */
-@Service
 public class DefaultPingService implements PingService, PingActionListener, OneWaySupport, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultPingService.class);
@@ -31,15 +31,26 @@ public class DefaultPingService implements PingService, PingActionListener, OneW
     private ConcurrentMap<HostPort, Long> hostPort2LastPong = new ConcurrentHashMap<>();
 
     @Override
-    public boolean isRedisAlive(HostPort hostPort) {
-        Long lastPongTime = hostPort2LastPong.get(hostPort);
-        long maxNoPongTime = 2 * config.getRedisReplicationHealthCheckInterval();
-        return lastPongTime != null && System.currentTimeMillis() - lastPongTime < maxNoPongTime;
+    public void updateRedisAlives(Map<HostPort, Boolean> redisAlives) {
+        throw new UnsupportedOperationException("updateRedisAlives not support");
     }
 
     @Override
-    public Map<HostPort, Long> getAllPongTimes() {
-        return null;
+    public boolean isRedisAlive(HostPort hostPort) {
+        Long lastPongTime = hostPort2LastPong.get(hostPort);
+        return isRedisAlive(lastPongTime);
+    }
+
+    @Override
+    public Map<HostPort, Boolean> getAllRedisAlives() {
+        Map<HostPort, Boolean> redisAlives = new HashMap<>();
+        hostPort2LastPong.forEach(((hostPort, lastPongTime) -> redisAlives.put(hostPort, isRedisAlive(lastPongTime))));
+        return redisAlives;
+    }
+
+    private boolean isRedisAlive(Long lastPongTime) {
+        long maxNoPongTime = 2 * config.getRedisReplicationHealthCheckInterval();
+        return lastPongTime != null && System.currentTimeMillis() - lastPongTime < maxNoPongTime;
     }
 
     @Override

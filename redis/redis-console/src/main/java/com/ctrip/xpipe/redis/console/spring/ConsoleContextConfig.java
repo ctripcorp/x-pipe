@@ -2,15 +2,19 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
+import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
+import com.ctrip.xpipe.redis.console.service.impl.ConsoleCachedPingService;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerMode;
 import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
@@ -92,7 +96,18 @@ public class ConsoleContextConfig {
 
 	@Bean
 	public PingService pingService() {
-		return new DefaultPingService();
+		return new ConsoleCachedPingService();
+	}
+
+	@Lazy
+	@Bean
+	public ClusterHealthMonitorManager clusterHealthManager() {
+		return new DefaultClusterHealthMonitorManager();
+	}
+
+	@Bean
+	public CrossMasterDelayService crossMasterDelayManager() {
+		return new DefaultCrossMasterDelayService();
 	}
 
 }

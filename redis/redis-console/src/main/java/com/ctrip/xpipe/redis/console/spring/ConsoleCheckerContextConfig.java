@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.spring;
 
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerMode;
 import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition;
@@ -23,6 +25,11 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
     @Bean
     public DcIgnoredConfigChangeListener dcIgnoredConfigChangeListener() {
         return new DcIgnoredConfigChangeListener();
+    }
+
+    @Bean
+    public PingService pingService() {
+        return new DefaultPingService();
     }
 
 }

@@ -56,6 +56,11 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
     private ConsoleConfig consoleConfig;
 
     @Override
+    public void updateRedisDelays(Map<HostPort, Long> redisDelays) {
+        hostPort2Delay.putAll(redisDelays);
+    }
+
+    @Override
     public long getDelay(HostPort hostPort) {
         Pair<String, String> clusterShard = metaCache.findClusterShard(hostPort);
         if (null == clusterShard) return -1L;

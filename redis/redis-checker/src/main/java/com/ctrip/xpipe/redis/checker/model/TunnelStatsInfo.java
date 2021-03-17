@@ -16,28 +16,41 @@ public class TunnelStatsInfo {
 
     private HostPort backend;
 
+    private HostPort proxyHost;
+
     public HostPort getFrontend() {
         return frontend;
     }
 
-    public void setFrontend(HostPort frontend) {
+    public TunnelStatsInfo setFrontend(HostPort frontend) {
         this.frontend = frontend;
+        return this;
     }
 
     public HostPort getBackend() {
         return backend;
     }
 
-    public void setBackend(HostPort backend) {
+    public TunnelStatsInfo setBackend(HostPort backend) {
         this.backend = backend;
+        return this;
+    }
+
+    public HostPort getProxyHost() {
+        return proxyHost;
+    }
+
+    public void setProxyHost(HostPort proxyHost) {
+        this.proxyHost = proxyHost;
     }
 
     public String getTunnelId() {
         return tunnelId;
     }
 
-    public void setTunnelId(String tunnelId) {
+    public TunnelStatsInfo setTunnelId(String tunnelId) {
         this.tunnelId = tunnelId;
+        return this;
     }
 
     @Override

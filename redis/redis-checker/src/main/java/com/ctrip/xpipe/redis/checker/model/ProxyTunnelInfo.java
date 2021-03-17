@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.checker.model;
 
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.google.common.collect.Lists;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -17,36 +20,55 @@ public class ProxyTunnelInfo {
 
     private List<TunnelStatsInfo> tunnelStatsInfos;
 
+    public ProxyTunnelInfo() {
+
+    }
+
     public String getBackupDcId() {
         return backupDcId;
     }
 
-    public void setBackupDcId(String backupDcId) {
+    public ProxyTunnelInfo setBackupDcId(String backupDcId) {
         this.backupDcId = backupDcId;
+        return this;
     }
 
     public String getClusterId() {
         return clusterId;
     }
 
-    public void setClusterId(String clusterId) {
+    public ProxyTunnelInfo setClusterId(String clusterId) {
         this.clusterId = clusterId;
+        return this;
     }
 
     public String getShardId() {
         return shardId;
     }
 
-    public void setShardId(String shardId) {
+    public ProxyTunnelInfo setShardId(String shardId) {
         this.shardId = shardId;
+        return this;
     }
 
     public List<TunnelStatsInfo> getTunnelStatsInfos() {
         return tunnelStatsInfos;
     }
 
-    public void setTunnelStatsInfos(List<TunnelStatsInfo> tunnelStatsInfos) {
+    public ProxyTunnelInfo setTunnelStatsInfos(List<TunnelStatsInfo> tunnelStatsInfos) {
         this.tunnelStatsInfos = tunnelStatsInfos;
+        return this;
+    }
+
+    public List<HostPort> getBackends() {
+        List<HostPort> backends = Lists.newArrayList();
+        for (TunnelStatsInfo tunnelInfo : tunnelStatsInfos) {
+            HostPort backend = tunnelInfo.getBackend();
+            HostPort proxy = tunnelInfo.getProxyHost();
+            backends.add(new HostPort(proxy.getHost(), backend.getPort()));
+        }
+
+        return backends;
     }
 
     @Override

@@ -11,8 +11,10 @@ import java.util.Map;
  */
 public interface PingService {
 
+    void updateRedisAlives(Map<HostPort, Boolean> redisAlives);
+
     boolean isRedisAlive(HostPort hostPort);
 
-    Map<HostPort, Long> getAllPongTimes();
+    Map<HostPort, Boolean> getAllRedisAlives();
 
 }

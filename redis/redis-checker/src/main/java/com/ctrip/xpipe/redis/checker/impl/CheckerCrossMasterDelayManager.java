@@ -8,21 +8,20 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Maps;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author lishanglin
  * date 2021/3/12
  */
-@Component
-public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, BiDirectionSupport {
-
-    // TODO: push delay to console
+public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, DelayActionListener, BiDirectionSupport {
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -54,4 +53,13 @@ public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, 
         }
     }
 
+    @Override
+    public Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> getAllCrossMasterDelays() {
+        return new HashMap<>(crossMasterDelays);
+    }
+
+    @Override
+    public void updateCrossMasterDelays(Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> delays) {
+        throw new UnsupportedOperationException("updateCrossMasterDelays not upport");
+    }
 }
