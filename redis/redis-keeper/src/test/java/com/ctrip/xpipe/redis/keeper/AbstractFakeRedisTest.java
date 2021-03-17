@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
+package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -70,16 +70,23 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	protected RedisKeeperServer startRedisKeeperServer(int replicationStoreCommandFileNumToKeep, 
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) throws Exception {
 		
-		KeeperConfig keeperConfig = new TestKeeperConfig(
+		KeeperConfig keeperConfig = newTestKeeperConfig(
 				commandFileSize, 
 				replicationStoreCommandFileNumToKeep, 
 				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
+
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
 		redisKeeperServer.initialize();
 		redisKeeperServer.start();
 		add(redisKeeperServer);
 		
 		return redisKeeperServer;
+	}
+
+	private KeeperConfig newTestKeeperConfig(int commandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
+
+		return new TestKeeperConfig(commandFileSize, replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
+
 	}
 
 	protected void connectToFakeRedis(RedisKeeperServer redisKeeperServer) {

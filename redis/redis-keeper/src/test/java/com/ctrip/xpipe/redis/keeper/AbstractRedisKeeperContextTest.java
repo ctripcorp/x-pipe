@@ -77,8 +77,9 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperConfig keeperConfig) throws Exception {
-		
-		return createRedisKeeperServer(createKeeperMeta(), keeperConfig, getReplicationStoreManagerBaseDir());
+
+		KeeperMeta keeperMeta = createKeeperMeta();
+		return createRedisKeeperServer(keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta));
 	}
 	
 	protected RedisKeeperServer createRedisKeeperServer() throws Exception {
@@ -87,7 +88,7 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper) throws Exception {
-		return createRedisKeeperServer(keeper, getReplicationStoreManagerBaseDir());
+		return createRedisKeeperServer(keeper, getReplicationStoreManagerBaseDir(keeper));
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, File baseDir) throws Exception {
@@ -108,7 +109,11 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeper, KeeperConfig keeperConfig,
 			File baseDir, LeaderElectorManager leaderElectorManager) {
 		return new DefaultRedisKeeperServer(keeper, keeperConfig, baseDir, leaderElectorManager,
-				createkeepersMonitorManager(), resourceManager);
+				createkeepersMonitorManager(), getResourceManager());
+	}
+
+	protected KeeperResourceManager getResourceManager() {
+		return resourceManager;
 	}
 
 	protected RedisMeta createRedisMeta() {

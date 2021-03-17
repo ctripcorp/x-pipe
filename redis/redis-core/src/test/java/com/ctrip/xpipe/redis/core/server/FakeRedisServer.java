@@ -39,6 +39,9 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private AtomicInteger sendHalfRdbAndCloseConnectionCount = new AtomicInteger(0);
 	
 	private List<FakeRedisServerAction> commandListeners = new LinkedList<>();
+
+	//for statis
+	private AtomicInteger psyncCount = new AtomicInteger(0);
 	
 	public FakeRedisServer(int port){
 		this(port, 0);
@@ -55,30 +58,18 @@ public class FakeRedisServer extends AbstractLifecycle{
 			}
 		});
 	}
-	
-	@Override
-	protected void doInitialize() throws Exception {
-		super.doInitialize();
-		server.initialize();
+
+
+	public int getPsyncCount() {
+		return psyncCount.get();
 	}
-	
-	@Override
-	protected void doStart() throws Exception {
-		super.doStart();
-		server.start();
+
+	public int getConnected() {
+		return server.getConnected();
 	}
-	
-	@Override
-	protected void doStop() throws Exception {
-		server.stop();
-		super.doStop();
-	}
-	
-	@Override
-	protected void doDispose() throws Exception {
-		server.dispose();
-		super.doDispose();
-	}
+
+
+
 
 	public int getPort() {
 		return port;
@@ -167,10 +158,6 @@ public class FakeRedisServer extends AbstractLifecycle{
 		return server;
 	}
 
-	public int getConnected() {
-		return server.getConnected();
-	}
-
 	public int getSleepBeforeSendFullSyncInfo() {
 		return sleepBeforeSendFullSyncInfo;
 	}
@@ -202,5 +189,34 @@ public class FakeRedisServer extends AbstractLifecycle{
 	public void setEof(boolean eof) {
 		this.eof = eof;
 	}
+
+	public void increasePsyncCount() {
+		psyncCount.incrementAndGet();
+	}
+
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		server.initialize();
+	}
+
+	@Override
+	protected void doStart() throws Exception {
+		super.doStart();
+		server.start();
+	}
+
+	@Override
+	protected void doStop() throws Exception {
+		server.stop();
+		super.doStop();
+	}
+
+	@Override
+	protected void doDispose() throws Exception {
+		server.dispose();
+		super.doDispose();
+	}
+
 }
 
