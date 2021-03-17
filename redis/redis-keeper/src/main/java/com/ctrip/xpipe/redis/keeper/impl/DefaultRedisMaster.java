@@ -8,10 +8,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.RdbDumper;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
+import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import io.netty.channel.nio.NioEventLoopGroup;
 
@@ -60,6 +57,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		redisMasterReplication.initialize();
+		//init we treat is as redis
+		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterRole(endpoint, SERVER_TYPE.REDIS);
+
 	}
 
 	@Override
@@ -149,6 +149,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public void setKeeper() {
 		isKeeper.set(true);
+		//for monitor
+		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterRole(endpoint, SERVER_TYPE.KEEPER);
 		logger.info("[setKeeper]{}", this);
 	}
 }

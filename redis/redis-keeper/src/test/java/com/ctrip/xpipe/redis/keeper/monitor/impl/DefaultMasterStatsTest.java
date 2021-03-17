@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,6 +12,48 @@ import org.junit.Test;
  * Mar 17, 2021
  */
 public class DefaultMasterStatsTest extends AbstractTest {
+
+    @Test
+    public void testJustChangeRole() {
+        DefaultMasterStats masterStats = new DefaultMasterStats();
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6379), SERVER_TYPE.REDIS);
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6379), SERVER_TYPE.KEEPER);
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+
+    }
+
+    @Test
+    public void testLastServerType() {
+
+        DefaultMasterStats masterStats = new DefaultMasterStats();
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6379), SERVER_TYPE.REDIS);
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6479), SERVER_TYPE.REDIS);
+        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6479), SERVER_TYPE.KEEPER);
+        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6579), SERVER_TYPE.KEEPER);
+        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6579), SERVER_TYPE.KEEPER);
+        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterRole());
+
+        //role change
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6579), SERVER_TYPE.REDIS);
+        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterRole());
+
+        masterStats.setMasterRole(new DefaultEndPoint("localhost", 6679), SERVER_TYPE.REDIS);
+        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterRole());
+    }
 
     @Test
     public void test() {
