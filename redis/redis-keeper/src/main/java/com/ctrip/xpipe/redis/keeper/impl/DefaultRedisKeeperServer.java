@@ -225,11 +225,25 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStop() throws Exception {
 		keeperMonitor.stop();
+		clearClients();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		this.leaderElector.stop();
 		stopServer();
-		replicationStoreManager.stop();		
+		replicationStoreManager.stop();
 		super.doStop();
+	}
+
+	private void clearClients() {
+		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
+			RedisClient client = entry.getValue();
+			try {
+				logger.info("[clearClients]close:{}", client);
+				client.close();
+			} catch (IOException e) {
+				logger.error("[clearClients]" + client, e);
+			}
+		}
+		redisClients.clear();
 	}
 
 	@Override

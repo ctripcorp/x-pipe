@@ -186,7 +186,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return keeperRateLimit;
 	}
 
-	private long replDownSafeIntervalMilli = 0;
+	private long replDownSafeIntervalMilli = 500;
 	@Override
 	public long getReplDownSafeIntervalMilli() {
 		return replDownSafeIntervalMilli;

@@ -42,6 +42,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 	protected void handlePsync(OutputStream ous, String line) throws IOException, InterruptedException {
 		
 		logger.info("[handlePsync]{}", line);
+		fakeRedisServer.increasePsyncCount();
 		String []sp = line.split("\\s+");
 		if(sp[1].equalsIgnoreCase("?")){
 			handleFullSync(ous);

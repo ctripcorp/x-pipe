@@ -73,21 +73,22 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
             // when it's under deploying circumstance, or a roughly active-backup swap
             // we won't limit the replication
             if(replDownShortly()) {
-                logger.info("[canSendPsync][repl down short] let psync pass");
+                logger.info("[canSendPsync][repl down short] psync pass {}", redisMasterReplication);
                 return true;
             }
             // for those who always fails, let it go
             KeeperStats keeperStats = redisKeeperServer.getKeeperMonitor().getKeeperStats();
             if(keeperStats.getLastPsyncFailReason() != null && keeperStats.getLastPsyncFailReason() != PsyncFailReason.TOKEN_LACK
                     && psyncEverSucceed.get() != INIT_STATE && !isPsyncEverSucceed()) {
-                logger.warn("[canSendPsync]never succeed, let it psync, {}", psyncEverSucceed.get());
+                logger.warn("[canSendPsync]never succeed, psync pass, {}, {}", psyncEverSucceed.get(), redisMasterReplication);
                 return true;
             }
             if(resourceManager.getLeakyBucket().tryAcquire()) {
+                logger.warn("[canSendPsync]leak acquire succeed, psync pass, {}, {}", psyncEverSucceed.get(), redisMasterReplication);
                 holdToken.set(true);
                 recordPsyncSendTime();
             } else {
-                logger.warn("[canSendPsync]psync wont send as no token is available [port:{}]", redisKeeperServer.getListeningPort());
+                logger.warn("[canSendPsync]leak acquire failed, psync blocked {}", redisMasterReplication);
                 keeperStats.setLastPsyncFailReason(PsyncFailReason.TOKEN_LACK);
                 keeperStats.increasePsyncSendFail();
                 return false;
@@ -99,12 +100,12 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     private boolean replDownShortly() {
         long repl_down_since = redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().getReplDownSince();
         if(repl_down_since == KEEPER_INIT_STATE) {
+            logger.info("[replDownShortly] KEEPER_INIT_STATE just return false {}", redisMasterReplication);
             return false;
         }
         long currentTime = System.currentTimeMillis();
         boolean result = currentTime - repl_down_since < redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli();
-        logger.info("[replDownShortly]currentTime - repl_down_since < getReplDownSafeIntervalMilli()");
-        logger.info("[replDownShortly]{} - {} < {} -> {}", currentTime, repl_down_since, redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli(), result);
+        logger.info("[replDownShortly]{} - {} < {} -> {}, {}", currentTime, repl_down_since, redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli(), result, redisMasterReplication);
         return result;
     }
 
