@@ -14,7 +14,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager implements KeepersMonitorManager{
 	
 	public static class NoneKeeperMonitor implements KeeperMonitor{
-		
+
+		private MasterStats masterStats = new DefaultMasterStats();
 		private KeeperStats keeperStats;
 		private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
 
@@ -35,6 +36,11 @@ public class NoneKeepersMonitorManager extends AbstractKeepersMonitorManager imp
 		@Override
 		public ReplicationStoreStats getReplicationStoreStats() {
 			return replicationStoreStats;
+		}
+
+		@Override
+		public MasterStats getMasterStats() {
+			return masterStats;
 		}
 
 		@Override

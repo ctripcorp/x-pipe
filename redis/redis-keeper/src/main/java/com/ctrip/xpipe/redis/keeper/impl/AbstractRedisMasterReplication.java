@@ -242,9 +242,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					String.format("not stated: %s, do not receive message:%d, %s", getLifecycleState().getPhaseName(), byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf)));
 		}
 
+		onReceiveMessage(byteBuf.readableBytes());
+
 		repl_transfer_lastio = System.currentTimeMillis();
 		clientPool.getObject().handleResponse(channel, byteBuf);
 	}
+
+	protected void onReceiveMessage(int messageLength){}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override

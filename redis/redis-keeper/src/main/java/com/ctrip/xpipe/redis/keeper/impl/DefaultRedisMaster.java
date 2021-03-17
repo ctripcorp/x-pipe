@@ -126,6 +126,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		
 		logger.info("[setMasterState]{}, {}", this, masterState);
 		this.masterState = masterState;
+
+		//for monitor
+		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterState(masterState);
 	}
 
 	@Override
