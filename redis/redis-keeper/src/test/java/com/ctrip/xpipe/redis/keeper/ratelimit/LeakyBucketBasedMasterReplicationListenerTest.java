@@ -329,8 +329,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         // in case leakyBucket.refresh() not run
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
         leakyBucket.setScheduled(scheduled);
-        leakyBucket.checkKeeperConfigChange();
-        sleep(110);
+        leakyBucket.doCheckKeeperConfigChange();
         int INFINITY = 1024;
         for(int i = 0; i < INFINITY; i ++) {
             Assert.assertTrue(listener.canSendPsync());

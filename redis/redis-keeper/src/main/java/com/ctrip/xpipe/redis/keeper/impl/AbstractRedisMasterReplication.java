@@ -373,7 +373,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		} else {
 			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getShardId());
 			// close and reconnect later by masterDisconnect Logic
-			masterChannel.close();
+			disconnectWithMaster();
 		}
 	}
 

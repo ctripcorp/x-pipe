@@ -106,6 +106,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 				while(true){
 					int data = ins.read();
 					if(data == -1){
+						logger.info("[doRun]read -1, close socket:{}", getSocket());
 						getSocket().close();
 						return;
 					}
@@ -173,6 +174,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		if(fakeRedisServer.getAndDecreaseSendHalfRdbAndCloseConnectionCount() > 0){
 			ous.write(rdb, 0, rdbStartPos + rdbContent.length()/2);
 			ous.flush();
+			logger.info("[handleFullSync]halfsync after write half data,close socket:{}", getSocket());
 			ous.close();
 		}else{
 			ous.write(rdb);
