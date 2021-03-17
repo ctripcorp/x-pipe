@@ -101,6 +101,7 @@ public class ConsoleContextConfig {
 
 	@Lazy
 	@Bean
+	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 	public ClusterHealthMonitorManager clusterHealthManager() {
 		return new DefaultClusterHealthMonitorManager();
 	}

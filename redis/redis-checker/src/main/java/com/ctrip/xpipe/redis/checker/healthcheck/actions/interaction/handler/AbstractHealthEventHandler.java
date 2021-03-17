@@ -37,17 +37,11 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @Autowired
     protected DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
-//    @Autowired
-//    private ConsoleServiceManager consoleServiceManager;
-
     @Autowired
     private RemoteCheckerManager remoteCheckerManager;
 
     @Autowired
     private CheckerConfig checkerConfig;
-
-//    @Autowired
-//    private SiteReliabilityChecker checker;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -89,7 +83,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     @VisibleForTesting
     protected void markdown(final AbstractInstanceEvent event) {
         final RedisInstanceInfo info = event.getInstance().getCheckInfo();
-//        boolean siteReliable = checker.isSiteHealthy(event);
         boolean siteReliable = !checkerConfig.isConsoleSiteUnstable();
         if(siteReliable) {
             doMarkDown(event);
@@ -133,10 +126,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
     }
 
     protected boolean quorumState(List<HEALTH_STATE> healthStates, HostPort hostPort) {
-        // TODO: 改造从console/checker通用
-//        List<HEALTH_STATE> health_states = consoleServiceManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
-//        return consoleServiceManager.quorumSatisfy(health_states, (state) -> healthStates.contains(state));
-
         List<HEALTH_STATE> health_states = remoteCheckerManager.allHealthStatus(hostPort.getHost(), hostPort.getPort());
         long matchStates = health_states.stream().filter(healthStates::contains).count();
         return matchStates >= checkerConfig.getQuorum();

@@ -3,12 +3,9 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
@@ -27,10 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorManager {
+public class DefaultClusterHealthMonitorManager extends CheckerClusterHealthManager implements ClusterHealthMonitorManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultClusterHealthMonitorManager.class);
 
@@ -41,10 +37,12 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
 
     private LeveledEmbededSet<String> warningClusters = new DefaultLeveledEmbededSet<>();
 
-    private ExecutorService executors = Executors.newFixedThreadPool(Math.max(1, Math.min(2, OsUtils.getCpuCount()/2)),
-            XpipeThreadFactory.create(DefaultClusterHealthMonitorManager.class.getSimpleName()));
-
     private ClusterHealthMonitorListener clusterHealthMonitorListener = new ClusterHealthMonitorListener();
+
+    public DefaultClusterHealthMonitorManager() {
+        super(Executors.newFixedThreadPool(Math.max(1, Math.min(2, OsUtils.getCpuCount()/2)),
+                XpipeThreadFactory.create(DefaultClusterHealthMonitorManager.class.getSimpleName())));
+    }
 
     @Override
     public void updateHealthCheckWarningShards(Map<String, Set<String>> warningClusterShards) {
@@ -55,7 +53,7 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
     }
 
     @Override
-    public Map<String, Set<String>> getAllWarningShards() {
+    public Map<String, Set<String>> getAllClusterWarningShards() {
         throw new UnsupportedOperationException();
     }
 
@@ -146,30 +144,6 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
         if(monitor != null) {
             monitor.removeListener(clusterHealthMonitorListener);
         }
-    }
-
-    private void onInstanceStateChange(Object args) {
-
-        executors.execute(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() {
-                AbstractInstanceEvent event = (AbstractInstanceEvent) args;
-                if (event.getInstance().getCheckInfo().getClusterType().supportMultiActiveDC()) {
-                    // only care about the master status for single active dc cluster
-                    return;
-                }
-                if(!event.getInstance().getCheckInfo().isMaster()) {
-                    return;
-                }
-                if(event instanceof InstanceSick || event instanceof InstanceDown) {
-                    healthCheckMasterDown(event.getInstance());
-                } else if(event instanceof InstanceUp) {
-                    healthCheckMasterUp(event.getInstance());
-                }
-            }
-        });
-
     }
 
     @VisibleForTesting

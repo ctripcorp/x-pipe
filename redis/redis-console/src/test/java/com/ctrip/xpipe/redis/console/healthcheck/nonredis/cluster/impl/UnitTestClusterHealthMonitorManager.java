@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -55,6 +56,16 @@ public class UnitTestClusterHealthMonitorManager implements ClusterHealthMonitor
 
     @Override
     public Observer createHealthStatusObserver() {
+        return null;
+    }
+
+    @Override
+    public void updateHealthCheckWarningShards(Map<String, Set<String>> warningClusterShards) {
+
+    }
+
+    @Override
+    public Map<String, Set<String>> getAllClusterWarningShards() {
         return null;
     }
 }

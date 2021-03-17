@@ -9,13 +9,13 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
-import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
 import com.ctrip.xpipe.utils.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +51,8 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     @Autowired
     private List<HealthEventProcessor> healthEventProcessors;
 
-//    @Autowired
-//    private ClusterHealthMonitorManager clusterHealthMonitorManager;
-
     @Autowired
-    private CheckerClusterHealthManager checkerClusterHealthManager;
+    private ClusterHealthManager clusterHealthManager;
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
@@ -121,7 +118,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
             public HealthStatus create() {
 
                 HealthStatus healthStatus = new HealthStatus(instance, scheduled);
-                healthStatus.addObserver(checkerClusterHealthManager.createHealthStatusObserver());
+                healthStatus.addObserver(clusterHealthManager.createHealthStatusObserver());
                 healthStatus.addObserver(new Observer() {
                     @Override
                     public void update(Object args, Observable observable) {

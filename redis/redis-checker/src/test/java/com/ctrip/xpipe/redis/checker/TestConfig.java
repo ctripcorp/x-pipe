@@ -5,10 +5,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author lishanglin
@@ -184,5 +181,10 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     @Override
     public int getCheckerAckIntervalMilli() {
         return 10000;
+    }
+
+    @Override
+    public Set<String> getAllCheckerAddress() {
+        return Collections.singleton("127.0.0.1:8080");
     }
 }

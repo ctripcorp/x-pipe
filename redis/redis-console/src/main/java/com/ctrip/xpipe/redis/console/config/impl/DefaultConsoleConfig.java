@@ -428,4 +428,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getProperty(KEY_CONSOLE_ADDRESS, "http://localhost:8080");
     }
 
+    @Override
+    public Set<String> getAllCheckerAddress() {
+        return getSplitStringSet(getProperty(KEY_CHECKER_ADDRESS_ALL, "127.0.0.1:8080"));
+    }
 }
