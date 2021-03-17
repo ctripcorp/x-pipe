@@ -56,8 +56,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultKeeperStatsTest.class,
         DefaultLeakyBucketTest.class,
         CompositeLeakyBucketTest.class,
-        RedisMasterReplicationTrafficRateLimitTest.class,
-        LeakyBucketBasedMasterReplicationListenerTest.class,
+//        RedisMasterReplicationTrafficRateLimitTest.class,
+//        LeakyBucketBasedMasterReplicationListenerTest.class,
         TestAbstractMetaStoreTest.class,
         PsyncFailReasonTest.class,
         DefaultMasterStatsTest.class

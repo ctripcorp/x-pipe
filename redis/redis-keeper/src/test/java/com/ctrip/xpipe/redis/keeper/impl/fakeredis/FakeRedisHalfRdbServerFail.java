@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.utils.SimplePsyncObserver;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -9,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -36,7 +39,7 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 	@Test
 	public void redisFailWhileSendingRdb() throws Exception {
 
-		waitUntilRedisMasterConnected(redisKeeperServer);
+		waitConditionUntilTimeOut(() -> {return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
 
 		logger.info(remarkableMessage("[redisFailWhileSendingRdb]"));
 		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort());
@@ -44,25 +47,6 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 		sleep(1500);
 		assertPsyncResultEquals(inMemoryPsync);
 
-	}
-
-	private void waitUntilRedisMasterConnected(RedisKeeperServer redisKeeperServer) throws TimeoutException {
-		waitUntilRedisMasterConnected(redisKeeperServer, 10000);
-	}
-
-	private void waitUntilRedisMasterConnected(RedisKeeperServer redisKeeperServer, int timeOutMilli) throws TimeoutException {
-
-		long begin = System.currentTimeMillis();
-		while (true) {
-
-			if (redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED) {
-				return;
-			}
-			if(System.currentTimeMillis() - begin > timeOutMilli){
-				throw new TimeoutException("timeout:" + timeOutMilli);
-			}
-			sleep(2);
-		}
 	}
 
 	@Test
@@ -77,12 +61,16 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 		redisKeeperServer.start();
 
 		connectToFakeRedis(redisKeeperServer);
-		
-		waitUntilRedisMasterConnected(redisKeeperServer);
+
+		waitConditionUntilTimeOut(() -> {return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
+
+		SimplePsyncObserver simplePsyncObserver = new SimplePsyncObserver();
+		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort(), simplePsyncObserver);
+		//wait
+		simplePsyncObserver.getOnline().get(5000, TimeUnit.MILLISECONDS);
+		//wait for commands
 		sleep(1000);
 
-		InMemoryPsync inMemoryPsync = sendInmemoryPsync("localhost", redisKeeperServer.getListeningPort());
-		sleep(1500);
 		assertPsyncResultEquals(inMemoryPsync);
 		Assert.assertEquals(1,
 				redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().getReplicationStoreCreateCount());

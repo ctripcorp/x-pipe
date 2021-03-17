@@ -181,7 +181,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void psyncFail(Throwable cause) {
 		
 		logger.info("[psyncFail][close channel, wait for reconnect]" + this, cause);
-		masterChannel.close();
+		disconnectWithMaster();
 	}
 
 	@Override

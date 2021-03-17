@@ -114,10 +114,19 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 	protected InMemoryPsync sendInmemoryPsync(String ip, int port) throws Exception {
 
-		return sendInmemoryPsync(ip, port, "?", -1);
+		return sendInmemoryPsync(ip, port, "?", -1, null);
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(String ip, int port, PsyncObserver psyncObserver) throws Exception {
+
+		return sendInmemoryPsync(ip, port, "?", -1, psyncObserver);
 	}
 
 	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset) throws Exception {
+		return sendInmemoryPsync(ip, port, "?", -1, null);
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		
@@ -132,7 +141,10 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 					ReplConfType.CAPA, scheduled, CAPA.EOF.toString()));
 			InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
 			chain.add(psync);
-			
+
+			if(psyncObserver != null){
+				psync.addPsyncObserver(psyncObserver);
+			}
 			psync.addPsyncObserver(new PsyncObserver() {
 				
 				private long masterRdbOffset = 0;
