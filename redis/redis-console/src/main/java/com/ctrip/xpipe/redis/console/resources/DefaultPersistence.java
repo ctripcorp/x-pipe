@@ -1,16 +1,23 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.api.email.EmailResponse;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
+import com.ctrip.xpipe.redis.console.dao.EventDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
@@ -39,6 +47,9 @@ public class DefaultPersistence implements Persistence {
 
     @Autowired
     private ConfigDao configDao;
+
+    @Autowired
+    private AlertEventService alertEventService;
 
     private static Logger logger = LoggerFactory.getLogger(DefaultPersistence.class);
 
@@ -136,13 +147,39 @@ public class DefaultPersistence implements Persistence {
     @Override
     public Map<String, Date> loadAllClusterCreateTime() {
         Map<String, Date> clusterCreateTimes = new HashMap<>();
-        // TODO: 优化返回字段，只需要createdTime @sl_li
-        List<ClusterTbl> clusterTbls = clusterDao.findAllClusters();
+        List<ClusterTbl> clusterTbls = clusterDao.findAllClustersWithCreateTime();
         for(ClusterTbl clusterTbl : clusterTbls) {
             clusterCreateTimes.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
         }
 
         return clusterCreateTimes;
+    }
+
+    @Override
+    public void recordAlert(AlertMessageEntity message, EmailResponse response) {
+        EventModel model = createEventModel(message, response);
+        alertEventService.insert(model);
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("unchecked")
+    protected EventModel createEventModel(AlertMessageEntity message, EmailResponse response) {
+        EventModel model = new EventModel();
+        model.setEventType(EventModel.EventType.ALERT_EMAIL).setEventOperator(FoundationService.DEFAULT.getLocalIp())
+                .setEventDetail(message.getTitle());
+        if(message.getAlert() != null) {
+            model.setEventOperation(message.getAlert().getAlertType().name());
+        } else {
+            model.setEventOperation("grouped");
+        }
+        String emailCheckInfo = null;
+        try {
+            emailCheckInfo = JsonCodec.INSTANCE.encode(response.getProperties());
+        } catch (Exception e) {
+            logger.error("[createEventModel] Error encode check info");
+        }
+        model.setEventProperty(emailCheckInfo);
+        return model;
     }
 
 }

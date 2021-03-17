@@ -50,14 +50,14 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
 
     @Override
     public void start() {
-        int interval = checkerConfig.getRedisReplicationHealthCheckInterval();
+        int interval = Math.max(checkerConfig.getRedisReplicationHealthCheckInterval(),
+                checkerConfig.getCheckerMetaRefreshIntervalMilli());
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
                 checkDcMetaChange();
             }
         }, interval * 2, interval, TimeUnit.MILLISECONDS);
-        // TODO: 与拉取频率保持一致 @sl_li
     }
 
     @Override

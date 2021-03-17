@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 
 import java.util.Date;
@@ -61,5 +63,10 @@ public class TestPersistence implements Persistence {
     @Override
     public Map<String, Date> loadAllClusterCreateTime() {
         return null;
+    }
+
+    @Override
+    public void recordAlert(AlertMessageEntity message, EmailResponse response) {
+
     }
 }
