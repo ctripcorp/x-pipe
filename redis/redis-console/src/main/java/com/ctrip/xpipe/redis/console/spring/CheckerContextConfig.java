@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistence;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
@@ -138,6 +139,11 @@ public class CheckerContextConfig {
     @Bean
     public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
         return new DefaultRemoteCheckerManager(checkerConfig);
+    }
+
+    @Bean
+    public AlertEventService alertEventService() {
+        return new AlertEventService();
     }
 
     @Bean

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 
 import java.util.Date;
@@ -26,5 +28,7 @@ public interface Persistence {
     Date getClusterCreateTime(String clusterId);
 
     Map<String, Date> loadAllClusterCreateTime();
+
+    void recordAlert(AlertMessageEntity message, EmailResponse response);
 
 }

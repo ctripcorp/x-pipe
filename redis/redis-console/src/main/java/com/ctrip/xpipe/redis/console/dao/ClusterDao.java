@@ -236,6 +236,15 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		});
 	}
 
+	public List<ClusterTbl> findAllClustersWithCreateTime() {
+		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+			@Override
+			public List<ClusterTbl> doQuery() throws DalException {
+				return clusterTblDao.findAllClusters(ClusterTblEntity.READSET_CREATE_TIME);
+			}
+		});
+	}
+
 	public List<ClusterTbl> findAllClusterWithOrgInfo() {
 		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override public List<ClusterTbl> doQuery() throws DalException {
