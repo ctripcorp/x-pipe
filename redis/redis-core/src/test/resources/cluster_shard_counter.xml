@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
 	<dc id="jq" lastModifiedTime="1234567abc">
-		<metaServerManager ip="1.1.1.1" port="9747" master="true"/>
-		<metaServerManager ip="1.1.1.1" port="9748" master="false"/>
+		<metaServer ip="1.1.1.1" port="9747" master="true"/>
+		<metaServer ip="1.1.1.1" port="9748" master="false"/>
 		<zkServer address="127.0.0.1:2181"/>
 		
 		<keeperContainers>
