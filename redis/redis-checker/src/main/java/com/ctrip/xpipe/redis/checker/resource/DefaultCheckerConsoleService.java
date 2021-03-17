@@ -37,12 +37,12 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public void ack(CheckerStatus checkerStatus) {
-
+    public void ack(String console, CheckerStatus checkerStatus) {
+        restTemplate.put(console + ConsoleCheckerPath.PATH_PUT_CHECKER_STATUS, checkerStatus);
     }
 
     @Override
-    public void report(HealthCheckResult result) {
-
+    public void report(String console, HealthCheckResult result) {
+        restTemplate.put(console + ConsoleCheckerPath.PATH_PUT_HEALTH_CHECK_RESULT, result);
     }
 }

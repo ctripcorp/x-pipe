@@ -17,8 +17,8 @@ public interface CheckerConsoleService {
 
     List<ProxyTunnelInfo> getProxyTunnelInfos(String console);
 
-    void ack(CheckerStatus checkerStatus);
+    void ack(String console, CheckerStatus checkerStatus);
 
-    void report(HealthCheckResult result);
+    void report(String console, HealthCheckResult result);
 
 }

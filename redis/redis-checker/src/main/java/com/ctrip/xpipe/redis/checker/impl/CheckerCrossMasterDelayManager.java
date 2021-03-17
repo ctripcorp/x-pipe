@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListen
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Maps;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,18 +22,18 @@ import java.util.Map;
  */
 public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, DelayActionListener, BiDirectionSupport {
 
-    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
+    protected static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
-    private Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> crossMasterDelays = Maps.newConcurrentMap();
+    protected Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> crossMasterDelays = Maps.newConcurrentMap();
 
     @Override
     public void onAction(DelayActionContext context) {
         RedisHealthCheckInstance instance = context.instance();
         RedisInstanceInfo info = instance.getCheckInfo();
         String targetDcId = info.getDcId();
-        DcClusterShard key = new DcClusterShard(currentDcId, info.getClusterId(), info.getShardId());
+        DcClusterShard key = new DcClusterShard(CURRENT_DC, info.getClusterId(), info.getShardId());
 
-        if (!currentDcId.equalsIgnoreCase(targetDcId)) {
+        if (!CURRENT_DC.equalsIgnoreCase(targetDcId)) {
             if (!crossMasterDelays.containsKey(key)) crossMasterDelays.put(key, Maps.newConcurrentMap());
             crossMasterDelays.get(key).put(targetDcId, Pair.of(context.instance().getCheckInfo().getHostPort(), context.getResult()));
         }
@@ -44,9 +43,9 @@ public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, 
     public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
         RedisHealthCheckInstance instance = action.getActionInstance();
         RedisInstanceInfo info = instance.getCheckInfo();
-        DcClusterShard key = new DcClusterShard(currentDcId, info.getClusterId(), info.getShardId());
+        DcClusterShard key = new DcClusterShard(CURRENT_DC, info.getClusterId(), info.getShardId());
 
-        if (currentDcId.equalsIgnoreCase(info.getDcId())) {
+        if (CURRENT_DC.equalsIgnoreCase(info.getDcId())) {
             crossMasterDelays.remove(key);
         } else if (crossMasterDelays.containsKey(key)) {
             crossMasterDelays.get(key).remove(info.getDcId());

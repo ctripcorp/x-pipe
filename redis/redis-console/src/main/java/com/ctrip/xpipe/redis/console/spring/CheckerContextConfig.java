@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
+import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
@@ -30,10 +31,7 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.*;
 
 import java.util.concurrent.ExecutorService;
 
@@ -71,8 +69,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public ProxyManager proxyManager(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
-        return new CheckerProxyManager(checkerConfig, checkerConsoleService);
+    public ProxyManager proxyManager(ClusterServer clusterServer, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
+        return new CheckerProxyManager(clusterServer, checkerConfig, checkerConsoleService);
     }
 
     @Bean
@@ -107,7 +105,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public PingService pingService() {
+    public DefaultPingService pingService() {
         return new DefaultPingService();
     }
 
@@ -144,6 +142,12 @@ public class CheckerContextConfig {
     @Bean
     public AlertEventService alertEventService() {
         return new AlertEventService();
+    }
+
+    @Bean
+    @Lazy
+    public SentinelManager sentinelManager() {
+        return new DefaultSentinelManager();
     }
 
     @Bean

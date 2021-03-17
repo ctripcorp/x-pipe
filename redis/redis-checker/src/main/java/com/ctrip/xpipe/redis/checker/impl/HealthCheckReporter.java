@@ -17,8 +17,6 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -55,9 +53,10 @@ public class HealthCheckReporter implements LeaderAware {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
-    @Autowired
-    public HealthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService, ClusterServer clusterServer,
-                               RedisDelayManager redisDelayManager, CrossMasterDelayManager crossMasterDelayManager, PingService pingService, ClusterHealthManager clusterHealthManager, @Value("${server.port}") int serverPort) {
+    public HealthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
+                               ClusterServer clusterServer, RedisDelayManager redisDelayManager,
+                               CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
+                               ClusterHealthManager clusterHealthManager, int serverPort) {
         this.serverPort = serverPort;
         this.config = checkerConfig;
         this.checkerConsoleService = checkerConsoleService;
@@ -119,7 +118,7 @@ public class HealthCheckReporter implements LeaderAware {
             status.setCheckerRole(clusterServer.amILeader() ? CheckerRole.LEADER : CheckerRole.FOLLOWER);
             status.setPartIndex(config.getClustersPartIndex());
 
-            checkerConsoleService.ack(status);
+            checkerConsoleService.ack(config.getConsoleAddress(), status);
         } catch (Throwable th) {
             logger.info("[heartbeat] fail", th);
         }
@@ -134,7 +133,7 @@ public class HealthCheckReporter implements LeaderAware {
             result.setRedisAlives(pingService.getAllRedisAlives());
             result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
 
-            checkerConsoleService.report(result);
+            checkerConsoleService.report(config.getConsoleAddress(), result);
         } catch (Throwable th) {
             logger.info("[reportCheckResult] fail", th);
         }

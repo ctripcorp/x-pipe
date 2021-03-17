@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.checker;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerMode;
+import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -22,6 +24,7 @@ import java.util.stream.IntStream;
  * date 2021/3/16
  */
 @Component
+@ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class DefaultCheckerManager implements CheckerManager {
 
     private List<Map<HostPort, CheckerStatus>> checkers;

@@ -43,6 +43,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInsta
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.impl.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -98,7 +99,13 @@ import org.junit.runners.Suite;
         SentinelHelloActionDowngradeTest.class,
         SentinelLeakyBucketTest.class,
         CurrentDcDelayPingActionCollectorTest.class,
-        CheckerControllerTest.class
+        CheckerControllerTest.class,
+
+        CheckerClusterHealthManagerTest.class,
+        CheckerCrossMasterDelayManagerTest.class,
+        CheckerProxyManagerTest.class,
+        CheckerRedisDelayManagerTest.class,
+        DefaultRemoteCheckerManagerTest.class
 })
 public class AllTests {
 }
