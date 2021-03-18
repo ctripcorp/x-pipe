@@ -55,9 +55,11 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
-    public XpipeMeta getDividedMeta(@PathVariable int index) {
+    public String getDividedMeta(@PathVariable int index, @RequestParam(value="format", required = false) String format) {
         if (index < 0) throw new IllegalArgumentException("illegal index " + index);
-        return metaCache.getDividedXpipeMeta(index);
+        XpipeMeta xpipeMeta = metaCache.getDividedXpipeMeta(index);
+
+        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_PROXY_CHAINS)

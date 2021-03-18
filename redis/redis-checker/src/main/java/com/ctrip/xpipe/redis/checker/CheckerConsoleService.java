@@ -4,7 +4,9 @@ import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -13,7 +15,7 @@ import java.util.List;
  */
 public interface CheckerConsoleService {
 
-    XpipeMeta getXpipeMeta(String console, int clusterPartIndex);
+    XpipeMeta getXpipeMeta(String console, int clusterPartIndex) throws SAXException, IOException;
 
     List<ProxyTunnelInfo> getProxyTunnelInfos(String console);
 
