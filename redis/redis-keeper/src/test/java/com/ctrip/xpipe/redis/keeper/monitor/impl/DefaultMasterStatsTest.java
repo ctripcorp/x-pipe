@@ -16,13 +16,13 @@ public class DefaultMasterStatsTest extends AbstractTest {
     @Test
     public void testJustChangeRole() {
         DefaultMasterStats masterStats = new DefaultMasterStats();
-        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6379), SERVER_TYPE.REDIS);
-        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6379), SERVER_TYPE.KEEPER);
-        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterType());
 
     }
 
@@ -30,29 +30,29 @@ public class DefaultMasterStatsTest extends AbstractTest {
     public void testLastServerType() {
 
         DefaultMasterStats masterStats = new DefaultMasterStats();
-        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6379), SERVER_TYPE.REDIS);
-        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.UNKNOWN, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6479), SERVER_TYPE.REDIS);
-        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6479), SERVER_TYPE.KEEPER);
-        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6579), SERVER_TYPE.KEEPER);
-        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6579), SERVER_TYPE.KEEPER);
-        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterType());
 
         //role change
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6579), SERVER_TYPE.REDIS);
-        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.KEEPER, masterStats.lastMasterType());
 
         masterStats.setMasterRole(new DefaultEndPoint("localhost", 6679), SERVER_TYPE.REDIS);
-        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterRole());
+        Assert.assertEquals(SERVER_TYPE.REDIS, masterStats.lastMasterType());
     }
 
     @Test

@@ -2,18 +2,20 @@ package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisMasterReplication;
+import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
-import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncRuntimeException;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateActive;
 import com.ctrip.xpipe.redis.keeper.impl.RedisKeeperServerStateBackup;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStats;
@@ -68,6 +70,9 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
 
     private KeeperStats keeperStats;
 
+    @Mock
+    private MasterStats masterStats;
+
     private LeakyBucketBasedMasterReplicationListener listener;
 
     @Before
@@ -82,6 +87,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(redisKeeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         keeperStats = spy(new DefaultKeeperStats("shard", scheduled));
         when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
+        when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
         when(keeperMonitor.getReplicationStoreStats()).thenReturn(replicationStoreStats);
     }
 
@@ -103,23 +109,12 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         verify(resourceManager, never()).getLeakyBucket();
         Assert.assertTrue(listener.canSendPsync());
     }
-    @Test
-    public void testCanSendPsyncWithAlwaysFail() {
-        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
-        when(redisMaster.isKeeper()).thenReturn(true);
-        LeakyBucket leakyBucket = spy(new DefaultLeakyBucket(1));
-        when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
-        Assert.assertTrue(listener.canSendPsync());
-        listener.onDumpFail(new Exception());
-        Assert.assertTrue(listener.canSendPsync());
-        listener.onDumpFail(new Exception());
-        Assert.assertTrue(listener.canSendPsync());
-        verify(leakyBucket, times(1)).tryAcquire();
-    }
+
     @Test
     public void testCanSendPsync() {
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
         when(redisMaster.isKeeper()).thenReturn(true);
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
         when(resourceManager.getLeakyBucket()).thenReturn(new DefaultLeakyBucket(1));
         Assert.assertTrue(listener.canSendPsync());
         verify(resourceManager, times(1)).getLeakyBucket();
@@ -129,6 +124,8 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     public void testCanSendPsyncWithFirstTimeFail() {
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
         when(redisMaster.isKeeper()).thenReturn(true);
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
+
         LeakyBucket leakyBucket = new DefaultLeakyBucket(1);
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         leakyBucket.tryAcquire();
@@ -138,98 +135,9 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     }
 
     @Test
-    public void testOverload() {
-        logger.info("{}", 1000L * 6 * 1073741824 / 104857600L);
-    }
-
-    @Test
-    public void testIsTokenReadyToReleaseWhenDeadline() {
-        long deadline = System.currentTimeMillis() - 10;
-        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
-        deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-    }
-
-    @Test
-    public void testIsTokenReadyToReleaseWhenPeakBPSHuge() {
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        when(keeperConfig.getReplicationTrafficLowWaterMark()).thenReturn(1024 * 1024 * 20L); // 20MB/s
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L); //21MB/s
-        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 50L); //50MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
-    }
-
-    @Test
-    public void testIsTokenReadyToReleaseWhenPeakBPSTiny() {
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        when(keeperConfig.getReplicationTrafficLowWaterMark()).thenReturn(1024 * 1024 * 20L); // 20MB/s
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L); //21MB/s
-        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 30L); //30MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-    }
-
-    @Test
-    public void testIsTokenReadyToReleaseWhenPeakBPSChange() {
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        when(keeperConfig.getReplicationTrafficLowWaterMark()).thenReturn(1024 * 1024 * 20L); // 20MB/s
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L); //21MB/s
-        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 50L); //50MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 30L); //30MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        when(keeperStats.getPeakInputInstantaneousBPS()).thenReturn(1024 * 1024 * 50L); //50MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
-    }
-
-    @Test
-    public void testIsTokenReadyToReleaseWhenLessThan20MB() {
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L); //2MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
-    }
-
-    @Test
-    public void testIsTokenReadyToReleaseIfNotContinuously() {
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L); //2MB/s
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 21L);
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L);
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertFalse(listener.isTokenReadyToRelease(deadline));
-        Assert.assertTrue(listener.isTokenReadyToRelease(deadline));
-    }
-
-    @Test
-    public void testLeakyBucketReleaseShouldAlsoResetCounter() {
-        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
-        when(redisMaster.isKeeper()).thenReturn(true);
-        when(resourceManager.getLeakyBucket()).thenReturn(new DefaultLeakyBucket(1));
-        Assert.assertTrue(listener.canSendPsync());
-        when(keeperStats.getInputInstantaneousBPS()).thenReturn(1024 * 1024 * 2L);
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(100);
-        listener.checkIfNeedReleaseToken(deadline, 10);
-        sleep(100 * 3 + 15);
-        // after sleep, token is released, now we shall reset all
-        // make sure, we reset the counter, so that we cannot pass in the first time(check 3 times)
-        Assert.assertFalse(listener.isTokenReadyToRelease(System.currentTimeMillis() + 1100));
-    }
-
-    @Test
     public void testDynamicAdjustTokenSize() {
         //increase size
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
         when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
         CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
@@ -253,6 +161,7 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
     @Test
     public void testDynamicAdjustTokenSize2() {
         //decrease size
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
         when(redisMaster.isKeeper()).thenReturn(true);
         when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
@@ -284,16 +193,13 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         Assert.assertFalse(listener.canSendPsync());
     }
 
-    @Test
-    public void testConcurrentDecreaseTokenSize() {
-
-    }
 
     @Test
     public void testConcurrentIncreaseTokenSize() {
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
         when(redisMaster.isKeeper()).thenReturn(true);
         when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
         CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         listener = new LeakyBucketBasedMasterReplicationListener(redisMasterReplication, redisKeeperServer,
@@ -318,6 +224,8 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
         when(redisMaster.isKeeper()).thenReturn(true);
         when(keeperConfig.getLeakyBucketInitSize()).thenReturn(3);
+        when(masterStats.lastMasterType()).thenReturn(SERVER_TYPE.REDIS);
+
         CompositeLeakyBucket leakyBucket = new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         listener = new LeakyBucketBasedMasterReplicationListener(redisMasterReplication, redisKeeperServer,
@@ -330,69 +238,30 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
         leakyBucket.setScheduled(scheduled);
         leakyBucket.doCheckKeeperConfigChange();
-        int INFINITY = 1024;
+        int INFINITY = 20;
         for(int i = 0; i < INFINITY; i ++) {
             Assert.assertTrue(listener.canSendPsync());
         }
     }
 
     @Test
-    public void testReleaseToken() {
-        listener = spy(listener);
-        listener.releaseToken();
-        verify(leakyBucket, times(1)).release();
-        int INIT_STATE = 1;
-        Assert.assertEquals(INIT_STATE, listener.psyncEverSucceed.get());
-    }
-
-    @Test
     public void testOnMasterDisconnected() {
         listener = spy(listener);
         listener.onMasterDisconnected();
-        verify(listener, never()).releaseToken();
+        verify(leakyBucket, never()).release();
         listener.holdToken.set(true);
         listener.onMasterDisconnected();
-        verify(listener, times(1)).releaseToken();
+        verify(leakyBucket, times(1)).release();
     }
 
     @Test
     public void testEndWriteRdb() {
         listener = spy(listener);
         listener.endWriteRdb();
-        verify(listener, never()).releaseToken();
+        verify(leakyBucket, never()).release();
         listener.holdToken.set(true);
         listener.endWriteRdb();
-        verify(listener, times(1)).releaseToken();
-    }
-
-    @Test
-    public void testOnContinue() {
-    }
-
-    @Test
-    public void testOnFullSync() {
-    }
-
-    @Test
-    public void testReFullSync() {
-    }
-
-    @Test
-    public void testOnDumpFinished() {
-    }
-
-    @Test
-    public void testOnDumpFail() {
-        listener = spy(listener);
-        listener.holdToken.set(true);
-        listener.onDumpFail(new Exception());
         verify(leakyBucket, times(1)).release();
-        int KEEP_FAIL = 3;
-        Assert.assertEquals(KEEP_FAIL, listener.psyncEverSucceed.get());
-    }
-
-    @Test
-    public void testBeginWriteRdb() {
     }
 
     @Test
@@ -402,7 +271,6 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         when(leakyBucket.tryAcquire()).thenReturn(true);
         logger.info("[{}]", redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli());
-        replicationStoreStats.refreshReplDownSince(System.currentTimeMillis());
         Assert.assertTrue(listener.canSendPsync());
         verify(leakyBucket, never()).tryAcquire();
     }
@@ -413,9 +281,9 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(redisMaster.isKeeper()).thenReturn(true);
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         when(leakyBucket.tryAcquire()).thenReturn(true);
-        replicationStoreStats.refreshReplDownSince(0);
+        replicationStoreStats.setMasterState(MASTER_STATE.REDIS_REPL_CONNECT);
         Assert.assertTrue(listener.canSendPsync());
-        verify(leakyBucket, times(1)).tryAcquire();
+        verify(leakyBucket, times(0)).tryAcquire();
     }
 
     @Test
@@ -425,7 +293,8 @@ public class LeakyBucketBasedMasterReplicationListenerTest extends AbstractTest 
         when(resourceManager.getLeakyBucket()).thenReturn(leakyBucket);
         when(leakyBucket.tryAcquire()).thenReturn(false);
         logger.info("[{}]", redisKeeperServer.getKeeperConfig().getReplDownSafeIntervalMilli());
-        replicationStoreStats.refreshReplDownSince(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(10));
+
+        ((DefaultReplicationStoreStats)replicationStoreStats).setLastReplDownTime(System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(10));
         Assert.assertFalse(listener.canSendPsync());
         verify(leakyBucket, times(1)).tryAcquire();
     }

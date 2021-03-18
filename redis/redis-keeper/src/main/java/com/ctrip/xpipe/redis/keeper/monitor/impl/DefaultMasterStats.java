@@ -70,7 +70,7 @@ public class DefaultMasterStats implements MasterStats {
     }
 
     @Override
-    public SERVER_TYPE lastMasterRole() {
+    public SERVER_TYPE lastMasterType() {
         return lastMasterType == null ? SERVER_TYPE.UNKNOWN : lastMasterType;
     }
 

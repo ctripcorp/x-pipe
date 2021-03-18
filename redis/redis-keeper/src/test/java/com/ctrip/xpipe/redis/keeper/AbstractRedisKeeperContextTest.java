@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
@@ -14,6 +15,7 @@ import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -128,6 +130,11 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 		redisMeta.setPort(port);
 		return redisMeta;
 	}
+
+	protected void waitRedisKeeperServerConnected(RedisKeeperServer redisKeeperServer) throws TimeoutException {
+		waitConditionUntilTimeOut(()->{return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
+	}
+
 
 	@Override
 	protected String getXpipeMetaConfigFile() {

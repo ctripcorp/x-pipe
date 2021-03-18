@@ -141,9 +141,18 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 		}
 
 		if(option.equals("keeper")){
-			return ERR;
+			if(!isKeeper()){
+				return ERR;
+			}else{
+				return OK;
+			}
+
 		}
 		return OK;
+	}
+
+	protected boolean isKeeper(){
+		return false;
 	}
 
 	protected void replconfAck(long ackPos) throws IOException, InterruptedException {

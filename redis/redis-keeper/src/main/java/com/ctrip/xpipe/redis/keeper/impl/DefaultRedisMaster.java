@@ -129,6 +129,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 		//for monitor
 		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterState(masterState);
+		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().setMasterState(masterState);
 	}
 
 	@Override

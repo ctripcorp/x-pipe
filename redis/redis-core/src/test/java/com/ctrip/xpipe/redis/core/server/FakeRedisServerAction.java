@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.gson.JsonDeserializationContext;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
@@ -54,6 +55,12 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 	}
 
 	private void handlePartialSync(OutputStream ous, long offset) throws IOException, InterruptedException {
+
+		if(fakeRedisServer.isPartialSyncFail()){
+			logger.info("[handlePartialSync]partial sync fail, close socket");
+			closeSocket();
+			return;
+		}
 		
 		logger.info("[handlePartialSync]");
 		int index = (int) (offset - fakeRedisServer.getRdbOffset() -1);
@@ -71,6 +78,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		writeCommands(ous);
 		
 	}
+
 
 	private void writeCommands(OutputStream ous) throws IOException, InterruptedException {
 		
@@ -185,7 +193,12 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			writeCommands(ous);
 		}
 	}
-	
+
+	@Override
+	protected boolean isKeeper() {
+		return fakeRedisServer.isKeeper();
+	}
+
 	@Override
 	protected void replconfAck(long ackPos) throws IOException, InterruptedException{
 		super.replconfAck(ackPos);
