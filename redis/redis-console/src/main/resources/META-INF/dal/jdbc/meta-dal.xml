@@ -150,6 +150,7 @@
 				<member name="count"/>
 			</readset>
 			<readset name="NAME">
+				<member name="id"/>
 				<member name='cluster-name'/>
 			</readset>
 			<readset name="CREATE_TIME">
