@@ -104,7 +104,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public RedisDelayManager redisDelayManager() {
+    public CheckerRedisDelayManager redisDelayManager() {
         return new CheckerRedisDelayManager();
     }
 
@@ -134,7 +134,7 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public CrossMasterDelayManager crossMasterDelayManager() {
+    public CheckerCrossMasterDelayManager checkerCrossMasterDelayManager() {
         return new CheckerCrossMasterDelayManager();
     }
 

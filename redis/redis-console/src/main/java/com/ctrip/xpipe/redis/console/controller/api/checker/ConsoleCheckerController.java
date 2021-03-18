@@ -76,7 +76,7 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @PutMapping(ConsoleCheckerPath.PATH_PUT_HEALTH_CHECK_RESULT)
-    public void reportHealthCheckResult(HttpServletRequest request, HealthCheckResult checkResult) {
+    public void reportHealthCheckResult(HttpServletRequest request, @RequestBody HealthCheckResult checkResult) {
         logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), checkResult);
         if (null != checkResult.getRedisDelays()) delayService.updateRedisDelays(checkResult.getRedisDelays());
         if (null != checkResult.getCrossMasterDelays()) crossMasterDelayService.updateCrossMasterDelays(checkResult.getCrossMasterDelays());

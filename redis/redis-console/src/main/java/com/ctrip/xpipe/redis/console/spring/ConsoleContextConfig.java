@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
-import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.impl.ConsoleCachedPingService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerMode;
@@ -107,7 +106,7 @@ public class ConsoleContextConfig {
 	}
 
 	@Bean
-	public CrossMasterDelayService crossMasterDelayManager() {
+	public DefaultCrossMasterDelayService defaultCrossMasterDelayService() {
 		return new DefaultCrossMasterDelayService();
 	}
 
