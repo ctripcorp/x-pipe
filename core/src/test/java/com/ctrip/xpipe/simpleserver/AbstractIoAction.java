@@ -75,8 +75,16 @@ public abstract class AbstractIoAction implements IoAction, DeadAware{
 	public void setDead() {
 		
 	}
-	
-	
+
+	protected void closeSocket() {
+		try {
+			logger.info("[closeSocket]{}", socket);
+			socket.close();
+		} catch (IOException e) {
+			logger.error("[closeSocket]" + socket, e);
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s(%s)", getClass().getSimpleName(), getSocket());

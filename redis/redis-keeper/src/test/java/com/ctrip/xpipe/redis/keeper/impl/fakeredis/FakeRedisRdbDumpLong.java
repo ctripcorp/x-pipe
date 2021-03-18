@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 import org.junit.Assert;
@@ -14,11 +15,19 @@ import org.junit.Test;
 public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
 	private int replicationTimeoutMilli = 200;
+	private int BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
 
 	@Override
 	public void beforeAbstractTest() throws Exception {
 		super.beforeAbstractTest();
+		BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI = AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI;
 		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = replicationTimeoutMilli;
+	}
+
+	@Override
+	public void afterAbstractTest() throws Exception {
+		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
+		super.afterAbstractTest();
 	}
 
 	@Test
@@ -47,7 +56,7 @@ public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
 		sleep(replicationTimeoutMilli * 3);
 
-		Assert.assertEquals(MASTER_STATE.REDIS_REPL_HANDSHAKE, redisKeeperServer.getRedisMaster().getMasterState());
+		Assert.assertEquals(MASTER_STATE.REDIS_REPL_NONE, redisKeeperServer.getRedisMaster().getMasterState());
 
 	}
 

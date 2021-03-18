@@ -159,20 +159,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return 3;
 	}
 
-	@Override
-	public int getPartialSyncTrafficMonitorIntervalTimes() {
-		return partialSyncTrafficMonitorIntervalTimes;
-	}
-
 	public TestKeeperConfig setPartialSyncTrafficMonitorIntervalTimes(int partialSyncTrafficMonitorIntervalTimes) {
 		this.partialSyncTrafficMonitorIntervalTimes = partialSyncTrafficMonitorIntervalTimes;
 		return this;
 	}
 
-	@Override
-	public int getMaxPartialSyncKeepTokenRounds() {
-		return maxPartialSyncKeepTokenRounds;
-	}
 
 	public TestKeeperConfig setMaxPartialSyncKeepTokenRounds(int maxPartialSyncKeepTokenRounds) {
 		this.maxPartialSyncKeepTokenRounds = maxPartialSyncKeepTokenRounds;
@@ -186,7 +177,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return keeperRateLimit;
 	}
 
-	private long replDownSafeIntervalMilli = 0;
+	private long replDownSafeIntervalMilli = 500;
 	@Override
 	public long getReplDownSafeIntervalMilli() {
 		return replDownSafeIntervalMilli;

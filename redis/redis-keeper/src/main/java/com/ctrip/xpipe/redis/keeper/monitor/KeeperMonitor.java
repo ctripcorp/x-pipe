@@ -16,5 +16,7 @@ public interface KeeperMonitor extends Startable, Stoppable {
 	KeeperStats getKeeperStats();
 	
 	ReplicationStoreStats getReplicationStoreStats();
+
+	MasterStats getMasterStats();
 	
 }

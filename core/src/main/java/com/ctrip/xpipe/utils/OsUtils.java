@@ -11,6 +11,7 @@ public class OsUtils {
 	
 	private static final int CPU_COUNT;
 	private static long startTime = System.currentTimeMillis();
+	public  static int 	APPROXIMATE__RESTART_TIME_MILLI = Integer.parseInt(System.getProperty("APPROXIMATE__RESTART_TIME_MILLI", "60000"));
 			
 	static{
 		

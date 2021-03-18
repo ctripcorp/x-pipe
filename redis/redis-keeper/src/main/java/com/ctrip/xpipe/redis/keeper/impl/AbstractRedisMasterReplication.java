@@ -186,18 +186,26 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			doConnect(b);
 		} catch (Exception e) {
 			logger.error("[doConnect0] ", e);
-
-			scheduled.schedule(new Runnable() {
-				@Override
-				public void run() {
-					try{
-						connectWithMaster();
-					}catch(Throwable th){
-						logger.error("[doConnect0][connectUntilConnected]" + AbstractRedisMasterReplication.this, th);
-					}
-				}
-			}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+			scheduleReconnect(masterConnectRetryDelaySeconds*1000);
 		}
+	}
+
+	protected void scheduleReconnect(int timeMilli) {
+
+		if (!(getLifecycleState().isStarting() || getLifecycleState().isStarted())) {
+			logger.info("[scheduleReconnect][do not connect, is stopped!!]{}", redisMaster.masterEndPoint());
+			return;
+		}
+		scheduled.schedule(new AbstractExceptionLogTask() {
+			@Override
+			public void doRun() {
+				try{
+					connectWithMaster();
+				}catch(Throwable th){
+					logger.error("[scheduleReconnect]" + AbstractRedisMasterReplication.this, th);
+				}
+			}
+		}, timeMilli, TimeUnit.MILLISECONDS);
 	}
 
 	protected abstract void doConnect(Bootstrap b);
@@ -242,9 +250,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 					String.format("not stated: %s, do not receive message:%d, %s", getLifecycleState().getPhaseName(), byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf)));
 		}
 
+		onReceiveMessage(byteBuf.readableBytes());
+
 		repl_transfer_lastio = System.currentTimeMillis();
 		clientPool.getObject().handleResponse(channel, byteBuf);
 	}
+
+	protected void onReceiveMessage(int messageLength){}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
@@ -369,7 +381,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		} else {
 			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getShardId());
 			// close and reconnect later by masterDisconnect Logic
-			masterChannel.close();
+			disconnectWithMaster();
 		}
 	}
 
@@ -436,7 +448,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public String toString() {
 
-		return String.format("%s(redisMaster:%s, %s)", getClass().getSimpleName(), redisMaster, ChannelUtil.getDesc(masterChannel));
+		return String.format("%s(M:%s, %s)", getClass().getSimpleName(), redisMaster, ChannelUtil.getDesc(masterChannel));
 	}
 
 	@Override

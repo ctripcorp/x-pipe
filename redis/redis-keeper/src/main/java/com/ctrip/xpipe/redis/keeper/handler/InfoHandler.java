@@ -8,6 +8,9 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
+import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
+import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 
@@ -28,6 +31,7 @@ public class InfoHandler extends AbstractCommandHandler{
 		register(new InfoServer());
 		register(new InfoReplication());
 		register(new InfoStats());
+		register(new InfoKeeper());
 	}
 
 	private void register(InfoSection section) {
@@ -191,6 +195,32 @@ public class InfoHandler extends AbstractCommandHandler{
 		@Override
 		public String name() {
 			return "Server";
+		}
+	}
+
+	//keeper has it while redis not
+	private class InfoKeeper extends AbstractInfoSection{
+
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+
+			StringBuilder sb = new StringBuilder();
+
+			MasterStats masterStats = keeperServer.getKeeperMonitor().getMasterStats();
+			sb.append("master:" + RedisProtocol.CRLF);
+			sb.append("commands_instantaneous_ops_per_sec:" + masterStats.getCommandBPS() + RedisProtocol.CRLF);
+			sb.append("commands_total_length:" + masterStats.getCommandTotalLength() + RedisProtocol.CRLF);
+			sb.append("last_master_type:" + masterStats.lastMasterType() + RedisProtocol.CRLF);
+
+
+			ReplicationStoreStats replicationStoreStats = keeperServer.getKeeperMonitor().getReplicationStoreStats();
+			sb.append("last_repl_down_time:" + DateTimeUtils.timeAsString(replicationStoreStats.getLastReplDownTime()) + RedisProtocol.CRLF);
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "keeper";
 		}
 	}
 
