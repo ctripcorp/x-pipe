@@ -42,10 +42,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 
 	//for statis
 	private AtomicInteger psyncCount = new AtomicInteger(0);
-	
+
+	private boolean isKeeper = false;
+	private boolean partialSyncFail = false;
+
 	public FakeRedisServer(int port){
 		this(port, 0);
 	}
+
 	public FakeRedisServer(int port, int sleepBeforeSendRdb){
 		
 		this.port = port;
@@ -59,6 +63,13 @@ public class FakeRedisServer extends AbstractLifecycle{
 		});
 	}
 
+	public void setIsKeeper(boolean isKeeper){
+		this.isKeeper = isKeeper;
+	}
+
+	public boolean isKeeper() {
+		return isKeeper;
+	}
 
 	public int getPsyncCount() {
 		return psyncCount.get();
@@ -218,5 +229,12 @@ public class FakeRedisServer extends AbstractLifecycle{
 		super.doDispose();
 	}
 
+	public boolean isPartialSyncFail() {
+		return partialSyncFail;
+	}
+
+	public void setPartialSyncFail(boolean partialSyncFail) {
+		this.partialSyncFail = partialSyncFail;
+	}
 }
 

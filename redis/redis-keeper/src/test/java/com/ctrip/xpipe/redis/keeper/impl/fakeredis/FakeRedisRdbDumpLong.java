@@ -15,11 +15,19 @@ import org.junit.Test;
 public class FakeRedisRdbDumpLong extends AbstractFakeRedisTest {
 
 	private int replicationTimeoutMilli = 200;
+	private int BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
 
 	@Override
 	public void beforeAbstractTest() throws Exception {
 		super.beforeAbstractTest();
+		BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI = AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI;
 		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = replicationTimeoutMilli;
+	}
+
+	@Override
+	public void afterAbstractTest() throws Exception {
+		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
+		super.afterAbstractTest();
 	}
 
 	@Test

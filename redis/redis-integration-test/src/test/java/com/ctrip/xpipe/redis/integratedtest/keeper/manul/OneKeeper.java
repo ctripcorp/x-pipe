@@ -55,12 +55,6 @@ public class OneKeeper extends AbstractKeeperIntegratedSingleDc{
 	}
 
 	@Override
-	public String getShardId() {
-		return "cluster1.shard1";
-	}
-
-
-	@Override
 	protected String getXpipeMetaConfigFile() {
 		return "one_keeper.xml";
 	}

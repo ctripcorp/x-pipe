@@ -16,7 +16,7 @@ public interface MasterStats {
 
     void setMasterRole(Endpoint endpoint, SERVER_TYPE serverType);
 
-    SERVER_TYPE lastMasterRole();
+    SERVER_TYPE lastMasterType();
 
     long getCommandBPS();
 

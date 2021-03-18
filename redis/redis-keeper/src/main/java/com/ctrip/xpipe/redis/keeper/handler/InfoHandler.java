@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
+import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 
@@ -208,7 +210,11 @@ public class InfoHandler extends AbstractCommandHandler{
 			sb.append("master:" + RedisProtocol.CRLF);
 			sb.append("commands_instantaneous_ops_per_sec:" + masterStats.getCommandBPS() + RedisProtocol.CRLF);
 			sb.append("commands_total_length:" + masterStats.getCommandTotalLength() + RedisProtocol.CRLF);
-			sb.append("last_master_role:" + masterStats.lastMasterRole() + RedisProtocol.CRLF);
+			sb.append("last_master_type:" + masterStats.lastMasterType() + RedisProtocol.CRLF);
+
+
+			ReplicationStoreStats replicationStoreStats = keeperServer.getKeeperMonitor().getReplicationStoreStats();
+			sb.append("last_repl_down_time:" + DateTimeUtils.timeAsString(replicationStoreStats.getLastReplDownTime()) + RedisProtocol.CRLF);
 			return sb.toString();
 		}
 
