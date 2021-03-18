@@ -10,6 +10,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
+import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.dao.MigrationShardDao;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
@@ -42,7 +45,8 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
  * date 2021/3/8
  */
 @Configuration
-@ComponentScan(basePackages = {"com.ctrip.xpipe.redis.checker", "com.ctrip.xpipe.redis.console.dao"})
+@ComponentScan(excludeFilters = { @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {MigrationEventDao.class, MigrationClusterDao.class, MigrationShardDao.class}) },
+        basePackages = { "com.ctrip.xpipe.redis.console.dao", "com.ctrip.xpipe.redis.checker" })
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CHECKER)
 public class CheckerContextConfig {
 
