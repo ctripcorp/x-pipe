@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
@@ -20,9 +21,9 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
@@ -73,5 +74,25 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
         int time = rdbonlyRedisMasterReplication.commandTimeoutMilli();
         Assert.assertEquals(AbstractRedisMasterReplication.PROXYED_REPLICATION_COMMAND_TIMEOUT_MILLI, time);
+    }
+
+    @Test
+    public void releaseRdbFileWhenCannotPsync() throws Exception {
+        DumpedRdbStore rdbStore = mock(DumpedRdbStore.class);
+
+        RdbonlyRedisMasterReplication replication = spy(new RdbonlyRedisMasterReplication(
+                mock(DefaultRedisKeeperServer.class),
+                mock(RedisMaster.class),
+                mock(NioEventLoopGroup.class),
+                mock(ScheduledExecutorService.class),
+                mock(RedisMasterNewRdbDumper.class),
+                mock(KeeperResourceManager.class)
+        ));
+        replication.dumpedRdbStore = rdbStore;
+        doReturn(false).when(replication).canSendPsync();
+        replication.sendReplicationCommand();
+
+        verify(rdbStore, times(1)).close();
+        verify(rdbStore, times(1)).destroy();
     }
 }

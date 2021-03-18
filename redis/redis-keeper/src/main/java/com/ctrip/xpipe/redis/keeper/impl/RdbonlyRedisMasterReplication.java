@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -13,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncConnectMasterFailException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -29,8 +29,9 @@ import java.util.concurrent.ScheduledExecutorService;
 public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplication{
 
 	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
-	private DumpedRdbStore dumpedRdbStore;
-	
+
+	@VisibleForTesting DumpedRdbStore dumpedRdbStore;
+
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
                                          NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
                                          RdbDumper rdbDumper, KeeperResourceManager resourceManager) {
@@ -45,7 +46,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		dumpedRdbStore = getRdbDumper().prepareRdbStore();
 		logger.info("[doInitialize][newRdbFile]{}", dumpedRdbStore);
 		rdbOnlyReplicationStore = new RdbOnlyReplicationStore(dumpedRdbStore);
-		
+
 	}
 
 	@Override
@@ -61,6 +62,17 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 				}
 			}
 		});
+	}
+
+	@Override
+	protected void doWhenCannotPsync() {
+		try {
+			dumpedRdbStore.close();
+			dumpedRdbStore.destroy();
+		} catch (Exception e) {
+		    logger.warn("[doWhenCannotPsync] unable to release rdb file", e);
+		}
+		disconnectWithMaster();
 	}
 
 	@Override
