@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
-public class CheckerController {
+public class CheckerHealthController {
 
     @Autowired
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
