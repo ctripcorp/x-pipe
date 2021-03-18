@@ -71,7 +71,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 		NettyClient nettyClient2 = objectPool.borrowObject();
 
 		waitConditionUntilTimeOut(()->nettyClient1.channel().isActive()
-				&& nettyClient2.channel().isActive(), 1000);
+				&& nettyClient2.channel().isActive());
 		waitConditionUntilTimeOut(() -> echoServer.getConnected() == 2);
 
 		objectPool.returnObject(nettyClient1);

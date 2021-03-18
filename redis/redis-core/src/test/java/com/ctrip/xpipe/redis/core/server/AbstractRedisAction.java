@@ -18,6 +18,7 @@ import java.util.List;
 public abstract class AbstractRedisAction extends AbstractIoAction implements SocketAware{
 
 	private byte[] OK = "+OK\r\n".getBytes();
+	private byte[] ERR = "-ERR \r\n".getBytes();
 	private String line;
 	
 	private boolean slaveof = false;
@@ -129,7 +130,8 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 	protected byte[] handleReplconf(String line) throws NumberFormatException, IOException{
 		
 		String []sp = line.split("\\s+");
-		if(sp[1].equals("ack")){
+		String option = sp[1];
+		if(option.equals("ack")){
 			try {
 				replconfAck(Long.parseLong(sp[2]));
 			} catch (InterruptedException e) {
@@ -137,7 +139,20 @@ public abstract class AbstractRedisAction extends AbstractIoAction implements So
 			}
 			return null;
 		}
+
+		if(option.equals("keeper")){
+			if(!isKeeper()){
+				return ERR;
+			}else{
+				return OK;
+			}
+
+		}
 		return OK;
+	}
+
+	protected boolean isKeeper(){
+		return false;
 	}
 
 	protected void replconfAck(long ackPos) throws IOException, InterruptedException {

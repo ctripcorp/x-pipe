@@ -60,19 +60,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 			public void operationComplete(ChannelFuture future) throws Exception {
 				
 				if(!future.isSuccess()){
-					
 					logger.error("[operationComplete][fail connect with master]" + redisMaster, future.cause());
-					
-					scheduled.schedule(new Runnable() {
-						@Override
-						public void run() {
-							try{
-								connectWithMaster();
-							}catch(Throwable th){
-								logger.error("[run][connectUntilConnected]" + DefaultRedisMasterReplication.this, th);
-							}
-						}
-					}, masterConnectRetryDelaySeconds, TimeUnit.SECONDS);
+					scheduleReconnect(masterConnectRetryDelaySeconds*1000);
 				}
 			}
 		});
@@ -83,44 +72,38 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	public void masterConnected(Channel channel) {
 		
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_HANDSHAKE);
-		
 		super.masterConnected(channel);
 		cancelReplConf();
 	}
-	
+
+	@Override
+	protected void onReceiveMessage(int messageLength) {
+		//for monitor
+		redisKeeperServer.getKeeperMonitor().getMasterStats().increaseDefaultReplicationInputBytes(messageLength);
+	}
+
 	@Override
 	public void masterDisconnected(Channel channel) {
 		super.masterDisconnected(channel);
-		refreshReplDownSince();
+		getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);
+
 		long interval = System.currentTimeMillis() - connectedTime;
 		long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
 		if (scheduleTime < 0) {
 			scheduleTime = 0;
 		}
-		logger.info("[masterDisconnected][reconnect after {} ms]", scheduleTime);
-		scheduled.schedule(new AbstractExceptionLogTask() {
-
-			@Override
-			public void doRun() {
-				connectWithMaster();
-			}
-		}, scheduleTime, TimeUnit.MILLISECONDS);
+		logger.info("[masterDisconnected][reconnect after {} ms]{}", scheduleTime, this);
+		scheduleReconnect((int) scheduleTime);
 	}
 
 	@Override
 	protected void doStop() throws Exception {
-		refreshReplDownSince();
+		//put none immediately
+		getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);
 		super.doStop();
+
 	}
 
-	private void refreshReplDownSince() {
-		if(getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED) {
-			logger.warn("[refreshReplDownSince]set state to MASTER_STATE.REDIS_REPL_NONE, and refresh repl_down_since");
-			redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(System.currentTimeMillis());
-			getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);
-		}
-	}
-	
 	public void setMasterConnectRetryDelaySeconds(int masterConnectRetryDelaySeconds) {
 		this.masterConnectRetryDelaySeconds = masterConnectRetryDelaySeconds;
 	}
@@ -172,7 +155,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void psyncFail(Throwable cause) {
 		
 		logger.info("[psyncFail][close channel, wait for reconnect]" + this, cause);
-		masterChannel.close();
+		disconnectWithMaster();
 	}
 
 	@Override
@@ -207,7 +190,6 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doEndWriteRdb() {
 		logger.info("[doEndWriteRdb]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
-		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
 		scheduleReplconf();
 		
 	}
@@ -217,7 +199,6 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		
 		logger.info("[doOnContinue]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
-		redisKeeperServer.getKeeperMonitor().getReplicationStoreStats().refreshReplDownSince(0);
 		try {
 			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
 		} catch (IOException e) {

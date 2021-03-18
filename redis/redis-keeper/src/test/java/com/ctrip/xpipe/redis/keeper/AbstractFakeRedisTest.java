@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
+package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -70,16 +70,23 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	protected RedisKeeperServer startRedisKeeperServer(int replicationStoreCommandFileNumToKeep, 
 			int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) throws Exception {
 		
-		KeeperConfig keeperConfig = new TestKeeperConfig(
+		KeeperConfig keeperConfig = newTestKeeperConfig(
 				commandFileSize, 
 				replicationStoreCommandFileNumToKeep, 
 				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
+
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
 		redisKeeperServer.initialize();
 		redisKeeperServer.start();
 		add(redisKeeperServer);
 		
 		return redisKeeperServer;
+	}
+
+	protected KeeperConfig newTestKeeperConfig(int commandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
+
+		return new TestKeeperConfig(commandFileSize, replicationStoreCommandFileNumToKeep, replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
+
 	}
 
 	protected void connectToFakeRedis(RedisKeeperServer redisKeeperServer) {
@@ -107,10 +114,19 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 	protected InMemoryPsync sendInmemoryPsync(String ip, int port) throws Exception {
 
-		return sendInmemoryPsync(ip, port, "?", -1);
+		return sendInmemoryPsync(ip, port, "?", -1, null);
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(String ip, int port, PsyncObserver psyncObserver) throws Exception {
+
+		return sendInmemoryPsync(ip, port, "?", -1, psyncObserver);
 	}
 
 	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset) throws Exception {
+		return sendInmemoryPsync(ip, port, "?", -1, null);
+	}
+
+	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		
@@ -125,7 +141,10 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 					ReplConfType.CAPA, scheduled, CAPA.EOF.toString()));
 			InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
 			chain.add(psync);
-			
+
+			if(psyncObserver != null){
+				psync.addPsyncObserver(psyncObserver);
+			}
 			psync.addPsyncObserver(new PsyncObserver() {
 				
 				private long masterRdbOffset = 0;

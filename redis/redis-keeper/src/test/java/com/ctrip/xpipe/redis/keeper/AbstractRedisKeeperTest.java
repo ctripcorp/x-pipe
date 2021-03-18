@@ -7,6 +7,7 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.*;
@@ -121,10 +122,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 	
 
-	protected File getReplicationStoreManagerBaseDir() {
+	protected File getReplicationStoreManagerBaseDir(KeeperMeta keeper) {
 
 		String tmpDir = getTestFileDir();
-		return new File(tmpDir);
+		return new File(String.format("%s/%s", tmpDir, keeper.getPort()));
 	}
 
 	

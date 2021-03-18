@@ -1,19 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.monitor.impl;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
-import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.ctrip.xpipe.redis.keeper.monitor.*;
 
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -23,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 public class DefaultKeeperMonitor extends AbstractStartStoppable implements KeeperMonitor{
 
 	private KeeperStats keeperStats;
+
+	private MasterStats masterStats = new DefaultMasterStats();
 	
 	private ReplicationStoreStats replicationStoreStats = new DefaultReplicationStoreStats();
 	
@@ -46,6 +40,11 @@ public class DefaultKeeperMonitor extends AbstractStartStoppable implements Keep
 	@Override
 	public ReplicationStoreStats getReplicationStoreStats() {
 		return replicationStoreStats;
+	}
+
+	@Override
+	public MasterStats getMasterStats() {
+		return masterStats;
 	}
 
 	@Override

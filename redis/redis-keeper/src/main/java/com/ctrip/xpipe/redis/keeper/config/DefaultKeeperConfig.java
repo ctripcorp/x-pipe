@@ -35,8 +35,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI = "keeper.repl.down.safe.interval.milli";
 
-	private static final String KEY_MAX_PARTIAL_SYNC_KEEP_TOKEN_ROUNDS = "keeper.leaky.keep.rounds.max";
-
 	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
 	public DefaultKeeperConfig(){
@@ -132,16 +130,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getLeakyBucketInitSize() {
 		return getIntProperty(KEY_LEAKY_BUCKET_INIT_SIZE, 8);
-	}
-
-	@Override
-	public int getPartialSyncTrafficMonitorIntervalTimes() {
-		return 5;
-	}
-
-	@Override
-	public int getMaxPartialSyncKeepTokenRounds() {
-		return getIntProperty(KEY_MAX_PARTIAL_SYNC_KEEP_TOKEN_ROUNDS, 3);
 	}
 
 	@Override

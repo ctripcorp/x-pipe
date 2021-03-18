@@ -41,6 +41,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -153,7 +154,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		replicationStoreManager.initialize();
 		
-		String threadPoolName = String.format("keeper:%s-%s", clusterId, shardId);
+		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId, shardId));
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
 		clientExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "RedisClient-" + threadPoolName));
@@ -224,11 +225,25 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doStop() throws Exception {
 		keeperMonitor.stop();
+		clearClients();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		this.leaderElector.stop();
 		stopServer();
-		replicationStoreManager.stop();		
+		replicationStoreManager.stop();
 		super.doStop();
+	}
+
+	private void clearClients() {
+		for (Entry<Channel, RedisClient> entry : redisClients.entrySet()) {
+			RedisClient client = entry.getValue();
+			try {
+				logger.info("[clearClients]close:{}", client);
+				client.close();
+			} catch (IOException e) {
+				logger.error("[clearClients]" + client, e);
+			}
+		}
+		redisClients.clear();
 	}
 
 	@Override

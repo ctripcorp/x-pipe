@@ -1,14 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisClient;
-import com.ctrip.xpipe.redis.keeper.impl.fakeredis.AbstractFakeRedisTest;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
+import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,7 +14,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Queue;
 
 /**
  * @author chen.zhu
