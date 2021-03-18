@@ -4,14 +4,12 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
+import com.ctrip.xpipe.redis.checker.impl.CheckerRedisDelayManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
@@ -19,14 +17,12 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,11 +31,9 @@ import java.util.concurrent.TimeUnit;
  * Sep 03, 2018
  */
 @Component
-public class DefaultDelayService implements DelayService, DelayActionListener, OneWaySupport, BiDirectionSupport {
+public class DefaultDelayService extends CheckerRedisDelayManager implements DelayService, DelayActionListener, OneWaySupport, BiDirectionSupport {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDelayService.class);
-
-    private ConcurrentMap<HostPort, Long> hostPort2Delay = Maps.newConcurrentMap();
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -196,14 +190,4 @@ public class DefaultDelayService implements DelayService, DelayActionListener, O
         return consoleServiceManager.getAllUnhealthyInstanceFromParallelService();
     }
 
-    @Override
-    public void onAction(DelayActionContext delayActionContext) {
-        hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
-                delayActionContext.getResult());
-    }
-
-    @Override
-    public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
-        hostPort2Delay.remove(action.getActionInstance().getCheckInfo().getHostPort());
-    }
 }

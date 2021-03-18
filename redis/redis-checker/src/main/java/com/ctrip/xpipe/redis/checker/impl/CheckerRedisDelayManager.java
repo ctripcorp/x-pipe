@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class CheckerRedisDelayManager implements RedisDelayManager, DelayActionListener, OneWaySupport, BiDirectionSupport {
 
-    private ConcurrentMap<HostPort, Long> hostPort2Delay = new ConcurrentHashMap<>();
+    protected ConcurrentMap<HostPort, Long> hostPort2Delay = new ConcurrentHashMap<>();
 
     @Override
     public Map<HostPort, Long> getAllDelays() {
