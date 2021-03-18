@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 
 import java.util.Map;
@@ -11,7 +12,7 @@ import java.util.Map;
  * <p>
  * Sep 03, 2018
  */
-public interface DelayService {
+public interface DelayService extends RedisDelayManager {
 
     void updateRedisDelays(Map<HostPort, Long> redisDelays);
 
