@@ -18,10 +18,10 @@ import java.util.Collections;
  * date 2021/3/16
  */
 @RunWith(MockitoJUnitRunner.class)
-public class CheckerControllerTest extends AbstractCheckerTest {
+public class CheckerHealthControllerTest extends AbstractCheckerTest {
 
     @InjectMocks
-    private CheckerController healthController;
+    private CheckerHealthController healthController;
 
     @Mock
     private HealthCheckInstanceManager instanceManager;
