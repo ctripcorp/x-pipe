@@ -97,6 +97,12 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
+	protected void doWhenCannotPsync() {
+		// close and reconnect later by masterDisconnect()
+		disconnectWithMaster();
+	}
+
+	@Override
 	protected void doStop() throws Exception {
 		//put none immediately
 		getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);

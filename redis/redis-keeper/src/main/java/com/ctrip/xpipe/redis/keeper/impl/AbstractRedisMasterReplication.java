@@ -5,8 +5,8 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.FailSafeCommandWrapper;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -380,10 +380,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			executeCommand(psyncCommand());
 		} else {
 			EventMonitor.DEFAULT.logAlertEvent("[lack-token]" + redisKeeperServer.getShardId());
-			// close and reconnect later by masterDisconnect Logic
-			disconnectWithMaster();
+			doWhenCannotPsync();
 		}
 	}
+
+	protected abstract void doWhenCannotPsync();
 
 	protected Psync psyncCommand() {
 
