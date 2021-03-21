@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.ratelimit;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.impl.fakeredis.AbstractFakeRedisTest;
+import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import org.junit.Test;
 
 /**

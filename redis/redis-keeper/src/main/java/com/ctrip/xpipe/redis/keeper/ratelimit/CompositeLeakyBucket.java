@@ -83,6 +83,7 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
     @Override
     public boolean tryAcquire() {
         if(closed.get()) {
+            logger.info("[tryAcquire]closed always return true");
             return true;
         }
         return origin.tryAcquire();
@@ -179,23 +180,30 @@ public class CompositeLeakyBucket implements LeakyBucket, Startable, Stoppable {
         checkConfigChangeProcess = scheduled.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                if(keeperConfig.getLeakyBucketInitSize() != origin.getTotalSize()) {
-                    origin.resize(keeperConfig.getLeakyBucketInitSize());
-                    EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_RESIZE + "->" + keeperConfig.getLeakyBucketInitSize());
-                }
-                if(closed.get() == keeperConfig.isKeeperRateLimitOpen()) {
-                    logger.warn("[checkKeeperConfigChange][close-state-change]{} -> {}", closed.get(), !keeperConfig.isKeeperRateLimitOpen());
-                    origin.reset();
-                    if(closed.get()) {
-                        EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_CLOSE);
-                    } else {
-                        EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_OPEN);
-                    }
-                }
-                closed.set(!keeperConfig.isKeeperRateLimitOpen());
+                doCheckKeeperConfigChange();
             }
         }, 100, 100, TimeUnit.MILLISECONDS);
     }
+
+    @VisibleForTesting
+    protected void doCheckKeeperConfigChange() {
+
+        if(keeperConfig.getLeakyBucketInitSize() != origin.getTotalSize()) {
+            origin.resize(keeperConfig.getLeakyBucketInitSize());
+            EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_RESIZE + "->" + keeperConfig.getLeakyBucketInitSize());
+        }
+        if(closed.get() == keeperConfig.isKeeperRateLimitOpen()) {
+            logger.warn("[checkKeeperConfigChange][close-state-change]{} -> {}", closed.get(), !keeperConfig.isKeeperRateLimitOpen());
+            origin.reset();
+            if(closed.get()) {
+                EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_CLOSE);
+            } else {
+                EventMonitor.DEFAULT.logEvent(LEAKY_BUCKET_EVENT_TYEP, LEAKY_BUCKET_OPEN);
+            }
+        }
+        closed.set(!keeperConfig.isKeeperRateLimitOpen());
+    }
+
 
     private void stopCheckKeeperConfig() {
         if (checkConfigChangeProcess != null) {

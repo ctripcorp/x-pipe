@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.utils.log;
 
+import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.MDC;
 
 /**
@@ -9,8 +11,17 @@ import org.slf4j.MDC;
  */
 public class MDCUtil {
 
+	protected static String MDC_KEY =  "xpipe.cluster.shard";
+
 	public static void setClusterShard(String cluster, String shard) {
-		MDC.put("xpipe.cluster.shard", "[" + cluster + "." + shard + "]");
+
+		MDC.put(MDC_KEY, StringUtil.makeSimpleName(cluster, shard));
+	}
+
+	@VisibleForTesting
+	protected static String getClusterShard() {
+		return MDC.get(MDC_KEY);
+
 	}
 
 	public static Runnable decorateClusterShardMDC(Runnable r, String cluster, String shard) {
