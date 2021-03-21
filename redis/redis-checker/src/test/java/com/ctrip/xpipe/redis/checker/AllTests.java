@@ -45,6 +45,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTe
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResultSerializeTest;
+import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleServiceTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -108,7 +109,8 @@ import org.junit.runners.Suite;
         CheckerRedisDelayManagerTest.class,
         DefaultRemoteCheckerManagerTest.class,
 
-        HealthCheckResultSerializeTest.class
+        HealthCheckResultSerializeTest.class,
+        DefaultCheckerConsoleServiceTest.class
 })
 public class AllTests {
 }

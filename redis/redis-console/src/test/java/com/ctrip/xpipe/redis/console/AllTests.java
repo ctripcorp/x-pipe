@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
+import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
@@ -180,7 +181,8 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
 
-        DefaultPersistenceTest.class
+        DefaultPersistenceTest.class,
+        DefaultCheckerManagerTest.class
 })
 public class AllTests {
 
