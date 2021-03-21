@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.spring.condition;
+package com.ctrip.xpipe.redis.checker.spring;
 
 import com.ctrip.xpipe.api.config.Config;
 import com.google.common.base.Enums;

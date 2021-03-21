@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.controller.api.checker;
 
-import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
@@ -12,8 +10,8 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
-import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerMode;
-import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
