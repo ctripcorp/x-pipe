@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.spring.condition;
+package com.ctrip.xpipe.redis.checker.spring;
 
 import org.springframework.context.annotation.Conditional;
 

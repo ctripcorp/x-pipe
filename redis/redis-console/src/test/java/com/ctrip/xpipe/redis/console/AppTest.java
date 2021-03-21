@@ -4,7 +4,7 @@ import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
-import com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.After;
 import org.junit.Before;
@@ -18,7 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import static com.ctrip.xpipe.redis.console.spring.condition.ConsoleServerModeCondition.KEY_SERVER_MODE;
+import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
 
 /**
  * @author lepdou 2016-11-09
