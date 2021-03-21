@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -77,7 +78,8 @@ public class DefaultCheckerManager implements CheckerManager {
         return checkers;
     }
 
-    private void expireCheckers() {
+    @VisibleForTesting
+    protected void expireCheckers() {
         logger.debug("[expireCheckers] start");
         int totalParts = config.getClusterDividedParts();
         if (totalParts != checkers.size()) {
