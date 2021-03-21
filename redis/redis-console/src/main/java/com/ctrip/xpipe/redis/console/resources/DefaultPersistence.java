@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
-import com.ctrip.xpipe.redis.console.dao.EventDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -25,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
@@ -58,7 +56,7 @@ public class DefaultPersistence implements Persistence {
         ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterId);
         if (null == clusterTbl) return false;
 
-        return ClusterStatus.isSameClusterStatus(clusterTbl.getStatus(), ClusterStatus.Normal);
+        return !ClusterStatus.isSameClusterStatus(clusterTbl.getStatus(), ClusterStatus.Normal);
     }
 
     @Override

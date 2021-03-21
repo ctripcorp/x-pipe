@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
+import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
@@ -177,7 +178,9 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
-        DefaultClusterMonitorModifiedNotifierTest.class
+        DefaultClusterMonitorModifiedNotifierTest.class,
+
+        DefaultPersistenceTest.class
 })
 public class AllTests {
 
