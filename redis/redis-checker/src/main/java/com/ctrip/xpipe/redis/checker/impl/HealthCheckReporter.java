@@ -128,9 +128,9 @@ public class HealthCheckReporter implements LeaderAware {
         try {
             logger.debug("[reportCheckResult] start");
             HealthCheckResult result = new HealthCheckResult();
-            result.setRedisDelays(redisDelayManager.getAllDelays());
-            result.setCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
-            result.setRedisAlives(pingService.getAllRedisAlives());
+            result.encodeRedisDelays(redisDelayManager.getAllDelays());
+            result.encodeCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
+            result.encodeRedisAlives(pingService.getAllRedisAlives());
             result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
 
             checkerConsoleService.report(config.getConsoleAddress(), result);

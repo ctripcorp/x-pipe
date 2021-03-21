@@ -4,11 +4,15 @@ import java.util.Objects;
 
 public final class DcClusterShard {
 
-    private final String dcId;
+    private String dcId;
 
-    private final String clusterId;
+    private String clusterId;
 
-    private final String shardId;
+    private String shardId;
+
+    public DcClusterShard() {
+
+    }
 
     public DcClusterShard(String dcId, String clusterId, String shardId) {
         this.dcId = dcId;
