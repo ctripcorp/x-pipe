@@ -103,6 +103,11 @@
             <appender-ref ref="catAppender4Log4j2"/>
         </logger>
 
+        <logger name="com.ctrip.xpipe.redis.checker.healthcheck" level="INFO" additivity="false">
+            <appender-ref ref="rollingHealthCheck"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+
         <logger name="com.ctrip.xpipe.netty.commands" level="INFO" additivity="false">
             <appender-ref ref="rollingNettyClient"/>
         </logger>

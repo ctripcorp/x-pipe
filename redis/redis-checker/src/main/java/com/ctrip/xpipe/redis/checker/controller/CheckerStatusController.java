@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.model.CheckerRole;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
@@ -20,6 +21,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author lishanglin
@@ -51,6 +55,9 @@ public class CheckerStatusController {
     @Autowired
     private ClusterHealthManager clusterHealthManager;
 
+    @Autowired
+    private HealthCheckInstanceManager healthCheckInstanceManager;
+
     @Value("${server.port}")
     private int serverPort;
 
@@ -78,6 +85,15 @@ public class CheckerStatusController {
         result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
 
         return result;
+    }
+
+    @GetMapping("/clusters")
+    public List<String> getCheckerClusters() {
+        List<String> allCheckClusters = new ArrayList<>();
+        healthCheckInstanceManager.getAllClusterInstance().forEach(instance ->
+            allCheckClusters.add(instance.getCheckInfo().getClusterId())
+        );
+        return allCheckClusters;
     }
 
 }
