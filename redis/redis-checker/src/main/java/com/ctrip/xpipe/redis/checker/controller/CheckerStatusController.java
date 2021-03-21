@@ -13,8 +13,10 @@ import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/checker")
+@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class CheckerStatusController {
 
     @Autowired
@@ -69,9 +72,9 @@ public class CheckerStatusController {
     @GetMapping("/result")
     public HealthCheckResult getCheckResult() {
         HealthCheckResult result = new HealthCheckResult();
-        result.setRedisDelays(redisDelayManager.getAllDelays());
-        result.setCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
-        result.setRedisAlives(pingService.getAllRedisAlives());
+        result.encodeRedisDelays(redisDelayManager.getAllDelays());
+        result.encodeCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
+        result.encodeRedisAlives(pingService.getAllRedisAlives());
         result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
 
         return result;

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.checker;
 
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
@@ -78,10 +80,10 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @PutMapping(ConsoleCheckerPath.PATH_PUT_HEALTH_CHECK_RESULT)
     public void reportHealthCheckResult(HttpServletRequest request, @RequestBody HealthCheckResult checkResult) {
         logger.debug("[reportHealthCheckResult][{}] {}", request.getRemoteAddr(), checkResult);
-        if (null != checkResult.getRedisDelays()) delayService.updateRedisDelays(checkResult.getRedisDelays());
-        if (null != checkResult.getCrossMasterDelays()) crossMasterDelayService.updateCrossMasterDelays(checkResult.getCrossMasterDelays());
+        if (null != checkResult.getRedisDelays()) delayService.updateRedisDelays(checkResult.decodeRedisDelays());
+        if (null != checkResult.getCrossMasterDelays()) crossMasterDelayService.updateCrossMasterDelays(checkResult.decodeCrossMasterDelays());
         if (null != checkResult.getWarningClusterShards()) clusterHealthMonitorManager.updateHealthCheckWarningShards(checkResult.getWarningClusterShards());
-        if (null != checkResult.getRedisAlives()) pingService.updateRedisAlives(checkResult.getRedisAlives());
+        if (null != checkResult.getRedisAlives()) pingService.updateRedisAlives(checkResult.decodeRedisAlives());
     }
 
 }
