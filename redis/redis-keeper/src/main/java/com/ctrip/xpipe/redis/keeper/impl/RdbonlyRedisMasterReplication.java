@@ -4,13 +4,15 @@ import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncConnectMasterFailException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.store.RdbOnlyReplicationStore;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -27,8 +29,9 @@ import java.util.concurrent.ScheduledExecutorService;
 public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplication{
 
 	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
-	private DumpedRdbStore dumpedRdbStore;
-	
+
+	@VisibleForTesting DumpedRdbStore dumpedRdbStore;
+
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
                                          NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
                                          RdbDumper rdbDumper, KeeperResourceManager resourceManager) {
@@ -43,9 +46,8 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		dumpedRdbStore = getRdbDumper().prepareRdbStore();
 		logger.info("[doInitialize][newRdbFile]{}", dumpedRdbStore);
 		rdbOnlyReplicationStore = new RdbOnlyReplicationStore(dumpedRdbStore);
-		
-	}
 
+	}
 
 	@Override
 	protected void doConnect(Bootstrap b) {
@@ -56,10 +58,21 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			public void operationComplete(ChannelFuture future) throws Exception {
 				if(!future.isSuccess()){
 					logger.info("[operationComplete][fail]", future.cause());
-					dumpFail(future.cause());
+					dumpFail(new PsyncConnectMasterFailException(future.cause()));
 				}
 			}
 		});
+	}
+
+	@Override
+	protected void doWhenCannotPsync() {
+		try {
+			dumpedRdbStore.close();
+			dumpedRdbStore.destroy();
+		} catch (Exception e) {
+		    logger.warn("[doWhenCannotPsync] unable to release rdb file", e);
+		}
+		disconnectWithMaster();
 	}
 
 	@Override
@@ -92,7 +105,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected void doEndWriteRdb() {
 		
 		logger.info("[endWriteRdb]{}", this);
-		masterChannel.close();
+		disconnectWithMaster();
 	}
 
 	@Override
@@ -101,8 +114,11 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 	}
 
 	@Override
-	protected void doOnFullSync() {
-		
+	protected void doOnFullSync(long masterRdbOffset) {
+		long firstAvailable = redisMaster.getCurrentReplicationStore().firstAvailableOffset();
+		if (firstAvailable > masterRdbOffset + 1) {
+			dumpFail(new PsyncMasterRdbOffsetNotContinuousRuntimeException(masterRdbOffset, firstAvailable));
+		}
 	}
 
 	@Override

@@ -13,6 +13,24 @@ import java.util.function.Function;
  */
 public class StringUtil {
 
+    public static String makeSimpleName(String first, String second){
+
+        String desc;
+        if(first == null && second == null){
+            desc = "[null]";
+        }
+        if(first == null){
+            desc = second;
+        }else if(second == null){
+            desc = first;
+        }else if(second.startsWith(first)){
+            desc = second;
+        }else {
+            desc = first+ "." +second;
+        }
+        return "[" + desc + "]";
+    }
+
     public static String subHead(String str, int maxLen){
 
         if(str == null || str.length() <= maxLen){

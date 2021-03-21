@@ -27,10 +27,9 @@
 
 		<logger name="io.netty.handler.logging.LoggingHandler" level="INFO"/>
 		<logger name="com.ctrip.xpipe.redis.keeper.monitor.DefaultCommandStoreDelay" level="INFO"/>
-		<logger name="com.ctrip.xpipe.redis.integratedtest.stability.DelayManager" level="INFO"/>
+        <logger name="com.ctrip.xpipe.redis.integratedtest.stability.DelayManager" level="INFO"/>
 
-
-	<!--  		
+	<!--
         <logger name="com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore$DefaultCommandReader" level="DEBUG"/>
 		<logger name="com.ctrip.xpipe.redis.integratedtest.stability.XPipeStabilityTest" level="INFO"/>
     -->

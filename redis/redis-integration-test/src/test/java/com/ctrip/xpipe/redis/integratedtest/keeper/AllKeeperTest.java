@@ -10,21 +10,22 @@ import org.junit.runners.Suite.SuiteClasses;
  *         May 17, 2016 2:09:41 PM
  */
 @RunWith(Suite.class)
-@SuiteClasses({ 
-	KeeperPsync2.class,
-	KeeperPsync2Continue.class,
-	KeeperSingleDc.class,
-	KeeperMultiDc.class,
-	KeeperMultiDcChangePrimary.class,
-	KeeperSingleDcRestart.class, 
-	KeeperSingleDcSlaveof.class,
-	KeeperSingleDcWipeOutData.class,
-	KeeperSingleDcEof.class,
-	KeeperMultiDc.class,
-	KeeperSingleDcWaitForOffset.class,
-	KeeperSingleDcVersionTest.class,
-	XRedisXpipeCommandTest.class,
-	XRedisPartialTest.class
+@SuiteClasses({
+		KeeperPsync2.class,
+		KeeperPsync2Continue.class,
+		KeeperSingleDc.class,
+		KeeperMultiDc.class,
+		KeeperMultiDcChangePrimary.class,
+		KeeperSingleDcRestart.class,
+		KeeperSingleDcSlaveof.class,
+		KeeperSingleDcWipeOutData.class,
+		KeeperSingleDcEof.class,
+		KeeperMultiDc.class,
+		KeeperSingleDcWaitForOffset.class,
+		KeeperSingleDcVersionTest.class,
+		XRedisXpipeCommandTest.class,
+		XRedisPartialTest.class,
+		TwoKeepers.class
 })
 public class AllKeeperTest {
 	

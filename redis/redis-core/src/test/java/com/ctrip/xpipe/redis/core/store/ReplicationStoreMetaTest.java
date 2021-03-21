@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import org.apache.commons.lang3.SerializationUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -135,4 +139,12 @@ public class ReplicationStoreMetaTest extends AbstractRedisTest{
 		return meta;
 	}
 
+	@Test
+	public void testEncode() {
+		ReplicationStoreMeta meta = createRandomMeta();
+		Codec.DEFAULT.encode(meta);
+		ProxyProtocol protocol = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE TCP://127.0.0.1:6379\r\n");
+		meta.setMasterAddress(new ProxyEnabledEndpoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol));
+		System.out.println(Codec.DEFAULT.encode(meta));
+	}
 }

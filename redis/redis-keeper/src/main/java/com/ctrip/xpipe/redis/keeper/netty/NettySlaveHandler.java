@@ -47,7 +47,7 @@ public class NettySlaveHandler extends ChannelTrafficStatisticsHandler{
 			logger.info("[channelInactive]" + ctx.channel());
 		}
 		
-		redisMasterReplication.masterDisconntected(ctx.channel());
+		redisMasterReplication.masterDisconnected(ctx.channel());
 		super.channelInactive(ctx);
 	}
 	

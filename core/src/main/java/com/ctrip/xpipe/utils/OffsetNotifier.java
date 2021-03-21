@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.utils;
 
+import java.util.concurrent.locks.AbstractQueuedLongSynchronizer;
+
 /**
  * @author marsqing
  *
  *         May 20, 2016 2:06:20 PM
  */
 public class OffsetNotifier {
-	private static final class Sync extends AbstractQueuedSynchronizer {
+	private static final class Sync extends AbstractQueuedLongSynchronizer {
 		private static final long serialVersionUID = 4982264981922014374L;
 
 		Sync(long offset) {
@@ -14,7 +16,7 @@ public class OffsetNotifier {
 		}
 
 		@Override
-		protected int tryAcquireShared(long startOffset) {
+		protected long tryAcquireShared(long startOffset) {
 			return (getState() >= startOffset) ? 1 : -1;
 		}
 

@@ -79,16 +79,18 @@ public class KeeperContainerController extends AbstractController {
 
     @RequestMapping(value = "/leakybucket", method = RequestMethod.GET)
     public LeakyBucketInfo getLeakyBucketInfo() {
-        return new LeakyBucketInfo(!leakyBucket.isClosed(), leakyBucket.getTotalSize());
+        return new LeakyBucketInfo(!leakyBucket.isClosed(), leakyBucket.getTotalSize(), leakyBucket.references());
     }
 
     private class LeakyBucketInfo {
         private boolean open;
         private int size;
+        private int availablePermits;
 
-        public LeakyBucketInfo(boolean open, int size) {
+        public LeakyBucketInfo(boolean open, int size, int availablePermits) {
             this.open = open;
             this.size = size;
+            this.availablePermits = availablePermits;
         }
 
         public boolean isOpen() {
@@ -97,6 +99,10 @@ public class KeeperContainerController extends AbstractController {
 
         public int getSize() {
             return size;
+        }
+
+        public int getAvailablePermits() {
+            return availablePermits;
         }
     }
 

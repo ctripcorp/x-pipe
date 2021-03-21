@@ -39,10 +39,17 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private AtomicInteger sendHalfRdbAndCloseConnectionCount = new AtomicInteger(0);
 	
 	private List<FakeRedisServerAction> commandListeners = new LinkedList<>();
-	
+
+	//for statis
+	private AtomicInteger psyncCount = new AtomicInteger(0);
+
+	private boolean isKeeper = false;
+	private boolean partialSyncFail = false;
+
 	public FakeRedisServer(int port){
 		this(port, 0);
 	}
+
 	public FakeRedisServer(int port, int sleepBeforeSendRdb){
 		
 		this.port = port;
@@ -55,30 +62,25 @@ public class FakeRedisServer extends AbstractLifecycle{
 			}
 		});
 	}
-	
-	@Override
-	protected void doInitialize() throws Exception {
-		super.doInitialize();
-		server.initialize();
+
+	public void setIsKeeper(boolean isKeeper){
+		this.isKeeper = isKeeper;
 	}
-	
-	@Override
-	protected void doStart() throws Exception {
-		super.doStart();
-		server.start();
+
+	public boolean isKeeper() {
+		return isKeeper;
 	}
-	
-	@Override
-	protected void doStop() throws Exception {
-		server.stop();
-		super.doStop();
+
+	public int getPsyncCount() {
+		return psyncCount.get();
 	}
-	
-	@Override
-	protected void doDispose() throws Exception {
-		server.dispose();
-		super.doDispose();
+
+	public int getConnected() {
+		return server.getConnected();
 	}
+
+
+
 
 	public int getPort() {
 		return port;
@@ -167,10 +169,6 @@ public class FakeRedisServer extends AbstractLifecycle{
 		return server;
 	}
 
-	public int getConnected() {
-		return server.getConnected();
-	}
-
 	public int getSleepBeforeSendFullSyncInfo() {
 		return sleepBeforeSendFullSyncInfo;
 	}
@@ -201,6 +199,42 @@ public class FakeRedisServer extends AbstractLifecycle{
 	
 	public void setEof(boolean eof) {
 		this.eof = eof;
+	}
+
+	public void increasePsyncCount() {
+		psyncCount.incrementAndGet();
+	}
+
+	@Override
+	protected void doInitialize() throws Exception {
+		super.doInitialize();
+		server.initialize();
+	}
+
+	@Override
+	protected void doStart() throws Exception {
+		super.doStart();
+		server.start();
+	}
+
+	@Override
+	protected void doStop() throws Exception {
+		server.stop();
+		super.doStop();
+	}
+
+	@Override
+	protected void doDispose() throws Exception {
+		server.dispose();
+		super.doDispose();
+	}
+
+	public boolean isPartialSyncFail() {
+		return partialSyncFail;
+	}
+
+	public void setPartialSyncFail(boolean partialSyncFail) {
+		this.partialSyncFail = partialSyncFail;
 	}
 }
 
