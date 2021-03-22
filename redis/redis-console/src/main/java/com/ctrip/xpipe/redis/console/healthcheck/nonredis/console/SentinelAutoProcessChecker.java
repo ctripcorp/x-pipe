@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.console;
 
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import org.springframework.stereotype.Component;
+
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_AUTO_PROCESS;
 
 /**
  * @author chen.zhu
@@ -20,7 +22,7 @@ public class SentinelAutoProcessChecker extends AbstractConsoleHealthChecker {
 
     @Override
     void alert() {
-        ConfigModel config = configService.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS);
+        ConfigModel config = configService.getConfig(KEY_SENTINEL_AUTO_PROCESS);
 
         String user = config.getUpdateUser() == null ? "unkown" : config.getUpdateUser();
         String ip = config.getUpdateIP() == null ? "unkown" : config.getUpdateIP();

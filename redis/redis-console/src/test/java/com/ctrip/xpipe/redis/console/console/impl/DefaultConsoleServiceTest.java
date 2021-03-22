@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import org.junit.Test;
 
 /**

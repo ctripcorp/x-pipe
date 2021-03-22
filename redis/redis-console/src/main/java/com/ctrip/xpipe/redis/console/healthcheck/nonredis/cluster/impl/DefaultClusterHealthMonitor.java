@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 
-import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
+import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.service.ShardService;
@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
 
@@ -35,6 +36,13 @@ public class DefaultClusterHealthMonitor implements ClusterHealthMonitor {
     @Override
     public String getClusterId() {
         return clusterId;
+    }
+
+    @Override
+    public void refreshHealthCheckWarningShards(Set<String> healthCheckWarningShards) {
+        this.healthStatusWarningShards = Sets.newConcurrentHashSet(healthCheckWarningShards);
+        this.warningShards = healthCheckWarningShards.stream().filter(outerClientWarningShards::contains).collect(Collectors.toSet());
+        checkIfStateChange();
     }
 
     @Override

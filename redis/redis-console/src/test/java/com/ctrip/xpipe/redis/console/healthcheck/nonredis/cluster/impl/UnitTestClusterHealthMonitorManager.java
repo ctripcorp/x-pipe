@@ -1,16 +1,16 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Sets;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -56,6 +56,16 @@ public class UnitTestClusterHealthMonitorManager implements ClusterHealthMonitor
 
     @Override
     public Observer createHealthStatusObserver() {
+        return null;
+    }
+
+    @Override
+    public void updateHealthCheckWarningShards(Map<String, Set<String>> warningClusterShards) {
+
+    }
+
+    @Override
+    public Map<String, Set<String>> getAllClusterWarningShards() {
         return null;
     }
 }

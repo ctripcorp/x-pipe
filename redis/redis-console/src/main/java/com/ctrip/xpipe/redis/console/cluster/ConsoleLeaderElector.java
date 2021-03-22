@@ -2,11 +2,8 @@ package com.ctrip.xpipe.redis.console.cluster;
 
 import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.cluster.AbstractLeaderElector;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -16,8 +13,6 @@ import javax.annotation.PreDestroy;
  *         <p>
  *         Jun 12, 2017
  */
-@Component
-@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class ConsoleLeaderElector extends AbstractLeaderElector implements ClusterServer{
 
     public static String KEY_CONSOLE_ID = "CONSOLE_ID";

@@ -2,20 +2,16 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
+import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
 import com.ctrip.xpipe.redis.console.notifier.shard.AbstractShardEvent;
-import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.redis.SentinelManager;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -31,7 +27,6 @@ import org.unidal.lookup.ContainerLoader;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 
 @Service
@@ -49,7 +44,7 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 	private DcService dcService;
 
 	@Autowired
-	private SentinelManager sentinelManager;
+	private ShardEventHandler shardEventHandler;
 
 	@Autowired
 	private ShardService shardService;
@@ -257,7 +252,7 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 		shardEvent.setClusterType(clusterType);
 		shardEvent.setShardSentinels(find(dcClusterShard.getSetinelId()).getSetinelAddress());
 		shardEvent.setShardMonitorName(SentinelUtil.getSentinelMonitorName(clusterName, shardTbl.getSetinelMonitorName(), activeIdc));
-		sentinelManager.removeShardSentinelMonitors(shardEvent);
+		shardEventHandler.handleShardDelete(shardEvent);
 	}
 
 	@Override
@@ -325,8 +320,8 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 	}
 
 	@VisibleForTesting
-	protected SentinelServiceImpl setSentinelManager(SentinelManager sentinelManager) {
-		this.sentinelManager = sentinelManager;
+	protected SentinelServiceImpl setShardEventHandler(ShardEventHandler shardEventHandler) {
+		this.shardEventHandler = shardEventHandler;
 		return this;
 	}
 

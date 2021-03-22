@@ -1,16 +1,16 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
-import com.ctrip.xpipe.redis.console.model.DcClusterShard;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -47,7 +47,7 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
         for (ClusterMeta cluster: dcMeta.getClusters().values()) {
             for (ShardMeta shard: cluster.getShards().values()) {
-                if (whitelist.contains(cluster.getId())) continue;
+                if (whitelist.contains(cluster.getId().toLowerCase())) continue;
 
                 if (!isDcClusterShardSafe(dcMeta, cluster, shard)) {
                     clusterShards.add(new DcClusterShard(dcMeta.getId(), cluster.getId(), shard.getId()));

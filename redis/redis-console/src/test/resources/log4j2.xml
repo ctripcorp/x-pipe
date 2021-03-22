@@ -56,7 +56,7 @@
 		<logger name="com.ctrip.xpipe.lifecycle.DefaultRegistry" level="WARN"/>
         <logger name="com.ctrip.xpipe.redis.console.migration.status.migration.statemachine" level="DEBUG"/>
 
-        <logger name="com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.HealthStatus" level="DEBUG" additivity="false">
+        <logger name="com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus" level="DEBUG" additivity="false">
             <appender-ref ref="rollingRedisDelay"/>
         </logger>
 

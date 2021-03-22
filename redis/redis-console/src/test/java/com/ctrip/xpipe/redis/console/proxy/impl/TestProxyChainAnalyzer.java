@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.model.DcClusterShard;
-import com.ctrip.xpipe.redis.console.model.ProxyModel;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
-import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Lists;

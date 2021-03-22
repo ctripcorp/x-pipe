@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.TunnelStatsInfo;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -17,6 +18,7 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -163,6 +165,26 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
         }
         message = message == null ? RetMessage.createFailMessage("no host port received") : message;
         return message;
+    }
+
+    @Override
+    public List<ProxyTunnelInfo> getAllProxyTunnels() {
+        List<ProxyChain> chains = analyzer.getProxyChains();
+        List<ProxyTunnelInfo> proxyTunnelInfos = new ArrayList<>();
+        chains.forEach(chain -> proxyTunnelInfos.add(chain.buildProxyTunnelInfo()));
+        return proxyTunnelInfos;
+    }
+
+    @Override
+    public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId) {
+        ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterId, shardId);
+        if (null == chain) return null;
+        return chain.buildProxyTunnelInfo();
+    }
+
+    @Override
+    public void closeProxyTunnel(ProxyTunnelInfo proxyTunnelInfo) {
+        deleteProxyChain(proxyTunnelInfo.getBackends());
     }
 
     private RetMessage notifyProxyNode(HostPort hostPort) {

@@ -4,9 +4,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.CrossMasterDelayService;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.delay.DelayService;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
+import com.ctrip.xpipe.redis.console.service.DelayService;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +36,7 @@ public class HealthCheckController extends AbstractConsoleController {
     private ConsoleConfig config;
 
     @Autowired
-    private CrossMasterDelayService crossMasterDelayService;
+    private DefaultCrossMasterDelayService crossMasterDelayService;
 
     private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
     private static final String CROSS_DC_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-source=%s&var-dest=%s";

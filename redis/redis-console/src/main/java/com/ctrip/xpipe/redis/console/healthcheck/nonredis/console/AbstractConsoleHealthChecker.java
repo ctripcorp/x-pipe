@@ -2,9 +2,8 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.console;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +13,8 @@ import javax.annotation.Resource;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
  * @author chen.zhu
@@ -33,7 +34,7 @@ public abstract class AbstractConsoleHealthChecker implements CrossDcLeaderAware
     @Autowired
     protected AlertManager alertManager;
 
-    @Resource(name=ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    @Resource(name=SCHEDULED_EXECUTOR)
     private ScheduledExecutorService schedule;
 
     protected Future future;

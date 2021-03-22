@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.meta;
 
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 
+import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_IGNORED_DC_FOR_HEALTH_CHECK;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -23,7 +24,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 public class DcIgnoredConfigListenerTest {
 
     @InjectMocks
-    private DcIgnoredConfigListener listener = new DcIgnoredConfigListener();
+    private DcIgnoredConfigChangeListener listener = new DcIgnoredConfigChangeListener();
 
     @Mock
     private MetaChangeManager metaChangeManager;
@@ -62,6 +63,6 @@ public class DcIgnoredConfigListenerTest {
 
     @Test
     public void testSupportsKeys() {
-        Assert.assertEquals(Lists.newArrayList(DefaultConsoleConfig.KEY_IGNORED_DC_FOR_HEALTH_CHECK), listener.supportsKeys());
+        Assert.assertEquals(Lists.newArrayList(KEY_IGNORED_DC_FOR_HEALTH_CHECK), listener.supportsKeys());
     }
 }

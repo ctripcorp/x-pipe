@@ -1,19 +1,18 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
-import com.ctrip.xpipe.redis.console.redis.SentinelManager;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.collect.Lists;
-import com.lambdaworks.redis.RedisCommandTimeoutException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +47,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
     private DcService dcService;
 
     @Mock
-    private SentinelManager sentinelManager;
+    private ShardEventHandler shardEventHandler;
 
     @Mock
     private ShardService shardService;
@@ -65,7 +64,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         }
         sentinelService.setClusterService(clusterService);
         sentinelService.setDcService(dcService);
-        sentinelService.setSentinelManager(sentinelManager);
+        sentinelService.setShardEventHandler(shardEventHandler);
         sentinelService.setShardService(shardService);
         sentinelService.setDcClusterShardService(dcClusterShardService);
     }
@@ -178,7 +177,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         sentinelService.setClusterService(clusterService);
         sentinelService.setShardService(shardService);
         sentinelService.setDcService(dcService);
-        sentinelService.setSentinelManager(sentinelManager);
+        sentinelService.setShardEventHandler(shardEventHandler);
         sentinelService.setDcClusterShardService(dcClusterShardService);
         when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1).setClusterType(ClusterType.ONE_WAY.toString()));
         when(dcService.getDcName(anyLong())).thenReturn(dc);
@@ -200,7 +199,7 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         sentinelService.setClusterService(clusterService);
         sentinelService.setShardService(shardService);
         sentinelService.setDcService(dcService);
-        sentinelService.setSentinelManager(sentinelManager);
+        sentinelService.setShardEventHandler(shardEventHandler);
         sentinelService.setDcClusterShardService(dcClusterShardService);
         when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1).setClusterType(ClusterType.ONE_WAY.toString()));
         when(dcService.getDcName(anyLong())).thenReturn(dc);
@@ -217,9 +216,9 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         sentinelService = spy(sentinelService);
         when(sentinelService.find(anyLong())).thenReturn(new SetinelTbl().setSetinelAddress("10.0.0.1:5555,10.0.0.2:5555"));
         when(shardService.find(anyLong())).thenReturn(new ShardTbl().setShardName(shard).setSetinelMonitorName(shard));
-        doNothing().when(sentinelManager).removeShardSentinelMonitors(any(ShardEvent.class));
+        doNothing().when(shardEventHandler).handleShardDelete(any(ShardEvent.class));
         sentinelService.removeSentinelMonitorByShard(dc, cluster, ClusterType.ONE_WAY, dcClusterShardTbl);
-        verify(sentinelManager, times(1)).removeShardSentinelMonitors(any(ShardEvent.class));
+        verify(shardEventHandler, times(1)).handleShardDelete(any(ShardEvent.class));
     }
 
     @Test

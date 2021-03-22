@@ -3,18 +3,14 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.console.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.AbstractInstanceEvent;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceSick;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
+import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitor;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.LeveledEmbededSet;
 import com.ctrip.xpipe.redis.console.service.ShardService;
-import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -24,19 +20,13 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Lazy
-@Component
-@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorManager {
+public class DefaultClusterHealthMonitorManager extends CheckerClusterHealthManager implements ClusterHealthMonitorManager {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultClusterHealthMonitorManager.class);
 
@@ -47,10 +37,25 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
 
     private LeveledEmbededSet<String> warningClusters = new DefaultLeveledEmbededSet<>();
 
-    private ExecutorService executors = Executors.newFixedThreadPool(Math.max(1, Math.min(2, OsUtils.getCpuCount()/2)),
-            XpipeThreadFactory.create(DefaultClusterHealthMonitorManager.class.getSimpleName()));
-
     private ClusterHealthMonitorListener clusterHealthMonitorListener = new ClusterHealthMonitorListener();
+
+    public DefaultClusterHealthMonitorManager() {
+        super(Executors.newFixedThreadPool(Math.max(1, Math.min(2, OsUtils.getCpuCount()/2)),
+                XpipeThreadFactory.create(DefaultClusterHealthMonitorManager.class.getSimpleName())));
+    }
+
+    @Override
+    public void updateHealthCheckWarningShards(Map<String, Set<String>> warningClusterShards) {
+        warningClusterShards.forEach((cluster, shards) -> {
+            DefaultClusterHealthMonitor monitor = getOrCreate(cluster);
+            monitor.refreshHealthCheckWarningShards(shards);
+        });
+    }
+
+    @Override
+    public Map<String, Set<String>> getAllClusterWarningShards() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void healthCheckMasterDown(RedisHealthCheckInstance instance) {
@@ -92,17 +97,6 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
         return warningClusters.getThrough(state.getLevel()).getCurrentSet();
     }
 
-    @Override
-    public Observer createHealthStatusObserver() {
-
-        return new Observer() {
-            @Override
-            public void update(Object args, Observable observable) {
-                onInstanceStateChange((AbstractInstanceEvent) args);
-            }
-        };
-    }
-
     private DefaultClusterHealthMonitor getOrCreate(String clusterId) {
         return MapUtils.getOrCreate(monitors, clusterId, new ObjectFactory<DefaultClusterHealthMonitor>() {
             @Override
@@ -141,33 +135,11 @@ public class DefaultClusterHealthMonitorManager implements ClusterHealthMonitorM
         }
     }
 
-    private void onInstanceStateChange(Object args) {
-
-        executors.execute(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() {
-                AbstractInstanceEvent event = (AbstractInstanceEvent) args;
-                if (event.getInstance().getCheckInfo().getClusterType().supportMultiActiveDC()) {
-                    // only care about the master status for single active dc cluster
-                    return;
-                }
-                if(!event.getInstance().getCheckInfo().isMaster()) {
-                    return;
-                }
-                if(event instanceof InstanceSick || event instanceof InstanceDown) {
-                    healthCheckMasterDown(event.getInstance());
-                } else if(event instanceof InstanceUp) {
-                    healthCheckMasterUp(event.getInstance());
-                }
-            }
-        });
-
-    }
-
     @VisibleForTesting
     protected DefaultClusterHealthMonitorManager setShardService(ShardService shardService) {
         this.shardService = shardService;
         return this;
     }
+
+
 }

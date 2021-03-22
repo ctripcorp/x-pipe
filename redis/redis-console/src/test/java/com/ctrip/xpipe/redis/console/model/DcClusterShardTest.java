@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;

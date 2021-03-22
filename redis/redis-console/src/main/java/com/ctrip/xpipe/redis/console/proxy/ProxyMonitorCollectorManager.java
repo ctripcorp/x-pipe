@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.proxy;
 
-import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 
