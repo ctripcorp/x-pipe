@@ -162,6 +162,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MetaUpdateTest3.class,
         MetaUpdateTest4.class,
         AlertPolicyManagerTest.class,
+        RedisUpdateControllerTest.class,
 
         ProxyDaoTest.class,
         RouteDaoTest.class,

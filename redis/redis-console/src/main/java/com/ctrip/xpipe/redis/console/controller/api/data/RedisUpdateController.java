@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
@@ -14,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -36,18 +34,19 @@ public class RedisUpdateController extends AbstractConsoleController{
     private MetaCache metaCache;
 
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+    public Map<String, String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
 
         logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
 
-        List<String> result = new LinkedList<>();
+        Map<String, String> result = new HashMap<>();
         List<RedisTbl> redisTbls = null;
         try {
             redisTbls = redisService.findRedisesByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
             redisTbls.forEach(new Consumer<RedisTbl>() {
                 @Override
                 public void accept(RedisTbl redisTbl) {
-                    result.add(String.format("%s:%d", redisTbl.getRedisIp(), redisTbl.getRedisPort()));
+                    Server.SERVER_ROLE role = redisTbl.isMaster() ? Server.SERVER_ROLE.MASTER : Server.SERVER_ROLE.SLAVE;
+                    result.put(String.format("%s:%d", redisTbl.getRedisIp(), redisTbl.getRedisPort()), role.name());
                 }
             });
         } catch (ResourceNotFoundException e) {
