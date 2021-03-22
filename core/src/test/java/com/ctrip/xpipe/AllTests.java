@@ -23,6 +23,7 @@ import com.ctrip.xpipe.spring.DomainValidateFilterTest;
 import com.ctrip.xpipe.spring.RestTemplateFactoryTest;
 import com.ctrip.xpipe.tuple.PairTest;
 import com.ctrip.xpipe.utils.*;
+import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTaskTest;
 import com.ctrip.xpipe.utils.log.MdcUtilTest;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfigTest;
 import com.ctrip.xpipe.zk.impl.TestZkClientTest;
@@ -90,6 +91,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultNettyClientTest.class,
 	NettyClientFactoryTest.class,
 	NettyPoolUtilTest.class,
+	DynamicDelayPeriodTaskTest.class,
 	MdcUtilTest.class
 })
 public class AllTests {

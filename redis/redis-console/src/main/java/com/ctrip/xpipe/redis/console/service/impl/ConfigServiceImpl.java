@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
@@ -57,7 +56,7 @@ public class ConfigServiceImpl implements ConfigService {
     public void startAlertSystem(ConfigModel config) throws DalException {
 
         logger.info("[startAlertSystem] start alert system, config: {}", config);
-        config.setKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).setVal(String.valueOf(true));
+        config.setKey(KEY_ALERT_SYSTEM_ON).setVal(String.valueOf(true));
         configDao.setConfig(config);
     }
 
@@ -68,7 +67,7 @@ public class ConfigServiceImpl implements ConfigService {
         Date date = DateTimeUtils.getHoursLaterDate(hours);
         boolean previousStateOn = isAlertSystemOn();
 
-        config.setKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).setVal(String.valueOf(false));
+        config.setKey(KEY_ALERT_SYSTEM_ON).setVal(String.valueOf(false));
         logger.info("[stopAlertSystem] stop alert system, config: {}", config);
 
         configDao.setConfigAndUntil(config, date);
@@ -82,7 +81,7 @@ public class ConfigServiceImpl implements ConfigService {
     public void startSentinelAutoProcess(ConfigModel config) throws DalException {
 
         logger.info("[startSentinelAutoProcess] start sentinel auto process, config: {}", config);
-        config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS).setVal(String.valueOf(true));
+        config.setKey(KEY_SENTINEL_AUTO_PROCESS).setVal(String.valueOf(true));
         configDao.setConfig(config);
     }
 
@@ -93,7 +92,7 @@ public class ConfigServiceImpl implements ConfigService {
         Date date = DateTimeUtils.getHoursLaterDate(hours);
         boolean previousStateOn = isSentinelAutoProcess();
 
-        config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS).setVal(String.valueOf(false));
+        config.setKey(KEY_SENTINEL_AUTO_PROCESS).setVal(String.valueOf(false));
         configDao.setConfigAndUntil(config, date);
         if(previousStateOn) {
             sentinelAutoProcessChecker.startAlert();
@@ -105,7 +104,7 @@ public class ConfigServiceImpl implements ConfigService {
     public void startSentinelCheck(ConfigModel config) throws DalException {
         logger.info("[startSentinelCheck] : turn off sentinel check exclude config {} for cluster {}", config, config.getSubKey());
 
-        config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE)
+        config.setKey(KEY_SENTINEL_CHECK_EXCLUDE)
                 .setVal(String.valueOf(false));
         logChangeEvent(config, null);
         configDao.setConfig(config);
@@ -117,7 +116,7 @@ public class ConfigServiceImpl implements ConfigService {
                 config, config.getSubKey(), minutes);
 
         Date date = DateTimeUtils.getMinutesLaterThan(new Date(), minutes);
-        config.setKey(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE)
+        config.setKey(KEY_SENTINEL_CHECK_EXCLUDE)
                 .setVal(String.valueOf(true));
         logChangeEvent(config, date);
         configDao.setConfigAndUntil(config, date);
@@ -142,7 +141,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public boolean shouldSentinelCheck(String cluster) {
         try {
-            ConfigTbl config = configDao.getByKeyAndSubId(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, cluster);
+            ConfigTbl config = configDao.getByKeyAndSubId(KEY_SENTINEL_CHECK_EXCLUDE, cluster);
             return null == config || !Boolean.parseBoolean(config.getValue()) || (new Date()).after(config.getUntil());
         } catch (Exception e) {
             return true;
@@ -153,7 +152,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public List<ConfigModel> getActiveSentinelCheckExcludeConfig() {
         List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(
-                DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
+                KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
         if (configTbls.isEmpty()) return Collections.emptyList();
         List<ConfigModel> models = new ArrayList<>();
 
@@ -164,18 +163,18 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public boolean isAlertSystemOn() {
-        return getAndResetTrueIfExpired(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON);
+        return getAndResetTrueIfExpired(KEY_ALERT_SYSTEM_ON);
     }
 
     @Override
     public boolean isSentinelAutoProcess() {
-        return getAndResetTrueIfExpired(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS);
+        return getAndResetTrueIfExpired(KEY_SENTINEL_AUTO_PROCESS);
     }
 
     @Override
     public Date getAlertSystemRecoverTime() {
         try {
-            return configDao.getByKey(DefaultConsoleDbConfig.KEY_ALERT_SYSTEM_ON).getUntil();
+            return configDao.getByKey(KEY_ALERT_SYSTEM_ON).getUntil();
         } catch (DalException e) {
             logger.error("[getAlertSystemRecovertIME]", e);
             return null;
@@ -185,7 +184,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public Date getSentinelAutoProcessRecoverTime() {
         try {
-            return configDao.getByKey(DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS).getUntil();
+            return configDao.getByKey(KEY_SENTINEL_AUTO_PROCESS).getUntil();
         } catch (DalException e) {
             logger.error("[getAlertSystemRecovertIME]", e);
             return null;
@@ -195,7 +194,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public boolean ignoreMigrationSystemAvailability() {
         try {
-            ConfigModel configModel = getOrCreate(DefaultConsoleDbConfig.KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY, String.valueOf(false));
+            ConfigModel configModel = getOrCreate(KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY, String.valueOf(false));
             return Boolean.parseBoolean(configModel.getVal());
         } catch (Exception e) {
             logger.error("[ignoreMigrationSystemAvailability]", e);
@@ -206,7 +205,7 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public void doIgnoreMigrationSystemAvailability(boolean ignore) {
         try {
-            ConfigModel configModel = getOrCreate(DefaultConsoleDbConfig.KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY, String.valueOf(ignore));
+            ConfigModel configModel = getOrCreate(KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY, String.valueOf(ignore));
             configModel.setVal(String.valueOf(ignore));
             configDao.setConfig(configModel);
         } catch (Exception e) {

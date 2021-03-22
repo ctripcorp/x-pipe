@@ -64,7 +64,7 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
         ShardDeleteEvent shardEvent = new ShardDeleteEvent("cluster", "shard", Executors.newFixedThreadPool(2));
         shardEvent.setShardSentinels("127.0.0.1:"+port);
         shardEvent.setShardMonitorName("sitemon-xpipegroup0");
-        manager.removeShardSentinelMonitors(shardEvent);
+        manager.handleShardDelete(shardEvent);
     }
 
     @Test

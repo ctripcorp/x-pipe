@@ -7,9 +7,8 @@ import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareReq
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoResponse;
-import com.ctrip.xpipe.redis.console.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 
-import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
@@ -24,7 +23,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import org.junit.Assert;
-import org.junit.Before;
 import org.springframework.web.client.RestOperations;
 
 import java.io.File;
@@ -32,7 +30,6 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
-import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
 import static com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig.KEY_REPLICATION_STORE_COMMANDFILE_SIZE;

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.config;
 
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
+
 import java.util.Set;
 
 /**
@@ -7,14 +9,7 @@ import java.util.Set;
  *         <p>
  *         Jun 15, 2017
  */
-public interface ConsoleDbConfig {
-
-
-    boolean isSentinelAutoProcess();
-
-    boolean isAlertSystemOn();
-
-    boolean ignoreMigrationSystemAvailability();
+public interface ConsoleDbConfig extends CheckerDbConfig {
 
     boolean shouldSentinelCheck(String cluster, boolean disableCache);
 

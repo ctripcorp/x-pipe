@@ -2,13 +2,11 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
-import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
-import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,15 +23,9 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     private MetaCache metaCache;
 
-    private DcService dcService;
-
-    private ClusterMetaService clusterMetaService;
-
     @Autowired
-    public BeaconMetaServiceImpl(MetaCache metaCache, DcService dcService, ClusterMetaService clusterMetaService) {
+    public BeaconMetaServiceImpl(MetaCache metaCache) {
         this.metaCache = metaCache;
-        this.dcService = dcService;
-        this.clusterMetaService = clusterMetaService;
     }
 
     @Override
@@ -54,15 +46,18 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     @Override
     public Set<MonitorGroupMeta> buildCurrentBeaconGroups(String cluster) {
-        List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(cluster);
-        if (null == relatedDcs) throw new IllegalArgumentException("no related dcs found for " + cluster);
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (null == xpipeMeta) throw new DataNotFoundException("meta not ready");
 
-        List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
-        Map<String, ClusterMeta> dcClusters = dcs.stream().collect(Collectors.toMap(
-                dc -> dc,
-                dc -> clusterMetaService.getClusterMeta(dc, cluster)
-        ));
-        return buildBeaconGroups(dcClusters);
+        Map<String, ClusterMeta> dcClusterMetas = new HashMap<>();
+        xpipeMeta.getDcs().values().forEach(dcMeta -> {
+            if (dcMeta.getClusters().containsKey(cluster)) {
+                dcClusterMetas.put(dcMeta.getId(), dcMeta.getClusters().get(cluster));
+            }
+        });
+
+        if (dcClusterMetas.isEmpty()) throw new DataNotFoundException("no related dcs found for " + cluster);
+        return buildBeaconGroups(dcClusterMetas);
     }
 
     @Override

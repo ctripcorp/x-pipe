@@ -150,7 +150,12 @@
 				<member name="count"/>
 			</readset>
 			<readset name="NAME">
+				<member name="id"/>
 				<member name='cluster-name'/>
+			</readset>
+			<readset name="CREATE_TIME">
+				<member name='cluster-name'/>
+				<member name="create-time"/>
 			</readset>
 			<readset name="FULL_WITH_SHARDS">
 				<readset-ref name="FULL"/>

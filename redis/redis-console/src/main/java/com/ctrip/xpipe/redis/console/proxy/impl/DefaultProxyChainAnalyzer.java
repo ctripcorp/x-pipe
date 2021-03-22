@@ -6,13 +6,11 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.console.healthcheck.leader.SafeLoop;
-import com.ctrip.xpipe.redis.console.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.proxy.*;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RouteService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.tuple.Pair;
@@ -27,8 +25,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +33,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 @Component
 @Lazy
@@ -61,10 +60,10 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
     @Autowired
     private RouteService routeService;
 
-    @Resource(name = ConsoleContextConfig.GLOBAL_EXECUTOR)
+    @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executors;
 
-    @Resource(name = ConsoleContextConfig.SCHEDULED_EXECUTOR)
+    @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
     private ScheduledFuture<?> future;

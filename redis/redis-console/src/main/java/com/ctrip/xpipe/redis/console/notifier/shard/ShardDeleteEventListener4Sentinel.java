@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.notifier.shard;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
-import com.ctrip.xpipe.redis.console.redis.SentinelManager;
+import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ public class ShardDeleteEventListener4Sentinel implements ShardDeleteEventListen
     private static Logger logger = LoggerFactory.getLogger(ShardDeleteEventListener4Sentinel.class);
 
     @Autowired
-    private SentinelManager sentinelManager;
+    private ShardEventHandler shardEventHandler;
 
     @Override
     public void update(Object args, Observable observable) {
@@ -32,7 +32,7 @@ public class ShardDeleteEventListener4Sentinel implements ShardDeleteEventListen
         }
         ShardDeleteEvent shardDeleteEvent = (ShardDeleteEvent) observable;
 
-        sentinelManager.removeShardSentinelMonitors(shardDeleteEvent);
+        shardEventHandler.handleShardDelete(shardDeleteEvent);
     }
 
 

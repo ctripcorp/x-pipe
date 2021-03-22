@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache;
 
-import com.ctrip.xpipe.redis.console.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 

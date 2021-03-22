@@ -23,6 +23,13 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-checker</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
@@ -57,6 +64,12 @@
 			<groupId>com.ctrip.framework.xpipe.redis</groupId>
 			<artifactId>redis-console</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-checker</artifactId>
+			<scope>test</scope>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.framework.xpipe.redis</groupId>

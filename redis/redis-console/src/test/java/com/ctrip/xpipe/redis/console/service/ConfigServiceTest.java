@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_CHECK_EXCLUDE;
+
 /**
  * @author chen.zhu
  * <p>
@@ -77,7 +79,7 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
     public void testStartSentinelCheck() throws Exception {
         configModel.setSubKey(mockClusterName);
         service.startSentinelCheck(configModel);
-        ConfigModel configModel = service.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
+        ConfigModel configModel = service.getConfig(KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
         Assert.assertEquals(configModel.getVal(), String.valueOf(false));
     }
 
@@ -85,7 +87,7 @@ public class ConfigServiceTest extends AbstractConsoleIntegrationTest {
     public void testStopSentinelCheck() throws Exception {
         configModel.setSubKey(mockClusterName);
         service.stopSentinelCheck(configModel, 1);
-        ConfigModel configModel = service.getConfig(DefaultConsoleDbConfig.KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
+        ConfigModel configModel = service.getConfig(KEY_SENTINEL_CHECK_EXCLUDE, mockClusterName);
         Assert.assertEquals(configModel.getVal(), String.valueOf(true));
     }
 

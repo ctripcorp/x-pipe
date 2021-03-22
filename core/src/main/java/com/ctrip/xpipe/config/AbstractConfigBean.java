@@ -3,11 +3,14 @@ package com.ctrip.xpipe.config;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -81,6 +84,19 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 		}
 		
 		return Boolean.parseBoolean(value.trim());
+	}
+
+	protected Set<String> getSplitStringSet(String str) {
+		HashSet result = new HashSet();
+
+		String[] split = str.split("\\s*(,|;)\\s*");
+
+		for(String sp : split){
+			if(!StringUtil.isEmpty(sp)){
+				result.add(sp);
+			}
+		}
+		return result;
 	}
 	
 	@Override

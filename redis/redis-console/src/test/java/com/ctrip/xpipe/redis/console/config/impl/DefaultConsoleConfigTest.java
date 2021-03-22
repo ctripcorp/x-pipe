@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;

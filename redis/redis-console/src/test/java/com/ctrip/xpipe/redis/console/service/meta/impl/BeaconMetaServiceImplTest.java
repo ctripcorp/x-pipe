@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
-import com.ctrip.xpipe.redis.console.resources.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -50,7 +50,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
-        beaconMetaService = new BeaconMetaServiceImpl(metaCache, dcService, clusterMetaService);
+        beaconMetaService = new BeaconMetaServiceImpl(metaCache);
     }
 
     @Test

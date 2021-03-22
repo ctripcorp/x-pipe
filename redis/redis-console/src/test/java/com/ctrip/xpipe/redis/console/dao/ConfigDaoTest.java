@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
 
+import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_AUTO_PROCESS;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -25,7 +27,7 @@ public class ConfigDaoTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private ConfigDao configDao;
 
-    private String key = DefaultConsoleDbConfig.KEY_SENTINEL_AUTO_PROCESS;
+    private String key = KEY_SENTINEL_AUTO_PROCESS;
 
     @Test
     public void testCreateIfNotExist() throws DalException {

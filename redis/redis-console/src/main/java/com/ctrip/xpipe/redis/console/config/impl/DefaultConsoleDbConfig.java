@@ -18,16 +18,7 @@ import java.util.stream.Collectors;
  *         <p>
  *         Jun 15, 2017
  */
-@Component
 public class DefaultConsoleDbConfig extends AbstractConfigBean implements ConsoleDbConfig{
-
-    public static final String KEY_SENTINEL_AUTO_PROCESS = "sentinel.auto.process";
-
-    public static final String KEY_ALERT_SYSTEM_ON = "alert.system.on";
-
-    public static final String KEY_IGNORE_MIGRATION_SYSTEM_AVAILABILITY = "ignore.migration.system.avail";
-
-    public static final String KEY_SENTINEL_CHECK_EXCLUDE = "sentinel.check.exclude";
 
     private Pair<Set<String>, Long> sentinelCheckWhitelistCache = null;
 
@@ -56,8 +47,13 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     }
 
     @Override
-    public boolean ignoreMigrationSystemAvailability() {
-        return configService.ignoreMigrationSystemAvailability();
+    public boolean shouldSentinelCheck(String cluster) {
+        return shouldSentinelCheck(cluster, false);
+    }
+
+    @Override
+    public Set<String> sentinelCheckWhiteList() {
+        return sentinelCheckWhiteList(false);
     }
 
     @Override
