@@ -4,6 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
@@ -166,9 +167,14 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 	@Override
 	public long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
 		if (ClusterStatus.isSameClusterStatus(clusterInfo.getStatus(), ClusterStatus.Migrating)) {
-			MigrationClusterTbl migrationCluster = migrationService.findLatestUnfinishedMigrationCluster(clusterInfo.getId());
+			MigrationClusterTbl migrationCluster = migrationService.findMigrationCluster(clusterInfo.getMigrationEventId(), clusterInfo.getId());
 			if(migrationCluster != null && dcInfo.getId() == migrationCluster.getDestinationDcId()) {
+				logger.info("[getClusterMetaCurrentPrimaryDc][{}][{}] migrating, return dst dc {}",
+						dcInfo.getDcName(), clusterInfo.getClusterName(), migrationCluster.getDestinationDcId());
 				return migrationCluster.getDestinationDcId();
+			} else {
+				logger.info("[getClusterMetaCurrentPrimaryDc][{}][{}] migrating but no event {}, return origin active dc {}",
+						dcInfo.getDcName(), clusterInfo.getClusterName(), clusterInfo.getMigrationEventId(), clusterInfo.getActivedcId());
 			}
 		}
 		return clusterInfo.getActivedcId();

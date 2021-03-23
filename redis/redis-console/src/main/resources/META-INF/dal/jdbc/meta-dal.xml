@@ -170,6 +170,7 @@
 				<member name="cluster-name"/>
 				<member name="cluster-type"/>
 				<member name="status"/>
+				<member name="migration-event-id"/>
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
 			</readset>
