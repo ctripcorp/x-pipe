@@ -85,6 +85,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ShardServiceTest2.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
+        ClusterMetaServiceMigrationStatusChangeTest.class,
         DcServiceImplTest.class,
 
         StateMachineTest.class,
