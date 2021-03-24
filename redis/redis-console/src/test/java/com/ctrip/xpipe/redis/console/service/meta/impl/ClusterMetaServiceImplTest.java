@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.when;
 
 
@@ -28,8 +29,8 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 	
 	@Mock
 	private MigrationService migrationService;
-	
-	
+
+
 	
 	@Before
 	public void beforeClusterMetaServiceImplTest(){
@@ -45,6 +46,7 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		long currentActiveDcId = randomInt();
 		long clusterId = randomInt();
 		long destinationDcId = currentActiveDcId + 1;
+		long migrationEventId = randomInt();
 		
 		DcTbl dcTbl = new DcTbl();
 		
@@ -52,9 +54,10 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		clusterTbl.setId(clusterId);
 		clusterTbl.setActivedcId(currentActiveDcId);
 		clusterTbl.setStatus(ClusterStatus.Migrating.toString());
+		clusterTbl.setMigrationEventId(migrationEventId);
 		
 		
-		when(migrationService.findLatestUnfinishedMigrationCluster(clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+		when(migrationService.findMigrationCluster(migrationEventId, clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 		
 		dcTbl.setId(destinationDcId);
 		Assert.assertEquals(destinationDcId, clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
@@ -80,7 +83,7 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		clusterTbl.setActivedcId(currentActiveDcId);
 		
 		
-		when(migrationService.findLatestUnfinishedMigrationCluster(clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+		when(migrationService.findMigrationCluster(anyLong(), anyLong())).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 
 		dcTbl.setId(destinationDcId);
 		for(ClusterStatus clusterStatus : ClusterStatus.values()){
@@ -97,6 +100,7 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		long currentActiveDcId = 1;
 		long clusterId = randomInt();
 		long destinationDcId = 2;
+		long migrationEventId = randomInt();
 
 		DcTbl dcTbl = new DcTbl();
 		dcTbl.setId(destinationDcId);
@@ -105,9 +109,10 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		clusterTbl.setId(clusterId);
 		clusterTbl.setActivedcId(currentActiveDcId);
 		clusterTbl.setStatus(ClusterStatus.Migrating.name());
+		clusterTbl.setMigrationEventId(migrationEventId);
 
 
-		when(migrationService.findLatestUnfinishedMigrationCluster(clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+		when(migrationService.findMigrationCluster(migrationEventId, clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 		long target = clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl);
 		Assert.assertEquals(destinationDcId, target);
 	}
