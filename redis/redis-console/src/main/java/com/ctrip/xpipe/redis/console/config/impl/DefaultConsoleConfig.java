@@ -432,4 +432,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public Set<String> getAllCheckerAddress() {
         return getSplitStringSet(getProperty(KEY_CHECKER_ADDRESS_ALL, "127.0.0.1:8080"));
     }
+
+    @Override
+    public long getConfigCacheTimeoutMilli() {
+        return getLongProperty(KEY_CONFIG_CACHE_TIMEOUT_MILLI, 1000L);
+    }
+
 }

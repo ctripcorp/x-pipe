@@ -72,7 +72,7 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
 
         @Bean
         public CheckerDbConfig checkerDbConfig(Persistence persistence) {
-            return new DefaultCheckerDbConfig(persistence, 0);
+            return new DefaultCheckerDbConfig(persistence, () -> 0L);
         }
 
         @Bean

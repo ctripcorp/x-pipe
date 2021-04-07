@@ -7,6 +7,7 @@ package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
+import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayActionControllerTest;
@@ -51,6 +52,8 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(value = {
+        DefaultCheckerDbConfigTest.class,
+
         DefaultSentinelHelloCollectorTest.class,
         SentinelCollector4KeeperTest.class,
         AlertPolicyManagerTest.class,
