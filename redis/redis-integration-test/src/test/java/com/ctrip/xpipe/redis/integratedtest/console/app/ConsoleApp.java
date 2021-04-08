@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.dr.app;
+package com.ctrip.xpipe.redis.integratedtest.console.app;
 
 import com.ctrip.xpipe.redis.console.App;
 import org.springframework.boot.SpringApplication;

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.dr;
+package com.ctrip.xpipe.redis.integratedtest.console;
 
 /**
  * @author lishanglin

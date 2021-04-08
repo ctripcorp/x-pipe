@@ -83,8 +83,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public CheckerDbConfig checkerDbConfig(Persistence persistence) {
-        return new DefaultCheckerDbConfig(persistence);
+    public CheckerDbConfig checkerDbConfig(Persistence persistence, CheckerConfig config) {
+        return new DefaultCheckerDbConfig(persistence, config);
     }
 
     @Bean

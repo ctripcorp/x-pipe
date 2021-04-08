@@ -1,9 +1,9 @@
-package com.ctrip.xpipe.redis.integratedtest.console;
+package com.ctrip.xpipe.redis.integratedtest.console.leader;
 
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthController;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
-import com.ctrip.xpipe.redis.integratedtest.dr.AbstractXPipeClusterTest;
-import com.ctrip.xpipe.redis.integratedtest.dr.ForkProcessCmd;
+import com.ctrip.xpipe.redis.integratedtest.console.AbstractXPipeClusterTest;
+import com.ctrip.xpipe.redis.integratedtest.console.ForkProcessCmd;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

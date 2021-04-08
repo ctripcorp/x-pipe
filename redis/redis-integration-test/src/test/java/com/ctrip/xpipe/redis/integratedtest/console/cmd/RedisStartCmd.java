@@ -1,7 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.dr.cmd;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
 import java.util.concurrent.ExecutorService;
 
@@ -13,13 +10,20 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
 
     private int port;
 
+    private boolean asSentinel;
+
     private String os;
 
     private String arch;
 
     public RedisStartCmd(int port, ExecutorService executors) {
+        this(port, false, executors);
+    }
+
+    public RedisStartCmd(int port, boolean asSentinel, ExecutorService executors) {
         super(executors);
         this.port = port;
+        this.asSentinel = asSentinel;
         this.os = System.getProperty("os.name");
         this.arch = System.getProperty("os.arch");
     }
@@ -39,8 +43,8 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
                     "-c",
                     String.format("mkdir -p src/test/tmp;" +
                             "touch src/test/tmp/redis%d.conf;" +
-                            "%s src/test/tmp/redis%d.conf --port %d --dir src/test/tmp --dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no",
-                            port, redisPath, port, port, port)
+                            "%s src/test/tmp/redis%d.conf --port %d --dir src/test/tmp --dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no %s",
+                            port, redisPath, port, port, port, asSentinel ? "--sentinel" : "")
             });
         }
     }
