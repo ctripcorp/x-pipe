@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.dr;
+package com.ctrip.xpipe.redis.integratedtest.console;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
@@ -12,11 +12,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.ctrip.xpipe.redis.integratedtest.dr.app.ConsoleApp;
-import com.ctrip.xpipe.redis.integratedtest.dr.app.MetaserverApp;
-import com.ctrip.xpipe.redis.integratedtest.dr.cmd.RedisKillCmd;
-import com.ctrip.xpipe.redis.integratedtest.dr.cmd.RedisStartCmd;
-import com.ctrip.xpipe.redis.integratedtest.dr.cmd.ServerStartCmd;
+import com.ctrip.xpipe.redis.integratedtest.console.app.ConsoleApp;
+import com.ctrip.xpipe.redis.integratedtest.console.app.MetaserverApp;
+import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisKillCmd;
+import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
+import com.ctrip.xpipe.redis.integratedtest.console.cmd.ServerStartCmd;
 import com.ctrip.xpipe.redis.keeper.KeeperContainerApplication;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -30,6 +30,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
+import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_CHECKER_META_REFRESH_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_SENTINEL_CHECK_INTERVAL;
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
 import static com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig.KEY_REPLICATION_STORE_COMMANDFILE_SIZE;
@@ -71,6 +73,21 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleH2DbTest {
         return redis;
     }
 
+    protected RedisStartCmd startSentinel(int port) {
+        RedisStartCmd redis = new RedisStartCmd(port, true, executors);
+        redis.execute(executors).addListener(redisFuture -> {
+            if (redisFuture.isSuccess()) {
+                logger.info("[startSentinel] sentinel{} end {}", port, redisFuture.get());
+            } else {
+                logger.info("[startSentinel] sentinel{} fail", port, redisFuture.cause());
+            }
+        });
+
+        redisPorts.add(port);
+        subProcessCmds.add(redis);
+        return redis;
+    }
+
     protected ServerStartCmd startConsole(int port, String idc, String zk, List<String> localDcConsoles,
                                           Map<String, String> crossDcConsoles, Map<String, String> metaservers) {
         return startConsole(port, idc, zk, localDcConsoles, crossDcConsoles, metaservers, Collections.emptyMap());
@@ -89,6 +106,8 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleH2DbTest {
             put(KEY_METASERVERS, JsonCodec.INSTANCE.encode(metaservers));
             put("console.domains", JsonCodec.INSTANCE.encode(crossDcConsoles));
             put("console.all.addresses", String.join(",", localDcConsoles));
+            put(KEY_CHECKER_META_REFRESH_INTERVAL, "2000");
+            put(KEY_SENTINEL_CHECK_INTERVAL, "15000");
             putAll(extras);
         }}, executors);
         consoleServer.execute(executors).addListener(consoleFuture -> {

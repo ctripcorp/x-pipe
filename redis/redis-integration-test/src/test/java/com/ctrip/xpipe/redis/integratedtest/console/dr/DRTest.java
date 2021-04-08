@@ -1,10 +1,12 @@
-package com.ctrip.xpipe.redis.integratedtest.dr;
+package com.ctrip.xpipe.redis.integratedtest.console.dr;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.integratedtest.console.AbstractXPipeClusterTest;
+import com.ctrip.xpipe.redis.integratedtest.console.ForkProcessCmd;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
