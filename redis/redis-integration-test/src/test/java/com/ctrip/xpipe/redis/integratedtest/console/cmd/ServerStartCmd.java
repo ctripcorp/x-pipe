@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.integratedtest.dr.cmd;
+package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
 import java.io.File;
 import java.net.URL;

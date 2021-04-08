@@ -1,13 +1,11 @@
-package com.ctrip.xpipe.redis.integratedtest.dr.cmd;
+package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
 import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.redis.integratedtest.dr.ForkProcessCmd;
+import com.ctrip.xpipe.redis.integratedtest.console.ForkProcessCmd;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
