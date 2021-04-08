@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.checker.config.impl;
 
 import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -15,10 +17,6 @@ import java.util.stream.Collectors;
  */
 public class DefaultCheckerDbConfig implements CheckerDbConfig {
 
-    private static final String KEY_CACHE_EXPIRED = "checker.cache.expired";
-
-    private static final String DEFAULT_CACHE_EXPIRED = "10000";
-
     private Persistence persistence;
 
     private TimeBoundCache<Set<String>> sentinelCheckWhiteListCache;
@@ -27,18 +25,18 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig {
 
     private TimeBoundCache<Boolean> alertSystemOn;
 
-    public DefaultCheckerDbConfig(Persistence persistence, long cacheExpired) {
+    public DefaultCheckerDbConfig(Persistence persistence, LongSupplier timeoutMilliSupplier) {
         this.persistence = persistence;
 
-        sentinelCheckWhiteListCache = new TimeBoundCache<>(cacheExpired, () ->
+        sentinelCheckWhiteListCache = new TimeBoundCache<>(timeoutMilliSupplier, () ->
                 this.persistence.sentinelCheckWhiteList().stream().map(String::toLowerCase).collect(Collectors.toSet()));
-        alertSystemOn = new TimeBoundCache<>(cacheExpired, this.persistence::isAlertSystemOn);
-        sentinelAutoProcessCache = new TimeBoundCache<>(cacheExpired, this.persistence::isSentinelAutoProcess);
+        alertSystemOn = new TimeBoundCache<>(timeoutMilliSupplier, this.persistence::isAlertSystemOn);
+        sentinelAutoProcessCache = new TimeBoundCache<>(timeoutMilliSupplier, this.persistence::isSentinelAutoProcess);
     }
 
     @Autowired
-    public DefaultCheckerDbConfig(Persistence persistence) {
-        this(persistence, Integer.parseInt(System.getProperty(KEY_CACHE_EXPIRED, DEFAULT_CACHE_EXPIRED)));
+    public DefaultCheckerDbConfig(Persistence persistence, CheckerConfig config) {
+        this(persistence, config::getConfigCacheTimeoutMilli);
     }
 
     @Override
@@ -70,14 +68,14 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig {
 
         private long expiredAt;
 
-        private long timeoutMill;
+        private LongSupplier timeoutMillSupplier;
 
         private Supplier<T> dataSupplier;
 
-        public TimeBoundCache(long timeoutMill, Supplier<T> dataSupplier) {
+        public TimeBoundCache(LongSupplier timeoutMillSupplier, Supplier<T> dataSupplier) {
             this.data = null;
             this.expiredAt = 0L;
-            this.timeoutMill = timeoutMill;
+            this.timeoutMillSupplier = timeoutMillSupplier;
             this.dataSupplier = dataSupplier;
         }
 
@@ -87,7 +85,7 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig {
             }
 
             this.data = dataSupplier.get();
-            this.expiredAt = System.currentTimeMillis() + timeoutMill;
+            this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
             return this.data;
         }
 

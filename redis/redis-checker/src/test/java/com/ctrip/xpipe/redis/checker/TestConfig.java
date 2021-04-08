@@ -187,4 +187,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public Set<String> getAllCheckerAddress() {
         return Collections.singleton("127.0.0.1:8080");
     }
+
+    @Override
+    public long getConfigCacheTimeoutMilli() {
+        return 0L;
+    }
 }

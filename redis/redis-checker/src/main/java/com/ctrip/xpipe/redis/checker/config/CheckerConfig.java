@@ -63,6 +63,8 @@ public interface CheckerConfig {
 
     String KEY_CHECKER_ADDRESS_ALL = "checker.address.all";
 
+    String KEY_CONFIG_CACHE_TIMEOUT_MILLI = "checker.config.cache.timeout.milli";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -112,5 +114,7 @@ public interface CheckerConfig {
     int getCheckerAckIntervalMilli();
 
     Set<String> getAllCheckerAddress();
+
+    long getConfigCacheTimeoutMilli();
 
 }

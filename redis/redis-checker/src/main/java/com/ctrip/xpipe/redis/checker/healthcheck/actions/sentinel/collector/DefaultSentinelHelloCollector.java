@@ -9,6 +9,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -71,6 +72,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     private CheckerConfig checkerConfig;
 
     @Autowired
+    private CheckerDbConfig checkerDbConfig;
+
+    @Autowired
     private DefaultRedisSessionManager sessionManager;
 
     @Autowired
@@ -125,6 +129,12 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private void collect(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getCheckInfo();
+        String cluster = info.getClusterId();
+        if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
+            logger.info("[collect][{}] in white list, skip", cluster);
+            return;
+        }
+
         Set<SentinelHello> hellos = context.getResult();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
@@ -484,6 +494,12 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @VisibleForTesting
     protected DefaultSentinelHelloCollector setKeyedObjectPool(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
         this.keyedObjectPool = keyedObjectPool;
+        return this;
+    }
+
+    @VisibleForTesting
+    protected DefaultSentinelHelloCollector setCheckerDbConfig(CheckerDbConfig checkerDbConfig) {
+        this.checkerDbConfig = checkerDbConfig;
         return this;
     }
 }

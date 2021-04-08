@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
@@ -17,9 +18,11 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
 import org.junit.*;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
 import java.util.Set;
 
 import static org.mockito.Matchers.any;
@@ -40,6 +43,12 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     private Server server;
 
+    private CheckerDbConfig checkerDbConfig = Mockito.mock(CheckerDbConfig.class);
+
+    private SentinelManager sentinelManager = mock(SentinelManager.class);
+
+    CheckerConfig checkerConfig = mock(CheckerConfig.class);
+
 
     @Before
     public void beforeDefaultSentinelCollectorTest() throws Exception {
@@ -53,10 +62,12 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 return new DefaultEndPoint(hostPort.getHost(), hostPort.getPort());
             }
         });
+        when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(true);
         sentinelCollector.setSessionManager(new DefaultRedisSessionManager()
                 .setExecutors(executors).setScheduled(scheduled).setEndpointFactory(endpointFactory)
                 .setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()));
         sentinelCollector.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
+        sentinelCollector.setCheckerDbConfig(checkerDbConfig);
         masterSentinels = Sets.newHashSet(
                 new HostPort("127.0.0.1", 5000),
                 new HostPort("127.0.0.1", 5001),
@@ -230,8 +241,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testRateLimitWorks() {
-        CheckerConfig checkerConfig = mock(CheckerConfig.class);
-        SentinelManager sentinelManager = mock(SentinelManager.class);
         sentinelCollector.setCheckerConfig(checkerConfig);
         sentinelCollector.setSentinelManager(sentinelManager);
         sentinelCollector.setScheduled(scheduled);
@@ -246,8 +255,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testRateNotLimit() {
-        CheckerConfig checkerConfig = mock(CheckerConfig.class);
-        SentinelManager sentinelManager = mock(SentinelManager.class);
         sentinelCollector.setCheckerConfig(checkerConfig);
         sentinelCollector.setSentinelManager(sentinelManager);
         sentinelCollector.setScheduled(scheduled);
@@ -260,4 +267,17 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 Sets.newHashSet(new SentinelHello(new HostPort("127.0.0.1", 5050), new HostPort("127.0.0.1", 6379), "monitorName")), Sets.newHashSet(), new QuorumConfig(5, 3));
         verify(sentinelManager, times(1)).removeSentinelMonitor(any(), anyString());
     }
+
+    @Test
+    public void testSkipCollectForSentinelWhiteList() throws Exception {
+        when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(false);
+        when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
+        sentinelCollector.setCheckerConfig(checkerConfig);
+        sentinelCollector.setCheckerDbConfig(checkerDbConfig);
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        sentinelCollector.onAction(new SentinelActionContext(instance, Collections.emptySet()));
+        verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
+    }
+
 }
