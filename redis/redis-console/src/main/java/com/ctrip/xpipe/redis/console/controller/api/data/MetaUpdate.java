@@ -30,6 +30,8 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -497,7 +499,7 @@ public class MetaUpdate extends AbstractConsoleController {
         }
 
         List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcId,
-                RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true, clusterId);
+                KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterId);
 
         logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardTbl.getShardName(), bestKeepers);
         try {
