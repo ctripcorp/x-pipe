@@ -170,7 +170,7 @@ public enum ALERT_TYPE {
             return new DetailDesc("Instance Mark Down", "说明：从机房Redis健康检测出问题，会将Redis拉出集群");
         }
     },
-    CRDT_INSTANCE_UP("crdt instance up", EMAIL_DBA) {
+    CRDT_INSTANCE_UP("crdt instance up", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;
@@ -186,7 +186,7 @@ public enum ALERT_TYPE {
             return new DetailDesc("crdt instance up", "crdt instance in local dc is healthy");
         }
     },
-    CRDT_INSTANCE_DOWN("crdt instance down", EMAIL_DBA) {
+    CRDT_INSTANCE_DOWN("crdt instance down", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;
@@ -202,7 +202,7 @@ public enum ALERT_TYPE {
             return new DetailDesc("crdt instance down", "crdt instance in local dc is unhealthy");
         }
     },
-    CRDT_CROSS_DC_REPLICATION_UP("crdt cross dc replication up", EMAIL_DBA) {
+    CRDT_CROSS_DC_REPLICATION_UP("crdt cross dc replication up", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;
@@ -218,7 +218,7 @@ public enum ALERT_TYPE {
             return new DetailDesc("crdt cross dc replication up", "crdt replication between cross dc master is healthy");
         }
     },
-    CRDT_CROSS_DC_REPLICATION_DOWN("crdt cross dc replication down", EMAIL_DBA) {
+    CRDT_CROSS_DC_REPLICATION_DOWN("crdt cross dc replication down", EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;

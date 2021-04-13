@@ -19,6 +19,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -96,7 +98,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
     try {
       List<KeeperBasicInfo> bestKeepers =
-          keeperAdvancedService.findBestKeepers(dcId, RedisProtocol.REDIS_PORT_DEFAULT, (ip, port) -> true, clusterId);
+          keeperAdvancedService.findBestKeepers(dcId, KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterId);
       logger.info("[addKeepers]{},{},{},{}", dcId, clusterId, shardId, bestKeepers);
       redisService.insertKeepers(dcId, clusterId, shardId, bestKeepers);
       return RetMessage.createSuccessMessage("insert success:" + bestKeepers);
