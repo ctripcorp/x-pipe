@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.console.build;
 
-import com.ctrip.xpipe.redis.console.dal.XPipeMysqlReadHandler;
-import com.ctrip.xpipe.redis.console.dal.XPipeMysqlWriteHandler;
-import com.ctrip.xpipe.redis.console.dal.XpipeDalTransactionManager;
 import com.ctrip.xpipe.redis.console.ds.*;
 import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.lookup.configuration.AbstractResourceConfigurator;
@@ -30,9 +27,6 @@ public class ComponentsConfigurator extends AbstractResourceConfigurator {
                 .config(E("datasourceFile").value("datasources.xml"),
                         E("baseDirRef").value(KEY_XPIPE_LOCATION)));
         all.add(A(XPipeDataSource.class));
-        all.add(A(XpipeDalTransactionManager.class));
-        all.add(A(XPipeMysqlWriteHandler.class));
-        all.add(A(XPipeMysqlReadHandler.class));
         return all;
     }
 
