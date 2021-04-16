@@ -71,13 +71,13 @@ public class DRTest extends AbstractXPipeClusterTest {
         startSimpleXPipeDR();
 
         // check migration system
-        waitForServerRespAsExpected("http://localhost:8080/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
+        waitForServerRespAsExpected("http://127.0.0.1:8080/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
 
         // do migration
-        tryMigration("http://localhost:8080", "cluster-dr", "jq", "oy");
+        tryMigration("http://127.0.0.1:8080", "cluster-dr", "jq", "oy");
 
         // check result
-        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 30000);
+        waitForServerRespAsExpected("http://127.0.0.1:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 30000);
     }
 
     @Test
@@ -85,24 +85,24 @@ public class DRTest extends AbstractXPipeClusterTest {
         startSimpleXPipeDR();
 
         // check migration system
-        waitForServerRespAsExpected("http://localhost:8081/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
+        waitForServerRespAsExpected("http://127.0.0.1:8081/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
 
         stopServer(jqMetaServer);
 
         if (jqMetaServer.isProcessAlive()) Assert.fail("jq metaserver is still alive after kill");
 
         // do migration
-        tryMigration("http://localhost:8081", "cluster-dr", "jq", "oy");
+        tryMigration("http://127.0.0.1:8081", "cluster-dr", "jq", "oy");
 
         // check primary dc up
-        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/7379", String.class, "\"HEALTHY\"", 30000);
+        waitForServerRespAsExpected("http://127.0.0.1:8081/api/health/127.0.0.1/7379", String.class, "\"HEALTHY\"", 30000);
         waitForRedisRole("127.0.0.1", 7379, Server.SERVER_ROLE.MASTER, 15000);
 
         // recover origin primary dc metaserver
         jqMetaServer = startMetaServer("jq", "http://127.0.0.1:8080", zkJQ, IdcUtil.JQ_METASERVER_PORT, dcInfos);
 
         // wait for repl recover
-        waitForServerRespAsExpected("http://localhost:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 120000);
+        waitForServerRespAsExpected("http://127.0.0.1:8081/api/health/127.0.0.1/6379", String.class, "\"HEALTHY\"", 120000);
     }
 
     protected void startSimpleXPipeDR() throws Exception {
@@ -126,8 +126,8 @@ public class DRTest extends AbstractXPipeClusterTest {
         startKeepercontainer("oy", zkOY, 7181, userDir + "/src/test/tmp/keepercontainer7181");
 
         // wait for console init
-        waitForServerAck("http://localhost:8080/api/dc/jq", DcMeta.class, 120000);
-        waitForServerAck("http://localhost:8081/api/dc/oy", DcMeta.class, 60000);
+        waitForServerAck("http://127.0.0.1:8080/api/dc/jq", DcMeta.class, 120000);
+        waitForServerAck("http://127.0.0.1:8081/api/dc/oy", DcMeta.class, 60000);
 
         checkAllProcessAlive();
 
@@ -135,7 +135,7 @@ public class DRTest extends AbstractXPipeClusterTest {
         oyMetaServer = startMetaServer("oy", "http://127.0.0.1:8081", zkOY, IdcUtil.OY_METASERVER_PORT, dcInfos);
 
         // repl online
-        waitForServerRespAsExpected("http://localhost:8080/api/health/127.0.0.1/7379", String.class, "\"HEALTHY\"", 120000);
+        waitForServerRespAsExpected("http://127.0.0.1:8080/api/health/127.0.0.1/7379", String.class, "\"HEALTHY\"", 120000);
 
         checkAllProcessAlive();
     }

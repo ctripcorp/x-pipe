@@ -49,10 +49,10 @@ public class SentinelMonitorTest extends DRTest {
         startSimpleXPipeDR();
 
         // check migration system
-        waitForServerRespAsExpected("http://localhost:8080/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
+        waitForServerRespAsExpected("http://127.0.0.1:8080/api/migration/migration/system/health/status", RetMessage.class, RetMessage.createSuccessMessage(), 60000);
 
         // do migration
-        tryMigration("http://localhost:8080", "cluster-dr", "jq", "oy");
+        tryMigration("http://127.0.0.1:8080", "cluster-dr", "jq", "oy");
 
         waitForAllSentinelNoMonitor("jq");
         waitForAllSentinelReady("oy", "127.0.0.1", 7379);
