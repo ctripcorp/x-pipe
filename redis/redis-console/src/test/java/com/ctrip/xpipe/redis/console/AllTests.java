@@ -11,8 +11,6 @@ import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
-import com.ctrip.xpipe.redis.console.dal.ConcurrentDalTransactionTest;
-import com.ctrip.xpipe.redis.console.dal.DalTransactionManagerTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
@@ -90,8 +88,6 @@ import org.junit.runners.Suite.SuiteClasses;
 
         StateMachineTest.class,
         MigrationStatusTest.class,
-        ConcurrentDalTransactionTest.class,
-        DalTransactionManagerTest.class,
         ClusterMetaModifiedNotifierTest.class,
         MetaServiceTest.class,
         ClusterMetaModifiedNotifierTest.class,
