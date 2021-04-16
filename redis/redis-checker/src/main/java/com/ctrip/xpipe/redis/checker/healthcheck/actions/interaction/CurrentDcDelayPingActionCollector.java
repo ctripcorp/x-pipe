@@ -31,7 +31,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
 @Component
 public class CurrentDcDelayPingActionCollector extends AbstractDelayPingActionCollector implements DelayPingActionCollector, BiDirectionSupport {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultDelayPingActionCollector.class);
+    private static final Logger logger = LoggerFactory.getLogger(CurrentDcDelayPingActionCollector.class);
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
