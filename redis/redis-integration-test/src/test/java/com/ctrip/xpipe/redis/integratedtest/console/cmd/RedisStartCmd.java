@@ -43,8 +43,10 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
                     "-c",
                     String.format("mkdir -p src/test/tmp;" +
                             "touch src/test/tmp/redis%d.conf;" +
-                            "%s src/test/tmp/redis%d.conf --port %d --dir src/test/tmp --dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no %s",
-                            port, redisPath, port, port, port, asSentinel ? "--sentinel" : "")
+                            "%s src/test/tmp/redis%d.conf --port %d --dir src/test/tmp %s",
+                            port, redisPath, port, port,
+                            asSentinel ? "--sentinel"
+                                    : String.format("--dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no", port))
             });
         }
     }

@@ -267,7 +267,8 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleH2DbTest {
 
     protected void cleanupConf() {
         String userDir = System.getProperty("user.dir");
-        IntStream.of(6379, 7379).forEach(port -> {
+        // TODO: override conf to be clean in sub-class
+        IntStream.of(6379, 7379, 5000, 5001, 5002, 17170, 17171, 17172).forEach(port -> {
             File conf = new File(userDir + "/src/test/tmp/redis" + port + ".conf");
             try {
                 if (conf.exists()) conf.delete();
