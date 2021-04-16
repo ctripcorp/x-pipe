@@ -86,7 +86,9 @@ CREATE TABLE `CLUSTER_TBL` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `cluster_name` (`cluster_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
-  KEY `is_xpipe_interested` (`is_xpipe_interested`)
+  KEY `is_xpipe_interested` (`is_xpipe_interested`),
+  KEY `Deleted` (`deleted`),
+  KEY `Deleted_ClusterType` (`deleted`,`cluster_type`)
 ) DEFAULT CHARSET=utf8 COMMENT='clusters info';
 
 
@@ -103,7 +105,10 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   PRIMARY KEY (`dc_cluster_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `DcId` (`dc_id`),
-  KEY `ClusterId` (`cluster_id`)
+  KEY `ClusterId` (`cluster_id`),
+  KEY `DcIdPrimary` (`dc_id`,`dc_cluster_id`,`deleted`),
+  KEY `ClusterId_Deleted` (`cluster_id`,`deleted`),
+  KEY `DcId_Deleted` (`dc_id`,`deleted`)
 ) DEFAULT CHARSET=utf8 COMMENT='dc cluster base info';
 
 
@@ -118,7 +123,8 @@ CREATE TABLE `SHARD_TBL` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   KEY `DataChangeLastTime` (`DataChange_LastTime`),
-  KEY `cluster_id` (`cluster_id`)
+  KEY `DlusterId` (`cluster_id`),
+  KEY `Deleted` (`deleted`)
 ) DEFAULT CHARSET=utf8 COMMENT='shard base info';
 
 
@@ -136,7 +142,10 @@ CREATE TABLE `DC_CLUSTER_SHARD_TBL` (
   PRIMARY KEY (`dc_cluster_shard_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `DcClusterId` (`dc_cluster_id`),
-  KEY `ShardId` (`shard_id`)
+  KEY `ShardId` (`shard_id`),
+  KEY `ShardId_Deleted` (`shard_id`,`deleted`),
+  KEY `Deleted` (`deleted`),
+  KEY `DcClusterId_Deleted` (`dc_cluster_id`,`deleted`)
 ) DEFAULT CHARSET=utf8 COMMENT='dc cluster shard base info';
 
 
@@ -161,7 +170,8 @@ CREATE TABLE `REDIS_TBL` (
   UNIQUE KEY `ip_port_deleted_at` (`redis_ip`,`redis_port`,`deleted_at`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `DcClusterShardId` (`dc_cluster_shard_id`),
-  KEY `keeper_active` (`keeper_active`)
+  KEY `keeper_active` (`keeper_active`),
+  KEY `DcClusterShardId_Deleted` (`dc_cluster_shard_id`,`deleted`)
 ) DEFAULT CHARSET=utf8 COMMENT='redis base info';
 
 
@@ -217,7 +227,9 @@ CREATE TABLE `migration_cluster_tbl` (
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
-  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+  KEY `DataChange_LastTime` (`DataChange_LastTime`),
+  KEY `ClusterId_MigrationEventId` (`cluster_id`,`migration_event_id`),
+  KEY `MigrationEventId` (`migration_event_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 COMMENT='migration cluster tbl';
 
 
@@ -233,7 +245,8 @@ CREATE TABLE `migration_shard_tbl` (
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
-  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+  KEY `DataChange_LastTime` (`DataChange_LastTime`),
+  KEY `MigrationClusterId` (`migration_cluster_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8 COMMENT='migration events on specific shard';
 
 
