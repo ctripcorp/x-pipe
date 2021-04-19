@@ -370,14 +370,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
-    public void forcePublish() {
+    public void forceProcess() {
         tryStartAction(() -> {
             logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            if (!(currentState instanceof PartialSuccessState)) {
+            if (!(currentState instanceof ForceProcessAbleState)) {
                 throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
             }
-            PartialSuccessState partialSuccessState = (PartialSuccessState) this.currentState;
-            partialSuccessState.forcePublish();
+            ForceProcessAbleState forceProcessAbleState = (ForceProcessAbleState) this.currentState;
+            forceProcessAbleState.updateAndForceProcess();
         });
     }
 

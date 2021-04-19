@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
@@ -122,8 +121,8 @@ public class MigrationController extends AbstractConsoleController {
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forcePublish", method = RequestMethod.POST)
 	public void forcePublishMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
-		logger.info("[forcePublishMigrationCluster]{}, {}", eventId, clusterId);
-		migrationService.forcePublishMigrationCluster(eventId, clusterId);
+		logger.info("[forceProcessMigrationCluster]{}, {}", eventId, clusterId);
+		migrationService.forceProcessMigrationCluster(eventId, clusterId);
 	}
 	
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forceEnd", method = RequestMethod.POST)

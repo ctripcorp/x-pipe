@@ -324,10 +324,10 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public void forcePublishMigrationCluster(long eventId, long clusterId) {
+    public void forceProcessMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
             try {
-                migrationEventManager.getEvent(eventId).forceClusterPublish(clusterId);
+                migrationEventManager.getEvent(eventId).forceClusterProcess(clusterId);
             } catch (Exception e) {
                 logger.info("[forcePublishMigrationCluster][{}][{}] fail", eventId, clusterId, e);
             }
