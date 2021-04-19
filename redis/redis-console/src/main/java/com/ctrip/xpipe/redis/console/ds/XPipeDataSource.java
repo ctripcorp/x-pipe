@@ -28,7 +28,7 @@ public class XPipeDataSource extends ContainerHolder implements DataSource, LogE
     private org.codehaus.plexus.logging.Logger m_logger;
 
     private static final String ctripDalDataSource =
-            "com.ctrip.xpipe.service.datasource.CtripDalBasedDataSource";
+            "com.ctrip.xpipe.service.datasource.CtripDynamicDataSource";
 
     private static boolean ctripDataSourceEnabled =
             ClassUtils.isPresent(ctripDalDataSource, XPipeDataSource.class.getClassLoader());
