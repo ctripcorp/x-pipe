@@ -320,26 +320,4 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(2, currentCluster.getActivedcId());
 	}
 	
-	@Test(expected = IllegalStateException.class)
-	@DirtiesContext
-	public void testForcePublishOnChecking() throws Exception {
-		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
-		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
-		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
-		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
-
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
-		sleep(1000);
-		
-		DcMeta DcAMeta = dcMetaService.getDcMeta(dcA);
-		DcMeta DcBMeta = dcMetaService.getDcMeta(dcB);
-		Assert.assertEquals(dcA, DcAMeta.findCluster("cluster1").getActiveDc());
-		Assert.assertEquals(dcA, DcBMeta.findCluster("cluster1").getActiveDc());
-		
-		Assert.assertEquals(MigrationStatus.CheckingFail, migrationCluster.getStatus());
-
-		migrationCluster.allowStart(true);
-		migrationCluster.forceProcess();
-	}
 }
