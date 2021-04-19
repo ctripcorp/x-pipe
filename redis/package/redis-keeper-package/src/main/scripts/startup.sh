@@ -123,8 +123,9 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 else
     #MB
-    USED_MEM=1600
-    XMN=600
+    #USED_MEM=1600
+    USED_MEM=30720
+    XMN=11520
     MAX_DIRECT=100
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 fi
