@@ -132,7 +132,20 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 		sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
 		logger.info("{}", executionLog.getLog());
 	}
-	
+
+	@Test
+	public void testAddFailed() throws Exception {
+		servers.get(0).stop();
+		try {
+			sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
+			logger.info("{}", executionLog.getLog());
+			servers.forEach(server -> {
+				Assert.assertTrue(executionLog.getLog().contains(String.valueOf(server.getPort())));
+			});
+		} catch (Exception e) {
+			Assert.fail();
+		}
+	}
 	
 	@Test
 	public void testEmpty(){
@@ -160,6 +173,34 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 		};
 		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
 		Assert.assertEquals(removeCnt.get(), 1);
+	}
+
+	@Test
+	public void testRemovedFailed() throws Exception {
+		AtomicInteger removeCnt = new AtomicInteger(0);
+
+		requestHandler = new BiFunction<Integer, String, String>() {
+			@Override
+			public String apply(Integer source, String s) {
+				if (null != s && s.equals("sentinel sentinels " + sentinelMonitorName)) {
+					return buildSentinelsResponse(source);
+				} else if (null != s && s.equals("sentinel remove " + sentinelMonitorName)) {
+					removeCnt.incrementAndGet();
+				}
+				return "+OK\r\n";
+			}
+		};
+
+		servers.get(0).stop();
+		try {
+			sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
+			logger.info("test result {}", executionLog.getLog());
+			servers.forEach(server -> {
+				Assert.assertTrue(executionLog.getLog().contains(String.valueOf(server.getPort())));
+			});
+		} catch (Exception e) {
+			Assert.fail();
+		}
 	}
 
 	private String buildSentinelsResponse(int source) {

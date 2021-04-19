@@ -28,6 +28,8 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -41,7 +43,7 @@ public class DefaultSentinelManager implements SentinelManager{
 	private static int DEFAULT_SENTINEL_ADD_SIZE = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_ADD_SIZE", "5"));
 
 	public static int DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("MIGRATE_SENTINEL_TIMEOUT", "100"));
-
+	public static int DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("MIGRATE_SENTINEL_WAIT_TIMEOUT", "150"));
 	private static Logger logger = LoggerFactory.getLogger(DefaultSentinelManager.class);
 	
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
@@ -85,15 +87,16 @@ public class DefaultSentinelManager implements SentinelManager{
 		int addSize = Math.min(sentinels.size(), DEFAULT_SENTINEL_ADD_SIZE);
 
 		for(int i=0; i < addSize; i++){
-			
+
 			Endpoint sentinelAddress = new DefaultEndPoint(sentinels.get(i));
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
 			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
-				String result = command.execute().get();
-				executionLog.info(String.format("add to sentinel %s : %s", sentinelAddress, result));
-			} catch (InterruptedException | ExecutionException e) {
-				throw new AddSentinelException(sentinelAddress.getSocketAddress(), clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), e);
+				String result = command.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
+				executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, result));
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+				executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, e.getMessage()));
+				logger.warn("[addSentinel]" + sentinelAddress, new AddSentinelException(sentinelAddress.getSocketAddress(), clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), e));
 			}
 		}
 	}
@@ -138,9 +141,9 @@ public class DefaultSentinelManager implements SentinelManager{
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 			SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
-				String result = sentinelRemove.execute().get();
+				String result = sentinelRemove.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
 				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, result));
-			} catch (InterruptedException | ExecutionException e) {
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, e.getMessage()));
 				logger.warn("[removeSentinel]" + sentinel, e);
 			}
@@ -155,13 +158,13 @@ public class DefaultSentinelManager implements SentinelManager{
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinelAddress));
 			Sentinels sentinelsCommand = new Sentinels(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
-				realSentinels = sentinelsCommand.execute().get();
+				realSentinels = sentinelsCommand.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
 				executionLog.info(String.format("get sentinels from %s : %s", sentinelAddress, realSentinels));
 				if(null != realSentinels) {
 					realSentinels.add(new Sentinel(sentinelAddress.toString(), sentinelAddress.getHostString(), sentinelAddress.getPort()));
 					break;
 				}
-			} catch (InterruptedException | ExecutionException e) {
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				logger.warn("[getRealSentinels]get sentinels from " + sentinelAddress, e);
 				executionLog.warn("[getRealSentinels]get sentinels from " + sentinelAddress + "," + e.getMessage());
 			}
