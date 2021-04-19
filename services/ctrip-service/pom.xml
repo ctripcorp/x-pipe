@@ -12,6 +12,7 @@
     <properties>
         <soa.version>2.8.0</soa.version>
         <vi.version>0.9.0</vi.version>
+        <dal.version>2.3.1</dal.version>
     </properties>
 
     <dependencyManagement>
@@ -45,6 +46,11 @@
                 <groupId>com.ctrip.framework</groupId>
                 <artifactId>vi</artifactId>
                 <version>${vi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>ctrip-datasource</artifactId>
+                <version>${dal.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -112,7 +118,6 @@
         <dependency>
             <groupId>com.ctrip.platform</groupId>
             <artifactId>ctrip-datasource</artifactId>
-            <version>2.1.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.tomcat</groupId>
