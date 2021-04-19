@@ -335,7 +335,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public void forceEndMigrationClsuter(long eventId, long clusterId) {
+    public void forceEndMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
             try {
                 migrationEventManager.getEvent(eventId).forceClusterEnd(clusterId);

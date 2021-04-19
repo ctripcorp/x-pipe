@@ -61,7 +61,7 @@ public interface MigrationService {
 
     void forceProcessMigrationCluster(long eventId, long clusterId);
 
-    void forceEndMigrationClsuter(long eventId, long clusterId);
+    void forceEndMigrationCluster(long eventId, long clusterId);
 
     MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability();
 
