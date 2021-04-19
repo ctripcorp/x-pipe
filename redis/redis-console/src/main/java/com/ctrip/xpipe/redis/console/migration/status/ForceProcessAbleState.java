@@ -5,8 +5,8 @@ package com.ctrip.xpipe.redis.console.migration.status;
  *         <p>
  *         Jun 27, 2017
  */
-public interface PartialSuccessState extends MigrationState{
+public interface ForceProcessAbleState extends MigrationState{
 
-    void forcePublish();
+    void updateAndForceProcess();
 
 }

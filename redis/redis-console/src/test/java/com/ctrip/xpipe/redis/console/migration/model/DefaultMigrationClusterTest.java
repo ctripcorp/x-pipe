@@ -308,7 +308,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
 
 		migrationCluster.allowStart(true);
-		migrationCluster.forcePublish();
+		migrationCluster.forceProcess();
 		DcAMeta = dcMetaService.getDcMeta(dcA);
 		DcBMeta = dcMetaService.getDcMeta(dcB);
 		Assert.assertEquals(dcB, DcAMeta.findCluster("cluster1").getActiveDc());
@@ -340,6 +340,6 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(MigrationStatus.CheckingFail, migrationCluster.getStatus());
 
 		migrationCluster.allowStart(true);
-		migrationCluster.forcePublish();
+		migrationCluster.forceProcess();
 	}
 }

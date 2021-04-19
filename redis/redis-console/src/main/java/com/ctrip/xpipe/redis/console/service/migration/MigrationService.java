@@ -59,7 +59,7 @@ public interface MigrationService {
 
     MigrationCluster rollbackMigrationCluster(long eventId, String clusterName) throws ClusterNotFoundException;
 
-    void forcePublishMigrationCluster(long eventId, long clusterId);
+    void forceProcessMigrationCluster(long eventId, long clusterId);
 
     void forceEndMigrationClsuter(long eventId, long clusterId);
 

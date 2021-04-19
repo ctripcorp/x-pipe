@@ -71,7 +71,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
         logger.info("[testForcePublish]");
 
-        partialSuccessState.forcePublish();
+        partialSuccessState.updateAndForceProcess();
         verify(migrationCluster).updateStat(isA(MigrationForcePublishState.class));
         verify(migrationCluster).process();
     }

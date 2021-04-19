@@ -98,9 +98,17 @@ index_module.controller('ActiveDcMigrationEventDetailsContentCtl', ['$rootScope'
                     toastr.error(AppUtil.errorMsg(result));
                 });
         }
-        
-        $scope.forcePublishMigrationCluster = function(eventId, clusterId) {
-        	MigrationService.forcePublishMigrationCluster(eventId, clusterId).then(
+
+        $scope.forceSkipChecking = function(eventId, clusterId) {
+            MigrationService.forceSkipChecking(eventId, clusterId).then(
+                loadDetails,
+                function(result) {
+                    toastr.error(AppUtil.errorMsg(result));
+                });
+        }
+
+        $scope.forcePublish = function(eventId, clusterId) {
+        	MigrationService.forcePublish(eventId, clusterId).then(
         			loadDetails,
         			function(result) {
                         toastr.error(AppUtil.errorMsg(result));

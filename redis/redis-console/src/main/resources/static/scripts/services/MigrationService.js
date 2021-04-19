@@ -30,11 +30,11 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 			method: 'POST',
 			url: '/console/migration/events/:eventId/clusters/:clusterId/rollback'
 		},
-		forcepublish_migration_cluster: {
+		force_process_migration_cluster: {
 			method: 'POST',
 			url: '/console/migration/events/:eventId/clusters/:clusterId/forcePublish'
 		},
-		forceend_migration_cluster: {
+		force_end_migration_cluster: {
 			method: 'POST',
 			url: '/console/migration/events/:eventId/clusters/:clusterId/forceEnd'
 		},
@@ -154,10 +154,10 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
             });
         return d.promise;
     }
-    
-    function forcePublishMigrationCluster(eventId, clusterId) {
+
+    function forceProcessMigrationCluster(eventId, clusterId) {
         var d = $q.defer();
-        resource.forcepublish_migration_cluster(
+        resource.force_process_migration_cluster(
             {
                 eventId : eventId,
                 clusterId : clusterId
@@ -174,7 +174,7 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
     
     function forceEndMigrationCluster(eventId, clusterId) {
         var d = $q.defer();
-        resource.forceend_migration_cluster(
+        resource.force_end_migration_cluster(
             {
                 eventId : eventId,
                 clusterId : clusterId
@@ -221,7 +221,8 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
 		continueMigrationCluster : continueMigrationCluster,
 		cancelMigrationCluster : cancelMigrationCluster,
 		rollbackMigrationCluster: rollbackMigrationCluster,
-		forcePublishMigrationCluster : forcePublishMigrationCluster,
+		forceSkipChecking : forceProcessMigrationCluster,
+		forcePublish : forceProcessMigrationCluster,
 		forceEndMigrationCluster : forceEndMigrationCluster,
         checkMigrationSystem : checkMigrationSystem,
         getDefaultMigrationCluster : getDefaultMigrationCluster

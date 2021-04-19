@@ -6,14 +6,14 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
-import com.ctrip.xpipe.redis.console.migration.status.PartialSuccessState;
+import com.ctrip.xpipe.redis.console.migration.status.ForceProcessAbleState;
 
 /**
  * @author shyin
  *         <p>
  *         Dec 8, 2016
  */
-public class MigrationPartialSuccessState extends AbstractMigrationMigratingState implements PartialSuccessState{
+public class MigrationPartialSuccessState extends AbstractMigrationMigratingState implements ForceProcessAbleState {
 
     public MigrationPartialSuccessState(MigrationCluster holder) {
         super(holder, MigrationStatus.PartialSuccess);
@@ -53,7 +53,7 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
     }
 
     @Override
-    public void forcePublish() {
+    public void updateAndForceProcess() {
         updateAndForceProcess(new MigrationForcePublishState(getHolder()));
     }
 }
