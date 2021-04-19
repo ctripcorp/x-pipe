@@ -128,7 +128,7 @@ public class MigrationController extends AbstractConsoleController {
 	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forceEnd", method = RequestMethod.POST)
 	public void forceEndMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
 		logger.info("[forceEndMigrationCluster]{}, {}", eventId, clusterId);
-		migrationService.forceEndMigrationClsuter(eventId, clusterId);
+		migrationService.forceEndMigrationCluster(eventId, clusterId);
 	}
 
 	@RequestMapping(value = "/migration/system/health/status", method = RequestMethod.GET)
