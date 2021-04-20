@@ -16,6 +16,10 @@ public class BeaconMigrationResponse {
 
     private String msg;
 
+    public BeaconMigrationResponse() {
+
+    }
+
     private BeaconMigrationResponse(int code, String msg) {
         this.code = code;
         this.msg = msg;

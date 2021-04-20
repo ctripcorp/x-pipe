@@ -95,8 +95,6 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         RedisInstanceInfo instanceInfo = instanceSick.getInstance().getCheckInfo();
         ProxyTunnelInfo proxyTunnelInfo = proxyManager.getProxyTunnelInfo(instanceInfo.getDcId(),
                 instanceInfo.getClusterId(), instanceInfo.getShardId());
-//        ProxyChain proxyChain = proxyService.getProxyChain(instanceInfo.getDcId(),
-//                instanceInfo.getClusterId(), instanceInfo.getShardId());
         if (proxyTunnelInfo == null) {
             logger.warn("[doOnEvent]proxy chain not found for {}", instanceInfo);
             return;
@@ -202,13 +200,6 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
         EventMonitor.DEFAULT.logEvent("XPIPE.PROXY.CHAIN", String.format("[CLOSE]%s: %s",
                 instance.getCheckInfo().getDcId(), instance.getCheckInfo().getShardId()));
 
-//        List<TunnelInfo> tunnelInfos = proxyChain.getTunnels();
-//        List<HostPort> backends = Lists.newArrayList();
-//        for (TunnelInfo tunnelInfo : tunnelInfos) {
-//            HostPort hostPort = tunnelInfo.getTunnelStatsResult().getBackend();
-//            backends.add(new HostPort(tunnelInfo.getProxyModel().getHostPort().getHost(), hostPort.getPort()));
-//        }
-//        proxyService.deleteProxyChain(backends);
         proxyManager.closeProxyTunnel(proxyTunnelInfo);
     }
 
