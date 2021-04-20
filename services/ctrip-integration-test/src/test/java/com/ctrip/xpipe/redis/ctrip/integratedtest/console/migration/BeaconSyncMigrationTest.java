@@ -1,0 +1,361 @@
+package com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration;
+
+import com.ctrip.xpipe.api.sso.SsoConfig;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
+import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMigrationEventDao;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlReadHandler;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlWriteHandler;
+import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import org.junit.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.PropertyValues;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.*;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestOperations;
+import org.unidal.dal.jdbc.query.DefaultQueryExecutor;
+import org.unidal.dal.jdbc.query.QueryExecutor;
+import org.unidal.dal.jdbc.query.ReadHandler;
+import org.unidal.dal.jdbc.query.WriteHandler;
+import org.unidal.lookup.ContainerLoader;
+
+import javax.annotation.PostConstruct;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
+/**
+ * @author lishanglin
+ * date 2021/3/29
+ */
+@SpringBootApplication(scanBasePackages = "com.ctrip.xpipe.redis.console")
+public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
+
+    private static boolean onTest = false;
+
+    private static int readDelay = 0;
+
+    private static int writeDelay = 0;
+
+    private ConfigurableApplicationContext applicationContext;
+
+    private RestOperations restOperations;
+
+    private ExecutorService migrationExecutors;
+
+    @Autowired
+    private ClusterService clusterService;
+
+    @Autowired
+    private DcService dcService;
+
+    @Autowired
+    private ConfigService configService;
+
+    private String srcDc = "jq";
+
+    private String targetDc = "oy";
+
+    private int defaultThreads;
+
+    @Before
+    public void setupBeaconSyncMigrationTest() throws Exception {
+        restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(1000, 1000, 1000, 10000);
+
+        onTest = true;
+        SsoConfig.stopsso = true;
+
+        migrationExecutors = Executors.newFixedThreadPool(1000, XpipeThreadFactory.create("BeaconSyncMigrationTest"));
+        defaultThreads = Integer.parseInt(System.getProperty("server.tomcat.max-threads", "200"));
+        System.setProperty("server.tomcat.max-threads", "1");
+
+        applicationContext = new SpringApplicationBuilder(BeaconSyncMigrationTest.class).run();
+        waitConditionUntilTimeOut(this::checkConsoleHealth, 10000, 1000);
+        configService.doIgnoreMigrationSystemAvailability(true);
+    }
+
+    @After
+    public void afterBeaconSyncMigrationTest() throws Exception {
+        onTest = false;
+        SsoConfig.stopsso = false;
+        readDelay = 0;
+        writeDelay = 0;
+        configService.doIgnoreMigrationSystemAvailability(false);
+        System.setProperty("server.tomcat.max-threads", "" + defaultThreads);
+        if (applicationContext != null) {
+            applicationContext.stop();
+        }
+    }
+
+    @Test
+    public void startAsConsole() throws Exception {
+        waitForAnyKeyToExit();
+    }
+
+    @Test
+    // make sure migration-threads-cnt ge concurrentCnt
+    public void testConcurrentMigrationNoBlockTomcat() throws Exception {
+        int concurrentCnt = 4;
+        CountDownLatch latch = new CountDownLatch(concurrentCnt);
+        AtomicInteger successCnt = new AtomicInteger(0);
+
+        IntStream.range(0, concurrentCnt).forEach(i -> {
+            executors.submit(() -> {
+                BeaconMigrationRequest request = new BeaconMigrationRequest();
+                request.setClusterName("cluster" + i);
+                request.setIsForced(true);
+                request.setTargetIDC("oy");
+                request.setGroups(Collections.emptySet());
+                try {
+                    BeaconMigrationResponse response = restOperations.postForObject("http://127.0.0.1:8080/api/beacon/migration/sync",
+                            request, BeaconMigrationResponse.class);
+                    logger.info("[testConcurrentMigrationNoBlockTomcat] {}", response);
+                    if (0 == response.getCode()) successCnt.incrementAndGet();
+                } catch (Exception e) {
+                    logger.info("[testConcurrentMigrationNoBlockTomcat] fail", e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        });
+
+        latch.await(11, TimeUnit.SECONDS);
+        Assert.assertEquals(concurrentCnt, successCnt.get());
+    }
+
+    @Test
+    // modify /opt/config/100004374/qconfig/datasource.properties, make maxActive=1
+    public void testOneDBConnectMigration() {
+        BeaconMigrationRequest request = new BeaconMigrationRequest();
+        request.setClusterName("cluster0");
+        request.setIsForced(true);
+        request.setTargetIDC("oy");
+        request.setGroups(Collections.emptySet());
+        BeaconMigrationResponse response = restOperations.postForObject("http://127.0.0.1:8080/api/beacon/migration/sync",
+                request, BeaconMigrationResponse.class);
+
+        logger.info("[testOneDBConnectMigration] resp {}", response);
+        Assert.assertEquals(0, response.getCode());
+    }
+
+    @Test
+    public void testSlowDb() throws Throwable {
+        readDelay = 1000;
+        writeDelay = 1000;
+        int concurrentCnt = 5;
+        CountDownLatch latch = new CountDownLatch(concurrentCnt);
+
+        IntStream.range(0, concurrentCnt).forEach(i -> {
+            executors.submit(() -> {
+                BeaconMigrationRequest request = new BeaconMigrationRequest();
+                request.setClusterName("cluster" + i);
+                request.setIsForced(true);
+                request.setTargetIDC("oy");
+                request.setGroups(Collections.emptySet());
+                try {
+                    BeaconMigrationResponse response = restOperations.postForObject("http://127.0.0.1:8080/api/beacon/migration/sync",
+                            request, BeaconMigrationResponse.class);
+                    logger.info("[testConcurrentMigrationNoBlockTomcat] {}", response);
+                } catch (Exception e) {
+                    logger.info("[testConcurrentMigrationNoBlockTomcat] fail", e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        });
+
+        waitConditionUntilTimeOut(() -> {
+            AtomicBoolean success = new AtomicBoolean(true);
+            IntStream.range(0, concurrentCnt).forEach(i -> {
+                ClusterTbl clusterTbl = clusterService.find("cluster" + i);
+                success.set(success.get() & clusterTbl.getActivedcId() == 2);
+            });
+            return success.get();
+        }, 50000);
+    }
+
+    @Ignore
+    @Test
+    public void fillInData() {
+        List<DcTbl> dcs = dcService.findAllDcs();
+        IntStream.range(0, 1000).forEach(i -> {
+            clusterService.createCluster(mockCluster(i, dcs));
+        });
+    }
+
+    @Test
+    public void restDrData() throws Exception {
+        executeSqlScript(
+                "use fxxpipedb;\n" +
+                        "update cluster_tbl set status='Normal', migration_event_id=0, activedc_id=1 where 1;\n" +
+                        "truncate table migration_event_tbl;\n" +
+                        "truncate table migration_cluster_tbl;\n" +
+                        "truncate table migration_shard_tbl;"
+        );
+    }
+
+    private boolean checkConsoleHealth() {
+        try {
+            String rst = restOperations.getForObject("http://127.0.0.1:8080/api/dc/jq", String.class);
+            logger.info("[checkConsoleHealth] rst {}", rst);
+            return true;
+        } catch (Exception e) {
+            logger.info("[checkConsoleHealth] check fail", e);
+            return false;
+        }
+    }
+
+    private void concurrentMigration() {
+        AtomicInteger rounds = new AtomicInteger(0);
+
+        do {
+            long startIndex = rounds.get() * 2;
+            logger.info("[concurrentMigration] rounds {} start", rounds.get());
+            IntStream.range(0, 2).forEach(i -> {
+                migrationExecutors.execute(() -> {
+                    String cluster = "cluster" + ((startIndex + i) % 1000);
+                    try {
+                        BeaconMigrationRequest request = new BeaconMigrationRequest();
+                        request.setIsForced(true);
+                        request.setClusterName(cluster);
+                        request.setTargetIDC(targetDc);
+                        request.setGroups(Collections.emptySet());
+
+                        logger.info("[concurrentMigration] migration start {}", cluster);
+                        BeaconMigrationResponse response = restOperations.postForObject("http://127.0.0.1:8080/api/beacon/migration/sync",
+                                request, BeaconMigrationResponse.class);
+                        if (0 != response.getCode()) {
+                            logger.info("[concurrentMigration][{}] migration fail {}", cluster, response.getMsg());
+                        }
+                    } catch (Exception e) {
+                        logger.info("[concurrentMigration][{}] req fail", cluster, e);
+                    }
+                });
+            });
+            logger.info("[concurrentMigration] rounds {} end", rounds.getAndIncrement());
+            sleep(10000);
+        } while (!allClusterMigrationFinish());
+    }
+
+    private boolean allClusterMigrationFinish() {
+        try {
+            return clusterService.findActiveClustersByDcName(srcDc).isEmpty();
+        } catch (Exception e) {
+            logger.info("[allClusterMigrationFinish] sql fail", e);
+            return false;
+        }
+    }
+
+    private ClusterModel mockCluster(int index, List<DcTbl> dcs) {
+        ClusterModel clusterModel = new ClusterModel();
+        ClusterTbl clusterTbl = new ClusterTbl();
+        clusterTbl.setClusterName("cluster" + index).setClusterType(ClusterType.ONE_WAY.name())
+                .setClusterDescription("cluster" + index).setActivedcId(dcs.get(0).getId())
+                .setClusterAdminEmails("test@trip.com").setClusterOrgId(0);
+
+        clusterModel.setClusterTbl(clusterTbl);
+        clusterModel.setDcs(dcs);
+
+        List<ShardModel> shards = new ArrayList<>();
+        IntStream.range(1, 5).forEach(i -> {
+            ShardModel shardModel = new ShardModel();
+            ShardTbl shardTbl = new ShardTbl();
+            shardTbl.setShardName("shard" + i);
+            shardModel.setShardTbl(shardTbl);
+
+            shards.add(shardModel);
+        });
+
+        clusterModel.setShards(shards);
+        return clusterModel;
+    }
+
+    @Component
+    @Profile(AbstractProfile.PROFILE_NAME_TEST)
+    public static class UnidalContainerMocker {
+
+        @PostConstruct
+        public void postConstruct() {
+            if (!onTest) return;
+
+            try {
+                DefaultQueryExecutor queryExecutor = (DefaultQueryExecutor)ContainerLoader.getDefaultContainer().lookup(QueryExecutor.class);
+                Field writeHandlerField = queryExecutor.getClass().getDeclaredField("m_writeHandler");
+                Field readHandlerField = queryExecutor.getClass().getDeclaredField("m_readHandler");
+                writeHandlerField.setAccessible(true);
+                readHandlerField.setAccessible(true);
+
+                MockMysqlWriteHandler mockMysqlWriteHandler = new MockMysqlWriteHandler((WriteHandler) writeHandlerField.get(queryExecutor), () -> writeDelay);
+                MockMysqlReadHandler mockMysqlReadHandler = new MockMysqlReadHandler((ReadHandler) readHandlerField.get(queryExecutor), () -> readDelay);
+                writeHandlerField.set(queryExecutor, mockMysqlWriteHandler);
+                readHandlerField.set(queryExecutor, mockMysqlReadHandler);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Component
+    @Profile(AbstractProfile.PROFILE_NAME_TEST)
+    public static class MigrationTestBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
+
+        private Logger logger = LoggerFactory.getLogger(MigrationTestBeanPostProcessor.class);
+
+        @Override
+        public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
+            return null;
+        }
+
+        @Override
+        public boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
+            return true;
+        }
+
+        @Override
+        public PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
+            return pvs;
+        }
+
+        @Override
+        public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+            return bean;
+        }
+
+        @Override
+        public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+            if (!onTest) return bean;
+
+            if (beanName.equals("migrationEventDao")) {
+                return new MockMigrationEventDao((MigrationEventDao) bean);
+            }
+
+            return bean;
+        }
+
+    }
+}
