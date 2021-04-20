@@ -98,9 +98,13 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
         int timeoutMilli = config.getMigrationTimeoutMilli();
         ScheduledFuture<?> scheduledFuture = scheduled.schedule(() -> {
-            if (!future.isDone()) {
+            if (future.isDone()) {
+                // already done, do nothing
+            } else if (migrateSequenceCmd.executeCount() <= 0) {
                 logger.info("[migrate][{}] timeout", migrationRequest.getClusterName());
                 future.cancel(false);
+            } else {
+                logger.info("[migrate][{}] timeout but already running, continue", migrationRequest.getClusterName());
             }
         }, timeoutMilli, TimeUnit.MILLISECONDS);
 

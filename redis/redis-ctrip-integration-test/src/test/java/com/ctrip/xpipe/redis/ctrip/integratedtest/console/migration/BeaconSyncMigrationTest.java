@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMigrationEventDao;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlReadHandler;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlWriteHandler;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -23,12 +25,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.*;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
+import org.unidal.dal.jdbc.query.DefaultQueryExecutor;
+import org.unidal.dal.jdbc.query.QueryExecutor;
+import org.unidal.dal.jdbc.query.ReadHandler;
+import org.unidal.dal.jdbc.query.WriteHandler;
+import org.unidal.lookup.ContainerLoader;
 
+import javax.annotation.PostConstruct;
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +45,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -47,6 +57,10 @@ import java.util.stream.IntStream;
 public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
 
     private static boolean onTest = false;
+
+    private static int readDelay = 0;
+
+    private static int writeDelay = 0;
 
     private ConfigurableApplicationContext applicationContext;
 
@@ -89,6 +103,8 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
     public void afterBeaconSyncMigrationTest() throws Exception {
         onTest = false;
         SsoConfig.stopsso = false;
+        readDelay = 0;
+        writeDelay = 0;
         configService.doIgnoreMigrationSystemAvailability(false);
         System.setProperty("server.tomcat.max-threads", "" + defaultThreads);
         if (applicationContext != null) {
@@ -97,7 +113,6 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    @Ignore
     public void startAsConsole() throws Exception {
         waitForAnyKeyToExit();
     }
@@ -146,6 +161,42 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
 
         logger.info("[testOneDBConnectMigration] resp {}", response);
         Assert.assertEquals(0, response.getCode());
+    }
+
+    @Test
+    public void testSlowDb() throws Throwable {
+        readDelay = 1000;
+        writeDelay = 1000;
+        int concurrentCnt = 5;
+        CountDownLatch latch = new CountDownLatch(concurrentCnt);
+
+        IntStream.range(0, concurrentCnt).forEach(i -> {
+            executors.submit(() -> {
+                BeaconMigrationRequest request = new BeaconMigrationRequest();
+                request.setClusterName("cluster" + i);
+                request.setIsForced(true);
+                request.setTargetIDC("oy");
+                request.setGroups(Collections.emptySet());
+                try {
+                    BeaconMigrationResponse response = restOperations.postForObject("http://127.0.0.1:8080/api/beacon/migration/sync",
+                            request, BeaconMigrationResponse.class);
+                    logger.info("[testConcurrentMigrationNoBlockTomcat] {}", response);
+                } catch (Exception e) {
+                    logger.info("[testConcurrentMigrationNoBlockTomcat] fail", e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        });
+
+        waitConditionUntilTimeOut(() -> {
+            AtomicBoolean success = new AtomicBoolean(true);
+            IntStream.range(0, concurrentCnt).forEach(i -> {
+                ClusterTbl clusterTbl = clusterService.find("cluster" + i);
+                success.set(success.get() & clusterTbl.getActivedcId() == 2);
+            });
+            return success.get();
+        }, 50000);
     }
 
     @Ignore
@@ -242,6 +293,31 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
 
         clusterModel.setShards(shards);
         return clusterModel;
+    }
+
+    @Component
+    @Profile(AbstractProfile.PROFILE_NAME_TEST)
+    public static class UnidalContainerMocker {
+
+        @PostConstruct
+        public void postConstruct() {
+            if (!onTest) return;
+
+            try {
+                DefaultQueryExecutor queryExecutor = (DefaultQueryExecutor)ContainerLoader.getDefaultContainer().lookup(QueryExecutor.class);
+                Field writeHandlerField = queryExecutor.getClass().getDeclaredField("m_writeHandler");
+                Field readHandlerField = queryExecutor.getClass().getDeclaredField("m_readHandler");
+                writeHandlerField.setAccessible(true);
+                readHandlerField.setAccessible(true);
+
+                MockMysqlWriteHandler mockMysqlWriteHandler = new MockMysqlWriteHandler((WriteHandler) writeHandlerField.get(queryExecutor), () -> writeDelay);
+                MockMysqlReadHandler mockMysqlReadHandler = new MockMysqlReadHandler((ReadHandler) readHandlerField.get(queryExecutor), () -> readDelay);
+                writeHandlerField.set(queryExecutor, mockMysqlWriteHandler);
+                readHandlerField.set(queryExecutor, mockMysqlReadHandler);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Component
