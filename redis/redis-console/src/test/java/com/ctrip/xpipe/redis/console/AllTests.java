@@ -56,6 +56,7 @@ import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
+import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationExecuteLockTest;
@@ -173,6 +174,12 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationExecuteLockTest.class,
         BeaconMetaServiceImplTest.class,
         BeaconMigrationServiceImplTest.class,
+
+        MigrationPreCheckCmdTest.class,
+        MigrationFetchProcessingEventCmdTest.class,
+        MigrationChooseTargetDcCmdTest.class,
+        MigrationBuildEventCmdTest.class,
+        MigrationDoExecuteCmdTest.class,
 
         DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
