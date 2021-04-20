@@ -1483,11 +1483,9 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>,<TABLE name="migration-event"/>
+					FROM <TABLE/>
 					WHERE <FIELD name='migration-event-id'/> = ${event-id}
 					AND <FIELD name="cluster-id"/> = ${cluster-id}
-					AND met.id = ${event-id}
-					AND met.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>

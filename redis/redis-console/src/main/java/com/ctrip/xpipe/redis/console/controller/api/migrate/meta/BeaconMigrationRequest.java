@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
@@ -14,8 +18,6 @@ import static com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService.BEACO
 public class BeaconMigrationRequest {
 
     private String clusterName;
-
-    private long clusterId;
 
     private Set<String> failoverGroups;
 
@@ -33,12 +35,47 @@ public class BeaconMigrationRequest {
 
     private Set<String> availableDcs;
 
-    public void setClusterId(long clusterId) {
-        this.clusterId = clusterId;
+    @JsonIgnore
+    private ClusterTbl clusterTbl;
+
+    @JsonIgnore
+    private MigrationClusterTbl currentMigrationCluster;
+
+    @JsonIgnore
+    private DcTbl sourceDcTbl;
+
+    @JsonIgnore
+    private DcTbl targetDcTbl;
+
+    @JsonIgnore
+    private long migrationEventId;
+
+    public long getMigrationEventId() {
+        return migrationEventId;
+    }
+
+    public void setMigrationEventId(long migrationEventId) {
+        this.migrationEventId = migrationEventId;
     }
 
     public void setTargetIDC(String targetIDC) {
         this.targetIDC = targetIDC;
+    }
+
+    public DcTbl getSourceDcTbl() {
+        return sourceDcTbl;
+    }
+
+    public void setSourceDcTbl(DcTbl sourceDcTbl) {
+        this.sourceDcTbl = sourceDcTbl;
+    }
+
+    public DcTbl getTargetDcTbl() {
+        return targetDcTbl;
+    }
+
+    public void setTargetDcTbl(DcTbl targetDcTbl) {
+        this.targetDcTbl = targetDcTbl;
     }
 
     public void setClusterName(String clusterName) {
@@ -73,10 +110,6 @@ public class BeaconMigrationRequest {
         return clusterName;
     }
 
-    public long getClusterId() {
-        return clusterId;
-    }
-
     public Set<String> getFailoverGroups() {
         return failoverGroups;
     }
@@ -97,19 +130,24 @@ public class BeaconMigrationRequest {
         return extra;
     }
 
-    public Boolean getIsForced() {
-        return isForced;
+    public boolean getIsForced() {
+        return null != isForced && isForced;
     }
 
     public String getTargetIDC() {
         return targetIDC;
     }
 
+    @VisibleForTesting
+    public void setAvailableDcs(Set<String> availableDcs) {
+        this.availableDcs = availableDcs;
+    }
+
     @JsonIgnore
     public Set<String> getAvailableDcs() {
         if (null != this.availableDcs) return this.availableDcs;
 
-        Set<String> availableDcs = new HashSet<>();
+        Set<String> localAvailableDcs = new HashSet<>();
         Map<String, Boolean> dcHealthMap = new HashMap<>();
 
         groups.forEach(group -> {
@@ -122,10 +160,10 @@ public class BeaconMigrationRequest {
         });
 
         dcHealthMap.forEach((dc, health) -> {
-            if (null != health && health) availableDcs.add(dc);
+            if (null != health && health) localAvailableDcs.add(dc);
         });
 
-        this.availableDcs = availableDcs;
+        this.availableDcs = localAvailableDcs;
         return this.availableDcs;
     }
 
@@ -140,6 +178,22 @@ public class BeaconMigrationRequest {
         });
 
         return failDcs;
+    }
+
+    public ClusterTbl getClusterTbl() {
+        return clusterTbl;
+    }
+
+    public void setClusterTbl(ClusterTbl clusterTbl) {
+        this.clusterTbl = clusterTbl;
+    }
+
+    public MigrationClusterTbl getCurrentMigrationCluster() {
+        return currentMigrationCluster;
+    }
+
+    public void setCurrentMigrationCluster(MigrationClusterTbl currentMigrationCluster) {
+        this.currentMigrationCluster = currentMigrationCluster;
     }
 
     @Override
@@ -166,7 +220,6 @@ public class BeaconMigrationRequest {
     public String toString() {
         return "BeaconMigrationRequest{" +
                 "clusterName='" + clusterName + '\'' +
-                ", clusterId=" + clusterId +
                 ", failoverGroups=" + failoverGroups +
                 ", recoverGroups=" + recoverGroups +
                 ", groups=" + groups +
