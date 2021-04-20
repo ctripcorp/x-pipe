@@ -492,4 +492,9 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     public MigrationState getMigrationState() {
         return currentState;
     }
+
+    @VisibleForTesting
+    public void setMigrationState(MigrationState state) {
+        this.currentState = state;
+    }
 }

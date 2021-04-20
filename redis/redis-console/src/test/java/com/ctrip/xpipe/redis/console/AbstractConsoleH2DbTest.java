@@ -96,6 +96,10 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
 
     protected void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
 
+        if (StringUtil.isEmpty(prepareSql)) {
+            return;
+        }
+
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
 
         Connection conn = null;
