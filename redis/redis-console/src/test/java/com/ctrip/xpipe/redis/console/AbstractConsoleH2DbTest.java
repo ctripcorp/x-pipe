@@ -29,9 +29,7 @@ import java.sql.SQLException;
  *         <p>
  *         Mar 17, 2017
  */
-public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
-
-    public static String DATA_SOURCE = "fxxpipe";
+public class AbstractConsoleH2DbTest extends AbstractConsoleDbTest {
 
     public static final String TABLE_STRUCTURE = "sql/h2/xpipedemodbtables.sql";
     public static final String TABLE_DATA = "sql/h2/xpipedemodbinitdata.sql";
@@ -50,21 +48,6 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
             Logger logger = LoggerFactory.getLogger("AbstractConsoleH2DbTest");
             logger.info("[setUp][dataSource location]{}", dataSourceLocation);
         }
-    }
-
-    @Before
-    public void before() throws ComponentLookupException, SQLException, IOException {
-//        ContainerLoader.getDefaultContainer().lookup(TransactionManager.class, "xpipe");
-//        ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class, "xpipe");
-        setUpTestDataSource();
-    }
-
-    @After
-    public void tearDown() throws ComponentLookupException {
-//        Assert.assertFalse(ContainerLoader.getDefaultContainer().lookup(TransactionManager.class) instanceof DefaultTransactionManager);
-//        Assert.assertTrue(ContainerLoader.getDefaultContainer().lookup(TransactionManager.class) instanceof XpipeDalTransactionManager);
-//        Assert.assertTrue(ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class) instanceof XPipeDataSourceManager);
-        ContainerLoader.destroy();
     }
 
     protected void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
@@ -94,45 +77,6 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
         }
     }
 
-    protected void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
-
-        if (StringUtil.isEmpty(prepareSql)) {
-            return;
-        }
-
-        DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
-
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        try {
-            conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
-            conn.setAutoCommit(false);
-            if (!Strings.isEmpty(prepareSql)) {
-                for (String sql : prepareSql.split(";")) {
-                    logger.debug("[setup][data]{}", sql.trim());
-                    stmt = conn.prepareStatement(sql);
-                    stmt.executeUpdate();
-                }
-            }
-            conn.commit();
-
-        } catch (Exception ex) {
-            logger.error("[SetUpTestDataSource][fail]:", ex);
-            if (null != conn) {
-                conn.rollback();
-            }
-        } finally {
-            if (null != stmt) {
-                stmt.close();
-            }
-            if (null != conn) {
-                conn.setAutoCommit(true);
-                conn.close();
-            }
-        }
-    }
-
-
     protected final String KEY_H2_PORT = "h2Port";
     private Server h2Server;
 
@@ -142,16 +86,6 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
         h2Server = Server.createTcpServer("-tcpPort", String.valueOf(h2Port), "-tcpAllowOthers");
         h2Server.start();
 //		new Console().runTool();
-    }
-
-
-    protected String prepareDatas() throws IOException {
-        return "";
-    }
-
-    public String prepareDatasFromFile(String path) throws IOException {
-        InputStream ins = FileUtils.getFileInputStream(path);
-        return IOUtils.toString(ins);
     }
 
 
