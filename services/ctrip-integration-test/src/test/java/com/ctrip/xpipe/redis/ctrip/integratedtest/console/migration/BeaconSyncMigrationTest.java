@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration;
 
 import com.ctrip.xpipe.api.sso.SsoConfig;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
@@ -10,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.AbstractCtripConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMigrationEventDao;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlReadHandler;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlWriteHandler;
@@ -54,7 +54,7 @@ import java.util.stream.IntStream;
  * date 2021/3/29
  */
 @SpringBootApplication(scanBasePackages = "com.ctrip.xpipe.redis.console")
-public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
+public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest {
 
     private static boolean onTest = false;
 
@@ -85,7 +85,7 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
 
     @Before
     public void setupBeaconSyncMigrationTest() throws Exception {
-        restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(1000, 1000, 1000, 10000);
+        restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(1000, 1000, 1000, 15000);
 
         onTest = true;
         SsoConfig.stopsso = true;
@@ -95,7 +95,7 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
         System.setProperty("server.tomcat.max-threads", "1");
 
         applicationContext = new SpringApplicationBuilder(BeaconSyncMigrationTest.class).run();
-        waitConditionUntilTimeOut(this::checkConsoleHealth, 10000, 1000);
+        waitConditionUntilTimeOut(this::checkConsoleHealth, 1000000, 1000);
         configService.doIgnoreMigrationSystemAvailability(true);
     }
 
@@ -113,7 +113,9 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    @Ignore
     public void startAsConsole() throws Exception {
+        fillInCluster(10);
         waitForAnyKeyToExit();
     }
 
@@ -123,6 +125,7 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
         int concurrentCnt = 4;
         CountDownLatch latch = new CountDownLatch(concurrentCnt);
         AtomicInteger successCnt = new AtomicInteger(0);
+        fillInCluster(concurrentCnt);
 
         IntStream.range(0, concurrentCnt).forEach(i -> {
             executors.submit(() -> {
@@ -145,12 +148,14 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
         });
 
         latch.await(11, TimeUnit.SECONDS);
+        waitConditionUntilTimeOut(() -> concurrentCnt == successCnt.get(), 100000);
         Assert.assertEquals(concurrentCnt, successCnt.get());
     }
 
     @Test
-    // modify /opt/config/100004374/qconfig/datasource.properties, make maxActive=1
     public void testOneDBConnectMigration() {
+        fillInCluster(1);
+
         BeaconMigrationRequest request = new BeaconMigrationRequest();
         request.setClusterName("cluster0");
         request.setIsForced(true);
@@ -165,10 +170,11 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testSlowDb() throws Throwable {
-        readDelay = 1000;
-        writeDelay = 1000;
-        int concurrentCnt = 5;
+        readDelay = 100;
+        writeDelay = 500;
+        int concurrentCnt = 4;
         CountDownLatch latch = new CountDownLatch(concurrentCnt);
+        fillInCluster(concurrentCnt);
 
         IntStream.range(0, concurrentCnt).forEach(i -> {
             executors.submit(() -> {
@@ -196,27 +202,14 @@ public class BeaconSyncMigrationTest extends AbstractConsoleIntegrationTest {
                 success.set(success.get() & clusterTbl.getActivedcId() == 2);
             });
             return success.get();
-        }, 50000);
+        }, 100000);
     }
 
-    @Ignore
-    @Test
-    public void fillInData() {
+    public void fillInCluster(int clusterCnt) {
         List<DcTbl> dcs = dcService.findAllDcs();
-        IntStream.range(0, 1000).forEach(i -> {
+        IntStream.range(0, clusterCnt).forEach(i -> {
             clusterService.createCluster(mockCluster(i, dcs));
         });
-    }
-
-    @Test
-    public void restDrData() throws Exception {
-        executeSqlScript(
-                "use fxxpipedb;\n" +
-                        "update cluster_tbl set status='Normal', migration_event_id=0, activedc_id=1 where 1;\n" +
-                        "truncate table migration_event_tbl;\n" +
-                        "truncate table migration_cluster_tbl;\n" +
-                        "truncate table migration_shard_tbl;"
-        );
     }
 
     private boolean checkConsoleHealth() {

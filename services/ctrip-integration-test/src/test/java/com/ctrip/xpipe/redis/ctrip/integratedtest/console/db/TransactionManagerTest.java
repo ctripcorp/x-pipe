@@ -1,14 +1,12 @@
 package com.ctrip.xpipe.redis.ctrip.integratedtest.console.db;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import com.ctrip.xpipe.redis.ctrip.integratedtest.console.AbstractCtripConsoleIntegrationTest;
+import org.junit.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -17,13 +15,13 @@ import java.io.IOException;
  * @author lishanglin
  * date 2021/4/20
  */
-public class TransactionManagerTest extends AbstractConsoleIntegrationTest {
+public class TransactionManagerTest extends AbstractCtripConsoleIntegrationTest {
 
     @Autowired
-    public MigrationEventDao migrationEventDao;
+    private MigrationEventDao migrationEventDao;
 
     @Autowired
-    public ClusterService clusterService;
+    private ClusterService clusterService;
 
     @Test
     public void testTransactionRollback() {
