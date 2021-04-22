@@ -62,7 +62,9 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-        // no nothing
+        downgradeBeginTime = 0;
+        needDowngrade.set(false);
+        resetCheckResult();
     }
 
     private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
