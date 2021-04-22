@@ -128,7 +128,7 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
 
     protected abstract Logger getHealthCheckLogger();
 
-    protected boolean shouldCheck() {
+    protected boolean shouldCheck(HealthCheckInstance instance) {
         for (HealthCheckActionController controller : controllers) {
             if (!controller.shouldCheck(instance)) {
                 CheckInfo checkInfo = getActionInstance().getCheckInfo();
@@ -169,7 +169,7 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
 
         @Override
         protected void doRun() {
-            if (shouldCheck()) {
+            if (shouldCheck(instance)) {
                 doTask();
             }
         }

@@ -6,11 +6,12 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractClusterLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ import java.util.Map;
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
+public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport {
 
     private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 
@@ -35,18 +36,21 @@ public class SentinelHelloCheckActionFactory extends AbstractRedisLeaderAwareHea
 
     private Persistence persistence;
 
+    private MetaCache metaCache;
+
     @Autowired
     public SentinelHelloCheckActionFactory(List<SentinelHelloCollector> collectors, List<SentinelActionController> controllers,
-                                           CheckerConfig checkerConfig, CheckerDbConfig checkerDbConfig, Persistence persistence) {
+                                           CheckerConfig checkerConfig, CheckerDbConfig checkerDbConfig, Persistence persistence, MetaCache metaCache) {
         this.checkerDbConfig = checkerDbConfig;
         this.persistence = persistence;
         this.collectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(collectors);
         this.controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
+        this.metaCache = metaCache;
     }
 
     @Override
-    public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
-        SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, checkerDbConfig, persistence);
+    public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
+        SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, checkerDbConfig, persistence, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         action.addListeners(collectorsByClusterType.get(clusterType));
         action.addControllers(controllersByClusterType.get(clusterType));

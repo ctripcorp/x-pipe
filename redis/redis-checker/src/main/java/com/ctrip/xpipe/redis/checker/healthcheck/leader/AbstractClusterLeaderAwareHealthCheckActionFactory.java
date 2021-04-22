@@ -15,7 +15,7 @@ public abstract class AbstractClusterLeaderAwareHealthCheckActionFactory extends
         implements ClusterHealthCheckActionFactory<SiteLeaderAwareHealthCheckAction> {
 
     @Autowired
-    private HealthCheckInstanceManager healthCheckInstanceManager;
+    protected HealthCheckInstanceManager healthCheckInstanceManager;
 
     @Override
     protected List<ClusterHealthCheckInstance> getAllInstances() {
