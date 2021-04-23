@@ -61,7 +61,7 @@ public class MockMigrationCommandBuilder implements MigrationCommandBuilder {
         @Override
         protected void doExecute() throws Throwable {
             try {
-                TimeUnit.MICROSECONDS.sleep(delayMilli);
+                TimeUnit.MILLISECONDS.sleep(delayMilli);
             } catch (Exception e) {
                 logger.info("[sleep] fail", e);
             }
