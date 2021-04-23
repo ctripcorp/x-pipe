@@ -150,6 +150,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         errors = Maps.newConcurrentMap();
     }
 
+    @Override
     protected boolean shouldCheck(HealthCheckInstance checkInstance) {
         long current = System.currentTimeMillis();
         if( current - lastStartTime < getIntervalMilli()){
