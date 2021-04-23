@@ -204,21 +204,21 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     Set<HostPort> checkTrueMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
-        if (hellos.isEmpty())
-            return metaMaster == null ? Sets.newHashSet() : Sets.newHashSet(metaMaster);
 
-        Set<HostPort> sentinelMasters = new HashSet<>();
-        hellos.forEach(sentinelHello -> {
-            sentinelMasters.add(sentinelHello.getMasterAddr());
-        });
+        Set<HostPort> currentCollectedMasters = collectMetaMasterAndHelloMasters(metaMaster, hellos);
+        if (currentMasterConsistent(currentCollectedMasters))
+            return currentCollectedMasters;
+
+        if (currentCollectedMasters.isEmpty())
+            return Sets.newHashSet();
 
         Set<HostPort> trueMasters = new HashSet<>();
-        sentinelMasters.forEach(sentinelMaster -> {
-            RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(sentinelMaster.getHost(), sentinelMaster.getPort())), scheduled);
+        currentCollectedMasters.forEach(currentCollectedMaster -> {
+            RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(currentCollectedMaster.getHost(), currentCollectedMaster.getPort())), scheduled);
             try {
                 Role role = roleCommand.execute().get(550, TimeUnit.MILLISECONDS);
                 if (role instanceof MasterRole) {
-                    trueMasters.add(sentinelMaster);
+                    trueMasters.add(currentCollectedMaster);
                 }
             } catch (Throwable e) {
                 logger.error("[checkMaster] check redis role err", e);
@@ -226,6 +226,21 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         });
 
         return trueMasters;
+    }
+
+    Set<HostPort> collectMetaMasterAndHelloMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
+        Set<HostPort> masters = new HashSet<>();
+        hellos.forEach(sentinelHello -> {
+            masters.add(sentinelHello.getMasterAddr());
+        });
+
+        if (metaMaster != null)
+            masters.add(metaMaster);
+        return masters;
+    }
+
+    boolean currentMasterConsistent(Set<HostPort> currentMasters){
+        return currentMasters!=null && currentMasters.size()==1;
     }
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
