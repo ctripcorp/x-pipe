@@ -75,7 +75,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
         hellos.add(new SentinelHello(sentinels.iterator().next(), remoteDcMAster, sentinelMonitorName));
         hellos.add(new SentinelHello(sentinels.iterator().next(), masterAddr, "error-monitor-name"));
 
-        Set<SentinelHello> needDeletedHello = collector.checkAndDelete(sentinelMonitorName, sentinels, hellos, quorumConfig, masterAddr);
+        Set<SentinelHello> needDeletedHello = collector.checkStaleHellos(sentinelMonitorName, sentinels, hellos, quorumConfig, masterAddr);
         logger.info("[testDeleted] {}", needDeletedHello);
         Assert.assertEquals(3, needDeletedHello.size());
         Assert.assertFalse(needDeletedHello.contains(normalHello));
