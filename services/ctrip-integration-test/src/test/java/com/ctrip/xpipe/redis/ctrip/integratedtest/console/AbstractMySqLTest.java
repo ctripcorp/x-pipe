@@ -8,8 +8,6 @@ import com.github.dockerjava.api.model.Ports;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -34,8 +32,7 @@ public class AbstractMySqLTest extends AbstractConsoleDbTest {
 
     protected static final boolean USE_EMBED_MYSQL = Boolean.parseBoolean(System.getProperty("xpipe.mysql.embed", "true"));
 
-    @ClassRule
-    public static MySQLContainer mysqlContainer = (MySQLContainer) new MySQLContainer(DockerImageName.parse("mysql:5.7.23"))
+    private static MySQLContainer mysqlContainer = (MySQLContainer) new MySQLContainer(DockerImageName.parse("mysql:5.7.23"))
             .withDatabaseName(MYSQL_TEST_DATABASE)
             .withUsername(MYSQL_ROOT_USER)
             .withPassword(MYSQL_ROOT_PASSWORD)

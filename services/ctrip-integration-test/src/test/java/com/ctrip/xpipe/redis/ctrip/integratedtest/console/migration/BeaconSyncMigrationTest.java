@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMys
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.collect.Sets;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +39,7 @@ import org.unidal.lookup.ContainerLoader;
 import javax.annotation.PostConstruct;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -206,8 +205,12 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     }
 
     public void fillInCluster(int clusterCnt) {
+        fillInCluster(0, clusterCnt);
+    }
+
+    public void fillInCluster(int startIndex, int clusterCnt) {
         List<DcTbl> dcs = dcService.findAllDcs();
-        IntStream.range(0, clusterCnt).forEach(i -> {
+        IntStream.range(startIndex, startIndex + clusterCnt).forEach(i -> {
             clusterService.createCluster(mockCluster(i, dcs));
         });
     }
@@ -223,15 +226,20 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
         }
     }
 
-    private void concurrentMigration() {
+    @Test
+    @Ignore
+    public void concurrentMigration() {
         AtomicInteger rounds = new AtomicInteger(0);
+        Set<String> successClusters = Sets.newConcurrentHashSet();
 
         do {
-            long startIndex = rounds.get() * 2;
+            long startIndex = rounds.get() * 1000;
             logger.info("[concurrentMigration] rounds {} start", rounds.get());
-            IntStream.range(0, 2).forEach(i -> {
+            IntStream.range(0, 1000).forEach(i -> {
                 migrationExecutors.execute(() -> {
                     String cluster = "cluster" + ((startIndex + i) % 1000);
+                    if (successClusters.contains(cluster)) return;
+
                     try {
                         BeaconMigrationRequest request = new BeaconMigrationRequest();
                         request.setIsForced(true);
@@ -244,6 +252,9 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
                                 request, BeaconMigrationResponse.class);
                         if (0 != response.getCode()) {
                             logger.info("[concurrentMigration][{}] migration fail {}", cluster, response.getMsg());
+                        } else {
+                            logger.info("[concurrentMigration][{}] migration success {}", cluster, response.getMsg());
+                            successClusters.add(cluster);
                         }
                     } catch (Exception e) {
                         logger.info("[concurrentMigration][{}] req fail", cluster, e);
