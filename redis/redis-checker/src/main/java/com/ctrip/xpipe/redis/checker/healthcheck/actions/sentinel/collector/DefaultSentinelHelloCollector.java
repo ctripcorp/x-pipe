@@ -152,25 +152,25 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
-//        check stale hellos
+        // check stale hellos
         Set<SentinelHello> toDelete = checkStaleHellos(sentinelMonitorName, sentinels, hellos, quorumConfig, trueMaster);
 
-//        check true master
+        // check true master
         Set<HostPort> trueMasters = checkTrueMasters(trueMaster, hellos);
-        if (!trueMasterConfirmed(trueMasters)) {
+        if (!currentMasterConsistent(trueMasters)) {
             String message = String.format("sentinel group monitored inconsistent masters, monitorName:%s, masters:%s ",sentinelMonitorName, trueMasters);
             alertManager.alert(clusterId, shardId, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
             return;
         }
         trueMaster = trueMasters.iterator().next();
 
-//        check wrong master hellos
+        // check wrong master hellos
         toDelete.addAll(checkWrongMasterHellos(hellos, trueMaster));
 
-//        checkReset
+        // checkReset
         checkReset(clusterId, shardId, sentinelMonitorName, hellos);
 
-//        check add
+        // check add
         Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, sentinels, hellos, trueMaster, quorumConfig);
 
         doAction(sentinelMonitorName, trueMaster, toDelete, toAdd, quorumConfig);
@@ -188,7 +188,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return metaCache.findMaster(info.getClusterId(), info.getShardId());
     }
 
-    Set<SentinelHello> checkWrongMasterHellos(Set<SentinelHello> hellos, HostPort trueMaster) {
+    @VisibleForTesting
+    protected Set<SentinelHello> checkWrongMasterHellos(Set<SentinelHello> hellos, HostPort trueMaster) {
         Set<SentinelHello> wrongMasters = new HashSet<>();
         for (SentinelHello sentinelHello : hellos) {
             if (!sentinelHello.getMasterAddr().equals(trueMaster)) {
@@ -199,11 +200,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return wrongMasters;
     }
 
-    boolean trueMasterConfirmed(Set<HostPort> trueMasters) {
-        return trueMasters != null && trueMasters.size() == 1;
-    }
-
-    Set<HostPort> checkTrueMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
+    @VisibleForTesting
+    protected Set<HostPort> checkTrueMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
 
         Set<HostPort> currentCollectedMasters = collectMetaMasterAndHelloMasters(metaMaster, hellos);
         if (currentMasterConsistent(currentCollectedMasters))
@@ -228,7 +226,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return trueMasters;
     }
 
-    Set<HostPort> collectMetaMasterAndHelloMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
+    @VisibleForTesting
+    protected Set<HostPort> collectMetaMasterAndHelloMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
         Set<HostPort> masters = new HashSet<>();
         hellos.forEach(sentinelHello -> {
             masters.add(sentinelHello.getMasterAddr());
@@ -239,10 +238,46 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return masters;
     }
 
-    boolean currentMasterConsistent(Set<HostPort> currentMasters){
-        return currentMasters!=null && currentMasters.size()==1;
+    @VisibleForTesting
+    protected Set<SentinelHello> checkStaleHellos(String sentinelMonitorName, Set<HostPort> sentinels,
+                                        Set<SentinelHello> hellos, QuorumConfig quorumConfig, HostPort masterAddr) {
+
+        Set<SentinelHello> toDelete = new HashSet<>();
+
+        hellos.forEach((hello) -> {
+
+            if (!hello.getMonitorName().equals(sentinelMonitorName)) {
+                toDelete.add(hello);
+            }
+        });
+
+        hellos.forEach((hello) -> {
+            HostPort sentinel = hello.getSentinelAddr();
+            if (!sentinels.contains(sentinel)) {
+                toDelete.add(hello);
+            }
+
+        });
+
+        hellos.forEach((hello) -> {
+            if (isHelloMasterInWrongDc(hello)) {
+                toDelete.add(hello);
+            }
+        });
+
+        toDelete.forEach((delete) -> {
+            hellos.remove(delete);
+        });
+
+        return toDelete;
     }
 
+    @VisibleForTesting
+    protected boolean currentMasterConsistent(Set<HostPort> currentMasters) {
+        return currentMasters != null && currentMasters.size() == 1;
+    }
+
+    @VisibleForTesting
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
 
         Set<HostPort> allKeepers = metaCache.getAllKeepers();
@@ -408,39 +443,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     }
 
-    protected Set<SentinelHello> checkStaleHellos(String sentinelMonitorName, Set<HostPort> sentinels,
-                                                  Set<SentinelHello> hellos, QuorumConfig quorumConfig, HostPort masterAddr) {
 
-        Set<SentinelHello> toDelete = new HashSet<>();
-
-        hellos.forEach((hello) -> {
-
-            if (!hello.getMonitorName().equals(sentinelMonitorName)) {
-                toDelete.add(hello);
-            }
-        });
-
-        hellos.forEach((hello) -> {
-            HostPort sentinel = hello.getSentinelAddr();
-            if (!sentinels.contains(sentinel)) {
-                toDelete.add(hello);
-            }
-
-        });
-
-        hellos.forEach((hello) -> {
-            if (isHelloMasterInWrongDc(hello)) {
-                toDelete.add(hello);
-            }
-        });
-
-        toDelete.forEach((delete) -> {
-            hellos.remove(delete);
-        });
-
-        return toDelete;
-    }
-
+    @VisibleForTesting
     protected boolean isHelloMasterInWrongDc(SentinelHello hello) {
         // delete check for master not in primary dc
         HostPort hostPort = hello.getMasterAddr();
