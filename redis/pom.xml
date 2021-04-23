@@ -18,6 +18,7 @@
 		<module>redis-checker</module>
 		<module>redis-integration-test</module>
 		<module>redis-proxy</module>
+		<module>redis-proxy-client</module>
 	</modules>
 
 	<profiles>
