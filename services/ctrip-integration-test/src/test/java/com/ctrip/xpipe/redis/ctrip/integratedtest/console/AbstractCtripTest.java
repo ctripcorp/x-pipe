@@ -98,7 +98,7 @@ public class AbstractCtripTest extends AbstractMySqLTest {
     }
 
     protected static String datasourcesXml() throws Exception {
-        return prepareDatasFromFile("src/test/resources/datasources.xml");
+        return prepareDatasFromFile("src/test/resources/local-datasources.xml");
     }
 
     protected static String ssoClientProperties() throws Exception {
