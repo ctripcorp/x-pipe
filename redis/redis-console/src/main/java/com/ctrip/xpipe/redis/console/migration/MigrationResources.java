@@ -43,9 +43,9 @@ public class MigrationResources {
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxPrepareThreads,
                 maxPrepareThreads,
                 120L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(maxPrepareThreads/2),
+                new ArrayBlockingQueue<>(maxPrepareThreads),
                 XpipeThreadFactory.create(MIGRATION_PREPARE_EXECUTOR),
-                new ThreadPoolExecutor.CallerRunsPolicy());
+                new ThreadPoolExecutor.AbortPolicy());
         poolExecutor.allowCoreThreadTimeOut(true);
         return MoreExecutors.getExitingExecutorService(
                 poolExecutor,
