@@ -59,7 +59,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
         return false;
     }
 
-    private void doShardCheck(MigrationCluster migrationCluster) {
+    protected void doShardCheck(MigrationCluster migrationCluster) {
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
 

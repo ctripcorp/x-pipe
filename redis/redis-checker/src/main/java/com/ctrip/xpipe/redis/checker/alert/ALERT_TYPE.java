@@ -426,6 +426,22 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("unregister cluster monitor too many", "too many clusters need to be excluded one round, skip");
         }
+    },
+    MIGRATION_DATA_CONFLICT("migration info conflict", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("unexpected migration data", "migration info conflict, maybe block migration");
+        }
     };
 
     private String simpleDesc;

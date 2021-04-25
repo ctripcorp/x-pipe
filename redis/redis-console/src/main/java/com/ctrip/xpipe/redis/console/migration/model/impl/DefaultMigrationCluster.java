@@ -423,7 +423,6 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         logger.info("[update]{}", args);
         this.currentState.refresh();
-//        notifyObservers(this);
     }
 
     @Override
@@ -492,5 +491,10 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @VisibleForTesting
     public MigrationState getMigrationState() {
         return currentState;
+    }
+
+    @VisibleForTesting
+    public void setMigrationState(MigrationState state) {
+        this.currentState = state;
     }
 }
