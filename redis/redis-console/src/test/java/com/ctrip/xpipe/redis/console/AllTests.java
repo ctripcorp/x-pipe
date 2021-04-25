@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoT
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
@@ -39,10 +40,6 @@ import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationLockTe
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
@@ -87,6 +84,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterMetaServiceMigrationStatusChangeTest.class,
         DcServiceImplTest.class,
 
+        MigrationStateUpdateStatTest.class,
         StateMachineTest.class,
         MigrationStatusTest.class,
         ClusterMetaModifiedNotifierTest.class,

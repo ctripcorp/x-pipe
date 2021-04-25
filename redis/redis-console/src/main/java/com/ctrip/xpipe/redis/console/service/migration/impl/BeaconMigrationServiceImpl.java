@@ -58,7 +58,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private AlertManager alertManager;
 
-    @Resource( name = MigrationResources.MIGRATION_EXECUTOR )
+    @Resource( name = MigrationResources.MIGRATION_PREPARE_EXECUTOR )
     private Executor executors;
 
     private ScheduledExecutorService scheduled;
