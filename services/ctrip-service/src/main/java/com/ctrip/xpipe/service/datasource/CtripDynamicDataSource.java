@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.service.datasource;
 
 import com.ctrip.datasource.configure.DalDataSourceFactory;
+import com.ctrip.platform.dal.dao.configure.FirstAidKit;
+import com.ctrip.platform.dal.dao.configure.SerializableDataSourceConfig;
 import com.ctrip.platform.dal.dao.datasource.ClusterDynamicDataSource;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSourceAdapter;
 import com.ctrip.xpipe.service.fireman.ForceSwitchableDataSourceHolder;
@@ -8,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
+import org.unidal.dal.jdbc.datasource.JdbcDataSourceDescriptor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -41,6 +44,12 @@ public class CtripDynamicDataSource implements DataSource {
 
     @Override
     public DataSourceDescriptor getDescriptor() {
+        FirstAidKit firstAidKit = dataSource.getFirstAidKit();
+        if (firstAidKit instanceof SerializableDataSourceConfig) {
+            ((JdbcDataSourceDescriptor)descriptor)
+                    .setProperty("url", ((SerializableDataSourceConfig) firstAidKit).getConnectionUrl());
+        }
+
         return descriptor;
     }
 
