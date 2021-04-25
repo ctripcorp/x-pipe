@@ -137,6 +137,8 @@
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" multiple="true"/>
 		<relation name="organization-info" entity-name="organization-tbl" entity-alias="ot"/>
+		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
+		<relation name="migration-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
 
 		<updatesets>
 			<updateset name="MIGRATION_STATUS" >
@@ -174,6 +176,11 @@
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
 			</readset>
+			<readset name="FULL_WITH_MIGRATION_OVERVIEW">
+				<readset-ref name="FULL"/>
+				<readset-ref name="ID" relation-name="migration-event"/>
+				<readset-ref name="STATUS" relation-name="migration-clusters"/>
+			</readset>
 		</readsets>
 		
 		<query-defs>
@@ -206,6 +213,16 @@
 					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='cluster-type' /> = ${cluster-type}
 					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-migrating-clusters-overview" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join <TABLE name='migration-event'/> on <FIELD name='migration-event-id'/> = met.id
+					left join <TABLE name='migration-clusters'/> on met.id = mct.migration_event_id
+					WHERE <FIELD name='status'/> != "Normal"
 					]]>
 				</statement>
 			</query>
@@ -1285,6 +1302,9 @@
 				<readset-ref name="FULL"/>
 				<readset-ref name="FULL" relation-name="redundant-clusters"/>
 				<readset-ref name="FULL" relation-name="redundant-shards"/>
+			</readset>
+			<readset name="ID">
+				<member name="id" />
 			</readset>
 		</readsets>
 		

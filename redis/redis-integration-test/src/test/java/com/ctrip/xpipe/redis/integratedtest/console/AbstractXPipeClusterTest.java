@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.integratedtest.console;
 
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
@@ -43,7 +43,7 @@ import static com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig.K
  * @author lishanglin
  * date 2021/2/3
  */
-public abstract class AbstractXPipeClusterTest extends AbstractConsoleH2DbTest {
+public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
 
     protected RestOperations restTemplate;
 

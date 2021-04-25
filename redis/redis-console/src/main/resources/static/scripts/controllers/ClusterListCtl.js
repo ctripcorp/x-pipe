@@ -3,13 +3,17 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
 
         $rootScope.currentNav = '1-2';
         $scope.dcs = {};
+        $scope.clusterId = $stateParams.clusterId;
         $scope.clusterName = $stateParams.clusterName;
         $scope.containerId = $stateParams.keepercontainer;
         $scope.getClusterActiveDc = getClusterActiveDc;
         $scope.getTypeName = getTypeName;
         $scope.preDeleteCluster = preDeleteCluster;
         $scope.deleteCluster = deleteCluster;
+        $scope.preResetClusterStatus = preResetClusterStatus;
+        $scope.resetClusterStatus = resetClusterStatus;
         $scope.showUnhealthyClusterOnly = false;
+        $scope.showErrorMigratingClusterOnly = false;
         $scope.dcName = $stateParams.dcName;
         $scope.type = $stateParams.type;
         $scope.clusterTypes = ClusterType.selectData()
@@ -77,6 +81,27 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
 				})
 			}
 
+        function preResetClusterStatus(clusterName, clusterId) {
+            $scope.clusterId = clusterId;
+            $scope.clusterName = clusterName;
+            console.log($scope);
+            console.log(clusterName, clusterId);
+            $('#resetClusterStatusConfirm').modal('show');
+        }
+        function resetClusterStatus() {
+            ClusterService.resetClusterStatus($scope.clusterId)
+                .then(function (result) {
+                    $('#resetClusterStatusConfirm').modal('hide');
+                    toastr.success('重置成功');
+                    setTimeout(function () {
+                        // TODO [marsqing] reload ng-table instead of reload window
+                        $window.location.reload();
+                    },1000);
+                }, function (result) {
+                    toastr.error(AppUtil.errorMsg(result), '重置失败');
+                })
+        }
+
         $scope.refresh = function() {
             showClusters();
         }
@@ -84,6 +109,8 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
         function showClusters() {
             if ($scope.showUnhealthyClusterOnly === true) {
                 showUnhealthyClusters();
+            } else if ($scope.showErrorMigratingClusterOnly === true){
+                showErrorMigratingClusters();
             } else if ($scope.dcName){
                 if ($scope.type === "activeDC"){
                     showClustersByActiveDc($scope.dcName);
@@ -101,6 +128,11 @@ index_module.controller('ClusterListCtl', ['$rootScope', '$scope', '$window', '$
 
         function showUnhealthyClusters() {
             ClusterService.getUnhealthyClusters()
+                .then(loadTable);
+        }
+
+        function showErrorMigratingClusters() {
+            ClusterService.getErrorMigratingClusters()
                 .then(loadTable);
         }
 

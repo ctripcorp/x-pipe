@@ -8,6 +8,9 @@
                         <input type="checkbox" class="ace ace-checkbox-2" id="ace-settings-navbar"
                                ng-model="showUnhealthyClusterOnly" ng-change="refresh()" />
                         <label class="lbl" for="ace-settings-navbar">显示问题Cluster</label>
+                        <input type="checkbox" class="ace ace-checkbox-2" id="ace-settings-navbar-error-migrating"
+                               ng-model="showErrorMigratingClusterOnly" ng-change="refresh()" />
+                        <label class="lbl" for="ace-settings-navbar-error-migrating">显示迁移异常Cluster</label>
                     </div>
                 </div>
 
@@ -44,6 +47,7 @@
                     <a href="/#/migration_event_list?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">Migration</a>&nbsp;
                     <a href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=update" class="btn btn-info btn-xs">修改</a>
                     <a class="btn btn-danger btn-xs" ng-click="preDeleteCluster(cluster.clusterName)">删除</a>
+                    <a class="btn btn-danger btn-xs" ng-click="preResetClusterStatus(cluster.clusterName, cluster.id)">重置状态</a>
                 </td>
             </tr>
             <tr ng-repeat-end ng-show="cluster.showDetail">
@@ -68,4 +72,8 @@
 <xpipeconfirmdialog xpipe-dialog-id="'deleteClusterConfirm'" xpipe-title="'删除 cluster'"
                     xpipe-detail="'您确定要删除该cluster下的所有内容吗（所有的shards以及相应的redis实例都将被删除）?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="deleteCluster"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'resetClusterStatusConfirm'" xpipe-title="'重置cluster状态'"
+                    xpipe-detail="'您确定要重置该cluster的状态吗（当前迁移任务可能收到影响）?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="resetClusterStatus"></xpipeconfirmdialog>
 

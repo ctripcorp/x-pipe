@@ -35,6 +35,13 @@ public interface ClusterService {
 	List<String> reBalanceSentinels(String dcName, int numOfClusters, boolean activeOnly);
 	void reBalanceClusterSentinels(String dcName, List<String> clusterNames);
 
+	List<ClusterTbl> findErrorMigratingClusters();
+	default void resetClustersStatus(List<Long> ids) {
+		for (Long id : ids) {
+			updateStatusById(id, ClusterStatus.Normal);
+		}
+	}
+
 	List<ClusterListUnhealthyClusterModel> findUnhealthyClusters();
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
 	List<ClusterTbl> findActiveClustersByDcName(String dcName);

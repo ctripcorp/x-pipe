@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -21,7 +21,7 @@ import java.io.IOException;
  */
 @SpringBootApplication(exclude = { EmbeddedServletContainerAutoConfiguration.class, WebMvcAutoConfiguration.class })
 @ComponentScan(basePackages = {"com.ctrip.xpipe.redis.console"})
-public class HealthCheckerTest extends AbstractConsoleH2DbTest {
+public class HealthCheckerTest extends AbstractConsoleDbTest {
 
 	@Before
 	public void startUp() {
