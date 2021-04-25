@@ -7,6 +7,8 @@ import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -14,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceManager> {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProxyUtil.class);
 
     private ConcurrentMap<Object, SocketAddress> socketAddressMap = Maps.newConcurrentMap();
 
@@ -26,12 +30,14 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     }
 
     public synchronized void registerProxy(String ip, int port, String routeInfo) {
+        logger.info("[Proxy] register for {}:{} -> {}", ip, port, routeInfo);
         put(new InetSocketAddress(ip, port), getProxyProtocol(ip, port, routeInfo));
     }
 
     public synchronized ProxyResourceManager unregisterProxy(String ip, int port) throws Exception {
         ProxyResourceManager proxyResourceManager = remove(new InetSocketAddress(ip, port));
         if (proxyResourceManager != null) {
+            logger.info("[Proxy] unregister for {}:{}", ip, port);
             proxyResourceManager.stop();
         }
         return proxyResourceManager;

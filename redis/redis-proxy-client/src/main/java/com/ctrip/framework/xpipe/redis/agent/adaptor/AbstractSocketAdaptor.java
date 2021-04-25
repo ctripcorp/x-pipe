@@ -7,7 +7,7 @@ public abstract class AbstractSocketAdaptor extends ClassVisitor {
     protected boolean isInterface;
 
     public AbstractSocketAdaptor(ClassVisitor cv) {
-        super(Opcodes.ASM4, cv);
+        super(Opcodes.ASM7_EXPERIMENTAL, cv);
     }
 
     @Override
