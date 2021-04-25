@@ -17,6 +17,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.console.model.ClusterTblEntity.READSET_FULL_WITH_MIGRATION_OVERVIEW;
+
 
 /**
  * @author shyin
@@ -284,6 +286,12 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 				return clusterTblDao.findClustersAndOrgWithClusterNames(clusterNames,
 						ClusterTblEntity.READSET_FULL_WITH_ORG);
 			}
+		});
+	}
+
+	public List<ClusterTbl> findAllClusterMigrationOverview() {
+		return queryHandler.handleQuery(() -> {
+			return clusterTblDao.findMigratingClustersOverview(READSET_FULL_WITH_MIGRATION_OVERVIEW);
 		});
 	}
 }

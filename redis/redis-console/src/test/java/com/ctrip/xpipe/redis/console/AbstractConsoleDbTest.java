@@ -29,12 +29,16 @@ import java.sql.SQLException;
  *         <p>
  *         Mar 17, 2017
  */
-public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
+public class AbstractConsoleDbTest extends AbstractConsoleTest {
 
     public static String DATA_SOURCE = "fxxpipe";
 
     public static final String TABLE_STRUCTURE = "sql/h2/xpipedemodbtables.sql";
     public static final String TABLE_DATA = "sql/h2/xpipedemodbinitdata.sql";
+
+    public static final String MYSQL_TABLE_STRUCTURE = "sql/mysql/xpipedemodbtables.sql";
+    public static final String MYSQL_TABLE_DATA = "sql/mysql/xpipedemodbinitdata.sql";
+
     protected String[] dcNames = new String[]{"jq", "oy"};
 
     @BeforeClass
@@ -54,16 +58,11 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
 
     @Before
     public void before() throws ComponentLookupException, SQLException, IOException {
-//        ContainerLoader.getDefaultContainer().lookup(TransactionManager.class, "xpipe");
-//        ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class, "xpipe");
         setUpTestDataSource();
     }
 
     @After
     public void tearDown() throws ComponentLookupException {
-//        Assert.assertFalse(ContainerLoader.getDefaultContainer().lookup(TransactionManager.class) instanceof DefaultTransactionManager);
-//        Assert.assertTrue(ContainerLoader.getDefaultContainer().lookup(TransactionManager.class) instanceof XpipeDalTransactionManager);
-//        Assert.assertTrue(ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class) instanceof XPipeDataSourceManager);
         ContainerLoader.destroy();
     }
 
@@ -78,7 +77,8 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
             executeSqlScript(FileUtils.readFileAsString(TABLE_STRUCTURE));
             executeSqlScript(FileUtils.readFileAsString(TABLE_DATA));
         } else {
-            logger.info("[setUpTestDataSource][do not clean]{}", driver);
+            executeSqlScript(FileUtils.readFileAsString(MYSQL_TABLE_STRUCTURE));
+            executeSqlScript(FileUtils.readFileAsString(MYSQL_TABLE_DATA));
         }
 
         executeSqlScript(prepareDatas());
@@ -105,6 +105,8 @@ public class AbstractConsoleH2DbTest extends AbstractConsoleTest {
             conn.setAutoCommit(false);
             if (!Strings.isEmpty(prepareSql)) {
                 for (String sql : prepareSql.split(";")) {
+                    if (StringUtil.isEmpty(sql))
+                        continue;
                     logger.debug("[setup][data]{}", sql.trim());
                     stmt = conn.prepareStatement(sql);
                     stmt.executeUpdate();

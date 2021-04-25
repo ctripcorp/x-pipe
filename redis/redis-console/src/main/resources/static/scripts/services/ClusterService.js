@@ -31,6 +31,10 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
             method: 'DELETE',
             url: '/console/clusters/:clusterName'
         },
+        reset_cluster_status: {
+            method: 'POST',
+            url: '/console/clusters/reset/status'
+        },
         find_clusters_batch : {
         	method : 'GET',
         	url : '/console/clusters?page=:page&size=:size',
@@ -61,6 +65,11 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         get_unhealthy_clusters: {
             method: 'GET',
             url: '/console/clusters/unhealthy',
+            isArray: true
+        },
+        get_error_migrating_clusters: {
+            method: 'GET',
+            url: '/console/clusters/error/migrating',
             isArray: true
         },
         find_clusters_by_dc_name_bind :{
@@ -253,9 +262,33 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         return d.promise;
     }
 
+    function resetClusterStatus(clusterId) {
+        var d = $q.defer();
+        resource.reset_cluster_status([
+                clusterId
+            ],
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function getUnhealthyClusters() {
         var d = $q.defer();
         resource.get_unhealthy_clusters({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getErrorMigratingClusters() {
+        var d = $q.defer();
+        resource.get_error_migrating_clusters({},
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -331,6 +364,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         createCluster: createCluster,
         updateCluster: updateCluster,
         deleteCluster: deleteCluster,
+        resetClusterStatus: resetClusterStatus,
         findClusterBatch : findClusterBatch,
         getClustersCount : getClustersCount,
         bindDc: bindDc,
@@ -338,6 +372,7 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getOrganizations: getOrganizations,
         getInvolvedOrgs: getInvolvedOrgs,
         getUnhealthyClusters: getUnhealthyClusters,
+        getErrorMigratingClusters: getErrorMigratingClusters,
         getUnhealthyShards: getUnhealthyShards,
         findClustersByDcNameBind: findClustersByDcNameBind,
         findClustersByDcName : findClustersByDcName,
