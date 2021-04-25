@@ -62,7 +62,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <createSourcesJar>true</createSourcesJar>
+                            <createSourcesJar>false</createSourcesJar>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <artifactSet>
                                 <includes>
@@ -83,19 +83,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <url>
-                http://maven.release.ctripcorp.com/nexus/content/repositories/fxrelease
-            </url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <url>
-                http://maven.release.ctripcorp.com/nexus/content/repositories/fxsnapshot
-            </url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
