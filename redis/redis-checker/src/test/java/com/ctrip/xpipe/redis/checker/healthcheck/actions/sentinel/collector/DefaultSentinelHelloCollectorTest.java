@@ -23,6 +23,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.mockito.Matchers.any;
@@ -83,6 +84,69 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         if (server != null) {
             server.stop();
         }
+    }
+
+
+    @Test
+    public void checkTrueMastersTest() throws Exception {
+//        meta master and hello masters all empty
+        Set<SentinelHello> hellos = new HashSet<>();
+        Set<HostPort> trueMasters = sentinelCollector.checkTrueMasters(null, hellos);
+        Assert.assertTrue(trueMasters.isEmpty());
+
+//        meta master and hello masters consistent
+        HostPort helloMaster = new HostPort(LOCAL_HOST, randomPort());
+        SentinelHello hello1 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), helloMaster, monitorName);
+        SentinelHello hello2 = new SentinelHello(new HostPort(LOCAL_HOST, 5001), helloMaster, monitorName);
+        SentinelHello hello3 = new SentinelHello(new HostPort(LOCAL_HOST, 5002), helloMaster, monitorName);
+        SentinelHello hello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), helloMaster, monitorName);
+        SentinelHello hello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), helloMaster, monitorName);
+        hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
+
+        trueMasters = sentinelCollector.checkTrueMasters(helloMaster, hellos);
+        Assert.assertEquals(1, trueMasters.size());
+        Assert.assertTrue(trueMasters.contains(helloMaster));
+
+//        meta master null and hello master consistent
+        trueMasters = sentinelCollector.checkTrueMasters(null, hellos);
+        Assert.assertEquals(1, trueMasters.size());
+        Assert.assertTrue(trueMasters.contains(helloMaster));
+
+//        meta master inconsistent with hello master
+
+        //double masters
+        HostPort metaMaster = new HostPort(LOCAL_HOST, randomPort());
+
+        Server metaMasterServer = startServer(metaMaster.getPort(), "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":" + metaMaster.getPort() + "\r\n");
+        Server helloMasterServer = startServer(helloMaster.getPort(), "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":" + helloMaster.getPort() + "\r\n");
+        trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
+        Assert.assertEquals(2, trueMasters.size());
+        metaMasterServer.stop();
+
+
+        //single master
+        metaMaster = new HostPort(LOCAL_HOST, randomPort());
+        trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
+        Assert.assertEquals(1, trueMasters.size());
+        Assert.assertTrue(trueMasters.contains(helloMaster));
+        helloMasterServer.stop();
+
+        //no masters
+        helloMaster = new HostPort(LOCAL_HOST, randomPort());
+        hello1 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), helloMaster, monitorName);
+        hello2 = new SentinelHello(new HostPort(LOCAL_HOST, 5001), helloMaster, monitorName);
+        hello3 = new SentinelHello(new HostPort(LOCAL_HOST, 5002), helloMaster, monitorName);
+        hello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), helloMaster, monitorName);
+        hello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), helloMaster, monitorName);
+        hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
+        trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
+        Assert.assertEquals(0, trueMasters.size());
     }
 
     @Test
@@ -171,6 +235,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     // And so on so forth, backup(DR) site redises receive message from keeper, which, apparently will be nothing
     // 3. A protection collection will be triggered if an empty Sentinel Hello set is received
     @Test
+    @Ignore
     public void testEmptySentinelLogDueToDoubleMasterInOneShard() throws Exception {
         String clusterId = "clusterId", shardId = "shardId";
         monitorName = shardId;

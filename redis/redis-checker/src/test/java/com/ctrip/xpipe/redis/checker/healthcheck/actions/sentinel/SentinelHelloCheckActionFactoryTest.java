@@ -50,7 +50,7 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
         collector1 = spy(collector1);
         collector2 = spy(collector2);
         SentinelHelloCheckAction action = (SentinelHelloCheckAction) factory
-                .create(newRandomRedisHealthCheckInstance("dc2", randomPort()));
+                .create(newRandomClusterHealthCheckInstance("dc2",ClusterType.ONE_WAY));
         Assert.assertTrue(action.getListeners().size() > 0);
         Assert.assertTrue(action.getControllers().size() > 0);
         logger.info("[listeners] {}", action.getListeners());
@@ -65,7 +65,7 @@ public class SentinelHelloCheckActionFactoryTest extends AbstractCheckerIntegrat
     @Test
     public void testCreateForBiDirectionInstance() throws Exception {
         SentinelHelloCheckAction action = (SentinelHelloCheckAction) factory
-                .create(newRandomRedisHealthCheckInstance("dc1", ClusterType.BI_DIRECTION, randomPort()));
+                .create(newRandomClusterHealthCheckInstance("dc1", ClusterType.BI_DIRECTION));
         Assert.assertTrue(action.getListeners().size() > 0);
         Assert.assertTrue(action.getControllers().size() > 0);
 
