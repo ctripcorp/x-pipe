@@ -1,15 +1,16 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
@@ -43,6 +44,11 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     private SentinelCheckStatus backupDcSlave1;
     private SentinelCheckStatus backupDcSlave2;
 
+    private RedisMeta activeDcMasterMeta = new RedisMeta().setIp("activeDcMasterMeta");
+    private RedisMeta activeDcSlaveMeta = new RedisMeta().setIp("activeDcSlaveMeta");
+    private RedisMeta backupDcSlave1Meta = new RedisMeta().setIp("backupDcSlave1Meta");
+    private RedisMeta backupDcSlave2Meta = new RedisMeta().setIp("backupDcSlave2Meta");
+
     @Mock
     protected CheckerDbConfig config;
 
@@ -67,7 +73,16 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     @Mock
     private DefaultSentinelHelloCollector sentinelHelloCollector;
 
+    @Mock
+    private HealthCheckInstanceManager instanceManager;
+
+    private SentinelHelloCheckAction checkAction;
+
+    private ClusterHealthCheckInstance instance;
+
     private SentinelCheckDowngradeCollectorController downgradeController;
+
+    private static final String activeDc = "dc1";
 
     private static final String clusterName = "cluster";
 
@@ -75,6 +90,9 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     @Before
     public void beforeSentinelHelloActionDowngradeTest() throws Exception {
+        instance = newRandomClusterHealthCheckInstance(activeDc, ClusterType.ONE_WAY);
+        ((DefaultClusterHealthCheckInstance)instance).setHealthCheckConfig(healthCheckConfig);
+        checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence,metaCache,instanceManager);
         downgradeController = new SentinelCheckDowngradeCollectorController(metaCache, sentinelHelloCollector, clusterName, shardName);
         downgradeController = Mockito.spy(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
@@ -83,10 +101,15 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         SubscribeCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = sentinelSubTimeout;
         prepareActions();
         prepareMetaCache();
-
+        checkAction.addController(checkActionController);
+        checkAction.addListener(checkActionController);
         when(config.isSentinelAutoProcess()).thenReturn(true);
         when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(true);
         when(persistence.isClusterOnMigration(anyString())).thenReturn(false);
+        when(instanceManager.getOrCreate(activeDcMasterMeta)).thenReturn(activeDcMaster.getRedisCheckInstance());
+        when(instanceManager.getOrCreate(activeDcSlaveMeta)).thenReturn(activeDcSlave.getRedisCheckInstance());
+        when(instanceManager.getOrCreate(backupDcSlave1Meta)).thenReturn(backupDcSlave1.getRedisCheckInstance());
+        when(instanceManager.getOrCreate(backupDcSlave2Meta)).thenReturn(backupDcSlave2.getRedisCheckInstance());
     }
 
     @After
@@ -108,7 +131,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         // no close connect before collect sentinel hello
         Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
-        sleep(1000);
+        sleep(1500);
         Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
         Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
         // close connect after collect sentinel hello
@@ -202,28 +225,6 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void backupConnectTimeoutTest() throws Exception {
-        // set unreachable redis server
-        ((DefaultRedisHealthCheckInstance)backupDcSlave1.checkInstance).setSession(
-                new RedisSession(new DefaultEndPoint("10.0.127.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool()));
-        ((DefaultRedisHealthCheckInstance)backupDcSlave2.checkInstance).setSession(
-                new RedisSession(new DefaultEndPoint("10.0.127.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool()));
-
-        allActionDoTask();
-        assertServerCalled(false, false, false, false);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(0)).onAction(Mockito.any());
-        Mockito.verify(downgradeController, Mockito.times(2)).onAction(Mockito.any());
-
-        resetCalled();
-        allActionDoTask();
-
-        assertServerCalled(false, true, false, false);
-        Mockito.verify(sentinelHelloCollector, Mockito.times(1)).onAction(Mockito.any());
-        Mockito.verify(downgradeController, Mockito.times(3)).onAction(Mockito.any());
-    }
-
-
-    @Test
     public void downgradeTimeoutTest() {
         setServerErrResp(false, false, true, true);
 
@@ -251,26 +252,22 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     }
 
     private void prepareActions() throws Exception {
-        activeDcMaster = new SentinelCheckStatus("dc1", "dc1", true);
-        activeDcSlave = new SentinelCheckStatus("dc1", "dc1", false);
-        backupDcSlave1 = new SentinelCheckStatus("dc2", "dc1", false);
-        backupDcSlave2 = new SentinelCheckStatus("dc2", "dc1", false);
+        activeDcMaster = new SentinelCheckStatus("dc1", activeDc, true);
+        activeDcSlave = new SentinelCheckStatus("dc1", activeDc, false);
+        backupDcSlave1 = new SentinelCheckStatus("dc2", activeDc, false);
+        backupDcSlave2 = new SentinelCheckStatus("dc2", activeDc, false);
     }
 
     public void prepareMetaCache() {
-        RedisMeta activeDcMaster = new RedisMeta();
-        RedisMeta activeDcSlave = new RedisMeta();
-        RedisMeta backupDcSlave1 = new RedisMeta();
-        RedisMeta backupDcSlave2 = new RedisMeta();
 
         ShardMeta activeDcShardMeta = new ShardMeta();
         activeDcShardMeta.setId(shardName);
-        activeDcShardMeta.addRedis(activeDcMaster);
-        activeDcShardMeta.addRedis(activeDcSlave);
+        activeDcShardMeta.addRedis(activeDcMasterMeta);
+        activeDcShardMeta.addRedis(activeDcSlaveMeta);
         ShardMeta backupDcShardMeta = new ShardMeta();
         backupDcShardMeta.setId(shardName);
-        backupDcShardMeta.addRedis(backupDcSlave1);
-        backupDcShardMeta.addRedis(backupDcSlave2);
+        backupDcShardMeta.addRedis(backupDcSlave1Meta);
+        backupDcShardMeta.addRedis(backupDcSlave2Meta);
 
         ClusterMeta activeDcClusterMeta = new ClusterMeta();
         activeDcClusterMeta.setId(clusterName);
@@ -308,10 +305,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     }
 
     private void allActionDoTaskWithoutWait() {
-        activeDcMaster.checkTask.run();
-        activeDcSlave.checkTask.run();
-        backupDcSlave1.checkTask.run();
-        backupDcSlave2.checkTask.run();
+        checkAction.new ScheduledHealthCheckTask().run();
     }
 
     private void setSentinelCollectInterval(int interval) {
@@ -343,7 +337,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     private String buildSentinelHello() {
         StringBuilder sb = new StringBuilder(SentinelHelloCheckActionTest.SUBSCRIBE_HEADER);
         for(int i = 0; i < 5; i++) {
-            sb.append(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5000 + i));
+            sb.append(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5000 + i,activeDcMaster.redisServer.getPort()));
         }
         return sb.toString();
     }
@@ -353,10 +347,6 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         public Server redisServer;
 
         public RedisHealthCheckInstance checkInstance;
-
-        public SentinelHelloCheckAction checkAction;
-
-        public AbstractHealthCheckAction.ScheduledHealthCheckTask checkTask;
 
         public volatile boolean errorResp = false;
 
@@ -373,10 +363,10 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
             checkInstance = newRandomRedisHealthCheckInstance(currentDc, activeDc, redisServer.getPort());
             ((DefaultRedisHealthCheckInstance)checkInstance).setHealthCheckConfig(healthCheckConfig);
             checkInstance.getCheckInfo().isMaster(isMaster);
-            checkAction = new SentinelHelloCheckAction(scheduled, checkInstance, executors, config, persistence);
-            checkAction.addController(checkActionController);
-            checkAction.addListener(checkActionController);
-            checkTask = checkAction.new ScheduledHealthCheckTask();
+        }
+
+        public RedisHealthCheckInstance getRedisCheckInstance(){
+            return checkInstance;
         }
 
         private void initServer() throws Exception {
@@ -404,7 +394,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
                                 if (null != response) ous.write(response.getBytes());
 
                                 while (true) {
-                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001).getBytes());
+                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001,activeDcMaster.redisServer.getPort()).getBytes());
                                     sleep(10);
                                 }
                             } catch (Exception e) {
