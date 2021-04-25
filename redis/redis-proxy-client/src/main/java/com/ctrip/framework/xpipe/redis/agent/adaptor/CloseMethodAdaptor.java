@@ -6,7 +6,7 @@ import org.objectweb.asm.Opcodes;
 public class CloseMethodAdaptor extends MethodVisitor {
 
     public CloseMethodAdaptor(MethodVisitor mv) {
-        super(Opcodes.ASM4, mv);
+        super(Opcodes.ASM7_EXPERIMENTAL, mv);
     }
 
     @Override

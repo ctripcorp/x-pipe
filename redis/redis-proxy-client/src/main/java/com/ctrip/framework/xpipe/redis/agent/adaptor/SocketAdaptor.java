@@ -22,7 +22,7 @@ public class SocketAdaptor extends AbstractSocketAdaptor {
 
     class ConnectMethodAdaptor extends MethodVisitor {
         public ConnectMethodAdaptor(MethodVisitor mv) {
-            super(Opcodes.ASM4, mv);
+            super(Opcodes.ASM7_EXPERIMENTAL, mv);
         }
 
         /**

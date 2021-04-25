@@ -24,7 +24,7 @@ public class SocketChannelImplAdaptor extends AbstractSocketAdaptor {
     class WriteMethodAdaptor extends MethodVisitor {
 
         public WriteMethodAdaptor(MethodVisitor methodVisitor) {
-            super(Opcodes.ASM4, methodVisitor);
+            super(Opcodes.ASM7_EXPERIMENTAL, methodVisitor);
         }
 
         /**
@@ -39,7 +39,7 @@ public class SocketChannelImplAdaptor extends AbstractSocketAdaptor {
 
     class ConnectMethodAdaptor extends MethodVisitor {
         public ConnectMethodAdaptor(MethodVisitor mv) {
-            super(Opcodes.ASM4, mv);
+            super(Opcodes.ASM7_EXPERIMENTAL, mv);
         }
 
         /**
