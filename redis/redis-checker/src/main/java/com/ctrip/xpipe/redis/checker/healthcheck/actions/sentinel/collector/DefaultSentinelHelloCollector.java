@@ -168,8 +168,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 trueMasters.addAll(checkTrueMasters(trueMaster, hellos));
                 if (!currentMasterConsistent(trueMasters)) {
                     logger.warn("[currentMasterConsistent]{},{}", sentinelMonitorName, trueMasters);
-                    String message = String.format("sentinel group monitored inconsistent masters, monitorName:%s, masters:%s ",sentinelMonitorName, trueMasters);
-                    alertManager.alert(clusterId, shardId, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
+                    String message = String.format("master inconsistent, monitorName:%s, masters:%s",sentinelMonitorName, trueMasters);
+                    alertManager.alert(clusterId, shardId, info.getHostPort(), ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
                     return;
                 }
                 trueMaster = trueMasters.iterator().next();
@@ -217,9 +217,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         for (SentinelHello sentinelHello : hellos) {
             if (!sentinelHello.getMasterAddr().equals(trueMaster)) {
                 wrongMasters.add(sentinelHello);
-                hellos.remove(sentinelHello);
             }
         }
+        hellos.removeAll(wrongMasters);
         return wrongMasters;
     }
 
@@ -288,9 +288,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             }
         });
 
-        toDelete.forEach((delete) -> {
-            hellos.remove(delete);
-        });
+        toDelete.forEach(hellos::remove);
 
         return toDelete;
     }
