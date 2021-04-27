@@ -137,7 +137,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             return;
         }
 
-        Set<SentinelHello> hellos = context.getResult();
+        Set<SentinelHello> originalHellos = context.getResult();
+        Set<SentinelHello> hellos = Sets.newHashSet(originalHellos);
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
         String sentinelMonitorName = getSentinelMonitorName(info);
@@ -190,7 +191,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             public Map<String, Set> getData() {
                 Map<String, Set> transactionData = new HashMap<>();
                 transactionData.put("sentinels", sentinels);
-                transactionData.put("hellos", hellos);
+                transactionData.put("hellos", originalHellos);
                 transactionData.put("toDelete", toDelete);
                 transactionData.put("trueMasters", trueMasters);
                 transactionData.put("toAdd", toAdd);
