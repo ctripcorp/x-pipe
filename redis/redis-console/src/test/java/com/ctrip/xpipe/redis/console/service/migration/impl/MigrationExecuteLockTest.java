@@ -845,7 +845,7 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
     }
 
     private void concurrentForceEnd(long clusterId, int concurrent) throws Exception {
-        concurrentHandleMigration(clusterId, concurrent, migrationService::forceEndMigrationClsuter);
+        concurrentHandleMigration(clusterId, concurrent, migrationService::forceEndMigrationCluster);
     }
 
     private void concurrentForceEndFromMultiDc(long clusterId, int concurrent) throws Exception {
