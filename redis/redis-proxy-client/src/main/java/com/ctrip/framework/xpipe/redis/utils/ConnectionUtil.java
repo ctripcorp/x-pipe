@@ -1,9 +1,5 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
-import com.google.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -11,19 +7,17 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ConnectionUtil {
 
-    private static final Logger logger = LoggerFactory.getLogger(ConnectionUtil.class);
-
-    public static Map<SocketChannel, Lock> socketChannelMap = Maps.newConcurrentMap();
+    public static Map<SocketChannel, Lock> socketChannelMap = new ConcurrentHashMap<>();
 
     public static InetSocketAddress getAddress(Object o, InetSocketAddress socketAddress) {
         if (ProxyUtil.getInstance().needProxy(socketAddress)) {
             InetSocketAddress proxy =  ProxyUtil.getInstance().getProxyAddress(o, socketAddress);
-            logger.info("[Proxy] replace {} -> {}", socketAddress, proxy);
             return proxy;
         } else {
             return socketAddress;
@@ -35,7 +29,6 @@ public class ConnectionUtil {
     }
 
     public static SocketAddress removeAddress(Object o) {
-        logger.info("[SocketAddress] removed for {}", o);
         return ProxyUtil.getInstance().removeProxyAddress(o);
     }
 
@@ -44,12 +37,10 @@ public class ConnectionUtil {
         byte[] bytes = ProxyUtil.getInstance().getProxyConnectProtocol(socket);
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
-        logger.info("[Connect] to {} -> {} with protocol {}", socket.getLocalAddress(), address, new String(bytes));
     }
 
     public static boolean connectToProxy(SocketChannel socketChannel, SocketAddress address) throws IOException {
         socketChannelMap.put(socketChannel, new ReentrantLock());
-        logger.info("[Connect] to {} -> {} through netty socketChannel", socketChannel.getLocalAddress(), address);
         return socketChannel.connect(address);
     }
 
@@ -74,7 +65,6 @@ public class ConnectionUtil {
                 byteBuffer.flip();
                 socketChannel.write(byteBuffer);
                 byteBuffer.clear();
-                logger.info("[Proxy] protocol {} send {} -> {}", new String(bytes), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
             }
         } finally {
             lock.unlock();

@@ -13,19 +13,33 @@
     <artifactId>redis-proxy-client</artifactId>
 
     <properties>
-        <asm.version>6.2</asm.version>
         <mockwebserver.version>3.12.0</mockwebserver.version>
+        <javax.servlet.version>3.1.0</javax.servlet.version>
+        <spring.boot.version>1.4.3.RELEASE</spring.boot.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>${asm.version}</version>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>${javax.servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot</artifactId>
+            <version>${spring.boot.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -60,8 +74,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                         <manifestEntries>
-                            <Premain-Class>com.ctrip.framework.xpipe.redis.PreMain</Premain-Class>
-                            <Agent-Class>com.ctrip.framework.xpipe.redis.PreMain</Agent-Class>
+                            <Agent-Class>com.ctrip.framework.xpipe.redis.instrument.AgentMain</Agent-Class>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
                             <Can-Retransform-Classes>true</Can-Retransform-Classes>
                         </manifestEntries>
