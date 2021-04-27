@@ -85,17 +85,23 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         try {
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
                 ClusterMeta clusterMeta = dcMeta.getClusters().get(getActionInstance().getCheckInfo().getClusterId());
-                clusterMeta.getShards().forEach((shardId, shardMeta) -> {
-                    shardMeta.getRedises().forEach((redisMeta) -> {
+                if (clusterMeta != null) {
+                    clusterMeta.getShards().forEach((shardId, shardMeta) -> {
                         try {
-                            RedisHealthCheckInstance redisInstance = instanceManager.getOrCreate(redisMeta);
-                            if (super.shouldCheck(redisInstance))
-                                redisHealthCheckInstances.add(redisInstance);
+                            shardMeta.getRedises().forEach((redisMeta) -> {
+                                try {
+                                    RedisHealthCheckInstance redisInstance = instanceManager.getOrCreate(redisMeta);
+                                    if (super.shouldCheck(redisInstance))
+                                        redisHealthCheckInstances.add(redisInstance);
+                                } catch (Exception e) {
+                                    logger.warn("[get redis health check instance {}:{} failed]", redisMeta.getIp(), redisMeta.getPort(), e);
+                                }
+                            });
                         } catch (Exception e) {
-                            logger.warn("[get redis health check instance {}:{} failed]", redisMeta.getIp(), redisMeta.getPort(), e);
+                            logger.warn("[get redis health check instance from shard {} failed]", shardId, e);
                         }
                     });
-                });
+                }
             });
         } catch (Exception e) {
             logger.warn("[get redis health check instances from cluster {} failed]", instance.getCheckInfo().getClusterId(), e);
