@@ -1,7 +1,7 @@
 package com.ctrip.framework.xpipe.redis;
 
-import com.ctrip.framework.xpipe.redis.agent.adaptor.SocketAdaptorTest;
-import com.ctrip.framework.xpipe.redis.agent.adaptor.SocketChannelImplAdaptorTest;
+import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdaptorTest;
+import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdaptorTest;
 import com.ctrip.framework.xpipe.redis.utils.ConnectionUtilTest;
 import com.ctrip.framework.xpipe.redis.utils.ProxyUtilTest;
 import okhttp3.mockwebserver.MockWebServer;
