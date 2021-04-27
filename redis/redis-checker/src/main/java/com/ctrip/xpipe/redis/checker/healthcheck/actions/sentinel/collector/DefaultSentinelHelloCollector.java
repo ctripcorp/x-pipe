@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.CommandTimeoutException;
@@ -43,9 +45,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.net.SocketException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -143,37 +143,60 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         String sentinelMonitorName = getSentinelMonitorName(info);
         Set<HostPort> sentinels = getSentinels(info);
         QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
-        HostPort trueMaster = null;
-        try{
-            trueMaster = getMaster(info);
-        } catch (MasterNotFoundException e) {
-            logger.error("[collect]" + e.getMessage(), e);
-        }
 
-        logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
+        TransactionMonitor transaction = TransactionMonitor.DEFAULT;
+        transaction.logTransactionSwallowException(SENTINEL_TYPE + ".hello.collect", sentinelMonitorName, new Task() {
 
-        // check stale hellos
-        Set<SentinelHello> toDelete = checkStaleHellos(sentinelMonitorName, sentinels, hellos, quorumConfig, trueMaster);
+            Set<SentinelHello> toDelete = new HashSet<>();
+            Set<HostPort> trueMasters = new HashSet<>();
+            Set<SentinelHello> toAdd = new HashSet<>();
+            @Override
+            public void go() throws Exception {
+                HostPort trueMaster = null;
+                try{
+                    trueMaster = getMaster(info);
+                } catch (MasterNotFoundException e) {
+                    logger.error("[collect]" + e.getMessage(), e);
+                }
 
-        // check true master
-        Set<HostPort> trueMasters = checkTrueMasters(trueMaster, hellos);
-        if (!currentMasterConsistent(trueMasters)) {
-            String message = String.format("sentinel group monitored inconsistent masters, monitorName:%s, masters:%s ",sentinelMonitorName, trueMasters);
-            alertManager.alert(clusterId, shardId, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
-            return;
-        }
-        trueMaster = trueMasters.iterator().next();
+                logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
-        // check wrong master hellos
-        toDelete.addAll(checkWrongMasterHellos(hellos, trueMaster));
+                // check stale hellos
+                toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos, quorumConfig, trueMaster));
 
-        // checkReset
-        checkReset(clusterId, shardId, sentinelMonitorName, hellos);
+                // check true master
+                trueMasters.addAll(checkTrueMasters(trueMaster, hellos));
+                if (!currentMasterConsistent(trueMasters)) {
+                    logger.warn("[currentMasterConsistent]{},{}", sentinelMonitorName, trueMasters);
+                    String message = String.format("sentinel group monitored inconsistent masters, monitorName:%s, masters:%s ",sentinelMonitorName, trueMasters);
+                    alertManager.alert(clusterId, shardId, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
+                    return;
+                }
+                trueMaster = trueMasters.iterator().next();
 
-        // check add
-        Set<SentinelHello> toAdd = checkToAdd(clusterId, shardId, sentinelMonitorName, sentinels, hellos, trueMaster, quorumConfig);
+                // check wrong master hellos
+                toDelete.addAll(checkWrongMasterHellos(hellos, trueMaster));
 
-        doAction(sentinelMonitorName, trueMaster, toDelete, toAdd, quorumConfig);
+                // checkReset
+                checkReset(clusterId, shardId, sentinelMonitorName, hellos);
+
+                // check add
+                toAdd.addAll(checkToAdd(clusterId, shardId, sentinelMonitorName, sentinels, hellos, trueMaster, quorumConfig));
+
+                doAction(sentinelMonitorName, trueMaster, toDelete, toAdd, quorumConfig);
+            }
+
+            @Override
+            public Map<String, Set> getData() {
+                Map<String, Set> transactionData = new HashMap<>();
+                transactionData.put("sentinels", sentinels);
+                transactionData.put("hellos", hellos);
+                transactionData.put("toDelete", toDelete);
+                transactionData.put("trueMasters", trueMasters);
+                transactionData.put("toAdd", toAdd);
+                return transactionData;
+            }
+        });
     }
 
     protected String getSentinelMonitorName(RedisInstanceInfo info) {
@@ -219,7 +242,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     trueMasters.add(currentCollectedMaster);
                 }
             } catch (Throwable e) {
-                logger.error("[checkMaster] check redis role err", e);
+                logger.warn("[checkTrueMasters] check redis {} role err", currentCollectedMaster, e);
             }
         });
 

@@ -65,4 +65,9 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
         controllerMap.put(Pair.of(cluster, shard), collectorController);
     }
 
+    @VisibleForTesting
+    protected Map<Pair<String, String>, SentinelCheckDowngradeCollectorController> getAllCheckCollectorControllers() {
+        return controllerMap;
+    }
+
 }

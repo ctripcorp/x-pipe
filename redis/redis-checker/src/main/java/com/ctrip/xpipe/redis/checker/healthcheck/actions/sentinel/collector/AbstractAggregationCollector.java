@@ -37,7 +37,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-        // no nothing
+        resetCheckResult();
     }
 
     protected synchronized int collectHello(SentinelActionContext context) {

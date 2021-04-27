@@ -16,6 +16,7 @@ import org.springframework.web.client.RestOperations;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -80,7 +81,12 @@ public class CRedisService extends AbstractOuterClientService {
                     if(!response.isSuccess()){
                         throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
                     }
-                }
+				}
+
+				@Override
+				public Map getData() {
+					return null;
+				}
             });
 		} catch (Exception e) {
 			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
