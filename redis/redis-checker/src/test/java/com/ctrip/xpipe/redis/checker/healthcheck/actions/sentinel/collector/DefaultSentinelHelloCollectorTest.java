@@ -345,4 +345,20 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
     }
 
+    @Test
+    public void checkWrongHelloMastersTest() throws Exception {
+        Set<SentinelHello> hellos = Sets.newHashSet(
+                new SentinelHello(new HostPort("127.0.0.1", 5000), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5001), new HostPort("127.0.0.3", 6380), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5002), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5003), new HostPort("127.0.0.3", 6381), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5004), new HostPort("127.0.0.3", 6379), monitorName)
+        );
+
+        HostPort trueMaster = new HostPort("127.0.0.3", 6379);
+        Set<SentinelHello> wrongHellos = sentinelCollector.checkWrongMasterHellos(hellos, trueMaster);
+        Assert.assertEquals(3, hellos.size());
+        Assert.assertEquals(2, wrongHellos.size());
+    }
+
 }
