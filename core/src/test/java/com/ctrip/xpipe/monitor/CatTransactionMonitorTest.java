@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -33,6 +34,12 @@ public class CatTransactionMonitorTest extends AbstractTest{
 			public void go() throws Exception {
 				
 			}
+
+			@Override
+			public Map getData() {
+				return null;
+			}
+
 		});
 		
 	}
@@ -49,6 +56,12 @@ public class CatTransactionMonitorTest extends AbstractTest{
 			public void go() throws Exception {
 				throw new Exception("just fail");
 			}
+
+			@Override
+			public Map getData() {
+				return null;
+			}
+
 		});
 	}
 	
