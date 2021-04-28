@@ -1,8 +1,8 @@
 package com.ctrip.framework.xpipe.redis.instrument;
 
 
-import com.ctrip.framework.xpipe.redis.asm.ClassReader;
-import com.ctrip.framework.xpipe.redis.asm.ClassWriter;
+import com.alibaba.arthas.deps.org.objectweb.asm.ClassReader;
+import com.alibaba.arthas.deps.org.objectweb.asm.ClassWriter;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdapter;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdapter;
 

@@ -1,6 +1,6 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
-import com.ctrip.framework.xpipe.redis.asm.MethodVisitor;
+import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
 import org.junit.Assert;
 import org.junit.Before;
 
