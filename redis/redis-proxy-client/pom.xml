@@ -13,6 +13,7 @@
     <artifactId>redis-proxy-client</artifactId>
 
     <properties>
+        <enforcer.qBanDuplicateClasses.skip>true</enforcer.qBanDuplicateClasses.skip>
         <mockwebserver.version>3.12.0</mockwebserver.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <spring.boot.version>1.4.3.RELEASE</spring.boot.version>

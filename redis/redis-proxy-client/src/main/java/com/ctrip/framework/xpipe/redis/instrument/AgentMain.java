@@ -5,10 +5,8 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.util.jar.JarFile;
 
-/**
- * @Author limingdong
- * @create 2021/4/26
- */
+import static com.ctrip.framework.xpipe.redis.utils.Constants.CONNECT_CLASS;
+
 public class AgentMain {
 
     public static void agentmain(String agentArgs, Instrumentation instrumentation) throws IOException {
@@ -16,7 +14,7 @@ public class AgentMain {
         Class<?> connectionClass = null;
         if (parent != null) {
             try {
-                connectionClass = parent.loadClass("com.ctrip.framework.xpipe.redis.utils.ConnectionUtil");
+                connectionClass = parent.loadClass(CONNECT_CLASS.replace("/", "."));
             } catch (Throwable e) {
                 // ignore
             }

@@ -3,9 +3,9 @@ package com.ctrip.framework.xpipe.redis;
 import com.ctrip.framework.xpipe.redis.proxy.ProxyResourceManager;
 import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
 
-public class ProxyRegistry {
+import static com.ctrip.framework.xpipe.redis.utils.Constants.PROXY_KEY_WORD;
 
-    public static final String PROXY_KEY_WORD = "PROXY";
+public class ProxyRegistry {
 
     public static boolean registerProxy(String ip, int port, String routeInfo) {
         if (routeInfo != null && routeInfo.startsWith(PROXY_KEY_WORD)) {
@@ -15,7 +15,7 @@ public class ProxyRegistry {
         return false;
     }
 
-    public static ProxyResourceManager unregisterProxy(String ip, int port) throws Exception {
+    public static ProxyResourceManager unregisterProxy(String ip, int port) {
         return ProxyUtil.getInstance().unregisterProxy(ip, port);
     }
 
