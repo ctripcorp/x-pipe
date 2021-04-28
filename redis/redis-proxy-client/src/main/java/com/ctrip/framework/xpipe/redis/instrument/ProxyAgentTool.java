@@ -8,11 +8,11 @@ import java.security.CodeSource;
 
 public class ProxyAgentTool {
 
-    static final String virtualMachineClassName = "com.sun.tools.attach.VirtualMachine";
+    public static final String virtualMachineClassName = "com.sun.tools.attach.VirtualMachine";
 
-    static final String hotspotVMName = "sun.tools.attach.HotSpotVirtualMachine";
+    public static final String hotspotVMName = "sun.tools.attach.HotSpotVirtualMachine";
 
-    static Class<?> vmProviderClass = null;
+    protected static Class<?> vmProviderClass = null;
 
     private static Boolean isLoaded = false;
 
