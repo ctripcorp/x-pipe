@@ -10,7 +10,7 @@
          <url><![CDATA[jdbc:mysql://localhost:3306/fxxpipedb]]></url>
          <user>root</user>
          <password></password>
-         <connectionProperties><![CDATA[useUnicode=true&amp;characterEncoding=UTF-8&amp;autoReconnect=true]]></connectionProperties>
+         <connectionProperties><![CDATA[useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;autoReconnect=true]]></connectionProperties>
       </properties>
 <!--      <properties>-->
 <!--         <driver>org.h2.Driver</driver>-->

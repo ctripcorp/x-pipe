@@ -41,7 +41,8 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static EmailConfig config = new EmailConfig();
 
-    private static EmailServiceClient client = EmailServiceClient.getInstance(config.getEmailServiceUrl());
+    private static EmailServiceClient client = StringUtil.isEmpty(config.getEmailServiceUrl()) ?
+            EmailServiceClient.getInstance() : EmailServiceClient.getInstance(config.getEmailServiceUrl());
 
     @Override
     public void sendEmail(Email email) {
