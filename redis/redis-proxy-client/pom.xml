@@ -25,6 +25,11 @@
             <version>0.0.6</version>
         </dependency>
         <dependency>
+            <groupId>com.alibaba.arthas</groupId>
+            <artifactId>arthas-repackage-logger</artifactId>
+            <version>0.0.6</version>
+        </dependency>
+        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>${javax.servlet.version}</version>
@@ -93,6 +98,7 @@
                             <artifactSet>
                                 <includes>
                                     <include>com.alibaba.arthas:arthas-repackage-asm</include>
+                                    <include>com.alibaba.arthas:arthas-repackage-logger</include>
                                 </includes>
                             </artifactSet>
                             <transformers>
