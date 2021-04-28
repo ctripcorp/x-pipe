@@ -8,8 +8,6 @@ import com.ctrip.xpipe.redis.core.proxy.parser.monitor.MonitorOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.ping.PingOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.RouteOptionParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author chen.zhu
@@ -95,13 +93,13 @@ public enum PROXY_OPTION {
         try {
             proxyOption = PROXY_OPTION.valueOf(optionType);
         } catch (IllegalArgumentException e) {
-            logger.info("[getOptionParser] unkown option: {}", option);
+//            logger.info("[getOptionParser] unkown option: {}", option);
             proxyOption = PROXY_OPTION.UNKOWN;
         }
         return proxyOption;
     }
 
-    private static Logger logger = LoggerFactory.getLogger(PROXY_OPTION.class);
+//    private static Logger logger = LoggerFactory.getLogger(PROXY_OPTION.class);
 
     public abstract ProxyOptionParser getProxyOptionParser();
 

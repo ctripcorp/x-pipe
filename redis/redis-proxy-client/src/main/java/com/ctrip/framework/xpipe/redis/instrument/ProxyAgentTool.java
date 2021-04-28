@@ -6,10 +6,6 @@ import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 
-/**
- * @Author limingdong
- * @create 2021/4/26
- */
 public class ProxyAgentTool {
 
     static final String virtualMachineClassName = "com.sun.tools.attach.VirtualMachine";

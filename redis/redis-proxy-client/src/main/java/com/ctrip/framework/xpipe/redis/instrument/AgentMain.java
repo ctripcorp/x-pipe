@@ -11,8 +11,6 @@ import java.util.jar.JarFile;
  */
 public class AgentMain {
 
-    private static Instrumentation inst;
-
     public static void agentmain(String agentArgs, Instrumentation instrumentation) throws IOException {
         ClassLoader parent = ClassLoader.getSystemClassLoader().getParent();
         Class<?> connectionClass = null;
@@ -25,12 +23,9 @@ public class AgentMain {
         }
         if (connectionClass == null) {
             File proxyJarFile = new File(agentArgs);
-            File redisCoreFile = new File(agentArgs.replace("redis-proxy-client", "redis-core"));
             instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(proxyJarFile));
-            instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(redisCoreFile));
         }
-        inst = instrumentation;
-        inst.addTransformer(new ProxyAgent(), true);
+        instrumentation.addTransformer(new ProxyAgent(), true);
     }
 
 }

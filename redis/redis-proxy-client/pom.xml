@@ -20,16 +20,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.ctrip.framework.xpipe.redis</groupId>
-            <artifactId>redis-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>${javax.servlet.version}</version>

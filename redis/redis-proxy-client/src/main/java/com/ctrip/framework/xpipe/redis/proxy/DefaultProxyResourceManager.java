@@ -1,47 +1,34 @@
 package com.ctrip.framework.xpipe.redis.proxy;
 
-import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
-import com.ctrip.xpipe.redis.core.exception.NoResourceException;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointManager;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.ProxyEndpointSelector;
-import com.ctrip.xpipe.redis.core.proxy.resource.KeeperProxyResourceManager;
-import io.netty.buffer.ByteBuf;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Random;
 
 public class DefaultProxyResourceManager implements ProxyResourceManager {
 
+    private Random random = new Random();
+
     private ProxyConnectProtocol proxyConnectProtocol;
 
-    private ProxyEndpointSelector proxyEndpointSelector;
-
-    private ProxyEndpointManager endpointManager;
+    private List<InetSocketAddress> candidates;
 
     public DefaultProxyResourceManager(ProxyConnectProtocol proxyConnectProtocol) {
         this.proxyConnectProtocol = proxyConnectProtocol;
-        endpointManager = new DefaultProxyEndpointManager(()->2);
-        KeeperProxyResourceManager proxyResourceManager = new KeeperProxyResourceManager(endpointManager, new NaiveNextHopAlgorithm());
-        proxyEndpointSelector = proxyResourceManager.createProxyEndpointSelector(proxyConnectProtocol);
-        start();
+        this.candidates = proxyConnectProtocol.nextEndpoints();
     }
 
     @Override
-    public ByteBuf getProxyConnectProtocol() {
+    public byte[] getProxyConnectProtocol() {
         return proxyConnectProtocol.output();
     }
 
     @Override
-    public ProxyEndpoint nextHop() throws NoResourceException {
-        return proxyEndpointSelector.nextHop();
+    public InetSocketAddress nextHop() {
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        int index = random.nextInt(candidates.size());
+        return candidates.get(index);
     }
 
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() throws Exception {
-        endpointManager.stop();
-    }
 }
