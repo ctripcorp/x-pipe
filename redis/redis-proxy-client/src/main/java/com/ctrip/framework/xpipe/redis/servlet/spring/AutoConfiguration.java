@@ -1,6 +1,7 @@
 package com.ctrip.framework.xpipe.redis.servlet.spring;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -24,11 +25,7 @@ public class AutoConfiguration {
 
             org.springframework.boot.web.servlet.FilterRegistrationBean filter =
                     new org.springframework.boot.web.servlet.FilterRegistrationBean();
-            filter.setFilter(new ProxyFilter());
-            filter.setName("proxy-filter");
-            filter.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.FORWARD);
-            filter.setAsyncSupported(true);
-            filter.setOrder(Ordered.HIGHEST_PRECEDENCE);
+            initFilter(filter);
             return filter;
         }
     }
@@ -45,13 +42,17 @@ public class AutoConfiguration {
 
             org.springframework.boot.context.embedded.FilterRegistrationBean filter =
                     new org.springframework.boot.context.embedded.FilterRegistrationBean();
-            filter.setFilter(new ProxyFilter());
-            filter.setName("proxy-filter");
-            filter.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.FORWARD);
-            filter.setAsyncSupported(true);
-            filter.setOrder(Ordered.HIGHEST_PRECEDENCE);
+            initFilter(filter);
             return filter;
         }
+    }
+
+    private static void initFilter(FilterRegistrationBean filter) {
+        filter.setFilter(new ProxyFilter());
+        filter.setName("proxy-filter");
+        filter.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.FORWARD);
+        filter.setAsyncSupported(true);
+        filter.setOrder(Ordered.HIGHEST_PRECEDENCE);
     }
 
 }
