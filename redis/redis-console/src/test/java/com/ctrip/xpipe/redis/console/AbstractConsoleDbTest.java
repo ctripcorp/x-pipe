@@ -51,7 +51,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         if (StringUtil.isEmpty(dataSourceLocation)) {
             System.setProperty(ComponentsConfigurator.KEY_XPIPE_LOCATION, "src/test/resources");
         } else {
-            Logger logger = LoggerFactory.getLogger("AbstractConsoleH2DbTest");
+            Logger logger = LoggerFactory.getLogger("AbstractConsoleDbTest");
             logger.info("[setUp][dataSource location]{}", dataSourceLocation);
         }
     }
@@ -67,6 +67,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     }
 
     protected void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
+        logger.info("[AbstractConsoleDbTest] setUpTestDataSource");
 
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
         DataSource dataSource = dsManager.getDataSource(DATA_SOURCE);
@@ -105,10 +106,11 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
             conn.setAutoCommit(false);
             if (!Strings.isEmpty(prepareSql)) {
                 for (String sql : prepareSql.split(";")) {
-                    if (StringUtil.isEmpty(sql))
-                        continue;
-                    logger.debug("[setup][data]{}", sql.trim());
-                    stmt = conn.prepareStatement(sql);
+                    String executeSql = sql.trim();
+                    if (StringUtil.isEmpty(executeSql)) continue;
+
+                    logger.debug("[setup][data]{}", executeSql);
+                    stmt = conn.prepareStatement(executeSql);
                     stmt.executeUpdate();
                 }
             }
@@ -130,7 +132,6 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         }
     }
 
-
     protected final String KEY_H2_PORT = "h2Port";
     private Server h2Server;
 
@@ -139,18 +140,15 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         int h2Port = Integer.parseInt(System.getProperty(KEY_H2_PORT, "9123"));
         h2Server = Server.createTcpServer("-tcpPort", String.valueOf(h2Port), "-tcpAllowOthers");
         h2Server.start();
-//		new Console().runTool();
     }
-
 
     protected String prepareDatas() throws IOException {
         return "";
     }
 
-    public String prepareDatasFromFile(String path) throws IOException {
+    public static String prepareDatasFromFile(String path) throws IOException {
         InputStream ins = FileUtils.getFileInputStream(path);
         return IOUtils.toString(ins);
     }
-
 
 }
