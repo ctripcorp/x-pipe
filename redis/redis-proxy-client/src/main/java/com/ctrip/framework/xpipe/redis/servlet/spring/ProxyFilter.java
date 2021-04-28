@@ -10,7 +10,7 @@ public class ProxyFilter implements Filter {
     private ProxyServlet proxyServlet;
 
     @Override
-    public void init(FilterConfig filterConfig) {
+    public void init(FilterConfig filterConfig) throws ServletException {
         proxyServlet = new ProxyServlet();
         proxyServlet.init();
     }

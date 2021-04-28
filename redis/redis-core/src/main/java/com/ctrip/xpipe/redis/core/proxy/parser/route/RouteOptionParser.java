@@ -5,8 +5,7 @@ import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.utils.StringUtil;
-
-import java.util.ArrayList;
+import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,7 +47,7 @@ public class RouteOptionParser extends AbstractProxyOptionParser implements Prox
         if(nextNodes == null || nextNodes.length == 0) {
             return null;
         }
-        List<ProxyEndpoint> result = new ArrayList<>();
+        List<ProxyEndpoint> result = Lists.newArrayList();
         for(String rawUri : nextNodes) {
             result.add(new DefaultProxyEndpoint(rawUri));
         }
