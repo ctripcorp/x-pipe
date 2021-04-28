@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Mon Apr 26 18:28:46 CST 2021
+foundation-service-3.1.4-sources.jar>=
+foundation-service-3.1.4.pom>=
+foundation-service-3.1.4.jar>=
