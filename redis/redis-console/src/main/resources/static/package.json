@@ -4,7 +4,7 @@
   "description": "QuickStart package.json from the documentation, supplemented with testing support",
   "scripts": {
     "build": "npx tsc -p ./",
-    "serve": "lite-server -c=bs-config.json",
+    "serve": "lite-server -c=bs-config.json"
   },
   "keywords": [],
   "author": "",
