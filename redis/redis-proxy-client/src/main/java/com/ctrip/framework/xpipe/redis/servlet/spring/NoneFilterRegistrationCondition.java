@@ -8,6 +8,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * Created by jiang.j on 2017/6/8.
  */
 public class NoneFilterRegistrationCondition implements Condition {
+
     @Override
     public boolean matches(ConditionContext conditionContext, AnnotatedTypeMetadata annotatedTypeMetadata) {
         try {

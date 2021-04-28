@@ -26,7 +26,7 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         put(new InetSocketAddress(ip, port), getProxyProtocol(ip, port, routeInfo));
     }
 
-    public synchronized ProxyResourceManager unregisterProxy(String ip, int port) throws Exception {
+    public synchronized ProxyResourceManager unregisterProxy(String ip, int port) {
         ProxyResourceManager proxyResourceManager = remove(new InetSocketAddress(ip, port));
         return proxyResourceManager;
     }
@@ -45,8 +45,7 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     protected byte[] getProxyConnectProtocol(Object object){
         SocketAddress socketAddress = socketAddressMap.get(object);
         ProxyResourceManager proxyResourceManager = get(socketAddress);
-        byte[] protocol = proxyResourceManager.getProxyConnectProtocol();
-        return protocol;
+        return proxyResourceManager.getProxyConnectProtocol();
     }
 
     protected SocketAddress removeProxyAddress(Object o) {

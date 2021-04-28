@@ -6,6 +6,8 @@ import com.alibaba.arthas.deps.org.objectweb.asm.Label;
 import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
 import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
 
+import static com.ctrip.framework.xpipe.redis.utils.Constants.CONNECT_CLASS;
+
 public class SocketAdapter extends AbstractSocketAdapter {
 
     public SocketAdapter(ClassVisitor cv) {
@@ -46,7 +48,7 @@ public class SocketAdapter extends AbstractSocketAdapter {
             mv.visitVarInsn(Opcodes.ASTORE, 3);
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "getAddress", "(Ljava/lang/Object;Ljava/net/InetSocketAddress;)Ljava/net/InetSocketAddress;", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "getAddress", "(Ljava/lang/Object;Ljava/net/InetSocketAddress;)Ljava/net/InetSocketAddress;", false);
             mv.visitVarInsn(Opcodes.ASTORE, 1);
             mv.visitVarInsn(Opcodes.ALOAD, 3);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
@@ -57,7 +59,7 @@ public class SocketAdapter extends AbstractSocketAdapter {
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
             mv.visitVarInsn(Opcodes.ILOAD, 2);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "connectToProxy", "(Ljava/net/Socket;Ljava/net/InetSocketAddress;I)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "connectToProxy", "(Ljava/net/Socket;Ljava/net/InetSocketAddress;I)V", false);
             mv.visitInsn(Opcodes.RETURN);
             mv.visitLabel(label);
 

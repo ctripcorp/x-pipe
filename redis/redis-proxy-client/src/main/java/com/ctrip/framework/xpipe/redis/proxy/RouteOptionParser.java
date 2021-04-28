@@ -6,12 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RouteOptionParser {
+import static com.ctrip.framework.xpipe.redis.utils.Constants.*;
 
-    public static final String ELEMENT_SPLITTER = "\\h";
-    public static final String WHITE_SPACE = " ";
-    public static final String ARRAY_SPLITTER = "\\s*,\\s*";
-    public static final String ROUTE = "ROUTE";
+public class RouteOptionParser {
 
     private String[] nodes;
 

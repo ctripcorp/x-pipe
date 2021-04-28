@@ -4,6 +4,8 @@ package com.ctrip.framework.xpipe.redis.instrument.adapter;
 import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
 import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
 
+import static com.ctrip.framework.xpipe.redis.utils.Constants.CONNECT_CLASS;
+
 public class CloseMethodAdapter extends MethodVisitor {
 
     public CloseMethodAdapter(MethodVisitor mv) {
@@ -13,6 +15,6 @@ public class CloseMethodAdapter extends MethodVisitor {
     @Override
     public void visitCode() {
         mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "removeAddress", "(Ljava/lang/Object;)Ljava/net/SocketAddress;", false);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "removeAddress", "(Ljava/lang/Object;)Ljava/net/SocketAddress;", false);
     }
 }

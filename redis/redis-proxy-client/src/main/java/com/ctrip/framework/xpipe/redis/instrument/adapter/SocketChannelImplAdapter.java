@@ -6,6 +6,8 @@ import com.alibaba.arthas.deps.org.objectweb.asm.Label;
 import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
 import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
 
+import static com.ctrip.framework.xpipe.redis.utils.Constants.CONNECT_CLASS;
+
 public class SocketChannelImplAdapter extends AbstractSocketAdapter {
 
     public SocketChannelImplAdapter(ClassVisitor cv) {
@@ -37,7 +39,7 @@ public class SocketChannelImplAdapter extends AbstractSocketAdapter {
         @Override
         public void visitCode() {
             mv.visitVarInsn(Opcodes.ALOAD, 0);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "sendProtocolToProxy", "(Ljava/nio/channels/SocketChannel;)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "sendProtocolToProxy", "(Ljava/nio/channels/SocketChannel;)V", false);
         }
     }
 
@@ -59,21 +61,21 @@ public class SocketChannelImplAdapter extends AbstractSocketAdapter {
         @Override
         public void visitCode() {
             mv.visitVarInsn(Opcodes.ALOAD, 1);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "getString", "(Ljava/net/SocketAddress;)Ljava/lang/String;", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "getString", "(Ljava/net/SocketAddress;)Ljava/lang/String;", false);
             mv.visitVarInsn(Opcodes.ASTORE, 2);
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "getAddress", "(Ljava/lang/Object;Ljava/net/SocketAddress;)Ljava/net/SocketAddress;", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "getAddress", "(Ljava/lang/Object;Ljava/net/SocketAddress;)Ljava/net/SocketAddress;", false);
             mv.visitVarInsn(Opcodes.ASTORE, 1);
             mv.visitVarInsn(Opcodes.ALOAD, 2);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "getString", "(Ljava/net/SocketAddress;)Ljava/lang/String;", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "getString", "(Ljava/net/SocketAddress;)Ljava/lang/String;", false);
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
             Label label = new Label();
             mv.visitJumpInsn(Opcodes.IFNE, label);
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             mv.visitVarInsn(Opcodes.ALOAD, 1);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil", "connectToProxy", "(Ljava/nio/channels/SocketChannel;Ljava/net/SocketAddress;)Z", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, CONNECT_CLASS, "connectToProxy", "(Ljava/nio/channels/SocketChannel;Ljava/net/SocketAddress;)Z", false);
             mv.visitInsn(Opcodes.IRETURN);
             mv.visitLabel(label);
         }
