@@ -1,9 +1,10 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
-import com.ctrip.framework.xpipe.redis.asm.ClassVisitor;
-import com.ctrip.framework.xpipe.redis.asm.Label;
-import com.ctrip.framework.xpipe.redis.asm.MethodVisitor;
-import com.ctrip.framework.xpipe.redis.asm.Opcodes;
+
+import com.alibaba.arthas.deps.org.objectweb.asm.ClassVisitor;
+import com.alibaba.arthas.deps.org.objectweb.asm.Label;
+import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
+import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
 
 public class SocketChannelImplAdapter extends AbstractSocketAdapter {
 

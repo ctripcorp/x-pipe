@@ -1,7 +1,8 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
-import com.ctrip.framework.xpipe.redis.asm.MethodVisitor;
-import com.ctrip.framework.xpipe.redis.asm.Opcodes;
+
+import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
+import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
 
 public class CloseMethodAdapter extends MethodVisitor {
 

@@ -1,8 +1,8 @@
 package com.ctrip.framework.xpipe.redis.instrument.adapter;
 
-import com.ctrip.framework.xpipe.redis.asm.ClassWriter;
-import com.ctrip.framework.xpipe.redis.asm.MethodVisitor;
-import com.ctrip.framework.xpipe.redis.asm.Opcodes;
+import com.alibaba.arthas.deps.org.objectweb.asm.ClassWriter;
+import com.alibaba.arthas.deps.org.objectweb.asm.MethodVisitor;
+import com.alibaba.arthas.deps.org.objectweb.asm.Opcodes;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -16,7 +16,7 @@ public abstract class AbstractSocketAdaptorTest {
 
     protected AbstractSocketAdapter socketAdaptor;
 
-    protected int version = Opcodes.ASM4;
+    protected int version = Opcodes.ASM7;
 
     protected int access = Opcodes.ACC_PUBLIC;
 
