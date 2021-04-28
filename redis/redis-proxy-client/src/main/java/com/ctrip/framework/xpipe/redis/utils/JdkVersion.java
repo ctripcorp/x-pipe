@@ -1,6 +1,7 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
 public class JdkVersion {
+
     public static final String JAVA_VERSION = "java.version";
 
     public static int getVersion() {

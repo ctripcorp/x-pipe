@@ -1,11 +1,10 @@
 package com.ctrip.framework.xpipe.redis.proxy;
 
-import com.ctrip.framework.xpipe.redis.ProxyRegistry;
-
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static com.ctrip.framework.xpipe.redis.proxy.RouteOptionParser.WHITE_SPACE;
+import static com.ctrip.framework.xpipe.redis.utils.Constants.PROXY_KEY_WORD;
+import static com.ctrip.framework.xpipe.redis.utils.Constants.WHITE_SPACE;
 
 public class DefaultProxyConnectProtocol implements ProxyConnectProtocol {
 
@@ -22,12 +21,12 @@ public class DefaultProxyConnectProtocol implements ProxyConnectProtocol {
 
     @Override
     public byte[] output() {
-        StringBuilder proxyProtocol = new StringBuilder("+").append(ProxyRegistry.PROXY_KEY_WORD).append(WHITE_SPACE);
+        StringBuilder proxyProtocol = new StringBuilder("+").append(PROXY_KEY_WORD).append(WHITE_SPACE);
         proxyProtocol.append(routeOptionParser.output()).append(";\r\n");
         return proxyProtocol.toString().getBytes();
     }
 
     protected String removeKeyWord(String protocol) {
-        return protocol.substring(ProxyRegistry.PROXY_KEY_WORD.length()).trim();
+        return protocol.substring(PROXY_KEY_WORD.length()).trim();
     }
 }
