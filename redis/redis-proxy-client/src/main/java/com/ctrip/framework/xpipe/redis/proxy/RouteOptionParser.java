@@ -19,8 +19,6 @@ public class RouteOptionParser {
 
     protected String originOptionString;
 
-    protected String output;
-
     private AtomicBoolean nextNodesRemoved = new AtomicBoolean(false);
 
     public List<InetSocketAddress> getNextEndpoints() {
