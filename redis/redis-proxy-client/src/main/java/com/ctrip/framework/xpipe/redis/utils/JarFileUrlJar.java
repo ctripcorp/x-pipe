@@ -14,19 +14,23 @@ public class JarFileUrlJar {
 
     public static final String TMP_PATH = "/tmp/redis/proxy/";
 
-    private final JarFile jarFile;
+    private JarFile jarFile;
 
     private JarEntry entry;
 
     private String fileName;
 
     public JarFileUrlJar(URL url) throws IOException {
-        // jar:file:...
-        JarURLConnection jarConn = (JarURLConnection) url.openConnection();
-        jarConn.setUseCaches(false);
-        jarFile = jarConn.getJarFile();
-        entry = jarConn.getJarEntry();
-        fileName = TMP_PATH + entry.getName();
+        try {
+            // jar:file:...
+            JarURLConnection jarConn = (JarURLConnection) url.openConnection();
+            jarConn.setUseCaches(false);
+            jarFile = jarConn.getJarFile();
+            entry = jarConn.getJarEntry();
+            fileName = TMP_PATH + entry.getName();
+        } catch (Exception e) {
+            throw new IOException(jarFile.getName() + ":" + jarFile.size(), e);
+        }
     }
 
     public void close() {

@@ -59,6 +59,7 @@ public class ProxyAgentTool {
                 jarPath = jarFileUrlJar.getJarFilePath();
                 proxyFile = jarPath;
                 msg = String.format("[AgentMain] proxy jarPath:%s", jarPath);
+                jarFileUrlJar.close();
             } else {
                 URI uri = url.toURI();
                 msg = String.format("[AgentMain] proxy uri:%s", uri);
