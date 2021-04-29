@@ -1,9 +1,11 @@
 package com.ctrip.framework.xpipe.redis.instrument;
 
+import com.ctrip.framework.xpipe.redis.utils.JarFileUrlJar;
 import com.ctrip.framework.xpipe.redis.utils.Tools;
 
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 
@@ -46,11 +48,24 @@ public class ProxyAgentTool {
                 loadAgentMethod = hotspotVMClass.getMethod("loadAgent", String.class, String.class);
                 detachMethod = vmClass.getMethod("detach");
             }
+
             CodeSource src = AgentMain.class.getProtectionDomain().getCodeSource();
-            URI uri = src.getLocation().toURI();
-            msg = String.format("[AgentMain] proxy uri:%s", uri);
-            String proxyFile = uri.getSchemeSpecificPart();
-            String jarPath = Paths.get(uri).toString();
+            URL url = src.getLocation();
+            String proxyFile;
+            String jarPath;
+
+            if (!("jar").equals(url.getProtocol())) {
+                JarFileUrlJar jarFileUrlJar = new JarFileUrlJar(url);
+                jarPath = jarFileUrlJar.getJarFilePath();
+                proxyFile = jarPath;
+                msg = String.format("[AgentMain] proxy jarPath:%s", jarPath);
+            } else {
+                URI uri = url.toURI();
+                msg = String.format("[AgentMain] proxy uri:%s", uri);
+                proxyFile = uri.getSchemeSpecificPart();
+                jarPath = Paths.get(uri).toString();
+            }
+
             loadAgentMethod.invoke(VM, jarPath, proxyFile);
             detachMethod.invoke(VM);
         } catch (Exception e) {
