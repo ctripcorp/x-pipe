@@ -1,10 +1,15 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static com.ctrip.framework.xpipe.redis.utils.JarFileUrlJar.TMP_PATH;
 
 /**
  * @Author limingdong
@@ -22,8 +27,11 @@ public class JarFileUrlJarTest {
     }
 
     @Test
-    public void test() {
-        System.out.println("");
+    public void testGetJarFilePath() throws IOException {
+        String path = jarFileUrlJar.getJarFilePath();
+        Assert.assertEquals(path, TMP_PATH + "BOOT-INF/lib/redis-proxy-client-1.2.2.jar");
+        Assert.assertTrue(Files.exists(Paths.get(path)));
+        Assert.assertTrue(Files.deleteIfExists(Paths.get(path)));
     }
 
 }

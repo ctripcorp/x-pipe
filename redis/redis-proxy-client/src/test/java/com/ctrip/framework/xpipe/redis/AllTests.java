@@ -4,10 +4,7 @@ import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdaptorTest;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdaptorTest;
 import com.ctrip.framework.xpipe.redis.proxy.DefaultProxyConnectProtocolTest;
 import com.ctrip.framework.xpipe.redis.proxy.RouteOptionParserTest;
-import com.ctrip.framework.xpipe.redis.utils.ConnectionUtilTest;
-import com.ctrip.framework.xpipe.redis.utils.JdkVersionTest;
-import com.ctrip.framework.xpipe.redis.utils.ProxyUtilTest;
-import com.ctrip.framework.xpipe.redis.utils.ToolsTest;
+import com.ctrip.framework.xpipe.redis.utils.*;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -27,6 +24,7 @@ import java.net.InetAddress;
         SocketAdaptorTest.class,
         SocketChannelImplAdaptorTest.class,
         ToolsTest.class,
+        JarFileUrlJarTest.class,
         JdkVersionTest.class,
         ProxyRegistryTest.class
 

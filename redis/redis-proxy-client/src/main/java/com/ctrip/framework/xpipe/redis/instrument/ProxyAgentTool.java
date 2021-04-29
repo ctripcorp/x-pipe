@@ -54,7 +54,7 @@ public class ProxyAgentTool {
             String proxyFile;
             String jarPath;
 
-            if (!("jar").equals(url.getProtocol())) {
+            if (("jar").equals(url.getProtocol())) {
                 JarFileUrlJar jarFileUrlJar = new JarFileUrlJar(url);
                 jarPath = jarFileUrlJar.getJarFilePath();
                 proxyFile = jarPath;
