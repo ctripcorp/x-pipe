@@ -48,6 +48,7 @@ public class ProxyAgentTool {
         String jarPath = Paths.get(src.getLocation().toURI()).toString();
         String proxyFile = src.getLocation().toURI().getSchemeSpecificPart();
         loadAgentMethod.invoke(VM, jarPath, proxyFile);
+        System.out.println(String.format("[AgentMain] jar path:%s, proxy file:%s", jarPath, proxyFile));
         detachMethod.invoke(VM);
     }
 
