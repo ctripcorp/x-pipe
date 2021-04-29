@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
@@ -18,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * @author lishanglin
  * date 2021/4/17
  */
-public class MigrationPreCheckCmd extends AbstractCommand<Boolean> {
+public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
     private MigrationSystemAvailableChecker checker;
 
@@ -30,13 +29,11 @@ public class MigrationPreCheckCmd extends AbstractCommand<Boolean> {
 
     private BeaconMetaService beaconMetaService;
 
-    private BeaconMigrationRequest migrationRequest;
-
     private static final Logger logger = LoggerFactory.getLogger(MigrationPreCheckCmd.class);
 
     public MigrationPreCheckCmd(BeaconMigrationRequest migrationRequest, MigrationSystemAvailableChecker checker, ConfigService configService,
                                 ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService) {
-        this.migrationRequest = migrationRequest;
+        super(migrationRequest);
         this.checker = checker;
         this.configService = configService;
         this.clusterService = clusterService;
@@ -45,12 +42,13 @@ public class MigrationPreCheckCmd extends AbstractCommand<Boolean> {
     }
 
     @Override
-    protected void doExecute() throws Throwable {
+    protected void innerExecute() throws Throwable {
         if(!checker.getResult().isAvaiable() && !configService.ignoreMigrationSystemAvailability()) {
             future().setFailure(new MigrationSystemNotHealthyException(checker.getResult().getMessage()));
             return;
         }
 
+        BeaconMigrationRequest migrationRequest = getMigrationRequest();
         String clusterName = migrationRequest.getClusterName();
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         if (null == clusterTbl) {
@@ -79,14 +77,4 @@ public class MigrationPreCheckCmd extends AbstractCommand<Boolean> {
         future().setSuccess(true);
     }
 
-    @Override
-    protected void doReset() {
-        // do nothing
-    }
-
-    @Override
-    public String getName() {
-        if (null != migrationRequest) return "MigrationPreCheckCmd-" + migrationRequest.getClusterName();
-        else return "MigrationPreCheckCmd-unknown";
-    }
 }

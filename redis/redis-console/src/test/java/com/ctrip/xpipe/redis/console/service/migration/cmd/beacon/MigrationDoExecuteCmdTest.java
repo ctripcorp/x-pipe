@@ -32,7 +32,7 @@ public class MigrationDoExecuteCmdTest extends AbstractConsoleIntegrationTest {
     @Before
     public void setupMigrationDoExecuteCmdTest() {
         migrationRequest = new BeaconMigrationRequest();
-        doExecuteCmd = new MigrationDoExecuteCmd(migrationRequest, migrationEventManager);
+        doExecuteCmd = new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, executors);
     }
 
     @Test(expected = ClusterMigrationNotSuccessException.class)
