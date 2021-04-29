@@ -12,7 +12,7 @@ import java.util.jar.JarFile;
 
 public class JarFileUrlJar {
 
-    private static final String TMP_PATH = "/tmp/redis/proxy/";
+    public static final String TMP_PATH = "/tmp/redis/proxy/";
 
     private final JarFile jarFile;
 
