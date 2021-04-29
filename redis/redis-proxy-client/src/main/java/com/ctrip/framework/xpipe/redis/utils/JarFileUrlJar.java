@@ -53,7 +53,6 @@ public class JarFileUrlJar {
 
     public String getJarFilePath() throws IOException {
         InputStream inputStream = getEntryInputStream();
-        Files.deleteIfExists(Paths.get(fileName));
         Files.copy(inputStream, getDistFile(fileName));
         return fileName;
     }
@@ -63,6 +62,7 @@ public class JarFileUrlJar {
         Path dist = Paths.get(path);
         Path parent = dist.getParent();
         if (parent != null) {
+            Files.deleteIfExists(parent);
             Files.createDirectories(parent);
         }
         return dist;
