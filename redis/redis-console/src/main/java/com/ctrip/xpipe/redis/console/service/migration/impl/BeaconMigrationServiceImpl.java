@@ -59,7 +59,10 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     private AlertManager alertManager;
 
     @Resource( name = MigrationResources.MIGRATION_PREPARE_EXECUTOR )
-    private Executor executors;
+    private Executor prepareExecutors;
+
+    @Resource(name = MigrationResources.MIGRATION_EXECUTOR)
+    private Executor migrationExecutors;
 
     private ScheduledExecutorService scheduled;
 
@@ -93,8 +96,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
         migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
-        migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager));
-        CommandFuture<?> future = migrateSequenceCmd.execute(executors);
+        migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, migrationExecutors));
+        CommandFuture<?> future = migrateSequenceCmd.execute(prepareExecutors);
 
         int timeoutMilli = config.getMigrationTimeoutMilli();
         ScheduledFuture<?> scheduledFuture = scheduled.schedule(() -> {
