@@ -23,7 +23,7 @@ public class ConnectionUtil {
     public static InetSocketAddress getAddress(Object o, InetSocketAddress socketAddress) {
         if (ProxyUtil.getInstance().needProxy(socketAddress)) {
             InetSocketAddress proxy =  ProxyUtil.getInstance().getProxyAddress(o, socketAddress);
-            logger.info("[Client -> Proxy]: {} -> {}", socketAddress, proxy);
+            logger.info("[Destination -> Proxy]: {} -> {}", socketAddress, proxy);
             return proxy;
         } else {
             return socketAddress;
@@ -49,7 +49,7 @@ public class ConnectionUtil {
 
     public static boolean connectToProxy(SocketChannel socketChannel, SocketAddress address) throws IOException {
         socketChannelMap.put(socketChannel, new ReentrantLock());
-        logger.info("[Connect] to {} -> {} through Netty SocketChannel", socketChannel.getLocalAddress(), address);
+        logger.info("[Connect] to proxy {} through Netty SocketChannel", address);
         return socketChannel.connect(address);
     }
 

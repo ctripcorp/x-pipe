@@ -50,6 +50,7 @@ public class AutoConfiguration {
     private static void initFilter(FilterRegistrationBean filter) {
         filter.setFilter(new ProxyFilter());
         filter.setName("proxy-filter");
+        filter.addUrlPatterns("/proxy/client");
         filter.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.FORWARD);
         filter.setAsyncSupported(true);
         filter.setOrder(Ordered.HIGHEST_PRECEDENCE);

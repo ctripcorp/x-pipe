@@ -24,6 +24,7 @@ import java.net.InetAddress;
         SocketAdaptorTest.class,
         SocketChannelImplAdaptorTest.class,
         ToolsTest.class,
+        JarFileUrlJarTest.class,
         JdkVersionTest.class,
         ProxyRegistryTest.class
 

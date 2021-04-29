@@ -8,7 +8,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.security.CodeSource;
-import java.util.jar.JarFile;
 
 public class ProxyAgentTool {
 
@@ -52,18 +51,21 @@ public class ProxyAgentTool {
 
             CodeSource src = AgentMain.class.getProtectionDomain().getCodeSource();
             URL url = src.getLocation();
+            URI uri = url.toURI();
+            String protocol = uri.toString();
             String proxyFile;
             String jarPath;
 
             if (("jar").equals(url.getProtocol())) {
-                JarFileUrlJar jarFileUrlJar = new JarFileUrlJar(url);
-                JarFile jarFile = jarFileUrlJar.getJarFile();
-                jarPath = jarFile.getName();
+                if (protocol.endsWith("!/")) {
+                    protocol = protocol.substring(0, protocol.length() - 2);
+                }
+                JarFileUrlJar jarFileUrlJar = new JarFileUrlJar(new URL(protocol));
+                jarPath = jarFileUrlJar.getJarFilePath();
                 proxyFile = jarPath;
                 msg = String.format("[AgentMain] proxy jarFile:%s", jarPath);
                 jarFileUrlJar.close();
             } else {
-                URI uri = url.toURI();
                 msg = String.format("[AgentMain] proxy uri:%s", uri);
                 proxyFile = uri.getSchemeSpecificPart();
                 jarPath = Paths.get(uri).toString();
