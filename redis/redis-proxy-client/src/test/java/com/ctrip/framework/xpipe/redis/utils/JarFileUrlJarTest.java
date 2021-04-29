@@ -6,8 +6,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URL;
 
-import static org.junit.Assert.*;
-
 /**
  * @Author limingdong
  * @create 2021/4/29
@@ -20,7 +18,7 @@ public class JarFileUrlJarTest {
 
     @Before
     public void setUp() throws IOException {
-        jarFileUrlJar = new JarFileUrlJar(new URL(JAR_FILE), true);
+        jarFileUrlJar = new JarFileUrlJar(new URL(JAR_FILE));
     }
 
     @Test
