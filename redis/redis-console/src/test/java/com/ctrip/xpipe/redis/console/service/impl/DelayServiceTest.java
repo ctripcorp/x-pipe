@@ -5,6 +5,8 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
@@ -15,6 +17,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -41,6 +44,9 @@ public class DelayServiceTest {
 
     @Mock
     private CrossMasterDelayService crossMasterDelayService;
+
+    @Mock
+    private HealthStateService healthStateService;
 
     private final HashMap<String, DcMeta> dcs = new HashMap<String, DcMeta>() {{
         put("jq", new DcMeta().setId("jq"));
@@ -86,6 +92,25 @@ public class DelayServiceTest {
 
     @Test
     public void getDcActiveClusterUnhealthyInstanceTest() {
+        prepareDcMeta();
+        Map<HostPort, HEALTH_STATE> allHealthStatus = new HashMap<>();
+        allHealthStatus.put(new HostPort("127.0.0.1", 1000), HEALTH_STATE.DOWN);
+        allHealthStatus.put(new HostPort("127.0.0.1", 2000), HEALTH_STATE.SICK);
+        allHealthStatus.put(new HostPort("127.0.0.1", 3000), HEALTH_STATE.HEALTHY);
+        Mockito.when(healthStateService.getAllCachedState()).thenReturn(allHealthStatus);
+
+        String dc = "jq";
+        UnhealthyInfoModel unhealthyInfo = delayService.getDcActiveClusterUnhealthyInstance(dc);
+        Assert.assertEquals(1, unhealthyInfo.getUnhealthyCluster());
+        Assert.assertEquals(2, unhealthyInfo.getUnhealthyRedis());
+        System.out.println(unhealthyInfo.getUnhealthyDcShardByCluster("cluster1"));
+//        Assert.assertEquals(Arrays.asList(Pair.of(dc, "shard1"), Pair.of("jq", "shard2")),
+//                unhealthyInfo.getUnhealthyDcShardByCluster("cluster1"));
+    }
+
+    @Test
+    @Ignore
+    public void getDcActiveClusterUnhealthyInstanceTest2() {
         prepareDcMeta();
         Map<HostPort, Long> redisDelay = new HashMap<HostPort, Long>() {{
             put(new HostPort("127.0.0.1", 1000), DelayAction.SAMPLE_LOST_BUT_PONG);
