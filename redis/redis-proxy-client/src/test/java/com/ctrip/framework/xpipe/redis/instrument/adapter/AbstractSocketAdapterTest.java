@@ -10,7 +10,7 @@ import org.junit.Test;
  * @Author limingdong
  * @create 2021/4/23
  */
-public abstract class AbstractSocketAdaptorTest {
+public abstract class AbstractSocketAdapterTest {
 
     protected ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 

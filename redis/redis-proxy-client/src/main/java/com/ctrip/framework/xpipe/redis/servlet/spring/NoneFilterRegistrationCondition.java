@@ -4,9 +4,6 @@ import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-/**
- * Created by jiang.j on 2017/6/8.
- */
 public class NoneFilterRegistrationCondition implements Condition {
 
     @Override
