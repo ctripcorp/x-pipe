@@ -1,6 +1,5 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.JarURLConnection;
@@ -64,15 +63,21 @@ public class JarFileUrlJar {
         Path dist = Paths.get(path);
         Path parent = dist.getParent();
         if (parent != null) {
-            Stream<Path> children =  Files.list(parent);
-            children.forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (IOException e) {
-                }
-            });
+            if (Files.exists(parent)) {
+                delete(parent);
+            }
             Files.createDirectories(parent);
         }
         return dist;
+    }
+
+    private void delete(Path root) throws IOException {
+        Stream<Path> children =  Files.list(root);
+        children.forEach(p -> {
+            try {
+                Files.deleteIfExists(p);
+            } catch (IOException e) {
+            }
+        });
     }
 }
