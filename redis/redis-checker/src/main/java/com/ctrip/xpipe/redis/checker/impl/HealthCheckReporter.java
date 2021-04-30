@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.model.CheckerRole;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
@@ -28,6 +29,8 @@ import java.util.concurrent.ScheduledExecutorService;
  * date 2021/3/17
  */
 public class HealthCheckReporter implements LeaderAware {
+
+    private HealthStateService healthStateService;
 
     private RedisDelayManager redisDelayManager;
 
@@ -51,12 +54,15 @@ public class HealthCheckReporter implements LeaderAware {
 
     private int serverPort;
 
+    private static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
+
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
-    public HealthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
+    public HealthCheckReporter(HealthStateService healthStateService, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
                                ClusterServer clusterServer, RedisDelayManager redisDelayManager,
                                CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
                                ClusterHealthManager clusterHealthManager, int serverPort) {
+        this.healthStateService = healthStateService;
         this.serverPort = serverPort;
         this.config = checkerConfig;
         this.checkerConsoleService = checkerConsoleService;
@@ -132,6 +138,7 @@ public class HealthCheckReporter implements LeaderAware {
             result.encodeCrossMasterDelays(crossMasterDelayManager.getAllCrossMasterDelays());
             result.encodeRedisAlives(pingService.getAllRedisAlives());
             result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
+            result.encodeRedisStates(healthStateService.getAllCachedState());
 
             checkerConsoleService.report(config.getConsoleAddress(), result);
         } catch (Throwable th) {
