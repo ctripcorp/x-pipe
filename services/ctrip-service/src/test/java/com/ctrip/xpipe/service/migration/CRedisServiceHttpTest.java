@@ -77,7 +77,7 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals(1, webServer.getRequestCount());
 
         RecordedRequest request = webServer.takeRequest();
-        Assert.assertEquals("/checkcluster/test-cluster",
+        Assert.assertEquals("/keeperApi/checkcluster/test-cluster",
                 request.getPath());
         Assert.assertEquals("POST", request.getMethod());
     }
