@@ -18,18 +18,18 @@ public class SocketChannelImplAdapter extends AbstractSocketAdapter {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
         if (!isInterface && mv != null && name.equals("connect")) {
-            mv = new ConnectMethodAdaptor(mv);
+            mv = new ConnectMethodAdapter(mv);
         } else if (!isInterface && mv != null && name.equals("write")) {
-            mv = new WriteMethodAdaptor(mv);
+            mv = new WriteMethodAdapter(mv);
         } else if (!isInterface && mv != null && name.equals("close")) {
             mv = new CloseMethodAdapter(mv);
         }
         return mv;
     }
 
-    class WriteMethodAdaptor extends MethodVisitor {
+    class WriteMethodAdapter extends MethodVisitor {
 
-        public WriteMethodAdaptor(MethodVisitor methodVisitor) {
+        public WriteMethodAdapter(MethodVisitor methodVisitor) {
             super(Opcodes.ASM7, methodVisitor);
         }
 
@@ -43,8 +43,8 @@ public class SocketChannelImplAdapter extends AbstractSocketAdapter {
         }
     }
 
-    class ConnectMethodAdaptor extends MethodVisitor {
-        public ConnectMethodAdaptor(MethodVisitor mv) {
+    class ConnectMethodAdapter extends MethodVisitor {
+        public ConnectMethodAdapter(MethodVisitor mv) {
             super(Opcodes.ASM7, mv);
         }
 

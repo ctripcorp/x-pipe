@@ -1,7 +1,7 @@
 package com.ctrip.framework.xpipe.redis;
 
-import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdaptorTest;
-import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdaptorTest;
+import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdapterTest;
+import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdapterTest;
 import com.ctrip.framework.xpipe.redis.proxy.DefaultProxyConnectProtocolTest;
 import com.ctrip.framework.xpipe.redis.proxy.RouteOptionParserTest;
 import com.ctrip.framework.xpipe.redis.utils.*;
@@ -21,8 +21,8 @@ import java.net.InetAddress;
         RouteOptionParserTest.class,
         ProxyUtilTest.class,
         ConnectionUtilTest.class,
-        SocketAdaptorTest.class,
-        SocketChannelImplAdaptorTest.class,
+        SocketAdapterTest.class,
+        SocketChannelImplAdapterTest.class,
         ToolsTest.class,
         JarFileUrlJarTest.class,
         JdkVersionTest.class,

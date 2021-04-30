@@ -9,7 +9,7 @@ import org.junit.Before;
  * @Author limingdong
  * @create 2021/4/23
  */
-public class SocketChannelImplAdaptorTest extends AbstractSocketAdaptorTest {
+public class SocketChannelImplAdapterTest extends AbstractSocketAdapterTest {
 
     @Before
     public void setUp() {
@@ -17,6 +17,6 @@ public class SocketChannelImplAdaptorTest extends AbstractSocketAdaptorTest {
     }
 
     protected void assertConnect(MethodVisitor methodVisitor) {
-        Assert.assertTrue(methodVisitor instanceof SocketChannelImplAdapter.ConnectMethodAdaptor);
+        Assert.assertTrue(methodVisitor instanceof SocketChannelImplAdapter.ConnectMethodAdapter);
     }
 }

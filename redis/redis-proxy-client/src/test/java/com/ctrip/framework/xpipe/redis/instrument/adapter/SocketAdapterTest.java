@@ -9,7 +9,7 @@ import org.junit.Before;
  * @Author limingdong
  * @create 2021/4/22
  */
-public class SocketAdaptorTest extends AbstractSocketAdaptorTest {
+public class SocketAdapterTest extends AbstractSocketAdapterTest {
 
     @Before
     public void setUp() {

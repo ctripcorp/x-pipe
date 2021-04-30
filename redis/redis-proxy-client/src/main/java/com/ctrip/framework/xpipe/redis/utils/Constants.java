@@ -1,9 +1,5 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
-/**
- * @Author limingdong
- * @create 2021/4/28
- */
 public class Constants {
 
     public static final String CONNECT_CLASS = "com/ctrip/framework/xpipe/redis/utils/ConnectionUtil";
