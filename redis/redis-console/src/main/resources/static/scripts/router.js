@@ -1,5 +1,8 @@
-index_module.config(function ($stateProvider, $urlRouterProvider) {
+angular
+    .module('index')
+    .config(router);
 
+function router($stateProvider, $urlRouterProvider) {
 
     $urlRouterProvider.otherwise("/cluster_list");
 
@@ -141,4 +144,4 @@ index_module.config(function ($stateProvider, $urlRouterProvider) {
             controller : 'KeeperContainerListCtl',
         });
 
-});
+}
