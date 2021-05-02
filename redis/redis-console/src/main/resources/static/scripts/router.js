@@ -1,6 +1,9 @@
 angular
     .module('index')
-    .config(router);
+    .config(router)
+    .config(['$locationProvider', function($locationProvider) {
+        $locationProvider.hashPrefix('');
+    }]);
 
 function router($stateProvider, $urlRouterProvider) {
 
