@@ -1,4 +1,6 @@
-services.service('KeeperContainerService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('KeeperContainerService', ['$resource', '$q', function ($resource, $q) {
 
     var resource = $resource('', {}, {
         find_availablekeepers_by_dc: {

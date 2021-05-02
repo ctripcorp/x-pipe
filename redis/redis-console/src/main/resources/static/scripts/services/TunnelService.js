@@ -1,4 +1,10 @@
-services.service('TunnelService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('TunnelService', TunnelService);
+
+TunnelService.$inject = ['$resource', '$q'];
+
+function TunnelService($resource, $q) {
 
     var resource = $resource('', {}, {
         get_tunnels:{
@@ -26,4 +32,4 @@ services.service('TunnelService', ['$resource', '$q', function ($resource, $q) {
     return {
         getAllTunnels : getAllTunnels,
     }
-}]);
+}

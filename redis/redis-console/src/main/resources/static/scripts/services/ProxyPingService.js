@@ -1,4 +1,10 @@
-services.service('ProxyPingService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('ProxyPingService', ProxyPingService);
+
+ProxyPingService.$inject = ['$resource', '$q'];
+
+function ProxyPingService($resource, $q) {
 
     var resource = $resource('', {}, {
         get_collectors:{
@@ -42,4 +48,4 @@ services.service('ProxyPingService', ['$resource', '$q', function ($resource, $q
         getDcBasedCollectors : getDcBasedCollectors,
         getHickwallAddr : getHickwallAddr
     }
-}]);
+}

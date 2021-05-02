@@ -1,4 +1,10 @@
-appUtil.service('AppUtil', ['toastr', '$window', function (toastr, $window) {
+angular
+    .module('utils')
+    .service('AppUtil', AppUtil);
+
+AppUtil.$inject = ['toastr', '$window'];
+
+function AppUtil(toastr, $window) {
 
     return {
         errorMsg: function (response) {
@@ -32,4 +38,4 @@ appUtil.service('AppUtil', ['toastr', '$window', function (toastr, $window) {
             return result;
         }
     }
-}]);
+}

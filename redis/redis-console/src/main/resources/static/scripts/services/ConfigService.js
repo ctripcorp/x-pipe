@@ -1,4 +1,10 @@
-services.service('ConfigService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('ConfigService', ConfigService);
+
+ConfigService.$inject = ['$resource', '$q'];
+
+function ConfigService($resource, $q) {
 
     var resource = $resource('', {}, {
         is_alert_system_on: {
@@ -56,4 +62,4 @@ services.service('ConfigService', ['$resource', '$q', function ($resource, $q) {
         isSentinelAutoProcessOn: isSentinelAutoProcessOn,
         changeConfig: changeConfig
     }
-}]);
+}

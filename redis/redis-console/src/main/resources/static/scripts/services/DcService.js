@@ -1,4 +1,10 @@
-services.service('DcService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('DcService', DcService);
+
+DcService.$inject = ['$resource', '$q'];
+
+function DcService($resource, $q) {
     
     var resource = $resource('', {}, {
         load_all_dc: {
@@ -79,4 +85,4 @@ services.service('DcService', ['$resource', '$q', function ($resource, $q) {
     	addDc : addDc,
         findAllDcsRichInfo: findAllDcsRichInfo
     }
-}]);
+}

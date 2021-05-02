@@ -1,4 +1,11 @@
-services.service('HealthCheckService', ['$resource', '$q', function($resource, $q) {
+angular
+	.module('services')
+	.service('HealthCheckService', HealthCheckService);
+
+HealthCheckService.$inject = ['$resource', '$q'];
+
+function HealthCheckService($resource, $q) {
+
 	var resource = $resource('', {}, {
 		is_redis_health: {
 			method: 'GET',
@@ -99,4 +106,4 @@ services.service('HealthCheckService', ['$resource', '$q', function($resource, $
 		getCrossMasterDelay : getCrossMasterDelay,
 		getCrossMasterHickwallAddr, getCrossMasterHickwallAddr
 	}
-}]);
+}

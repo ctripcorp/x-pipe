@@ -1,4 +1,10 @@
-services.service('UserService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('UserService', UserService);
+
+UserService.$inject = ['$resource', '$q'];
+
+function UserService($resource, $q) {
 
     var resource = $resource('', {}, {
         get_current_user: {
@@ -37,4 +43,4 @@ services.service('UserService', ['$resource', '$q', function ($resource, $q) {
         getCurrentUser: getCurrentUser,
         logout: logout
     }
-}]);
+}

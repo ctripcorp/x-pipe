@@ -1,5 +1,9 @@
 /**  确认框 */
-directive_module.directive('addshard', function ($compile, $window) {
+angular
+    .module('directive')
+    .directive('addshard', addshard);
+
+function addshard($compile, $window) {
     return {
         restrict: 'E',
         templateUrl: '../../views/directives/add-shard.html',
@@ -7,4 +11,4 @@ directive_module.directive('addshard', function ($compile, $window) {
         replace: true
         // TODO [marsqing] move shard create/delete opertion here
     }
-});
+}
