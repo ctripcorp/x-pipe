@@ -1,5 +1,9 @@
 /**  确认框 */
-directive_module.directive('xpipeconfirmdialog', function ($compile, $window) {
+angular
+    .module('directive')
+    .directive('xpipeconfirmdialog', xpipeconfirmdialog);
+
+function xpipeconfirmdialog($compile, $window) {
     return {
         restrict: 'E',
         templateUrl: '../../views/directives/confirm-dialog.html',
@@ -14,7 +18,6 @@ directive_module.directive('xpipeconfirmdialog', function ($compile, $window) {
             doCancel: '=xpipeCancel'
         },
         link: function (scope, element, attrs) {
-
             scope.confirm = function () {
                 if (scope.doConfirm){
                     scope.doConfirm();
@@ -25,7 +28,6 @@ directive_module.directive('xpipeconfirmdialog', function ($compile, $window) {
                     scope.doCancel();
                 }
             };
-
         }
     }
-});
+}

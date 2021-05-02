@@ -1,4 +1,10 @@
-services.service('ProxyService', ['$resource', '$q', '$http', function ($resource, $q, $http) {
+angular
+    .module('services')
+    .service('ProxyService', ProxyService);
+
+ProxyService.$inject = ['$resource', '$q', '$http'];
+
+function ProxyService($resource, $q, $http) {
 
     var resource = $resource('', {}, {
         get_proxy_chain:{
@@ -128,4 +134,4 @@ services.service('ProxyService', ['$resource', '$q', '$http', function ($resourc
         getProxyTrafficHickwall: getProxyTrafficHickwall,
         closeProxyChain: closeProxyChain
     }
-}]);
+}

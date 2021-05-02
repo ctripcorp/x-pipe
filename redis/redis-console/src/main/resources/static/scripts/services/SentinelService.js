@@ -1,4 +1,10 @@
-services.service('SentinelService', ['$resource', '$q', function ($resource, $q) {
+angular
+	.module('services')
+	.service('SentinelService', SentinelService);
+
+SentinelService.$inject = ['$resource', '$q'];
+
+function SentinelService($resource, $q) {
 	var resource = $resource('', {}, {
 		find_sentinels_by_dc: {
 			method: 'GET',
@@ -57,4 +63,4 @@ services.service('SentinelService', ['$resource', '$q', function ($resource, $q)
 		findSentinelById: findSentinelById,
 		findSentinelsByShardId: findSentinelsByShardId
 	}
-}]);
+}

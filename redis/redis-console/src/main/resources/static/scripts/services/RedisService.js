@@ -1,4 +1,10 @@
-services.service('RedisService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('RedisService', RedisService);
+
+RedisService.$inject = ['$resource', '$q'];
+
+function RedisService($resource, $q) {
 
     var resource = $resource('', {}, {
         update_shard_redis: {
@@ -25,4 +31,4 @@ services.service('RedisService', ['$resource', '$q', function ($resource, $q) {
     return {
         updateShardRedis: updateShardRedis
     }
-}]);
+}

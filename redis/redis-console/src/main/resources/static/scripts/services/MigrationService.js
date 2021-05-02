@@ -1,4 +1,11 @@
-services.service('MigrationService', ['$resource', '$q', function($resource, $q) {
+angular
+	.module('services')
+	.service('MigrationService', MigrationService);
+
+MigrationService.$inject = ['$resource', '$q'];
+
+function MigrationService($resource, $q) {
+
 	var resource = $resource('', {}, {
 		create_event: {
 			method : 'POST',
@@ -227,4 +234,4 @@ services.service('MigrationService', ['$resource', '$q', function($resource, $q)
         checkMigrationSystem : checkMigrationSystem,
         getDefaultMigrationCluster : getDefaultMigrationCluster
 	}
-}]);
+}

@@ -1,4 +1,10 @@
-services.service('ShardService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('ShardService', ShardService);
+
+ShardService.$inject = ['$resource', '$q'];
+
+function ShardService($resource, $q) {
     var resource = $resource('', {}, {
         find_cluster_dc_shards: {
             method: 'GET',
@@ -163,5 +169,4 @@ services.service('ShardService', ['$resource', '$q', function ($resource, $q) {
         unbindRedis: unbind_redis,
         updateRedis: update_redis
     }
-
-}]);
+}

@@ -1,4 +1,10 @@
-services.service('ClusterService', ['$resource', '$q', function ($resource, $q) {
+angular
+    .module('services')
+    .service('ClusterService', ClusterService);
+
+ClusterService.$inject = ['$resource', '$q'];
+
+function ClusterService($resource, $q) {
     var resource = $resource('', {}, {
         load_cluster: {
             method: 'GET',
@@ -379,4 +385,4 @@ services.service('ClusterService', ['$resource', '$q', function ($resource, $q) 
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
     }
-}]);
+}

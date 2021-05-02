@@ -1,57 +1,62 @@
-index_module.controller('ProxyPingCtl',['$rootScope', '$scope', 'toastr', 'AppUtil', '$window', 'ProxyPingService', 'DcService', 'NgTableParams', '$stateParams',
-    function ($rootScope, $scope, toastr, AppUtil, $window, ProxyPingService, DcService, NgTableParams, $stateParams) {
+angular
+    .module('index')
+    .controller('ProxyPingCtl', ProxyPingCtl);
 
-        $scope.collectors = [];
+ProxyPingCtl.$inject = ['$rootScope', '$scope',
+    'toastr', 'AppUtil', '$window', 'ProxyPingService', 'DcService', 'NgTableParams', '$stateParams'];
 
-        $scope.loadProxyCollectors = loadProxyCollectors;
-        $scope.prettyJson = prettyJson;
-        $scope.getAllDcs = getAllDcs;
-        $scope.switchDc = switchDc;
-        $scope.toDate = toDate;
-        $scope.gotoProxyPingHickwall = gotoProxyPingHickwall;
+function ProxyPingCtl($rootScope, $scope, toastr, AppUtil, $window, ProxyPingService, DcService, NgTableParams, $stateParams) {
 
-        getAllDcs();
+    $scope.collectors = [];
 
-        function switchDc(dc) {
-            $scope.currentDcId = dc.dcName;
-            loadProxyCollectors($scope.currentDcId);
-        }
+    $scope.loadProxyCollectors = loadProxyCollectors;
+    $scope.prettyJson = prettyJson;
+    $scope.getAllDcs = getAllDcs;
+    $scope.switchDc = switchDc;
+    $scope.toDate = toDate;
+    $scope.gotoProxyPingHickwall = gotoProxyPingHickwall;
 
-        function loadProxyCollectors(dcName) {
-            ProxyPingService.getDcBasedCollectors(dcName)
-                .then(function (result) {
-                    $scope.collectors = result;
-                }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result));
-                });
-        }
+    getAllDcs();
+
+    function switchDc(dc) {
+        $scope.currentDcId = dc.dcName;
+        loadProxyCollectors($scope.currentDcId);
+    }
+
+    function loadProxyCollectors(dcName) {
+        ProxyPingService.getDcBasedCollectors(dcName)
+            .then(function (result) {
+                $scope.collectors = result;
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+    }
 
 
-        function prettyJson(obj) {
-            return JSON.stringify(obj);
-        }
+    function prettyJson(obj) {
+        return JSON.stringify(obj);
+    }
 
-        function toDate(timestamp) {
-            return new Date(timestamp);
-        }
+    function toDate(timestamp) {
+        return new Date(timestamp);
+    }
 
-        function getAllDcs() {
-            DcService.loadAllDcs()
-                .then(function (result) {
-                    $scope.dcs = result;
-                    $scope.loadProxyCollectors($scope.dcs[0].dcName);
-                }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result));
-                });
-        }
+    function getAllDcs() {
+        DcService.loadAllDcs()
+            .then(function (result) {
+                $scope.dcs = result;
+                $scope.loadProxyCollectors($scope.dcs[0].dcName);
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+    }
 
-        function gotoProxyPingHickwall() {
-            ProxyPingService.getHickwallAddr()
-                .then(function(result) {
-                    if(result.addr) {
-                        $window.open(result.addr, '_blank');
-                    }
-                });
-        }
-
-    }]);
+    function gotoProxyPingHickwall() {
+        ProxyPingService.getHickwallAddr()
+            .then(function(result) {
+                if(result.addr) {
+                    $window.open(result.addr, '_blank');
+                }
+            });
+    }
+}
