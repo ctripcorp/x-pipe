@@ -116,7 +116,8 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                                 redisDc: dc.dcName,
                                 delay: delay,
                                 redisIp: hostPort[0],
-                                redisPort: hostPort[1]
+                                redisPort: hostPort[1],
+                                healthy: false
                             };
 
                             crossMaster.healthy = isRedisHealthy(crossMaster);

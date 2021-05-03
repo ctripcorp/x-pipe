@@ -104,6 +104,6 @@ function HealthCheckService($resource, $q) {
 		getReplDelay : getReplDelay,
 		getHickwallAddr : getHickwallAddr,
 		getCrossMasterDelay : getCrossMasterDelay,
-		getCrossMasterHickwallAddr, getCrossMasterHickwallAddr
+		getCrossMasterHickwallAddr: getCrossMasterHickwallAddr
 	}
 }

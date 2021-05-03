@@ -2,9 +2,9 @@ angular
     .module('index')
     .controller('IndexCtl', IndexCtl);
 
-IndexCtl.$inject = ['$rootScope', '$scope', '$window', 'UserService', 'ConfigService'];
+IndexCtl.$inject = ['$rootScope', '$scope', '$window', 'UserService', 'ConfigService', 'AppUtil'];
 
-function IndexCtl($rootScope, $scope, $window, UserService, ConfigService) {
+function IndexCtl($rootScope, $scope, $window, UserService, ConfigService, AppUtil) {
 
     $rootScope.currentNav = '1-2';
     $rootScope.switchNav = switchNav;

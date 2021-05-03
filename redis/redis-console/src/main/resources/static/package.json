@@ -38,6 +38,7 @@
     "zone.js": "^0.8.20"
   },
   "devDependencies": {
+    "@types/webpack-env": "^1.16.0",
     "lite-server": "^2.2.2",
     "ts-loader": "^9.1.1",
     "typescript": "^4.2",
