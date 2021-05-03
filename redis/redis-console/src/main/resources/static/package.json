@@ -4,7 +4,7 @@
   "description": "XPipe Console",
   "scripts": {
     "build": "npx webpack",
-    "serve": "npx webpack serve"
+    "serve": "npx webpack serve --host=127.0.0.1"
   },
   "keywords": [],
   "author": "",
