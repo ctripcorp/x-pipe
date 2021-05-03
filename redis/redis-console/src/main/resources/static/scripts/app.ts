@@ -1,13 +1,3 @@
-declare var angular: any;
-declare var $: any;
-declare var _: any;
-
-declare var toastr: any;
-declare var result: any;
-
-declare var tmp_dc: any;
-declare var dc: any;
-
 require('angular');
 require('angular-resource');
 require('angular-ui-router');
@@ -17,6 +7,9 @@ require('angular-aria');
 require('angular-messages');
 require('angular-touch');
 require('angular-material');
+require('ng-table')
+require('angular-chosen');
+require('angular-chosen-localytics');
 
 angular.module('services', ['ngResource']);
 angular.module('utils', ['toastr']);
@@ -24,10 +17,7 @@ angular.module('directive', ['toastr']);
 angular.module('cluster_type', [])
 angular
     .module('index', ['services', 'ui.router', 'toastr', 'utils','ngTable', 'directive',
-    'ngMaterial', 'localytics.directives', 'cluster_type']);
-
-//same order as old index.html
-//don't change order unless you know them well
+        'ngMaterial', 'localytics.directives', 'cluster_type']);
 
 require('./router');
 require('./AppUtil');

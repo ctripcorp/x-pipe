@@ -14,7 +14,6 @@ function TunnelsCtl($rootScope, $scope, toastr, AppUtil, $window, TunnelService,
     $scope.loadTunnels = loadTunnels;
     $scope.prettyJson = syntaxHighlight;
     $scope.gotoChain = gotoChain;
-    $scope.prettyPrint = prettyPrint;
 
     if ($scope.dcId && $scope.proxyIp) {
         loadTunnels($scope.dcId, $scope.proxyIp);
@@ -27,18 +26,6 @@ function TunnelsCtl($rootScope, $scope, toastr, AppUtil, $window, TunnelService,
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
-    }
-
-    function prettyPrint(metrics) {
-        result = "";
-        metrics.forEach(function(metric){
-            result += metric.metricType + ":" + metric.value + ";  ";
-        });
-        return result;
-    }
-
-    function prettyJson(obj) {
-        return JSON.stringify(obj, null, '\t');
     }
 
     function syntaxHighlight(obj) {
