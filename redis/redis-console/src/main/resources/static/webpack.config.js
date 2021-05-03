@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  entry: './scripts/app.ts',
+  entry: './main.ts',
   mode: 'development',
   module: {
     rules: [
@@ -10,9 +10,20 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
+      {
+        test: /\.coffee$/,
+        use: 'coffee-loader'
+      },
+      { 
+        test: /ng-table\/.*\.html$/, 
+        use: ['ngtemplate-loader?requireAngular&relativeTo=/src/browser/&prefix=ng-table/', 'html-loader'] 
+      }
     ],
   },
   resolve: {
+    alias: {
+      "@angular/upgrade/static": "@angular/upgrade/bundles/upgrade-static.umd.js"
+    },
     extensions: ['.tsx', '.ts', '.js'],
   },
   output: {

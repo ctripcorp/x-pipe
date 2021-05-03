@@ -12,7 +12,12 @@
     "esModuleInterop": true,
     "types": [
       "node",
-      "webpack-env"
+      "webpack-env",
+      "angular",
+      "jquery",
+      "toastr",
+      "underscore",
+      "bootstrap"
     ]
   }
 }

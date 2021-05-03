@@ -99,7 +99,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                 HealthCheckService.getCrossMasterDelay($scope.currentDcName, $scope.clusterName, shard.shardTbl.shardName, $scope.clusterType)
                     .then(function (result) {
                         shard.crossMasters = [];
-                        for (dc of $scope.dcs) {
+                        for (let dc of $scope.dcs) {
                             if (dc.dcName === $scope.currentDcName) continue;
                             if (!result || !result[dc.dcName]) {
                                 shard.crossMasters.push({

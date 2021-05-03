@@ -87,7 +87,7 @@ function ClusterDcCtl($rootScope, $scope, $window, $stateParams, AppUtil,
 				var dc = all_dcs[i];
 				var flag = false;
 				for (var j = 0; j < $scope.dcs.length; ++j) {
-					tmp_dc = $scope.dcs[j];
+					let tmp_dc = $scope.dcs[j];
 					if (tmp_dc.id == dc.id) {
 						flag = true;
 					}
