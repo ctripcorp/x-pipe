@@ -1,3 +1,13 @@
+declare var angular: any;
+declare var $: any;
+declare var _: any;
+
+declare var toastr: any;
+declare var result: any;
+
+declare var tmp_dc: any;
+declare var dc: any;
+
 require('angular');
 require('angular-resource');
 require('angular-ui-router');
@@ -19,11 +29,10 @@ angular
 //same order as old index.html
 //don't change order unless you know them well
 
-let s = require.context('./services', false, /\.js$/); s.keys().map(k => {s(k);});
-let d = require.context('./directives', false, /\.js$/); d.keys().map(k => {d(k);});
-let c = require.context('./controllers', false, /\.js$/); c.keys().map(k => {c(k);});
-
 require('./router');
-require('./AppUtils');
+require('./AppUtil');
 require('./ClusterType');
 
+let s = require.context('./services', false, /\.ts$/); s.keys().map(k => {s(k);});
+let d = require.context('./directives', false, /\.ts$/); d.keys().map(k => {d(k);});
+let c = require.context('./controllers', false, /\.ts$/); c.keys().map(k => {c(k);});
