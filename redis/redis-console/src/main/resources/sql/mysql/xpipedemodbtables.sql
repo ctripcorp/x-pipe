@@ -123,7 +123,7 @@ CREATE TABLE `SHARD_TBL` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   KEY `DataChangeLastTime` (`DataChange_LastTime`),
-  KEY `DlusterId` (`cluster_id`),
+  KEY `ClusterId` (`cluster_id`),
   KEY `Deleted` (`deleted`)
 ) DEFAULT CHARSET=utf8 COMMENT='shard base info';
 
