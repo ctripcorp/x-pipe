@@ -30,6 +30,8 @@ public interface OuterClientService extends Ordered{
 
 	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
 
+	boolean clusterMigratePreCheck(String clusterName) throws OuterClientException;
+
 	MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws OuterClientException;
 	
 	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws OuterClientException;

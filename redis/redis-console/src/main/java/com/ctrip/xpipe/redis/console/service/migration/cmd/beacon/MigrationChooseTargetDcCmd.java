@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -16,9 +15,7 @@ import java.util.Set;
  * @author lishanglin
  * date 2021/4/17
  */
-public class MigrationChooseTargetDcCmd extends AbstractCommand<DcTbl> {
-
-    private BeaconMigrationRequest migrationRequest;
+public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
 
     private DcCache dcCache;
 
@@ -27,17 +24,18 @@ public class MigrationChooseTargetDcCmd extends AbstractCommand<DcTbl> {
     private static final Logger logger = LoggerFactory.getLogger(MigrationChooseTargetDcCmd.class);
 
     public MigrationChooseTargetDcCmd(BeaconMigrationRequest migrationRequest, DcCache dcCache, DcClusterService dcClusterService) {
-        this.migrationRequest = migrationRequest;
+        super(migrationRequest);
         this.dcCache = dcCache;
         this.dcClusterService = dcClusterService;
     }
 
     @Override
-    protected void doExecute() throws Throwable {
-        ClusterTbl cluster = migrationRequest.getClusterTbl();
+    protected void innerExecute() throws Throwable {
+        BeaconMigrationRequest migrationRequest = getMigrationRequest();
+        ClusterTbl cluster = getMigrationRequest().getClusterTbl();
         String clusterName = cluster.getClusterName();
-        DcTbl sourcedDc = migrationRequest.getSourceDcTbl();
-        DcTbl forcedDc = migrationRequest.getIsForced() ? dcCache.find(migrationRequest.getTargetIDC()) : null;
+        DcTbl sourcedDc = getMigrationRequest().getSourceDcTbl();
+        DcTbl forcedDc = getMigrationRequest().getIsForced() ? dcCache.find(migrationRequest.getTargetIDC()) : null;
         DcTbl currentEventTargetDc = null != migrationRequest.getCurrentMigrationCluster() ?
                 dcCache.find(migrationRequest.getCurrentMigrationCluster().getDestinationDcId()) : null;
 
@@ -98,18 +96,6 @@ public class MigrationChooseTargetDcCmd extends AbstractCommand<DcTbl> {
             migrationRequest.setTargetDcTbl(targetDc);
             future().setSuccess(targetDc);
         }
-    }
-
-
-    @Override
-    protected void doReset() {
-        // do nothing
-    }
-
-    @Override
-    public String getName() {
-        if (null != migrationRequest) return "MigrationChooseTargetDcCmd-" + migrationRequest.getClusterName();
-        else return "MigrationChooseTargetDcCmd-unknown";
     }
 
 }

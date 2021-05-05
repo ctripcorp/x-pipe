@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.migrate;
 import com.ctrip.xpipe.command.CommandChainException;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
+import com.ctrip.xpipe.redis.console.migration.exception.MigrationUnderProcessingException;
 import com.ctrip.xpipe.redis.console.service.migration.BeaconMigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import org.slf4j.Logger;
@@ -56,6 +57,9 @@ public class MigrationApi4Beacon {
                 } else if (cause instanceof MigrationNoNeedException) {
                     logger.info("[syncMigrate][{}] no need and success", migrationRequest.getClusterName(), cause);
                     response.setResult(BeaconMigrationResponse.success());
+                } else if (cause instanceof MigrationUnderProcessingException) {
+                    logger.info("[syncMigrate][{}] migration on processing, skip", migrationRequest.getClusterName(), cause);
+                    response.setResult(BeaconMigrationResponse.skip(cause.getMessage()));
                 } else if (cause instanceof MigrationNotSupportException || cause instanceof UnknownTargetDcException
                         || cause instanceof  MigrationCrossZoneException) {
                     logger.warn("[syncMigrate][{}] unexpect migration", migrationRequest.getClusterName(), cause);

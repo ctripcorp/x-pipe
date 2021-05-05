@@ -44,6 +44,11 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	}
 
 	@Override
+	public boolean clusterMigratePreCheck(String clusterName) throws OuterClientException {
+		return false;
+	}
+
+	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws OuterClientException {
 		return null;
 	}

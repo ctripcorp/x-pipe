@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.checker;
 
 import com.ctrip.xpipe.redis.checker.ProxyManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
@@ -52,6 +53,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @Autowired
     private CrossMasterDelayService crossMasterDelayService;
 
+    @Autowired
+    private HealthStateService healthStateService;
+
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
@@ -82,6 +86,7 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getCrossMasterDelays()) crossMasterDelayService.updateCrossMasterDelays(checkResult.decodeCrossMasterDelays());
         if (null != checkResult.getWarningClusterShards()) clusterHealthMonitorManager.updateHealthCheckWarningShards(checkResult.getWarningClusterShards());
         if (null != checkResult.getRedisAlives()) pingService.updateRedisAlives(checkResult.decodeRedisAlives());
+        if (null != checkResult.getRedisStates()) healthStateService.updateHealthState(checkResult.decodeRedisStates());
     }
 
 }
