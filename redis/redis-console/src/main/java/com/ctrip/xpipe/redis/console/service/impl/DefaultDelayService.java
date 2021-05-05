@@ -5,6 +5,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.impl.CheckerRedisDelayManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
@@ -48,6 +51,9 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private HealthStateService healthStateService;
 
     @Override
     public void updateRedisDelays(Map<HostPort, Long> redisDelays) {
@@ -139,8 +145,8 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
         }
 
         String currentIdc = FoundationService.DEFAULT.getDataCenter();
+        Map<HostPort, HEALTH_STATE> cachedHealthStatus = healthStateService.getAllCachedState();
         UnhealthyInfoModel unhealthyInfo = new UnhealthyInfoModel();
-        Map<HostPort, Long> redisDelayMap = getDcCachedDelay(currentIdc);
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
 
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
@@ -152,8 +158,10 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
                     for (RedisMeta redisMeta : shardMeta.getRedises()) {
                         HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-                        Long delay = redisDelayMap.get(hostPort);
-                        if(null != delay && (delay < 0 || delay == DelayAction.SAMPLE_LOST_BUT_PONG)) {
+                        if (!cachedHealthStatus.containsKey(hostPort)) continue;
+
+                        HEALTH_STATE state = cachedHealthStatus.get(hostPort);
+                        if(HEALTH_STATE.DOWN.equals(state) || HEALTH_STATE.SICK.equals(state)) {
                             unhealthyInfo.addUnhealthyInstance(clusterMeta.getId(), dcMeta.getId(), shardMeta.getId(), hostPort);
                         }
                     }
