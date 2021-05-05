@@ -94,6 +94,7 @@ public class PsyncHandler extends AbstractCommandHandler{
 				waitForoffset(args, redisSlave, keeperRepl.replId(), offsetRequest);
 			}else{
 				if(endOffset - offsetRequest < keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb()) {
+					logger.info("[innerDoHandle][do partial sync]{}, {} - {} < {}", redisSlave, endOffset, offsetRequest, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
 					doPartialSync(redisSlave, keeperRepl.replId(), offsetRequest);
 				} else {
 					logger.info("[innerDoHandle][too much commands to transfer]{} - {} < {}", endOffset, offsetRequest, keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb());
