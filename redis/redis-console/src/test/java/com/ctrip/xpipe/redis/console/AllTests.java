@@ -84,7 +84,6 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterMetaServiceMigrationStatusChangeTest.class,
         DcServiceImplTest.class,
 
-        MigrationStateUpdateStatTest.class,
         StateMachineTest.class,
         MigrationStatusTest.class,
         ClusterMetaModifiedNotifierTest.class,

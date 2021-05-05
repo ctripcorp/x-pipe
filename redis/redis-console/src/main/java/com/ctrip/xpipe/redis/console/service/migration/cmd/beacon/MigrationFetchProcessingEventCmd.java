@@ -18,9 +18,7 @@ import org.slf4j.LoggerFactory;
  * @author lishanglin
  * date 2021/4/17
  */
-public class MigrationFetchProcessingEventCmd extends AbstractCommand<MigrationClusterTbl> {
-
-    private BeaconMigrationRequest migrationRequest;
+public class MigrationFetchProcessingEventCmd extends AbstractMigrationCmd<MigrationClusterTbl> {
 
     private MigrationClusterDao migrationClusterDao;
 
@@ -32,14 +30,15 @@ public class MigrationFetchProcessingEventCmd extends AbstractCommand<MigrationC
 
     public MigrationFetchProcessingEventCmd(BeaconMigrationRequest migrationRequest, ClusterService clusterService,
                                             MigrationClusterDao migrationClusterDao, DcCache dcCache) {
-        this.migrationRequest = migrationRequest;
+        super(migrationRequest);
         this.clusterService = clusterService;
         this.migrationClusterDao = migrationClusterDao;
         this.dcCache = dcCache;
     }
 
     @Override
-    protected void doExecute() throws Throwable {
+    protected void innerExecute() throws Throwable {
+        BeaconMigrationRequest migrationRequest = getMigrationRequest();
         ClusterTbl clusterTbl = migrationRequest.getClusterTbl();
         if (ClusterStatus.isSameClusterStatus(clusterTbl.getStatus(), ClusterStatus.Normal)) {
             logger.info("[doExecute][{}] no processing migration, skip", clusterTbl.getClusterName());
@@ -74,14 +73,4 @@ public class MigrationFetchProcessingEventCmd extends AbstractCommand<MigrationC
         future().setSuccess(currentMigration);
     }
 
-    @Override
-    protected void doReset() {
-        // do nothing
-    }
-
-    @Override
-    public String getName() {
-        if (null != migrationRequest) return "MigrationFetchCurrentEventCmd-" + migrationRequest.getClusterName();
-        else return "MigrationFetchCurrentEventCmd-unknown";
-    }
 }
