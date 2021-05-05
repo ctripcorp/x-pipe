@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -66,4 +67,7 @@ public interface MigrationService {
     MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability();
 
     RetMessage getMigrationSystemHealth();
+
+    MigrationProgress buildMigrationProgress(int hours);
+
 }
