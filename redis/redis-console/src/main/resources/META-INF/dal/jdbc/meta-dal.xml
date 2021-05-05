@@ -223,6 +223,7 @@
 					FROM <TABLE/> left join <TABLE name='migration-event'/> on <FIELD name='migration-event-id'/> = met.id
 					left join <TABLE name='migration-clusters'/> on met.id = mct.migration_event_id
 					WHERE <FIELD name='status'/> != "Normal"
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
