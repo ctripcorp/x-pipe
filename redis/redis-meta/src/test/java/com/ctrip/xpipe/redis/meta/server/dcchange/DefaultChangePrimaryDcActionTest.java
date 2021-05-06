@@ -99,4 +99,13 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
         Assert.assertEquals(expectedResult, result);
     }
 
+    @Test
+    public void testChangePrimaryDcNotHavingCluster() {
+        when(currentMetaManager.hasCluster(anyString())).thenReturn(false);
+        when(dcMetaCache.getCurrentDc()).thenReturn("SHAOY");
+        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc("cluster", "shard", "SHAOY", new MasterInfo());
+        Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL, result.getErrorType());
+        logger.info("\n{}", result.getErrorMessage());
+    }
+
 }
