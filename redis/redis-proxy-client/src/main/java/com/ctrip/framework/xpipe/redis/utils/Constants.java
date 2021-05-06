@@ -14,4 +14,8 @@ public class Constants {
 
     public static final String PROXY_KEY_WORD = "PROXY";
 
+    public static final String NIO_SOCKET = "sun.nio.ch.SocketChannelImpl";
+
+    public static final String SOCKET = "java.net.Socket";
+
 }
