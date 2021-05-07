@@ -5,6 +5,7 @@ import com.ctrip.xpipe.foundation.DefaultFoundationService;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.AbstractMetaServerClusterTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.ArrangeTaskExecutor;
+import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultSlotManager;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,6 +22,14 @@ public class ManualTest extends AbstractMetaServerClusterTest {
 
 	}
 
+
+	@Test
+	public void testGetSlot(){
+		String cluster = "xpipe_dr_pt_cluster_601";
+		DefaultSlotManager slotManager = new DefaultSlotManager();
+		int id = slotManager.getSlotIdByKey(cluster);
+		logger.info("cluster:{}, slot:{}", cluster, id);
+	}
 	
 	@Test
 	public void startServersJq() throws Exception {

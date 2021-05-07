@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
@@ -14,9 +13,7 @@ import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
  * @author lishanglin
  * date 2021/4/18
  */
-public class MigrationBuildEventCmd extends AbstractCommand<Long> {
-
-    private BeaconMigrationRequest migrationRequest;
+public class MigrationBuildEventCmd extends AbstractMigrationCmd<Long> {
 
     private MigrationEventDao migrationEventDao;
 
@@ -26,13 +23,14 @@ public class MigrationBuildEventCmd extends AbstractCommand<Long> {
 
     public MigrationBuildEventCmd(BeaconMigrationRequest migrationRequest, MigrationEventDao migrationEventDao,
                                   MigrationEventManager migrationEventManager) {
-        this.migrationRequest = migrationRequest;
+        super(migrationRequest);
         this.migrationEventDao = migrationEventDao;
         this.migrationEventManager = migrationEventManager;
     }
 
     @Override
-    protected void doExecute() throws Throwable {
+    protected void innerExecute() throws Throwable {
+        BeaconMigrationRequest migrationRequest = getMigrationRequest();
         MigrationClusterTbl currentMigrationTbl = migrationRequest.getCurrentMigrationCluster();
         if (null != currentMigrationTbl) {
             migrationRequest.setMigrationEventId(currentMigrationTbl.getMigrationEventId());
@@ -47,9 +45,9 @@ public class MigrationBuildEventCmd extends AbstractCommand<Long> {
     }
 
     private MigrationRequest buildXPipeMigrationRequest() {
-        ClusterTbl cluster = migrationRequest.getClusterTbl();
-        DcTbl sourceDc = migrationRequest.getSourceDcTbl();
-        DcTbl targetDc = migrationRequest.getTargetDcTbl();
+        ClusterTbl cluster = getMigrationRequest().getClusterTbl();
+        DcTbl sourceDc = getMigrationRequest().getSourceDcTbl();
+        DcTbl targetDc = getMigrationRequest().getTargetDcTbl();
 
         MigrationRequest request = new MigrationRequest(MIGRATION_OPERATOR);
         request.setTag(MIGRATION_OPERATOR);
@@ -60,14 +58,4 @@ public class MigrationBuildEventCmd extends AbstractCommand<Long> {
         return request;
     }
 
-    @Override
-    protected void doReset() {
-        // do nothing
-    }
-
-    @Override
-    public String getName() {
-        if (null != migrationRequest) return "MigrationDoBuildCmd-" + migrationRequest.getClusterName();
-        else return "MigrationDoBuildCmd-unknown";
-    }
 }

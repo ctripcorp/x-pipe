@@ -18,7 +18,7 @@ public class MigrationResources {
 
     public static final String MIGRATION_EXECUTOR = "MIGRATION_EXECUTOR";
 
-    public static final String MIGRATION_PREPARE_EXECUTOR = "MIGRATION_EXECUTOR";
+    public static final String MIGRATION_PREPARE_EXECUTOR = "MIGRATION_PREPARE_EXECUTOR";
 
     public static final int maxExecuteThreads = 512;
 

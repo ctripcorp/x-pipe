@@ -9,6 +9,7 @@ import com.ctrip.xpipe.utils.UrlUtils;
  */
 public enum CREDIS_SERVICE {
 
+	MIGRATION_PRE_CHECK(PATH.PATH_MIGRATION_PRE_CHECK),
 	MIGRATION_PUBLISH(PATH.PATH_MIGRATION_PUBLISH),
 	SWITCH_STATUS(PATH.PATH_SWITCH_STATUS),
 	QUERY_STATUS(PATH.PATH_QUERY_STATUS),
@@ -27,7 +28,7 @@ public enum CREDIS_SERVICE {
 	public String getRealPath(String host) {
 
 		if (!host.startsWith("http")) {
-			host += "http://";
+			host = "http://" + host;
 		}
 		return UrlUtils.format(String.format("%s/%s/%s", host, PATH.PATH_PREFIX, getPath()));
 	}
@@ -35,6 +36,7 @@ public enum CREDIS_SERVICE {
 	public static class PATH {
 
 		public static final String PATH_PREFIX = "/";
+		public static final String PATH_MIGRATION_PRE_CHECK = "/keeperApi/checkcluster/{clusterName}";
 		public static final String PATH_MIGRATION_PUBLISH = "/keeperApi/primarydc/{clusterName}/{primaryDcName}";
 		public static final String PATH_SWITCH_STATUS  = "/keeperApi/switchReadStatus";
 		public static final String PATH_QUERY_STATUS = "keeperApi/queryReadStatus";

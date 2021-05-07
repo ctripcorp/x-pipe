@@ -16,7 +16,7 @@ import java.util.List;
  * @author lishanglin
  * date 2021/4/21
  */
-public class AbstractCtripTest extends AbstractMySqLTest {
+public class AbstractCtripTest extends AbstractMySqlTest {
 
     public static final String CONFIG_QCONFIG_DIR_PATH = "/opt/config/100004374/qconfig/";
     public static final String CONFIG_DAL_DIR_PATH = "/opt/config/100004374/dal/";

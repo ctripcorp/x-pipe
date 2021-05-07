@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
@@ -71,6 +72,21 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/unhealthy", method = RequestMethod.GET)
     public List<ClusterListUnhealthyClusterModel> findUnhealthyClusters() {
         return valueOrEmptySet(ClusterListUnhealthyClusterModel.class, clusterService.findUnhealthyClusters());
+    }
+
+    @RequestMapping(value = "/clusters/error/migrating", method = RequestMethod.GET)
+    public List<ClusterTbl> findErrorMigratingClusters() {
+        return valueOrEmptySet(ClusterTbl.class, clusterService.findErrorMigratingClusters());
+    }
+
+    @RequestMapping(value = "/clusters/reset/status", method = RequestMethod.POST)
+    public RetMessage reBalanceSentinels(@RequestBody List<Long> ids) {
+        try {
+            clusterService.resetClustersStatus(ids);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
     }
 
     private List<ClusterTbl> joinClusterAndDcCluster(List<ClusterTbl> clusters, List<DcClusterTbl> dcClusters) {
