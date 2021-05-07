@@ -82,15 +82,16 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 
 	@Override
 	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
-		
+
+		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
+
 		if(!currentMetaManager.hasCluster(clusterId)){
-			logger.info("[changePrimaryDc][not interested in this cluster]");
-			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, "not interested in this cluster:" + clusterId);
+			logger.info("[changePrimaryDc][not interested in this cluster]{}, {}", clusterId, shardId);
+			executionLog.info("not interested in this cluster:" + clusterId);
+			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 		
 		ChangePrimaryDcAction changePrimaryDcAction = null;
-
-		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
