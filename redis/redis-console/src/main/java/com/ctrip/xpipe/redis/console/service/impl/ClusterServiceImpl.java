@@ -9,8 +9,8 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -20,7 +20,7 @@ import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -136,6 +136,28 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbls.forEach( clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
 
 		return clusterNames;
+	}
+
+	@Override
+	public Map<String, Long> getAllCountByActiveDc() {
+		List<DcTbl> dcs = dcService.findAllDcs();
+		Map<String, Long> counts = new HashMap<>();
+
+		dcs.forEach(dcTbl -> {
+			counts.put(dcTbl.getDcName(), getCountByActiveDc(dcTbl.getId()));
+		});
+
+		return counts;
+	}
+
+	@Override
+	public Long getCountByActiveDc(long activeDc) {
+		return queryHandler.handleQuery(new DalQuery<Long>() {
+			@Override
+			public Long doQuery() throws DalException {
+				return dao.countByActiveDc(activeDc, ClusterTblEntity.READSET_COUNT).getCount();
+			}
+		});
 	}
 
 	@Override
@@ -463,6 +485,26 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 			scheduled.schedule(() -> reBalanceClusterSentinels(dcName, nextExecutionClusters), changingPeriod, TimeUnit.SECONDS);
 		}
+	}
+
+	@Override
+	public List<ClusterTbl> findErrorMigratingClusters() {
+		List<ClusterTbl> overviews = clusterDao.findAllClusterMigrationOverview();
+		List<ClusterTbl> errorClusters = Lists.newArrayList();
+		for (ClusterTbl overview : overviews) {
+			MigrationClusterTbl migrationClusterTbl = overview.getMigrationClusters();
+			String migrationStatus = migrationClusterTbl.getStatus();
+			if (migrationStatus != null) {
+				String clusterStatus = overview.getStatus();
+				if (MigrationStatus.valueOf(migrationStatus).getClusterStatus().toString().equals(clusterStatus)) {
+					continue;
+				}
+			}
+			overview.setMigrationEvent(null);
+			overview.setMigrationClusters(null);
+			errorClusters.add(overview);
+		}
+		return errorClusters;
 	}
 
 	// Cache {dc name} -> List {SentinelTbl}

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * Jan 23, 2018
  */
-public class RemoveUnusedRedisTest extends AbstractConsoleH2DbTest {
+public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
 
     private Server server;
 

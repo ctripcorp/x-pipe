@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.mockito.Mockito.when;
 
-public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleH2DbTest {
+public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleDbTest {
 
     @Mock
     private ClusterService clusterService;

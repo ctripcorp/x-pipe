@@ -8,6 +8,9 @@ import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.ForceProcessAbleState;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * @author shyin
  *         <p>
@@ -23,14 +26,17 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
 
     @Override
     public void doAction() {
+        String clusterName = getHolder().clusterName();
+        List<MigrationShard> failedShards = getHolder().getMigrationShards().stream().filter(shard ->
+                !shard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)
+        ).collect(Collectors.toList());
 
-        for (final MigrationShard shard : getHolder().getMigrationShards()) {
-
-            ShardMigrationResult shardMigrationResult = shard.getShardMigrationResult();
-            if (!shardMigrationResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)) {
-                shardMigrationResult.stepRetry(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC);
-
-                String clusterName = getHolder().clusterName();
+        if (failedShards.isEmpty()) {
+            logger.info("[doAction][{}] no failed shards and refresh", clusterName);
+            refresh();
+        } else {
+            failedShards.forEach(shard -> shard.getShardMigrationResult().stepRetry(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+            failedShards.forEach(shard -> {
                 String shardName = shard.shardName();
                 logger.info("[doAction][execute]{}, {}", clusterName, shardName);
                 executors.execute(new AbstractExceptionLogTask() {
@@ -42,7 +48,7 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
                         logger.info("[doMigrate][done]{},{}", clusterName, shardName);
                     }
                 });
-            }
+            });
         }
     }
 
