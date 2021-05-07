@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
