@@ -2,13 +2,12 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.api.server.Server.SERVER_ROLE;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.tuple.Pair;
@@ -76,37 +75,34 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         List<RedisMeta> masters = new LinkedList<>();
         List<RedisMeta> tmpAliveServers = new LinkedList<>();
 
-        CountDownLatch latch = new CountDownLatch(allRedises.size());
-
+        ParallelCommandChain commandChain = new ParallelCommandChain();
         for (RedisMeta redisMeta : allRedises) {
-
-            executors.execute(new AbstractExceptionLogTask() {
-
-                @Override
-                protected void doRun() throws Exception {
-                    try {
-                        SERVER_ROLE role = serverRole(redisMeta);
-                        if (role == SERVER_ROLE.MASTER) {
-                            synchronized (masters){
-                                masters.add(redisMeta);
-                            }
+            SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
+            RoleCommand cmd = new RoleCommand(clientPool, CHECK_NEW_MASTER_TIMEOUT_SECONDS*1000, true, scheduled);
+            cmd.future().addListener(commandFuture -> {
+                if (commandFuture.isSuccess()) {
+                    SERVER_ROLE role = commandFuture.get().getServerRole();
+                    if (role == SERVER_ROLE.MASTER) {
+                        synchronized (masters) {
+                            masters.add(redisMeta);
                         }
-                        if (role != SERVER_ROLE.UNKNOWN) {
-                            synchronized (tmpAliveServers){
-                                tmpAliveServers.add(redisMeta);
-                            }
+                    } else if (role == SERVER_ROLE.SLAVE) {
+                        synchronized (tmpAliveServers) {
+                            tmpAliveServers.add(redisMeta);
                         }
-                    } finally {
-                        latch.countDown();
                     }
+                } else {
+                    logger.error("[getMasters] isMaster {}", redisMeta, commandFuture.cause());
                 }
             });
+
+            commandChain.add(cmd);
         }
 
         try {
-            latch.await(CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            logger.error("[getMasters]" + allRedises, e);
+            commandChain.execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2L, TimeUnit.SECONDS);
+        } catch (Throwable th) {
+            logger.error("[getMasters] execute fail {}", allRedises, th);
         }
 
         List<RedisMeta> aliveServers = sortAccording(allRedises, tmpAliveServers);
@@ -130,18 +126,6 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
             }
         }
         return result;
-    }
-
-    protected SERVER_ROLE serverRole(RedisMeta redisMeta) {
-
-        try {
-            SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
-            Role role = new RoleCommand(clientPool, CHECK_NEW_MASTER_TIMEOUT_SECONDS*1000, true, scheduled).execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            return role.getServerRole();
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            logger.error("[isMaster]" + redisMeta, e);
-        }
-        return SERVER_ROLE.UNKNOWN;
     }
 
     protected abstract RedisMeta doChooseFromAliveServers(List<RedisMeta> aliveServers);
