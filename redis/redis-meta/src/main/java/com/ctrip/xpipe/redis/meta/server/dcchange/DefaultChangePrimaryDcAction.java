@@ -33,6 +33,7 @@ import static com.ctrip.xpipe.redis.core.service.AbstractService.DEFAULT_SO_TIME
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractChangePrimaryDcAction.DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractNewMasterChooser.CHECK_NEW_MASTER_TIMEOUT_SECONDS;
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.DefaultSentinelManager.DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI;
+import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.MIGRATION_EXECUTOR;
 
 /**
  * @author wenchao.meng
@@ -52,7 +53,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
+	@Resource(name = MIGRATION_EXECUTOR)
 	private ExecutorService executors;
 
 	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
