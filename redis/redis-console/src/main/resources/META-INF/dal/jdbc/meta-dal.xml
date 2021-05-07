@@ -184,6 +184,17 @@
 		</readsets>
 		
 		<query-defs>
+			<query name="count-by-active-dc" type="SELECT" multiple="false">
+				<param name='activedc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='activedc-id'/> = ${activedc-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="atomic-set-status" type="UPDATE" batch='false'>
 				<param name="id" />
 				<param name="origin-status" />
@@ -1436,6 +1447,17 @@
 		</readsets>
 		
 		<query-defs>
+			<query name="find-latest-migration-clusters" type="SELECT" multiple="true">
+				<param name="data-change-last-time"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted' /> = 0
+					AND <FIELD name='data-change-last-time' /> > ${data-change-last-time}
+					]]>
+				</statement>
+			</query>
 			<query name="find-migration-clusters" type="SELECT" multiple="true">
 				<param name="size"/>
 				<param name="offset"/>
