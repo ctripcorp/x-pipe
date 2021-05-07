@@ -100,7 +100,7 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         }
 
         try {
-            commandChain.execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2L, TimeUnit.SECONDS);
+            commandChain.execute().get(CHECK_NEW_MASTER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (Throwable th) {
             logger.error("[getMasters] execute fail {}", allRedises, th);
         }
