@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
@@ -33,6 +36,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -46,15 +50,12 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.net.SocketException;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.*;
 
 /**
  * @author chen.zhu
@@ -94,11 +95,18 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private SentinelLeakyBucket leakyBucket;
 
+    int corePoolSize = OsUtils.getMultiCpuOrMax(GLOBAL_THREAD_MULTI_CORE, GLOBAL_THREAD_MAX);
+    int maxPoolSize = 2 * OsUtils.getCpuCount();
+
+    private ExecutorService executors;
+
     @PostConstruct
     public void postConstruct() {
         leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
         try {
             leakyBucket.start();
+            executors = new DefaultExecutorFactory(getClass().getSimpleName(), corePoolSize, maxPoolSize,
+                    new ThreadPoolExecutor.AbortPolicy()).createExecutorService();
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
         }
@@ -117,7 +125,23 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @Override
     public void onAction(SentinelActionContext context) {
-        collect(context);
+        try {
+            CommandFuture<Void> future = new SentinelHelloCollectorCommand(context).execute(executors);
+            ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    future.cancel(false);
+                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
+                            String.format("[%s]%s+%s", "cancel", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
+                }
+            }, context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli(), TimeUnit.MILLISECONDS);
+            future.addListener(commandFuture -> {
+                if (!commandFuture.isCancelled())
+                    timeoutFuture.cancel(false);
+            });
+        } catch (Throwable e) {
+            logger.error("[DefaultSentinelHelloCollector]onAction", e);
+        }
     }
 
     @Override
@@ -531,6 +555,35 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             }
         }
         return toAdd;
+    }
+
+    public class SentinelHelloCollectorCommand extends AbstractCommand<Void>{
+
+        private SentinelActionContext context;
+
+        public SentinelHelloCollectorCommand(SentinelActionContext context) {
+            this.context = context;
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
+            try {
+                collect(context);
+                future().setSuccess();
+            } catch (Throwable e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+
+        }
+
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
     }
 
     @VisibleForTesting
