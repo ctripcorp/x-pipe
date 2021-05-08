@@ -171,7 +171,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
 
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
-        transaction.logTransactionSwallowException(SENTINEL_TYPE + ".hello.collect", sentinelMonitorName, new Task() {
+        transaction.logTransactionSwallowException(SENTINEL_TYPE, "hello.collect", new Task() {
 
             Set<SentinelHello> toDelete = new HashSet<>();
             Set<HostPort> trueMasters = new HashSet<>();
@@ -188,10 +188,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 logger.debug("[collect]{},{},{}", clusterId, shardId, hellos);
 
                 // check stale hellos
-                toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos, quorumConfig, trueMaster));
+                toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos));
 
                 // check true master
-                trueMasters.addAll(checkTrueMasters(sentinelMonitorName, trueMaster, hellos));
+                trueMasters.addAll(checkTrueMasters(trueMaster, hellos));
                 if (!currentMasterConsistent(trueMasters)) {
                     logger.warn("[currentMasterConsistent]{},{}", sentinelMonitorName, trueMasters);
                     String message = String.format("master inconsistent, monitorName:%s, masters:%s",sentinelMonitorName, trueMasters);
@@ -213,8 +213,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             }
 
             @Override
-            public Map<String, Set> getData() {
-                Map<String, Set> transactionData = new HashMap<>();
+            public Map<String, Object> getData() {
+                Map<String, Object> transactionData = new HashMap<>();
+                transactionData.put("monitorName", sentinelMonitorName);
                 transactionData.put("sentinels", sentinels);
                 transactionData.put("hellos", originalHellos);
                 transactionData.put("toDelete", toDelete);
@@ -250,8 +251,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     @VisibleForTesting
-    protected Set<HostPort> checkTrueMasters(String monitorName, HostPort metaMaster, Set<SentinelHello> hellos) {
-        return TransactionMonitor.DEFAULT.logTransactionSwallowException(SENTINEL_TYPE + ".hello.checkTrueMasters", monitorName, new Callable<Set<HostPort>>() {
+    protected Set<HostPort> checkTrueMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
+        return TransactionMonitor.DEFAULT.logTransactionSwallowException(SENTINEL_TYPE, "hello.checkTrueMasters", new Callable<Set<HostPort>>() {
             @Override
             public Set<HostPort> call() throws Exception {
                 Set<HostPort> currentCollectedMasters = collectMetaMasterAndHelloMasters(metaMaster, hellos);
@@ -293,7 +294,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @VisibleForTesting
     protected Set<SentinelHello> checkStaleHellos(String sentinelMonitorName, Set<HostPort> sentinels,
-                                        Set<SentinelHello> hellos, QuorumConfig quorumConfig, HostPort masterAddr) {
+                                        Set<SentinelHello> hellos) {
 
         Set<SentinelHello> toDelete = new HashSet<>();
 
@@ -331,7 +332,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @VisibleForTesting
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
 
-        TransactionMonitor.DEFAULT.logTransactionSwallowException(SENTINEL_TYPE + ".hello.checkReset", sentinelMonitorName, new Task() {
+        TransactionMonitor.DEFAULT.logTransactionSwallowException(SENTINEL_TYPE, "hello.checkReset", new Task() {
             @Override
             public void go() throws Exception {
                 Set<HostPort> allKeepers = metaCache.getAllKeepers();
@@ -388,7 +389,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
             @Override
             public Map getData() {
-                return null;
+                Map<String, Object> map = new HashMap<>();
+                map.put("monitorName", sentinelMonitorName);
+                map.put("hellos", hellos);
+                return map;
             }
         });
     }
@@ -440,7 +444,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @VisibleForTesting
     protected void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
                             QuorumConfig quorumConfig) {
-        TransactionMonitor.DEFAULT.logTransactionSwallowException(SENTINEL_TYPE + ".hello.doAction", sentinelMonitorName, new Task() {
+        TransactionMonitor.DEFAULT.logTransactionSwallowException(SENTINEL_TYPE, "hello.doAction", new Task() {
             @Override
             public void go() throws Exception {
                 if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
@@ -507,7 +511,12 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
             @Override
             public Map getData() {
-                return null;
+                Map<String, Object> map = new HashMap<>();
+                map.put("monitorName", sentinelMonitorName);
+                map.put("master", masterAddr);
+                map.put("toDelete", toDelete);
+                map.put("toAdd", toAdd);
+                return map;
             }
         });
 
