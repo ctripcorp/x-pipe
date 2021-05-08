@@ -121,7 +121,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 		};
 
 		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
-		logger.info("{}", executionLog.getLog());
+		logger.info("remove: {}", executionLog.getLog());
 		Assert.assertEquals(removeCnt.get(), sentinels.size());
 		
 	}
@@ -130,7 +130,10 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	public void testAdd(){
 		
 		sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
-		logger.info("{}", executionLog.getLog());
+		logger.info("addSuccess: {}", executionLog.getLog());
+		servers.forEach(server -> {
+			Assert.assertTrue(executionLog.getLog().contains(String.format("add %s to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, server.getPort())));
+		});
 	}
 
 	@Test
@@ -138,9 +141,9 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 		servers.get(0).stop();
 		try {
 			sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
-			logger.info("{}", executionLog.getLog());
+			logger.info("addFailed: {}", executionLog.getLog());
 			servers.forEach(server -> {
-				Assert.assertTrue(executionLog.getLog().contains(String.valueOf(server.getPort())));
+				Assert.assertTrue(executionLog.getLog().contains(String.format("add %s to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, server.getPort())));
 			});
 		} catch (Exception e) {
 			Assert.fail();
@@ -196,10 +199,12 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 			sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
 			logger.info("test result {}", executionLog.getLog());
 			servers.forEach(server -> {
-				Assert.assertTrue(executionLog.getLog().contains(String.valueOf(server.getPort())));
+				Assert.assertTrue(executionLog.getLog().contains(String.format("%s:%d, ip:%s, port:%d", LOCAL_HOST, server.getPort(), LOCAL_HOST, server.getPort())));
 			});
 		} catch (Exception e) {
+			e.printStackTrace();
 			Assert.fail();
+
 		}
 	}
 
