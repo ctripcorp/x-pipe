@@ -268,11 +268,10 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function resetClusterStatus(clusterId) {
+    function resetClusterStatus() {
         var d = $q.defer();
-        resource.reset_cluster_status([
-                clusterId
-            ],
+        resource.reset_cluster_status(
+            Array.from(arguments),
             function (result) {
                 d.resolve(result);
             }, function (result) {
