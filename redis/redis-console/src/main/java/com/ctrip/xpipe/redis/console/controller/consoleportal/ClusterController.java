@@ -79,8 +79,16 @@ public class ClusterController extends AbstractConsoleController {
         return valueOrEmptySet(ClusterTbl.class, clusterService.findErrorMigratingClusters());
     }
 
+    @RequestMapping(value = "/clusters/migrating", method = RequestMethod.GET)
+    public List<ClusterTbl> findMigratingClusters() {
+        return valueOrEmptySet(ClusterTbl.class, clusterService.findMigratingClusters());
+    }
+
     @RequestMapping(value = "/clusters/reset/status", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@RequestBody List<Long> ids) {
+    public RetMessage resetClustersStatus(@RequestBody List<Long> ids) {
+        if (ids.size() == 0) {
+            return RetMessage.createFailMessage("zero clusters to reset.");
+        }
         try {
             clusterService.resetClustersStatus(ids);
             return RetMessage.createSuccessMessage();

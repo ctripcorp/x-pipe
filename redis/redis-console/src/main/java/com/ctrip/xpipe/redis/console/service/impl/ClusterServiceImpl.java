@@ -507,6 +507,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return errorClusters;
 	}
 
+	@Override
+	public List<ClusterTbl> findMigratingClusters() {
+		return clusterDao.findAllClusterMigrationOverview();
+	}
+
 	// Cache {dc name} -> List {SentinelTbl}
 	private Map<String, List<SetinelTbl>> getDcNameMappedSentinels(final List<String> dcNames) {
 		Map<String, List<SetinelTbl>> map = Maps.newHashMap();

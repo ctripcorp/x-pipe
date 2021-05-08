@@ -39,6 +39,7 @@ public interface ClusterService {
 	void reBalanceClusterSentinels(String dcName, List<String> clusterNames);
 
 	List<ClusterTbl> findErrorMigratingClusters();
+	List<ClusterTbl> findMigratingClusters();
 	default void resetClustersStatus(List<Long> ids) {
 		for (Long id : ids) {
 			updateStatusById(id, ClusterStatus.Normal);

@@ -20,9 +20,9 @@ public class MigrationResources {
 
     public static final String MIGRATION_PREPARE_EXECUTOR = "MIGRATION_PREPARE_EXECUTOR";
 
-    public static final int maxExecuteThreads = 512;
+    public static final int maxExecuteThreads = 768;
 
-    public static final int maxPrepareThreads = 256;
+    public static final int maxPrepareThreads = 128;
 
     @Bean(name = MIGRATION_EXECUTOR)
     public ExecutorService getMigrationlExecutor() {
@@ -43,7 +43,7 @@ public class MigrationResources {
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxPrepareThreads,
                 maxPrepareThreads,
                 120L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(maxPrepareThreads),
+                new ArrayBlockingQueue<>(maxExecuteThreads),
                 XpipeThreadFactory.create(MIGRATION_PREPARE_EXECUTOR),
                 new ThreadPoolExecutor.AbortPolicy());
         poolExecutor.allowCoreThreadTimeOut(true);

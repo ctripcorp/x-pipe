@@ -3,12 +3,13 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil',
-    'toastr', 'ClusterService','DcService', 'NgTableParams', 'ClusterType'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ClusterType'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
-                        toastr, ClusterService, DcService, NgTableParams, ClusterType) {
+                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ClusterType) {
 
     $rootScope.currentNav = '1-2';
+    $scope.select = {};
     $scope.dcs = {};
     $scope.clusterId = $stateParams.clusterId;
     $scope.clusterName = $stateParams.clusterName;
@@ -19,8 +20,14 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     $scope.deleteCluster = deleteCluster;
     $scope.preResetClusterStatus = preResetClusterStatus;
     $scope.resetClusterStatus = resetClusterStatus;
-    $scope.showUnhealthyClusterOnly = false;
-    $scope.showErrorMigratingClusterOnly = false;
+    $scope.preResetSelectedClusterStatus = preResetSelectedClusterStatus;
+    $scope.resetSelectedClusterStatus = resetSelectedClusterStatus;
+    $scope.getSelectedClusters = getSelectedClusters;
+    $scope.showClusters = showClusters;
+    $scope.showAll = false;
+    $scope.showUnhealthy = false;
+    $scope.showErrorMigrating = false;
+    $scope.showMigrating = false;
     $scope.dcName = $stateParams.dcName;
     $scope.type = $stateParams.type;
     $scope.clusterTypes = ClusterType.selectData()
@@ -43,7 +50,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
         showClustersByContainer($scope.containerId)
     }
     else {
-        showClusters();
+        showClusters("showAll");
     }
 
     DcService.loadAllDcs()
@@ -91,10 +98,9 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     function preResetClusterStatus(clusterName, clusterId) {
         $scope.clusterId = clusterId;
         $scope.clusterName = clusterName;
-        console.log($scope);
-        console.log(clusterName, clusterId);
         $('#resetClusterStatusConfirm').modal('show');
     }
+
     function resetClusterStatus() {
         ClusterService.resetClusterStatus($scope.clusterId)
             .then(function (result) {
@@ -109,27 +115,85 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
             })
     }
 
-    $scope.refresh = function() {
-        showClusters();
+    function preResetSelectedClusterStatus(clusterName, clusterId) {
+        $('#resetSelectedClusterStatusConfirm').modal('show');
     }
 
-    function showClusters() {
-        if ($scope.showUnhealthyClusterOnly === true) {
+    function resetSelectedClusterStatus() {
+        let selected = $scope.getSelectedClusters();
+        ClusterService.resetClusterStatus.apply(ClusterService, selected)
+            .then(function (result) {
+                $('#resetClusterStatusConfirm').modal('hide');
+                toastr.success('重置成功');
+                setTimeout(function () {
+                    // TODO [marsqing] reload ng-table instead of reload window
+                    $window.location.reload();
+                },1000);
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result), '重置失败');
+            })
+    }
+
+    function getSelectedClusters() {
+        let selected;
+        if ($scope.select.all) {
+            selected = $scope.sourceClusters.filterOut(c => c.isChecked === false).map(c => c.id);
+        } else {
+            selected = $scope.sourceClusters.filter(c => c.isChecked).map(c => c.id);
+        }
+        return selected;
+    }
+
+    function migrateSelectedClusters() {
+        let selected = $scope.getSelectedClusters();
+        let migrationClusters = [];
+        selected.forEach(function(cluster) {
+            migrationClusters.push({
+                clusterId : cluster.id,
+                sourceDcId : cluster.activedcId,
+                destinationDcId : cluster.back,
+                cluster,
+            });
+        });
+        MigrationService.createEvent(migrationClusters)
+            .then(function(result) {
+                $('#createEventWithLostConfirm').modal('hide');
+                toastr.success('创建成功');
+                $window.location.href = '/#/migration_event_details/' + result.value;
+            }, function(result) {
+                toastr.error(AppUtil.errorMsg(result), '创建失败');
+            });
+    }
+
+    function showClusters(type) {
+        $scope.showAll = false;
+        $scope.showUnhealthy = false;
+        $scope.showErrorMigrating = false;
+        $scope.showMigrating = false;
+        if (type === "showUnhealthy") {
+            $scope.showUnhealthy = true;
             showUnhealthyClusters();
-        } else if ($scope.showErrorMigratingClusterOnly === true){
+        } else if (type === "showErrorMigrating") {
+            $scope.showErrorMigrating = true;
             showErrorMigratingClusters();
-        } else if ($scope.dcName){
-            if ($scope.type === "activeDC"){
-                showClustersByActiveDc($scope.dcName);
-            }else if ($scope.type === "bindDC"){
-                showClustersBindDc($scope.dcName);
+        } else if (type === 'showMigrating') {
+            $scope.showMigrating = true;
+            showMigratingClusters();
+        } else {
+            $scope.showAll = true;
+            if ($scope.dcName){
+                if ($scope.type === "activeDC"){
+                    showClustersByActiveDc($scope.dcName);
+                }else if ($scope.type === "bindDC"){
+                    showClustersBindDc($scope.dcName);
+                }
             }
-        }
-        else if ($scope.containerId) {
-            showClustersByContainer($scope.containerId)
-        }
-        else {
-            showAllClusters();
+            else if ($scope.containerId) {
+                showClustersByContainer($scope.containerId)
+            }
+            else {
+                showAllClusters();
+            }
         }
     }
 
@@ -140,6 +204,11 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
 
     function showErrorMigratingClusters() {
         ClusterService.getErrorMigratingClusters()
+            .then(loadTable);
+    }
+
+    function showMigratingClusters() {
+        ClusterService.getMigratingClusters()
             .then(loadTable);
     }
 

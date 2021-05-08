@@ -78,6 +78,11 @@ function ClusterService($resource, $q) {
             url: '/console/clusters/error/migrating',
             isArray: true
         },
+        get_migrating_clusters: {
+            method: 'GET',
+            url: '/console/clusters/migrating',
+            isArray: true
+        },
         find_clusters_by_dc_name_bind :{
             method: 'GET',
             url: '/console/clusters/allBind/:dcName',
@@ -268,11 +273,10 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function resetClusterStatus(clusterId) {
+    function resetClusterStatus() {
         var d = $q.defer();
-        resource.reset_cluster_status([
-                clusterId
-            ],
+        resource.reset_cluster_status(
+            Array.from(arguments),
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -295,6 +299,17 @@ function ClusterService($resource, $q) {
     function getErrorMigratingClusters() {
         var d = $q.defer();
         resource.get_error_migrating_clusters({},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getMigratingClusters() {
+        var d = $q.defer();
+        resource.get_migrating_clusters({},
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -379,6 +394,7 @@ function ClusterService($resource, $q) {
         getInvolvedOrgs: getInvolvedOrgs,
         getUnhealthyClusters: getUnhealthyClusters,
         getErrorMigratingClusters: getErrorMigratingClusters,
+        getMigratingClusters: getMigratingClusters,
         getUnhealthyShards: getUnhealthyShards,
         findClustersByDcNameBind: findClustersByDcNameBind,
         findClustersByDcName : findClustersByDcName,
