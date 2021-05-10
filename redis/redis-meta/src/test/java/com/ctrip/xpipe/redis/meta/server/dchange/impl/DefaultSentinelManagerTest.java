@@ -64,7 +64,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	
 	@Before
 	public void beforeDefaultSentinelManagerTest() throws Exception{
-		
+        DefaultSentinelManager.DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI = 2000;
 		sentinelManager = new DefaultSentinelManager(dcMetaCache, getXpipeNettyClientKeyedObjectPool());
 		executionLog = new ExecutionLog(currentTestName());
 		redisMaster = new RedisMeta().setIp("127.0.0.1").setPort(port);

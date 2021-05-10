@@ -43,7 +43,7 @@ public class DefaultSentinelManager implements SentinelManager{
 	private static int DEFAULT_SENTINEL_ADD_SIZE = Integer.parseInt(System.getProperty("DEFAULT_SENTINEL_ADD_SIZE", "5"));
 
 	public static int DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("MIGRATE_SENTINEL_TIMEOUT", "100"));
-	public static int DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("MIGRATE_SENTINEL_WAIT_TIMEOUT", "1500"));
+	public static int DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("MIGRATE_SENTINEL_WAIT_TIMEOUT", "150"));
 	private static Logger logger = LoggerFactory.getLogger(DefaultSentinelManager.class);
 	
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
@@ -91,7 +91,7 @@ public class DefaultSentinelManager implements SentinelManager{
 
 		ParallelCommandChain chain = new ParallelCommandChain(executors);
 		for (int i = 0; i < addSize; i++) {
-			chain.add(createSentinelAddJob(sentinelMonitorName, redisMaster, quorum, sentinels.get(i), executionLog, clusterId, shardId));
+			chain.add(createSentinelAddCommand(sentinelMonitorName, redisMaster, quorum, sentinels.get(i), executionLog, clusterId, shardId));
 		}
 		try {
 			chain.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
@@ -137,7 +137,7 @@ public class DefaultSentinelManager implements SentinelManager{
 
 		ParallelCommandChain chain = new ParallelCommandChain(executors);
 		for (Sentinel sentinel : realSentinels) {
-			chain.add(createSentinelRemoveJob(sentinelMonitorName, sentinel, executionLog));
+			chain.add(createSentinelRemoveCommand(sentinelMonitorName, sentinel, executionLog));
 		}
 		try {
 			chain.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
@@ -146,7 +146,7 @@ public class DefaultSentinelManager implements SentinelManager{
 		}
 	}
 
-	SentinelRemove createSentinelRemoveJob(String sentinelMonitorName, Sentinel sentinel, ExecutionLog executionLog) {
+	SentinelRemove createSentinelRemoveCommand(String sentinelMonitorName, Sentinel sentinel, ExecutionLog executionLog) {
 		SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 		SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 		sentinelRemove.future().addListener(commandFuture -> {
@@ -160,7 +160,7 @@ public class DefaultSentinelManager implements SentinelManager{
 		return sentinelRemove;
 	}
 
-	SentinelAdd createSentinelAddJob(String sentinelMonitorName, HostPort redisMaster, int quorum, InetSocketAddress sentinel, ExecutionLog executionLog, String clusterId, String shardId) {
+	SentinelAdd createSentinelAddCommand(String sentinelMonitorName, HostPort redisMaster, int quorum, InetSocketAddress sentinel, ExecutionLog executionLog, String clusterId, String shardId) {
 		Endpoint sentinelAddress = new DefaultEndPoint(sentinel);
 		SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
 		SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
