@@ -150,12 +150,14 @@ public class DefaultSentinelManager implements SentinelManager{
 		SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 		SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 		sentinelRemove.future().addListener(commandFuture -> {
-			if (commandFuture.isSuccess()) {
-				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, commandFuture.get()));
-			} else {
-				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, commandFuture.cause().getMessage()));
-				logger.warn("[removeSentinel]" + sentinel, commandFuture.cause());
-			}
+            synchronized (executionLog) {
+                if (commandFuture.isSuccess()) {
+                    executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, commandFuture.get()));
+                } else {
+                    executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, commandFuture.cause().getMessage()));
+                    logger.warn("[removeSentinel]" + sentinel, commandFuture.cause());
+                }
+            }
 		});
 		return sentinelRemove;
 	}
@@ -163,16 +165,18 @@ public class DefaultSentinelManager implements SentinelManager{
 	SentinelAdd createSentinelAddCommand(String sentinelMonitorName, HostPort redisMaster, int quorum, InetSocketAddress sentinel, ExecutionLog executionLog, String clusterId, String shardId) {
 		Endpoint sentinelAddress = new DefaultEndPoint(sentinel);
 		SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
-		SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
-		command.future().addListener(commandFuture -> {
-			if (commandFuture.isSuccess()) {
-				executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, commandFuture.get()));
-			} else {
-				executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, commandFuture.cause().getMessage()));
-				logger.warn("[addSentinel]" + sentinelAddress, new AddSentinelException(sentinelAddress.getSocketAddress(), clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), commandFuture.cause()));
-			}
+		SentinelAdd sentinelAdd = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
+        sentinelAdd.future().addListener(commandFuture -> {
+            synchronized (executionLog) {
+                if (commandFuture.isSuccess()) {
+                    executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, commandFuture.get()));
+                } else {
+                    executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, commandFuture.cause().getMessage()));
+                    logger.warn("[addSentinel]" + sentinelAddress, new AddSentinelException(sentinelAddress.getSocketAddress(), clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), commandFuture.cause()));
+                }
+            }
 		});
-		return command;
+		return sentinelAdd;
 	}
 
 
