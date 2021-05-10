@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_THREAD_MAX;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_THREAD_MULTI_CORE;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
@@ -103,7 +104,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
         try {
             leakyBucket.start();
-            executors = new DefaultExecutorFactory(getClass().getSimpleName(), OsUtils.getMultiCpuOrMax(2, GLOBAL_THREAD_MAX), 2 * OsUtils.getCpuCount(),
+            executors = new DefaultExecutorFactory(getClass().getSimpleName(), OsUtils.getMultiCpuOrMax(GLOBAL_THREAD_MULTI_CORE, GLOBAL_THREAD_MAX), 2 * OsUtils.getCpuCount(),
                     new ThreadPoolExecutor.AbortPolicy()).createExecutorService();
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
