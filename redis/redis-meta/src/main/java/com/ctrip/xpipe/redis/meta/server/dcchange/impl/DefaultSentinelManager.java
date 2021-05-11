@@ -89,7 +89,7 @@ public class DefaultSentinelManager implements SentinelManager{
 
 		ParallelCommandChain chain = new ParallelCommandChain(executors);
 		for (int i = 0; i < addSize; i++) {
-			chain.add(createSentinelAddCommand(sentinelMonitorName, redisMaster, quorum, new DefaultEndPoint(sentinels.get(i)), executionLog, clusterId, shardId));
+			chain.add(createSentinelAddCommand(sentinelMonitorName, redisMaster, quorum, new DefaultEndPoint(sentinels.get(i)), executionLog));
 		}
 		try {
 			chain.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
@@ -149,7 +149,7 @@ public class DefaultSentinelManager implements SentinelManager{
         return (SentinelRemove) executionLog.trackCommand(this, sentinelRemove, String.format("removeSentinel %s from %s", sentinelMonitorName, sentinel));
     }
 
-    SentinelAdd createSentinelAddCommand(String sentinelMonitorName, HostPort redisMaster, int quorum, DefaultEndPoint sentinel, ExecutionLog executionLog, String clusterId, String shardId) {
+    SentinelAdd createSentinelAddCommand(String sentinelMonitorName, HostPort redisMaster, int quorum, DefaultEndPoint sentinel, ExecutionLog executionLog) {
         SentinelAdd sentinelAdd = new SentinelAdd(keyedClientPool.getKeyPool(sentinel), sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
         return (SentinelAdd) executionLog.trackCommand(this, sentinelAdd, String.format("add %s %s:%d %d to sentinel %s", sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, sentinel));
     }
