@@ -90,15 +90,8 @@ sudo sysctl -p
 ### Java 启动TCP在80端口
 
 ```
-setcap 'cap_net_bind_service=+ep' /usr/java/latest/bin/java
+setcap 'cap_net_bind_service=+ep' $JAVE_HOME/bin/java
  
-touch /etc/ld.so.conf.d/java.conf
- 
-sed -i '1,$d' /etc/ld.so.conf.d/java.conf
- 
-echo '/usr/java/latest/jre/lib/amd64/jli' >> /etc/ld.so.conf.d/java.conf
- 
-ldconfig | grep libjli
 ```
 
 ### 数据库插入信息
@@ -145,4 +138,20 @@ body:
 到此, 用户可以使用 proxy 提供的跨公网传输的功能, 携程目前使用 proxy 进行从上海到德国的数据传输, 稳定性和安全性都经过生产环境的检验
 
 # Proxy 整体架构设计
-> To be continued..
+![](../image/arch.png)
+
+## 核心概念
+
+### Tunnel
+网络隧道，隧道有入口和出口，分别映射到内网和外网，所以Tunnel的作用就是将 内网/外网 流量转到 外网/内网
+
+### Session
+一段连接回话，具有生命周期。Init、Established、Closing和Closed
+
+### ProxyProtocol
+Proxy 之间通信协议，Proxy首先通过ROUTE命令进行建连，端到端建立连接后，进行双向数据通信
+
+# Proxy Client
+```
+
+```
