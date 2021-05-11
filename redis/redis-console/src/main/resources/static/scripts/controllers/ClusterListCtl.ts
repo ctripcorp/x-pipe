@@ -178,22 +178,23 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
             });
     }
 
-    function showClusters(type) {
+    function clearData() {
+        loadTable([]);
         $scope.showAll = false;
         $scope.showUnhealthy = false;
         $scope.showErrorMigrating = false;
         $scope.showMigrating = false;
+    }
+
+    function showClusters(type) {
+        clearData();
         if (type === "showUnhealthy") {
-            $scope.showUnhealthy = true;
             showUnhealthyClusters();
         } else if (type === "showErrorMigrating") {
-            $scope.showErrorMigrating = true;
             showErrorMigratingClusters();
         } else if (type === 'showMigrating') {
-            $scope.showMigrating = true;
             showMigratingClusters();
         } else {
-            $scope.showAll = true;
             if ($scope.dcName){
                 if ($scope.type === "activeDC"){
                     showClustersByActiveDc($scope.dcName);
@@ -211,35 +212,31 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     }
 
     function showUnhealthyClusters() {
-        ClusterService.getUnhealthyClusters()
-            .then(loadTable);
+        ClusterService.getUnhealthyClusters().then(loadTable).then(() => { $scope.showUnhealthy = true; });
     }
 
     function showErrorMigratingClusters() {
-        ClusterService.getErrorMigratingClusters()
-            .then(loadTable);
+        ClusterService.getErrorMigratingClusters().then(loadTable).then(() => { $scope.showErrorMigrating = true; });
     }
 
     function showMigratingClusters() {
-        ClusterService.getMigratingClusters()
-            .then(loadTable);
+        ClusterService.getMigratingClusters().then(loadTable).then(() => { $scope.showMigrating = true; });
     }
 
     function showAllClusters() {
-        ClusterService.findAllClusters()
-            .then(loadTable);
+        ClusterService.findAllClusters().then(loadTable).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersBindDc(dcName) {
-        ClusterService.findClustersByDcNameBind(dcName).then(loadTable);
+        ClusterService.findClustersByDcNameBind(dcName).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersByActiveDc(dcName) {
-        ClusterService.findClustersByDcName(dcName).then(loadTable);
+        ClusterService.findClustersByDcName(dcName).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersByContainer(containerId) {
-        ClusterService.findAllByKeeperContainer(containerId).then(loadTable);
+        ClusterService.findAllByKeeperContainer(containerId).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function loadTable(data) {
