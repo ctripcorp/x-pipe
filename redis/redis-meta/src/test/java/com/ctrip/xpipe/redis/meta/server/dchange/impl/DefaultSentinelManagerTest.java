@@ -132,7 +132,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 		sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
 		logger.info("addSuccess: {}", executionLog.getLog());
 		servers.forEach(server -> {
-			Assert.assertTrue(executionLog.getLog().contains(String.format("add %s to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, server.getPort())));
+			Assert.assertTrue(executionLog.getLog().contains(String.format("add %s %s:%d 3 to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, port, LOCAL_HOST, server.getPort())));
 		});
 	}
 
@@ -143,7 +143,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 			sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
 			logger.info("addFailed: {}", executionLog.getLog());
 			servers.forEach(server -> {
-				Assert.assertTrue(executionLog.getLog().contains(String.format("add %s to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, server.getPort())));
+				Assert.assertTrue(executionLog.getLog().contains(String.format("add %s %s:%d 3 to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, port, LOCAL_HOST, server.getPort())));
 			});
 		} catch (Exception e) {
 			Assert.fail();

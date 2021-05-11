@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange;
 
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.utils.LogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,4 +39,17 @@ public class ExecutionLog {
 	public String getLog() {
 		return log.toString();
 	}
+
+	public Command trackCommand(Object invoker, AbstractCommand command, String desc) {
+		command.future().addListener(commandFuture -> {
+			if (commandFuture.isSuccess()) {
+				info(String.format("%s : %s", desc, commandFuture.get()));
+			} else {
+				warn(String.format("%s : %s", desc, commandFuture.cause().getMessage()));
+				LoggerFactory.getLogger(invoker.getClass()).warn("[{}]{}", command.getName(), desc, commandFuture.cause());
+			}
+		});
+		return command;
+	}
+
 }
