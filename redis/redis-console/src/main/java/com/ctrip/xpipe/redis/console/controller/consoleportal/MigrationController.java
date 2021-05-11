@@ -119,8 +119,8 @@ public class MigrationController extends AbstractConsoleController {
 		migrationService.rollbackMigrationCluster(eventId, clusterId);
 	}
 	
-	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forcePublish", method = RequestMethod.POST)
-	public void forcePublishMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
+	@RequestMapping(value = "/migration/events/{eventId}/clusters/{clusterId}/forceProcess", method = RequestMethod.POST)
+	public void forceProcessMigrationCluster(@PathVariable Long eventId, @PathVariable Long clusterId) {
 		logger.info("[forceProcessMigrationCluster]{}, {}", eventId, clusterId);
 		migrationService.forceProcessMigrationCluster(eventId, clusterId);
 	}
