@@ -13,8 +13,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand.Sentinels
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
-import com.ctrip.xpipe.redis.meta.server.dcchange.exception.AddSentinelException;
-import com.ctrip.xpipe.redis.meta.server.dcchange.exception.RemoveSentinelException;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
@@ -148,31 +146,15 @@ public class DefaultSentinelManager implements SentinelManager{
 
     SentinelRemove createSentinelRemoveCommand(String sentinelMonitorName, DefaultEndPoint sentinel, ExecutionLog executionLog) {
         SentinelRemove sentinelRemove = new SentinelRemove(keyedClientPool.getKeyPool(sentinel), sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
-        sentinelRemove.future().addListener(commandFuture -> {
-            if (commandFuture.isSuccess()) {
-                executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, commandFuture.get()));
-            } else {
-                executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, commandFuture.cause().getMessage()));
-                logger.warn("[removeSentinel]{}", sentinel, new RemoveSentinelException(sentinel.getSocketAddress(), sentinelMonitorName, commandFuture.cause()));
-            }
-        });
-        return sentinelRemove;
+        return (SentinelRemove) executionLog.trackCommand(this, sentinelRemove, String.format("removeSentinel %s from %s", sentinelMonitorName, sentinel));
     }
 
     SentinelAdd createSentinelAddCommand(String sentinelMonitorName, HostPort redisMaster, int quorum, DefaultEndPoint sentinel, ExecutionLog executionLog, String clusterId, String shardId) {
         SentinelAdd sentinelAdd = new SentinelAdd(keyedClientPool.getKeyPool(sentinel), sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
-        sentinelAdd.future().addListener(commandFuture -> {
-            if (commandFuture.isSuccess()) {
-                executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinel, commandFuture.get()));
-            } else {
-                executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinel, commandFuture.cause().getMessage()));
-                logger.warn("[addSentinel]{}", sentinel, new AddSentinelException(sentinel.getSocketAddress(), clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), commandFuture.cause()));
-            }
-        });
-        return sentinelAdd;
+        return (SentinelAdd) executionLog.trackCommand(this, sentinelAdd, String.format("add %s %s:%d %d to sentinel %s", sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, sentinel));
     }
 
-	private List<Sentinel> getRealSentinels(List<InetSocketAddress> sentinels, String sentinelMonitorName, ExecutionLog executionLog) {
+    private List<Sentinel> getRealSentinels(List<InetSocketAddress> sentinels, String sentinelMonitorName, ExecutionLog executionLog) {
 		
 		List<Sentinel> realSentinels = null;
 		for(InetSocketAddress sentinelAddress: sentinels){
