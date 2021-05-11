@@ -237,7 +237,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     }
 
     function showAllClusters() {
-        ClusterService.findAllClusters().then(loadTable).then(loadTable).then(() => { $scope.showAll = true; });
+        ClusterService.findAllClusters().then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersBindDc(dcName) {
