@@ -12,8 +12,8 @@
                 </div>
                 <div class="col-md-4 text-right">
                     <a ng-if="showAll" type="button" class="btn btn-info btn-xs" href="/#/cluster_form?clusterName=&type=create">创建Cluster</a>
-                    <a ng-if="showErrorMigrating || showMigrating" class="btn btn-danger btn-xs" >重置状态后迁移</a>
-                    <a ng-if="showErrorMigrating || showMigrating" class="btn btn-danger btn-xs" ng-click="preResetSelectedClusterStatus()">重置状态</a>
+                    <a ng-if="showMigrating" class="btn btn-danger btn-xs" ng-click="preContinueSelectedClusterStatus()">批量继续</a>
+                    <a ng-if="showErrorMigrating" class="btn btn-danger btn-xs" ng-click="preResetSelectedClusterStatus()">重置状态</a>
                 </div>
             </div>
         </header>
@@ -81,3 +81,7 @@
 <xpipeconfirmdialog xpipe-dialog-id="'resetSelectedClusterStatusConfirm'" xpipe-title="'重置cluster状态'"
                     xpipe-detail="'您确定要对选中的集群做重置迁移状态的操作吗（当前迁移任务可能收到影响）?'"
                     xpipe-show-cancel-btn="true" xpipe-confirm="resetSelectedClusterStatus"></xpipeconfirmdialog>
+
+<xpipeconfirmdialog xpipe-dialog-id="'continueSelectedClusterStatusConfirm'" xpipe-title="'批量继续'"
+                    xpipe-detail="'您确定要对选中的集群做继续迁移的操作吗?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="continueSelectedClusterStatus"></xpipeconfirmdialog>

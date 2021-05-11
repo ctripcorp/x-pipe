@@ -22,6 +22,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     $scope.resetClusterStatus = resetClusterStatus;
     $scope.preResetSelectedClusterStatus = preResetSelectedClusterStatus;
     $scope.resetSelectedClusterStatus = resetSelectedClusterStatus;
+    $scope.preContinueSelectedClusterStatus = preContinueSelectedClusterStatus;
+    $scope.continueSelectedClusterStatus = continueSelectedClusterStatus;
     $scope.getSelectedClusters = getSelectedClusters;
     $scope.showClusters = showClusters;
     $scope.showAll = false;
@@ -120,7 +122,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     }
 
     function resetSelectedClusterStatus() {
-        let selected = $scope.getSelectedClusters();
+        let selected = $scope.getSelectedClusters().map(c => c.id);
         ClusterService.resetClusterStatus.apply(ClusterService, selected)
             .then(function (result) {
                 $('#resetClusterStatusConfirm').modal('hide');
@@ -134,12 +136,23 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
             })
     }
 
+    function preContinueSelectedClusterStatus() {
+        $('#continueSelectedClusterStatusConfirm').modal('show');
+    }
+
+    function continueSelectedClusterStatus() {
+        let selected = $scope.getSelectedClusters();
+        selected.forEach(cluster => {
+            MigrationService.continueMigrationCluster(cluster.migrationEventId, cluster.id);
+        });
+    }
+
     function getSelectedClusters() {
         let selected;
         if ($scope.select.all) {
-            selected = $scope.sourceClusters.filterOut(c => c.isChecked === false).map(c => c.id);
+            selected = $scope.sourceClusters.filterOut(c => c.isChecked === false);
         } else {
-            selected = $scope.sourceClusters.filter(c => c.isChecked).map(c => c.id);
+            selected = $scope.sourceClusters.filter(c => c.isChecked);
         }
         return selected;
     }
