@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.command.ParallelCommandChain;
+import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -12,11 +13,11 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand.Sentinels
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
-import com.ctrip.xpipe.redis.meta.server.dcchange.exception.AddSentinelException;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,10 +27,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * @author wenchao.meng
@@ -51,6 +49,9 @@ public class DefaultSentinelManager implements SentinelManager{
 	
 	@Autowired
 	private DcMetaCache dcMetaCache;
+
+	private ExecutorService executors = new DefaultExecutorFactory(getClass().getSimpleName(), OsUtils.getMultiCpuOrMax(2, 16), 2 * OsUtils.getCpuCount(),
+			new ThreadPoolExecutor.AbortPolicy()).createExecutorService();
 
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedClientPool;
@@ -86,18 +87,14 @@ public class DefaultSentinelManager implements SentinelManager{
 		
 		int addSize = Math.min(sentinels.size(), DEFAULT_SENTINEL_ADD_SIZE);
 
-		for(int i=0; i < addSize; i++){
-
-			Endpoint sentinelAddress = new DefaultEndPoint(sentinels.get(i));
-			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(sentinelAddress);
-			SentinelAdd command = new SentinelAdd(clientPool, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
-			try {
-				String result = command.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
-				executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, result));
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				executionLog.info(String.format("add %s to sentinel %s : %s", sentinelMonitorName, sentinelAddress, e.getMessage()));
-				logger.warn("[addSentinel]" + sentinelAddress, new AddSentinelException(sentinelAddress.getSocketAddress(), clusterId, shardId, redisMaster.getHost(), redisMaster.getPort(), e));
-			}
+		ParallelCommandChain chain = new ParallelCommandChain(executors);
+		for (int i = 0; i < addSize; i++) {
+			chain.add(createSentinelAddCommand(sentinelMonitorName, redisMaster, quorum, new DefaultEndPoint(sentinels.get(i)), executionLog, clusterId, shardId));
+		}
+		try {
+			chain.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
+		} catch (Exception e) {
+			logger.warn("[addSentinels]{},{}", sentinelMonitorName, allSentinels, e);
 		}
 	}
 
@@ -135,22 +132,29 @@ public class DefaultSentinelManager implements SentinelManager{
 		}
 		
 		executionLog.info(String.format("removeSentinel realSentinels:%s", realSentinels));
-		
-		for(Sentinel sentinel : realSentinels){
-			
-			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-			SentinelRemove sentinelRemove = new SentinelRemove(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
-			try {
-				String result = sentinelRemove.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
-				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, result));
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				executionLog.info(String.format("removeSentinel %s from %s : %s", sentinelMonitorName, sentinel, e.getMessage()));
-				logger.warn("[removeSentinel]" + sentinel, e);
-			}
+
+		ParallelCommandChain chain = new ParallelCommandChain(executors);
+		for (Sentinel sentinel : realSentinels) {
+			chain.add(createSentinelRemoveCommand(sentinelMonitorName, new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()), executionLog));
+		}
+		try {
+			chain.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
+		} catch (Exception e) {
+			logger.warn("[removeSentinels]{}", realSentinels, e);
 		}
 	}
 
-	private List<Sentinel> getRealSentinels(List<InetSocketAddress> sentinels, String sentinelMonitorName, ExecutionLog executionLog) {
+    SentinelRemove createSentinelRemoveCommand(String sentinelMonitorName, DefaultEndPoint sentinel, ExecutionLog executionLog) {
+        SentinelRemove sentinelRemove = new SentinelRemove(keyedClientPool.getKeyPool(sentinel), sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
+        return (SentinelRemove) executionLog.trackCommand(this, sentinelRemove, String.format("removeSentinel %s from %s", sentinelMonitorName, sentinel));
+    }
+
+    SentinelAdd createSentinelAddCommand(String sentinelMonitorName, HostPort redisMaster, int quorum, DefaultEndPoint sentinel, ExecutionLog executionLog, String clusterId, String shardId) {
+        SentinelAdd sentinelAdd = new SentinelAdd(keyedClientPool.getKeyPool(sentinel), sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
+        return (SentinelAdd) executionLog.trackCommand(this, sentinelAdd, String.format("add %s %s:%d %d to sentinel %s", sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort(), quorum, sentinel));
+    }
+
+    private List<Sentinel> getRealSentinels(List<InetSocketAddress> sentinels, String sentinelMonitorName, ExecutionLog executionLog) {
 		
 		List<Sentinel> realSentinels = null;
 		for(InetSocketAddress sentinelAddress: sentinels){
@@ -158,7 +162,7 @@ public class DefaultSentinelManager implements SentinelManager{
 			SimpleObjectPool<NettyClient> clientPool = keyedClientPool.getKeyPool(new DefaultEndPoint(sentinelAddress));
 			Sentinels sentinelsCommand = new Sentinels(clientPool, sentinelMonitorName, scheduled, DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI);
 			try {
-				realSentinels = sentinelsCommand.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_WAIT_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
+				realSentinels = sentinelsCommand.execute().get(DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
 				executionLog.info(String.format("get sentinels from %s : %s", sentinelAddress, realSentinels));
 				if(null != realSentinels) {
 					realSentinels.add(new Sentinel(sentinelAddress.toString(), sentinelAddress.getHostString(), sentinelAddress.getPort()));
