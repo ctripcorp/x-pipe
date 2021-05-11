@@ -194,18 +194,18 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 			}
 		};
 
-		servers.get(0).stop();
-		try {
-			sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
-			logger.info("test result {}", executionLog.getLog());
-			servers.forEach(server -> {
-				Assert.assertTrue(executionLog.getLog().contains(String.format("%s:%d, ip:%s, port:%d", LOCAL_HOST, server.getPort(), LOCAL_HOST, server.getPort())));
-			});
-		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail();
+        servers.get(0).stop();
+        try {
+            sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
+            logger.info("test result {}", executionLog.getLog());
+            servers.forEach(server -> {
+                Assert.assertTrue(executionLog.getLog().contains(String.format("removeSentinel %s from redis://%s:%d", sentinelMonitorName, LOCAL_HOST, server.getPort())));
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail();
 
-		}
+        }
 	}
 
 	private String buildSentinelsResponse(int source) {

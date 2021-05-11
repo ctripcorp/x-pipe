@@ -13,7 +13,7 @@ public class ExecutionLog {
 	
 	private static Logger logger = LoggerFactory.getLogger(ExecutionLog.class);
 	
-	private StringBuilder log = new StringBuilder();
+	private StringBuffer log = new StringBuffer();
 
 	public ExecutionLog(String initMessage){
 		info(initMessage);
