@@ -236,10 +236,8 @@
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/> left join <TABLE name='migration-event'/> on <FIELD name='migration-event-id'/> = met.id
-					WHERE <FIELD name='status'/> != "Normal"
+					WHERE <FIELD name='status'/> != 'Normal'
 					AND <FIELD name='deleted'/> = 0
-					AND met.deleted = 0
-					AND mct.deleted = 0
 					]]>
 				</statement>
 			</query>
@@ -250,7 +248,7 @@
 					FROM <TABLE/> left join <TABLE name='migration-event'/> on <FIELD name='migration-event-id'/> = met.id
 					left join <TABLE name='migration-clusters'/> on met.id = mct.migration_event_id
 					WHERE <FIELD name='id'/>  = mct.cluster_id
-					AND <FIELD name='status'/> != "Normal"
+					AND <FIELD name='status'/> != 'Normal'
 					AND <FIELD name='deleted'/> = 0
 					AND met.deleted = 0
 					AND mct.deleted = 0
