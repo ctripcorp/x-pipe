@@ -331,7 +331,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             try {
                 migrationEventManager.getEvent(eventId).forceClusterProcess(clusterId);
             } catch (Exception e) {
-                logger.info("[forcePublishMigrationCluster][{}][{}] fail", eventId, clusterId, e);
+                logger.info("[forceProcessMigrationCluster][{}][{}] fail", eventId, clusterId, e);
             }
         }
     }

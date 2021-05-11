@@ -22,8 +22,10 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     $scope.resetClusterStatus = resetClusterStatus;
     $scope.preResetSelectedClusterStatus = preResetSelectedClusterStatus;
     $scope.resetSelectedClusterStatus = resetSelectedClusterStatus;
-    $scope.preContinueSelectedClusterStatus = preContinueSelectedClusterStatus;
-    $scope.continueSelectedClusterStatus = continueSelectedClusterStatus;
+    $scope.preContinueSelectedCluster = preContinueSelectedCluster;
+    $scope.continueSelectedCluster = continueSelectedCluster;
+    $scope.preForceSelectedCluster = preForceSelectedCluster;
+    $scope.forceSelectedCluster = forceSelectedCluster;
     $scope.getSelectedClusters = getSelectedClusters;
     $scope.showClusters = showClusters;
     $scope.showAll = false;
@@ -136,14 +138,25 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
             })
     }
 
-    function preContinueSelectedClusterStatus() {
-        $('#continueSelectedClusterStatusConfirm').modal('show');
+    function preContinueSelectedCluster() {
+        $('#continueSelectedClusterConfirm').modal('show');
     }
 
-    function continueSelectedClusterStatus() {
+    function continueSelectedCluster() {
         let selected = $scope.getSelectedClusters();
         selected.forEach(cluster => {
             MigrationService.continueMigrationCluster(cluster.migrationEventId, cluster.id);
+        });
+    }
+
+    function preForceSelectedCluster() {
+        $('#forceSelectedClusterConfirm').modal('show');
+    }
+
+    function forceSelectedCluster() {
+        let selected = $scope.getSelectedClusters();
+        selected.forEach(cluster => {
+            MigrationService.forceProcessMigrationCluster(cluster.migrationEventId, cluster.id);
         });
     }
 

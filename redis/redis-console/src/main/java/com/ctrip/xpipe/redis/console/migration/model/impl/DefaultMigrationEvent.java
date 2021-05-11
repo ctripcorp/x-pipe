@@ -160,7 +160,7 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
             allowOneClusterStart(clusterId);
             migrationCluster.forceProcess();
         } catch (Throwable th) {
-            logger.info("[forceClusterPublish][{}][{}] fail", event.getId(), clusterId, th);
+            logger.info("[forceClusterProcess][{}][{}] fail", event.getId(), clusterId, th);
             unlockAfterProcess();
         }
     }
