@@ -489,8 +489,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public List<ClusterTbl> findErrorMigratingClusters() {
-		List<ClusterTbl> overviews = clusterDao.findAllClusterMigrationOverview();
 		List<ClusterTbl> errorClusters = Lists.newArrayList();
+		List<ClusterTbl> clustersWithEvents = clusterDao.findMigratingClustersWithEvents();
+		for (ClusterTbl clusterWithEvent: clustersWithEvents) {
+		    if (clusterWithEvent.getMigrationEvent().getId() == 0) {
+				errorClusters.add(clusterWithEvent);
+			}
+		}
+		List<ClusterTbl> overviews = clusterDao.findMigratingClustersOverview();
 		for (ClusterTbl overview : overviews) {
 			MigrationClusterTbl migrationClusterTbl = overview.getMigrationClusters();
 			String migrationStatus = migrationClusterTbl.getStatus();
@@ -509,7 +515,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Override
 	public List<ClusterTbl> findMigratingClusters() {
-		return clusterDao.findAllClusterMigrationOverview();
+		return clusterDao.findMigratingClustersOverview();
 	}
 
 	// Cache {dc name} -> List {SentinelTbl}
