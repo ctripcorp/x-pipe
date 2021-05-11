@@ -10,7 +10,9 @@ cp $CERT_DIR/* /opt/data/100013684/openssl
 chown deploy:deploy /opt/data/100013684/openssl/*
 
 ###############################reset xpipe.properties###########
-rm /opt/data/100013684/xpipe.properties
+if [ -f "/opt/data/100013684/xpipe.properties" ]; then
+  rm /opt/data/100013684/xpipe.properties
+fi
 
 echo 'proxy.frontend.tcp.port = 80
 proxy.frontend.tls.port = 443
