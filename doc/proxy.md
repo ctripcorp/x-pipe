@@ -77,7 +77,7 @@ proxy.traffic.report.interval.milli = 5000  xpipe 向CAT打的监控埋点, 可�
 rpm -ivh XXX  
 rpm -qa | grep kernel
 sudo egrep ^menuentry /etc/grub2.cfg | cut -f 2 -d \'
-sudo grub2-set-default 0 
+sudo grub2-set-default 0  # 这里0需根据上个命令输出结果而定
 sudo shutdown -r now
 uname -r
 
@@ -91,6 +91,13 @@ sudo sysctl -p
 
 ```
 setcap 'cap_net_bind_service=+ep' $JAVE_HOME/bin/java
+```
+
+### 初始化脚本
+
+redis/redis-proxy/src/main/test/resources下包含cert和env_set文件夹，将2个文件夹复制到Proxy机器上，在完成内核手动升级后，执行如下命令完成机器初始化。
+```
+sudo bash init.sh && sudo bash refresh.sh
 ```
 
 ### 数据库插入信息
