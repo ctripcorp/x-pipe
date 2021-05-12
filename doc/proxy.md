@@ -157,15 +157,32 @@ proxy 会在80和443分别启动服务，80端口服务内网连接，443端口�
 一段连接回话，具有生命周期，包含Init、Established、Closing和Closed。
 
 ### ProxyProtocol
-proxy 之间通信协议，proxy首先通过ROUTE命令进行建连，端到端建立连接后，进行双向数据通信。
+为了保证proxy本身是无状态的，使用proxy的client需要将整条链路上经过的所有proxy与server的IP和端口作为一条信息发送给连接的proxy，此条消息即proxy协议中route信息。
+
+数据在公网传输时，proxy需要进行ssl加密，使用443端口，在proxy协议中URI为PROXYTLS:后接IP与端口，即PROXYTLS:IP:443；
+
+而在内网传输时，不必进行ssl加密，使用80端口，在proxy协议中URI为TCP:后接IP与端口，即TCP:IP:80。
+
+URI构成格式如下所示：
+![](image/route.png)
 
 # Proxy Client
-为了无侵入使用proxy，提供redis-proxy-client客户端，用户注册需要拦截的终端，运行时客户端自动拦截建连请求，完成proxy通信协议，实现用户数据传输。
+redis-proxy-client客户端提供了低侵入proxy接入方式，用户注册需要代理的终端，运行时客户端自动拦截建连请求，完成proxy通信协议，实现用户数据传输。
 
 ## 使用方式
 
-### 注册被拦截终端
-只需注册需要拦截的(ip, port)及其使用的proxy信息即可。
+### 引入依赖
+
+```
+<dependency>
+    <groupId>com.ctrip.framework.xpipe.redis</groupId>
+    <artifactId>redis-proxy-client</artifactId>
+    <version>1.2.4</version>
+</dependency>
+```
+
+### 注册代理终端
+注册需要代理的(ip, port)及其使用的proxy信息即可。
 ```
 ProxyRegistry.registerProxy("10.15.1.0", 8080, "PROXY ROUTE PROXYTCP://10.26.0.1:80 PROXYTLS://10.15.1.1:443 TCP")
 
@@ -173,19 +190,19 @@ ProxyRegistry.registerProxy("10.15.1.0", 8080, "PROXY ROUTE PROXYTCP://10.26.0.1
 运行时，keeper会自动建立如下链路，proxy对用户完全透明。
 ![](image/protocol.png)
 
-### 取消被拦截终端
+### 取消代理终端
 ```
 ProxyRegistry.unegisterProxy("10.15.1.0", 8080)
 
 ```
 
 ## 实现原理
-redis-proxy-client使用JavaAgent和ASM字节码技术，在JVM加载Socket.class和SocketChannelImpl.class二进制文件时，利用ASM动态修改加载的class文件，代理实现proxy协议。
+redis-proxy-client使用JavaAgent和ASM字节码技术，对JVM加载的Socket.class和SocketChannelImpl.class二进制文件，利用ASM动态修改对应的class文件，代理实现proxy协议。
 
 ### Agent启动
 1. 使用Tomcat容器的启动war包的应用，通过ServletContextListener实现Agent的自动启动；
 2. 使用Spring Boot启动jar包的应用，通过EnableAutoConfiguration实现Agent的自动启动;
-3. 如果非以上2种方式，可以主动执行ProxyAgentTool.startUp()启动Agent。
+3. 非以上2种方式，可以主动执行ProxyAgentTool.startUp()启动Agent。
 
 对于jdk >= 9的应用，需添加如下VM参数：
 ```
