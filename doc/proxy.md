@@ -146,7 +146,7 @@ body:
 # Proxy 整体设计
 ![](image/arch.png)
 
-Proxy 会在80和443分别启动服务，80端口服务内网连接，443端口服务外网连接。
+proxy 会在80和443分别启动服务，80端口服务内网连接，443端口服务外网连接。
 
 ## 核心概念
 
@@ -157,20 +157,20 @@ Proxy 会在80和443分别启动服务，80端口服务内网连接，443端口�
 一段连接回话，具有生命周期，包含Init、Established、Closing和Closed。
 
 ### ProxyProtocol
-Proxy 之间通信协议，Proxy首先通过ROUTE命令进行建连，端到端建立连接后，进行双向数据通信。
+proxy 之间通信协议，proxy首先通过ROUTE命令进行建连，端到端建立连接后，进行双向数据通信。
 
 # Proxy Client
-为了无侵入使用Proxy，提供redis-proxy-client客户端，用户注册需要拦截的终端，运行时客户端自动拦截建连请求，完成Proxy通信协议，实现用户数据传输。
+为了无侵入使用proxy，提供redis-proxy-client客户端，用户注册需要拦截的终端，运行时客户端自动拦截建连请求，完成proxy通信协议，实现用户数据传输。
 
 ## 使用方式
 
 ### 注册被拦截终端
-只需注册需要拦截的服务端及其使用的Proxy信息即可。
+只需注册需要拦截的(ip, port)及其使用的proxy信息即可。
 ```
 ProxyRegistry.registerProxy("10.15.1.0", 8080, "PROXY ROUTE PROXYTCP://10.26.0.1:80 PROXYTLS://10.15.1.1:443 TCP")
 
 ```
-运行时，客户端会自动建立如下链路，Proxy对用户完全透明。
+运行时，keeper会自动建立如下链路，proxy对用户完全透明。
 ![](image/protocol.png)
 
 ### 取消被拦截终端
@@ -180,11 +180,12 @@ ProxyRegistry.unegisterProxy("10.15.1.0", 8080)
 ```
 
 ## 实现原理
-redis-proxy-client使用JavaAgent和ASM字节码技术，在JVM加载Socket.class和SocketChannelImpl.class二进制文件时，利用ASM动态修改加载的class文件，代理实现Proxy协议。
+redis-proxy-client使用JavaAgent和ASM字节码技术，在JVM加载Socket.class和SocketChannelImpl.class二进制文件时，利用ASM动态修改加载的class文件，代理实现proxy协议。
 
 ### Agent启动
-1. 使用Tomcat容器的启动war包的应用，通过ServletContextListener实现Agent的自动启动。
-2. 使用Spring Boot启动jar包的应用，通过EnableAutoConfiguration实现Agent的自动启动。
+1. 使用Tomcat容器的启动war包的应用，通过ServletContextListener实现Agent的自动启动；
+2. 使用Spring Boot启动jar包的应用，通过EnableAutoConfiguration实现Agent的自动启动;
+3. 如果非以上2种方式，可以主动执行ProxyAgentTool.startUp()启动Agent。
 
 对于jdk >= 9的应用，需添加如下VM参数：
 ```
