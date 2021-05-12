@@ -75,7 +75,7 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         List<RedisMeta> masters = new LinkedList<>();
         List<RedisMeta> tmpAliveServers = new LinkedList<>();
 
-        ParallelCommandChain commandChain = new ParallelCommandChain();
+        ParallelCommandChain commandChain = new ParallelCommandChain(executors);
         for (RedisMeta redisMeta : allRedises) {
             SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
             RoleCommand cmd = new RoleCommand(clientPool, CHECK_NEW_MASTER_TIMEOUT_SECONDS*1000, true, scheduled);
