@@ -21,6 +21,8 @@ public interface ConfigService {
 
     String KEY_SENTINEL_CHECK_EXCLUDE = "sentinel.check.exclude";
 
+    String KEY_ALLOW_AUTO_MIGRATION = "allow.migration.auto";
+
     void startAlertSystem(ConfigModel config) throws DalException;
 
     void stopAlertSystem(ConfigModel config, int hours) throws DalException;
@@ -52,6 +54,10 @@ public interface ConfigService {
     boolean ignoreMigrationSystemAvailability();
 
     void doIgnoreMigrationSystemAvailability(boolean ignore) throws DalException;
+
+    boolean allowAutoMigration();
+
+    void setAllowAutoMigration(boolean allow) throws DalException;
 
     ConfigModel getConfig(String key);
 
