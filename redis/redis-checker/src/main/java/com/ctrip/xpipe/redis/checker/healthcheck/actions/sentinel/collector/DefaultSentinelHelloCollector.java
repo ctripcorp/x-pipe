@@ -436,7 +436,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         // add rate limit logic to reduce frequently sentinel operations
         if (!leakyBucket.tryAcquire()) {
-            logger.warn("[doAction][not-mod]");
+            logger.warn("[doAction][not-mod]{}", sentinelMonitorName);
             return;
         } else {
             // I got the lock, remember to release it
