@@ -39,7 +39,7 @@ function MigrationService($resource, $q) {
 		},
 		force_process_migration_cluster: {
 			method: 'POST',
-			url: '/console/migration/events/:eventId/clusters/:clusterId/forcePublish'
+			url: '/console/migration/events/:eventId/clusters/:clusterId/forceProcess'
 		},
 		force_end_migration_cluster: {
 			method: 'POST',
@@ -230,6 +230,7 @@ function MigrationService($resource, $q) {
 		rollbackMigrationCluster: rollbackMigrationCluster,
 		forceSkipChecking : forceProcessMigrationCluster,
 		forcePublish : forceProcessMigrationCluster,
+		forceProcessMigrationCluster : forceProcessMigrationCluster,
 		forceEndMigrationCluster : forceEndMigrationCluster,
         checkMigrationSystem : checkMigrationSystem,
         getDefaultMigrationCluster : getDefaultMigrationCluster
