@@ -42,7 +42,7 @@ public class MigrationApi extends AbstractConsoleController {
         logger.info("[checkAndPrepare]{}", checkMeta);
         CheckPrepareResponse checkRetMeta = new CheckPrepareResponse();
 
-        List<TryMigrateResult> avaibleClusters = new LinkedList<>();
+        List<TryMigrateResult> availableClusters = new LinkedList<>();
         List<ClusterMigratingNow> migratingClusters = new LinkedList<>();
         List<CheckPrepareClusterResponse> failClusters = new LinkedList<>();
 
@@ -50,7 +50,7 @@ public class MigrationApi extends AbstractConsoleController {
         for (String clusterName : checkMeta.getClusters()) {
             try {
                 TryMigrateResult tryMigrateResult = migrationService.tryMigrate(clusterName, fromIdc, checkMeta.getToIdc());
-                avaibleClusters.add(tryMigrateResult);
+                availableClusters.add(tryMigrateResult);
                 logger.info("[checkAndPrepare]{}", tryMigrateResult);
             } catch (ClusterNotFoundException e) {
                 failClusters.add(CheckPrepareClusterResponse.createFailResponse(clusterName, fromIdc, CHECK_FAIL_STATUS.CLUSTER_NOT_FOUND, e.getMessage()));
@@ -77,23 +77,23 @@ public class MigrationApi extends AbstractConsoleController {
         }
 
         Long eventId = -1L;
-        if (avaibleClusters.size() > 0) {
+        if (availableClusters.size() > 0) {
             MigrationRequest request = new MigrationRequest("api_call");
             request.setTag("api_call");
-            logger.info("[checkAndPrepare][availableClusters]{}", avaibleClusters);
-            avaibleClusters.forEach((tryMigrateResult) -> request.addClusterInfo(new MigrationRequest.ClusterInfo(tryMigrateResult)));
+            logger.info("[checkAndPrepare][availableClusters]{}", availableClusters);
+            availableClusters.forEach((tryMigrateResult) -> request.addClusterInfo(new MigrationRequest.ClusterInfo(tryMigrateResult)));
             eventId = migrationService.createMigrationEvent(request);
         }else if(migratingClusters.size() > 0){
             int migraingSelected = RandomUtils.nextInt(0, migratingClusters.size());
             ClusterMigratingNow clusterMigratingNow = migratingClusters.remove(migraingSelected);
             eventId = clusterMigratingNow.getEventId();
-            avaibleClusters.add(new TryMigrateResult(clusterMigratingNow.getClusterName(), clusterMigratingNow.getFromIdc(), clusterMigratingNow.getToIdc()));
+            availableClusters.add(new TryMigrateResult(clusterMigratingNow.getClusterName(), clusterMigratingNow.getFromIdc(), clusterMigratingNow.getToIdc()));
             logger.info("[checkAndPrepare][clusterAlreadyMigrating, random choose one to return]{}", clusterMigratingNow.getMessage());
         }
 
         checkRetMeta.setTicketId(eventId);
 
-        avaibleClusters.forEach((successCluster) -> checkRetMeta.addCheckPrepareClusterResponse(CheckPrepareClusterResponse.createSuccessResponse(successCluster.getClusterName(), successCluster.getFromDcName(), successCluster.getToDcName())));
+        availableClusters.forEach((successCluster) -> checkRetMeta.addCheckPrepareClusterResponse(CheckPrepareClusterResponse.createSuccessResponse(successCluster.getClusterName(), successCluster.getFromDcName(), successCluster.getToDcName())));
         migratingClusters.forEach((migratingNow) -> checkRetMeta.addCheckPrepareClusterResponse(CheckPrepareClusterResponse.createFailResponse(
                 migratingNow.getClusterName(), migratingNow.getFromIdc(), migratingNow.getToIdc(), CHECK_FAIL_STATUS.ALREADY_MIGRATING, String.valueOf(migratingNow.getEventId()))));
         failClusters.forEach((failCluster) -> checkRetMeta.addCheckPrepareClusterResponse(failCluster));
