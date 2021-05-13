@@ -282,6 +282,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("哨兵检测关闭", "");
         }
     },
+    AUTO_MIGRATION_NOT_ALLOW("auto migration not allow",  EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return true;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("auto migration not allow", "");
+        }
+    },
     REPL_BACKLOG_NOT_ACTIVE("repl_backlog_not_active", EMAIL_DBA | EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
