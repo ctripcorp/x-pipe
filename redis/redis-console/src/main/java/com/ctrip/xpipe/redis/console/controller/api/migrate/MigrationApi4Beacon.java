@@ -51,7 +51,8 @@ public class MigrationApi4Beacon {
 
                 if (cause instanceof MigrationSystemNotHealthyException || cause instanceof ClusterNotFoundException
                         || cause instanceof WrongClusterMetaException || cause instanceof NoAvailableDcException
-                        || cause instanceof MigrationConflictException || cause instanceof MigrationJustFinishException) {
+                        || cause instanceof MigrationConflictException || cause instanceof MigrationJustFinishException
+                        || cause instanceof AutoMigrationNotAllowException) {
                     logger.info("[syncMigrate][{}] fail and skip", migrationRequest.getClusterName(), cause);
                     response.setResult(BeaconMigrationResponse.skip(cause.getMessage()));
                 } else if (cause instanceof MigrationNoNeedException) {

@@ -66,4 +66,14 @@ public class ChangeConfigTest {
         Mockito.verify(configService, Mockito.times(3)).stopSentinelCheck(Mockito.any(), Mockito.anyInt());
     }
 
+    @Test
+    public void testStopAutoMigration() throws Exception {
+        controller.setAllowAutoMigration(Mockito.mock(HttpServletRequest.class), false);
+        Mockito.verify(configService, Mockito.times(1)).setAllowAutoMigration(false);
+
+        controller.setAllowAutoMigration(Mockito.mock(HttpServletRequest.class), true);
+        Mockito.verify(configService, Mockito.times(1)).setAllowAutoMigration(true);
+    }
+
+
 }
