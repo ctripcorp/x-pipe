@@ -175,16 +175,16 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     @Override
     protected boolean shouldCheck(HealthCheckInstance checkInstance) {
+        String cluster = checkInstance.getCheckInfo().getClusterId();
         long current = System.currentTimeMillis();
         if( current - lastStartTime < getIntervalMilli()){
-            logger.debug("[generatePlan][too quick {}, quit]", current - lastStartTime);
+            logger.debug("[generatePlan][{} checked too quick {}, quit]", cluster, current - lastStartTime);
             return false;
         }
 
-        String cluster = checkInstance.getCheckInfo().getClusterId();
-        if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
-            logger.warn("[doTask][BackupDc] cluster is in sentinel check whitelist, quit");
 
+        if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
+            logger.warn("[doTask][BackupDc] cluster {} is in sentinel check whitelist, quit", cluster);
             return false;
         }
 
