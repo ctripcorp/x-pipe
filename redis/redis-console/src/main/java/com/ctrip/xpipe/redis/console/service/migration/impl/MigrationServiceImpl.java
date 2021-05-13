@@ -372,7 +372,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Override
     public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc)
-            throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException {
+            throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException, ClusterMigratingNowButMisMatch {
 
         if(!checker.getResult().isAvaiable() && !configService.ignoreMigrationSystemAvailability()) {
             throw new MigrationSystemNotHealthyException(checker.getResult().getMessage());
@@ -387,9 +387,19 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
         MigrationClusterTbl unfinished = findLatestUnfinishedMigrationCluster(clusterTbl.getId());
         if (unfinished != null) {
+            long migrationEventId = unfinished.getMigrationEventId();
             long fromDcId = unfinished.getSourceDcId();
             long toDcId = unfinished.getDestinationDcId();
-            throw new ClusterMigratingNow(clusterName, dcService.getDcName(fromDcId), dcService.getDcName(toDcId), unfinished.getMigrationEventId());
+            String realFromIdc = dcService.getDcName(fromDcId);
+            String realToIdc = dcService.getDcName(toDcId);
+            if(fromIdc == null || fromIdc.equalsIgnoreCase(realFromIdc)){
+                if(toIdc == null || toIdc.equalsIgnoreCase(realToIdc)){
+                    logger.info("[tryMigrate][already migrating]{},real({}->{}), request({}->{})",
+                            migrationEventId, realFromIdc, realToIdc, fromIdc, toIdc);
+                    throw new ClusterMigratingNow(clusterName, realFromIdc, realToIdc, unfinished.getMigrationEventId());
+                }
+            }
+            throw new ClusterMigratingNowButMisMatch(clusterName, realFromIdc, realToIdc, unfinished.getMigrationEventId(), fromIdc, toIdc);
         }
 
         long activedcId = clusterTbl.getActivedcId();

@@ -23,6 +23,11 @@ public class TryMigrateResult {
     public TryMigrateResult(){
 
     }
+    public TryMigrateResult(String clusterName, String fromDcName, String toDcName){
+        this.clusterName = clusterName;
+        this.fromDcName = fromDcName;
+        this.toDcName = toDcName;
+    }
 
     public TryMigrateResult(ClusterTbl clusterTbl, DcTbl fromDc, DcTbl toDc){
 
