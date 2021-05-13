@@ -176,6 +176,10 @@
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
 			</readset>
+			<readset name="FULL_WITH_MIGRATION_EVENT">
+                <readset-ref name="FULL"/>
+                <readset-ref name="FULL" relation-name="migration-event"/>
+            </readset>
 			<readset name="FULL_WITH_MIGRATION_OVERVIEW">
 				<readset-ref name="FULL"/>
 				<readset-ref name="ID" relation-name="migration-event"/>
@@ -227,14 +231,27 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-migrating-clusters-with-events" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/> left join <TABLE name='migration-event'/> on <FIELD name='migration-event-id'/> = met.id
+					WHERE <FIELD name='status'/> != 'Normal'
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-migrating-clusters-overview" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/> left join <TABLE name='migration-event'/> on <FIELD name='migration-event-id'/> = met.id
 					left join <TABLE name='migration-clusters'/> on met.id = mct.migration_event_id
-					WHERE <FIELD name='status'/> != "Normal"
+					WHERE <FIELD name='id'/>  = mct.cluster_id
+					AND <FIELD name='status'/> != 'Normal'
 					AND <FIELD name='deleted'/> = 0
+					AND met.deleted = 0
+					AND mct.deleted = 0
 					]]>
 				</statement>
 			</query>
