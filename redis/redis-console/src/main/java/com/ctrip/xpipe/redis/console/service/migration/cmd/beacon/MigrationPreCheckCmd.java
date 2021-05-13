@@ -43,6 +43,10 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
     @Override
     protected void innerExecute() throws Throwable {
+        if (!configService.allowAutoMigration()) {
+            future().setFailure(new AutoMigrationNotAllowException());
+            return;
+        }
         if(!checker.getResult().isAvaiable() && !configService.ignoreMigrationSystemAvailability()) {
             future().setFailure(new MigrationSystemNotHealthyException(checker.getResult().getMessage()));
             return;

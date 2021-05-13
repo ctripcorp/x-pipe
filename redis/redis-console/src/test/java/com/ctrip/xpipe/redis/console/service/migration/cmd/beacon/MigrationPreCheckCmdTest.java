@@ -86,6 +86,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         when(clusterService.find(clusterName)).thenReturn(clusterTbl);
         when(dcCache.find(anyLong())).thenReturn(dcTbl);
         when(beaconMetaService.compareMetaWithXPipe(eq(clusterName), anySet())).thenReturn(true);
+        when(configService.allowAutoMigration()).thenReturn(true);
     }
 
     @Test
@@ -111,6 +112,15 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
     @Test(expected = MigrationSystemNotHealthyException.class)
     public void testDRSystemDown() throws Throwable {
         when(availability.isAvaiable()).thenReturn(false);
+        CommandFuture future = preCheckCmd.execute();
+        waitConditionUntilTimeOut(() -> future.isDone());
+        Assert.assertFalse(future.isSuccess());
+        throw future.cause();
+    }
+
+    @Test(expected = AutoMigrationNotAllowException.class)
+    public void testAutoMigrationNotAllow() throws Throwable {
+        when(configService.allowAutoMigration()).thenReturn(false);
         CommandFuture future = preCheckCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertFalse(future.isSuccess());

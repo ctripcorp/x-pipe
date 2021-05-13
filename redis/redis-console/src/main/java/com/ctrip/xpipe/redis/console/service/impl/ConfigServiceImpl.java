@@ -6,12 +6,14 @@ import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,9 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Autowired
     private SentinelAutoProcessChecker sentinelAutoProcessChecker;
+
+    @Autowired
+    private AutoMigrationOffChecker autoMigrationOffChecker;
 
     private String crossDcLeaderLeaseName;
 
@@ -215,6 +220,35 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public boolean allowAutoMigration() {
+        try {
+            ConfigModel configModel = getOrCreate(KEY_ALLOW_AUTO_MIGRATION, String.valueOf(true));
+            return Boolean.parseBoolean(configModel.getVal());
+        } catch (Exception e) {
+            logger.error("[ignoreMigrationSystemAvailability]", e);
+            return true;
+        }
+    }
+
+    @Override
+    public void setAllowAutoMigration(boolean allow) throws DalException {
+        try {
+            ConfigModel configModel = getOrCreate(KEY_ALLOW_AUTO_MIGRATION, String.valueOf(allow));
+            boolean origin = Boolean.parseBoolean(configModel.getVal());
+            configModel.setVal(String.valueOf(allow));
+            configDao.setConfig(configModel);
+
+            if (origin && !allow) {
+                logger.info("[setAllowAutoMigration] Auto Migration stop");
+                autoMigrationOffChecker.startAlert();
+            }
+        } catch (Exception e) {
+            logger.error("[setAllowAutoMigration]", e);
+            throw new DalUpdateException(e.getMessage());
+        }
+    }
+
+    @Override
     public ConfigModel getConfig(String key) {
         return getConfig(key, "");
     }
@@ -293,4 +327,10 @@ public class ConfigServiceImpl implements ConfigService {
         if (null != recoveryDate) sb.append(" until ").append(DateTimeUtils.timeAsString(recoveryDate));
         EventMonitor.DEFAULT.logEvent(EVENT_CONFIG_CHANGE, sb.toString());
     }
+
+    @VisibleForTesting
+    public void setAutoMigrationOffChecker(AutoMigrationOffChecker checker) {
+        this.autoMigrationOffChecker = checker;
+    }
+
 }

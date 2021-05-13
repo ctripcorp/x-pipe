@@ -14,10 +14,9 @@ import java.util.Set;
  *
  * Jul 7, 2016
  */
-public interface XpipeMetaManager extends MetaUpdateOperation{
+public interface XpipeMetaManager extends MetaUpdateOperation, ReadWriteSafe {
 
-
-	public static class MetaDesc extends ShardMeta {
+	class MetaDesc extends ShardMeta {
 
 		private DcMeta dcMeta;
 		private ClusterMeta clusterMeta;
@@ -52,77 +51,92 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 		}
 	}
 	
-	boolean dcExists(String dc);
-	
-	Set<String> getDcs();
-	
-	Set<String> getDcClusters(String dc);
-	
-	ClusterMeta getClusterMeta(String dc, String clusterId);
+	default boolean dcExists(String dc) { return read(()-> doDcExists(dc)); }
+	boolean doDcExists(String dc);
 
-	ClusterType getClusterType(String clusterId);
-	
-	ShardMeta getShardMeta(String dc, String clusterId, String shardId);
+	default Set<String> getDcs() { return read(this::doGetDcs); }
+	Set<String> doGetDcs();
 
-	List<KeeperMeta> getKeepers(String dc, String clusterId, String shardId);
+	default Set<String> getDcClusters(String dc) { return read(() -> doGetDcClusters(dc)); }
+	Set<String> doGetDcClusters(String dc);
 
-	List<RedisMeta> getRedises(String dc, String clusterId, String shardId);
+	default ClusterMeta getClusterMeta(String dc, String clusterId) { return read(()->doGetClusterMeta(dc, clusterId)); }
+	ClusterMeta doGetClusterMeta(String dc, String clusterId);
 
-	KeeperMeta getKeeperActive(String dc, String clusterId, String shardId);
-	
-	List<KeeperMeta> getKeeperBackup(String dc, String clusterId, String shardId);
+	default ClusterType getClusterType(String clusterId) { return read(()->doGetClusterType(clusterId)); }
+	ClusterType doGetClusterType(String clusterId);
 
-	MetaDesc findMetaDesc(HostPort hostPort);
-	
-	/**
-	 * @param clusterId
-	 * @param shardId
-	 * @return dc and redismeta info
-	 */
-	Pair<String, RedisMeta> getRedisMaster(String clusterId, String shardId);
-	
-	List<MetaServerMeta> getMetaServers(String dc);
-	
-	SentinelMeta getSentinel(String dc, String clusterId, String shardId);
+	default ShardMeta getShardMeta(String dc, String clusterId, String shardId) { return read(()->doGetShardMeta(dc, clusterId, shardId)); }
+	ShardMeta doGetShardMeta(String dc, String clusterId, String shardId);
 
-	String getSentinelMonitorName(String dc, String clusterId, String shardId);
-	
-	ZkServerMeta  getZkServerMeta(String dc);
+	default List<KeeperMeta> getKeepers(String dc, String clusterId, String shardId) { return read(()->doGetKeepers(dc, clusterId, shardId)); }
+	List<KeeperMeta> doGetKeepers(String dc, String clusterId, String shardId);
 
-	String getActiveDc(String clusterId, String shardId) throws MetaException;
-	
-	Set<String> getBackupDcs(String clusterId, String shardId);
+	default List<RedisMeta> getRedises(String dc, String clusterId, String shardId) { return read(()->doGetRedises(dc, clusterId, shardId)); }
+	List<RedisMeta> doGetRedises(String dc, String clusterId, String shardId);
 
-	Set<String> getRelatedDcs(String clusterId, String shardId);
+	default KeeperMeta getKeeperActive(String dc, String clusterId, String shardId) { return read(()->doGetKeeperActive(dc, clusterId, shardId)); }
+	KeeperMeta doGetKeeperActive(String dc, String clusterId, String shardId);
 
-	KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta);
+	default List<KeeperMeta> getKeeperBackup(String dc, String clusterId, String shardId) { return read(()->doGetKeeperBackup(dc, clusterId, shardId)); }
+	List<KeeperMeta> doGetKeeperBackup(String dc, String clusterId, String shardId);
 
-	DcMeta getDcMeta(String dc);
+	default MetaDesc findMetaDesc(HostPort hostPort) { return read(()->doFindMetaDesc(hostPort)); }
+	MetaDesc doFindMetaDesc(HostPort hostPort);
 
-	String getDcZone(String dc);
+	default Pair<String, RedisMeta> getRedisMaster(String clusterId, String shardId) { return read(()->doGetRedisMaster(clusterId, shardId)); }
+	Pair<String, RedisMeta> doGetRedisMaster(String clusterId, String shardId);
 
-	List<KeeperMeta> getAllSurviceKeepers(String currentDc, String clusterId, String shardId);
+	default List<MetaServerMeta> getMetaServers(String dc) { return read(()->doGetMetaServers(dc)); }
+	List<MetaServerMeta> doGetMetaServers(String dc);
 
-	boolean hasCluster(String currentDc, String clusterId);
+	default SentinelMeta getSentinel(String dc, String clusterId, String shardId) { return read(()->doGetSentinel(dc, clusterId, shardId)); }
+	SentinelMeta doGetSentinel(String dc, String clusterId, String shardId);
 
-	boolean hasShard(String currentDc, String clusterId, String shardId);
+	default String getSentinelMonitorName(String dc, String clusterId, String shardId) { return read(()->doGetSentinelMonitorName(dc, clusterId, shardId)); }
+	String doGetSentinelMonitorName(String dc, String clusterId, String shardId);
 
-	void primaryDcChanged(String currentDc, String clusterId, String shardId, String newPrimaryDc);
+	default ZkServerMeta getZkServerMeta(String dc) { return read(()->doGetZkServerMeta(dc)); }
+	ZkServerMeta doGetZkServerMeta(String dc);
 
-	/**
-	 * find all routes for current dc, and srcDc equals currentDc
-	 * @param currentDc
-	 * @return
-	 */
-	List<RouteMeta>  routes(String currentDc, String tag);
+	default String getActiveDc(String clusterId, String shardId) throws MetaException { return read(()->doGetActiveDc(clusterId, shardId)); }
+	String doGetActiveDc(String clusterId, String shardId);
 
-	RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc);
+	default Set<String> getBackupDcs(String clusterId, String shardId) { return read(()->doGetBackupDcs(clusterId, shardId)); }
+	Set<String> doGetBackupDcs(String clusterId, String shardId);
+
+	default Set<String> getRelatedDcs(String clusterId, String shardId) { return read(()->doGetRelatedDcs(clusterId, shardId)); }
+	Set<String> doGetRelatedDcs(String clusterId, String shardId);
+
+	default KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta) { return read(()->doGetKeeperContainer(dc, keeperMeta)); }
+	KeeperContainerMeta doGetKeeperContainer(String dc, KeeperMeta keeperMeta);
+
+	default DcMeta getDcMeta(String dc) { return read(()->doGetDcMeta(dc)); }
+	DcMeta doGetDcMeta(String dc);
+
+	default String getDcZone(String dc) { return read(()->doGetDcZone(dc)); }
+	String doGetDcZone(String dc);
+
+	default List<KeeperMeta> getAllSurviveKeepers(String currentDc, String clusterId, String shardId) { return read(()-> doGetAllSurviveKeepers(currentDc, clusterId, shardId)); }
+	List<KeeperMeta> doGetAllSurviveKeepers(String currentDc, String clusterId, String shardId);
+
+	default boolean hasCluster(String currentDc, String clusterId) { return read(()->doHasCluster(currentDc, clusterId)); }
+	boolean doHasCluster(String currentDc, String clusterId);
+
+	default boolean hasShard(String currentDc, String clusterId, String shardId) { return read(()->doHasShard(currentDc, clusterId, shardId)); }
+	boolean doHasShard(String currentDc, String clusterId, String shardId);
+
+	default List<RouteMeta> routes(String currentDc, String tag) { return read(()->doGetRoutes(currentDc, tag)); }
+	List<RouteMeta> doGetRoutes(String currentDc, String tag);
+
+	default RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc) { return read(()->doGetRandomRoute(currentDc, tag, orgId, dstDc)); }
+	RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc);
 
 	default List<RouteMeta>  metaRoutes(String currentDc){
 		return routes(currentDc, Route.TAG_META);
 	}
 
-	default RouteMeta  metaRandomRoutes(String currentDc, Integer orgId, String dstDc){
+	default RouteMeta metaRandomRoutes(String currentDc, Integer orgId, String dstDc){
 		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
 	}
 
@@ -132,12 +146,6 @@ public interface XpipeMetaManager extends MetaUpdateOperation{
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;
 
-	/**
-	 * find all clusters in currentDc whose active dc is clusterActiveDc
-	 * @param currentDc
-	 * @param clusterActiveDc
-	 * @return
-	 */
-	List<ClusterMeta> getSpecificActiveDcClusters(String currentDc, String clusterActiveDc);
-
+	default List<ClusterMeta> getSpecificActiveDcClusters(String currentDc, String clusterActiveDc) { return read(()->doGetSpecificActiveDcClusters(currentDc, clusterActiveDc)); }
+	List<ClusterMeta> doGetSpecificActiveDcClusters(String currentDc, String clusterActiveDc);
 }

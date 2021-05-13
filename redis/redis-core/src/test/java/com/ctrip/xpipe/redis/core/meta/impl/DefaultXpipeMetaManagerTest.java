@@ -223,7 +223,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	@Test
 	public void testSetKeeperAlive() {
 
-		List<KeeperMeta> allSurvice = metaManager.getAllSurviceKeepers(dc, clusterId1, shardId);
+		List<KeeperMeta> allSurvice = metaManager.getAllSurviveKeepers(dc, clusterId1, shardId);
 		logger.info("[testSetKeeperAlive][allAlive]{}", allSurvice);
 		Assert.assertEquals(0, allSurvice.size());
 
@@ -232,12 +232,12 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 			allOne.setSurvive(true);
 		}
 
-		allSurvice = metaManager.getAllSurviceKeepers(dc, clusterId1, shardId);
+		allSurvice = metaManager.getAllSurviveKeepers(dc, clusterId1, shardId);
 		Assert.assertEquals(0, allSurvice.size());
 
 		metaManager.setSurviveKeepers(dc, clusterId1, shardId, allKeepers);
 
-		allSurvice = metaManager.getAllSurviceKeepers(dc, clusterId1, shardId);
+		allSurvice = metaManager.getAllSurviveKeepers(dc, clusterId1, shardId);
 		Assert.assertEquals(allKeepers.size(), allSurvice.size());
 
 		try {
