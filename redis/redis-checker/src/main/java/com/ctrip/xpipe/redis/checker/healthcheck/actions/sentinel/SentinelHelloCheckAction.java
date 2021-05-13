@@ -91,8 +91,10 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             shardMeta.getRedises().forEach((redisMeta) -> {
                                 try {
                                     RedisHealthCheckInstance redisInstance = instanceManager.getOrCreate(redisMeta);
-                                    if (super.shouldCheck(redisInstance))
+                                    if (super.shouldCheck(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
+                                        hellos.put(redisInstance, Sets.newHashSet());
+                                    }
                                 } catch (Exception e) {
                                     logger.warn("[get redis health check instance {}:{} failed]", redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
@@ -157,6 +159,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     protected void processSentinelHellos() {
 
         List<SentinelActionContext> contexts = new ArrayList<>();
+
+        for (RedisHealthCheckInstance instance : errors.keySet())
+            hellos.remove(instance);
 
         for (RedisHealthCheckInstance instance : hellos.keySet()) {
             instance.getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
