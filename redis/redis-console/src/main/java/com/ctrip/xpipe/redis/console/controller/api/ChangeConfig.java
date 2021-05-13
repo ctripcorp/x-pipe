@@ -81,6 +81,16 @@ public class ChangeConfig extends AbstractConsoleController{
         configService.doIgnoreMigrationSystemAvailability(ignore);
     }
 
+    @RequestMapping(value = "/config/allow/migration/auto/{allow}", method = RequestMethod.POST)
+    public void setAllowAutoMigration(HttpServletRequest request, @PathVariable boolean allow) throws DalException {
+        String sourceIp = request.getHeader("X-FORWARDED-FOR");
+        if(sourceIp == null) {
+            sourceIp = request.getRemoteAddr();
+        }
+        logger.info("[setAllowAutoMigration][{}] allow: {}", sourceIp, allow);
+        configService.setAllowAutoMigration(allow);
+    }
+
     @RequestMapping(value = "/config/sentinel/check/" + CLUSTER_NAME_PATH_VARIABLE + "/start", method = RequestMethod.POST)
     public RetMessage startSentinelCheck(HttpServletRequest request, @PathVariable String clusterName) throws DalException {
         checkClusterName(clusterName);
