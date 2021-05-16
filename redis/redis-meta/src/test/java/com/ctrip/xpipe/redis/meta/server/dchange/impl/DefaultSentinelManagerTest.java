@@ -175,7 +175,8 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 			}
 		};
 		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
-		Assert.assertEquals(removeCnt.get(), 1);
+		logger.info("test result {}", executionLog.getLog());
+		Assert.assertEquals(removeCnt.get(), 5);
 	}
 
 	@Test
