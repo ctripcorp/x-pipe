@@ -26,6 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.ctrip.xpipe.service.email.CtripAlertEmailTemplate.EMAIL_TYPE_ALERT;
+
 /**
  * @author chen.zhu
  * <p>
@@ -41,8 +43,7 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static EmailConfig config = new EmailConfig();
 
-    private static EmailServiceClient client = StringUtil.isEmpty(config.getEmailServiceUrl()) ?
-            EmailServiceClient.getInstance() : EmailServiceClient.getInstance(config.getEmailServiceUrl());
+    private static EmailServiceClient client = EmailServiceClient.getInstance();
 
     @Override
     public void sendEmail(Email email) {
@@ -99,7 +100,7 @@ public class CtripPlatformEmailService implements EmailService {
             String emailIDListStr = (String) response.getProperties().get(EmailResponse.KEYS.CHECK_INFO.name());
             List<String> emailIDList = decodeListString(emailIDListStr);
             GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
-                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList));
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList, EMAIL_TYPE_ALERT));
 
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
