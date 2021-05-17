@@ -117,7 +117,6 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     }
 
     @Test
-    @Ignore
     public void startAsConsole() throws Exception {
         fillInCluster(10);
         waitForAnyKeyToExit();
