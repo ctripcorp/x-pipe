@@ -20,6 +20,7 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
@@ -35,9 +36,6 @@ public class AlertManager {
 
     private static final String ALERT_TYPE = "Notification";
 
-//    @Autowired
-//    private ClusterService clusterService;
-
     @Autowired
     private Persistence persistence;
 
@@ -46,6 +44,9 @@ public class AlertManager {
 
     @Autowired
     private NotificationManager notifier;
+
+    @Autowired
+    private AlertDbConfig alertDbConfig;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -60,26 +61,24 @@ public class AlertManager {
     @PostConstruct
     public void postConstruct(){
 
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() throws Exception {
-                alertClusterWhiteList = alertConfig.getAlertWhileList();
-            }
-        }, 0, 30, TimeUnit.SECONDS);
+        scheduled.scheduleWithFixedDelay(this::refreshWhiteList, 0, 30, TimeUnit.SECONDS);
 
         scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
                 logger.info("[clusterCreateTimeMapper][execute]");
-//                List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
-//                for(ClusterTbl clusterTbl : clusterTbls) {
-//                    clusterCreateTime.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
-//                }
                 clusterCreateTime = persistence.loadAllClusterCreateTime();
             }
         }, 1, 60, TimeUnit.MINUTES);
 
+    }
+
+    @VisibleForTesting
+    protected void refreshWhiteList() {
+        Set<String> whiteList = new HashSet<>();
+        whiteList.addAll(alertDbConfig.clusterAlertWhiteList());
+        whiteList.addAll(alertConfig.getAlertWhileList().stream().map(String::toLowerCase).collect(Collectors.toList()));
+        this.alertClusterWhiteList = whiteList;
     }
 
     private Date getClusterCreateTime(String clusterName) {
@@ -95,16 +94,6 @@ public class AlertManager {
             } else {
                 clusterCreateTime.put(clusterName, date);
             }
-
-//            ClusterTbl clusterTbl = clusterService.find(clusterName);
-//            if(clusterTbl == null) {
-//                logger.error("[getClusterCreateTime] cluster not found: {}", clusterName);
-//            } else {
-//                date = clusterTbl.getCreateTime();
-//                if(date != null) {
-//                    clusterCreateTime.put(clusterName, date);
-//                }
-//            }
         }
         return date;
     }
@@ -126,12 +115,10 @@ public class AlertManager {
     private void doAlert(String dc, String cluster, String shard, HostPort hostPort, ALERT_TYPE type, String message, boolean force) {
 
         if(!force && !shouldAlert(cluster)){
-//            logger.warn("[alert][skip]{}, {}, {}, {}", cluster, shard, type, message);
             return;
         }
 
 
-//        logger.warn("[alert]{}, {}, {}, {}", cluster, shard, type, message);
         EventMonitor.DEFAULT.logEvent(ALERT_TYPE, generateAlertMessage(dc, cluster, shard, type, message));
         notifier.addAlert(dc, cluster, shard, hostPort, type, message);
     }
@@ -148,7 +135,7 @@ public class AlertManager {
         } catch (Exception e) {
             logger.warn("[shouldAlert]", e);
         }
-        return !alertClusterWhiteList.contains(cluster);
+        return !alertClusterWhiteList.contains(cluster.toLowerCase());
     }
 
     private String findDc(HostPort hostPort) {

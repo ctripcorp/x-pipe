@@ -23,6 +23,8 @@ public interface ConfigService {
 
     String KEY_ALLOW_AUTO_MIGRATION = "allow.migration.auto";
 
+    String KEY_CLUSTER_ALERT_EXCLUDE = "alert.cluster.exclude";
+
     void startAlertSystem(ConfigModel config) throws DalException;
 
     void stopAlertSystem(ConfigModel config, int hours) throws DalException;
@@ -30,6 +32,10 @@ public interface ConfigService {
     void startSentinelAutoProcess(ConfigModel config) throws DalException;
 
     void stopSentinelAutoProcess(ConfigModel config, int hours) throws DalException;
+
+    void startClusterAlert(ConfigModel config) throws DalException;
+
+    void stopClusterAlert(ConfigModel config, int minutes) throws DalException;
 
     void startSentinelCheck(ConfigModel config) throws DalException;
 
@@ -42,6 +48,8 @@ public interface ConfigService {
     boolean shouldSentinelCheck(String cluster);
 
     List<ConfigModel> getActiveSentinelCheckExcludeConfig();
+
+    List<ConfigModel> getActiveClusterAlertExcludeConfig();
 
     boolean isAlertSystemOn();
 
