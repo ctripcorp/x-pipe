@@ -29,6 +29,9 @@ function getEnv(){
     fi
     echo `toUpper $ENV`
 }
+
+ENV=`getEnv`
+echo "current env:"$ENV
 if [ $ENV = "UAT" ]
 then
     DIR=`dirname $0`
