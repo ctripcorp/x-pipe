@@ -9,52 +9,6 @@
     <!-- ctrip related infrastructure -->
     <artifactId>ctrip-service</artifactId>
 
-    <properties>
-        <soa.version>2.8.0</soa.version>
-        <vi.version>0.9.0</vi.version>
-        <dal.version>2.3.1</dal.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.ctriposs.baiji</groupId>
-                <artifactId>baiji-core</artifactId>
-                <version>${soa.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctriposs.baiji</groupId>
-                <artifactId>baiji-rpc-common</artifactId>
-                <version>${soa.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctriposs.baiji</groupId>
-                <artifactId>baiji-rpc-client</artifactId>
-                <version>${soa.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctriposs.baiji</groupId>
-                <artifactId>baiji-rpc-server</artifactId>
-                <version>${soa.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctriposs.baiji</groupId>
-                <artifactId>baiji-rpc-mobile-request-filter</artifactId>
-                <version>${soa.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctrip.framework</groupId>
-                <artifactId>vi</artifactId>
-                <version>${vi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.ctrip.platform</groupId>
-                <artifactId>ctrip-datasource</artifactId>
-                <version>${dal.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>com.ctrip.framework.clogging</groupId>
@@ -161,15 +115,9 @@
 
         <!--Email Service-->
         <dependency>
-            <groupId>com.ctrip.basebiz</groupId>
-            <artifactId>EmailServiceClient</artifactId>
-            <version>1.0.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>javax.servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
+            <artifactId>emailservice</artifactId>
+            <version>1.2.2</version>
         </dependency>
 
         <dependency>
