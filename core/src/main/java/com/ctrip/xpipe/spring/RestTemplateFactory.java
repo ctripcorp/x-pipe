@@ -17,12 +17,15 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -75,6 +78,8 @@ public class RestTemplateFactory {
                 .build();
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         RestTemplate restTemplate = new RestTemplate(factory);
+
+        List<HttpMessageConverter<?>> converters = new ArrayList<>();
         //set jackson mapper
         for (HttpMessageConverter<?> hmc : restTemplate.getMessageConverters()) {
             if (hmc instanceof MappingJackson2HttpMessageConverter) {
@@ -82,8 +87,12 @@ public class RestTemplateFactory {
                 MappingJackson2HttpMessageConverter mj2hmc = (MappingJackson2HttpMessageConverter) hmc;
                 mj2hmc.setObjectMapper(objectMapper);
             }
+            if (!(hmc instanceof MappingJackson2XmlHttpMessageConverter)) {
+                converters.add(hmc);
+            }
         }
 
+        restTemplate.setMessageConverters(converters);
         return (RestOperations) Proxy.newProxyInstance(RestOperations.class.getClassLoader(),
                 new Class[]{RestOperations.class},
                 new RetryableRestOperationsHandler(restTemplate, retryTimes, retryPolicyFactory));
