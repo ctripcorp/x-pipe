@@ -20,10 +20,6 @@ PORT=$(cat $CONFIG | grep port | awk '{print $2}')
 
 echo "Using config file:"$CONFIG $PORT
 
-if [ $preCount -ge 0 ]; then
-    sleep 1
-fi
-
 DATA_DIR=$DIR"/data"
 sed -i "s#dir.*#dir $DATA_DIR#" $DIR/*.conf
 

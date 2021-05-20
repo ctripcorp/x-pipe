@@ -35,6 +35,8 @@ redis和sentinel实例启动的端口连续。当如示例中配置时，redis�
 
 
 
+3.如果通过公司内发布系统发布，需要在 /opt/settings/server.properties 中添加配置 role=REDIS
+
 ### 启动
 
 启动分为两种模式：主机房和备机房
