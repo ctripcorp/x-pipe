@@ -11,10 +11,10 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.Collections;
 import java.util.Set;
 
-import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_AUTO_PROCESS;
-import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_CHECK_EXCLUDE;
+import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
 /**
  * @author wenchao.meng
@@ -24,7 +24,7 @@ import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_SENTINEL_C
 public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
 
     @Autowired
-    private ConsoleDbConfig consoleDbConfig;
+    private DefaultConsoleDbConfig consoleDbConfig;
 
     @Autowired
     private ConfigDao configDao;
@@ -116,6 +116,24 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         Assert.assertTrue(whitelist.contains(mockCluster1));
         Assert.assertTrue(whitelist.contains(mockCluster2));
         Assert.assertFalse(whitelist.contains(mockCluster3));
+    }
+
+    @Test
+    public void testShouldClusterAlert() throws DalException {
+        configModel.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
+        configModel.setSubKey("Cluster1");
+
+        service.stopClusterAlert(configModel, 1);
+
+        configModel.setSubKey("cluster2");
+        service.stopClusterAlert(configModel, 1);
+        service.startClusterAlert(configModel);
+
+        configModel.setSubKey("cluster3");
+        service.startClusterAlert(configModel);
+
+        Set<String> whitelist = consoleDbConfig.clusterAlertWhiteList();
+        Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
     }
 
 

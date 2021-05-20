@@ -18,6 +18,8 @@ public class TestPersistence implements Persistence {
 
     private Set<String> sentinelCheckWhiteList = new HashSet<>();
 
+    private Set<String> clusterAlertWhitelist = new HashSet<>();
+
     private boolean sentinelAutoProcess = true;
 
     private boolean alertSystemOn = true;
@@ -43,6 +45,11 @@ public class TestPersistence implements Persistence {
     @Override
     public Set<String> sentinelCheckWhiteList() {
         return sentinelCheckWhiteList;
+    }
+
+    @Override
+    public Set<String> clusterAlertWhiteList() {
+        return clusterAlertWhitelist;
     }
 
     @Override

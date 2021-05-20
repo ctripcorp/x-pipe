@@ -21,6 +21,8 @@ public interface Persistence {
 
     Set<String> sentinelCheckWhiteList();
 
+    Set<String> clusterAlertWhiteList();
+
     boolean isSentinelAutoProcess();
 
     boolean isAlertSystemOn();
