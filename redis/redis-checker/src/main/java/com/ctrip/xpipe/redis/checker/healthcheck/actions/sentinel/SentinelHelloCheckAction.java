@@ -41,9 +41,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private Persistence persistence;
 
-    private static final int SENTINEL_CHECK_BASE_INTERVAL = 10000;
-
-    protected long lastStartTime = System.currentTimeMillis();
+    public static final String LOG_TITLE = "SentinelHelloCollect";
 
     private MetaCache metaCache;
 
@@ -60,7 +58,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     @Override
     protected void doTask() {
-        lastStartTime = System.currentTimeMillis();
         hellos.clear();
         errors.clear();
 
@@ -94,19 +91,22 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                     if (super.shouldCheck(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
                                         hellos.put(redisInstance, Sets.newHashSet());
+                                    } else {
+                                        logger.warn("[{}-{}+{}+{}]{} should not check", LOG_TITLE, redisInstance.getCheckInfo().getClusterShardHostport().getClusterName(),
+                                                redisInstance.getCheckInfo().getShardId(), redisInstance.getCheckInfo().getDcId(), redisInstance.getCheckInfo().getHostPort());
                                     }
                                 } catch (Exception e) {
-                                    logger.warn("[get redis health check instance {}:{} failed]", redisMeta.getIp(), redisMeta.getPort(), e);
+                                    logger.warn("[{}]get redis health check instance {}:{} failed", LOG_TITLE, redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
                             });
                         } catch (Exception e) {
-                            logger.warn("[get redis health check instance from shard {} failed]", shardId, e);
+                            logger.warn("[{}]get redis health check instance from shard {} failed", LOG_TITLE, shardId, e);
                         }
                     });
                 }
             });
         } catch (Exception e) {
-            logger.warn("[get redis health check instances from cluster {} failed]", instance.getCheckInfo().getClusterId(), e);
+            logger.warn("[{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), e);
         }
         return redisHealthCheckInstances;
     }
@@ -116,7 +116,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             try {
                 RedisInstanceInfo info = redisInstanceToCheck.getCheckInfo();
                 if (redisInstanceToCheck.getCheckInfo().isInActiveDc()) {
-                    logger.info("[doTask][{}-{}] in active dc, redis {}", info.getClusterId(), info.getShardId(), redisInstanceToCheck.getEndpoint());
+                    logger.info("[{}-{}+{}+{}]{} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
+                            info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
                 }
                 redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
                     @Override
@@ -140,9 +141,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                     @Override
                     public void fail(Throwable e) {
                         if (ExceptionUtils.isStackTraceUnnecessary(e)) {
-                            logger.error("[sub-failed][{}] {}", redisInstanceToCheck.getCheckInfo().getHostPort(), e.getMessage());
+                            logger.error("[{}-{}+{}+{}][{}][sub-failed][{}]", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                         } else {
-                            logger.error("[sub-failed][{}]", redisInstanceToCheck.getCheckInfo().getHostPort(), e);
+                            logger.error("[{}-{}+{}+{}][{}][sub-failed][{}]", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
                         }
                         synchronized (errors) {
                             errors.put(redisInstanceToCheck, e);
@@ -150,7 +151,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                     }
                 });
             } catch (Exception e) {
-                logger.warn("[subscribe redis instance {}:{} failed]", redisInstanceToCheck.getEndpoint().getHost(), redisInstanceToCheck.getEndpoint().getPort(), e);
+                logger.warn("[{}]subscribe redis instance {}:{} failed", LOG_TITLE, redisInstanceToCheck.getEndpoint().getHost(), redisInstanceToCheck.getEndpoint().getPort(), e);
             }
         });
     }
@@ -181,29 +182,18 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @Override
     protected boolean shouldCheck(HealthCheckInstance checkInstance) {
         String cluster = checkInstance.getCheckInfo().getClusterId();
-        long current = System.currentTimeMillis();
-        if( current - lastStartTime < getIntervalMilli()){
-            logger.debug("[generatePlan][{} checked too quick {}, quit]", cluster, current - lastStartTime);
-            return false;
-        }
-
 
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
-            logger.warn("[doTask][BackupDc] cluster {} is in sentinel check whitelist, quit", cluster);
+            logger.warn("[{}][BackupDc] cluster {} is in sentinel check whitelist, quit", LOG_TITLE, cluster);
             return false;
         }
 
         if (persistence.isClusterOnMigration(cluster)) {
-            logger.warn("[shouldStart][{}] in migration, stop check", cluster);
+            logger.warn("[{}][{}] in migration, stop check", LOG_TITLE, cluster);
             return false;
         }
 
         return checkerDbConfig.isSentinelAutoProcess();
-    }
-
-    @Override
-    protected int getBaseCheckInterval() {
-        return SENTINEL_CHECK_BASE_INTERVAL;
     }
 
     protected int getIntervalMilli() {

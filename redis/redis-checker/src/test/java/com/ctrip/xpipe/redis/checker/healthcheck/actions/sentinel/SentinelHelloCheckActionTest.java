@@ -174,7 +174,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void testDoScheduleTask() {
         action = spy(action);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
-        action.lastStartTime = System.currentTimeMillis() - 3600000;
+//        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
         sleep(30);
         verify(action, times(1)).processSentinelHellos();
@@ -185,13 +185,13 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         action = spy(action);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
         when(action.getIntervalMilli()).thenReturn(500);
-        action.lastStartTime = System.currentTimeMillis() - 500;
+//        action.lastStartTime = System.currentTimeMillis() - 500;
 
         ScheduledFuture f = scheduled.scheduleWithFixedDelay(action.new ScheduledHealthCheckTask(), 0, 200, TimeUnit.MILLISECONDS);
 
         sleep(900);
         f.cancel(false);
-        verify(action, times(2)).processSentinelHellos();
+        verify(action, atLeast(3)).processSentinelHellos();
     }
 
     @Test
@@ -249,7 +249,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }
         });
         Assert.assertEquals(1, action.getListeners().size());
-        action.lastStartTime = System.currentTimeMillis() - 3600000;
+//        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
         waitConditionUntilTimeOut(() -> counter.get() == 4, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
     }
@@ -329,7 +329,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }
         });
         Assert.assertEquals(1, action.getListeners().size());
-        action.lastStartTime = System.currentTimeMillis() - 3600000;
+//        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
         waitConditionUntilTimeOut(() -> successResults.get() == 3, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
         waitConditionUntilTimeOut(() -> failedResults.get() == 1, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);

@@ -10,7 +10,10 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
+
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 
 public class SentinelCheckDowngradeCollectorController extends AbstractAggregationCollector<DefaultSentinelHelloCollector> implements OneWaySupport, SentinelActionController {
 
@@ -29,7 +32,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
         if (tooLongNoCollect(instance) && needDowngrade.compareAndSet(true, false)) {
-            logger.warn("[{}-{}][shouldCheck] too long no collect, cancel downgrade", clusterId, shardId);
+            logger.warn("[{}-{}+{}+{}][{}][shouldCheck] too long no collect, cancel downgrade", LOG_TITLE, instance.getCheckInfo().getClusterShardHostport().getClusterName(), instance.getCheckInfo().getShardId(), instance.getCheckInfo().getDcId(), instance.getCheckInfo().getHostPort());
         }
         return shouldCheckFromRedis(instance);
     }
@@ -42,7 +45,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
         // only deal with success result when downgrade
         if (!context.isFail() && needDowngrade.compareAndSet(true, false)) {
-            logger.info("[{}-{}][onAction] sub from active dc redis {}", clusterId, shardId, info.getHostPort());
+            logger.info("[{}-{}+{}+{}][{}][onAction] sub from active dc redis {}", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
             handleAllHello(context.instance());
             return;
         }
@@ -51,11 +54,11 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         if (info.isInActiveDc()) return;
         if (collectHello(context) >= countBackDcRedis()) {
             if (checkFinishedInstance.size() == checkFailInstance.size()) {
-                logger.warn("[{}-{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", clusterId, shardId);
+                logger.warn("[{}-{}+{}+{}][{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
                 beginDowngrade();
                 return;
             }
-            logger.debug("[{}-{}][onAction] sub from backup dc all finish", clusterId, shardId);
+            logger.debug("[{}-{}+{}+{}][{}][onAction] sub from backup dc all finish", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
             handleAllHello(context.instance());
         }
     }
