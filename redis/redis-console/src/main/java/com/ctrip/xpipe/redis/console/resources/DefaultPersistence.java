@@ -97,11 +97,19 @@ public class DefaultPersistence implements Persistence {
 
     @Override
     public Set<String> sentinelCheckWhiteList() {
+        return findConfigWhiteList(KEY_SENTINEL_CHECK_EXCLUDE);
+    }
+
+    @Override
+    public Set<String> clusterAlertWhiteList() {
+        return findConfigWhiteList(KEY_CLUSTER_ALERT_EXCLUDE);
+    }
+
+    private Set<String> findConfigWhiteList(String key) {
         Set<String> whiteList = new HashSet<>();
-        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(
-                KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
+        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, String.valueOf(true), new Date());
         if (null == configTbls) {
-            logger.info("[sentinelCheckWhiteList] no such config");
+            logger.debug("[findConfigWhiteList][{}] no such config", key);
             return whiteList;
         }
 

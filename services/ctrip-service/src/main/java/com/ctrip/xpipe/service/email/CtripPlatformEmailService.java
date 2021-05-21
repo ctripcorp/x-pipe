@@ -10,7 +10,6 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,10 +20,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.ctrip.xpipe.service.email.CtripAlertEmailTemplate.EMAIL_TYPE_ALERT;
 
 /**
  * @author chen.zhu
@@ -41,8 +40,7 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static EmailConfig config = new EmailConfig();
 
-    private static EmailServiceClient client = StringUtil.isEmpty(config.getEmailServiceUrl()) ?
-            EmailServiceClient.getInstance() : EmailServiceClient.getInstance(config.getEmailServiceUrl());
+    private static EmailServiceClient client = EmailServiceClient.getInstance();
 
     @Override
     public void sendEmail(Email email) {
@@ -99,7 +97,7 @@ public class CtripPlatformEmailService implements EmailService {
             String emailIDListStr = (String) response.getProperties().get(EmailResponse.KEYS.CHECK_INFO.name());
             List<String> emailIDList = decodeListString(emailIDListStr);
             GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
-                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList));
+                    new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList, EMAIL_TYPE_ALERT));
 
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
             return emailStatusResponse.getResultCode() == 1;
