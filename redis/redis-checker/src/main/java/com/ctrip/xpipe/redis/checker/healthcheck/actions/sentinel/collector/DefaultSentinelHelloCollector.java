@@ -444,7 +444,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         // add rate limit logic to reduce frequently sentinel operations
         if (!leakyBucket.tryAcquire()) {
-            logger.warn("[{}-{}][doAction][acquire failed]", LOG_TITLE, sentinelMonitorName);
+            logger.warn("[{}-{}][acquire failed]", LOG_TITLE, sentinelMonitorName);
             return;
         } else {
             // I got the lock, remember to release it
@@ -457,8 +457,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 try {
                     CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
                     sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName());
+                    logger.info("[{}-{}][doAction][deleted]{}", LOG_TITLE, sentinelMonitorName, hello);
                 } catch (Exception e) {
-                    logger.error("[{}-{}][doAction][delete]{}", LOG_TITLE, sentinelMonitorName, hello, e);
+                    logger.error("[{}-{}][doAction][deleted]{}", LOG_TITLE, sentinelMonitorName, hello, e);
                 }
             }));
         }
@@ -483,9 +484,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     if (doAdd) {
                         CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
                         sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
+                        logger.info("[{}-{}][doAction][added]{}", LOG_TITLE, sentinelMonitorName, hello);
                     }
                 } catch (Exception e) {
-                    logger.error("[{}-{}][doAction][add]{}", LOG_TITLE, sentinelMonitorName, hello, e);
+                    logger.error("[{}-{}][doAction][added]{}", LOG_TITLE, sentinelMonitorName, hello, e);
                 }
             });
         }
