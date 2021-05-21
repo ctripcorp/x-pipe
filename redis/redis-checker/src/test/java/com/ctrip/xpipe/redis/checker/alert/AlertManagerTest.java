@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.alert;
 
+import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -9,9 +11,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
@@ -24,12 +28,22 @@ public class AlertManagerTest {
     @Mock
     private AlertConfig alertConfig;
 
+    @Mock
+    private AlertDbConfig alertDbConfig;
+
+    @Mock
+    private Persistence persistence;
+
     @InjectMocks
     AlertManager alertManager = new AlertManager();
 
     @Before
     public void beforeAlertManagerTest() {
         MockitoAnnotations.initMocks(this);
+        when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
+        when(persistence.getClusterCreateTime(anyString())).thenReturn(DateTimeUtils.getHoursBeforeDate(new Date(), 1));
+        when(alertConfig.getAlertWhileList()).thenReturn(Collections.emptySet());
+        when(alertDbConfig.clusterAlertWhiteList()).thenReturn(Sets.newHashSet("cluster1"));
     }
 
     @Test
@@ -43,14 +57,24 @@ public class AlertManagerTest {
 
     @Test
     public void testShouldAlert() {
-        when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
         Map<String, Date> map = Maps.newHashMapWithExpectedSize(1);
         map.put("cluster", new Date());
         alertManager.setClusterCreateTime(map);
-        alertManager.setAlertClusterWhiteList(Sets.newHashSet());
+        alertManager.refreshWhiteList();
 
         Assert.assertFalse(alertManager.shouldAlert("cluster"));
 
         Assert.assertTrue(alertManager.shouldAlert("test"));
     }
+
+    @Test
+    public void testAlertWhiteList() {
+        when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
+        alertManager.setClusterCreateTime(Collections.emptyMap());
+        alertManager.refreshWhiteList();
+
+        Assert.assertFalse(alertManager.shouldAlert("cluster1"));
+        Assert.assertTrue(alertManager.shouldAlert("cluster2"));
+    }
+
 }
