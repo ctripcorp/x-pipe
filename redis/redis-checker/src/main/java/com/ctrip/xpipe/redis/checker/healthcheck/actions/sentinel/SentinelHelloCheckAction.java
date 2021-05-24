@@ -113,7 +113,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             try {
                 RedisInstanceInfo info = redisInstanceToCheck.getCheckInfo();
                 if (redisInstanceToCheck.getCheckInfo().isInActiveDc()) {
-                    logger.info("[{}-{}+{}+{}]{} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
+                    logger.info("[{}-{}+{}]{} instance {} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
                             info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
                 }
                 redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
@@ -138,9 +138,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                     @Override
                     public void fail(Throwable e) {
                         if (ExceptionUtils.isStackTraceUnnecessary(e)) {
-                            logger.error("[{}-{}+{}+{}][{}][sub-failed][{}]", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
+                            logger.error("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                         } else {
-                            logger.error("[{}-{}+{}+{}][{}][sub-failed][{}]", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
+                            logger.error("[{}-{}+{}]{} instance sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
                         }
                         synchronized (errors) {
                             errors.put(redisInstanceToCheck, e);

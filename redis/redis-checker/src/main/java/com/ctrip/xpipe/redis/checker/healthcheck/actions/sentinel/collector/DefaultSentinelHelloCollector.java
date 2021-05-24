@@ -163,7 +163,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
-            logger.info("[{}-{}+{}+{}][collect][{}] in white list, skip", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), cluster);
+            logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
         }
 
@@ -187,10 +187,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 try{
                     trueMaster = getMaster(info);
                 } catch (MasterNotFoundException e) {
-                    logger.error("[{}-{}+{}+{}][collect]", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), e);
+                    logger.error("[{}-{}+{}] {} master not found", LOG_TITLE, clusterId, shardId, info.getDcId(), e);
                 }
 
-                logger.debug("[{}-{}+{}+{}][collect]{}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), hellos);
+                logger.debug("[{}-{}+{}] {} collected hellos: {}", LOG_TITLE, clusterId, shardId, info.getDcId(), hellos);
 
                 // check stale hellos
                 toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos));
@@ -198,7 +198,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 // check true master
                 trueMasters.addAll(checkTrueMasters(trueMaster, hellos));
                 if (!currentMasterConsistent(trueMasters)) {
-                    logger.warn("[{}-{}][currentMasterConsistent]{}", LOG_TITLE, sentinelMonitorName, trueMasters);
+                    logger.warn("[{}-{}+{}] {} currentMasterConsistent: {}", LOG_TITLE, clusterId,shardId, sentinelMonitorName, trueMasters);
                     String message = String.format("master inconsistent, monitorName:%s, masters:%s",sentinelMonitorName, trueMasters);
                     alertManager.alert(clusterId, shardId, info.getHostPort(), ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
                     return;
@@ -371,13 +371,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 }
 
                 if (shoudReset) {
-                    logger.info("[{}-{}][reset][sentinelAddr]{}, {}", LOG_TITLE, sentinelMonitorName, sentinelAddr, reason);
+                    logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
                     EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
                             String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
                     sentinelManager.reset(sentinel, sentinelMonitorName);
                 }
             } catch (Exception e) {
-                logger.error("[{}][doAction][checkReset]{}", LOG_TITLE, hello, e);
+                logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
             }
         });
     }
@@ -457,9 +457,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 try {
                     CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
                     sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName());
-                    logger.info("[{}-{}][doAction][deleted]{}", LOG_TITLE, sentinelMonitorName, hello);
+                    logger.info("[{}-{}][deleted]{}", LOG_TITLE, sentinelMonitorName, hello);
                 } catch (Exception e) {
-                    logger.error("[{}-{}][doAction][deleted]{}", LOG_TITLE, sentinelMonitorName, hello, e);
+                    logger.error("[{}-{}][deleted]{}", LOG_TITLE, sentinelMonitorName, hello, e);
                 }
             }));
         }
@@ -474,7 +474,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         HostPort masterHostPort = sentinelManager.getMasterOfMonitor(sentinel, hello.getMonitorName());
                         if (hello.getMasterAddr().equals(masterHostPort)) {
                             doAdd = false;
-                            logger.info("[{}-{}][doAction][already exist]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
+                            logger.info("[{}-{}][already exist]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
                         } else {
                             sentinelManager.removeSentinelMonitor(sentinel, hello.getMonitorName());
                         }
@@ -484,10 +484,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     if (doAdd) {
                         CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
                         sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
-                        logger.info("[{}-{}][doAction][added]{}", LOG_TITLE, sentinelMonitorName, hello);
+                        logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
                     }
                 } catch (Exception e) {
-                    logger.error("[{}-{}][doAction][added]{}", LOG_TITLE, sentinelMonitorName, hello, e);
+                    logger.error("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello, e);
                 }
             });
         }
