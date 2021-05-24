@@ -22,6 +22,7 @@ if [ $ENV = "UAT" ]; then
     echo "    rotate 30" >>$LOGROTATE_FILE_REDIS
     echo "    missingok" >>$LOGROTATE_FILE_REDIS
     echo "    dateext" >>$LOGROTATE_FILE_REDIS
+    echo "    copytruncate" >>$LOGROTATE_FILE_REDIS
     echo "}" >>$LOGROTATE_FILE_REDIS
 
     LOGROTATE_FILE_SENTINEL=/etc/logrotate.d/sentinel
@@ -30,6 +31,7 @@ if [ $ENV = "UAT" ]; then
     echo "    rotate 30" >>$LOGROTATE_FILE_SENTINEL
     echo "    missingok" >>$LOGROTATE_FILE_SENTINEL
     echo "    dateext" >>$LOGROTATE_FILE_SENTINEL
+    echo "    copytruncate" >>$LOGROTATE_FILE_SENTINEL
     echo "}" >>$LOGROTATE_FILE_SENTINEL
 
     #change systemd config
