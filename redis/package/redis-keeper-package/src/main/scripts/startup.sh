@@ -66,6 +66,11 @@ function changeAndMakeLogDir(){
     sed -i 's#LOG_FOLDER=\(.*\)#LOG_FOLDER='"$logdir"'#'  $current/../*.conf
     sed -i 's#name="baseDir">.*</Property>#name="baseDir">'$logdir'</Property>#'   $current/../config/log4j2.xml
 }
+function changeConfigLogFile() {
+    current=$1
+    logfile=$2
+    sed -i "s/log4j2.xml/$logfile/g" $current/../*.conf
+}
 function changePort(){
     conf=$1
     port=$2
@@ -85,6 +90,13 @@ function getCurrentRealPath(){
     done
     dir="$( cd -P "$( dirname "$source" )" && pwd )"
     echo $dir
+}
+function getRole(){
+    ROLE=keeper
+    if [ -f /opt/settings/server.properties ];then
+        ENV=`cat /opt/settings/server.properties | egrep -i "^role" | awk -F= '{print $2}'`
+    fi
+    echo `toUpper $ENV`
 }
 
 #VARS
@@ -122,6 +134,17 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     MAX_DIRECT=100
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 else
+    changeConfigLogFile $FULL_DIR log4j2-uat.xml
+
+    ROLE=`getRole`
+    if [ $ROLE = "REDIS" ]
+    then
+      DIR=`dirname $0`
+      CURRENT_SCRIPT_PATH="$DIR/../current/scripts"
+
+      find $CURRENT_SCRIPT_PATH -name "*.sh" | xargs chmod 755
+      $CURRENT_SCRIPT_PATH/start_all.sh active
+    fi
     #MB
     #USED_MEM=1600
     USED_MEM=30720
