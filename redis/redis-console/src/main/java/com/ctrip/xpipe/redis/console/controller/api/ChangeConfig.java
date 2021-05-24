@@ -126,6 +126,35 @@ public class ChangeConfig extends AbstractConsoleController{
         return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
     }
 
+    @PostMapping(value = "/config/alert/" + CLUSTER_NAME_PATH_VARIABLE + "/start")
+    public RetMessage startClusterAlert(HttpServletRequest request, @PathVariable String clusterName) throws DalException {
+        checkClusterName(clusterName);
+        ConfigModel config = configModel(request, null);
+        config.setSubKey(clusterName);
+        configService.startClusterAlert(config);
+        return RetMessage.createSuccessMessage("success");
+    }
+
+    @PostMapping(value = {"/config/alert/" + CLUSTER_NAME_PATH_VARIABLE + "/stop/{maintainMinutes}",
+            "/config/alert/" + CLUSTER_NAME_PATH_VARIABLE + "/stop"})
+    public RetMessage stopClusterAlert(HttpServletRequest request, @PathVariable String clusterName,
+                                        @PathVariable(required = false) Integer maintainMinutes) throws DalException {
+        if (null == maintainMinutes || maintainMinutes <= 0) maintainMinutes = consoleConfig.getNoAlarmMinutesForClusterUpdate();
+        maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
+
+        checkClusterName(clusterName);
+        ConfigModel config = configModel(request, null);
+        config.setSubKey(clusterName);
+        configService.stopClusterAlert(config, maintainMinutes);
+        return RetMessage.createSuccessMessage("success");
+    }
+
+    @GetMapping(value = "/config/alert/cluster/exclude/all")
+    public List<String> getAllClusterAlertExcludeConfig() {
+        List<ConfigModel> configModels = configService.getActiveClusterAlertExcludeConfig();
+        return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
+    }
+
     private void checkClusterName(String clusterName) {
         if (StringUtil.isEmpty(clusterName)) throw new IllegalArgumentException("cluster can not be empty");
         ClusterTbl clusterTbl = clusterService.find(clusterName);

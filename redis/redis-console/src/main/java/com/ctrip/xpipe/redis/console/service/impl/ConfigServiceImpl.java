@@ -106,6 +106,27 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public void startClusterAlert(ConfigModel config) throws DalException {
+        logger.info("[startClusterAlert][{}]", config.getSubKey());
+
+        config.setKey(KEY_CLUSTER_ALERT_EXCLUDE)
+                .setVal(String.valueOf(false));
+        logChangeEvent(config, null);
+        configDao.setConfig(config);
+    }
+
+    @Override
+    public void stopClusterAlert(ConfigModel config, int minutes) throws DalException {
+        logger.info("[stopClusterAlert][{}] for {}", config.getSubKey(), minutes);
+
+        Date date = DateTimeUtils.getMinutesLaterThan(new Date(), minutes);
+        config.setKey(KEY_CLUSTER_ALERT_EXCLUDE)
+                .setVal(String.valueOf(true));
+        logChangeEvent(config, date);
+        configDao.setConfigAndUntil(config, date);
+    }
+
+    @Override
     public void startSentinelCheck(ConfigModel config) throws DalException {
         logger.info("[startSentinelCheck] : turn off sentinel check exclude config {} for cluster {}", config, config.getSubKey());
 
@@ -145,19 +166,33 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public boolean shouldSentinelCheck(String cluster) {
+        return !getConfigBooleanByKeyAndSubKey(KEY_SENTINEL_CHECK_EXCLUDE, cluster, false);
+    }
+
+    private boolean getConfigBooleanByKeyAndSubKey(String key, String subKey, boolean defaultVal) {
         try {
-            ConfigTbl config = configDao.getByKeyAndSubId(KEY_SENTINEL_CHECK_EXCLUDE, cluster);
-            return null == config || !Boolean.parseBoolean(config.getValue()) || (new Date()).after(config.getUntil());
+            ConfigTbl config = configDao.getByKeyAndSubId(key, subKey);
+            if (null == config || (new Date()).after(config.getUntil())) {
+                return defaultVal;
+            }
+            return Boolean.parseBoolean(config.getValue());
         } catch (Exception e) {
-            return true;
+            return defaultVal;
         }
     }
 
-
     @Override
     public List<ConfigModel> getActiveSentinelCheckExcludeConfig() {
-        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(
-                KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
+        return getActiveConfig(KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true));
+    }
+
+    @Override
+    public List<ConfigModel> getActiveClusterAlertExcludeConfig() {
+        return getActiveConfig(KEY_CLUSTER_ALERT_EXCLUDE, String.valueOf(true));
+    }
+
+    private List<ConfigModel> getActiveConfig(String key, String val) {
+        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, val, new Date());
         if (configTbls.isEmpty()) return Collections.emptyList();
         List<ConfigModel> models = new ArrayList<>();
 
@@ -316,7 +351,7 @@ public class ConfigServiceImpl implements ConfigService {
         }
     }
 
-    private void logChangeEvent(ConfigModel configModel, Date recoveryDate) {
+    private void  logChangeEvent(ConfigModel configModel, Date recoveryDate) {
         StringBuilder sb = new StringBuilder();
         if (!StringUtil.isEmpty(configModel.getKey())) sb.append(configModel.getKey());
         if (!StringUtil.isEmpty(configModel.getSubKey())) sb.append(":").append(configModel.getSubKey());

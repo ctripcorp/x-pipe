@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.config.AbstractConfigBean;
+import com.ctrip.xpipe.redis.checker.alert.AlertDbConfig;
+import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -18,14 +19,17 @@ import java.util.stream.Collectors;
  *         <p>
  *         Jun 15, 2017
  */
-public class DefaultConsoleDbConfig extends AbstractConfigBean implements ConsoleDbConfig{
+public class DefaultConsoleDbConfig extends AbstractConfigBean implements ConsoleDbConfig, AlertDbConfig {
 
-    private Pair<Set<String>, Long> sentinelCheckWhitelistCache = null;
+    private TimeBoundCache<Set<String>> sentinelCheckWhitelistCache;
 
-    private static final long DEFAULT_CACHE_EXPIRED = 10 * 1000L;
+    private TimeBoundCache<Set<String>> clusterAlertWhitelistCache;
 
     @Autowired
     private DbConfig dbConfig;
+
+    @Autowired
+    private ConsoleConfig config;
 
     @Autowired
     private ConfigService configService;
@@ -33,6 +37,9 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
     @PostConstruct
     public void postConstruct(){
         setConfig(dbConfig);
+
+        sentinelCheckWhitelistCache = new TimeBoundCache<>(config::getCacheRefreshInterval, this::refreshSentinelCheckWhiteList);
+        clusterAlertWhitelistCache = new TimeBoundCache<>(config::getCacheRefreshInterval, this::refreshClusterAlertWhiteList);
     }
 
 
@@ -63,16 +70,27 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
 
     @Override
     public Set<String> sentinelCheckWhiteList(boolean disableCache) {
-        if (!disableCache &&
-                null != sentinelCheckWhitelistCache
-                && sentinelCheckWhitelistCache.getValue().compareTo(System.currentTimeMillis()) > 0) {
-            return sentinelCheckWhitelistCache.getKey();
-        }
+        return sentinelCheckWhitelistCache.getData(disableCache);
+    }
 
+    @Override
+    public boolean shouldClusterAlert(String cluster) {
+        return !clusterAlertWhiteList().contains(cluster.toLowerCase());
+    }
+
+    @Override
+    public Set<String> clusterAlertWhiteList() {
+        return clusterAlertWhitelistCache.getData(false);
+    }
+
+    private Set<String> refreshSentinelCheckWhiteList() {
         List<ConfigModel> configModels = configService.getActiveSentinelCheckExcludeConfig();
-        Set<String> whitelist = configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toSet());
-        sentinelCheckWhitelistCache = new Pair<>(whitelist, System.currentTimeMillis() + DEFAULT_CACHE_EXPIRED);
-        return whitelist;
+        return configModels.stream().map(model -> model.getSubKey().toLowerCase()).collect(Collectors.toSet());
+    }
+
+    private Set<String> refreshClusterAlertWhiteList() {
+        List<ConfigModel> configModels = configService.getActiveClusterAlertExcludeConfig();
+        return configModels.stream().map(model -> model.getSubKey().toLowerCase()).collect(Collectors.toSet());
     }
 
 }
