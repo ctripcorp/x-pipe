@@ -121,7 +121,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
             logger.info("[removeSentinels]removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, result);
 
         } catch (Exception e) {
-            logger.error("removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
+            logger.error("[removeSentinels]removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
         }
     }
 

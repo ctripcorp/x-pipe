@@ -32,7 +32,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
         if (tooLongNoCollect(instance) && needDowngrade.compareAndSet(true, false)) {
-            logger.warn("[{}-{}+{}+{}][{}][shouldCheck] too long no collect, cancel downgrade", LOG_TITLE, instance.getCheckInfo().getClusterShardHostport().getClusterName(), instance.getCheckInfo().getShardId(), instance.getCheckInfo().getDcId(), instance.getCheckInfo().getHostPort());
+            logger.warn("[{}-{}+{}]{} instance {} shouldCheck, too long no collect, cancel downgrade", LOG_TITLE, instance.getCheckInfo().getClusterShardHostport().getClusterName(), instance.getCheckInfo().getShardId(), instance.getCheckInfo().getDcId(), instance.getCheckInfo().getHostPort());
         }
         return shouldCheckFromRedis(instance);
     }
@@ -45,7 +45,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
         // only deal with success result when downgrade
         if (!context.isFail() && needDowngrade.compareAndSet(true, false)) {
-            logger.info("[{}-{}+{}+{}][{}][onAction] sub from active dc redis {}", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
+            logger.info("[{}-{}+{}]sub from active dc redis {} {} ", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
             handleAllHello(context.instance());
             return;
         }
@@ -54,11 +54,11 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         if (info.isInActiveDc()) return;
         if (collectHello(context) >= countBackDcRedis()) {
             if (checkFinishedInstance.size() == checkFailInstance.size()) {
-                logger.warn("[{}-{}+{}+{}][{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
+                logger.warn("[{}-{}+{}] backup dc {} sentinel hello all sub fail, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
                 beginDowngrade();
                 return;
             }
-            logger.debug("[{}-{}+{}+{}][{}][onAction] sub from backup dc all finish", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
+            logger.debug("[{}-{}+{}]backup dc {} sub finish", LOG_TITLE, clusterId, shardId, info.getDcId());
             handleAllHello(context.instance());
         }
     }
