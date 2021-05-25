@@ -81,9 +81,16 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
             @Override
             public Map<String, Object> getData() {
-                return null;
+                Map<String, Object> transactionData = new HashMap<>();
+                transactionData.put("checkInterval", getBaseCheckInterval());
+                return transactionData;
             }
         });
+    }
+
+    @Override
+    protected int getBaseCheckInterval() {
+        return instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
     }
 
     @Override
