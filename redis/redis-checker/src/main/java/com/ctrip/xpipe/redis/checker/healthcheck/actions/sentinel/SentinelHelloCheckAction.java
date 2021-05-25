@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.checker.Persistence;
@@ -58,18 +60,30 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     @Override
     protected void doTask() {
-        hellos.clear();
-        errors.clear();
-
-        Set<RedisHealthCheckInstance> redisInstancesToCheck = redisInstancesToCheck();
-        subAllRedisInstances(redisInstancesToCheck);
-
-        scheduled.schedule(new AbstractExceptionLogTask() {
+        TransactionMonitor transaction = TransactionMonitor.DEFAULT;
+        transaction.logTransactionSwallowException("sentinel.health.check", instance.getCheckInfo().getClusterId(), new Task() {
             @Override
-            protected void doRun() throws Exception {
-                processSentinelHellos();
+            public void go() throws Exception {
+                hellos.clear();
+                errors.clear();
+
+                Set<RedisHealthCheckInstance> redisInstancesToCheck = redisInstancesToCheck();
+
+                subAllRedisInstances(redisInstancesToCheck);
+
+                scheduled.schedule(new AbstractExceptionLogTask() {
+                    @Override
+                    protected void doRun() throws Exception {
+                        processSentinelHellos();
+                    }
+                }, SENTINEL_COLLECT_INFO_INTERVAL, TimeUnit.MILLISECONDS);
             }
-        }, SENTINEL_COLLECT_INFO_INTERVAL, TimeUnit.MILLISECONDS);
+
+            @Override
+            public Map<String, Object> getData() {
+                return null;
+            }
+        });
     }
 
     @Override
