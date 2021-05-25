@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   entry: './main.ts',
-  mode: 'production',
+  mode: 'development',
   module: {
     rules: [
       {
@@ -29,5 +29,11 @@ module.exports = {
   output: {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
+  },
+  devServer: {
+    port: 9002,
+    proxy: {
+      '/console': 'http://localhost:8080',
+    },
   }
 };
