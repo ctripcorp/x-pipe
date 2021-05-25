@@ -176,7 +176,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
 
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
-        transaction.logTransactionSwallowException(SENTINEL_TYPE, clusterId, new Task() {
+        transaction.logTransactionSwallowException("sentinel.hello.collect", clusterId, new Task() {
 
             Set<SentinelHello> toDelete = new HashSet<>();
             Set<HostPort> trueMasters = new HashSet<>();
