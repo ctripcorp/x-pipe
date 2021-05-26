@@ -9,11 +9,11 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
                         toastr, ClusterService, MigrationService, DcService, NgTableParams, ClusterType) {
 
     $rootScope.currentNav = '1-2';
-    $scope.select = {};
     $scope.dcs = {};
     $scope.clusterId = $stateParams.clusterId;
     $scope.clusterName = $stateParams.clusterName;
     $scope.containerId = $stateParams.keepercontainer;
+    $scope.selectAll = selectAll;
     $scope.getClusterActiveDc = getClusterActiveDc;
     $scope.getTypeName = getTypeName;
     $scope.preDeleteCluster = preDeleteCluster;
@@ -66,6 +66,13 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     		}
     	});
 
+    function selectAll() {
+        if ($scope.sourceClusters.reduce((a, c) => !!a.isChecked && !!c.isChecked)) {
+            $scope.sourceClusters.map(c => c.isChecked = false);
+        } else {
+            $scope.sourceClusters.map(c => c.isChecked = true);
+        }
+    }
 
     function getClusterActiveDc(cluster) {
         var clusterType = ClusterType.lookup(cluster.clusterType)
@@ -162,13 +169,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     }
 
     function getSelectedClusters() {
-        let selected;
-        if ($scope.select.all) {
-            selected = $scope.sourceClusters.filterOut(c => c.isChecked === false);
-        } else {
-            selected = $scope.sourceClusters.filter(c => c.isChecked);
-        }
-        return selected;
+        return $scope.sourceClusters.filter(c => c.isChecked);
     }
 
     function migrateSelectedClusters() {
