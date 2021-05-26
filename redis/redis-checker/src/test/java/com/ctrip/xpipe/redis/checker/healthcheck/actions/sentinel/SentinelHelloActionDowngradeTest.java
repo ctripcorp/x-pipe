@@ -163,17 +163,17 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         resetCalled();
         allActionDoTask();
 
-        assertServerCalled(false, true, false, false);
-        verify(downgradeController, times(3)).onAction(Mockito.any());
+        assertServerCalled(false, true, true, true);
+        verify(downgradeController, times(5)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
 
         setServerErrResp(false, false, false, false);
         resetCalled();
         allActionDoTask();
 
-        assertServerCalled(false, false, true, true);
-        verify(downgradeController, times(5)).onAction(Mockito.any());
-        verify(sentinelHelloCollector, times(2)).onAction(Mockito.any());
+        assertServerCalled(false, true, true, true);
+        verify(downgradeController, times(8)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, times(3)).onAction(Mockito.any());
     }
 
     @Test
@@ -191,8 +191,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         resetCalled();
         allActionDoTask();
 
-        assertServerCalled(false, true, false, false);
-        verify(downgradeController, times(3)).onAction(Mockito.any());
+        assertServerCalled(false, true, true, true);
+        verify(downgradeController, times(5)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
 
         setServerHang(false, false, false, false);
@@ -200,9 +200,9 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         allActionDoTask();
 
 
-        assertServerCalled(false, false, true, true);
-        verify(downgradeController, times(5)).onAction(Mockito.any());
-        verify(sentinelHelloCollector, times(2)).onAction(Mockito.any());
+        assertServerCalled(false, true, true, true);
+        verify(downgradeController, times(8)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, times(3)).onAction(Mockito.any());
     }
 
     @Test
@@ -221,33 +221,6 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         resetCalled();
         allActionDoTask();
 
-        assertServerCalled(false, true, false, false);
-        verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
-        verify(downgradeController, times(3)).onAction(Mockito.any());
-    }
-
-    @Test
-    public void downgradeTimeoutTest() {
-        setServerErrResp(false, false, true, true);
-
-        allActionDoTask();
-
-        assertServerCalled(false, false, true, true);
-        verify(sentinelHelloCollector, times(0)).onAction(Mockito.any());
-        verify(downgradeController, times(2)).onAction(Mockito.any());
-
-        sleep(3 * sentinelCheckInterval);
-
-        resetCalled();
-        allActionDoTask();
-
-        assertServerCalled(false, false, true, true);
-        verify(sentinelHelloCollector, times(0)).onAction(Mockito.any());
-        verify(downgradeController, times(4)).onAction(Mockito.any());
-
-        resetCalled();
-        allActionDoTask();
-        // should not always timeout, so do downgrade
         assertServerCalled(false, true, false, false);
         verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
         verify(downgradeController, times(5)).onAction(Mockito.any());
