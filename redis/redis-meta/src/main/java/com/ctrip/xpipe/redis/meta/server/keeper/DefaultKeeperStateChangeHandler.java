@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.command.ConditionalCommand;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
@@ -111,7 +112,9 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
 			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{},{}", clusterId, shardId,
 					slaves);
-			keeperStateChangeJob.setActiveSuccessCommand(new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors));
+			keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
+					new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors),
+					() -> !dcMetaCache.isCurrentDcPrimary(clusterId, shardId), true));
 		}
 		
 		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), keeperStateChangeJob);

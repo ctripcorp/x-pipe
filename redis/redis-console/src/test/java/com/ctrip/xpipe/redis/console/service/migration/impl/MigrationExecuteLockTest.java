@@ -761,7 +761,7 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
 
         Map<Long, MigrationCluster> migrationClusters = event.getMigrationClustersMap();
         MigrationCluster cluster = migrationClusters.get(clusterId);
-        Mockito.verify(cluster, Mockito.atLeast(1)).forcePublish();
+        Mockito.verify(cluster, Mockito.atLeast(1)).forceProcess();
         checkAllMigrationOver(migrationClusters);
         checkLockRelease();
     }
@@ -837,15 +837,15 @@ public class MigrationExecuteLockTest extends AbstractConsoleIntegrationTest {
     }
 
     private void concurrentForcePublish(long clusterId, int concurrent) throws Exception {
-        concurrentHandleMigration(clusterId, concurrent, migrationService::forcePublishMigrationCluster);
+        concurrentHandleMigration(clusterId, concurrent, migrationService::forceProcessMigrationCluster);
     }
 
     private void concurrentForcePublishFromMultiDc(long clusterId, int concurrent) throws Exception {
-        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::forceClusterPublish);
+        concurrentHandleMigrationForMultiDc(clusterId, concurrent, DefaultMigrationEvent::forceClusterProcess);
     }
 
     private void concurrentForceEnd(long clusterId, int concurrent) throws Exception {
-        concurrentHandleMigration(clusterId, concurrent, migrationService::forceEndMigrationClsuter);
+        concurrentHandleMigration(clusterId, concurrent, migrationService::forceEndMigrationCluster);
     }
 
     private void concurrentForceEndFromMultiDc(long clusterId, int concurrent) throws Exception {

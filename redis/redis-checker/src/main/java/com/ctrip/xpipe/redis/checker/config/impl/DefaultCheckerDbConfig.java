@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.config.impl;
 
 import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.redis.checker.alert.AlertDbConfig;
+import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -8,14 +10,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * @author lishanglin
  * date 2021/3/13
  */
-public class DefaultCheckerDbConfig implements CheckerDbConfig {
+public class DefaultCheckerDbConfig implements CheckerDbConfig, AlertDbConfig {
 
     private Persistence persistence;
 
@@ -25,13 +26,21 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig {
 
     private TimeBoundCache<Boolean> alertSystemOn;
 
+    private TimeBoundCache<Set<String>> clusterAlertWhiteListCache;
+
     public DefaultCheckerDbConfig(Persistence persistence, LongSupplier timeoutMilliSupplier) {
         this.persistence = persistence;
 
-        sentinelCheckWhiteListCache = new TimeBoundCache<>(timeoutMilliSupplier, () ->
-                this.persistence.sentinelCheckWhiteList().stream().map(String::toLowerCase).collect(Collectors.toSet()));
         alertSystemOn = new TimeBoundCache<>(timeoutMilliSupplier, this.persistence::isAlertSystemOn);
         sentinelAutoProcessCache = new TimeBoundCache<>(timeoutMilliSupplier, this.persistence::isSentinelAutoProcess);
+        sentinelCheckWhiteListCache = new TimeBoundCache<>(timeoutMilliSupplier,
+                () -> this.lowCaseClusters(persistence.sentinelCheckWhiteList()));
+        clusterAlertWhiteListCache = new TimeBoundCache<>(timeoutMilliSupplier,
+                () -> this.lowCaseClusters(persistence.clusterAlertWhiteList()));
+    }
+
+    private Set<String> lowCaseClusters(Set<String> clusters) {
+        return clusters.stream().map(String::toLowerCase).collect(Collectors.toSet());
     }
 
     @Autowired
@@ -62,33 +71,16 @@ public class DefaultCheckerDbConfig implements CheckerDbConfig {
         return sentinelCheckWhiteListCache.getData(false);
     }
 
-    private static class TimeBoundCache<T> {
+    @Override
+    public boolean shouldClusterAlert(String cluster) {
+        if (StringUtil.isEmpty(cluster)) return false;
 
-        private T data;
-
-        private long expiredAt;
-
-        private LongSupplier timeoutMillSupplier;
-
-        private Supplier<T> dataSupplier;
-
-        public TimeBoundCache(LongSupplier timeoutMillSupplier, Supplier<T> dataSupplier) {
-            this.data = null;
-            this.expiredAt = 0L;
-            this.timeoutMillSupplier = timeoutMillSupplier;
-            this.dataSupplier = dataSupplier;
-        }
-
-        public T getData(boolean disableCache) {
-            if (!disableCache && null != data && expiredAt > System.currentTimeMillis()) {
-                return data;
-            }
-
-            this.data = dataSupplier.get();
-            this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
-            return this.data;
-        }
-
+        Set<String> whiteList = clusterAlertWhiteList();
+        return null != whiteList && !whiteList.contains(cluster.toLowerCase());
     }
 
+    @Override
+    public Set<String> clusterAlertWhiteList() {
+        return clusterAlertWhiteListCache.getData(false);
+    }
 }

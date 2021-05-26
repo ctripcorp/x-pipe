@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration;
 
-import com.ctrip.xpipe.redis.console.AbstractConsoleH2DbTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -19,7 +19,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class MigrationSystemAvailableCheckTest extends AbstractConsoleH2DbTest {
+public class MigrationSystemAvailableCheckTest extends AbstractConsoleDbTest {
 
     @Mock
     private DcService dcService;

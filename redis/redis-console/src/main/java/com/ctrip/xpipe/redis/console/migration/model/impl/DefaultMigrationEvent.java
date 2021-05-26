@@ -152,15 +152,15 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
     }
 
     @Override
-    public void forceClusterPublish(long clusterId) throws ClusterNotFoundException {
+    public void forceClusterProcess(long clusterId) throws ClusterNotFoundException {
         MigrationCluster migrationCluster = tryGetMigrationCluster(clusterId);
         if (!lockBeforeProcess()) return;
 
         try {
             allowOneClusterStart(clusterId);
-            migrationCluster.forcePublish();
+            migrationCluster.forceProcess();
         } catch (Throwable th) {
-            logger.info("[forceClusterPublish][{}][{}] fail", event.getId(), clusterId, th);
+            logger.info("[forceClusterProcess][{}][{}] fail", event.getId(), clusterId, th);
             unlockAfterProcess();
         }
     }

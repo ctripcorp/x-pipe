@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface ClusterService {
@@ -22,6 +23,8 @@ public interface ClusterService {
 	List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType);
 	List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc);
 	List<String> findAllClusterNames();
+	Long getCountByActiveDc(long activeDcId);
+	Map<String, Long> getAllCountByActiveDc();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
 	void updateCluster(String clusterName, ClusterTbl cluster);
@@ -34,6 +37,14 @@ public interface ClusterService {
 	void update(ClusterTbl cluster);
 	List<String> reBalanceSentinels(String dcName, int numOfClusters, boolean activeOnly);
 	void reBalanceClusterSentinels(String dcName, List<String> clusterNames);
+
+	List<ClusterTbl> findErrorMigratingClusters();
+	List<ClusterTbl> findMigratingClusters();
+	default void resetClustersStatus(List<Long> ids) {
+		for (Long id : ids) {
+			updateStatusById(id, ClusterStatus.Normal);
+		}
+	}
 
 	List<ClusterListUnhealthyClusterModel> findUnhealthyClusters();
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);

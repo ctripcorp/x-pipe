@@ -17,7 +17,6 @@
         <mockwebserver.version>3.12.0</mockwebserver.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <arthas-repackage.version>0.0.6</arthas-repackage.version>
-        <spring.boot.version>1.4.3.RELEASE</spring.boot.version>
     </properties>
 
     <dependencies>
@@ -40,7 +39,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot</artifactId>
-            <version>${spring.boot.version}</version>
+            <version>${spring-boot.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.service.migration;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.Map;
 
@@ -25,5 +26,10 @@ public enum CRedisConfig {
 	@SuppressWarnings("unchecked")
 	public Map<String, String> getCredisIdcMappingRules() {
 		return Codec.DEFAULT.decode(config.get(KEY_CREDIS_IDC_MAPPING_RULE, "{}"), Map.class);
+	}
+
+	@VisibleForTesting
+	protected void setConfig(Config config) {
+		this.config = config;
 	}
 }

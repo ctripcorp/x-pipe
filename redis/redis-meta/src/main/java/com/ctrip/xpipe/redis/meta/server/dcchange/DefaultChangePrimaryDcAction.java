@@ -33,6 +33,7 @@ import static com.ctrip.xpipe.redis.core.service.AbstractService.DEFAULT_SO_TIME
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractChangePrimaryDcAction.DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractNewMasterChooser.CHECK_NEW_MASTER_TIMEOUT_SECONDS;
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.DefaultSentinelManager.DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI;
+import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.MIGRATION_EXECUTOR;
 
 /**
  * @author wenchao.meng
@@ -52,7 +53,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
+	@Resource(name = MIGRATION_EXECUTOR)
 	private ExecutorService executors;
 
 	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
@@ -81,15 +82,16 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 
 	@Override
 	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
-		
+
+		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
+
 		if(!currentMetaManager.hasCluster(clusterId)){
-			logger.info("[changePrimaryDc][not interested in this cluster]");
-			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, "not interested in this cluster:" + clusterId);
+			logger.info("[changePrimaryDc][not interested in this cluster]{}, {}", clusterId, shardId);
+			executionLog.info("not interested in this cluster:" + clusterId);
+			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 		
 		ChangePrimaryDcAction changePrimaryDcAction = null;
-
-		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
