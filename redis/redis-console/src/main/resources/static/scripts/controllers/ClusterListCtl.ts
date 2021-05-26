@@ -2,10 +2,10 @@ angular
     .module('index')
     .controller('ClusterListCtl', ClusterListCtl);
 
-ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', 'AppUtil',
+ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
     'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ClusterType'];
 
-function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
+function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
                         toastr, ClusterService, MigrationService, DcService, NgTableParams, ClusterType) {
 
     $rootScope.currentNav = '1-2';
@@ -27,6 +27,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
     $scope.preForceSelectedCluster = preForceSelectedCluster;
     $scope.forceSelectedCluster = forceSelectedCluster;
     $scope.getSelectedClusters = getSelectedClusters;
+    $scope.migrateSelectedClusters = migrateSelectedClusters;
     $scope.showClusters = showClusters;
     $scope.showAll = false;
     $scope.showUnhealthy = false;
@@ -172,23 +173,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, AppUtil,
 
     function migrateSelectedClusters() {
         let selected = $scope.getSelectedClusters();
-        let migrationClusters = [];
-        selected.forEach(function(cluster) {
-            migrationClusters.push({
-                clusterId : cluster.id,
-                sourceDcId : cluster.activedcId,
-                destinationDcId : cluster.back,
-                cluster,
-            });
-        });
-        MigrationService.createEvent(migrationClusters)
-            .then(function(result) {
-                $('#createEventWithLostConfirm').modal('hide');
-                toastr.success('创建成功');
-                $window.location.href = '/#/migration_event_details/' + result.value;
-            }, function(result) {
-                toastr.error(AppUtil.errorMsg(result), '创建失败');
-            });
+        $state.go('migration_index', { clusters: selected });
     }
 
     function clearData() {

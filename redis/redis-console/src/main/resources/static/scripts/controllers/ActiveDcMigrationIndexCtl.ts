@@ -33,7 +33,9 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
                 $scope.organizations = result;
                 $scope.organizations.push({"orgName": "不选择"});
             });
-            if ($stateParams.clusterName != undefined) {
+            if (!!$stateParams.clusters && $stateParams.clusters.length > 0) {
+				showClusters($stateParams.clusters);
+			} else if ($stateParams.clusterName != undefined) {
                 ClusterService.load_cluster($stateParams.clusterName).then(showCluster);
 			} else {
 				MigrationService.getDefaultMigrationCluster().then(showCluster);
@@ -42,21 +44,24 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
         intervalRetriveInfo();
 	}
 
-	function showCluster(value) {
-		if(value != null) {
-			$scope.defaultCluster = value;
-			$scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
-				return dcInfo.id === $scope.defaultCluster.activedcId;
-			})[0];
-			ClusterService.findClustersByActiveDcName($scope.sourceDcInfo.dcName).then(function (targetClusters) {
-				var result = targetClusters;
-				result = result.filter(function (localCluster) {
-					return localCluster.clusterName === $scope.defaultCluster.clusterName;
-				});
-				$scope.clusters = result;
-				$scope.tableParams.reload();
-			});
-		}
+	function focusDcByCluster(cluster) {
+		$scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
+			return dcInfo.id === cluster.activedcId;
+		})[0];
+	}
+
+	function showCluster(cluster) {
+		showClusters([cluster]);
+	}
+
+	function showClusters(clusters) {
+		if (!clusters || clusters.length == 0) return;
+		focusDcByCluster(clusters[0]);
+		const clusterNames = clusters.map(c => c.clusterName);
+		ClusterService.findClustersByActiveDcName($scope.sourceDcInfo.dcName).then(function (result) {
+			$scope.clusters = result.filter(c => clusterNames.indexOf(c.clusterName) >= 0);
+			$scope.tableParams.reload();
+		});
 	}
 
     $scope.$on('$destroy',function(){
