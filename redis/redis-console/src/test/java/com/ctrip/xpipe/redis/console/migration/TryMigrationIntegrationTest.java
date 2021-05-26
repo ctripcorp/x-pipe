@@ -73,7 +73,7 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
     }
 
     @Test
-    public void testConsoleTryMigration() throws ClusterMigratingNow, ToIdcNotFoundException, ClusterNotFoundException, MigrationNotSupportException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest {
+    public void testConsoleTryMigration() throws ClusterMigratingNow, ToIdcNotFoundException, ClusterNotFoundException, MigrationNotSupportException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
 
         migrationService.tryMigrate("cluster-", fromIdc, toIdc);
     }

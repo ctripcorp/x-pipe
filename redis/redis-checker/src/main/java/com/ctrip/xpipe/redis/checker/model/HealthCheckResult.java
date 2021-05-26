@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.model;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.*;
@@ -18,6 +19,8 @@ public class HealthCheckResult {
     private List<CrossMasterDelay> crossMasterDelays;
 
     private Map<String, Set<String>> warningClusterShards;
+
+    private List<RedisHealthState> redisStates;
 
     public List<RedisAlive> getRedisAlives() {
         return this.redisAlives;
@@ -76,20 +79,22 @@ public class HealthCheckResult {
         this.crossMasterDelays = localCrossMasterDelays;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        HealthCheckResult result = (HealthCheckResult) o;
-        return Objects.equals(redisAlives, result.redisAlives) &&
-                Objects.equals(redisDelays, result.redisDelays) &&
-                Objects.equals(crossMasterDelays, result.crossMasterDelays) &&
-                Objects.equals(warningClusterShards, result.warningClusterShards);
+    public Map<HostPort, HEALTH_STATE> decodeRedisStates() {
+        Map<HostPort, HEALTH_STATE> result = new HashMap<>();
+        if (null != this.redisStates) this.redisStates.forEach(
+                states -> result.put(states.hostPort, states.healthState)
+        );
+        return result;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(redisAlives, redisDelays, crossMasterDelays, warningClusterShards);
+    public void encodeRedisStates(Map<HostPort, HEALTH_STATE> redisStates) {
+        List<RedisHealthState> localRedisStates = new ArrayList<>();
+        redisStates.forEach(((hostPort, healthStates) -> localRedisStates.add(new RedisHealthState(hostPort, healthStates))));
+        this.redisStates = localRedisStates;
+    }
+
+    public List<RedisHealthState> getRedisStates() {
+        return redisStates;
     }
 
     @Override
@@ -99,7 +104,25 @@ public class HealthCheckResult {
                 ", redisDelays=" + redisDelays +
                 ", crossMasterDelays=" + crossMasterDelays +
                 ", warningClusterShards=" + warningClusterShards +
+                ", redisStates=" + redisStates +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HealthCheckResult result = (HealthCheckResult) o;
+        return Objects.equals(redisAlives, result.redisAlives) &&
+                Objects.equals(redisDelays, result.redisDelays) &&
+                Objects.equals(crossMasterDelays, result.crossMasterDelays) &&
+                Objects.equals(warningClusterShards, result.warningClusterShards) &&
+                Objects.equals(redisStates, result.redisStates);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(redisAlives, redisDelays, crossMasterDelays, warningClusterShards, redisStates);
     }
 
     // inner class for serialize as json, otherwise we need to use object as map key
@@ -213,6 +236,44 @@ public class HealthCheckResult {
             return "CrossMasterDelay{" +
                     "dcClusterShard=" + dcClusterShard +
                     ", delays=" + delays +
+                    '}';
+        }
+    }
+
+    public static class RedisHealthState {
+
+        public RedisHealthState() {
+
+        }
+
+        public RedisHealthState(HostPort hostPort, HEALTH_STATE healthState) {
+            this.hostPort = hostPort;
+            this.healthState = healthState;
+        }
+
+        public HostPort hostPort;
+
+        public HEALTH_STATE healthState;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RedisHealthState that = (RedisHealthState) o;
+            return Objects.equals(hostPort, that.hostPort) &&
+                    healthState == that.healthState;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(hostPort, healthState);
+        }
+
+        @Override
+        public String toString() {
+            return "RedisHealthState{" +
+                    "hostPort=" + hostPort +
+                    ", healthState=" + healthState +
                     '}';
         }
     }

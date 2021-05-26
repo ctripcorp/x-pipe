@@ -45,6 +45,12 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
+	public boolean clusterMigratePreCheck(String clusterName) throws OuterClientException {
+		logger.info("[clusterMigratePreCheck]{}", clusterName);
+		return true;
+	}
+
+	@Override
 	public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName, List<InetSocketAddress> newMasters) throws OuterClientException{
 		logger.info("[doMigrationPublish]Cluster:{}, NewPrimaryDc:{}, Masters:{}", clusterName, primaryDcName,
 				newMasters);

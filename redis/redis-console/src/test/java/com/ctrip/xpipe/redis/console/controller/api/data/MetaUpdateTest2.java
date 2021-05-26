@@ -16,6 +16,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 
@@ -58,7 +59,7 @@ public class MetaUpdateTest2 {
         keeper2.setKeeperContainerId(1);
 
         List<KeeperBasicInfo> keepers = Lists.newArrayList(keeper1, keeper2);
-        when(keeperAdvancedService.findBestKeepers(eq(dc), eq(RedisProtocol.REDIS_PORT_DEFAULT), any(), eq(cluster)))
+        when(keeperAdvancedService.findBestKeepers(eq(dc), eq(KEEPER_PORT_DEFAULT), any(), eq(cluster)))
                 .thenReturn(keepers);
 
         when(redisService.insertKeepers(dc, cluster, shard, keepers)).thenReturn(2);
@@ -77,7 +78,7 @@ public class MetaUpdateTest2 {
         keeper1.setKeeperContainerId(1);
 
         keepers = Lists.newArrayList(keeper1);
-        when(keeperAdvancedService.findBestKeepers(eq(dc), eq(RedisProtocol.REDIS_PORT_DEFAULT), any(), eq(cluster)))
+        when(keeperAdvancedService.findBestKeepers(eq(dc), eq(KEEPER_PORT_DEFAULT), any(), eq(cluster)))
                 .thenReturn(keepers);
 
         when(redisService.insertKeepers(anyString(), anyString(), anyString(), eq(keepers)))

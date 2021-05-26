@@ -17,7 +17,7 @@ public interface MigrationClusterAction extends Startable, Stoppable {
     void updateStat(MigrationState stat);
     void cancel();
     void rollback();
-    void forcePublish();
+    void forceProcess();
     void forceEnd();
     boolean isStarted();
 

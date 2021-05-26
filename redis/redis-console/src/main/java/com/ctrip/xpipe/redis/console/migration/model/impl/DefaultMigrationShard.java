@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcCheckMessage;
 import com.ctrip.xpipe.utils.LogUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,6 +142,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					logger.info("[doCheck]{}, {}, {}, {}", cluster, shard, newPrimaryDc, res);
 					if(PRIMARY_DC_CHECK_RESULT.SUCCESS.equals(res.getErrorType())){
 						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, LogUtils.info("Check success"));
+					} else if (PRIMARY_DC_CHECK_RESULT.PRIMARY_DC_ALREADY_IS_NEW.equals(res.getErrorType())) {
+						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, true, LogUtils.info("Already primary dc"));
 					} else {
 						shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(res.getErrorMessage()));
 					}
@@ -357,7 +360,10 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 		shardMigrationResult.stepRetry(step);
 	}
 
-
+	@VisibleForTesting
+	public void setCommandBuilder(MigrationCommandBuilder builder) {
+		this.commandBuilder = builder;
+	}
 
 	public static class ShardObserverEvent{
 

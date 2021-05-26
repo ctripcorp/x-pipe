@@ -172,7 +172,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 				logger.info("[getClusterMetaCurrentPrimaryDc][{}][{}] migrating, return dst dc {}",
 						dcInfo.getDcName(), clusterInfo.getClusterName(), migrationCluster.getDestinationDcId());
 				return migrationCluster.getDestinationDcId();
-			} else {
+			} else if (null == migrationCluster) {
 				logger.info("[getClusterMetaCurrentPrimaryDc][{}][{}] migrating but no event {}, return origin active dc {}",
 						dcInfo.getDcName(), clusterInfo.getClusterName(), clusterInfo.getMigrationEventId(), clusterInfo.getActivedcId());
 			}

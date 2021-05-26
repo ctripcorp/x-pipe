@@ -67,6 +67,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CHECKER_ACK_TIMEOUT_MILLI = "checker.ack.timeout.milli";
 
+    private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
+
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -438,4 +440,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getLongProperty(KEY_CONFIG_CACHE_TIMEOUT_MILLI, 1000L);
     }
 
+    @Override
+    public int getMigrationTimeoutMilli() {
+        return getIntProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000);
+    }
 }

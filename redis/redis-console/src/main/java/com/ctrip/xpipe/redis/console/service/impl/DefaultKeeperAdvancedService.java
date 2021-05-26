@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.BiPredicate;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -37,7 +39,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   @Override
   public List<KeeperBasicInfo> findBestKeepers(String dcName, String clusterName) {
-    return findBestKeepers(dcName, RedisProtocol.REDIS_PORT_DEFAULT, (host, port) -> true, clusterName);
+    return findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (host, port) -> true, clusterName);
   }
 
   @Override

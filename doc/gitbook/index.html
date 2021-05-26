@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>XPipe用户使用手册</title>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0"/>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css"/>
+</head>
+<body>
+<div id="app">正在加载...</div>
+<script>
+    window.$docsify = {
+        name: 'XPipe用户使用手册',
+        auto2top: true,
+        maxLevel: 4,
+        subMaxLevel: 0,
+        loadSidebar: true,
+        search: {
+            noData: {
+                '/': '没有结果'
+            },
+            paths: 'auto',
+            placeholder: {
+                '/': '搜索'
+            }
+        },
+        toc: {
+            tocMaxLevel: 5,
+            target: 'h1, h2, h3, h4, h5, h6'
+        }
+    }
+</script>
+<script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+<script src="//cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+<script src="//unpkg.com/docsify-plugin-toc"></script>
+<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-java.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
+</body>
+</html>
