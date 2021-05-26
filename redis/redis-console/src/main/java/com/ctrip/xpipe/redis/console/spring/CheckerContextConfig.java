@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.cluster.CheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.*;
@@ -159,8 +160,9 @@ public class CheckerContextConfig {
     public HealthCheckReporter healthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
                                                    ClusterServer clusterServer, RedisDelayManager redisDelayManager,
                                                    CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
-                                                   ClusterHealthManager clusterHealthManager, @Value("${server.port}") int serverPort) {
-        return new HealthCheckReporter(checkerConfig, checkerConsoleService, clusterServer, redisDelayManager,
+                                                   ClusterHealthManager clusterHealthManager, HealthStateService healthStateService,
+                                                   @Value("${server.port}") int serverPort) {
+        return new HealthCheckReporter(healthStateService, checkerConfig, checkerConsoleService, clusterServer, redisDelayManager,
                 crossMasterDelayManager, pingService, clusterHealthManager, serverPort);
     }
 

@@ -27,13 +27,14 @@
 				</div>
 				<div class="col-sm-6">
 					<span class="col-md-4">
-						<md-select md-on-close="sourceDcSelected()" ng-model="sourceDc" class="md-no-underline color-white radius-border-fat no-margin" required placeholder="源机房">
+						<md-select md-on-close="sourceDcSelected()"
+								   ng-model="sourceDc"
+								   class="md-no-underline color-white radius-border-fat no-margin" required placeholder="源机房">
 							<md-option ng-repeat="dc in dcs" value="{{dc.dcName}}">{{dc.dcName}}</md-option>
 						</md-select>
 					</span>
 					<span class="col-md-4">
 						<md-select md-on-close="clusterOrgNameSelected()"
-								   chosen="directiveOptions"
 								   allow_single_deselect=true
 								   ng-model="clusterOrgName"
 								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="组织部门">
@@ -42,7 +43,6 @@
 					</span>
 					<span class="col-md-4">
 						<md-select md-on-close="getMasterUnhealthyClusters()"
-								   chosen="directiveOptions"
 								   allow_single_deselect=true
 								   ng-model="masterUnhealthyClusterState"
 								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="Master有问题的Cluster">

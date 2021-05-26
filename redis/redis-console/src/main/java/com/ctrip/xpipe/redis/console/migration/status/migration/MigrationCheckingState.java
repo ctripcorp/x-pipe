@@ -36,30 +36,28 @@ public class MigrationCheckingState extends AbstractMigrationState {
 	}
 
     private boolean doCheckClientService(MigrationCluster migrationCluster) {
-
-
         String clusterName = migrationCluster.clusterName();
         OuterClientService outerClientService = migrationCluster.getOuterClientService();
-        String failMesage = "";
+        String failMessage = "";
 
         logger.info("[doCheckClientService]{}", clusterName);
 
         try {
-            OuterClientService.ClusterInfo clusterInfo = outerClientService.getClusterInfo(clusterName);
-            //simple check
-            if(clusterInfo != null && clusterInfo.getGroups() != null && clusterInfo.getGroups().size() > 0){
-                return true;
-            }
-            failMesage = String.format("%s FAIL, cluster:%s, info empty:%s", outerClientService.serviceName(), clusterName, clusterInfo);
-        } catch (Exception e) {
-            logger.error("[doCheckClientService]" + clusterName, e);
-            failMesage = String.format("%s FAIL, cluster:%s, error message:%s", outerClientService.serviceName(), clusterName, e.getMessage());
-        }
-        migrationCluster.markCheckFail(failMesage);
+        	 if (outerClientService.clusterMigratePreCheck(clusterName)) {
+        	 	return true;
+			 } else {
+				 failMessage = String.format("cluster %s check fail", clusterName);
+			 }
+		} catch (Exception e) {
+			logger.error("[doCheckClientService]" + clusterName, e);
+			failMessage = String.format("%s FAIL, cluster:%s, error message:%s", outerClientService.serviceName(), clusterName, e.getMessage());
+		}
+
+        migrationCluster.markCheckFail(failMessage);
         return false;
     }
 
-    private void doShardCheck(MigrationCluster migrationCluster) {
+    protected void doShardCheck(MigrationCluster migrationCluster) {
 		List<MigrationShard> migrationShards = migrationCluster.getMigrationShards();
 		for (final MigrationShard migrationShard : migrationShards) {
 

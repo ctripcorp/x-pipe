@@ -9,7 +9,7 @@ import org.junit.Before;
  *         <p>
  *         Aug 10, 2017
  */
-public class AbstratAppTest extends AbstractConsoleH2DbTest {
+public class AbstratAppTest extends AbstractConsoleDbTest {
 
     private String metaServers =
             "{ \"jq\" : \"http://127.0.0.1:9747\", " +

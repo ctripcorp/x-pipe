@@ -122,8 +122,8 @@ elif [ $ENV = "UAT" ];then
     USED_MEM=6
     XMN=4
     MAX_DIRECT=100
-    META_SPACE=128
-    MAX_META_SPACE=128
+    META_SPACE=256
+    MAX_META_SPACE=256
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}g -Xmx${USED_MEM}g -Xmn${XMN}g -Dio.netty.leakDetectionLevel=advanced -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 
 else

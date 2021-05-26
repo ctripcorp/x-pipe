@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -19,6 +20,7 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -324,18 +326,18 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public void forcePublishMigrationCluster(long eventId, long clusterId) {
+    public void forceProcessMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
             try {
-                migrationEventManager.getEvent(eventId).forceClusterPublish(clusterId);
+                migrationEventManager.getEvent(eventId).forceClusterProcess(clusterId);
             } catch (Exception e) {
-                logger.info("[forcePublishMigrationCluster][{}][{}] fail", eventId, clusterId, e);
+                logger.info("[forceProcessMigrationCluster][{}][{}] fail", eventId, clusterId, e);
             }
         }
     }
 
     @Override
-    public void forceEndMigrationClsuter(long eventId, long clusterId) {
+    public void forceEndMigrationCluster(long eventId, long clusterId) {
         if (isMigrationClusterExist(eventId, clusterId)) {
             try {
                 migrationEventManager.getEvent(eventId).forceClusterEnd(clusterId);
@@ -370,7 +372,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Override
     public TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc)
-            throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException {
+            throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException, ClusterMigratingNowButMisMatch {
 
         if(!checker.getResult().isAvaiable() && !configService.ignoreMigrationSystemAvailability()) {
             throw new MigrationSystemNotHealthyException(checker.getResult().getMessage());
@@ -385,9 +387,19 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
         MigrationClusterTbl unfinished = findLatestUnfinishedMigrationCluster(clusterTbl.getId());
         if (unfinished != null) {
+            long migrationEventId = unfinished.getMigrationEventId();
             long fromDcId = unfinished.getSourceDcId();
             long toDcId = unfinished.getDestinationDcId();
-            throw new ClusterMigratingNow(clusterName, dcService.getDcName(fromDcId), dcService.getDcName(toDcId), unfinished.getMigrationEventId());
+            String realFromIdc = dcService.getDcName(fromDcId);
+            String realToIdc = dcService.getDcName(toDcId);
+            if(fromIdc == null || fromIdc.equalsIgnoreCase(realFromIdc)){
+                if(toIdc == null || toIdc.equalsIgnoreCase(realToIdc)){
+                    logger.info("[tryMigrate][already migrating]{},real({}->{}), request({}->{})",
+                            migrationEventId, realFromIdc, realToIdc, fromIdc, toIdc);
+                    throw new ClusterMigratingNow(clusterName, realFromIdc, realToIdc, unfinished.getMigrationEventId());
+                }
+            }
+            throw new ClusterMigratingNowButMisMatch(clusterName, realFromIdc, realToIdc, unfinished.getMigrationEventId(), fromIdc, toIdc);
         }
 
         long activedcId = clusterTbl.getActivedcId();
@@ -422,6 +434,31 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             logger.error("[getMigrationSystemHealthStatus][warn]{}", availability.getMessage());
             return RetMessage.createFailMessage(availability.getMessage());
         }
+    }
+
+    @Override
+    public MigrationProgress buildMigrationProgress(int hours) {
+        MigrationProgress progress = new MigrationProgress();
+        long totalMigrationSeconds = 0;
+
+        List<MigrationClusterTbl> migrationClusterTbls = migrationClusterDao
+                .findLatestMigrationClusters(DateTimeUtils.getHoursBeforeDate(new Date(), hours));
+
+        for (MigrationClusterTbl migrationClusterTbl : migrationClusterTbls) {
+            progress.addMigrationCluster(migrationClusterTbl);
+            MigrationStatus status = MigrationStatus.valueOf(migrationClusterTbl.getStatus());
+            if (MigrationStatus.Success.equals(status)) {
+                if (null == migrationClusterTbl.getEndTime() || null == migrationClusterTbl.getStartTime()) {
+                    logger.info("[buildMigrationProgress][{}] no time but success", migrationClusterTbl.getId());
+                }
+                long durationMilli = migrationClusterTbl.getEndTime().getTime() - migrationClusterTbl.getStartTime().getTime();
+                totalMigrationSeconds += TimeUnit.MILLISECONDS.toSeconds(durationMilli);
+            }
+        }
+        if (progress.getSuccess() > 0) progress.setAvgMigrationSeconds(totalMigrationSeconds / progress.getSuccess());
+        progress.setActiveDcs(clusterService.getAllCountByActiveDc());
+
+        return progress;
     }
 
     protected DcTbl findToDc(String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {

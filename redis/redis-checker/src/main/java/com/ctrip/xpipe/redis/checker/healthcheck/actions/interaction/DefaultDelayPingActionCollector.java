@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.utils.MapUtils;
 import org.slf4j.Logger;
@@ -25,7 +26,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -38,7 +41,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  * Sep 06, 2018
  */
 @Component
-public class DefaultDelayPingActionCollector extends AbstractDelayPingActionCollector implements DelayPingActionCollector, OneWaySupport {
+public class DefaultDelayPingActionCollector extends AbstractDelayPingActionCollector implements DelayPingActionCollector, HealthStateService, OneWaySupport {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDelayPingActionCollector.class);
 
@@ -129,6 +132,32 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
                 return healthStatus;
             }
         });
+    }
+
+    @Override
+    public HEALTH_STATE getHealthState(HostPort hostPort) {
+        RedisHealthCheckInstance key = allHealthStatus.keySet().stream()
+                .filter(instance -> instance.getCheckInfo().getHostPort().equals(hostPort))
+                .findFirst().orElse(null);
+
+        if (null != key) return allHealthStatus.get(key).getState();
+        return null;
+    }
+
+    @Override
+    public Map<HostPort, HEALTH_STATE> getAllCachedState() {
+        Map<HostPort, HEALTH_STATE> cachedHealthStatus = new HashMap<>();
+        allHealthStatus.forEach(((instance, healthStatus) -> {
+            RedisInstanceInfo info = instance.getCheckInfo();
+            cachedHealthStatus.put(info.getHostPort(), healthStatus.getState());
+        }));
+
+        return cachedHealthStatus;
+    }
+
+    @Override
+    public void updateHealthState(Map<HostPort, HEALTH_STATE> redisStates) {
+        throw new UnsupportedOperationException();
     }
 
     private void onInstanceStateChange(Object args) {

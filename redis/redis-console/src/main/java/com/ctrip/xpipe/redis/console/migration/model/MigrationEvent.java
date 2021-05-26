@@ -27,7 +27,7 @@ public interface MigrationEvent extends Observable {
 
     void cancelCluster(long clusterId) throws ClusterNotFoundException;
 
-    void forceClusterPublish(long clusterId) throws ClusterNotFoundException;
+    void forceClusterProcess(long clusterId) throws ClusterNotFoundException;
 
     void forceClusterEnd(long clusterId) throws ClusterNotFoundException;
 

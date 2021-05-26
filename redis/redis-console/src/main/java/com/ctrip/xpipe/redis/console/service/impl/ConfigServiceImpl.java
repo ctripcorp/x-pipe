@@ -6,12 +6,14 @@ import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionAction;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AlertSystemOffChecker;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffChecker;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.SentinelAutoProcessChecker;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigTbl;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,9 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Autowired
     private SentinelAutoProcessChecker sentinelAutoProcessChecker;
+
+    @Autowired
+    private AutoMigrationOffChecker autoMigrationOffChecker;
 
     private String crossDcLeaderLeaseName;
 
@@ -101,6 +106,27 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
+    public void startClusterAlert(ConfigModel config) throws DalException {
+        logger.info("[startClusterAlert][{}]", config.getSubKey());
+
+        config.setKey(KEY_CLUSTER_ALERT_EXCLUDE)
+                .setVal(String.valueOf(false));
+        logChangeEvent(config, null);
+        configDao.setConfig(config);
+    }
+
+    @Override
+    public void stopClusterAlert(ConfigModel config, int minutes) throws DalException {
+        logger.info("[stopClusterAlert][{}] for {}", config.getSubKey(), minutes);
+
+        Date date = DateTimeUtils.getMinutesLaterThan(new Date(), minutes);
+        config.setKey(KEY_CLUSTER_ALERT_EXCLUDE)
+                .setVal(String.valueOf(true));
+        logChangeEvent(config, date);
+        configDao.setConfigAndUntil(config, date);
+    }
+
+    @Override
     public void startSentinelCheck(ConfigModel config) throws DalException {
         logger.info("[startSentinelCheck] : turn off sentinel check exclude config {} for cluster {}", config, config.getSubKey());
 
@@ -140,19 +166,33 @@ public class ConfigServiceImpl implements ConfigService {
 
     @Override
     public boolean shouldSentinelCheck(String cluster) {
+        return !getConfigBooleanByKeyAndSubKey(KEY_SENTINEL_CHECK_EXCLUDE, cluster, false);
+    }
+
+    private boolean getConfigBooleanByKeyAndSubKey(String key, String subKey, boolean defaultVal) {
         try {
-            ConfigTbl config = configDao.getByKeyAndSubId(KEY_SENTINEL_CHECK_EXCLUDE, cluster);
-            return null == config || !Boolean.parseBoolean(config.getValue()) || (new Date()).after(config.getUntil());
+            ConfigTbl config = configDao.getByKeyAndSubId(key, subKey);
+            if (null == config || (new Date()).after(config.getUntil())) {
+                return defaultVal;
+            }
+            return Boolean.parseBoolean(config.getValue());
         } catch (Exception e) {
-            return true;
+            return defaultVal;
         }
     }
 
-
     @Override
     public List<ConfigModel> getActiveSentinelCheckExcludeConfig() {
-        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(
-                KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true), new Date());
+        return getActiveConfig(KEY_SENTINEL_CHECK_EXCLUDE, String.valueOf(true));
+    }
+
+    @Override
+    public List<ConfigModel> getActiveClusterAlertExcludeConfig() {
+        return getActiveConfig(KEY_CLUSTER_ALERT_EXCLUDE, String.valueOf(true));
+    }
+
+    private List<ConfigModel> getActiveConfig(String key, String val) {
+        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, val, new Date());
         if (configTbls.isEmpty()) return Collections.emptyList();
         List<ConfigModel> models = new ArrayList<>();
 
@@ -210,6 +250,35 @@ public class ConfigServiceImpl implements ConfigService {
             configDao.setConfig(configModel);
         } catch (Exception e) {
             logger.error("[ignoreMigrationSystemAvailability]", e);
+            throw new DalUpdateException(e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean allowAutoMigration() {
+        try {
+            ConfigModel configModel = getOrCreate(KEY_ALLOW_AUTO_MIGRATION, String.valueOf(true));
+            return Boolean.parseBoolean(configModel.getVal());
+        } catch (Exception e) {
+            logger.error("[ignoreMigrationSystemAvailability]", e);
+            return true;
+        }
+    }
+
+    @Override
+    public void setAllowAutoMigration(boolean allow) throws DalException {
+        try {
+            ConfigModel configModel = getOrCreate(KEY_ALLOW_AUTO_MIGRATION, String.valueOf(allow));
+            boolean origin = Boolean.parseBoolean(configModel.getVal());
+            configModel.setVal(String.valueOf(allow));
+            configDao.setConfig(configModel);
+
+            if (origin && !allow) {
+                logger.info("[setAllowAutoMigration] Auto Migration stop");
+                autoMigrationOffChecker.startAlert();
+            }
+        } catch (Exception e) {
+            logger.error("[setAllowAutoMigration]", e);
             throw new DalUpdateException(e.getMessage());
         }
     }
@@ -282,7 +351,7 @@ public class ConfigServiceImpl implements ConfigService {
         }
     }
 
-    private void logChangeEvent(ConfigModel configModel, Date recoveryDate) {
+    private void  logChangeEvent(ConfigModel configModel, Date recoveryDate) {
         StringBuilder sb = new StringBuilder();
         if (!StringUtil.isEmpty(configModel.getKey())) sb.append(configModel.getKey());
         if (!StringUtil.isEmpty(configModel.getSubKey())) sb.append(":").append(configModel.getSubKey());
@@ -293,4 +362,10 @@ public class ConfigServiceImpl implements ConfigService {
         if (null != recoveryDate) sb.append(" until ").append(DateTimeUtils.timeAsString(recoveryDate));
         EventMonitor.DEFAULT.logEvent(EVENT_CONFIG_CHANGE, sb.toString());
     }
+
+    @VisibleForTesting
+    public void setAutoMigrationOffChecker(AutoMigrationOffChecker checker) {
+        this.autoMigrationOffChecker = checker;
+    }
+
 }

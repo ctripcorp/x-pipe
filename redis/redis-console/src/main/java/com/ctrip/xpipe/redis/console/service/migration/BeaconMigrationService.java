@@ -10,10 +10,6 @@ import com.ctrip.xpipe.redis.console.service.migration.exception.*;
  */
 public interface BeaconMigrationService {
 
-    long buildMigration(BeaconMigrationRequest migrationRequest) throws ClusterNotFoundException, WrongClusterMetaException,
-            NoAvailableDcException, MigrationNotSupportException, MigrationSystemNotHealthyException,
-            MigrationNoNeedException, UnknownTargetDcException, MigrationConflictException, MigrationCrossZoneException;
-
-    CommandFuture<Boolean> doMigration(long eventId, long clusterId) throws Exception;
+    CommandFuture<?> migrate(BeaconMigrationRequest migrationRequest);
 
 }

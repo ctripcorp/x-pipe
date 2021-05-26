@@ -179,7 +179,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId) {
-		return metaManager.getAllSurviceKeepers(currentDc, clusterId, shardId);
+		return metaManager.getAllSurviveKeepers(currentDc, clusterId, shardId);
 	}
 
 	@Override

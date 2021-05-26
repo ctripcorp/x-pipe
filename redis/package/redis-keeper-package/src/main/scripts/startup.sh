@@ -66,6 +66,11 @@ function changeAndMakeLogDir(){
     sed -i 's#LOG_FOLDER=\(.*\)#LOG_FOLDER='"$logdir"'#'  $current/../*.conf
     sed -i 's#name="baseDir">.*</Property>#name="baseDir">'$logdir'</Property>#'   $current/../config/log4j2.xml
 }
+function changeConfigLogFile() {
+    current=$1
+    logfile=$2
+    sed -i "s/log4j2.xml/$logfile/g" $current/../*.conf
+}
 function changePort(){
     conf=$1
     port=$2
@@ -85,6 +90,13 @@ function getCurrentRealPath(){
     done
     dir="$( cd -P "$( dirname "$source" )" && pwd )"
     echo $dir
+}
+function getRole(){
+    ROLE=keeper
+    if [ -f /opt/settings/server.properties ];then
+        ENV=`cat /opt/settings/server.properties | egrep -i "^role" | awk -F= '{print $2}'`
+    fi
+    echo `toUpper $ENV`
 }
 
 #VARS
@@ -122,10 +134,24 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     MAX_DIRECT=100
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 else
+    changeConfigLogFile $FULL_DIR log4j2-uat.xml
+
+    ROLE=`getRole`
+    if [ $ROLE = "REDIS" ]
+    then
+      DIR=`dirname $0`
+      CURRENT_SCRIPT_PATH="$DIR/../current/scripts"
+
+      find $CURRENT_SCRIPT_PATH -name "*.sh" | xargs chmod 755
+      $CURRENT_SCRIPT_PATH/start_all.sh active
+    fi
     #MB
-    USED_MEM=1600
-    XMN=600
-    MAX_DIRECT=100
+    #USED_MEM=1600
+    USED_MEM=30720
+    #XMN=600
+    XMN=11520
+    #MAX_DIRECT=100
+    MAX_DIRECT=5120
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m"
 fi
 export JAVA_OPTS="$JAVA_OPTS -Dio.netty.maxDirectMemory=0 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+UseParNewGC -XX:MaxTenuringThreshold=2 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:$LOG_DIR/heap_trace.txt -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -Djava.security.egd=file:/dev/./urandom"
