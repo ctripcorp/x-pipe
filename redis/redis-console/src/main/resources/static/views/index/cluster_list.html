@@ -7,11 +7,12 @@
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showUnhealthy')">问题集群</a>
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showErrorMigrating')">迁移异常集群</a>
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showMigrating')">迁移中集群</a>
-                    <input ng-if="showErrorMigrating || showMigrating" type="checkbox" ng-model="select.all" id="ace-settings-navbar-select-all">
-                    <label ng-if="showErrorMigrating || showMigrating" class="lbl" for="ace-settings-navbar-select-all">全选</label>
+                    <input ng-if="showUnhealthy || showErrorMigrating || showMigrating" type="checkbox" ng-model="select.all" id="ace-settings-navbar-select-all">
+                    <label ng-if="showUnhealthy || showErrorMigrating || showMigrating" class="lbl" for="ace-settings-navbar-select-all">全选</label>
                 </div>
                 <div class="col-md-4 text-right">
                     <a ng-if="showAll" type="button" class="btn btn-info btn-xs" href="/#/cluster_form?clusterName=&type=create">创建Cluster</a>
+                    <a ng-if="showUnhealthy || showMigrating" class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
                     <a ng-if="showMigrating" class="btn btn-danger btn-xs" ng-click="preContinueSelectedCluster()">批量继续</a>
                     <a ng-if="showMigrating" class="btn btn-danger btn-xs" ng-click="preForceSelectedCluster()">批量强制继续</a>
                     <a ng-if="showErrorMigrating" class="btn btn-danger btn-xs" ng-click="preResetSelectedClusterStatus()">重置状态</a>
@@ -21,7 +22,7 @@
 
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat-start="cluster in $data">
-                <td ng-if="showErrorMigrating || showMigrating">
+                <td ng-if="showUnhealthy || showErrorMigrating || showMigrating">
                     <input type="checkbox" ng-checked="select.all" ng-model="cluster.isChecked">
                 </td>
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">
@@ -47,7 +48,8 @@
                 	<a ng-if="showAll" href="/#/cluster_dc?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">数据中心</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=retrieve" class="btn btn-info btn-xs">Cluster</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_shards?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">Shards</a>&nbsp;
-                    <a href="/#/migration_event_list?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">Migration</a>&nbsp;
+                    <a href="/#/migration_event_list?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">迁移事件</a>&nbsp;
+                    <a ng-if="showAll || showUnhealthy" href="/#/active_dc_migration?clusterName={{cluster.clusterName}}" class="btn btn-danger btn-xs">迁移</a>&nbsp;
                     <a ng-if="showAll" href="/#/cluster_form?clusterName={{cluster.clusterName}}&type=update" class="btn btn-info btn-xs">修改</a>
                     <a ng-if="showAll" class="btn btn-danger btn-xs" ng-click="preDeleteCluster(cluster.clusterName)">删除</a>
                     <a ng-if="showAll" class="btn btn-danger btn-xs" ng-click="preResetClusterStatus(cluster.clusterName, cluster.id)">重置状态</a>
