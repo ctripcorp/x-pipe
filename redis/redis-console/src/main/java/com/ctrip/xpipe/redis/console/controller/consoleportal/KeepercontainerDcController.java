@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
+
 
 /**
  * @author shyin
@@ -51,12 +53,10 @@ public class KeepercontainerDcController extends AbstractConsoleController {
 
     logger.debug("[findAvailableKeepers]{}, {}", dcName, shardModel);
 
-    int beginPort = findBeginPort(shardModel);
-
     String clusterName = getShardClusterName(shardModel);
 
     List<KeeperBasicInfo> bestKeepers =
-        keeperAdvancedService.findBestKeepers(dcName, beginPort, (ip, port) -> {
+        keeperAdvancedService.findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (ip, port) -> {
 
           if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
             return false;
@@ -80,15 +80,6 @@ public class KeepercontainerDcController extends AbstractConsoleController {
       }
     }
     return false;
-  }
-
-  private int findBeginPort(ShardModel shardModel) {
-
-    int port = RedisProtocol.REDIS_PORT_DEFAULT;
-    if (shardModel != null && shardModel.getRedises().size() > 0) {
-      port = shardModel.getRedises().get(0).getRedisPort();
-    }
-    return port;
   }
 
   private String getShardClusterName(ShardModel shardModel) {

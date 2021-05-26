@@ -27,6 +27,13 @@ function getEnv(){
     fi
     echo `toUpper $ENV`
 }
+function getIdc(){
+    IDC=normal
+    if [ -f /opt/settings/server.properties ];then
+        IDC=`cat /opt/settings/server.properties | egrep -i "^idc" | awk -F= '{print $2}'`
+    fi
+    echo `toUpper $IDC`
+}
 function makedir(){
     if [ ! -d $1 ]; then
         echo "log dir not exist, create it"
@@ -117,9 +124,16 @@ elif [ $ENV = "FWS" ] || [ $ENV = "FAT" ];then
     MAX_META_SPACE=128
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 else
-    #MB
-    USED_MEM=800
-    XMN=600
+    IDC=`getIdc`
+    if [ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ];then
+        #MB
+        USED_MEM=6144
+        XMN=2304
+    else
+        #MB
+        USED_MEM=800
+        XMN=600
+    fi
     MAX_DIRECT=100
     META_SPACE=128
     MAX_META_SPACE=128

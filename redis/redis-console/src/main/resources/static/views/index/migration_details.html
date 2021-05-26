@@ -1,19 +1,23 @@
 <div id="sidebar" class="sidebar responsive sidebar-fixed" style="margin-top: -25px;width : 200px">
-	<ul class="nav nav-list">
-		<li ng-repeat="migrationCluster in eventDetails">
-			<a ui-sref=".details({migrationCluster: migrationCluster})" class="dropdown-toggle"> 
-				<i class="menu-icon fa fa-caret-right"></i> {{ migrationCluster.migrationCluster.clusterName }}
-				<div>
-					<span class="label label-sm" ng-class="{
-						'label-default':migrationCluster.migrationCluster.statusType == 'Init',
-						'label-info':migrationCluster.migrationCluster.statusType == 'Processing',
-						'label-success':migrationCluster.migrationCluster.statusType == 'Success',
-						'label-danger':migrationCluster.migrationCluster.statusType == 'Fail'
-						}">{{migrationCluster.migrationCluster.status}}</span>
-				</div>
-			</a> 
-		</li>
-	</ul>
+	<md-content>
+		<md-list style="height: 900px; overflow-y: scroll;" flex>
+			<div ng-repeat="migrationCluster in eventDetails" ui-sref=".details({migrationCluster: migrationCluster})">
+				<md-list-item  class="md-1-line">
+					<a  class="dropdown-toggle">
+						<i class="menu-icon fa fa-caret-right"></i> {{ migrationCluster.migrationCluster.clusterName }}
+						<div>
+						<span class="label label-sm" ng-class="{
+							'label-default':migrationCluster.migrationCluster.statusType == 'Init',
+							'label-info':migrationCluster.migrationCluster.statusType == 'Processing',
+							'label-success':migrationCluster.migrationCluster.statusType == 'Success',
+							'label-danger':migrationCluster.migrationCluster.statusType == 'Fail'
+							}">{{migrationCluster.migrationCluster.status}}</span>
+						</div>
+					</a>
+				</md-list-item>
+			</div>
+		</md-list>
+	</md-content>
 </div>
 
 <div ui-view style="margin-left:200px"></div>

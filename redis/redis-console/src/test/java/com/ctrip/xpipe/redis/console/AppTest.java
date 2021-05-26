@@ -47,7 +47,6 @@ public class AppTest extends AbstratAppTest {
 	@Test
 	public void startConsole8080() throws IOException, SQLException {
 
-//		startH2Server();
 		System.setProperty("server.port", "8080");
 		System.setProperty(KEY_SERVER_MODE, ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER.name());
 		start();
@@ -92,8 +91,6 @@ public class AppTest extends AbstratAppTest {
 
 	private void start() throws IOException, SQLException {
 		SpringApplication.run(AppTest.class);
-
-		startH2Server();
 	}
 
 

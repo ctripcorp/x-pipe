@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
 import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -43,7 +44,7 @@ public interface MigrationService {
 
     void updateMigrationShardLogById(long id, String log);
 
-    TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException;
+    TryMigrateResult tryMigrate(String clusterName, String fromIdc, String toIdc) throws ClusterNotFoundException, MigrationNotSupportException, ClusterActiveDcNotRequest, ClusterMigratingNow, ToIdcNotFoundException, MigrationSystemNotHealthyException, ClusterMigratingNowButMisMatch;
 
     Long createMigrationEvent(MigrationRequest request);
 
@@ -59,11 +60,14 @@ public interface MigrationService {
 
     MigrationCluster rollbackMigrationCluster(long eventId, String clusterName) throws ClusterNotFoundException;
 
-    void forcePublishMigrationCluster(long eventId, long clusterId);
+    void forceProcessMigrationCluster(long eventId, long clusterId);
 
-    void forceEndMigrationClsuter(long eventId, long clusterId);
+    void forceEndMigrationCluster(long eventId, long clusterId);
 
     MigrationSystemAvailableChecker.MigrationSystemAvailability getMigrationSystemAvailability();
 
     RetMessage getMigrationSystemHealth();
+
+    MigrationProgress buildMigrationProgress(int hours);
+
 }

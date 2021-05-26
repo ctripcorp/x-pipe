@@ -72,7 +72,7 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
 
         startConsole(newFollowerPort, dcJQ, zkJQ, consoles, Collections.emptyMap(), Collections.emptyMap(), Collections.singletonMap(KEY_CONSOLE_ID, dcJQ + newFollowerPort));
 
-        waitForServerAck(String.format("http://localhost:%d/health", newFollowerPort), Map.class, 120000);
+        waitForServerAck(String.format("http://127.0.0.1:%d/health", newFollowerPort), Map.class, 120000);
 
         Assert.assertTrue(isLeader(newLeaderPort));
         Assert.assertFalse(isLeader(newFollowerPort));
@@ -84,14 +84,14 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
     }
 
     private boolean isLeader(int port) {
-        Map<String, Object> healthState = restTemplate.exchange(String.format("http://localhost:%d/health", port),
+        Map<String, Object> healthState = restTemplate.exchange(String.format("http://127.0.0.1:%d/health", port),
                 HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {}).getBody();
 
         return (Boolean) healthState.get("isLeader");
     }
 
     private CheckerHealthController.HealthCheckInstanceModel getCheckInstance(int port) throws Exception {
-        String url = String.format("http://localhost:%d/api/health/check/instance/127.0.0.1/6379", port);
+        String url = String.format("http://127.0.0.1:%d/api/health/check/instance/127.0.0.1/6379", port);
         waitForServerAck(url, CheckerHealthController.HealthCheckInstanceModel.class, 30000);
         return restTemplate.getForObject(url, CheckerHealthController.HealthCheckInstanceModel.class);
     }
@@ -107,8 +107,8 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
         jqConsole8080 = startConsole(8080, dcJQ, zkJQ, consoles, Collections.emptyMap(), Collections.emptyMap(), Collections.singletonMap(KEY_CONSOLE_ID, consoleId8080));
         jqConsole8081 = startConsole(8081, dcJQ, zkJQ, consoles, Collections.emptyMap(), Collections.emptyMap(), Collections.singletonMap(KEY_CONSOLE_ID, consoleId8081));
 
-        waitForServerAck("http://localhost:8080/health", Map.class, 120000);
-        waitForServerAck("http://localhost:8081/health", Map.class, 60000);
+        waitForServerAck("http://127.0.0.1:8080/health", Map.class, 120000);
+        waitForServerAck("http://127.0.0.1:8081/health", Map.class, 60000);
     }
 
 }

@@ -174,5 +174,14 @@ public class MigrationClusterDao extends AbstractXpipeConsoleDAO{
         });
     }
 
+    public List<MigrationClusterTbl> findLatestMigrationClusters(Date date) {
+        return queryHandler.handleQuery(new DalQuery<List<MigrationClusterTbl>>() {
+            @Override
+            public List<MigrationClusterTbl> doQuery() throws DalException {
+                return migrationClusterTblDao.findLatestMigrationClusters(date, MigrationClusterTblEntity.READSET_FULL);
+            }
+        });
+    }
+
 
 }

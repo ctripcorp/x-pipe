@@ -9,8 +9,8 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -20,14 +20,13 @@ import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -137,6 +136,28 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbls.forEach( clusterTbl -> clusterNames.add(clusterTbl.getClusterName()));
 
 		return clusterNames;
+	}
+
+	@Override
+	public Map<String, Long> getAllCountByActiveDc() {
+		List<DcTbl> dcs = dcService.findAllDcs();
+		Map<String, Long> counts = new HashMap<>();
+
+		dcs.forEach(dcTbl -> {
+			counts.put(dcTbl.getDcName(), getCountByActiveDc(dcTbl.getId()));
+		});
+
+		return counts;
+	}
+
+	@Override
+	public Long getCountByActiveDc(long activeDc) {
+		return queryHandler.handleQuery(new DalQuery<Long>() {
+			@Override
+			public Long doQuery() throws DalException {
+				return dao.countByActiveDc(activeDc, ClusterTblEntity.READSET_COUNT).getCount();
+			}
+		});
 	}
 
 	@Override
@@ -464,6 +485,37 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 			scheduled.schedule(() -> reBalanceClusterSentinels(dcName, nextExecutionClusters), changingPeriod, TimeUnit.SECONDS);
 		}
+	}
+
+	@Override
+	public List<ClusterTbl> findErrorMigratingClusters() {
+		List<ClusterTbl> errorClusters = Lists.newArrayList();
+		List<ClusterTbl> clustersWithEvents = clusterDao.findMigratingClustersWithEvents();
+		for (ClusterTbl clusterWithEvent: clustersWithEvents) {
+		    if (clusterWithEvent.getMigrationEvent().getId() == 0) {
+				errorClusters.add(clusterWithEvent);
+			}
+		}
+		List<ClusterTbl> overviews = clusterDao.findMigratingClustersOverview();
+		for (ClusterTbl overview : overviews) {
+			MigrationClusterTbl migrationClusterTbl = overview.getMigrationClusters();
+			String migrationStatus = migrationClusterTbl.getStatus();
+			if (migrationStatus != null) {
+				String clusterStatus = overview.getStatus();
+				if (MigrationStatus.valueOf(migrationStatus).getClusterStatus().toString().equals(clusterStatus)) {
+					continue;
+				}
+			}
+			overview.setMigrationEvent(null);
+			overview.setMigrationClusters(null);
+			errorClusters.add(overview);
+		}
+		return errorClusters;
+	}
+
+	@Override
+	public List<ClusterTbl> findMigratingClusters() {
+		return clusterDao.findMigratingClustersOverview();
 	}
 
 	// Cache {dc name} -> List {SentinelTbl}

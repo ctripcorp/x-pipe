@@ -73,9 +73,11 @@ public class CRedisService extends AbstractOuterClientService {
 
 					logger.info("[doMarkInstance][begin]{},{}", clusterShardHostPort, state);
 					String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
+					String cluster = clusterShardHostPort.getClusterName();
                     HostPort hostPort = clusterShardHostPort.getHostPort();
                     MarkInstanceResponse response =
-                            restOperations.postForObject(address + "?ip={ip}&port={port}&canRead={canRead}", null, MarkInstanceResponse.class, hostPort.getHost(), hostPort.getPort(), state);
+                            restOperations.postForObject(address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}",
+									null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state);
                     logger.info("[doMarkInstance][ end ]{},{},{}", clusterShardHostPort, state, response);
                     if(!response.isSuccess()){
                         throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
@@ -86,6 +88,24 @@ public class CRedisService extends AbstractOuterClientService {
 			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
 		}
 
+	}
+
+	@Override
+	public boolean clusterMigratePreCheck(String clusterName) throws OuterClientException {
+		try {
+
+			return catTransactionMonitor.logTransaction(TYPE, String.format("clusterMigratePreCheck-%s", clusterName), new Callable<Boolean>() {
+				@Override
+				public Boolean call() throws Exception {
+					logger.info("[clusterMigratePreCheck]Cluster:{}", clusterName);
+					String credisAddress = CREDIS_SERVICE.MIGRATION_PRE_CHECK.getRealPath(credisConfig.getCredisServiceAddress());
+					return restOperations.postForObject(credisAddress, null, Boolean.class, clusterName);
+				}
+			});
+
+		} catch (Exception e) {
+			throw new OuterClientException(String.format("%s pre check fail", clusterName), e);
+		}
 	}
 
 	@Override

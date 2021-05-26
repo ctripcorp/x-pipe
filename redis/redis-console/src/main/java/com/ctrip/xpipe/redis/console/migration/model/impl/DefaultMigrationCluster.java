@@ -370,14 +370,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
-    public void forcePublish() {
+    public void forceProcess() {
         tryStartAction(() -> {
-            logger.info("[ForcePublish]{}-{}, {} -> ForcePublish", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            if (!(currentState instanceof PartialSuccessState)) {
+            logger.info("[ForceProcess]{}-{}, {} -> ForceProcess", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+            if (!(currentState instanceof ForceProcessAbleState)) {
                 throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
             }
-            PartialSuccessState partialSuccessState = (PartialSuccessState) this.currentState;
-            partialSuccessState.forcePublish();
+            ForceProcessAbleState forceProcessAbleState = (ForceProcessAbleState) this.currentState;
+            forceProcessAbleState.updateAndForceProcess();
         });
     }
 
@@ -423,7 +423,6 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         logger.info("[update]{}", args);
         this.currentState.refresh();
-//        notifyObservers(this);
     }
 
     @Override
@@ -492,5 +491,10 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @VisibleForTesting
     public MigrationState getMigrationState() {
         return currentState;
+    }
+
+    @VisibleForTesting
+    public void setMigrationState(MigrationState state) {
+        this.currentState = state;
     }
 }
