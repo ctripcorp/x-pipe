@@ -17,6 +17,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.selectDisplayed= selectDisplayed;
     $scope.selectFiltered = selectFiltered;
     $scope.selectAll = selectAll;
+    $scope.unselectAll = unselectAll;
     $scope.getClusterActiveDc = getClusterActiveDc;
     $scope.getTypeName = getTypeName;
     $scope.preDeleteCluster = preDeleteCluster;
@@ -85,25 +86,20 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         console.log(index, size, start, end, $scope.filteredClusters, $scope.displayedClusters);
     });
 
-    function selectOrDeselect(scoped, all) {
-        if (scoped.reduce((a, c) => !!a.isChecked && !!c.isChecked)) {
-            all.map(c => c.isChecked = false);
-        } else {
-            all.map(c => c.isChecked = false);
-            scoped.map(c => c.isChecked = true);
-        }
-    }
-
     function selectDisplayed() {
-        selectOrDeselect($scope.displayedClusters, $scope.sourceClusters);
+        $scope.displayedClusters.forEach(c => c.isChecked = true);
     }
 
     function selectFiltered() {
-        selectOrDeselect($scope.filteredClusters, $scope.sourceClusters);
+        $scope.filteredClusters.forEach(c => c.isChecked = true);
     }
 
     function selectAll() {
-        selectOrDeselect($scope.sourceClusters, $scope.sourceClusters);
+        $scope.sourceClusters.forEach(c => c.isChecked = true);
+    }
+
+    function unselectAll() {
+        $scope.sourceClusters.forEach(c => c.isChecked = false);
     }
 
     function getClusterActiveDc(cluster) {
