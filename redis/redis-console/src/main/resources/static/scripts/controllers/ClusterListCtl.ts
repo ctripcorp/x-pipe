@@ -89,8 +89,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         if (scoped.reduce((a, c) => !!a.isChecked && !!c.isChecked)) {
             all.map(c => c.isChecked = false);
         } else {
-            scoped.sourceClusters.map(c => c.isChecked = false);
-            all.map(c => c.isChecked = true);
+            all.map(c => c.isChecked = false);
+            scoped.map(c => c.isChecked = true);
         }
     }
 
