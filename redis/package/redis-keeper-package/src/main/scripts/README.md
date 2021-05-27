@@ -8,6 +8,18 @@
 
 ### 环境准备
 
+0.修改系统配置(可选，操作需谨慎)
+
+根据启动的redis和sentinel数量，以及机器配置情况，决定是否需要进行此操作
+
+sudo权限执行 change_system_config.sh
+
+此脚本会修改系统级别以及systemd级别的句柄、进程数的最大值
+
+脚本执行后需重启生效，可执行 sudo reboot命令重启
+
+
+
 1.redis可执行文件
 
 (1)在系统环境变量中存在redis-server, redis-cli, redis-sentinel 命令
