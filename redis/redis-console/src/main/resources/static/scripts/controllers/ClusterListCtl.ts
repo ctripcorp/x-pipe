@@ -3,16 +3,19 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
-    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ClusterType'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
-                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ClusterType) {
+                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType) {
 
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
+    $scope.dcsFilterData = [];
     $scope.clusterId = $stateParams.clusterId;
     $scope.clusterName = $stateParams.clusterName;
     $scope.containerId = $stateParams.keepercontainer;
+    $scope.selectDisplayed= selectDisplayed;
+    $scope.selectFiltered = selectFiltered;
     $scope.selectAll = selectAll;
     $scope.getClusterActiveDc = getClusterActiveDc;
     $scope.getTypeName = getTypeName;
@@ -37,6 +40,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.type = $stateParams.type;
     $scope.clusterTypes = ClusterType.selectData()
 
+    $scope.displayedClusters = [];
+    $scope.filteredClusters = [];
     $scope.sourceClusters = [];
     if($scope.clusterName) {
     	ClusterService.load_cluster($scope.clusterName)
@@ -63,15 +68,42 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     		for(var i = 0 ; i < data.length; ++i) {
     			var dc = data[i];
     			$scope.dcs[dc.id] = dc.dcName;
+                $scope.dcsFilterData.push({
+                    "id": dc.id,
+                    "title": dc.dcName
+                });
     		}
     	});
 
-    function selectAll() {
-        if ($scope.sourceClusters.reduce((a, c) => !!a.isChecked && !!c.isChecked)) {
-            $scope.sourceClusters.map(c => c.isChecked = false);
+    ngTableEventsChannel.onAfterDataFiltered(function (params, filtered) {
+        const index = params.page() - 1;
+        const size = params.count();
+        const start = index * size;
+        const end = Math.min(start + size, filtered.length);
+        $scope.filteredClusters = filtered;
+        $scope.displayedClusters = filtered.slice(start, end);
+        console.log(index, size, start, end, $scope.filteredClusters, $scope.displayedClusters);
+    });
+
+    function selectOrDeselect(scoped, all) {
+        if (scoped.reduce((a, c) => !!a.isChecked && !!c.isChecked)) {
+            all.map(c => c.isChecked = false);
         } else {
-            $scope.sourceClusters.map(c => c.isChecked = true);
+            scoped.sourceClusters.map(c => c.isChecked = false);
+            all.map(c => c.isChecked = true);
         }
+    }
+
+    function selectDisplayed() {
+        selectOrDeselect($scope.displayedClusters, $scope.sourceClusters);
+    }
+
+    function selectFiltered() {
+        selectOrDeselect($scope.filteredClusters, $scope.sourceClusters);
+    }
+
+    function selectAll() {
+        selectOrDeselect($scope.sourceClusters, $scope.sourceClusters);
     }
 
     function getClusterActiveDc(cluster) {
