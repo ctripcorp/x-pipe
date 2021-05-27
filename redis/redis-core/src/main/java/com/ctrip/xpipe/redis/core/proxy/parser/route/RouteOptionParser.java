@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.AbstractProxyOptionParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
