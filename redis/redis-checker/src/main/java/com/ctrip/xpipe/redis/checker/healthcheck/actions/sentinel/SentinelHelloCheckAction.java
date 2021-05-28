@@ -61,13 +61,14 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @Override
     protected void doTask() {
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
+        Set<RedisHealthCheckInstance> redisInstancesToCheck=new HashSet<>();
         transaction.logTransactionSwallowException("sentinel.health.check", instance.getCheckInfo().getClusterId(), new Task() {
             @Override
             public void go() throws Exception {
                 hellos.clear();
                 errors.clear();
 
-                Set<RedisHealthCheckInstance> redisInstancesToCheck = redisInstancesToCheck();
+                redisInstancesToCheck.addAll(redisInstancesToCheck());
 
                 subAllRedisInstances(redisInstancesToCheck);
 
@@ -83,6 +84,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             public Map<String, Object> getData() {
                 Map<String, Object> transactionData = new HashMap<>();
                 transactionData.put("checkInterval", getBaseCheckInterval());
+                transactionData.put("checkRedisInstances", redisInstancesToCheck);
                 return transactionData;
             }
         });
@@ -114,17 +116,17 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                         hellos.put(redisInstance, Sets.newHashSet());
                                     }
                                 } catch (Exception e) {
-                                    logger.warn("[{}]get redis health check instance {}:{} failed", LOG_TITLE, redisMeta.getIp(), redisMeta.getPort(), e);
+                                    logger.warn("[{}-{}]get redis health check instance {}:{} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(),redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
                             });
                         } catch (Exception e) {
-                            logger.warn("[{}]get redis health check instance from shard {} failed", LOG_TITLE, shardId, e);
+                            logger.warn("[{}-{}]get redis health check instance from shard {} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(), shardId, e);
                         }
                     });
                 }
             });
         } catch (Exception e) {
-            logger.warn("[{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), e);
+            logger.warn("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
         }
         return redisHealthCheckInstances;
     }
@@ -169,7 +171,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                     }
                 });
             } catch (Exception e) {
-                logger.warn("[{}]subscribe redis instance {}:{} failed", LOG_TITLE, redisInstanceToCheck.getEndpoint().getHost(), redisInstanceToCheck.getEndpoint().getPort(), e);
+                logger.warn("[{}-{}]subscribe redis instance {}:{} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(), redisInstanceToCheck.getEndpoint().getHost(), redisInstanceToCheck.getEndpoint().getPort(), e);
             }
         });
     }
