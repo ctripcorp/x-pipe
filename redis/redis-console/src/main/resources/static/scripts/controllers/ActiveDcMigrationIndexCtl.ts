@@ -58,8 +58,8 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 		if (!clusters || clusters.length == 0) return;
 		focusDcByCluster(clusters[0]);
 		const clusterNames = clusters.map(c => c.clusterName);
-		ClusterService.findClustersByActiveDcName($scope.sourceDcInfo.dcName).then(function (result) {
-			$scope.clusters = result.filter(c => clusterNames.indexOf(c.clusterName) >= 0);
+		ClusterService.findClustersByNames.apply(ClusterService, clusterNames).then(result=>{
+			$scope.clusters = result.filter(c => c.activedcId == $scope.sourceDcInfo.id);
 			$scope.tableParams.reload();
 		});
 	}
