@@ -7,14 +7,26 @@
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showUnhealthy')">问题集群</a>
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showErrorMigrating')">迁移异常集群</a>
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showMigrating')">迁移中集群</a>
-                    <a ng-if="showUnhealthy || showErrorMigrating || showMigrating" class="btn btn-white btn-xs" ng-click="selectAll()">全选</a>
+                    <div ng-if="showUnhealthy || showErrorMigrating || showMigrating">
+                        <a class="btn btn-round btn-xs" ng-click="selectDisplayed()">当前页全选</a>
+                        <a class="btn btn-round btn-xs" ng-click="selectFiltered()">跨页全选</a>
+                        <a class="btn btn-round btn-xs" ng-click="selectAll()">无视筛选条件全选</a>
+                        <a class="btn btn-round btn-xs" ng-click="unselectAll()">取消所有选中</a>
+                    </div>
                 </div>
-                <div class="col-md-4 text-right">
+                <div class="col-md-4 text-right" ng-if="showAll">
                     <a ng-if="showAll" type="button" class="btn btn-info btn-xs" href="/#/cluster_form?clusterName=&type=create">创建Cluster</a>
-                    <a ng-if="showUnhealthy || showMigrating" class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
-                    <a ng-if="showMigrating" class="btn btn-danger btn-xs" ng-click="preContinueSelectedCluster()">批量继续</a>
-                    <a ng-if="showMigrating" class="btn btn-danger btn-xs" ng-click="preForceSelectedCluster()">批量强制继续</a>
-                    <a ng-if="showErrorMigrating" class="btn btn-danger btn-xs" ng-click="preResetSelectedClusterStatus()">重置状态</a>
+                </div>
+                <div class="col-md-4 text-right" ng-if="showUnhealthy">
+                    <a class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
+                </div>
+                <div class="col-md-4 text-right" ng-if="showErrorMigrating">
+                    <a class="btn btn-danger btn-xs" ng-click="preResetSelectedClusterStatus()">重置状态</a>
+                    <a class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
+                </div>
+                <div class="col-md-4 text-right" ng-if="showMigrating">
+                    <a class="btn btn-danger btn-xs" ng-click="preContinueSelectedCluster()">批量继续</a>
+                    <a class="btn btn-danger btn-xs" ng-click="preForceSelectedCluster()">批量强制继续</a>
                 </div>
             </div>
         </header>
@@ -38,7 +50,7 @@
                 <td ng-if="showUnhealthy" data-title="'问题实例数'" ng-bind="cluster.unhealthyRedisCnt" sortable="'unhealthyRedisCnt'" ></td>
                 <td ng-if="showMigrating" data-title="'ClusterStatus'" ng-bind="cluster.status"></td>
                 <td ng-if="showMigrating" data-title="'MigrationStatus'" ng-bind="cluster.migrationClusters.status"></td>
-                <td ng-if="true" data-title="'主数据中心'" ng-bind="getClusterActiveDc(cluster)"></td>
+                <td ng-if="true" data-title="'主数据中心'" filter="{activedcId: 'select'}" filter-data="dcsFilterData" ng-bind="getClusterActiveDc(cluster)"></td>
                 <td data-title="'集群类型'" filter="{clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(cluster.clusterType)"></td>
                 <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
                 <td ng-if="true" data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>

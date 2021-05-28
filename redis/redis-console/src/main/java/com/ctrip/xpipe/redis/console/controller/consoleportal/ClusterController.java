@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author zhangle
@@ -43,6 +44,16 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public ClusterTbl loadCluster(@PathVariable String clusterName) {
         return valueOrDefault(ClusterTbl.class, clusterService.findClusterAndOrg(clusterName));
+    }
+
+    @RequestMapping(value = "/clusters/by/names", method = RequestMethod.POST)
+    public List<ClusterTbl> loadClusters(@RequestBody List<String> clusterNames) {
+        List<ClusterTbl> clusters = clusterNames.stream()
+                .map(name -> clusterService.findClusterAndOrg(name))
+                .collect(Collectors.toList());
+        List<Long> clusterIds = clusters.stream().map(ClusterTbl::getId).collect(Collectors.toList());
+        List<DcClusterTbl> dcClusters = dcClusterService.findByClusterIds(clusterIds);
+        return valueOrEmptySet(ClusterTbl.class, joinClusterAndDcCluster(clusters, dcClusters));
     }
 
     @RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
