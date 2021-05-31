@@ -131,10 +131,10 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
     protected boolean shouldCheck(HealthCheckInstance instance) {
         for (HealthCheckActionController controller : controllers) {
             if (!controller.shouldCheck(instance)) {
-                CheckInfo checkInfo = getActionInstance().getCheckInfo();
+                CheckInfo checkInfo = instance.getCheckInfo();
                 if (checkInfo instanceof RedisInstanceInfo) {
                     RedisInstanceInfo redisInfo = (RedisInstanceInfo) checkInfo;
-                    logger.debug("[doRun][{}][{}][{}] skip check by {}", redisInfo.getClusterId(), redisInfo.getShardId(),
+                    logger.debug("[doRun][{}+{}][{}] skip check by {}", redisInfo.getClusterId(), redisInfo.getShardId(),
                             redisInfo.getHostPort(), controller);
                 } else {
                     logger.debug("[doRun][{}] skip check by {}", checkInfo.getClusterId(), controller);

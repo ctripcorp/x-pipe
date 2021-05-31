@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -105,10 +107,15 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         try {
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
                 ClusterMeta clusterMeta = dcMeta.getClusters().get(getActionInstance().getCheckInfo().getClusterId());
+                logger.debug("[{}-{}][{}]found in MetaCache", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, instance.getCheckInfo().getClusterId());
                 if (clusterMeta != null) {
-                    clusterMeta.getShards().forEach((shardId, shardMeta) -> {
+                    Map<String, ShardMeta> clusterShards = clusterMeta.getShards();
+                    logger.debug("[{}-{}][{}]shards num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, clusterShards.size(), clusterShards);
+                    clusterShards.forEach((shardId, shardMeta) -> {
                         try {
-                            shardMeta.getRedises().forEach((redisMeta) -> {
+                            List<RedisMeta> redisMetas = shardMeta.getRedises();
+                            logger.debug("[{}-{}+{}][{}]redis num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, dc, redisMetas.size(), redisMetas);
+                            redisMetas.forEach((redisMeta) -> {
                                 try {
                                     RedisHealthCheckInstance redisInstance = instanceManager.getOrCreate(redisMeta);
                                     if (super.shouldCheck(redisInstance)) {
@@ -116,17 +123,17 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                         hellos.put(redisInstance, Sets.newHashSet());
                                     }
                                 } catch (Exception e) {
-                                    logger.warn("[{}-{}]get redis health check instance {}:{} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(),redisMeta.getIp(), redisMeta.getPort(), e);
+                                    logger.warn("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
                             });
                         } catch (Exception e) {
-                            logger.warn("[{}-{}]get redis health check instance from shard {} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(), shardId, e);
+                            logger.warn("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
                         }
                     });
                 }
             });
         } catch (Exception e) {
-            logger.warn("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE,instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
+            logger.warn("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
         }
         return redisHealthCheckInstances;
     }
