@@ -6,7 +6,11 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -102,7 +106,15 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         ClusterHealthCheckInstance checkInstance = instanceManager.findClusterHealthCheckInstance(future.getId());
 
         if (null != checkInstance) {
-            checkInstance.getCheckInfo().setOrgId(future.getOrgId());
+            checkInstance.getCheckInfo().setOrgId(future.getOrgId()).setActiveDc(future.getActiveDc());
+            for (ShardMeta shardMeta : future.getShards().values()) {
+                for (RedisMeta redisMeta : shardMeta.getRedises()) {
+                    RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
+                    if (redisInstance != null) {
+                        redisInstance.getCheckInfo().setActiveDc(future.getActiveDc());
+                    }
+                }
+            }
         }
     }
 
