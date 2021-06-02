@@ -39,7 +39,7 @@ public class DefaultMigrationEvent extends AbstractObservable implements Migrati
             return;
         }
 
-        MigrationCluster migrationCluster = migrationClusters.get(0);
+        MigrationCluster migrationCluster = localMigrationClusters.get(0);
         migrationCluster.process();
     }
 
