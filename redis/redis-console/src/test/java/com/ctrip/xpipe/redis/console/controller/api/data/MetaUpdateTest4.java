@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
-import static com.ctrip.xpipe.redis.console.controller.api.RetMessage.FAIL_STATE;
-import static com.ctrip.xpipe.redis.console.controller.api.RetMessage.SUCCESS_STATE;
+import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.FAIL_STATE;
+import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.SUCCESS_STATE;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 

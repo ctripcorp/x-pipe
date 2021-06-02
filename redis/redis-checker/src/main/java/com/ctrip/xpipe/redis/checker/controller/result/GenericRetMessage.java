@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.api;
+package com.ctrip.xpipe.redis.checker.controller.result;
 
 /**
  * @author chen.zhu
@@ -7,31 +7,31 @@ package com.ctrip.xpipe.redis.console.controller.api;
  */
 public class GenericRetMessage<T> extends RetMessage {
 
-    private int state;
-
     private T payload;
 
     public static <T> GenericRetMessage createGenericRetMessage(T t) {
-        return new GenericRetMessage<T>(SUCCESS_STATE, t);
+        return new GenericRetMessage<>(SUCCESS_STATE, t);
     }
 
     public GenericRetMessage(int state, T payload) {
-        this.state = state;
+        super(state);
         this.payload = payload;
     }
 
     public GenericRetMessage(int state) {
-        this.state = state;
+        super(state);
     }
 
-    @Override
-    public int getState() {
-        return state;
-    }
+    public GenericRetMessage() {
 
+    }
 
     public T getPayload() {
         return payload;
+    }
+
+    public void setPayload(T payload) {
+        this.payload = payload;
     }
 
     public GenericRetMessage setMessage(T payload) {
