@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationLock;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
@@ -50,8 +49,6 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private RedisService redisService;
 	@Autowired
 	private MigrationService migrationService;
-	@Autowired
-	private ConsoleConfig config;
 
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
@@ -134,7 +131,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		if (null != migrationRequest) {
 			/** Create event **/
 			MigrationEventTbl migrationEvent = migrationEventTblDao.createLocal();
-			migrationEvent.setOperator(migrationRequest.getUser()).setEventTag(migrationRequest.getTag()).setExecLock("");
+			migrationEvent.setOperator(migrationRequest.getUser()).setEventTag(migrationRequest.getTag());
 
 			queryHandler.handleQuery(new DalQuery<MigrationEventTbl>() {
 				@Override
@@ -182,36 +179,11 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		return result;
 	}
 
-	public void updateMigrationEventLock(long eventId, String lock, long lockUntil) {
-		MigrationEventTbl migrationEventTbl = migrationEventTblDao.createLocal();
-		migrationEventTbl.setId(eventId).setExecLock(lock).setLockUntil(lockUntil).setCurrent(System.currentTimeMillis());
-
-		queryHandler.handleUpdate(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return migrationEventTblDao.updateExecLock(migrationEventTbl, MigrationEventTblEntity.UPDATESET_LOCK_STATUS);
-			}
-		});
-	}
-
-	public void releaseMigrationEventLock(long eventId, String lock, long lockUntil) {
-		MigrationEventTbl migrationEventTbl = migrationEventTblDao.createLocal();
-		migrationEventTbl.setId(eventId).setExecLock(lock).setLockUntil(lockUntil);
-
-		queryHandler.handleUpdate(new DalQuery<Integer>() {
-			@Override
-			public Integer doQuery() throws DalException {
-				return migrationEventTblDao.releaseExecLock(migrationEventTbl, MigrationEventTblEntity.UPDATESET_FULL);
-			}
-		});
-	}
-	
 	private MigrationEvent loadMigrationEvent(List<MigrationEventTbl> details) {
 
 		if(!CollectionUtils.isEmpty(details)) {
 
-			MigrationEvent event = new DefaultMigrationEvent(details.get(0), new DefaultMigrationLock(details.get(0).getId(),
-					config.getMigrationExecLockTimeoutMilli(), this));
+			MigrationEvent event = new DefaultMigrationEvent(details.get(0));
 			for(MigrationEventTbl detail : details) {
 				MigrationClusterTbl cluster = detail.getRedundantClusters();
 				MigrationShardTbl shard = detail.getRedundantShards();

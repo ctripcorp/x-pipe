@@ -88,7 +88,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
         partialSuccessState.getStateActionState().tryAction();
         partialSuccessState.refresh();
 
-        verify(migrationCluster).updateStat(isA(MigrationPartialSuccessState.class));
+        verify(migrationCluster).updateStat(isA(MigrationPartialRetryFailState.class));
         verify(migrationCluster, times(0)).process();
 
         partialSuccessState.getStateActionState().tryRollback();
@@ -106,7 +106,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
         partialSuccessState.refresh();
 
-        verify(migrationCluster).updateStat(isA(MigrationPartialSuccessState.class));
+        verify(migrationCluster).updateStat(isA(MigrationPartialRetryFailState.class));
         verify(migrationCluster, times(0)).process();
 
         logger.info("[testForcePublish]");
