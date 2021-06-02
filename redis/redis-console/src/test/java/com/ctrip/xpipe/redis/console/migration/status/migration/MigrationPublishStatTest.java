@@ -84,7 +84,7 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 			}
 		});
 		stat.getStateActionState().tryAction();
-		verify(migrationCluster).updateStat(isA(MigrationPublishState.class));
+		verify(migrationCluster).updateStat(isA(MigrationPublishFailState.class));
 	}
 	
 	@Test
@@ -111,6 +111,6 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 		});
 		
 		stat.getStateActionState().tryAction();
-		verify(migrationCluster).updateStat(isA(MigrationPublishState.class));
+		verify(migrationCluster).updateStat(isA(MigrationPublishFailState.class));
 	}
 }

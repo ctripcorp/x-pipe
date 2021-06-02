@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 import org.unidal.dal.jdbc.DalRuntimeException;
 import org.unidal.dal.jdbc.transaction.TransactionManager;
 
@@ -39,6 +40,7 @@ public class MigrationEventConcurrentCreateTest extends AbstractConsoleIntegrati
         Mockito.when(clusterTblDao.atomicSetStatus(Mockito.any(), Mockito.any())).thenReturn(1);
     }
 
+    @DirtiesContext
     @Test
     public void testCreateSuccess() {
         MigrationEvent migrationEvent = migrationEventDao.createMigrationEvent(mockEvent());
@@ -46,12 +48,14 @@ public class MigrationEventConcurrentCreateTest extends AbstractConsoleIntegrati
         Assert.assertEquals(1, migrationClusterModels.size());
     }
 
+    @DirtiesContext
     @Test(expected = ServerException.class)
     public void testLockClusterRowZero() throws Exception {
         Mockito.when(clusterTblDao.atomicSetStatus(Mockito.any(), Mockito.any())).thenReturn(0);
         migrationEventDao.createMigrationEvent(mockEvent());
     }
 
+    @DirtiesContext
     @Test(expected = ServerException.class)
     public void testLockClusterCommitFail() throws Exception {
         Mockito.doThrow(new DalRuntimeException("commit fail for data conflict"))

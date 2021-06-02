@@ -47,6 +47,16 @@
                 <redis id="unknown" ip="127.0.0.1" port="6398" master="0.0.0.0:0"/>
             </shard>
         </cluster>
+        <cluster id="cluster5" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster5+shard2+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6403" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6404" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster5+shard1+jq">
+                <redis id="unknown" ip="127.0.0.1" port="6405" master=""/>
+                <redis id="unknown" ip="127.0.0.1" port="6406" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
     </dc>
     <dc id="oy" lastModifiedTime="0000000000000000" zone="SHA">
         <keeperContainers>
@@ -93,6 +103,16 @@
             <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster4+shard1+oy">
                 <redis id="unknown" ip="127.0.0.1" port="6401" master="0.0.0.0:0"/>
                 <redis id="unknown" ip="127.0.0.1" port="6402" master="0.0.0.0:0"/>
+            </shard>
+        </cluster>
+        <cluster id="cluster5" active-dc="jq" backup-dcs="oy" org-id="1" type="ONE_WAY">
+            <shard id="shard2" sentinelId="1" sentinelMonitorName="cluster5+shard2+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6407" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6408" master="0.0.0.0:0"/>
+            </shard>
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="cluster5+shard1+oy">
+                <redis id="unknown" ip="127.0.0.1" port="6409" master="0.0.0.0:0"/>
+                <redis id="unknown" ip="127.0.0.1" port="6410" master="0.0.0.0:0"/>
             </shard>
         </cluster>
     </dc>

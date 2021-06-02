@@ -38,7 +38,6 @@ import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationLockTest;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
@@ -58,7 +57,6 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
-import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationExecuteLockTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import org.junit.runner.RunWith;
@@ -170,9 +168,7 @@ import org.junit.runners.Suite.SuiteClasses;
         NettyKeyedPoolClientFactoryTest.class,
         UnhealthyClusterCheckerTest.class,
 
-        DefaultMigrationLockTest.class,
         MigrationEventConcurrentCreateTest.class,
-        MigrationExecuteLockTest.class,
         BeaconMetaServiceImplTest.class,
         BeaconMigrationServiceImplTest.class,
         MigrationApiTest.class,

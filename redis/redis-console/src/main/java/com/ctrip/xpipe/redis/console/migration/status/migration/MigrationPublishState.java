@@ -21,7 +21,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 	public MigrationPublishState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Publish);
 		this.setNextAfterSuccess(new MigrationSuccessState(getHolder()))
-			.setNextAfterFail(this);
+			.setNextAfterFail(new MigrationPublishFailState(getHolder()));
 	}
 
 	@Override
