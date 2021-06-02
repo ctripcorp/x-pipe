@@ -472,14 +472,17 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     boolean doAdd = true;
                     try {
                         HostPort masterHostPort = sentinelManager.getMasterOfMonitor(sentinel, hello.getMonitorName());
-                        if (hello.getMasterAddr().equals(masterHostPort)) {
-                            doAdd = false;
-                            logger.info("[{}-{}][already exist]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
-                        } else {
-                            sentinelManager.removeSentinelMonitor(sentinel, hello.getMonitorName());
+                        if (masterHostPort != null) {
+                            if (hello.getMasterAddr().equals(masterHostPort)) {
+                                doAdd = false;
+                                logger.info("[{}-{}][already exist]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
+                            } else {
+                                sentinelManager.removeSentinelMonitor(sentinel, hello.getMonitorName());
+                                logger.info("[{}-{}][removed wrong master]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
+                            }
                         }
                     } catch (Exception e) {
-                        //ingnore
+                        logger.warn("[{}-{}][check master exist error]{}", LOG_TITLE, sentinelMonitorName, hello.getSentinelAddr());
                     }
                     if (doAdd) {
                         CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);

@@ -101,7 +101,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         HostPort result = null;
         try {
             result = sentinelMaster.execute().get();
-            logger.info("[getMasterOfMonitor]getMasterOfMonitor {} from {} : {}", sentinelMonitorName, sentinel, result);
+            logger.info("[getMasterOfMonitor] {} from {} : {}", sentinelMonitorName, sentinel, result);
         } catch (Exception e) {
             logger.error("[getMasterOfMonitor] {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
         }
@@ -118,10 +118,10 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         silentCommand(sentinelRemove);
         try {
             String result = sentinelRemove.execute().get();
-            logger.info("[removeSentinels]removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, result);
+            logger.info("[removeSentinels] {} from {} : {}", sentinelMonitorName, sentinel, result);
 
         } catch (Exception e) {
-            logger.error("[removeSentinels]removeSentinelMonitor {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
+            logger.error("[removeSentinels] {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
         }
     }
 
