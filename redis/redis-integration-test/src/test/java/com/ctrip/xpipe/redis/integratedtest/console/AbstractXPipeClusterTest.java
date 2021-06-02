@@ -1,12 +1,11 @@
 package com.ctrip.xpipe.redis.integratedtest.console;
 
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareRequest;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
@@ -33,6 +32,7 @@ import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KE
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_CHECKER_META_REFRESH_INTERVAL;
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_SENTINEL_CHECK_INTERVAL;
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_METASERVERS;
+import static com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService.BEACON_GROUP_SEPARATOR;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
 import static com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig.KEY_REPLICATION_STORE_COMMANDFILE_SIZE;
 import static com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig.KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB;
@@ -169,6 +169,11 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
     }
 
     protected void tryMigration(String console, String cluster, String src, String dest) {
+        long ticketId = tryPrepareMigration(console, cluster, src, dest);
+        tryDoMigration(console, ticketId);
+    }
+
+    protected long tryPrepareMigration(String console, String cluster, String src, String dest) {
         CheckPrepareRequest prepareRequest = new CheckPrepareRequest();
         prepareRequest.setClusters(Collections.singletonList(cluster));
         prepareRequest.setFromIdc(src);
@@ -176,13 +181,64 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         prepareRequest.setIsForce(false);
 
         CheckPrepareResponse prepareResp = restTemplate.postForObject(console + "/api/migration/checkandprepare", prepareRequest, CheckPrepareResponse.class);
-        if (!prepareResp.getResults().get(0).isSuccess()) Assert.fail("migration prepare fail " + prepareResp.getResults().get(0).getFailReason());
+        if (!prepareResp.getResults().get(0).isSuccess()) {
+            logger.info("[tryPrepareMigration][{}][{}] {}->{}: {}", console, cluster, src, dest, prepareResp);
+            Assert.fail("migration prepare fail " + prepareResp.getResults().get(0).getFailReason());
+        }
 
+        return prepareResp.getTicketId();
+    }
+
+    protected void tryDoMigration(String console, long ticketId) {
         DoRequest doRequest = new DoRequest();
-        doRequest.setTicketId(prepareResp.getTicketId());
+        doRequest.setTicketId(ticketId);
         DoResponse doResp = restTemplate.postForObject(console + "/api/migration/domigration", doRequest, DoResponse.class);
 
-        if (!doResp.isSuccess()) Assert.fail("do migration fail " + doResp.getMsg());
+        if (!doResp.isSuccess()) {
+            logger.info("[tryDoMigration][{}][{}] {}", console, ticketId, doResp);
+            Assert.fail("do migration fail " + doResp.getMsg());
+        }
+    }
+
+    protected void tryBeaconAutoMigration(String console, String cluster, Set<MonitorGroupMeta> groups, Set<String> failDcs) {
+        BeaconMigrationRequest migrationReq = new BeaconMigrationRequest();
+        migrationReq.setClusterName(cluster);
+        migrationReq.setFailoverGroups(failDcs);
+        migrationReq.setGroups(groups);
+
+        BeaconMigrationResponse migrationResp = restTemplate.postForObject(console + "/api/beacon/migration/sync", migrationReq, BeaconMigrationResponse.class);
+
+        if (!migrationResp.isSuccess()) {
+            logger.info("[tryBeaconForceMigration][{}][{}] {}, {}", console, cluster, migrationReq, migrationResp);
+            Assert.fail("do migration fail " + migrationResp.getMsg());
+        }
+    }
+
+    protected Set<MonitorGroupMeta> buildMonitorMeta(Map<String, Map<String, Set<HostPort>>> meta, String activeDc) {
+        Set<MonitorGroupMeta> monitorMeta = new HashSet<>();
+        meta.forEach((dc, groupMeta) -> {
+            groupMeta.forEach((groupName, nodes) -> {
+                MonitorGroupMeta monitorGroupMeta = new MonitorGroupMeta(String.join(BEACON_GROUP_SEPARATOR, groupName, dc), dc, nodes, activeDc.equalsIgnoreCase(dc));
+                monitorGroupMeta.setDown(activeDc.equalsIgnoreCase(dc));
+                monitorMeta.add(monitorGroupMeta);
+            });
+        });
+
+        return monitorMeta;
+    }
+
+    protected void tryBeaconForceMigration(String console, String cluster, String dest) {
+        BeaconMigrationRequest migrationReq = new BeaconMigrationRequest();
+        migrationReq.setClusterName(cluster);
+        migrationReq.setIsForced(true);
+        migrationReq.setTargetIDC(dest);
+
+        BeaconMigrationResponse migrationResp = restTemplate.postForObject(console + "/api/beacon/migration/sync", migrationReq, BeaconMigrationResponse.class);
+
+        if (!migrationResp.isSuccess()) {
+            logger.info("[tryBeaconForceMigration][{}][{}] to {}, {}", console, cluster, dest, migrationResp);
+            Assert.fail("do migration fail " + migrationResp.getMsg());
+        }
     }
 
     /* --------- wait condition --------- */
