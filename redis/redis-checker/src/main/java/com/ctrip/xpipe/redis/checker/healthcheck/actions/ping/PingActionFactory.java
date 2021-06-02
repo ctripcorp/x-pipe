@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.PING_DELAY_EXECUTORS;
-import static com.ctrip.xpipe.redis.checker.resource.Resource.PING_DELAY_SCHEDULED;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.PING_DELAY_INFO_EXECUTORS;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.PING_DELAY_INFO_SCHEDULED;
 
 /**
  * @author chen.zhu
@@ -30,10 +30,10 @@ import static com.ctrip.xpipe.redis.checker.resource.Resource.PING_DELAY_SCHEDUL
 @Component
 public class PingActionFactory implements RedisHealthCheckActionFactory<PingAction>, OneWaySupport, BiDirectionSupport {
 
-    @Resource(name = PING_DELAY_SCHEDULED)
+    @Resource(name = PING_DELAY_INFO_SCHEDULED)
     private ScheduledExecutorService scheduled;
 
-    @Resource(name = PING_DELAY_EXECUTORS)
+    @Resource(name = PING_DELAY_INFO_EXECUTORS)
     private ExecutorService executors;
 
     @Autowired

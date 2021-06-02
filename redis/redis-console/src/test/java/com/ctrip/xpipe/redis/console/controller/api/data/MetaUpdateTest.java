@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;

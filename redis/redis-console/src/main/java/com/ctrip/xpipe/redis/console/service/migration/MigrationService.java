@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;

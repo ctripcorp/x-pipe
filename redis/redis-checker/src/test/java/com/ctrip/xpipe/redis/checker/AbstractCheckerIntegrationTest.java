@@ -129,12 +129,12 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
             return keyedObjectPool;
         }
 
-        @Bean(name = PING_DELAY_EXECUTORS)
+        @Bean(name = PING_DELAY_INFO_EXECUTORS)
         public ExecutorService getDelayPingExecturos() {
             return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-").createExecutorService();
         }
 
-        @Bean(name = PING_DELAY_SCHEDULED)
+        @Bean(name = PING_DELAY_INFO_SCHEDULED)
         public ScheduledExecutorService getDelayPingScheduled() {
             ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2,
                     XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));

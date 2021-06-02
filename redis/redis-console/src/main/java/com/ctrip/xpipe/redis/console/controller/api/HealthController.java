@@ -2,8 +2,11 @@ package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -12,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,11 +34,23 @@ public class HealthController extends AbstractConsoleController{
     @Autowired
     private DefaultCrossMasterDelayService crossMasterDelayService;
 
+    @Autowired
+    private RedisInfoService infoService;
+
     @RequestMapping(value = "/redis/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Long getReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {
         return delayService.getDelay(new HostPort(redisIp, redisPort));
     }
 
+    @RequestMapping(value = "/redis/info/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String redisIp, @PathVariable int redisPort) {
+        return ActionContextRetMessage.from(infoService.getInfoByHostPort(new HostPort(redisIp, redisPort)));
+    }
+
+    @RequestMapping(value = "/redis/info/all", method = RequestMethod.GET)
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
+        return ActionContextRetMessage.map(infoService.getAllInfos());
+    }
 
     @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
     public Long getInnerReplDelayMillis(@PathVariable String redisIp, @PathVariable int redisPort) {

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import org.slf4j.Logger;

@@ -3,11 +3,10 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -23,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
-import static com.ctrip.xpipe.redis.console.controller.api.RetMessage.FAIL_STATE;
+import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.FAIL_STATE;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
