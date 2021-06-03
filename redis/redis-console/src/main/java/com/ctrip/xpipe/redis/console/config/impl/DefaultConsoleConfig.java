@@ -434,7 +434,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public int getMigrationTimeoutMilli() {
-        return getIntProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000);
+    public long getMigrationTimeoutMilli() {
+        return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
 }
