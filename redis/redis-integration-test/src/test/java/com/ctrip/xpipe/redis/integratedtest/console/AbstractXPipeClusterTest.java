@@ -27,6 +27,8 @@ import org.springframework.web.client.RestOperations;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
@@ -200,6 +202,21 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         }, waitTimeMilli, 2000);
     }
 
+    protected Object waitForServerResp(String healthUrl, Class<?> respType, int waitTimeMilli) throws Exception {
+        AtomicReference<Object> result = new AtomicReference<>();
+        waitConditionUntilTimeOut(() -> {
+            try {
+                Object resp = restTemplate.getForObject(healthUrl, respType);
+                logger.info("[waitForServerRespAsExpected] resp for {}, {}", healthUrl, resp);
+                result.set(resp);
+                return true;
+            } catch (Throwable th) {
+                return false;
+            }
+        }, waitTimeMilli, 2000);
+        return result.get();
+    }
+
     protected void waitForServerRespAsExpected(String healthUrl, Class<?> respType, Object expected, int waitTimeMilli) throws Exception {
         waitConditionUntilTimeOut(() -> {
             try {
@@ -288,6 +305,16 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
                 logger.info("[cleanupSubProcesses][{}] kill thread fail", subProcess, th);
             }
         }
+    }
+
+    protected boolean isAllProcessAlive() {
+        for (ForkProcessCmd subProcess: subProcessCmds) {
+            logger.info("[checkAllProcessAlive][{}]", subProcess);
+            if (!subProcess.isProcessAlive()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected void checkAllProcessAlive() {
