@@ -128,6 +128,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getCheckerAckTimeoutMilli();
 
-	int getMigrationTimeoutMilli();
+	long getMigrationTimeoutMilli();
 
 }

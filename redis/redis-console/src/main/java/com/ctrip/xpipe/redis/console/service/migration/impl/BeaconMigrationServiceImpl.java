@@ -99,7 +99,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, migrationExecutors));
         CommandFuture<?> future = migrateSequenceCmd.execute(prepareExecutors);
 
-        int timeoutMilli = config.getMigrationTimeoutMilli();
+        long timeoutMilli = config.getMigrationTimeoutMilli();
         ScheduledFuture<?> scheduledFuture = scheduled.schedule(() -> {
             if (future.isDone()) {
                 // already done, do nothing
