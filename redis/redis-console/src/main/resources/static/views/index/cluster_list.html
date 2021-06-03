@@ -48,8 +48,8 @@
                 </div></td>
                 <td ng-if="showUnhealthy" data-title="'问题分片数'" ng-bind="cluster.unhealthyShardsCnt" sortable="'unhealthyShardsCnt'" ></td>
                 <td ng-if="showUnhealthy" data-title="'问题实例数'" ng-bind="cluster.unhealthyRedisCnt" sortable="'unhealthyRedisCnt'" ></td>
-                <td ng-if="showMigrating" data-title="'ClusterStatus'" ng-bind="cluster.status"></td>
-                <td ng-if="showMigrating" data-title="'MigrationStatus'" ng-bind="cluster.migrationClusters.status"></td>
+                <td ng-if="showErrorMigrating || showMigrating" data-title="'ClusterStatus'" ng-bind="cluster.status"></td>
+                <td ng-if="showErrorMigrating || showMigrating" data-title="'MigrationStatus'" ng-bind="cluster.migrationClusters.status"></td>
                 <td ng-if="true" data-title="'主数据中心'" filter="{activedcId: 'select'}" filter-data="dcsFilterData" ng-bind="getClusterActiveDc(cluster)"></td>
                 <td data-title="'集群类型'" filter="{clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(cluster.clusterType)"></td>
                 <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
