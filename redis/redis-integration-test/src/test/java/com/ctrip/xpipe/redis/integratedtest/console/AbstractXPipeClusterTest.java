@@ -21,7 +21,9 @@ import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.FileUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.springframework.web.client.RestOperations;
 
 import java.io.File;
@@ -50,6 +52,24 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
     private List<ForkProcessCmd> subProcessCmds;
 
     private List<Integer> redisPorts;
+
+    private static int h2Port = 9123;
+
+    private static org.h2.tools.Server h2Server;
+
+    @BeforeClass
+    public static void setupAbstractXPipeClusterTest() throws Exception {
+        h2Server = org.h2.tools.Server.createTcpServer("-tcpPort", String.valueOf(h2Port), "-tcpAllowOthers");
+        h2Server.start();
+    }
+
+    @AfterClass
+    public static void afterAbstractXPipeClusterTest() throws Exception {
+        if (null != h2Server) {
+            h2Server.shutdown();
+            h2Server.stop();
+        }
+    }
 
     @Override
     public void before() {
