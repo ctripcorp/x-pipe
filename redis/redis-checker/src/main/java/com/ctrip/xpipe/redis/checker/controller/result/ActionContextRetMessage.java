@@ -36,6 +36,10 @@ public class ActionContextRetMessage<C> extends GenericRetMessage<C> {
         return result;
     }
 
+    public ActionContextRetMessage() {
+
+    }
+
     public <I extends CheckInfo, T extends HealthCheckInstance<I>> ActionContextRetMessage(ActionContext<C, T> context) {
         if (context.isFail()) {
             setState(FAIL_STATE);
