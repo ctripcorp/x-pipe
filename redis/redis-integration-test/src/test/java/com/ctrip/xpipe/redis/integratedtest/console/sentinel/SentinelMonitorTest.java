@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
-import com.ctrip.xpipe.redis.integratedtest.console.dr.DRTest;
+import com.ctrip.xpipe.redis.integratedtest.console.AbstractXPipeDrTest;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutionException;
  * @author lishanglin
  * date 2021/4/7
  */
-public class SentinelMonitorTest extends DRTest {
+public class SentinelMonitorTest extends AbstractXPipeDrTest {
 
     private Map<String, List<HostPort>> dcSentinels = new HashMap<String, List<HostPort>>() {{
         put("jq", Arrays.asList(new HostPort("127.0.0.1", 5000), new HostPort("127.0.0.1", 5001), new HostPort("127.0.0.1", 5002)));
