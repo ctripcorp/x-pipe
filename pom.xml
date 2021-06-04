@@ -34,7 +34,7 @@
         <unidal.plexus.version>2.5.8</unidal.plexus.version>
         <commons-pool.version>2.3</commons-pool.version>
         <commons-lang3.version>3.4</commons-lang3.version>
-        <commons-httpclient.version>4.5.2</commons-httpclient.version>
+        <commons-httpclient.version>4.5.13</commons-httpclient.version>
         <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
         <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
