@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomeBackupAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomePrimaryAction;
+import com.ctrip.xpipe.redis.meta.server.dcchange.impl.ClusterShardCachedNewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.job.ChangePrimaryDcJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -95,7 +96,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
-					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
+					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterId, shardId), scheduled, executors);
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
 					newPrimaryDc, masterInfo);
 			int timeout = DEFAULT_SO_TIMEOUT / 2;
@@ -145,8 +146,12 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 				newPrimaryDc, masterInfo);
 	}
 
-	private NewMasterChooser createNewMasterChooser() {
-		return new FirstNewMasterChooser(keyedObjectPool, scheduled, executors);
+	private NewMasterChooser wrapCachedNewMasterChooser(String cluster, String shard, NewMasterChooser chooser) {
+		return ClusterShardCachedNewMasterChooser.wrapChooser(cluster, shard, chooser, metaServerConfig::getNewMasterCacheTimeoutMilli, scheduled);
+	}
+
+	private NewMasterChooser createNewMasterChooser(String cluster, String shard) {
+		return wrapCachedNewMasterChooser(cluster, shard, new FirstNewMasterChooser(keyedObjectPool, scheduled, executors));
 	}
 
 	@VisibleForTesting
