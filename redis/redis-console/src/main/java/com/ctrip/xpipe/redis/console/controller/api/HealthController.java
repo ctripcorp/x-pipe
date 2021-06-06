@@ -3,19 +3,20 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
-import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
-import com.ctrip.xpipe.redis.console.service.DelayService;
-import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,14 +43,14 @@ public class HealthController extends AbstractConsoleController{
         return delayService.getDelay(new HostPort(redisIp, redisPort));
     }
 
-    @RequestMapping(value = "/redis/info/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String redisIp, @PathVariable int redisPort) {
-        return ActionContextRetMessage.from(infoService.getInfoByHostPort(new HostPort(redisIp, redisPort)));
+    @RequestMapping(value = "/redis/info/local", produces = "application/json;charset=UTF-8", method = RequestMethod.GET)
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllRedisInfo() {
+        return infoService.getLocalAllInfosRetMessage();
     }
 
-    @RequestMapping(value = "/redis/info/all", method = RequestMethod.GET)
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
-        return ActionContextRetMessage.map(infoService.getAllInfos());
+    @RequestMapping(value = "/redis/info/global", produces = "application/json;charset=UTF-8", method = RequestMethod.GET)
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllRedisInfo() {
+        return infoService.getGlobalAllInfosRetMessage();
     }
 
     @RequestMapping(value = "/redis/inner/delay/{redisIp}/{redisPort}", method = RequestMethod.GET)
