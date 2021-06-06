@@ -34,8 +34,4 @@ public class GenericRetMessage<T> extends RetMessage {
         this.payload = payload;
     }
 
-    public GenericRetMessage setMessage(T payload) {
-        this.payload = payload;
-        return this;
-    }
 }
