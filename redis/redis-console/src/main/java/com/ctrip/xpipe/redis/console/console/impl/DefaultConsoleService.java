@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
+import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
@@ -39,6 +41,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String crossMasterDelayUrl;
 
+    private final String allLocalRedisInfosUrl;
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
 
@@ -60,6 +64,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         allUnhealthyInstanceUrl = String.format("%s/api/redis/inner/unhealthy/all", this.address);
         crossMasterDelayUrl = String.format("%s/api/cross-master/delay/{dcId}/{cluster}/{shard}", this.address);
         innerCrossMasterDelayUrl = String.format("%s/api/cross-master/inner/delay/{cluster}/{shard}", this.address);
+        allLocalRedisInfosUrl = String.format("%s/api/redis/info/local", this.address);
     }
 
     @Override
@@ -111,6 +116,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         ResponseEntity<Map<String, Pair<HostPort, Long>>> response = restTemplate.exchange(crossMasterDelayUrl, HttpMethod.GET,
                 null, crossMasterDelayDef, sourceDcId, clusterId, shardId);
         return response.getBody();
+    }
+
+    @Override
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos() {
+        return restTemplate.getForObject(allLocalRedisInfosUrl, InfoActionContext.ResultMap.class);
     }
 
     @Override

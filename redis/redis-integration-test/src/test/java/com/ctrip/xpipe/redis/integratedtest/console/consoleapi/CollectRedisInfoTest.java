@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.console.consoleapi;
 
-import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.integratedtest.console.AbstractXPipeClusterTest;
 import org.junit.After;
@@ -11,9 +12,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector.KEY_CONSOLE_ID;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author Slight
@@ -29,9 +27,6 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
     private String zkJQ;
 
     private String zkOY;
-
-    private String consoleId8080 = "jq8080";
-    private String consoleId8081 = "jq8081";
 
     @Before
     public void setUpRedisInfoTest() {
@@ -57,22 +52,8 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
         return prepareDatasFromFile("src/test/resources/xpipe-dr.sql");
     }
 
-    public static class Message extends ActionContextRetMessage<Map<String, String>> {
-
-        public Message() {
-
-        }
-    }
-
-    public static class MessageMap extends HashMap<String, ActionContextRetMessage<Map<String, String>>> {
-
-        public MessageMap() {
-        }
-
-    }
-
     @Test
-    public void testStandaloneConsole() throws Exception {
+    public void testFullFeaturedConsole() throws Exception {
 
         startZk(IdcUtil.JQ_ZK_PORT);
         startZk(IdcUtil.OY_ZK_PORT);
@@ -83,21 +64,48 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
         startRedis(6379);
         startRedis(7379);
 
-        startConsole(8080, "jq", zkJQ, Collections.singletonList("127.0.0.1:8080"), consoles, metaServers, Collections.singletonMap(KEY_CONSOLE_ID, consoleId8080));
-        startConsole(8081, "oy", zkOY, Collections.singletonList("127.0.0.1:8081"), consoles, metaServers, Collections.singletonMap(KEY_CONSOLE_ID, consoleId8081));
+        startConsole(8080, "jq", zkJQ, Collections.singletonList("127.0.0.1:8080"), consoles, metaServers);
+        startConsole(8081, "oy", zkOY, Collections.singletonList("127.0.0.1:8081"), consoles, metaServers);
 
         waitConditionUntilTimeOut(this::isAllProcessAlive);
 
-        Message single = (Message) waitForServerResp("http://127.0.0.1:8080/api/redis/info/127.0.0.1/6379", Message.class, 60000);
+        waitForServerResp("http://127.0.0.1:8080/api/health/redis/info/127.0.0.1/6379", InfoActionContext.Result.class, 60000,
+                (health)-> "master".equals(((InfoActionContext.Result) health).getPayload().get("role")));
 
-        assertEquals("master", single.getPayload().get("role"));
+        waitForServerResp("http://127.0.0.1:8080/api/health/redis/info/all", InfoActionContext.ResultMap.class, 60000,
+                (healthAll)-> "master".equals(((InfoActionContext.ResultMap) healthAll).get(HostPort.fromString("127.0.0.1:6379")).getPayload().get("role")));
 
-        MessageMap all = (MessageMap) waitForServerResp("http://127.0.0.1:8080/api/redis/info/all", MessageMap.class, 60000);
-
-        assertEquals("master", all.get("127.0.0.1:6379").getPayload().get("role"));
+        waitForServerResp("http://127.0.0.1:8081/api/redis/info/global", InfoActionContext.ResultMap.class, 60000,
+                (all)-> "master".equals(((InfoActionContext.ResultMap) all).get(HostPort.fromString("127.0.0.1:6379")).getPayload().get("role")));
     }
 
     @Test
-    public void testCheckerAndConsole() {
+    public void testCheckerAndConsole() throws Exception {
+
+        startZk(IdcUtil.JQ_ZK_PORT);
+        startZk(IdcUtil.OY_ZK_PORT);
+
+        startH2Server();
+        setUpTestDataSource();
+
+        startRedis(6379);
+        startRedis(7379);
+
+        startStandaloneConsole(8080, "jq", zkJQ, Collections.singletonList("127.0.0.1:8080"), consoles, Collections.emptyMap());
+        startChecker(18080, "jq", zkJQ, Collections.singletonList("127.0.0.1:8080"));
+
+        startStandaloneConsole(8081, "oy", zkOY, Collections.singletonList("127.0.0.1:8081"), consoles, Collections.emptyMap());
+        startChecker(18081, "oy", zkOY, Collections.singletonList("127.0.0.1:8081"));
+
+        waitConditionUntilTimeOut(this::isAllProcessAlive);
+
+        waitForServerResp("http://127.0.0.1:18080/api/health/redis/info/127.0.0.1/6379", InfoActionContext.Result.class, 60000,
+                (health)-> "master".equals(((InfoActionContext.Result) health).getPayload().get("role")));
+
+        waitForServerResp("http://127.0.0.1:18080/api/health/redis/info/all", InfoActionContext.ResultMap.class, 60000,
+                (healthAll)-> "master".equals(((InfoActionContext.ResultMap) healthAll).get(HostPort.fromString("127.0.0.1:6379")).getPayload().get("role")));
+
+        waitForServerResp("http://127.0.0.1:8081/api/redis/info/global", InfoActionContext.ResultMap.class, 60000,
+                (all)-> "master".equals(((InfoActionContext.ResultMap) all).get(HostPort.fromString("127.0.0.1:6379")).getPayload().get("role")));
     }
 }

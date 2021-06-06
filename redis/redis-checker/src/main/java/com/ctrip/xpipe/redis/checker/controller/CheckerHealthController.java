@@ -60,12 +60,12 @@ public class CheckerHealthController {
         return Codec.DEFAULT.encode(model);
     }
 
-    @RequestMapping(value = "/health/info/redis/{ip}/{port}", method = RequestMethod.GET)
+    @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
     public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
         return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
     }
 
-    @RequestMapping(value = "/health/info/redis/all", method = RequestMethod.GET)
+    @RequestMapping(value = "/health/redis/info/all", method = RequestMethod.GET)
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
         return ActionContextRetMessage.map(redisInfoManager.getAllInfos());
     }
