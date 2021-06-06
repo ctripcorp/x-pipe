@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
+import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
 import com.ctrip.xpipe.redis.checker.impl.DefaultRemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -88,6 +89,11 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         @Bean
         public PingService pingService() {
             return new DefaultPingService();
+        }
+
+        @Bean
+        public CheckerRedisInfoManager redisInfoManager() {
+            return new CheckerRedisInfoManager();
         }
 
         @Bean
