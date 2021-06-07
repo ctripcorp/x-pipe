@@ -34,7 +34,9 @@ public class StateBackupDeadlockTest extends AbstractFakeRedisTest {
 
     @Test
     public void test() throws Exception {
-        for (int i = 0; i < 5000; i++) {
+        //so many logs that pipeline does not pass, so loop for 10 times
+        //you can increase the loop time to make sure the problem appear
+        for (int i = 0; i < 10; i++) {
             keeperServerB.getRedisKeeperServerState().becomeBackup(new DefaultEndPoint("localhost", keeperServerA.getListeningPort()));
             keeperServerB.getRedisKeeperServerState().psync(new DefaultRedisClient(new EmbeddedChannel(), keeperServerB), null);
             CountDownLatch latch = new CountDownLatch(2);
