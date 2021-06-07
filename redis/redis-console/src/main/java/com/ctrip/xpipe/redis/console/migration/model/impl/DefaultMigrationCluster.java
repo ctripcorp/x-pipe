@@ -253,6 +253,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         MigrationStatus migrationStatus = this.currentState.getStatus();
         ClusterStatus clusterStatus = migrationStatus.getClusterStatus();
+        long migrationEventId = this.migrationCluster.getMigrationEventId();
 
         logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
         RetryTemplate<String> retryTemplate = new RetryNTimesOnCondition<>(new RetryCondition.AbstractRetryCondition<String>() {
@@ -272,7 +273,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
             @Override
             protected void doExecute() throws Exception {
                 try {
-                    getClusterService().updateStatusById(clusterId(), clusterStatus);
+                    getClusterService().updateStatusById(clusterId(), clusterStatus, migrationEventId);
                     ClusterTbl newCluster = getClusterService().find(clusterName());
                     future().setSuccess(newCluster.getStatus());
                 } catch (Exception e) {

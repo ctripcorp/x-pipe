@@ -108,7 +108,7 @@ public class MigrationStatTest extends AbstractConsoleTest {
                 clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
                 return null;
             }
-        }).when(mockedClusterService).updateStatusById(anyInt(), any());
+        }).when(mockedClusterService).updateStatusById(anyInt(), any(), anyLong());
     }
 
 }

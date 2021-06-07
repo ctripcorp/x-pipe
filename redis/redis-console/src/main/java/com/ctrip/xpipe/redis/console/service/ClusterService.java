@@ -30,7 +30,7 @@ public interface ClusterService {
 	void updateCluster(String clusterName, ClusterTbl cluster);
 
 	void updateActivedcId(long id, long activeDcId);
-	void updateStatusById(long id, ClusterStatus clusterStatus);
+	void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId);
 	void deleteCluster(String clusterName);
 	void bindDc(String clusterName, String dcName);
 	void unbindDc(String clusterName, String dcName);
@@ -42,7 +42,7 @@ public interface ClusterService {
 	List<ClusterTbl> findMigratingClusters();
 	default void resetClustersStatus(List<Long> ids) {
 		for (Long id : ids) {
-			updateStatusById(id, ClusterStatus.Normal);
+			updateStatusById(id, ClusterStatus.Normal, 0L);
 		}
 	}
 
