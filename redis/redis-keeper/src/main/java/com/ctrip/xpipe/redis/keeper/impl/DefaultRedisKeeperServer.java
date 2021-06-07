@@ -38,10 +38,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
-import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -91,7 +88,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	private long keeperStartTime;
 	
-	private ReplicationStoreManager replicationStoreManager;
+	@VisibleForTesting ReplicationStoreManager replicationStoreManager;
 
 	private ServerSocketChannel serverSocketChannel;
 	
