@@ -118,7 +118,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         ClusterStatus oldStatus = ClusterStatus.valueOf(clusterTbl.getStatus());
         ClusterStatus newStatus = ClusterStatus.different(oldStatus);
 
-        clusterService.updateStatusById(clusterTbl.getId(), newStatus);
+        clusterService.updateStatusById(clusterTbl.getId(), newStatus, 0L);
 
         ClusterTbl newCluster = clusterService.find(clusterName);
 

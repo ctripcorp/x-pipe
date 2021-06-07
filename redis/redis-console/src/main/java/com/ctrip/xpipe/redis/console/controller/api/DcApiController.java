@@ -55,7 +55,7 @@ public class DcApiController extends AbstractConsoleController {
                 if (ClusterStatus.isSameClusterStatus(cluster.getStatus(), ClusterStatus.Normal)) {
                     continue;
                 }
-                clusterService.updateStatusById(cluster.getId(), ClusterStatus.Normal);
+                clusterService.updateStatusById(cluster.getId(), ClusterStatus.Normal, 0L);
             }
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());

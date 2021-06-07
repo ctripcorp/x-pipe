@@ -324,11 +324,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void updateStatusById(long id, ClusterStatus clusterStatus) {
+	public void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId) {
 
 		ClusterTbl clusterTbl = new ClusterTbl();
 		clusterTbl.setId(id);
 		clusterTbl.setStatus(clusterStatus.toString());
+		clusterTbl.setMigrationEventId(migrationEventId);
 
 		if (clusterStatus.equals(ClusterStatus.Normal)) {
 			// reset migration id when exit migration
