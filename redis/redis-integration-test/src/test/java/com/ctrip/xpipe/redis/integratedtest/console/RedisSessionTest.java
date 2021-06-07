@@ -163,10 +163,10 @@ public class RedisSessionTest extends AbstractIntegratedTest {
 
     @Test
     public void testInfo() throws InterruptedException {
-        redisSession.info("server", new Callbackable<String>() {
+        redisSession.info("replication", new Callbackable<String>() {
             @Override
             public void success(String message) {
-                logger.info("[info] message: ", message);
+                logger.info("[info] message: {}", message);
             }
 
             @Override

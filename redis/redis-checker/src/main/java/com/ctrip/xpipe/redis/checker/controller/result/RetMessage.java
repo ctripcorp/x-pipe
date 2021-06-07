@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.api;
+package com.ctrip.xpipe.redis.checker.controller.result;
 
 import java.util.Objects;
 
@@ -18,7 +18,6 @@ public class RetMessage {
     private int state;
 
     private String message;
-
 
     public static RetMessage createFailMessage(String message){
         return new RetMessage(FAIL_STATE, message);
@@ -40,18 +39,21 @@ public class RetMessage {
 
     }
 
-    public  RetMessage(int state){
+    public RetMessage(int state){
         this.state = state;
     }
 
-    public  RetMessage(int state, String message){
-
+    public RetMessage(int state, String message){
         this.state = state;
-        this.message  = message;
+        this.message = message;
     }
 
     public int getState() {
         return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
     }
 
     public String getMessage() {
@@ -60,10 +62,6 @@ public class RetMessage {
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    public void setState(int state) {
-        this.state = state;
     }
 
     @Override
