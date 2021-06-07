@@ -106,23 +106,25 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 			logger.info("[update]{},{},{}", redisClient, updateArgs, observable);
 			
 			if(updateArgs instanceof KeeperServerStateChanged){
-				
-				try {
-					new PsyncHandler().handle(args, redisClient);
-				} catch (Exception e) {
-					logger.error("[update]" + updateArgs+ "," + observable + "," + redisClient, e);
+
+				redisClient.getRedisKeeperServer().processCommandSequentially(()-> {
 					try {
-						redisClient.close();
-					} catch (IOException e1) {
-						logger.error("[update][closeclient]" + redisClient, e);
-					}
-				}finally{
-					try {
-						release();
+						new PsyncHandler().handle(args, redisClient);
 					} catch (Exception e) {
-						logger.error("[update][release]" + updateArgs+ "," + observable + "," + redisClient, e);
+						logger.error("[update]" + updateArgs + "," + observable + "," + redisClient, e);
+						try {
+							redisClient.close();
+						} catch (IOException e1) {
+							logger.error("[update][closeclient]" + redisClient, e);
+						}
+					} finally {
+						try {
+							release();
+						} catch (Exception e) {
+							logger.error("[update][release]" + updateArgs + "," + observable + "," + redisClient, e);
+						}
 					}
-				}
+				});
 			}
 		}
 
