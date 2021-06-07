@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
+import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
 import com.ctrip.xpipe.redis.checker.impl.DefaultRemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -91,6 +92,11 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         }
 
         @Bean
+        public CheckerRedisInfoManager redisInfoManager() {
+            return new CheckerRedisInfoManager();
+        }
+
+        @Bean
         public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
             return new DefaultRemoteCheckerManager(checkerConfig);
         }
@@ -129,12 +135,12 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
             return keyedObjectPool;
         }
 
-        @Bean(name = PING_DELAY_EXECUTORS)
+        @Bean(name = PING_DELAY_INFO_EXECUTORS)
         public ExecutorService getDelayPingExecturos() {
             return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("RedisHealthCheckInstance-").createExecutorService();
         }
 
-        @Bean(name = PING_DELAY_SCHEDULED)
+        @Bean(name = PING_DELAY_INFO_SCHEDULED)
         public ScheduledExecutorService getDelayPingScheduled() {
             ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2,
                     XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));

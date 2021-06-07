@@ -8,6 +8,12 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareRequest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.CheckPrepareResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoRequest;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.DoResponse;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
@@ -28,11 +34,17 @@ import org.springframework.web.client.RestOperations;
 
 import java.io.File;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
+import static com.ctrip.xpipe.redis.checker.cluster.CheckerLeaderElector.KEY_CHECKER_ID;
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_CHECKER_META_REFRESH_INTERVAL;
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_SENTINEL_CHECK_INTERVAL;
+import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
+import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CHECKER;
+import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
+import static com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector.KEY_CONSOLE_ID;
 import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY_METASERVERS;
 import static com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService.BEACON_GROUP_SEPARATOR;
 import static com.ctrip.xpipe.redis.core.config.AbstractCoreConfig.KEY_ZK_ADDRESS;
@@ -106,6 +118,29 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         redisPorts.add(port);
         subProcessCmds.add(redis);
         return redis;
+    }
+
+    protected ServerStartCmd startChecker(int port, String idc, String zk, List<String> localDcConsoles) {
+        return startConsole(port, idc, zk,
+                localDcConsoles, Collections.emptyMap(),
+                Collections.emptyMap(),
+                new HashMap<String, String>() {{
+                    put(KEY_CONSOLE_ADDRESS, "http://" + localDcConsoles.get(0));
+                    put(KEY_CHECKER_ID, idc + port);
+                    put(KEY_SERVER_MODE, CHECKER.name());
+                }});
+    }
+
+    protected ServerStartCmd startStandaloneConsole(int port, String idc, String zk,
+                                                    List<String> localDcConsoles, Map<String, String> crossDcConsole,
+                                                    Map<String, String> metaservers) {
+        return startConsole(port, idc, zk,
+                localDcConsoles, crossDcConsole,
+                metaservers,
+                new HashMap<String, String>() {{
+                    put(KEY_CONSOLE_ID, idc + port);
+                    put(KEY_SERVER_MODE, CONSOLE.name());
+                }});
     }
 
     protected ServerStartCmd startConsole(int port, String idc, String zk, List<String> localDcConsoles,
@@ -276,6 +311,18 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         }, waitTimeMilli, 2000);
     }
 
+    protected void waitForServerResp(String healthUrl, Class<?> respType, int waitTimeMilli, Predicate<Object> predicate) throws Exception {
+        waitConditionUntilTimeOut(() -> {
+            try {
+                Object resp = restTemplate.getForObject(healthUrl, respType);
+                logger.info("[waitForServerRespAsExpected] resp for {}, {}", healthUrl, resp);
+                return predicate.test(resp);
+            } catch (Throwable th) {
+                return false;
+            }
+        }, waitTimeMilli, 2000);
+    }
+
     protected void waitForServerRespAsExpected(String healthUrl, Class<?> respType, Object expected, int waitTimeMilli) throws Exception {
         waitConditionUntilTimeOut(() -> {
             try {
@@ -364,6 +411,16 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
                 logger.info("[cleanupSubProcesses][{}] kill thread fail", subProcess, th);
             }
         }
+    }
+
+    protected boolean isAllProcessAlive() {
+        for (ForkProcessCmd subProcess: subProcessCmds) {
+            logger.info("[checkAllProcessAlive][{}]", subProcess);
+            if (!subProcess.isProcessAlive()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected void checkAllProcessAlive() {
