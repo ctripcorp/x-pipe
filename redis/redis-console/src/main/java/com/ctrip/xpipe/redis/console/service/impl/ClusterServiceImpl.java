@@ -344,7 +344,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			queryHandler.handleUpdate(new DalQuery<Integer>() {
 				@Override
 				public Integer doQuery() throws DalException {
-					return dao.updateStatusById(clusterTbl, ClusterTblEntity.UPDATESET_FULL);
+					return dao.updateStatusById(clusterTbl, ClusterTblEntity.UPDATESET_MIGRATION_STATUS);
 				}
 			});
 		}
