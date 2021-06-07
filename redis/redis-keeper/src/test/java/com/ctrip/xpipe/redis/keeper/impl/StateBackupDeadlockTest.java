@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
-import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
@@ -12,8 +11,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Slight
