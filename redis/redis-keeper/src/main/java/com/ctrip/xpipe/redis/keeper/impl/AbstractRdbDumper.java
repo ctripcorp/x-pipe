@@ -8,8 +8,11 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.io.IOException;
+
+import static com.ctrip.xpipe.redis.core.store.RdbDumpState.WAIT_DUMPPING;
 
 /**
  * @author wenchao.meng
@@ -18,7 +21,7 @@ import java.io.IOException;
  */
 public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements RdbDumper {
 
-	private volatile RdbDumpState rdbDumpState = RdbDumpState.WAIT_DUMPPING;
+	private volatile RdbDumpState rdbDumpState = WAIT_DUMPPING;
 
 	protected RedisKeeperServer redisKeeperServer;
 
@@ -99,10 +102,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		switch (rdbDumpState) {
 
 		case DUMPING:
-			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-			if (!redisKeeperServer.getReplicationStore().fullSyncIfPossible(fullSyncListener)) {
-				throw new IllegalStateException("[tryFullSync][rdb dumping, but can not full sync]");
-			}
+			doFullSyncOrGiveUp(redisSlave);
 			break;
 		case FAIL:
 		case NORMAL:
@@ -114,6 +114,13 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 			getLogger().info("[tryFullSync][make slave waiting]{}", redisSlave);
 			redisSlave.waitForRdbDumping();
 			break;
+		}
+	}
+
+	@VisibleForTesting void doFullSyncOrGiveUp(RedisSlave redisSlave) throws IOException {
+		FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
+		if (!redisKeeperServer.getReplicationStore().fullSyncIfPossible(fullSyncListener)) {
+			throw new IllegalStateException("[tryFullSync][rdb dumping, but can not full sync]");
 		}
 	}
 
