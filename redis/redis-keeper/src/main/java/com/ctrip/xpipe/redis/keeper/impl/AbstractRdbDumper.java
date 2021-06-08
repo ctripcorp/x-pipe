@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.io.IOException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.ctrip.xpipe.redis.core.store.RdbDumpState.WAIT_DUMPPING;
 
@@ -25,6 +26,8 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 
 	protected RedisKeeperServer redisKeeperServer;
 
+	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
 	public AbstractRdbDumper(RedisKeeperServer redisKeeperServer) {
 		this.redisKeeperServer = redisKeeperServer;
 	}
@@ -35,24 +38,27 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	}
 
 	public void setRdbDumpState(RdbDumpState rdbDumpState) {
-
-		this.rdbDumpState = rdbDumpState;
-
-		switch (rdbDumpState) {
-			case DUMPING:
-				doWhenDumping();
-				break;
-			case FAIL:
-				doWhenDumpFailed();
-				redisKeeperServer.clearRdbDumper(this);
-				break;
-			case NORMAL:
-				// clear dumper
-				redisKeeperServer.clearRdbDumper(this);
-				;
-				break;
-			case WAIT_DUMPPING:
-				break;
+		lock.writeLock().lock();
+		try {
+			this.rdbDumpState = rdbDumpState;
+			switch (rdbDumpState) {
+				case DUMPING:
+					doWhenDumping();
+					break;
+				case FAIL:
+					doWhenDumpFailed();
+					redisKeeperServer.clearRdbDumper(this);
+					break;
+				case NORMAL:
+					// clear dumper
+					redisKeeperServer.clearRdbDumper(this);
+					;
+					break;
+				case WAIT_DUMPPING:
+					break;
+			}
+		} finally {
+		    lock.writeLock().unlock();
 		}
 	}
 
@@ -98,23 +104,30 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 
 	@Override
 	public void tryFullSync(RedisSlave redisSlave) throws IOException {
-
-		switch (rdbDumpState) {
-
-		case DUMPING:
-			doFullSyncOrGiveUp(redisSlave);
-			break;
-		case FAIL:
-		case NORMAL:
-			getLogger().warn("[tryFullSync]{}", redisSlave);
-			redisKeeperServer.clearRdbDumper(this);
-			redisKeeperServer.fullSyncToSlave(redisSlave);
-			break;
-		case WAIT_DUMPPING:
-			getLogger().info("[tryFullSync][make slave waiting]{}", redisSlave);
-			redisSlave.waitForRdbDumping();
-			break;
+		RdbDumpState state;
+		lock.readLock().lock();
+		try {
+			state = rdbDumpState;
+			if (state == WAIT_DUMPPING) {
+				getLogger().info("[tryFullSync][make slave waiting]{}", redisSlave);
+				redisSlave.waitForRdbDumping();
+				return;
+			}
+		} finally {
+			lock.readLock().unlock();
 		}
+		switch (state) {
+			case DUMPING:
+				doFullSyncOrGiveUp(redisSlave);
+				break;
+			case FAIL:
+			case NORMAL:
+				getLogger().warn("[tryFullSync]{}", redisSlave);
+				redisKeeperServer.clearRdbDumper(this);
+				redisKeeperServer.fullSyncToSlave(redisSlave);
+				break;
+		}
+
 	}
 
 	@VisibleForTesting void doFullSyncOrGiveUp(RedisSlave redisSlave) throws IOException {
