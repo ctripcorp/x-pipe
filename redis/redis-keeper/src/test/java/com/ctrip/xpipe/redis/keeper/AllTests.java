@@ -27,6 +27,7 @@ import org.junit.runners.Suite.SuiteClasses;
  */
 @RunWith(Suite.class)
 @SuiteClasses({
+        AbstractRdbDumperTest.class,
         DefaultRedisKeeperServerConnectToFakeRedisTest.class,
         FakeRedisHalfRdbServerFail.class,
         PsyncTest.class,
