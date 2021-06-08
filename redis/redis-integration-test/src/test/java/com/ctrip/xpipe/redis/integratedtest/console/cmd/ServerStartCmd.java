@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Stream;
 
 /**
  * @author lishanglin
@@ -36,7 +39,7 @@ public class ServerStartCmd extends AbstractForkProcessCmd {
                 File.separator + "bin" +
                 File.separator + "java";
 
-        URL[] urls = ((URLClassLoader) Thread.currentThread().getContextClassLoader()).getURLs();
+        URL[] urls = urlsFromClassLoader(Thread.currentThread().getContextClassLoader());
         String classPath = ".:";
         for (URL url: urls) {
             classPath += url.getPath() + ":";
@@ -50,6 +53,26 @@ public class ServerStartCmd extends AbstractForkProcessCmd {
         });
 
         execCmd(cmd + argBuilder.toString() + mainClass);
+    }
+
+    private static URL[] urlsFromClassLoader(ClassLoader classLoader) {
+        if (classLoader instanceof URLClassLoader) {
+            return ((URLClassLoader) classLoader).getURLs();
+        }
+        return Stream
+                .of(ManagementFactory.getRuntimeMXBean().getClassPath()
+                        .split(File.pathSeparator))
+                .map(ServerStartCmd::toURL).toArray(URL[]::new);
+    }
+
+    private static URL toURL(String classPathEntry) {
+        try {
+            return new File(classPathEntry).toURI().toURL();
+        }
+        catch (MalformedURLException ex) {
+            throw new IllegalArgumentException(
+                    "URL could not be created from '" + classPathEntry + "'", ex);
+        }
     }
 
     @Override

@@ -77,10 +77,13 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
         Assert.assertTrue(isLeader(newLeaderPort));
         Assert.assertFalse(isLeader(newFollowerPort));
 
-        CheckerHealthController.HealthCheckInstanceModel checkInstanceOfLeader = getCheckInstance(newLeaderPort);
-        CheckerHealthController.HealthCheckInstanceModel checkInstanceOfFollower = getCheckInstance(newFollowerPort);
-
-        Assert.assertTrue(checkInstanceOfLeader.getActions().size() > checkInstanceOfFollower.getActions().size());
+        waitConditionUntilTimeOut(()-> {
+            try {
+                return getCheckInstance(newLeaderPort).getActions().size() > getCheckInstance(newFollowerPort).getActions().size();
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 100);
     }
 
     private boolean isLeader(int port) {

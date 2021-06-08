@@ -2,15 +2,19 @@ package com.ctrip.xpipe.redis.checker.controller;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.RedisInfoManager;
+import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -26,6 +30,9 @@ public class CheckerHealthController {
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
+
+    @Autowired
+    private RedisInfoManager redisInfoManager;
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
@@ -51,6 +58,16 @@ public class CheckerHealthController {
         }
         HealthCheckInstanceModel model = buildHealthCheckInfo(instance);
         return Codec.DEFAULT.encode(model);
+    }
+
+    @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
+    public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
+        return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
+    }
+
+    @RequestMapping(value = "/health/redis/info/all", method = RequestMethod.GET)
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
+        return ActionContextRetMessage.map(redisInfoManager.getAllInfos());
     }
 
     private HealthCheckInstanceModel buildHealthCheckInfo(HealthCheckInstance<?> instance) {

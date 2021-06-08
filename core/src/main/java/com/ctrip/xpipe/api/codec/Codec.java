@@ -14,7 +14,9 @@ public interface Codec {
 	Charset defaultCharset = Charset.forName("UTF-8");
 	
 	Codec DEFAULT = new JsonCodec();
-	
+
+	Codec PRETTY = new JsonCodec(true);
+
 	String encode(Object obj);
 
 	byte[] encodeAsBytes(Object obj);

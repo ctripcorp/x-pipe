@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.console.dr;
 
 import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.redis.console.controller.api.RetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.foundation.IdcUtil;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
