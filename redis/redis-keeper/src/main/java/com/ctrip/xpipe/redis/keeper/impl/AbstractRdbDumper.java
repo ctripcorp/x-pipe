@@ -77,8 +77,15 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 					public void run() {
 						try {
 							redisKeeperServer.fullSyncToSlave(redisSlave);
-						} catch (Exception e) {
-							getLogger().error(String.format("fullsync to slave:%s", redisSlave), e);
+						} catch (Throwable th) {
+							try {
+								getLogger().error(String.format("fullsync to slave:%s", redisSlave), th);
+								if(redisSlave.isOpen()){
+									redisSlave.close();
+								}
+							} catch (IOException e) {
+								getLogger().error("[run][close]" + redisSlave, th);
+							}
 						}
 					}
 				});
@@ -94,7 +101,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		case DUMPING:
 			FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
 			if (!redisKeeperServer.getReplicationStore().fullSyncIfPossible(fullSyncListener)) {
-				throw new IllegalStateException("[tryFullSync][rdb dumping, but can not full synn]");
+				throw new IllegalStateException("[tryFullSync][rdb dumping, but can not full sync]");
 			}
 			break;
 		case FAIL:
