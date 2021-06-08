@@ -729,6 +729,7 @@
                         <execution>
                             <configuration>
                                 <skipIfEmpty>true</skipIfEmpty>
+                                <skip>false</skip>
                             </configuration>
                             <goals>
                                 <goal>test-jar</goal>
@@ -759,6 +760,23 @@
                     <artifactId>plexus-maven-plugin</artifactId>
                     <version>${unidal.plexus.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>enforce-versions</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <skip>true</skip>
+                        <fail>false</fail>
+                    </configuration>
+                </plugin>
+
             </plugins>
         </pluginManagement>
         <plugins>
