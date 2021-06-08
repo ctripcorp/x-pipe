@@ -110,6 +110,11 @@ public class CheckerContextConfig {
     }
 
     @Bean
+    public CheckerRedisInfoManager redisInfoManager() {
+        return new CheckerRedisInfoManager();
+    }
+
+    @Bean
     public DefaultPingService pingService() {
         return new DefaultPingService();
     }

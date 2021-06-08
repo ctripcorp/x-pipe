@@ -1,0 +1,32 @@
+package com.ctrip.xpipe.redis.console.checker;
+
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
+import com.ctrip.xpipe.redis.core.service.AbstractService;
+
+import java.util.Map;
+
+/**
+ * @author Slight
+ * <p>
+ * Jun 04, 2021 2:52 PM
+ */
+public class ConsoleCheckerService extends AbstractService implements CheckerService {
+
+    private String address;
+
+    private final String allRedisInfosUrl;
+
+    public ConsoleCheckerService(HostPort hostPort) {
+        this.address = hostPort.toString();
+        if(!this.address.startsWith("http://")){
+            this.address = "http://" + this.address;
+        }
+        allRedisInfosUrl = String.format("%s/api/health/redis/info/all", this.address);
+    }
+
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos() {
+        return restTemplate.getForObject(allRedisInfosUrl, InfoActionContext.ResultMap.class);
+    }
+}

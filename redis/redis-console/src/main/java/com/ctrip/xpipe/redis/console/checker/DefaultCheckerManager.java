@@ -20,6 +20,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.IntStream;
 
+import static com.ctrip.xpipe.redis.checker.model.CheckerRole.LEADER;
+
 /**
  * @author lishanglin
  * date 2021/3/16
@@ -76,6 +78,19 @@ public class DefaultCheckerManager implements CheckerManager {
     @Override
     public List<Map<HostPort, CheckerStatus>> getCheckers() {
         return checkers;
+    }
+
+    @Override
+    public List<CheckerService> getLeaderCheckerServices() {
+        List<CheckerService> services = new ArrayList<>();
+        for (Map<HostPort, CheckerStatus> checker : checkers) {
+            for (CheckerStatus value : checker.values()) {
+                if (LEADER.equals(value.getCheckerRole())) {
+                    services.add(new ConsoleCheckerService(value.getHostPort()));
+                }
+            }
+        }
+        return services;
     }
 
     @VisibleForTesting
