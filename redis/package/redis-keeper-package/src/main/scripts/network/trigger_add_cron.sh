@@ -21,8 +21,6 @@ do
     ssh_iplist+=($ip)
 done
 
-echo ${iplist[@]}
-
 while [ ${#ssh_iplist[@]} -gt 0 ]; do
     for src_ip in ${ssh_iplist[@]};
     do
@@ -33,19 +31,20 @@ while [ ${#ssh_iplist[@]} -gt 0 ]; do
     done
 
     #waiting
-    echo "triggering add cron.....\c"
+    count=0
     while [ $((`ps -ef | grep sshpass | grep -v grep | wc -l`)) -gt 0 ]; do
-        echo ".....\c"
+        if [ $(($count%6)) -eq 1 ]; then
+            echo "waiting ips:"
+            echo `ps -ef | grep sshpass | grep -v grep | awk '{print $13}' | cut -b 7-`
+        fi
+        count=$(($count+1))
         sleep 0.5
     done
-    echo "done!"
 
     retry_ip=()
     for src_ip in ${ssh_iplist[@]};
     do
-        if [ $((`cat "$LOGPATH/$src_ip.log" | grep -v "nohup: ignoring input" | grep -v UTF | grep -v "Permanently added" | wc -l`)) -eq 0 ]; then
-            echo "$src_ip triggered success"
-        else
+        if [ $((`cat "$LOGPATH/$src_ip.log" | grep -v "nohup: ignoring input" | grep -v UTF | grep -v "Permanently added" | wc -l`)) -ne 0 ]; then
             retry_ip+=($src_ip)
             echo "Error. $src_ip triggered failed. Due to:"
             echo `cat "$LOGPATH/$src_ip.log"`
