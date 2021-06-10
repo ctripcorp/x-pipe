@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListenerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -62,6 +63,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RateLimitTest.class,
         LeakyBucketBasedMasterReplicationListenerTest.class,
         DefaultReplicationStoreStatsTest.class,
+        DefaultMetaStoreTest.class,
         TestAbstractMetaStoreTest.class,
         PsyncFailReasonTest.class,
         DefaultMasterStatsTest.class
