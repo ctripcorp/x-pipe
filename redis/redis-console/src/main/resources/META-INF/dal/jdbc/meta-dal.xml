@@ -365,7 +365,7 @@
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-					SET <FIELD name='status'/> = ${status}
+					SET <FIELDS />
 					WHERE <FIELD name='id'/> = ${id}
 					AND <FIELD name='deleted'/> = 0
 					]]>
@@ -1307,21 +1307,12 @@
 	</entity>
 
 	<entity name="migration-event-tbl" table="migration_event_tbl" alias="met">
-		<var name="current" value-type="long" />
-
 		<relation name="migration-clusters" entity-name="migration-cluster-tbl" entity-alias="mct" multiple="true"/>
 		
 		<relation name="redundant-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
 		<relation name="redundant-shards" entity-name="migration-shard-tbl" entity-alias="mst"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
-
-		<updatesets>
-			<updateset name="LOCK_STATUS" >
-				<member name="exec-lock" />
-				<member name="lock-until" />
-			</updateset>
-		</updatesets>
 
 		<readsets>
 			<readset name="COUNT">
@@ -1338,30 +1329,6 @@
 		</readsets>
 		
 		<query-defs>
-			<query name="update-exec-lock" type="UPDATE" batch="false">
-				<param name="id" />
-				<param name="current" />
-				<param name="exec-lock" />
-				<statement><![CDATA[
-					UPDATE <TABLE/>
-					SET <FIELDS />
-					WHERE <FIELD name='id'/> = ${id}
-					AND (<FIELD name='lock-until'/> < ${current} OR <FIELD name='exec-lock' /> = ${exec-lock})
-					AND <FIELD name='deleted'/> = 0
-				]]></statement>
-			</query>
-			<query name="release-exec-lock" type="UPDATE" batch="false">
-				<param name="id" />
-				<param name="exec-lock" />
-				<param name="lock-until" />
-				<statement><![CDATA[
-					UPDATE <TABLE/>
-					SET <FIELD name='exec-lock' />='', <FIELD name='lock-until' />=0
-					WHERE <FIELD name='id'/> = ${id}
-					AND <FIELD name='exec-lock' />=${exec-lock}
-					AND <FIELD name='lock-until'/>=${lock-until}
-				]]></statement>
-			</query>
 			<query name="find-by-tag" type="SELECT">
 				<param name="event-tag"/>
 				<statement>

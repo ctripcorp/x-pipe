@@ -36,7 +36,7 @@ public class MigrationDoExecuteCmd extends AbstractMigrationCmd<Boolean> impleme
         migrationExecutor.execute(() -> {
             try {
                 event.getMigrationCluster(clusterId).addObserver(this);
-                event.processCluster(clusterId);
+                event.getMigrationCluster(clusterId).process();
             } catch (Throwable th) {
                 future().setFailure(th);
             }
@@ -48,7 +48,7 @@ public class MigrationDoExecuteCmd extends AbstractMigrationCmd<Boolean> impleme
         MigrationCluster migrationCluster = (MigrationCluster) observable;
         MigrationStatus migrationStatus = migrationCluster.getStatus();
 
-        if (!migrationCluster.isStarted() || migrationStatus.isTerminated()) {
+        if (migrationStatus.isTerminated() || migrationStatus.isPaused()) {
             if (MigrationStatus.Success.equals(migrationStatus)) {
                 future().setSuccess(true);
             } else {

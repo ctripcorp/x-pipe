@@ -57,8 +57,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_PARALLEL_CONSOLE_DOMAIN = "console.parallel.domain";
 
-    private static final String KEY_MIGRATION_EXEC_LOCK_TIMEOUT = "console.migration.exec.lock.timeout";
-
     private static final String KEY_BEACON_DEFAULT_HOST = "beacon.host.default";
 
     private static final String KEY_BEACON_HOST_BY_ORG = "beacon.host.org";
@@ -380,11 +378,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public int getMigrationExecLockTimeoutMilli() {
-        return getIntProperty(KEY_MIGRATION_EXEC_LOCK_TIMEOUT, 300000);
-    }
-
-    @Override
     public String getDefaultBeaconHost() {
         return getProperty(KEY_BEACON_DEFAULT_HOST);
     }
@@ -441,7 +434,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public int getMigrationTimeoutMilli() {
-        return getIntProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000);
+    public long getMigrationTimeoutMilli() {
+        return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
 }

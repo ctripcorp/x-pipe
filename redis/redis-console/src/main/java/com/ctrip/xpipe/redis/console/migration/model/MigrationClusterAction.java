@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.migration.model;
 
-import com.ctrip.xpipe.api.lifecycle.Startable;
-import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
 
 /**
@@ -9,7 +7,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
  *
  *         Dec 11, 2016
  */
-public interface MigrationClusterAction extends Startable, Stoppable {
+public interface MigrationClusterAction {
 
     void addNewMigrationShard(MigrationShard migrationShard);
 
@@ -19,6 +17,5 @@ public interface MigrationClusterAction extends Startable, Stoppable {
     void rollback();
     void forceProcess();
     void forceEnd();
-    boolean isStarted();
 
 }

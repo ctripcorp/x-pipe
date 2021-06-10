@@ -15,21 +15,13 @@ public interface MigrationEvent extends Observable {
 
     MigrationEventTbl getEvent();
 
-    void process() throws Exception;
+    void process();
 
     long getMigrationEventId();
 
     MigrationCluster getMigrationCluster(long clusterId);
 
     MigrationCluster getMigrationCluster(String clusterName);
-
-    void processCluster(long clusterId) throws Exception;
-
-    void cancelCluster(long clusterId) throws ClusterNotFoundException;
-
-    void forceClusterProcess(long clusterId) throws ClusterNotFoundException;
-
-    void forceClusterEnd(long clusterId) throws ClusterNotFoundException;
 
     MigrationCluster rollbackCluster(long clusterId) throws ClusterNotFoundException;
 
@@ -40,7 +32,5 @@ public interface MigrationEvent extends Observable {
     void addMigrationCluster(MigrationCluster migrationCluster);
 
     boolean isDone();
-
-    boolean isRunning();
 
 }

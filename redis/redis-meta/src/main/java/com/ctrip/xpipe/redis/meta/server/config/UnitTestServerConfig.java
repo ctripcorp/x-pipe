@@ -160,4 +160,9 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public boolean shouldCorrectPeerMasterPeriodically() {
 		return true;
 	}
+
+	@Override
+	public long getNewMasterCacheTimeoutMilli() {
+		return 10L;
+	}
 }
