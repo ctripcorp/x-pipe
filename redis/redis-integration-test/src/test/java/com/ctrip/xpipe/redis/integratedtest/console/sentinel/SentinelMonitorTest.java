@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.redis.integratedtest.console.dr.DRTest;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -42,6 +43,22 @@ public class SentinelMonitorTest extends DRTest {
     public void testAddSentinels() throws Exception {
         startSimpleXPipeDR();
         waitForAllSentinelReady("jq", "127.0.0.1", 6379);
+    }
+
+    @Test
+    public void testMasterConsistent() throws Exception {
+        startSimpleXPipeDR();
+        String masterName = SentinelUtil.getSentinelMonitorName("cluster-dr", "cluster-dr-shard1", "jq");
+        waitForAllSentinelReady("jq", LOCAL_HOST, 6379);
+
+        Assert.assertEquals(6379,sentinelMaster(LOCAL_HOST, 5000, masterName).getPort());
+
+        sentinelRemove(LOCAL_HOST, 5000, masterName);
+        sentinelMonitor(LOCAL_HOST, 5000, masterName, new HostPort(LOCAL_HOST, 7379));
+
+        Assert.assertEquals(7379,sentinelMaster(LOCAL_HOST, 5000, masterName).getPort());
+
+        waitForSentinelMaster(LOCAL_HOST, 5000, masterName, LOCAL_HOST, 6379, 60000);
     }
 
     @Test
@@ -113,6 +130,22 @@ public class SentinelMonitorTest extends DRTest {
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
                 .SentinelMaster(clientPool, scheduled, monitorName);
         return sentinelMaster.execute().get();
+    }
+
+    protected String sentinelRemove(String host, int port, String monitorName) throws Exception {
+        SimpleObjectPool<NettyClient> clientPool = getXpipeNettyClientKeyedObjectPool()
+                .getKeyPool(new DefaultEndPoint(host, port));
+        AbstractSentinelCommand.SentinelRemove remove = new AbstractSentinelCommand
+                .SentinelRemove(clientPool, monitorName, scheduled);
+        return remove.execute().get();
+    }
+
+    protected String sentinelMonitor(String host, int port, String monitorName, HostPort master) throws Exception {
+        SimpleObjectPool<NettyClient> clientPool = getXpipeNettyClientKeyedObjectPool()
+                .getKeyPool(new DefaultEndPoint(host, port));
+        AbstractSentinelCommand.SentinelMonitor monitor = new AbstractSentinelCommand
+                .SentinelMonitor(clientPool, scheduled, monitorName, master, 2);
+        return monitor.execute().get();
     }
 
 }
