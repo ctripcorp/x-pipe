@@ -36,5 +36,4 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
 
     OuterClientService getOuterClientService();
 
-    void allowStart(boolean allow);
 }

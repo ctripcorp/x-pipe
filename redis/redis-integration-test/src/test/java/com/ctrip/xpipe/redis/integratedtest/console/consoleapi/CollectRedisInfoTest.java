@@ -41,7 +41,7 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
     }
 
     @After
-    public void afterDRTest() throws IOException {
+    public void afterCollectRedisInfoTest() throws IOException {
         cleanupAllSubProcesses();
         killAllRedisServers();
         cleanupConf();
@@ -58,7 +58,6 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
         startZk(IdcUtil.JQ_ZK_PORT);
         startZk(IdcUtil.OY_ZK_PORT);
 
-        startH2Server();
         setUpTestDataSource();
 
         startRedis(6379);
@@ -85,7 +84,6 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
         startZk(IdcUtil.JQ_ZK_PORT);
         startZk(IdcUtil.OY_ZK_PORT);
 
-        startH2Server();
         setUpTestDataSource();
 
         startRedis(6379);
@@ -99,7 +97,7 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
 
         waitConditionUntilTimeOut(this::isAllProcessAlive);
 
-        waitForServerResp("http://127.0.0.1:18080/api/health/redis/info/127.0.0.1/6379", InfoActionContext.Result.class, 60000,
+        waitForServerResp("http://127.0.0.1:18080/api/health/redis/info/127.0.0.1/6379", InfoActionContext.Result.class, 1200000,
                 (health)-> "master".equals(((InfoActionContext.Result) health).getPayload().get("role")));
 
         waitForServerResp("http://127.0.0.1:18080/api/health/redis/info/all", InfoActionContext.ResultMap.class, 60000,

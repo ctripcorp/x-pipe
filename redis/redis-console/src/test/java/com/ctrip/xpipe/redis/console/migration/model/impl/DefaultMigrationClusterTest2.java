@@ -108,7 +108,7 @@ public class DefaultMigrationClusterTest2 {
                 }
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
         migrationClusterTbl.setStatus("Checking");
         migrationCluster.updateStorageClusterStatus();
@@ -129,7 +129,7 @@ public class DefaultMigrationClusterTest2 {
                 }
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
         migrationCluster.updateStat(new MigrationCheckingState(migrationCluster));
 
@@ -148,7 +148,7 @@ public class DefaultMigrationClusterTest2 {
                 }
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
         migrationCluster.updateStat(new MigrationMigratingState(migrationCluster));
 
@@ -167,7 +167,7 @@ public class DefaultMigrationClusterTest2 {
                 }
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
         migrationCluster.updateStat(new MigrationPublishState(migrationCluster));
 
@@ -186,7 +186,7 @@ public class DefaultMigrationClusterTest2 {
                 clusterTbl.setStatus(clusterStatus.name());
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
         migrationCluster.updateStat(new MigrationPublishState(migrationCluster));
 
@@ -205,7 +205,7 @@ public class DefaultMigrationClusterTest2 {
                 clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
 
         migrationCluster.updateStat(new MigrationPublishState(migrationCluster));

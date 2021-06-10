@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         beaconMetaService.setMetaCache(metaCache);
     }
 
+    @DirtiesContext
     @Test(expected = ClusterMigrationNotSuccessException.class)
     public void testMigrateNormalCluster() throws Throwable {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet("jq"));
@@ -67,7 +69,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     }
 
     @Test(expected = ClusterMigrationNotSuccessException.class)
-    public void testMigrateMigratingCluster() throws Throwable {
+    public void testMigrateCheckingCluster() throws Throwable {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster2", Sets.newHashSet("jq"));
         CommandFuture future = migrationService.migrate(request);
         waitConditionUntilTimeOut(() -> future.isDone());
@@ -75,6 +77,16 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         throw future.cause().getCause();
     }
 
+    @Test(expected = ClusterMigrationNotSuccessException.class)
+    public void testMigrateMigratingCluster() throws Throwable {
+        BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster5", Sets.newHashSet("jq"));
+        CommandFuture future = migrationService.migrate(request);
+        waitConditionUntilTimeOut(() -> future.isDone());
+        Assert.assertFalse(future.isSuccess());
+        throw future.cause().getCause();
+    }
+
+    @DirtiesContext
     @Test(expected = ClusterMigrationNotSuccessException.class)
     public void testForcedMigrate() throws Throwable {
         BeaconMigrationRequest request = buildBeaconMigrationRequest("cluster1", Sets.newHashSet());

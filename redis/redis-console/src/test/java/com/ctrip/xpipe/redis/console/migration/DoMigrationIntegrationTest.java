@@ -70,7 +70,7 @@ public class DoMigrationIntegrationTest extends AbstractMigrationIntegrationTest
                 }
                 return null;
             }
-        }).when(clusterService).updateStatusById(anyLong(), any());
+        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
 
         doAnswer(new Answer() {
             @Override
