@@ -87,7 +87,6 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
 
-		migrationCluster.allowStart(true);
 		migrationCluster.cancel();
 		
 		ClusterTbl afterCacelledCluster = clusterService.find(1);
@@ -102,7 +101,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 	
 	@Test
 	@DirtiesContext
-	public void testCancelOnChecking() throws Exception {
+	public void testCancelOnChecking() {
 		mockFailCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
 		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
 		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
@@ -122,8 +121,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.CHECK));
 
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
+		migrationCluster.process();
 		sleep(1000);
 		
 		ClusterTbl currentCluster = clusterService.find(1);
@@ -137,7 +135,6 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.CHECK).equals(""));
 
-		migrationCluster.allowStart(true);
 		migrationCluster.cancel();
 		ClusterTbl afterCacelledCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), afterCacelledCluster.getStatus());
@@ -151,7 +148,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 	
 	@Test
 	@DirtiesContext
-	public void testCancelOnMigrating() throws Exception {
+	public void testCancelOnMigrating() {
 		mockSuccessCheckCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcB);
 		mockSuccessPrevPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcA);
 		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB,new Throwable("mocked new fail"));
@@ -171,8 +168,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
+		migrationCluster.process();
 		sleep(1000);
 		DcMeta DcAMeta = dcMetaService.getDcMeta(dcA);
 		DcMeta DcBMeta = dcMetaService.getDcMeta(dcB);
@@ -190,7 +186,6 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 
-		migrationCluster.allowStart(true);
 		migrationCluster.cancel();
 		
 		DcAMeta = dcMetaService.getDcMeta(dcA);
@@ -208,17 +203,15 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 		mockSuccessRollBackCommand(migrationCommandBuilder, "cluster1", "shard1", dcA);
 
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
+		migrationCluster.process();
 		sleep(1000);
 		DcMeta DcAMeta = dcMetaService.getDcMeta(dcA);
 		DcMeta DcBMeta = dcMetaService.getDcMeta(dcB);
 		Assert.assertEquals(dcA, DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals(dcB, DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.PartialRetryFail, migrationCluster.getStatus());
 
-		migrationCluster.allowStart(true);
 		migrationCluster.rollback();
 		sleep(1000);
 		DcAMeta = dcMetaService.getDcMeta(dcA);
@@ -242,17 +235,15 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 		mockFailRollBackCommand(migrationCommandBuilder, "cluster1", "shard1", dcA);
 
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
+		migrationCluster.process();
 		sleep(1000);
 		DcMeta DcAMeta = dcMetaService.getDcMeta(dcA);
 		DcMeta DcBMeta = dcMetaService.getDcMeta(dcB);
 		Assert.assertEquals(dcA, DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals(dcB, DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.PartialRetryFail, migrationCluster.getStatus());
 
-		migrationCluster.allowStart(true);
 		migrationCluster.rollback();
 		sleep(1000);
 		DcAMeta = dcMetaService.getDcMeta(dcA);
@@ -260,7 +251,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		Assert.assertEquals(dcA, DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals(dcA, DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.RollBack, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.RollBackFail, migrationCluster.getStatus());
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Rollback.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
@@ -274,8 +265,7 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB);
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
+		migrationCluster.process();
 		sleep(1000);
 		
 		DcMeta DcAMeta = dcMetaService.getDcMeta(dcA);
@@ -285,7 +275,6 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		
 		Assert.assertEquals(MigrationStatus.CheckingFail, migrationCluster.getStatus());
 
-		migrationCluster.allowStart(true);
 		migrationCluster.rollback();
 	}
 	
@@ -297,17 +286,15 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		mockFailNewPrimaryDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB,new Throwable("mocked new fail"));
 		mockSuccessOtherDcCommand(migrationCommandBuilder,"cluster1", "shard1", dcB, dcA);
 
-		migrationCluster.allowStart(true);
-		migrationCluster.start();
+		migrationCluster.process();
 		sleep(1000);
 		DcMeta DcAMeta = dcMetaService.getDcMeta(dcA);
 		DcMeta DcBMeta = dcMetaService.getDcMeta(dcB);
 		Assert.assertEquals(dcA, DcAMeta.findCluster("cluster1").getActiveDc());
 		Assert.assertEquals(dcB, DcBMeta.findCluster("cluster1").getActiveDc());
 		
-		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.PartialRetryFail, migrationCluster.getStatus());
 
-		migrationCluster.allowStart(true);
 		migrationCluster.forceProcess();
 		DcAMeta = dcMetaService.getDcMeta(dcA);
 		DcBMeta = dcMetaService.getDcMeta(dcB);

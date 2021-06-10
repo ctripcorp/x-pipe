@@ -72,14 +72,4 @@ public class MockMigrationEventDao extends MigrationEventDao {
         return delegate.findAllUnfinished();
     }
 
-    @Override
-    public void updateMigrationEventLock(long eventId, String lock, long lockUntil) {
-        delegate.updateMigrationEventLock(eventId, lock, lockUntil);
-    }
-
-    @Override
-    public void releaseMigrationEventLock(long eventId, String lock, long lockUntil) {
-        delegate.releaseMigrationEventLock(eventId, lock, lockUntil);
-    }
-
 }

@@ -120,8 +120,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	boolean isConsoleSiteUnstable();
 
-	int getMigrationExecLockTimeoutMilli();
-
 	String getDefaultBeaconHost();
 
 	Map<Long, String> getBeaconHosts();
@@ -130,6 +128,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getCheckerAckTimeoutMilli();
 
-	int getMigrationTimeoutMilli();
+	long getMigrationTimeoutMilli();
 
 }

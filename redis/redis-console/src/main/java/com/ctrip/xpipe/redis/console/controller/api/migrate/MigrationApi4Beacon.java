@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate;
 
 import com.ctrip.xpipe.command.CommandChainException;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
 import com.ctrip.xpipe.redis.console.migration.exception.MigrationUnderProcessingException;
@@ -28,11 +29,14 @@ public class MigrationApi4Beacon {
     @Autowired
     private BeaconMigrationService beaconMigrationService;
 
+    @Autowired
+    private ConsoleConfig config;
+
     Logger logger = LoggerFactory.getLogger(MigrationApi4Beacon.class);
 
     @PostMapping(value = "/sync")
     public DeferredResult<BeaconMigrationResponse> syncMigrate(@RequestBody BeaconMigrationRequest migrationRequest) {
-        DeferredResult<BeaconMigrationResponse> response = new DeferredResult<>();
+        DeferredResult<BeaconMigrationResponse> response = new DeferredResult<>(config.getMigrationTimeoutMilli());
 
         try {
             beaconMigrationService.migrate(migrationRequest).addListener((commandFuture) -> {

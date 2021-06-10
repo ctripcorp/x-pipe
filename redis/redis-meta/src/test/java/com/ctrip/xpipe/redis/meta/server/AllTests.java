@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.meta.server.crdt.replication.impl.*;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.PeerMasterChooseCommandTest;
 import com.ctrip.xpipe.redis.meta.server.dcchange.DefaultChangePrimaryDcActionTest;
+import com.ctrip.xpipe.redis.meta.server.dcchange.impl.ClusterShardCachedNewMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.AtLeastOneCheckerTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultOffsetwaiterTest;
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest;
@@ -99,7 +100,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	PeerMasterMetaServerStateChangeHandlerTest.class,
 	DefaultMetaServerRefreshPeerMasterTest.class,
 	AbstractClusterShardPeriodicTaskTest.class,
-	DefaultMasterChooserManagerTest.class
+	DefaultMasterChooserManagerTest.class,
+	ClusterShardCachedNewMasterChooserTest.class
 })
 public class AllTests {
 

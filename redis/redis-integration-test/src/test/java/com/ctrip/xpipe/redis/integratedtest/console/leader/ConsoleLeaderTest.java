@@ -102,7 +102,6 @@ public class ConsoleLeaderTest extends AbstractXPipeClusterTest {
     private void startJqConsoleClusters() throws Exception {
         startZk(IdcUtil.JQ_ZK_PORT);
 
-        startH2Server();
         setUpTestDataSource();
 
         startRedis(6379);
