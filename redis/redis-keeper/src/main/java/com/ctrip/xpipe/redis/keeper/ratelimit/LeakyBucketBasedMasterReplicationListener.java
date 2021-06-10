@@ -152,7 +152,7 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
     }
 
     @Override
-    public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+    public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
 
     }
 
