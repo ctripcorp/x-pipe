@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -15,51 +20,12 @@ import static org.junit.Assert.*;
  */
 public class DefaultMetaStoreTest extends AbstractTest {
 
-    private DefaultMetaStore metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), "19c9a31ab9aeb916429198e51e7abada9d9ecb62");
 
-    @Before
-    public void beforeDefaultMetaStoreTest() {
+    @Test (expected = UnexpectedReplIdException.class)
+    public void fixPsync0() throws IOException {
 
-    }
-
-    @Test
-    public void testGetReplId() {
-        metaStore.getReplId();
-    }
-
-    @Test
-    public void testGetReplId2() {
-    }
-
-    @Test
-    public void testGetSecondReplIdOffset() {
-    }
-
-    @Test
-    public void testBeginOffset() {
-    }
-
-    @Test
-    public void testDoSetMasterAddress() {
-    }
-
-    @Test
-    public void testGetMasterAddress() {
-    }
-
-    @Test
-    public void testRdbBegun() {
-    }
-
-    @Test
-    public void testMasterChanged() {
-    }
-
-    @Test
-    public void testClearReplicationId2() {
-    }
-
-    @Test
-    public void testShiftReplicationId() {
+        DefaultMetaStore metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b");
+        metaStore.becomeActive();
+        metaStore.checkReplIdAndUpdateRdbInfo("rdb_1620671301121_e67222d2-eee1-48c4-bde7-5c6d37734ca4", new EofMarkType("94480e125b6ebb54dc7b9eae7b9c8ea00aeed56e"), 572767153, null);
     }
 }
