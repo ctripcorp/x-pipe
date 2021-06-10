@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -27,6 +28,10 @@ public class ConsoleCheckerService extends AbstractService implements CheckerSer
     }
 
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos() {
-        return restTemplate.getForObject(allRedisInfosUrl, InfoActionContext.ResultMap.class);
+        try {
+            return restTemplate.getForObject(allRedisInfosUrl, InfoActionContext.ResultMap.class);
+        } catch (Throwable t) {
+            return Collections.emptyMap();
+        }
     }
 }
