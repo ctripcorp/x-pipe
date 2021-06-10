@@ -9,12 +9,8 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
 import com.ctrip.xpipe.redis.console.job.retry.RetryNTimesOnCondition;
-import com.ctrip.xpipe.redis.console.migration.exception.ClusterMigrationAlreadyStartedException;
 import com.ctrip.xpipe.redis.console.migration.model.*;
 import com.ctrip.xpipe.redis.console.migration.status.*;
-import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Doing;
-import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Rollbacking;
-import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateActionState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -30,7 +26,6 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author shyin
@@ -40,8 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class DefaultMigrationCluster extends AbstractObservable implements MigrationCluster {
 
     private volatile MigrationState currentState;
-    private AtomicBoolean isStarted = new AtomicBoolean(false);
-    private volatile boolean execChance = false;
 
     private MigrationEvent event;
     private MigrationClusterTbl migrationCluster;
@@ -150,50 +143,9 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
-    public void allowStart(boolean allow) {
-        this.execChance = allow;
-        this.isStarted.set(false);
-    }
-
-    @Override
-    public void start() {
-        if (execChance && isStarted.compareAndSet(false, true)) {
-            logger.info("[start]{}-{}", migrationCluster.getMigrationEventId(), clusterName());
-            execChance = false;
-            process();
-        } else {
-            throw new ClusterMigrationAlreadyStartedException(event.getMigrationEventId(), clusterName());
-        }
-    }
-
-    @Override
-    public void stop() {
-        if (isStarted.compareAndSet(true, false)) {
-            logger.info("[stop]{}-{}, {}", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            notifyObservers(this);
-        } else {
-            logger.info("[stop]{}-{} already stop", migrationCluster.getMigrationEventId(), clusterName());
-        }
-    }
-
-    @Override
-    public boolean isStarted() {
-        return isStarted.get();
-    }
-
-    @Override
     public void process() {
-        if (isStarted.get()) {
-            try {
-                logger.info("[process]{}-{}, {}", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-                this.currentState.getStateActionState().tryAction();
-            } catch (Throwable th) {
-                makeSureMigrationStopped();
-                throw th;
-            }
-        } else {
-            logger.info("[process]{}-{} migration has been stopped, skip", migrationCluster.getMigrationEventId(), clusterName());
-        }
+        logger.info("[process]{}-{}, {}", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+        this.currentState.getStateActionState().tryAction();
     }
 
     @Override
@@ -301,6 +253,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         MigrationStatus migrationStatus = this.currentState.getStatus();
         ClusterStatus clusterStatus = migrationStatus.getClusterStatus();
+        long migrationEventId = this.migrationCluster.getMigrationEventId();
 
         logger.info("[updateStat][updatedb]{}, {}", clusterName(), clusterStatus);
         RetryTemplate<String> retryTemplate = new RetryNTimesOnCondition<>(new RetryCondition.AbstractRetryCondition<String>() {
@@ -320,7 +273,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
             @Override
             protected void doExecute() throws Exception {
                 try {
-                    getClusterService().updateStatusById(clusterId(), clusterStatus);
+                    getClusterService().updateStatusById(clusterId(), clusterStatus, migrationEventId);
                     ClusterTbl newCluster = getClusterService().find(clusterName());
                     future().setSuccess(newCluster.getStatus());
                 } catch (Exception e) {
@@ -355,67 +308,34 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     @Override
     public void cancel() {
-        tryStartAction(() -> {
-            logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            this.currentState.getStateActionState().tryRollback();
-        });
+        logger.info("[Cancel]{}-{}, {} -> Cancelled", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+        this.currentState.getStateActionState().tryRollback();
     }
 
     @Override
     public void rollback() {
-        tryStartAction(() -> {
-            logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            this.currentState.getStateActionState().tryRollback();
-        });
+        logger.info("[Rollback]{}-{}, {} -> Rollback", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+        this.currentState.getStateActionState().tryRollback();
     }
 
     @Override
     public void forceProcess() {
-        tryStartAction(() -> {
-            logger.info("[ForceProcess]{}-{}, {} -> ForceProcess", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            if (!(currentState instanceof ForceProcessAbleState)) {
-                throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
-            }
-            ForceProcessAbleState forceProcessAbleState = (ForceProcessAbleState) this.currentState;
-            forceProcessAbleState.updateAndForceProcess();
-        });
+        logger.info("[ForceProcess]{}-{}, {} -> ForceProcess", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+        if (!(currentState instanceof ForceProcessAbleState)) {
+            throw new IllegalStateException(String.format("cannot cancel while %s", this.currentState.getStatus()));
+        }
+        ForceProcessAbleState forceProcessAbleState = (ForceProcessAbleState) this.currentState;
+        forceProcessAbleState.updateAndForceProcess();
     }
 
     @Override
     public void forceEnd() {
-        tryStartAction(() -> {
-            logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
-            if (!(currentState instanceof PublishState)) {
-                throw new IllegalStateException(String.format("Cannot force end while %s", this.currentState.getStatus()));
-            }
-            PublishState publishState = (PublishState) this.currentState;
-            publishState.forceEnd();
-        });
-    }
-
-    private void tryStartAction(Runnable action) {
-        if (execChance && isStarted.compareAndSet(false, true)) {
-            try {
-                execChance = false;
-                action.run();
-            } catch (Throwable th) {
-                makeSureMigrationStopped();
-                throw th;
-            }
-        } else {
-            throw new ClusterMigrationAlreadyStartedException(event.getMigrationEventId(), clusterName());
+        logger.info("[ForceEnd]{}-{}, {} -> ForceEnd", migrationCluster.getMigrationEventId(), clusterName(), this.currentState.getStatus());
+        if (!(currentState instanceof PublishState)) {
+            throw new IllegalStateException(String.format("Cannot force end while %s", this.currentState.getStatus()));
         }
-    }
-
-    private void makeSureMigrationStopped() {
-        StateActionState actionState = this.currentState.getStateActionState();
-        if (actionState instanceof Doing) {
-            actionState.actionDone();
-        } else if (actionState instanceof Rollbacking) {
-            actionState.rollbackDone();
-        }
-
-        isStarted.set(false);
+        PublishState publishState = (PublishState) this.currentState;
+        publishState.forceEnd();
     }
 
     @Override
@@ -423,6 +343,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         logger.info("[update]{}", args);
         this.currentState.refresh();
+        notifyObservers(this);
     }
 
     @Override
@@ -486,11 +407,6 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     @Override
     public String toString() {
         return String.format("[cluster:%s, state:%s]", clusterName(), currentState);
-    }
-
-    @VisibleForTesting
-    public MigrationState getMigrationState() {
-        return currentState;
     }
 
     @VisibleForTesting

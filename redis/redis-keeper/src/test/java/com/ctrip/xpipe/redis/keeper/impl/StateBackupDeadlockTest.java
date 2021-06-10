@@ -53,10 +53,10 @@ public class StateBackupDeadlockTest extends AbstractFakeRedisTest {
         }
     }
 
-    private ExecutorService server = Executors.newFixedThreadPool(2);
+    private ExecutorService executor = Executors.newFixedThreadPool(2);
 
     private void runTogether(Runnable runnable, CountDownLatch latch) {
-        server.execute(()->{
+        executor.execute(()->{
             try {
                 latch.countDown();
                 latch.await();

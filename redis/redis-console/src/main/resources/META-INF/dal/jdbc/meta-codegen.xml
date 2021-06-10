@@ -577,8 +577,6 @@
     <member name="break" field="break" value-type="boolean" nullable="false" />
     <member name="operator" field="operator" value-type="String" length="128" nullable="false" />
     <member name="event-tag" field="event_tag" value-type="String" length="150" nullable="false" />
-    <member name="exec-lock" field="exec_lock" value-type="String" length="128" nullable="false" />
-    <member name="lock-until" field="lock_until" value-type="long" length="19" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

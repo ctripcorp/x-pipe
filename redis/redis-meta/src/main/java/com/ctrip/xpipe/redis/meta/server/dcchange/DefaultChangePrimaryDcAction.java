@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomeBackupAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.BecomePrimaryAction;
+import com.ctrip.xpipe.redis.meta.server.dcchange.impl.ClusterShardCachedNewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.job.ChangePrimaryDcJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -33,7 +34,7 @@ import static com.ctrip.xpipe.redis.core.service.AbstractService.DEFAULT_SO_TIME
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractChangePrimaryDcAction.DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.AbstractNewMasterChooser.CHECK_NEW_MASTER_TIMEOUT_SECONDS;
 import static com.ctrip.xpipe.redis.meta.server.dcchange.impl.DefaultSentinelManager.DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI;
-import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.MIGRATION_EXECUTOR;
+import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.*;
 
 /**
  * @author wenchao.meng
@@ -50,10 +51,10 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	@Resource(name = MetaServerContextConfig.CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
-	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
+	@Resource(name = REPLICATION_ADJUST_SCHEDULED)
 	private ScheduledExecutorService scheduled;
 
-	@Resource(name = MIGRATION_EXECUTOR)
+	@Resource(name = REPLICATION_ADJUST_EXECUTOR)
 	private ExecutorService executors;
 
 	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
@@ -95,7 +96,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
-					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(), scheduled, executors);
+					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterId, shardId), scheduled, executors);
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
 					newPrimaryDc, masterInfo);
 			int timeout = DEFAULT_SO_TIMEOUT / 2;
@@ -145,8 +146,12 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 				newPrimaryDc, masterInfo);
 	}
 
-	private NewMasterChooser createNewMasterChooser() {
-		return new FirstNewMasterChooser(keyedObjectPool, scheduled, executors);
+	private NewMasterChooser wrapCachedNewMasterChooser(String cluster, String shard, NewMasterChooser chooser) {
+		return ClusterShardCachedNewMasterChooser.wrapChooser(cluster, shard, chooser, metaServerConfig::getNewMasterCacheTimeoutMilli, scheduled);
+	}
+
+	private NewMasterChooser createNewMasterChooser(String cluster, String shard) {
+		return wrapCachedNewMasterChooser(cluster, shard, new FirstNewMasterChooser(keyedObjectPool, scheduled, executors));
 	}
 
 	@VisibleForTesting

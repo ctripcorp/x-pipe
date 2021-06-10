@@ -20,7 +20,7 @@ public class MigrationPartialSuccessRollBackState extends AbstractMigrationState
     public MigrationPartialSuccessRollBackState(MigrationCluster holder) {
         super(holder, MigrationStatus.RollBack);
         this.setNextAfterSuccess(new MigrationAbortedState(holder))
-                .setNextAfterFail(this);
+                .setNextAfterFail(new MigrationPartialSuccessRollBackFailState(holder));
     }
 
     @Override

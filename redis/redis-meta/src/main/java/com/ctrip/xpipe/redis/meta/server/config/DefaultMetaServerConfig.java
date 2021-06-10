@@ -47,6 +47,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private static final String KEY_WAIT_FOR_META_SYNC_MILLI = "meta.sync.delay.milli";
 
 	private static final String KEY_OWN_CLUSTER_TYPES = "meta.cluster.types";
+	private static final String KEY_NEW_MASTER_CACHE_TIMEOUT_MILLI = "meta.cache.newmaster.timeout.milli";
 
 	private static final String KEY_CORRECT_PEER_MASTER_PERIODICALLY = "meta.cluster.peermaster.correct.periodically";
 	
@@ -179,6 +180,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public int getMetaServerPort() {
 		return Integer.parseInt(serverConfig.get(KEY_SERVER_PORT, String.valueOf(defaultServerPort)));
 	}
+
+	@Override
+	public long getNewMasterCacheTimeoutMilli() {
+		return getLongProperty(KEY_NEW_MASTER_CACHE_TIMEOUT_MILLI, 5000L);
+	}
 	
 	public void setDefaultServerPort(int defaultServerPort) {
 		this.defaultServerPort = defaultServerPort;
@@ -189,5 +195,4 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 		super.onChange(key, oldValue, newValue);
 		dcInfos = getDcInofMapping();
 	}
-
 }
