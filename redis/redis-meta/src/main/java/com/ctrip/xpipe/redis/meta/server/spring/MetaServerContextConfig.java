@@ -13,6 +13,8 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.spring.DomainValidateFilter;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
@@ -20,9 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 /**
@@ -39,9 +39,11 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
 
     public static final String CLIENT_POOL = "clientPool";
 
-    public static final String MIGRATION_EXECUTOR = "migrationExecutor";
-    public static final int MIGRATION_THREAD = 100;
-    public static final int MIGRATION_THREAD_MAX = 100;
+    public static final String REPLICATION_ADJUST_EXECUTOR = "replicationAdjustExecutor";
+    public static final int REPLICATION_ADJUST_THREAD = 100;
+    public static final int REPLICATION_ADJUST_THREAD_MAX = 100;
+
+    public static final String REPLICATION_ADJUST_SCHEDULED = "replicationAdjustScheduled";
 
     @Bean(name = CLIENT_POOL)
     public XpipeNettyClientKeyedObjectPool getClientPool() {
@@ -49,16 +51,26 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
         return new XpipeNettyClientKeyedObjectPool();
     }
 
-    @Bean(name = MIGRATION_EXECUTOR)
-    public ExecutorService getMigrationExecutor() {
-        DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(MIGRATION_EXECUTOR,
-                MIGRATION_THREAD, MIGRATION_THREAD_MAX, new ThreadPoolExecutor.AbortPolicy());
+    @Bean(name = REPLICATION_ADJUST_EXECUTOR)
+    public ExecutorService getReplicationAdjustExecutor() {
+        DefaultExecutorFactory executorFactory = new DefaultExecutorFactory(REPLICATION_ADJUST_EXECUTOR,
+                REPLICATION_ADJUST_THREAD, REPLICATION_ADJUST_THREAD_MAX, new ThreadPoolExecutor.AbortPolicy());
         return executorFactory.createExecutorService();
+    }
+
+    @Bean(name = REPLICATION_ADJUST_SCHEDULED)
+    public ScheduledExecutorService getReplicationAdjustScheduled() {
+
+        int corePoolSize = Math.min(OsUtils.getCpuCount(), maxScheduledCorePoolSize);
+        return MoreExecutors.getExitingScheduledExecutorService(
+                new ScheduledThreadPoolExecutor(corePoolSize, XpipeThreadFactory.create(REPLICATION_ADJUST_SCHEDULED)),
+                THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
+        );
     }
 
     @Bean(name = CLUSTER_SHARD_ADJUST_EXECUTOR)
     public KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> getClusterShardAdjustExecutor(
-            @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, @Qualifier(SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled) {
+            @Qualifier(REPLICATION_ADJUST_EXECUTOR) ExecutorService executors, @Qualifier(REPLICATION_ADJUST_SCHEDULED) ScheduledExecutorService scheduled) {
         return new KeyedOneThreadMutexableTaskExecutor<>(executors, scheduled);
     }
 
