@@ -21,7 +21,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	
 	DumpedRdbStore prepareNewRdb() throws IOException;
 
-	void rdbUpdated(DumpedRdbStore dumpedRdbStore) throws IOException;
+	void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException;
 
 	// command related
 	int appendCommands(ByteBuf byteBuf) throws IOException;
