@@ -12,6 +12,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -120,7 +121,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     @Override
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos() {
-        return restTemplate.getForObject(allLocalRedisInfosUrl, InfoActionContext.ResultMap.class);
+        try {
+            return restTemplate.getForObject(allLocalRedisInfosUrl, InfoActionContext.ResultMap.class);
+        } catch (Throwable t) {
+            return Collections.emptyMap();
+        }
     }
 
     @Override

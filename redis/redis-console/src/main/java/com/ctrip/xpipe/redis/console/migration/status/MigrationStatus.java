@@ -12,19 +12,21 @@ import java.lang.reflect.InvocationTargetException;
  */
 public enum MigrationStatus {
 
-	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false, 0, MigrationStatus.TYPE_INIT),
+	Initiated(MigrationInitiatedState.class, ClusterStatus.Lock, false,false, 0, MigrationStatus.TYPE_INIT),
 
-	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false, 10, MigrationStatus.TYPE_PROCESSING),
-	CheckingFail(MigrationCheckingFailState.class, ClusterStatus.Lock, false, 10, MigrationStatus.TYPE_PROCESSING),
-	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false, 30, MigrationStatus.TYPE_PROCESSING),
-	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false, 40, MigrationStatus.TYPE_PROCESSING),
-	Publish(MigrationPublishState.class, ClusterStatus.Migrating, false, 80, MigrationStatus.TYPE_PROCESSING),
-	PublishFail(MigrationPublishState.class, ClusterStatus.Migrating, false, 80, MigrationStatus.TYPE_PROCESSING),
-	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false, 30, MigrationStatus.TYPE_PROCESSING),
+	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false, false, 10, MigrationStatus.TYPE_PROCESSING),
+	CheckingFail(MigrationCheckingFailState.class, ClusterStatus.Lock, true, false, 10, MigrationStatus.TYPE_PROCESSING),
+	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false, false, 30, MigrationStatus.TYPE_PROCESSING),
+	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false, false, 40, MigrationStatus.TYPE_PROCESSING),
+	PartialRetryFail(MigrationPartialRetryFailState.class, ClusterStatus.Migrating, true, false, 40, MigrationStatus.TYPE_PROCESSING),
+	Publish(MigrationPublishState.class, ClusterStatus.Migrating, false, false, 80, MigrationStatus.TYPE_PROCESSING),
+	PublishFail(MigrationPublishState.class, ClusterStatus.Migrating, true, false, 80, MigrationStatus.TYPE_PROCESSING),
+	RollBack(MigrationPartialSuccessRollBackState.class, ClusterStatus.Rollback, false, false, 30, MigrationStatus.TYPE_PROCESSING),
+	RollBackFail(MigrationPartialSuccessRollBackFailState.class, ClusterStatus.Rollback, true, false, 30, MigrationStatus.TYPE_PROCESSING),
 
-	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, true, 100, MigrationStatus.TYPE_FAIL),
-	Success(MigrationSuccessState.class, ClusterStatus.Normal, true, 100, MigrationStatus.TYPE_SUCCESS),
-	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, true, 100, MigrationStatus.TYPE_FAIL);
+	Aborted(MigrationAbortedState.class, ClusterStatus.Normal, false, true, 100, MigrationStatus.TYPE_FAIL),
+	Success(MigrationSuccessState.class, ClusterStatus.Normal, false, true, 100, MigrationStatus.TYPE_SUCCESS),
+	ForceEnd(MigrationForceEndState.class, ClusterStatus.Normal, false, true, 100, MigrationStatus.TYPE_FAIL);
 
 	public static final String TYPE_INIT = "Init";
 	public static final String TYPE_PROCESSING = "Processing";
@@ -34,14 +36,17 @@ public enum MigrationStatus {
 
 	private final  Class<MigrationState> classMigrationState;
 	private final ClusterStatus clusterStatus;
+	private boolean isPaused;
 	private boolean isTerminated;
 	private int  	percent;
 	private String 	type;
 
 	@SuppressWarnings("unchecked")
-	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean isTerminated, int percent, String type){
+	MigrationStatus(Class<?> classMigrationState, ClusterStatus clusterStatus, boolean isPaused, boolean isTerminated,
+					int percent, String type){
 		this.classMigrationState = (Class<MigrationState>) classMigrationState;
 		this.clusterStatus = clusterStatus;
+		this.isPaused = isPaused;
 		this.isTerminated = isTerminated;
 		this.percent = percent;
 		this.type = type;
@@ -58,6 +63,10 @@ public enum MigrationStatus {
 				| NoSuchMethodException | SecurityException e) {
 			throw new IllegalStateException("[createMigrationState]" + this, e);
 		}
+	}
+
+	public boolean isPaused() {
+		return isPaused;
 	}
 
 	public boolean isTerminated(){

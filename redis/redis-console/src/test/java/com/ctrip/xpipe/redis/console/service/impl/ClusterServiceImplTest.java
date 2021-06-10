@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
+import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -116,15 +117,18 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         ClusterTbl clusterTbl = clusterService.find(clusterName);
 
         ClusterStatus oldStatus = ClusterStatus.valueOf(clusterTbl.getStatus());
-        ClusterStatus newStatus = ClusterStatus.different(oldStatus);
+        Assert.assertEquals(ClusterStatus.Normal, oldStatus);
 
-        clusterService.updateStatusById(clusterTbl.getId(), newStatus);
+        ClusterStatus newStatus = ClusterStatus.different(oldStatus);
+        clusterService.updateStatusById(clusterTbl.getId(), newStatus, 100L);
 
         ClusterTbl newCluster = clusterService.find(clusterName);
 
         Assert.assertEquals(newStatus.toString(), newCluster.getStatus());
+        Assert.assertEquals(100L, newCluster.getMigrationEventId());
 
         newCluster.setStatus(oldStatus.toString());
+        newCluster.setMigrationEventId(0);
         Assert.assertEquals(clusterTbl.toString(), newCluster.toString());
 
     }

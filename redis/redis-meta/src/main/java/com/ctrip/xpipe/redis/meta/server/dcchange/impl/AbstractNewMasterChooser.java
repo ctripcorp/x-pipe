@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.meta.server.dcchange.NewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.dcchange.exception.ChooseNewMasterFailException;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +76,7 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         List<RedisMeta> masters = new LinkedList<>();
         List<RedisMeta> tmpAliveServers = new LinkedList<>();
 
-        ParallelCommandChain commandChain = new ParallelCommandChain(executors);
+        ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor());
         for (RedisMeta redisMeta : allRedises) {
             SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
             RoleCommand cmd = new RoleCommand(clientPool, CHECK_NEW_MASTER_TIMEOUT_SECONDS*1000, true, scheduled);

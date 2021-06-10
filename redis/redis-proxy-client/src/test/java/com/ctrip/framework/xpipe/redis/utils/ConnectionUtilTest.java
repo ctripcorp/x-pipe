@@ -3,19 +3,16 @@ package com.ctrip.framework.xpipe.redis.utils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import sun.nio.ch.PollSelectorProvider;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.Set;
 
 import static com.ctrip.framework.xpipe.redis.AllTests.IP;
 import static com.ctrip.framework.xpipe.redis.AllTests.PORT;
+import static org.mockito.Mockito.*;
 
 /**
  * @Author limingdong
@@ -53,113 +50,15 @@ public class ConnectionUtilTest extends AbstractProxyTest {
         Assert.assertEquals(sa, socketAddress);
 
         ProxyUtil.getInstance().registerProxy(IP, PORT, ROUTE_INFO);
-        final int[] writeCount = {0};
 
-        SocketChannel socketChannel = new SocketChannel(new PollSelectorProvider()) {
-            @Override
-            protected void implCloseSelectableChannel() throws IOException {
-
-            }
-
-            @Override
-            protected void implConfigureBlocking(boolean block) throws IOException {
-
-            }
-
-            @Override
-            public SocketChannel bind(SocketAddress local) throws IOException {
-                return null;
-            }
-
-            @Override
-            public <T> SocketChannel setOption(SocketOption<T> name, T value) throws IOException {
-                return null;
-            }
-
-            @Override
-            public <T> T getOption(SocketOption<T> name) throws IOException {
-                return null;
-            }
-
-            @Override
-            public Set<SocketOption<?>> supportedOptions() {
-                return null;
-            }
-
-            @Override
-            public SocketChannel shutdownInput() throws IOException {
-                return null;
-            }
-
-            @Override
-            public SocketChannel shutdownOutput() throws IOException {
-                return null;
-            }
-
-            @Override
-            public Socket socket() {
-                return null;
-            }
-
-            @Override
-            public boolean isConnected() {
-                return false;
-            }
-
-            @Override
-            public boolean isConnectionPending() {
-                return false;
-            }
-
-            @Override
-            public boolean connect(SocketAddress remote) throws IOException {
-                return false;
-            }
-
-            @Override
-            public boolean finishConnect() throws IOException {
-                return false;
-            }
-
-            @Override
-            public SocketAddress getRemoteAddress() throws IOException {
-                return null;
-            }
-
-            @Override
-            public int read(ByteBuffer dst) throws IOException {
-                return 0;
-            }
-
-            @Override
-            public long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
-                return 0;
-            }
-
-            @Override
-            public int write(ByteBuffer src) throws IOException {
-                writeCount[0]++;
-                return 0;
-            }
-
-            @Override
-            public long write(ByteBuffer[] srcs, int offset, int length) throws IOException {
-                return 0;
-            }
-
-            @Override
-            public SocketAddress getLocalAddress() throws IOException {
-                return null;
-            }
-        };
-
+        SocketChannel socketChannel = mock(SocketChannel.class);
         try {
 
             ConnectionUtil.getAddress(socketChannel, socketAddress);
             boolean connected = ConnectionUtil.connectToProxy(socketChannel, socketAddress);  // suppose socketAddress is proxy
             Assert.assertFalse(connected);
             ConnectionUtil.sendProtocolToProxy(socketChannel);
-            Assert.assertEquals(writeCount[0], 1);
+            verify(socketChannel, times(1)).write(any(ByteBuffer.class));
         } catch (Throwable t) {
             Assert.fail("[Connect] to proxy failed");
         } finally {
