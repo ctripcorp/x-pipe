@@ -49,11 +49,11 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
                     }
                 }
 
-                if (0 == finishedCnt && doOtherDcMigrate.compareAndSet(false, true)) {
-                    doMigrateOtherDc();
-                } else if (finishedCnt == migrationShardsSize) {
+                if (finishedCnt == migrationShardsSize) {
                     logger.info("[success][continue]{}", getHolder().clusterName());
                     updateAndProcess(nextAfterSuccess());
+                } else if (doOtherDcMigrate.compareAndSet(false, true)) {
+                    doMigrateOtherDc();
                 }
             } else {
                 // any fail
@@ -78,15 +78,17 @@ public abstract class AbstractMigrationMigratingState extends AbstractMigrationS
         String clusterName = migrationCluster.clusterName();
 
         for (MigrationShard migrationShard : migrationCluster.getMigrationShards()) {
-            executors.execute(new AbstractExceptionLogTask() {
-                @Override
-                public void doRun() {
-                    String shardName = migrationShard.shardName();
-                    logger.info("[doOtherDcMigrate][start]{},{}", clusterName, shardName);
-                    migrationShard.doMigrateOtherDc();
-                    logger.info("[doOtherDcMigrate][done]{},{}", clusterName, shardName);
-                }
-            });
+            if (!migrationShard.getShardMigrationResult().stepTerminated(ShardMigrationStep.MIGRATE)) {
+                executors.execute(new AbstractExceptionLogTask() {
+                    @Override
+                    public void doRun() {
+                        String shardName = migrationShard.shardName();
+                        logger.info("[doOtherDcMigrate][start]{},{}", clusterName, shardName);
+                        migrationShard.doMigrateOtherDc();
+                        logger.info("[doOtherDcMigrate][done]{},{}", clusterName, shardName);
+                    }
+                });
+            }
         }
     }
 }

@@ -37,6 +37,10 @@ public class BeaconMigrationResponse {
         return new BeaconMigrationResponse(FAIL_NO_RETRY, err);
     }
 
+    public boolean isSuccess() {
+        return SUCCESS == this.code;
+    }
+
     public int getCode() {
         return code;
     }

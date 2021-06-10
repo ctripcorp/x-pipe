@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
-import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.ForceProcessAbleState;
@@ -21,7 +20,7 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
     public MigrationPartialSuccessState(MigrationCluster holder) {
         super(holder, MigrationStatus.PartialSuccess);
         this.setNextAfterSuccess(new MigrationPublishState(holder))
-                .setNextAfterFail(this);
+                .setNextAfterFail(new MigrationPartialRetryFailState(holder));
     }
 
     @Override

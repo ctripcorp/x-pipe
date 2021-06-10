@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 
@@ -58,11 +59,12 @@ public class MigrationBuildEventCmdTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
+    @DirtiesContext
     public void testCreateNewEvent() throws Throwable {
         migrationRequest.setClusterTbl(clusterService.find("cluster1"));
         CommandFuture future = buildEventCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
-        Assert.assertTrue(future.isSuccess());
+        if (!future.isSuccess()) throw future.cause();
         Assert.assertNotNull( migrationEventManager.getEvent(migrationRequest.getMigrationEventId()).getMigrationCluster("cluster1"));
     }
 
