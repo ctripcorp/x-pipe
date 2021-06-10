@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
+import com.ctrip.xpipe.redis.keeper.exception.psync.RdbOnlyPsyncReplIdNotSameException;
+import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,8 +117,10 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
 
         try {
             logger.info("[beginReceiveRdbData][update rdb]{}", dumpedRdbStore);
-            redisMaster.getCurrentReplicationStore().rdbUpdated(dumpedRdbStore);
+            redisMaster.getCurrentReplicationStore().checkReplIdAndUpdateRdb(dumpedRdbStore, replId);
             super.beginReceiveRdbData(replId, masterOffset);
+        } catch (UnexpectedReplIdException e) {
+            dumpFail(new RdbOnlyPsyncReplIdNotSameException("[beginReceiveRdbData]", e));
         } catch (IOException e) {
             logger.error("[beginReceiveRdbData]", e);
         }

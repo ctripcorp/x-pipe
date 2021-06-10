@@ -101,7 +101,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long masterOffset)
+			public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, EofType eofType, long masterOffset, String expectedReplId)
 					throws IOException {
 				throw new UnsupportedOperationException();
 			}
@@ -183,7 +183,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void rdbUpdated(DumpedRdbStore dumpedRdbStore) throws IOException {
+	public void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException {
 		throw new UnsupportedOperationException();
 	}
 

@@ -61,7 +61,7 @@ public interface MetaStore {
 	@Deprecated
 	void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException;
 
-	ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long rdbOffset) throws IOException;
+	ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, EofType eofType, long rdbOffset, String expectedReplId) throws IOException;
 	
 	void updateKeeperRunid(String keeperRunid) throws IOException;
 

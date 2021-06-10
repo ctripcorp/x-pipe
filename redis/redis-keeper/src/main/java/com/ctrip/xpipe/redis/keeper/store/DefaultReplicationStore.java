@@ -135,7 +135,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public void rdbUpdated(DumpedRdbStore dumpedRdbStore) throws IOException {
+	public void checkReplIdAndUpdateRdb(DumpedRdbStore dumpedRdbStore, String expectedReplId) throws IOException {
 
 		makeSureOpen();
 
@@ -151,7 +151,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			long rdbOffset = dumpedRdbStore.rdbOffset();
 
 			@SuppressWarnings("unused")
-			ReplicationStoreMeta metaDup = metaStore.rdbUpdated(dumpedRdbFile.getName(), eofType, rdbOffset);
+			ReplicationStoreMeta metaDup = metaStore.checkReplIdAndUpdateRdbInfo(dumpedRdbFile.getName(), eofType, rdbOffset, expectedReplId);
 
 			dumpedRdbStore.addListener(new ReplicationStoreRdbFileListener(dumpedRdbStore));
 
