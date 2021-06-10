@@ -28,12 +28,17 @@ rm $DIR/iplist
 
 $DIR/generate_iplist.sh $dc
 
+#check time
+echo "============================start check time==============================="
+$DIR/check_time.sh $DIR/iplist
+
 #change add_cron.sh
 echo "sudo sh -c 'echo \"$isolate_minute $isolate_hour * * * sudo ~/remote_cron/isolate_iplist.sh\" > /var/spool/cron/xpipe'" > $REMOTE_SCRIPT_DIR/add_cron.sh
 chmod +x $REMOTE_SCRIPT_DIR/add_cron.sh
 
 #upload remote_cron folder
 #only need upload first time
+echo "============================start upload scripts==============================="
 remote_dir="~"
 if [ "$upload_sh" == "n" ]; then
     echo "upload add_cron.sh only"
@@ -44,7 +49,9 @@ else
 fi
 
 #upload iplist
+echo "============================start upload iplists==============================="
 $DIR/upload_iplists.sh
 
 #ssh trigger add cron
+echo "============================start trigger cron==============================="
 $DIR/trigger_add_cron.sh
