@@ -111,12 +111,12 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     }
 
     @Override
-    public void beginReceiveRdbData(long masterOffset) {
+    public void beginReceiveRdbData(String replId, long masterOffset) {
 
         try {
             logger.info("[beginReceiveRdbData][update rdb]{}", dumpedRdbStore);
             redisMaster.getCurrentReplicationStore().rdbUpdated(dumpedRdbStore);
-            super.beginReceiveRdbData(masterOffset);
+            super.beginReceiveRdbData(replId, masterOffset);
         } catch (IOException e) {
             logger.error("[beginReceiveRdbData]", e);
         }

@@ -444,7 +444,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public void beginWriteRdb(EofType eofType, long offset) {
+	public void beginWriteRdb(EofType eofType, String replId, long offset) {
 	}
 
 	@Override
