@@ -4,20 +4,17 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import org.junit.BeforeClass;
-
-import java.util.Set;
 
 /**
  * @author lishanglin
@@ -82,6 +79,18 @@ public class AbstractCheckerTest extends AbstractRedisTest {
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.ONE_WAY);
         return newRandomRedisHealthCheckInstance(info);
+    }
+
+    protected ClusterHealthCheckInstance newRandomClusterHealthCheckInstance(String activeDc,ClusterType clusterType) throws Exception {
+        DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
+
+        ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster", activeDc,
+                clusterType, 1);
+        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig());
+
+        instance.setInstanceInfo(info).setHealthCheckConfig(config);
+
+        return instance;
     }
 
     protected CheckerConfig buildCheckerConfig() {

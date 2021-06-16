@@ -7,6 +7,7 @@ import com.dianping.cat.message.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -24,6 +25,7 @@ public class CatTransactionMonitor implements TransactionMonitor{
 		Transaction transaction = Cat.newTransaction(type, name);
 		try{
 			task.go();
+			addData(transaction, task.getData());
 			transaction.setStatus(Transaction.SUCCESS);
 		}catch(Throwable th){
 			transaction.setStatus(th);
@@ -39,6 +41,7 @@ public class CatTransactionMonitor implements TransactionMonitor{
 		Transaction transaction = Cat.newTransaction(type, name);
 		try{
 			task.go();
+			addData(transaction, task.getData());
 			transaction.setStatus(Transaction.SUCCESS);
 		}catch(Exception th){
 			transaction.setStatus(th);
@@ -79,4 +82,13 @@ public class CatTransactionMonitor implements TransactionMonitor{
 		}
 		return null;
 	}
+
+	private void addData(Transaction transaction, Map<String, Object> data) {
+		if (data != null) {
+			for (Map.Entry<String, Object> entry : data.entrySet()) {
+				transaction.addData(entry.getKey(), entry.getValue());
+			}
+		}
+	}
+
 }
