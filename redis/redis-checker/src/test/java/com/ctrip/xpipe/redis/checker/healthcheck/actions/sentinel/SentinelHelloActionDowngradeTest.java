@@ -34,9 +34,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
@@ -59,7 +57,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     private int sentinelCollectInterval = 600;
 
-    private int sentinelCheckInterval = 2000;
+    private int sentinelCheckInterval = 800;
 
     private int sentinelSubTimeout = 200;
 
@@ -124,28 +122,25 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     @Test
     public void allUpTest() {
-        setSentinelCollectInterval(1000);
-        sleep(sentinelCheckInterval);
-        allActionDoTaskWithoutWait();
+        allActionDoTask();
 
-        sleep(300);
         assertServerCalled(false, false, true, true);
         // no close connect before collect sentinel hello
         Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
-        sleep(1500);
+
         verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
         verify(downgradeController, times(2)).onAction(Mockito.any());
-        // close connect after collect sentinel hello
-        Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
-        Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
+        // not close connect after collect sentinel hello
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
 
         // break one slave in backup dc
         backupDcSlave1.errorResp = true;
         resetCalled();
         allActionDoTask();
-
-        assertServerCalled(false, false, true, true);
+        // do not resubscribe if successfully subscribed
+        assertServerCalled(false, false, false, false);
         verify(sentinelHelloCollector, times(2)).onAction(Mockito.any());
         verify(downgradeController, times(4)).onAction(Mockito.any());
     }
@@ -153,9 +148,13 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     @Test
     public void backupErrRespTest() {
         setServerErrResp(false, false, true, true);
-
         allActionDoTask();
 
+        //unsubscribe if subscribe failed
+        Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
+        Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
+        Assert.assertEquals(0, activeDcSlave.redisServer.getConnected());
         assertServerCalled(false, false, true, true);
         verify(sentinelHelloCollector, times(0)).onAction(Mockito.any());
         verify(downgradeController, times(2)).onAction(Mockito.any());
@@ -163,17 +162,38 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         resetCalled();
         allActionDoTask();
 
+        //downgrade active dc slave and dr slaves, but unsubscribe dr slaves duo to sub failed
+        Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
+        Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
+        Assert.assertEquals(1, activeDcSlave.redisServer.getConnected());
         assertServerCalled(false, true, true, true);
         verify(downgradeController, times(5)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
+
 
         setServerErrResp(false, false, false, false);
         resetCalled();
         allActionDoTask();
 
-        assertServerCalled(false, true, true, true);
+        //downgrade
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+        Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
+        Assert.assertEquals(1, activeDcSlave.redisServer.getConnected());
+
+        assertServerCalled(false, false, true, true);
         verify(downgradeController, times(8)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(3)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        //unsubscribe master dc slave when not downgrade
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+        Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
+        Assert.assertEquals(0, activeDcSlave.redisServer.getConnected());
     }
 
     @Test
@@ -200,9 +220,14 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         allActionDoTask();
 
 
-        assertServerCalled(false, true, true, true);
+        assertServerCalled(false, false, true, true);
         verify(downgradeController, times(8)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(3)).onAction(Mockito.any());
+
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, false, false, false);
     }
 
     @Test
@@ -285,16 +310,11 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     private void allActionDoTask() {
         sleep(sentinelCheckInterval); // wait for check interval
         allActionDoTaskWithoutWait();
-        sleep(sentinelCollectInterval + 100); // wait for hello collect
+        sleep( sentinelCollectInterval + 600); // wait for hello collect
     }
 
     private void allActionDoTaskWithoutWait() {
         checkAction.new ScheduledHealthCheckTask().run();
-    }
-
-    private void setSentinelCollectInterval(int interval) {
-        this.sentinelCollectInterval = interval;
-        SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = sentinelCollectInterval;
     }
 
     private void setServerHang(boolean activeDcMasterHang, boolean activeDcSlaveHang, boolean backupDcSlave1Hang, boolean backupDcSlave2Hang) {
@@ -377,8 +397,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
                                 if (null != response) ous.write(response.getBytes());
 
-                                while (true) {
-                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001,activeDcMaster.redisServer.getPort()).getBytes());
+                                while (!(errorResp || serverHang)) {
+                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001, activeDcMaster.redisServer.getPort()).getBytes());
                                     sleep(10);
                                 }
                             } catch (Exception e) {
