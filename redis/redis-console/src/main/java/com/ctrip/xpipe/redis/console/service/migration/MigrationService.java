@@ -20,9 +20,17 @@ public interface MigrationService {
 
     long countAllByCluster(long clusterId);
 
+    long countAllByOperator(String operator);
+
+    long countAllByStatus(String status);
+
     List<MigrationModel> find(long size, long offset);
 
     List<MigrationModel> findByCluster(long clusterId, long size, long offset);
+
+    List<MigrationModel> findByOperator(String operator, long size, long offset);
+
+    List<MigrationModel> findByStatus(String status, long size, long offset);
 
     MigrationEventTbl find(long id);
 

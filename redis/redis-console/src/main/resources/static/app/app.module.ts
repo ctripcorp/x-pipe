@@ -1,39 +1,43 @@
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { UpgradeModule, setAngularJSGlobal, downgradeComponent } from '@angular/upgrade/static';
+import {NgModule} from '@angular/core';
+import {BrowserModule} from '@angular/platform-browser';
+import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
+import {UpgradeModule, setAngularJSGlobal, downgradeComponent} from '@angular/upgrade/static';
 
 import * as angular from 'angular'; setAngularJSGlobal(angular);
 import 'zone.js/dist/zone';
 import 'core-js'
 
-import { UIRouterUpgradeModule } from '@uirouter/angular-hybrid';
-import { UIRouterModule } from '@uirouter/angular';
+import {UIRouterUpgradeModule} from '@uirouter/angular-hybrid';
+import {UIRouterModule} from '@uirouter/angular';
 
 import '../scripts/app.angularjs.module';
 
-import { Ng2SmartTableModule } from 'ng2-smart-table';
+import {Ng2SmartTableModule} from 'ng2-smart-table';
+import {MatSelectModule} from '@angular/material/select';
 
-import { ClusterListComponent } from "./cluster.list.component";
+import {DynamicStringValueSelectComponent} from "./dynamic-string-value-select.component";
 
 angular
     .module('directive')
     .directive(
-        'clusterList',
-        downgradeComponent({ component: ClusterListComponent }) as angular.IDirectiveFactory
+        'dynamicStringValueSelect',
+        downgradeComponent({ component: DynamicStringValueSelectComponent }) as angular.IDirectiveFactory
     );
 
 @NgModule({
     imports: [
         BrowserModule,
+        BrowserAnimationsModule,
         UpgradeModule,
         UIRouterUpgradeModule,
         Ng2SmartTableModule,
+        MatSelectModule
     ],
     declarations: [
-        ClusterListComponent
+        DynamicStringValueSelectComponent
     ],
     entryComponents: [
-        ClusterListComponent
+        DynamicStringValueSelectComponent
     ]
 })
 export class AppModule {
