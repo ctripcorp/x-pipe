@@ -178,7 +178,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                         if (ExceptionUtils.isStackTraceUnnecessary(e)) {
                             logger.error("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                         } else {
-                            logger.error("[{}-{}+{}]{} instance sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
+                            logger.error("[{}-{}+{}]{} instance {} sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
                         }
 
                         synchronized (errors) {
