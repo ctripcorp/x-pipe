@@ -23,6 +23,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.mockito.Matchers.any;
@@ -85,6 +86,69 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         }
     }
 
+
+    @Test
+    public void checkTrueMastersTest() throws Exception {
+//        meta master and hello masters all empty
+        Set<SentinelHello> hellos = new HashSet<>();
+        Set<HostPort> trueMasters = sentinelCollector.checkTrueMasters(null, hellos);
+        Assert.assertTrue(trueMasters.isEmpty());
+
+//        meta master and hello masters consistent
+        HostPort helloMaster = new HostPort(LOCAL_HOST, randomPort());
+        SentinelHello hello1 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), helloMaster, monitorName);
+        SentinelHello hello2 = new SentinelHello(new HostPort(LOCAL_HOST, 5001), helloMaster, monitorName);
+        SentinelHello hello3 = new SentinelHello(new HostPort(LOCAL_HOST, 5002), helloMaster, monitorName);
+        SentinelHello hello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), helloMaster, monitorName);
+        SentinelHello hello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), helloMaster, monitorName);
+        hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
+
+        trueMasters = sentinelCollector.checkTrueMasters(helloMaster, hellos);
+        Assert.assertEquals(1, trueMasters.size());
+        Assert.assertTrue(trueMasters.contains(helloMaster));
+
+//        meta master null and hello master consistent
+        trueMasters = sentinelCollector.checkTrueMasters(null, hellos);
+        Assert.assertEquals(1, trueMasters.size());
+        Assert.assertTrue(trueMasters.contains(helloMaster));
+
+//        meta master inconsistent with hello master
+
+        //double masters
+        HostPort metaMaster = new HostPort(LOCAL_HOST, randomPort());
+
+        Server metaMasterServer = startServer(metaMaster.getPort(), "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":" + metaMaster.getPort() + "\r\n");
+        Server helloMasterServer = startServer(helloMaster.getPort(), "*3\r\n"
+                + "$6\r\nmaster\r\n"
+                + "$9\r\nlocalhost\r\n"
+                + ":" + helloMaster.getPort() + "\r\n");
+        trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
+        Assert.assertEquals(2, trueMasters.size());
+        metaMasterServer.stop();
+
+
+        //single master
+        metaMaster = new HostPort(LOCAL_HOST, randomPort());
+        trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
+        Assert.assertEquals(1, trueMasters.size());
+        Assert.assertTrue(trueMasters.contains(helloMaster));
+        helloMasterServer.stop();
+
+        //no masters
+        helloMaster = new HostPort(LOCAL_HOST, randomPort());
+        hello1 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), helloMaster, monitorName);
+        hello2 = new SentinelHello(new HostPort(LOCAL_HOST, 5001), helloMaster, monitorName);
+        hello3 = new SentinelHello(new HostPort(LOCAL_HOST, 5002), helloMaster, monitorName);
+        hello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), helloMaster, monitorName);
+        hello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), helloMaster, monitorName);
+        hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
+        trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
+        Assert.assertEquals(0, trueMasters.size());
+    }
+
     @Test
     public void testAdd(){
 
@@ -118,17 +182,17 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
         );
 
-        Set<SentinelHello> toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, master);
+        Set<SentinelHello> toDelete = sentinelCollector.checkStaleHellos(monitorName, masterSentinels, hellos);
 
         Assert.assertEquals(0, toDelete.size());
 
         hellos.add(new SentinelHello(new HostPort("127.0.0.1", 5000), master, monitorName + "_1"));
-        toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, master);
+        toDelete = sentinelCollector.checkStaleHellos(monitorName, masterSentinels, hellos);
         Assert.assertEquals(1, toDelete.size());
         Assert.assertEquals(5, hellos.size());
 
         hellos.add(new SentinelHello(new HostPort("127.0.0.1", 6000), master, monitorName));
-        toDelete = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, master);
+        toDelete = sentinelCollector.checkStaleHellos(monitorName, masterSentinels, hellos);
         Assert.assertEquals(1, toDelete.size());
         Assert.assertEquals(5, hellos.size());
 
@@ -152,7 +216,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.setCheckerConfig(mock(CheckerConfig.class));
         sentinelCollector = spy(sentinelCollector);
         doCallRealMethod().when(sentinelCollector).onAction(any(SentinelActionContext.class));
-        doReturn(null).when(sentinelCollector).checkAndDelete(anyString(), any(), any(), any(), any());
+        doReturn(null).when(sentinelCollector).checkStaleHellos(anyString(), any(), any());
         doNothing().when(sentinelCollector).checkReset(anyString(), any(), any(), any());
         doReturn(null).when(sentinelCollector).checkToAdd(anyString(), any(), any(), any(), any(), any(), any());
 //        doNothing().when(sentinelCollector).doAction(any(), any(), any());
@@ -162,7 +226,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
             hellos.add(SentinelHello.fromString(String.format("127.0.0.1,%d,d156c06308a5e5c6edba1f8786b32e22cfceafcc,8410,shard,127.0.0.1,16379,0", 500 + i)));
         }
         sentinelCollector.onAction(new SentinelActionContext(instance, hellos));
-        verify(sentinelCollector, never()).checkAndDelete(anyString(), any(), any(), any(), any());
+        verify(sentinelCollector, never()).checkStaleHellos(anyString(), any(), any());
     }
 
     // for whom reading this code, here's how and why all this happens:
@@ -171,6 +235,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     // And so on so forth, backup(DR) site redises receive message from keeper, which, apparently will be nothing
     // 3. A protection collection will be triggered if an empty Sentinel Hello set is received
     @Test
+    @Ignore
     public void testEmptySentinelLogDueToDoubleMasterInOneShard() throws Exception {
         String clusterId = "clusterId", shardId = "shardId";
         monitorName = shardId;
@@ -235,7 +300,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 new SentinelHello(new HostPort("127.0.0.1", 5003), new HostPort("127.0.0.3", 6379), monitorName),
                 new SentinelHello(new HostPort("127.0.0.1", 5004), new HostPort("127.0.0.3", 6379), monitorName)
         );
-        Set<SentinelHello> toDeleted = sentinelCollector.checkAndDelete(monitorName, masterSentinels, hellos, quorumConfig, new HostPort("127.0.0.2", 6379));
+        Set<SentinelHello> toDeleted = sentinelCollector.checkStaleHellos(monitorName, masterSentinels, hellos);
         Assert.assertEquals(5, toDeleted.size());
     }
 
@@ -278,6 +343,22 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         sentinelCollector.onAction(new SentinelActionContext(instance, Collections.emptySet()));
         verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
+    }
+
+    @Test
+    public void checkWrongHelloMastersTest() throws Exception {
+        Set<SentinelHello> hellos = Sets.newHashSet(
+                new SentinelHello(new HostPort("127.0.0.1", 5000), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5001), new HostPort("127.0.0.3", 6380), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5002), new HostPort("127.0.0.3", 6379), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5003), new HostPort("127.0.0.3", 6381), monitorName),
+                new SentinelHello(new HostPort("127.0.0.1", 5004), new HostPort("127.0.0.3", 6379), monitorName)
+        );
+
+        HostPort trueMaster = new HostPort("127.0.0.3", 6379);
+        Set<SentinelHello> wrongHellos = sentinelCollector.checkWrongMasterHellos(hellos, trueMaster);
+        Assert.assertEquals(3, hellos.size());
+        Assert.assertEquals(2, wrongHellos.size());
     }
 
 }

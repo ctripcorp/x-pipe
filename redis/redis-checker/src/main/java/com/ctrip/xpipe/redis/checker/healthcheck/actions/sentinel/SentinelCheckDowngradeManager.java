@@ -45,7 +45,9 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-
+        for (SentinelCheckDowngradeCollectorController sentinelCheckDowngradeCollectorController : controllerMap.values())
+            sentinelCheckDowngradeCollectorController.stopWatch(action);
+        controllerMap.clear();
     }
 
     private SentinelCheckDowngradeCollectorController getCheckCollectorController(String cluster, String shard) {
@@ -61,6 +63,11 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
     @VisibleForTesting
     protected void addCheckCollectorController(String cluster, String shard, SentinelCheckDowngradeCollectorController collectorController) {
         controllerMap.put(Pair.of(cluster, shard), collectorController);
+    }
+
+    @VisibleForTesting
+    protected Map<Pair<String, String>, SentinelCheckDowngradeCollectorController> getAllCheckCollectorControllers() {
+        return controllerMap;
     }
 
 }

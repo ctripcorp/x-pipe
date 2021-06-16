@@ -511,6 +511,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				DefaultRedisKeeperServer.this.redisKeeperServerState = redisKeeperServerState;
 				notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 			}
+
+			@Override
+			public Map getData() {
+				return null;
+			}
+
 		});
 		
 	}

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -10,16 +12,20 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 
 public class SentinelCheckDowngradeCollectorController extends AbstractAggregationCollector<DefaultSentinelHelloCollector> implements OneWaySupport, SentinelActionController {
 
     private AtomicBoolean needDowngrade = new AtomicBoolean(false);
 
-    private MetaCache metaCache;
+    private AtomicBoolean activeDcCollected = new AtomicBoolean(false);
 
-    // avoid always do downgrade without recovery
-    private volatile long downgradeBeginTime = 0;
+    private MetaCache metaCache;
 
     public SentinelCheckDowngradeCollectorController(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterId, String shardId) {
         super(sentinelHelloCollector, clusterId, shardId);
@@ -28,51 +34,77 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        if (tooLongNoCollect(instance) && needDowngrade.compareAndSet(true, false)) {
-            logger.warn("[{}-{}][shouldCheck] too long no collect, cancel downgrade", clusterId, shardId);
-        }
+        activeDcCollected.compareAndSet(true, false);
         return shouldCheckFromRedis(instance);
     }
 
     @Override
     public void onAction(SentinelActionContext context) {
+        TransactionMonitor transaction = TransactionMonitor.DEFAULT;
         RedisInstanceInfo info = context.instance().getCheckInfo();
-        if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId)) return;
-        if (!shouldCheckFromRedis(context.instance())) return;
+        transaction.logTransactionSwallowException("sentinel.check.notify", info.getClusterId(), new Task() {
+            @Override
+            public void go() throws Exception {
+                if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId))
+                    return;
+                if (!shouldCheckFromRedis(context.instance())) return;
 
-        // only deal with success result when downgrade
-        if (!context.isFail() && needDowngrade.compareAndSet(true, false)) {
-            logger.info("[{}-{}][onAction] sub from active dc redis {}", clusterId, shardId, info.getHostPort());
-            handleAllHello(context.instance());
-            return;
-        }
+                // only deal with success result when downgrade
+                if (!context.isFail() && info.isInActiveDc() && activeDcCollected.compareAndSet(false, true)) {
+                    logger.info("[{}-{}+{}]active dc {} redis {} sub finish", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
+                    handleAllActiveDcHellos(context.instance(), context.getResult());
+                    return;
+                }
 
-        // handle backup dc hello when all right
-        if (info.isInActiveDc()) return;
-        if (collectHello(context) >= countBackDcRedis()) {
-            if (checkFinishedInstance.size() == checkFailInstance.size()) {
-                logger.warn("[{}-{}][onAction] backup dc sub sentinel hello all fail, try to sub from active dc", clusterId, shardId);
-                beginDowngrade();
-                return;
+                // handle backup dc hello when all right
+                if (info.isInActiveDc()) return;
+                if (collectHello(context) >= countBackDcRedis()) {
+                    if (checkFinishedInstance.size() == checkFailInstance.size()) {
+                        logger.warn("[{}-{}+{}]backup dc {} all sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
+                        beginDowngrade();
+                        return;
+                    }
+                    needDowngrade.compareAndSet(true, false);
+                    logger.debug("[{}-{}+{}]backup dc {} sub finish", LOG_TITLE, clusterId, shardId, info.getDcId());
+                    handleAllBackupDcHellos(context.instance());
+                }
             }
-            logger.debug("[{}-{}][onAction] sub from backup dc all finish", clusterId, shardId);
-            handleAllHello(context.instance());
-        }
+
+            @Override
+            public Map<String, Object> getData() {
+                Map<String, Object> transactionData = new HashMap<>();
+                transactionData.put("checkRedisInstances", info);
+                return transactionData;
+            }
+        });
     }
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-        // no nothing
+        super.stopWatch(action);
+        needDowngrade.set(false);
     }
 
     private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
-        return !instance.getCheckInfo().isMaster()
-                && instance.getCheckInfo().isInActiveDc() == needDowngrade.get();
+        return noNeedDowngradeAndIsDrSlave(instance) || needDowngradeAndIsSlave(instance);
     }
 
-    private boolean tooLongNoCollect(RedisHealthCheckInstance instance) {
-        int sentinelHealthCheckInterval = instance.getHealthCheckConfig().getSentinelCheckIntervalMilli();
-        return System.currentTimeMillis() - downgradeBeginTime > 3 * sentinelHealthCheckInterval;
+    private boolean noNeedDowngradeAndIsDrSlave(RedisHealthCheckInstance instance) {
+        boolean shouldCheck = !needDowngrade.get() && !instance.getCheckInfo().isMaster() && !instance.getCheckInfo().isInActiveDc();
+
+        logger.debug("[{}-{}+{}][{}]noNeedDowngradeAndIsDrSlave:{}, needDowngrade:{}, isMaster:{}, isInActiveDc:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
+                shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster(), instance.getCheckInfo().isInActiveDc());
+
+        return shouldCheck;
+    }
+
+    private boolean needDowngradeAndIsSlave(RedisHealthCheckInstance instance) {
+        boolean shouldCheck = needDowngrade.get() && !instance.getCheckInfo().isMaster();
+
+        logger.debug("[{}-{}+{}][{}]needDowngradeAndIsSlave:{}, needDowngrade:{}, isMaster:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
+                shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster());
+
+        return shouldCheck;
     }
 
     private int countBackDcRedis() {
@@ -90,8 +122,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     }
 
     private void beginDowngrade() {
-        downgradeBeginTime = System.currentTimeMillis();
-        needDowngrade.set(true);
+        needDowngrade.compareAndSet(false, true);
         resetCheckResult();
     }
 

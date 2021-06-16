@@ -103,6 +103,11 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
                 XpipeMeta xpipeMeta = createXpipeMeta(dcMetas);
                 refreshMeta(xpipeMeta);
             }
+
+            @Override
+            public Map getData() {
+                return null;
+            }
         });
     }
 
