@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.integratedtest.console;
 
+
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -19,17 +21,35 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.integratedtest.console.app.ConsoleApp;
 import com.ctrip.xpipe.redis.integratedtest.console.app.MetaserverApp;
+import com.ctrip.xpipe.redis.integratedtest.console.cmd.CrdtRedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisKillCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.ServerStartCmd;
+import com.ctrip.xpipe.redis.integratedtest.metaserver.proxy.LocalProxyConfig;
+import com.ctrip.xpipe.redis.integratedtest.metaserver.proxy.LocalResourceManager;
 import com.ctrip.xpipe.redis.keeper.KeeperContainerApplication;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
+import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
+import com.ctrip.xpipe.redis.proxy.ProxyApplication;
+import com.ctrip.xpipe.redis.proxy.ProxyServer;
+import com.ctrip.xpipe.redis.proxy.config.DefaultProxyConfig;
+import com.ctrip.xpipe.redis.proxy.config.ProxyConfig;
+import com.ctrip.xpipe.redis.proxy.monitor.DefaultTunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.monitor.TunnelMonitorManager;
+import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
+import com.ctrip.xpipe.redis.proxy.tunnel.DefaultTunnelManager;
+import com.ctrip.xpipe.redis.proxy.tunnel.TunnelManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToByteEncoder;
+import org.junit.Assert;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.web.client.RestOperations;
 
 import java.io.File;
@@ -61,7 +81,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
 
     protected RestOperations restTemplate;
 
-    private List<ForkProcessCmd> subProcessCmds;
+    protected List<ForkProcessCmd> subProcessCmds;
 
     private List<Integer> redisPorts;
 
@@ -92,6 +112,21 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
 
     protected RedisStartCmd startRedis(int port) {
         RedisStartCmd redis = new RedisStartCmd(port, executors);
+        redis.execute(executors).addListener(redisFuture -> {
+            if (redisFuture.isSuccess()) {
+                logger.info("[startRedis] redis{} end {}", port, redisFuture.get());
+            } else {
+                logger.info("[startRedis] redis{} fail", port, redisFuture.cause());
+            }
+        });
+
+        redisPorts.add(port);
+        subProcessCmds.add(redis);
+        return redis;
+    }
+
+    protected RedisStartCmd startCrdtRedis(int gid, int port) {
+        RedisStartCmd redis = new CrdtRedisStartCmd(gid, port, executors);
         redis.execute(executors).addListener(redisFuture -> {
             if (redisFuture.isSuccess()) {
                 logger.info("[startRedis] redis{} end {}", port, redisFuture.get());
@@ -178,6 +213,26 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         return consoleServer;
     }
 
+    protected ServerStartCmd startProxyServer1(String idc, String console, String zk, int tcp_port, int tls_port, Map<String, DcInfo> dcInfos) {
+        ServerStartCmd proxyserver = new ServerStartCmd(idc + tcp_port, ProxyApplication.class.getName(), new HashMap<String, String>() {{
+            put(KEY_CONSOLE_ADDRESS, console);
+            put(DefaultMetaServerConfig.KEY_DC_INFOS, JsonCodec.INSTANCE.encode(dcInfos));
+            put(KEY_ZK_ADDRESS, zk);
+            put("proxy.frontend.tls.port",String.valueOf(tls_port));
+            put("proxy.frontend.tcp.port", String.valueOf(tcp_port));
+        }}, executors);
+        proxyserver.execute(executors).addListener(metaserverFuture -> {
+            if (metaserverFuture.isSuccess()) {
+                logger.info("[startMetaServer] metaserver {}-{} end {}", idc, tcp_port, metaserverFuture.get());
+            } else {
+                logger.info("[startMetaServer] metaserver {}-{} fail", idc, tcp_port, metaserverFuture.cause());
+            }
+        });
+
+        subProcessCmds.add(proxyserver);
+        return proxyserver;
+    }
+
     protected ServerStartCmd startMetaServer(String idc, String console, String zk, int port, Map<String, DcInfo> dcInfos) {
         ServerStartCmd metaserver = new ServerStartCmd(idc + port, MetaserverApp.class.getName(), new HashMap<String, String>() {{
             put("server.port", String.valueOf(port));
@@ -186,6 +241,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
             put(DATA_CENTER_KEY, idc);
             put(KEY_CONSOLE_ADDRESS, console);
             put(KEY_ZK_ADDRESS, zk);
+            put("meta.cluster.types" , "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
             put(DefaultMetaServerConfig.KEY_DC_INFOS, JsonCodec.INSTANCE.encode(dcInfos));
         }}, executors);
         metaserver.execute(executors).addListener(metaserverFuture -> {
@@ -359,21 +415,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         return false;
     }
 
-    protected void cleanupKeeper() {
-        String userDir = System.getProperty("user.dir");
-        IntStream.of(7080, 7081, 7082, 7180, 7181, 7182).forEach(port -> {
-            File dir = new File(userDir + "/src/test/tmp/keepercontainer" + port);
-            if (dir.exists()) {
-                try {
-                    FileUtils.recursiveDelete(dir);
-                } catch (Throwable th) {
-                    logger.info("[cleanupKeeper][{}] delete dir fail", port, th);
-                }
-            } else {
-                logger.info("[cleanupKeeper][{}] no rsd dir {}", port, dir.getAbsolutePath());
-            }
-        });
-    }
+
 
     protected void cleanupRDB() {
         String userDir = System.getProperty("user.dir");
@@ -391,7 +433,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
     protected void cleanupConf() {
         String userDir = System.getProperty("user.dir");
         // TODO: override conf to be clean in sub-class
-        IntStream.of(6379, 7379, 5000, 5001, 5002, 17170, 17171, 17172).forEach(port -> {
+        IntStream.of(6379, 7379, 5000, 5001, 5002, 17170, 17171, 17172, 32222, 32223).forEach(port -> {
             File conf = new File(userDir + "/src/test/tmp/redis" + port + ".conf");
             try {
                 if (conf.exists()) conf.delete();

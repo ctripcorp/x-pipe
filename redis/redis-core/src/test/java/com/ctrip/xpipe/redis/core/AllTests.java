@@ -55,6 +55,7 @@ import org.junit.runners.Suite.SuiteClasses;
         InfoResultExtractorTest.class,
         RoleCommandTest.class,
         KeeperCommandTest.class,
+        PeerOfCommandTest.class,
         MasterRoleTest.class,
         MasterInfoTest.class,
         DcInfoTest.class,

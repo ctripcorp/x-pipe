@@ -3,19 +3,23 @@ package com.ctrip.xpipe.redis.meta.server.meta.impl;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyFactory;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyType;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -258,13 +262,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			
 			dcMetaChange((DcMetaComparator)args);
 		} else if(args instanceof DcRouteMetaComparator) {
-
-			routeChanges();
+			DcRouteMetaComparator dc = (DcRouteMetaComparator)args;
+			routeChanges(dc.idDesc());
 		} else{
 			
 			throw new IllegalArgumentException(String.format("unknown args(%s):%s", args.getClass(), args));
 		}
 	}
+
 
 	@VisibleForTesting
 	protected void dcMetaChange(DcMetaComparator comparator) {
@@ -298,12 +303,25 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@VisibleForTesting
-	protected void routeChanges() {
+	protected void routeChanges(String dcid) {
 		for(String clusterId : allClusters()) {
-			if(randomRoute(clusterId) != null) {
-				ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
-				refreshKeeperMaster(clusterMeta);
+			ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+			if(ClusterType.lookup(clusterMeta.getType()) == ClusterType.ONE_WAY) {
+				if(randomRoute(clusterId) != null) {
+					refreshKeeperMaster(clusterMeta);
+				}
+			} else if(ClusterType.lookup(clusterMeta.getType()) == ClusterType.BI_DIRECTION) {
+				refreshCRDTMaster(clusterMeta, dcid);
 			}
+		}
+	}
+
+	@VisibleForTesting
+	protected void refreshCRDTMaster(ClusterMeta clusterMeta, String dcId) {
+		Set<String> shards = clusterMeta.getShards().keySet();
+		String clusterId = clusterMeta.getId();
+		for (String shardId : shards) {
+			notifyPeerMasterChange(dcId, clusterId, shardId);
 		}
 	}
 
@@ -341,7 +359,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	public RouteMeta randomRoute(String clusterId) {
 		return dcMetaCache.randomRoute(clusterId);
 	}
-
 
 	@Override
 	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
@@ -439,19 +456,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port) {
+	public void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port, RedisProxy proxy) {
 		if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
 			throw new IllegalArgumentException(String.format("peer master must from other dc %s %s %d %s:%d",
 					clusterId, shardId, gid, ip, port));
 		}
-
-		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
+		ProxyRedisMeta peerMaster = (ProxyRedisMeta)new ProxyRedisMeta().setProxy(proxy).setIp(ip).setPort(port).setGid(gid);
 		currentMeta.setPeerMaster(dcId, clusterId, shardId, peerMaster);
 		notifyPeerMasterChange(dcId, clusterId, shardId);
 	}
 
 	@Override
-	public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
+	public ProxyRedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
 		return currentMeta.getPeerMaster(dcId, clusterId, shardId);
 	}
 
@@ -460,7 +476,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return currentMeta.getUpstreamPeerDcs(clusterId, shardId);
 	}
 
-	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+	public List<ProxyRedisMeta> getAllPeerMasters(String clusterId, String shardId) {
 		return currentMeta.getAllPeerMasters(clusterId, shardId);
 	}
 

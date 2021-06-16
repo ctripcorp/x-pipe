@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentKeeperShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
@@ -130,14 +131,15 @@ public class CurrentMeta implements Releasable {
 		return null;
 	}
 
-	public void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peerMaster) {
+	public void setPeerMaster(String dcId, String clusterId, String shardId, ProxyRedisMeta peerMaster) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
+
 		currentCRDTShardMeta.setPeerMaster(dcId, peerMaster);
 	}
 
-	public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
+	public ProxyRedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);
@@ -158,7 +160,7 @@ public class CurrentMeta implements Releasable {
 		return currentCRDTShardMeta.getUpstreamPeerDcs();
 	}
 
-	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+	public List<ProxyRedisMeta> getAllPeerMasters(String clusterId, String shardId) {
 		checkClusterSupportPeerMaster(clusterId);
 
 		CurrentCRDTShardMeta currentCRDTShardMeta = (CurrentCRDTShardMeta) getCurrentShardMetaOrThrowException(clusterId, shardId);

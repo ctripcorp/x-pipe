@@ -14,6 +14,7 @@ import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
 import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
@@ -47,13 +48,13 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private String shardId;
 
-    private List<RedisMeta> upstreamPeerMasters;
+    private List<ProxyRedisMeta> upstreamPeerMasters;
 
     private Pair<String, Integer> currentMaster;
 
     private String masterVersion;
 
-    private List<RedisMeta> currentPeerMasters;
+    private List<ProxyRedisMeta> currentPeerMasters;
 
     private SimpleObjectPool<NettyClient> clientPool;
 
@@ -65,22 +66,22 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private Executor executors;
 
-    private Map<Long, NodeDeleted<HostPort>> peerMasterDeleted;
+    private Map<Long, NodeDeleted<ProxyRedisMeta>> peerMasterDeleted;
 
-    private Map<Long, NodeAdded<HostPort>> peerMasterAdded;
+    private Map<Long, NodeAdded<ProxyRedisMeta>> peerMasterAdded;
 
-    private Map<Long, NodeModified<HostPort>> peerMasterChanged;
+    private Map<Long, NodeModified<ProxyRedisMeta>> peerMasterChanged;
 
     private boolean doDelete = true;
 
-    public PeerMasterAdjustJob(String clusterId, String shardId, List<RedisMeta> upstreamPeerMasters,
+    public PeerMasterAdjustJob(String clusterId, String shardId, List<ProxyRedisMeta> upstreamPeerMasters,
                                Pair<String, Integer> currentMaster, boolean doDelete,
                                SimpleObjectPool<NettyClient> clientPool
             , ScheduledExecutorService scheduled, Executor executors) {
         this(clusterId, shardId, upstreamPeerMasters, currentMaster, doDelete, clientPool, 1000, 5, scheduled, executors);
     }
 
-    public PeerMasterAdjustJob(String clusterId, String shardId, List<RedisMeta> upstreamPeerMasters,
+    public PeerMasterAdjustJob(String clusterId, String shardId, List<ProxyRedisMeta> upstreamPeerMasters,
                                Pair<String, Integer> currentMaster, boolean doDelete,
                                SimpleObjectPool<NettyClient> clientPool
             , int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors) {
@@ -126,14 +127,14 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     private void doPeerMasterAdjust() {
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain(true);
         peerMasterChanged.forEach((gid, nodeModified) -> {
-            HostPort peerMaster = nodeModified.getNewNode();
+            ProxyRedisMeta peerMaster = nodeModified.getNewNode();
             logOperation(PEER_CHANGE, currentMaster, gid, nodeModified);
-            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getHost(), peerMaster.getPort(), scheduled)));
+            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getIp(), peerMaster.getPort(), peerMaster.getProxy(), scheduled)));
         });
         peerMasterAdded.forEach((gid, nodeAdded) -> {
-            HostPort peerMaster = nodeAdded.getNode();
+            ProxyRedisMeta peerMaster = nodeAdded.getNode();
             logOperation(PEER_ADD, currentMaster, gid, nodeAdded);
-            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getHost(), peerMaster.getPort(), scheduled)));
+            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getIp(), peerMaster.getPort(), peerMaster.getProxy(), scheduled)));
         });
         peerMasterDeleted.forEach((gid, nodeDeleted) -> {
             if (doDelete) {
@@ -165,7 +166,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     @Override
     public String toString() {
         return String.format("[%s] master: %s",
-                StringUtil.join(",", (peerMaster) -> String.format("%d %s:%d", peerMaster.getGid(), peerMaster.getIp(), peerMaster.getPort()), upstreamPeerMasters),
+                StringUtil.join(",", (peerMaster) -> String.format("%d %s:%d proxy:%s", peerMaster.getGid(), peerMaster.getIp(), peerMaster.getPort(), peerMaster.getProxy().toString()), upstreamPeerMasters),
                 currentMaster);
     }
 
@@ -307,14 +308,15 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             peerMasterChanged = new HashMap<>();
             peerMasterDeleted = new HashMap<>();
             peerMasterAdded = new HashMap<>();
-            Set<HostPort> currentPeerMasterAddrSet = currentPeerMasters.stream()
-                    .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
-                    .collect(Collectors.toSet());
+            Map<HostPort, ProxyRedisMeta> currentPeerMasterAddrSet = new HashMap<>();
+            currentPeerMasters.forEach(peerRedisMeta -> {
+                currentPeerMasterAddrSet.put(new HostPort(peerRedisMeta.getIp(), peerRedisMeta.getPort()), peerRedisMeta);
+            });
 
-            upstreamPeerMasters.forEach(redisMeta -> {
-                HostPort peerMaster = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-                if (!currentPeerMasterAddrSet.contains(peerMaster)) {
-                    peerMasterAdded.put(redisMeta.getGid(), new NodeAdded<>(peerMaster));
+            upstreamPeerMasters.forEach(peerRedisMeta -> {
+                HostPort peerMaster = new HostPort(peerRedisMeta.getIp(), peerRedisMeta.getPort());
+                if (currentPeerMasterAddrSet.get(peerMaster) == null) {
+                    peerMasterAdded.put(peerRedisMeta.getGid(), new NodeAdded<>(peerRedisMeta));
                 }
             });
 
@@ -336,26 +338,41 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {
-            Map<Long, HostPort> flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
-            Map<Long, HostPort> flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
+            Map<Long, ProxyRedisMeta> flatExpectedPeerMaster = parsePeerRedisMasters(upstreamPeerMasters);
+            Map<Long, ProxyRedisMeta> flatCurrentPeerMaster = parsePeerRedisMasters(currentPeerMasters);
             Set<Long> retainGidSet = new HashSet<>(flatExpectedPeerMaster.keySet());
             Set<Long> currentGidSet = flatCurrentPeerMaster.keySet();
             retainGidSet.retainAll(currentGidSet);
-
-            makePeerMasterChange(flatExpectedPeerMaster, flatCurrentPeerMaster, retainGidSet);
-            makePeerMasterAdded(flatExpectedPeerMaster, retainGidSet);
-            makePeerMasterDeleted(flatCurrentPeerMaster, retainGidSet);
-
+            makePeerRedisMasterChange(flatExpectedPeerMaster, flatCurrentPeerMaster, retainGidSet);
+            makePeerRedisMasterAdded(flatExpectedPeerMaster, retainGidSet);
+            makePeerRedisMasterDeleted(flatCurrentPeerMaster, retainGidSet);
             future().setSuccess();
+//            Map<Long, HostPort> flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
+//            Map<Long, HostPort> flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
+//            Set<Long> retainGidSet = new HashSet<>(flatExpectedPeerMaster.keySet());
+//            Set<Long> currentGidSet = flatCurrentPeerMaster.keySet();
+//            retainGidSet.retainAll(currentGidSet);
+//
+//            makePeerMasterChange(flatExpectedPeerMaster, flatCurrentPeerMaster, retainGidSet);
+//            makePeerMasterAdded(flatExpectedPeerMaster, retainGidSet);
+//            makePeerMasterDeleted(flatCurrentPeerMaster, retainGidSet);
+//
+//            future().setSuccess();
         }
 
-        private Map<Long, HostPort> parsePeerMasters(List<RedisMeta> peerMasters) {
-            Map<Long, HostPort> flatPeerMasterInfo = new HashMap<>();
-            peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getGid(), new HostPort(peerMaster.getIp(), peerMaster.getPort())));
+//        private Map<Long, HostPort> parsePeerMasters(List<PeerRedisMeta> peerMasters) {
+//            Map<Long, HostPort> flatPeerMasterInfo = new HashMap<>();
+//            peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getRedisMeta().getGid(), new HostPort(peerMaster.getRedisMeta().getIp(), peerMaster.getRedisMeta().getPort())));
+//            return flatPeerMasterInfo;
+//        }
+
+        private Map<Long, ProxyRedisMeta> parsePeerRedisMasters(List<ProxyRedisMeta> peerRedisMetas) {
+            Map<Long, ProxyRedisMeta> flatPeerMasterInfo = new HashMap<>();
+            peerRedisMetas.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getGid(), peerMaster));
             return flatPeerMasterInfo;
         }
 
-        private void makePeerMasterChange(Map<Long, HostPort> expectedPeerMaster, Map<Long, HostPort> currentPeerMaster, Set<Long> retainGid) {
+        private void makePeerRedisMasterChange(Map<Long, ProxyRedisMeta> expectedPeerMaster, Map<Long, ProxyRedisMeta> currentPeerMaster, Set<Long> retainGid) {
             peerMasterChanged = new HashMap<>();
 
             retainGid.forEach(gid -> {
@@ -365,7 +382,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             });
         }
 
-        private void makePeerMasterAdded(Map<Long, HostPort> expectedPeerMaster, Set<Long> retainGid) {
+        private void makePeerRedisMasterAdded(Map<Long, ProxyRedisMeta> expectedPeerMaster, Set<Long> retainGid) {
             peerMasterAdded = new HashMap<>();
             expectedPeerMaster.forEach((gid, peerMaster) -> {
                 if (!retainGid.contains(gid)) {
@@ -374,7 +391,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             });
         }
 
-        private void makePeerMasterDeleted(Map<Long, HostPort> currentPeerMaster, Set<Long> retainGid) {
+        private void makePeerRedisMasterDeleted(Map<Long, ProxyRedisMeta> currentPeerMaster, Set<Long> retainGid) {
             peerMasterDeleted = new HashMap<>();
 
             currentPeerMaster.forEach((gid, peerMaster) -> {

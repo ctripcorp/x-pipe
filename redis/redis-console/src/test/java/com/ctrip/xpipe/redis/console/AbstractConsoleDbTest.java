@@ -39,7 +39,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     public static final String MYSQL_TABLE_STRUCTURE = "sql/mysql/xpipedemodbtables.sql";
     public static final String MYSQL_TABLE_DATA = "sql/mysql/xpipedemodbinitdata.sql";
 
-    protected String[] dcNames = new String[]{"jq", "oy"};
+    protected String[] dcNames = new String[]{"jq", "oy", "fra"};
 
     @BeforeClass
     public static void setUp() {
@@ -70,7 +70,19 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         logger.info("[AbstractConsoleDbTest] setUpTestDataSource");
 
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
-        DataSource dataSource = dsManager.getDataSource(DATA_SOURCE);
+        DataSource dataSource;
+        while(true) {
+            try {
+                dataSource = dsManager.getDataSource(DATA_SOURCE);
+                break;
+            } catch (Exception e) {
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException te) {
+
+                }
+            }
+        }
         String driver = dataSource.getDescriptor().getProperty("driver", null);
 
         if (driver != null && driver.equals("org.h2.Driver")) {

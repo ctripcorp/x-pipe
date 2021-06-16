@@ -8,13 +8,15 @@ import java.util.concurrent.ExecutorService;
  */
 public class RedisStartCmd extends AbstractForkProcessCmd {
 
-    private int port;
+    protected int port;
 
-    private boolean asSentinel;
+    protected boolean asSentinel;
 
-    private String os;
+    protected String os;
 
-    private String arch;
+    protected String arch;
+
+    protected String args = "";
 
     public RedisStartCmd(int port, ExecutorService executors) {
         this(port, false, executors);
@@ -34,7 +36,10 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
         if (os.startsWith("Mac")) {
             redisPath = "src/test/resources/redis/Mac/redis-server";
         }
+        execServer(redisPath);
+    }
 
+    protected void execServer(String redisPath) throws Exception {
         if (null == redisPath) {
             future().setFailure(new IllegalArgumentException("no redis-server for os " + os));
         } else {
@@ -42,14 +47,16 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
                     "/bin/sh",
                     "-c",
                     String.format("mkdir -p src/test/tmp;" +
-                            "touch src/test/tmp/redis%d.conf;" +
-                            "%s src/test/tmp/redis%d.conf --port %d --dir src/test/tmp %s",
-                            port, redisPath, port, port,
+                            "mkdir -p src/test/tmp/redis%d;" +
+                            "%s --port %d  --dir src/test/tmp/redis%d --logfile redis.log %s %s",
+                            port,redisPath, port, port,
                             asSentinel ? "--sentinel"
-                                    : String.format("--dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no", port))
+                                    : String.format("--dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no", port),
+                            args)
             });
         }
     }
+
 
     @Override
     protected void doReset() {

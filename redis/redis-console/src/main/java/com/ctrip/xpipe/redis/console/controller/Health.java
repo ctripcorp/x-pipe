@@ -2,12 +2,15 @@ package com.ctrip.xpipe.redis.console.controller;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +38,9 @@ public class Health extends AbstractConsoleController {
     @Autowired(required = false)
     private CheckerManager checkerManager;
 
+    @Autowired
+    private ConsoleConfig config;
+
     @RequestMapping(value = "/health", method = RequestMethod.GET)
     public Map<String, Object> getHealthState(HttpServletRequest request, HttpServletResponse response) {
 
@@ -58,6 +64,8 @@ public class Health extends AbstractConsoleController {
         result.put("status", consoleLeaderElector.getAllServers());
         result.put("crossDcLeader", crossDcClusterServer.amILeader());
         result.put("dc", FoundationService.DEFAULT.getDataCenter());
+        result.put("type", config.getOwnClusterType());
+        result.put("rawtype", System.getProperty("console.cluster.types", "sb"));
 
         if (null != checkerManager) {
             result.put("checker", checkerManager.getCheckers());

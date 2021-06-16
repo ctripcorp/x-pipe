@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
@@ -119,11 +120,12 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	@Test
 	public void testRouteChange() {
 		currentMetaServerMetaManager = spy(currentMetaServerMetaManager);
-
-		currentMetaServerMetaManager.update(new DcRouteMetaComparator(null, null), null);
+		DcMeta current = new DcMeta();
+		current.setId("jq");
+		currentMetaServerMetaManager.update(new DcRouteMetaComparator(current, null), null);
 		verify(currentMetaServerMetaManager, never()).dcMetaChange(any());
 
-		verify(currentMetaServerMetaManager, times(1)).routeChanges();
+		verify(currentMetaServerMetaManager, times(1)).routeChanges(anyString());
 	}
 
 	@Test
@@ -142,7 +144,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 		int times = getCluster(getDcs()[0], clusterId).getShards().size();
 		currentMetaServerMetaManager.addMetaServerStateChangeHandler(handler);
-		currentMetaServerMetaManager.routeChanges();
+		currentMetaServerMetaManager.routeChanges(dcMetaCache.getCurrentDc());
 
 		verify(handler, times(times)).keeperMasterChanged(eq(clusterId), anyString(), any());
 	}
@@ -183,14 +185,14 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(currentMeta, times(1)).setCurrentCRDTMaster(anyString(), anyString(), any());
 		verify(handler, times(1)).currentMasterChanged(getClusterId(), getShardId());
 
-		currentMetaServerMetaManager.setPeerMaster(upstreamDc, getClusterId(), getShardId(), 2, "127.0.0.2", 6379);
+		currentMetaServerMetaManager.setPeerMaster(upstreamDc, getClusterId(), getShardId(), 2, "127.0.0.2", 6379, null);
 		verify(currentMeta, times(1)).setPeerMaster(anyString(), anyString(), anyString(), any());
 		verify(handler, times(1)).peerMasterChanged(upstreamDc, getClusterId(), getShardId());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetCurrentDcPeerMaster() {
-		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
+		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), 1, "127.0.0.1", 6379, null);
 	}
 
 }

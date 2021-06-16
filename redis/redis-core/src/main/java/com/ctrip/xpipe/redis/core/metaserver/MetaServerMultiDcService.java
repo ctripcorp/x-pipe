@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.core.metaserver;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 
 /**
  * @author wenchao.meng
@@ -21,6 +23,6 @@ public interface MetaServerMultiDcService extends MetaServerService{
 
 	void upstreamPeerChange(String dcId, String clusterId, String shardId);
 
-	RedisMeta getPeerMaster(String clusterId, String shardId);
+	ProxyRedisMeta getPeerMaster(String clusterId, String shardId, RedisProxy proxy);
 
 }

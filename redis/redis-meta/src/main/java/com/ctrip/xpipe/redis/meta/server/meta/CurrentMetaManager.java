@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
@@ -66,13 +68,13 @@ public interface CurrentMetaManager extends Observable {
 
 	RedisMeta getCurrentMaster(String clusterId, String shardId);
 
-	void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port);
+	void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port, RedisProxy proxy);
 
-	RedisMeta getPeerMaster(String dcId, String clusterId, String shardId);
+	ProxyRedisMeta getPeerMaster(String dcId, String clusterId, String shardId);
 
 	Set<String> getUpstreamPeerDcs(String clusterId, String shardId);
 
-	List<RedisMeta> getAllPeerMasters(String clusterId, String shardId);
+	List<ProxyRedisMeta> getAllPeerMasters(String clusterId, String shardId);
 
 	void removePeerMaster(String dcId, String clusterId, String shardId);
 

@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<xpipe>
+    <dc id="jq" zone="SHA">
+        <routes>
+            <route id="1" org-id="0" tag="meta" src-dc="jq" dst-dc="fra" routeInfo="TCP://127.0.0.1:11080 PROXYTLS://127.0.0.1:11444"/>
+        </routes>
+        <zkServer address="127.0.0.1:2181"/>
+        <metaServer ip="127.0.0.1" port="9747" master="true"/>
+        <sentinel id="1" address="127.0.0.1:5000, 127.0.0.1:5001, 127.0.0.1:5002"/>
+        <cluster id="cluster1" phase ="1" type="bi_direction" dcs="jq,oy,fra">
+            <shard id="shard1" sentinelId="1" sentinelMonitorName="shard1">
+                <redis ip="127.0.0.1" port="36379" master=""/>
+                <redis ip="127.0.0.1" port="36380" master="127.0.0.1:36379"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="oy" zone="SHA">
+        <zkServer address="127.0.0.1:2282"/>
+        <metaServer ip="127.0.0.1" port="9847" master="true"/>
+        <sentinel id="2" address="127.0.0.1:17170, 127.0.0.1:17171, 127.0.0.1:17172"/>
+        <cluster id="cluster1" phase = "1" type="bi_direction" dcs="jq,oy,fra">
+            <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
+                <redis ip="127.0.0.1" port="37379" master=""/>
+                <redis ip="127.0.0.1" port="37380" master="127.0.0.1:37379"/>
+            </shard>
+        </cluster>
+    </dc>
+    <dc id="fra" zone="FRA">
+        <routes>
+            <route id="1" org-id="0" tag="meta" src-dc="fra" dst-dc="jq" weight="6" routeInfo="TCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443"/>
+        </routes>
+        <zkServer address="127.0.0.1:2283"/>
+        <metaServer ip="127.0.0.1" port="9947" master="true"/>
+        <sentinel id="2" address="127.0.0.1:32222, 127.0.0.1:32223"/>
+        <cluster id="cluster1" phase = "1" type="bi_direction" dcs="jq,oy,fra">
+            <shard id="shard1" sentinelId="3" sentinelMonitorName="shard1">
+                <redis ip="127.0.0.1" port="38379" master=""/>
+                <redis ip="127.0.0.1" port="38380" master="127.0.0.1:38379"/>
+            </shard>
+        </cluster>
+    </dc>
+</xpipe>

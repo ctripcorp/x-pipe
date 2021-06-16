@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.meta.server.crdt.master.impl;
 
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommand;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommandFactory;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.command.CurrentMasterChooseCommand;
@@ -62,12 +64,13 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
         command.future().addListener(commandFuture -> {
             logger.debug("[peerMasterChooseComplete]{}, {}, {}", dcId, clusterId, shardId);
             if (commandFuture.isSuccess()) {
-                RedisMeta master = commandFuture.get();
-                RedisMeta currentMaster = currentMetaManager.getPeerMaster(dcId, clusterId, shardId);
+                ProxyRedisMeta master = (ProxyRedisMeta)commandFuture.get();
+                ProxyRedisMeta currentMaster = currentMetaManager.getPeerMaster(dcId, clusterId, shardId);
 
-                if (checkMasterChange(master, currentMaster)) {
-                    logger.info("[operationComplete][setPeerMaster]{}, {}, {}, {}", dcId, clusterId, shardId, master);
-                    currentMetaManager.setPeerMaster(dcId, clusterId, shardId, master.getGid(), master.getIp(), master.getPort());
+                if (checkMasterChange(master, currentMaster) || checkProxyChange(master, currentMaster)) {
+                    logger.info("[operationComplete][setPeerMaster]{}, {}, {}, {}, {}", dcId, clusterId, shardId, master, master.getPort());
+
+                    currentMetaManager.setPeerMaster(dcId, clusterId, shardId, master.getGid(), master.getIp(), master.getPort(), master.getProxy());
                 }
             }
         });
@@ -109,6 +112,28 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
             return false;
         }
 
+        return true;
+    }
+
+    private boolean checkProxyChange(ProxyRedisMeta newMaster, ProxyRedisMeta currentMaster) {
+        if(newMaster == null ) {
+            return false;
+        }
+        if(newMaster != null && currentMaster == null) {
+            return true;
+        }
+        RedisProxy newProxy = newMaster.getProxy();
+        RedisProxy currentProxy = currentMaster.getProxy();
+        if (newProxy == null && currentProxy == null) {
+            return false;
+        }
+        if (newProxy == null || currentProxy == null) {
+            return true;
+        }
+        if(newProxy.equals(currentProxy)) {
+            logger.debug("[checkProxyChange][new proxy null or equals to old proxy]{} != {}", newProxy, currentProxy);
+            return false;
+        }
         return true;
     }
 
