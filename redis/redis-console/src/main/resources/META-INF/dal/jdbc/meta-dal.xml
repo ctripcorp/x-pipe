@@ -1404,6 +1404,7 @@
 		<var name="event-id" value-type="long"/>
 		<var name="size" value-type="long" />
 		<var name="offset" value-type="long" />
+		<var name="operator" value-type="String" />
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
@@ -1477,6 +1478,45 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-migration-clusters-by-operator" type="SELECT" multiple="true">
+				<param name="operator"/>
+				<param name="size"/>
+				<param name="offset"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM (<TABLE/>
+						JOIN (SELECT * FROM <TABLE name='migration-event' /> WHERE id in (
+							SELECT migration_event_id FROM (
+								SELECT migration_event_id from <TABLE />, <TABLE name='migration-event' />
+									WHERE <FIELD name='migration-event-id'/> = met.id
+									AND met.operator = ${operator} AND <FIELD name='deleted' /> = 0
+									ORDER BY <FIELD name='migration-event-id'/> DESC LIMIT ${size} OFFSET ${offset}) event
+							)
+						) met on <FIELD name='migration-event-id' />=met.id)
+						JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
+						ORDER BY met.id DESC
+					]]>
+				</statement>
+			</query>
+			<query name="find-migration-clusters-by-status" type="SELECT" multiple="true">
+				<param name="status"/>
+				<param name="size"/>
+				<param name="offset"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM (<TABLE/>
+						JOIN (SELECT * FROM <TABLE name='migration-event' /> WHERE id in (
+							SELECT migration_event_id FROM (
+								SELECT migration_event_id from <TABLE />
+									WHERE <FIELD name='status' /> = ${status} AND deleted=0
+									ORDER BY <FIELD name='migration-event-id'/> DESC LIMIT ${size} OFFSET ${offset}) event
+							)
+						) met on <FIELD name='migration-event-id' />=met.id)
+						JOIN <TABLE name='cluster' /> on <FIELD name='cluster-id'/>=ct.id
+						ORDER BY met.id DESC
+					]]>
+				</statement>
+			</query>
 			<query name="count-all-by-cluster" type="SELECT">
 				<param name="cluster-id" />
 				<statement>
@@ -1487,7 +1527,27 @@
 					]]>
 				</statement>
 			</query>
-
+			<query name="count-all-by-operator" type="SELECT">
+				<param name="operator" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>, <TABLE name='migration-event' />
+					WHERE <FIELD name='migration-event-id'/> = met.id
+					AND met.operator = ${operator}
+					AND <FIELD name='deleted' /> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="count-all-by-status" type="SELECT">
+				<param name="status" />
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS /> FROM <TABLE/>
+					WHERE <FIELD name='status'/> = ${status}
+					AND <FIELD name='deleted' /> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-by-event-id" type="SELECT" multiple="true">
 				<param name="event-id"/>
 				<statement>

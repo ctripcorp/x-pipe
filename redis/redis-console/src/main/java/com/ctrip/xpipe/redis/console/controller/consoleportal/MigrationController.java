@@ -83,6 +83,30 @@ public class MigrationController extends AbstractConsoleController {
 		}
 	}
 
+	@RequestMapping(value = "/migration/events/by/operator", method = RequestMethod.GET)
+	public PageModal<MigrationModel> getEventAndClusterByOperator(@RequestParam String operator, @RequestParam Long size, @RequestParam Long page) {
+		if (null == size || size <=0) size = 10L;
+		if (null == page || page < 0) page = 0L;
+
+		long totalSize = migrationService.countAllByOperator(operator);
+		if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+
+		return new PageModal<>(
+				migrationService.findByOperator(operator, size, size * page), size, page, totalSize);
+	}
+
+	@RequestMapping(value = "/migration/events/by/migration/status", method = RequestMethod.GET)
+	public PageModal<MigrationModel> getEventAndClusterByMigrationStatus(@RequestParam String status, @RequestParam Long size, @RequestParam Long page) {
+		if (null == size || size <=0) size = 10L;
+		if (null == page || page < 0) page = 0L;
+
+		long totalSize = migrationService.countAllByStatus(status);
+		if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
+
+		return new PageModal<>(
+				migrationService.findByStatus(status, size, size * page), size, page, totalSize);
+	}
+
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 
 	public List<MigrationEventTbl> getAllEvents() {
 		return migrationService.findAll();
