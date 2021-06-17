@@ -58,9 +58,9 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class)){
 		
 			@Override
-			public void beginWriteRdb(EofType eofType, long offset) {
+			public void beginWriteRdb(EofType eofType, String replId, long offset) {
 				
-				super.beginWriteRdb(eofType, offset);
+				super.beginWriteRdb(eofType, replId, offset);
 				try {
 					writeToRdb(getCurrentReplicationStore());
 				} catch (IOException e) {

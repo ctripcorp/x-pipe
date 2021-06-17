@@ -169,7 +169,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				}
 				
 				@Override
-				public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+				public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
 					this.masterRdbOffset = masterRdbOffset;
 				}
 			});

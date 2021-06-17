@@ -14,6 +14,7 @@ public enum PsyncFailReason {
     MASTER_RDB_OFFSET_NOT_CONTINUOUS,
     CONNECT_MASTER_FAIL,
     PSYNC_COMMAND_FAIL,
+    PSYNC_REPL_ID_NOT_SAME,
     MASTER_DISCONNECTED;
 
     public static PsyncFailReason from(Throwable th) {

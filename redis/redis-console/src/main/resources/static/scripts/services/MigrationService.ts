@@ -20,6 +20,14 @@ function MigrationService($resource, $q) {
 			method : 'GET',
 			url : '/console/migration/events',
 		},
+		findByOperator: {
+			method : 'GET',
+			url : '/console/migration/events/by/operator',
+		},
+		findByMigrationStatus: {
+			method : 'GET',
+			url : '/console/migration/events/by/migration/status',
+		},
 		find_event_details: {
 			method : 'GET',
 			url : '/console/migration/events/:eventId',
@@ -87,6 +95,30 @@ function MigrationService($resource, $q) {
 	function find(page, size, clusterName = null) {
 		let d = $q.defer();
 		resource.find({ page, size, clusterName},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
+	function findByOperator(page, size, operator) {
+		let d = $q.defer();
+		resource.findByOperator({ page, size, operator},
+			function(result) {
+				d.resolve(result);
+			},
+			function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
+
+	function findByMigrationStatus(page, size, status) {
+		let d = $q.defer();
+		resource.findByMigrationStatus({ page, size, status},
 			function(result) {
 				d.resolve(result);
 			},
@@ -224,6 +256,8 @@ function MigrationService($resource, $q) {
 		createEvent : createEvent,
 		findAll : findAll,
 		find: find,
+		findByOperator: findByOperator,
+		findByMigrationStatus: findByMigrationStatus,
 		findEventDetails : findEventDetails,
 		continueMigrationCluster : continueMigrationCluster,
 		cancelMigrationCluster : cancelMigrationCluster,

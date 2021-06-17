@@ -11,11 +11,24 @@
 				<div class="input-group">
 					<input type="text" class="form-control" ng-model="clusterName" placeholder="search by cluster name" />
 					<div class="input-group-btn">
-						<button type="button" class="btn btn-default no-border btn-sm" ng-click="refresh()">
+						<button type="button" class="btn btn-default no-border btn-sm" ng-click="onClusterChange()">
 							<i class="ace-icon fa fa-search icon-on-right bigger-110"></i>
 						</button>
 					</div>
 				</div>
+			</div>
+			<div class="col-md-2">
+				<div class="input-group">
+					<input type="text" class="form-control" ng-model="operator" placeholder="search by operator" />
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-default no-border btn-sm" ng-click="onOperatorChange()">
+							<i class="ace-icon fa fa-search icon-on-right bigger-110"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-2">
+				<dynamic-string-value-select title="MigrationStatus" [values]="statuses" [(value)]="status" (selected)="onStatusChange($event)"></dynamic-string-value-select>
 			</div>
 		</div>
 

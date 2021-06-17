@@ -138,7 +138,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	}
 
 	@Override
-	public void beginReceiveRdbData(long masterOffset) {
+	public void beginReceiveRdbData(String replId, long masterOffset) {
 		getLogger().info("[beginReceiveRdbData]{}", this);
 		setRdbDumpState(RdbDumpState.DUMPING);
 
