@@ -104,14 +104,39 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
+    public long countAllByOperator(String operator) {
+        return migrationClusterDao.countAllByOperator(operator);
+    }
+
+    @Override
+    public long countAllByStatus(String status) {
+        return migrationClusterDao.countAllByStatus(status);
+    }
+
+    @Override
     public List<MigrationModel> find(long size, long offset) {
         List<MigrationClusterTbl> migrationClusterList = migrationClusterDao.find(size, offset);
         return aggregateClusterByMigration(migrationClusterList);
     }
+
     @Override
     public List<MigrationModel> findByCluster(long clusterId, long size, long offset) {
         List<MigrationClusterTbl> migrationClusterList =
                 migrationClusterDao.findByCluster(clusterId, size, offset);
+        return aggregateClusterByMigration(migrationClusterList);
+    }
+
+    @Override
+    public List<MigrationModel> findByOperator(String operator, long size, long offset) {
+        List<MigrationClusterTbl> migrationClusterList =
+                migrationClusterDao.findByOperator(operator, size, offset);
+        return aggregateClusterByMigration(migrationClusterList);
+    }
+
+    @Override
+    public List<MigrationModel> findByStatus(String status, long size, long offset) {
+        List<MigrationClusterTbl> migrationClusterList =
+                migrationClusterDao.findByStatus(status, size, offset);
         return aggregateClusterByMigration(migrationClusterList);
     }
 

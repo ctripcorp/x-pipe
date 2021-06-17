@@ -467,10 +467,10 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected abstract void doReFullSync();
 
 	@Override
-	public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+	public void beginWriteRdb(EofType eofType, String replId, long masterRdbOffset) throws IOException {
 
 		doBeginWriteRdb(eofType, masterRdbOffset);
-		rdbDumper.get().beginReceiveRdbData(masterRdbOffset);
+		rdbDumper.get().beginReceiveRdbData(replId, masterRdbOffset);
 	}
 
 	protected abstract void doBeginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException;

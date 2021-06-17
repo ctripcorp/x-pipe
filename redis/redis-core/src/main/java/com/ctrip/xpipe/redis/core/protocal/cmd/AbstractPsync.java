@@ -255,7 +255,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 		for (PsyncObserver observer : observers) {
 			try {
-				observer.beginWriteRdb(eofType, masterRdbOffset);
+				observer.beginWriteRdb(eofType, replId, masterRdbOffset);
 			} catch (Throwable th) {
 				getLogger().error("[beginReadRdb]" + this, th);
 			}

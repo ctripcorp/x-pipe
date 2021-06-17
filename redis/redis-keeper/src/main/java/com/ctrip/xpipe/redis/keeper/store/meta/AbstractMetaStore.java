@@ -9,12 +9,14 @@ import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.core.store.exception.BadMetaStoreException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.helper.Files.IO;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -154,11 +156,15 @@ public abstract class AbstractMetaStore implements MetaStore{
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbUpdated(String rdbFile, EofType eofType, long rdbOffset) throws IOException {
+	public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, EofType eofType, long rdbOffset, String expectedReplId) throws IOException {
 		
 		synchronized (metaRef) {
 			
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			if (!Objects.equals(expectedReplId, metaDup.getReplId())) {
+			    throw new UnexpectedReplIdException(expectedReplId, metaDup.getReplId());
+			}
 
 			metaDup.setRdbFile(rdbFile);
 			setRdbFileInfo(metaDup, eofType);

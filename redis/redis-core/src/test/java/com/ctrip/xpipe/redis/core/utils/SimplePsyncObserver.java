@@ -25,7 +25,7 @@ public class SimplePsyncObserver implements PsyncObserver {
     }
 
     @Override
-    public void beginWriteRdb(EofType eofType, long masterRdbOffset) throws IOException {
+    public void beginWriteRdb(EofType eofType, String repelId, long masterRdbOffset) throws IOException {
 
     }
 

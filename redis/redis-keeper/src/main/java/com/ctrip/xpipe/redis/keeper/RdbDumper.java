@@ -16,13 +16,12 @@ public interface RdbDumper extends Command<Void>{
 
 	DumpedRdbStore prepareRdbStore() throws IOException;
 
-	void beginReceiveRdbData(long masterOffset);
+	void beginReceiveRdbData(String replId, long masterOffset);
 	
 	void dumpFinished();
 
 	void dumpFail(Throwable th);
 	
 	void exception(Throwable th);
-	
 
 }
