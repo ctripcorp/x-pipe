@@ -163,14 +163,13 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                     return;
 
                                 SentinelHello hello = SentinelHello.fromString(message);
-                                synchronized (hellos) {
-                                    Set<SentinelHello> currentInstanceHellos = hellos.get(redisInstanceToCheck);
-                                    if (currentInstanceHellos == null) {
-                                        hellos.put(redisInstanceToCheck, Sets.newHashSet(hello));
-                                    } else {
-                                        currentInstanceHellos.add(hello);
-                                    }
+                                Set<SentinelHello> currentInstanceHellos = hellos.get(redisInstanceToCheck);
+                                if (currentInstanceHellos == null) {
+                                    hellos.put(redisInstanceToCheck, Sets.newHashSet(hello));
+                                } else {
+                                    currentInstanceHellos.add(hello);
                                 }
+
                             }
                         });
                     }
@@ -186,9 +185,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             logger.error("[{}-{}+{}]{} instance {} sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
                         }
 
-                        synchronized (errors) {
-                            errors.put(redisInstanceToCheck, e);
-                        }
+                        errors.put(redisInstanceToCheck, e);
                     }
                 });
             } catch (Exception e) {
