@@ -156,18 +156,23 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                 redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
                     @Override
                     public void message(String channel, String message) {
-                        if (processing)
-                            return;
+                        executors.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (processing)
+                                    return;
 
-                        synchronized (hellos) {
-                            SentinelHello hello = SentinelHello.fromString(message);
-                            Set<SentinelHello> currentInstanceHellos = hellos.get(redisInstanceToCheck);
-                            if (currentInstanceHellos == null) {
-                                hellos.put(redisInstanceToCheck, Sets.newHashSet(hello));
-                            } else {
-                                currentInstanceHellos.add(hello);
+                                SentinelHello hello = SentinelHello.fromString(message);
+                                synchronized (hellos) {
+                                    Set<SentinelHello> currentInstanceHellos = hellos.get(redisInstanceToCheck);
+                                    if (currentInstanceHellos == null) {
+                                        hellos.put(redisInstanceToCheck, Sets.newHashSet(hello));
+                                    } else {
+                                        currentInstanceHellos.add(hello);
+                                    }
+                                }
                             }
-                        }
+                        });
                     }
 
                     @Override
