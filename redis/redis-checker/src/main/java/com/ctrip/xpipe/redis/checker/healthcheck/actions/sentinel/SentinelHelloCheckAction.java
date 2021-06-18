@@ -53,7 +53,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private Set<RedisHealthCheckInstance> redisInstancesToCheck = new HashSet<>();
 
-    private volatile boolean processing = false;
+    private volatile boolean collecting = false;
 
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, ClusterHealthCheckInstance instance,
                                     ExecutorService executors, CheckerDbConfig checkerDbConfig, Persistence persistence, MetaCache metaCache, HealthCheckInstanceManager instanceManager) {
@@ -72,6 +72,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             @Override
             public void go() throws Exception {
                 redisInstancesToCheck = redisInstancesToCheck();
+
+                collecting = true;
+
                 subAllRedisInstances(redisInstancesToCheck);
 
                 scheduled.schedule(new AbstractExceptionLogTask() {
@@ -156,7 +159,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                 redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
                     @Override
                     public void message(String channel, String message) {
-                        if (processing)
+                        if (!collecting)
                             return;
 
                         SentinelHello hello = SentinelHello.fromString(message);
@@ -171,7 +174,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
                     @Override
                     public void fail(Throwable e) {
-                        if (processing)
+                        if (!collecting)
                             return;
 
                         if (ExceptionUtils.isStackTraceUnnecessary(e)) {
@@ -192,7 +195,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @VisibleForTesting
     protected void processSentinelHellos() {
 
-        processing = true;
+        collecting = false;
 
         if (hellos.size() + errors.size() == 0) {
             logger.warn("[{}-{}]sub result empty", LOG_TITLE, instance.getCheckInfo().getClusterId());
@@ -247,7 +250,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     void resetResults() {
         hellos.clear();
         errors.clear();
-        processing = false;
+        collecting = false;
     }
 
     @VisibleForTesting
