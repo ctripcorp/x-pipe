@@ -6,6 +6,9 @@ import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluste
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationSuccessState;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -22,6 +25,9 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author shyin
@@ -305,6 +311,53 @@ public class DefaultMigrationClusterTest extends AbstractMigrationTest {
 		ClusterTbl currentCluster = clusterService.find(1);
 		Assert.assertEquals("Normal", currentCluster.getStatus());
 		Assert.assertEquals(2, currentCluster.getActivedcId());
+	}
+
+	@Test
+	@DirtiesContext
+	public void testConcurrentUpdateStat() throws Exception {
+		CountDownLatch latch = new CountDownLatch(3);
+		executors.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					migrationCluster.updateStat(new MigrationCheckingState(migrationCluster));
+				} catch (Exception e) {
+					logger.info("[testConcurrentUpdateStat] update checking fail", e);
+				}
+				latch.countDown();
+			}
+		});
+		executors.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					migrationCluster.updateStat(new MigrationPublishState(migrationCluster));
+				} catch (Exception e) {
+					logger.info("[testConcurrentUpdateStat] update checking fail", e);
+				}
+				latch.countDown();
+			}
+		});
+		executors.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					migrationCluster.updateStat(new MigrationSuccessState(migrationCluster));
+				} catch (Exception e) {
+					logger.info("[testConcurrentUpdateStat] update checking fail", e);
+				}
+				latch.countDown();
+			}
+		});
+
+		latch.await(5000, TimeUnit.MILLISECONDS);
+		MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, 1L);
+		ClusterTbl clusterTbl = clusterService.find("cluster1");
+		MigrationStatus migrationStatus = MigrationStatus.valueOf(migrationClusterTbl.getStatus());
+		logger.info("[testConcurrentUpdateStat] migration status {}", migrationClusterTbl.getStatus());
+		logger.info("[testConcurrentUpdateStat] cluster status {}", clusterTbl.getStatus());
+		Assert.assertEquals(clusterTbl.getStatus(), migrationStatus.getClusterStatus().name());
 	}
 	
 }
