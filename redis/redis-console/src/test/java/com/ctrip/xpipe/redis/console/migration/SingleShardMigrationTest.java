@@ -382,7 +382,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		mockSuccessNewPrimaryDcCommand(migrationCommandBuilder, "cluster1", "shard1", dcB);
 
 		migrationCluster.process();
-		waitConditionUntilTimeOut(() -> migrationCluster.getStatus().equals(MigrationStatus.Success), 3000, 200);
+		waitConditionUntilTimeOut(() -> clusterService.find(1).getActivedcId() == 2, 3000, 200);
 		currentCluster = clusterService.find(1);
 		Assert.assertEquals(ClusterStatus.Normal.toString(), currentCluster.getStatus());
 		Assert.assertEquals(2, currentCluster.getActivedcId());
