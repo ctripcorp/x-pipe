@@ -33,6 +33,7 @@ public class PingAction extends AbstractHealthCheckAction<RedisHealthCheckInstan
 
             @Override
             public void fail(Throwable th) {
+                logger.error("[PingAction] pong error.{}", instance, th);
                 notifyListeners(new PingActionContext(instance, false));
             }
         });
