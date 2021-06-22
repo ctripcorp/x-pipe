@@ -5,7 +5,8 @@ UPLOAD_SCRIPT_DIR=$DIR./upload/
 dc=$1
 isolate_hour=$2
 isolate_minute=$3
-upload_sh=$4
+beacon=$4
+upload_sh=$5
 
 if [ -z $dc ]; then
     echo "Input Error. DC cannot be null"
@@ -22,11 +23,17 @@ if [ -z $isolate_minute ]; then
     exit
 fi
 
-#generate iplists
-rm -rf $DIR/iplists
-rm $DIR/iplist
+#kill all sshpass process before start
+ps -ef | grep sshpass | awk '{print $2,$8}' | grep -v grep | awk '{print $1}' | xargs kill -9
 
-$DIR/generate_iplist.sh $dc
+#generate iplists
+if [ "$beacon" == "beacon" ]; then
+    echo "mode: just isolate beacon"
+    $DIR/generate_iplist_just_isolate_beacon.sh $dc
+else
+    echo "mode: isolate whole DC"
+    $DIR/generate_iplist.sh $dc
+fi
 
 #check time
 echo "============================start check time==============================="
