@@ -231,19 +231,19 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			ClusterTbl cluster = clusterMap.get(clusterName);
 			Map<String, ShardListModel> shardMap = new HashMap<>();
 			unhealthyInfoModel.getUnhealthyDcShardByCluster(clusterName).forEach(dcShard -> {
-				if (!shardMap.containsKey(dcShard.getValue())) {
+				if (!shardMap.containsKey(dcShard.getShard())) {
 					ShardListModel shardModel = new ShardListModel();
-					shardModel.setShardName(dcShard.getValue())
+					shardModel.setShardName(dcShard.getShard())
 							.setActivedcId(cluster.getActivedcId())
 							.setClusterType(cluster.getClusterType())
 							.setClusterName(cluster.getClusterName())
 							.setClusterAdminEmails(cluster.getClusterAdminEmails())
 							.setClusterOrgName(cluster.getClusterOrgName())
 							.setClusterDescription(cluster.getClusterDescription());
-					shardMap.put(dcShard.getValue(), shardModel);
+					shardMap.put(dcShard.getShard(), shardModel);
 				}
 
-				shardMap.get(dcShard.getValue()).addDc(dcShard.getKey());
+				shardMap.get(dcShard.getShard()).addDc(dcShard.getDc());
 			});
 			shardModels.addAll(shardMap.values());
 		}
