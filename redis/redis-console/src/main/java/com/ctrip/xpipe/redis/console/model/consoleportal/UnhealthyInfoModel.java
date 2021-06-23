@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.tuple.Pair;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.*;
@@ -16,7 +15,7 @@ public class UnhealthyInfoModel {
 
     private List<String> attachFailDc;
 
-    private Map<String, Map<String, Set<HostPort>>> unhealthyInstance;
+    private Map<String, Map<DcShard, Set<RedisHostPort>>> unhealthyInstance;
 
     public UnhealthyInfoModel() {
         this.attachFailDc = new ArrayList<>();
@@ -37,23 +36,22 @@ public class UnhealthyInfoModel {
         return this;
     }
 
-    public void addUnhealthyInstance(String cluster, String dc, String shard, HostPort redis) {
-        String dcShardName = dc + " " + shard;
-        addUnhealthyInstance(cluster, dcShardName, redis);
+    public void addUnhealthyInstance(String cluster, String dc, String shard, HostPort redis, boolean isMaster) {
+        addUnhealthyInstance(cluster, new DcShard(dc, shard), new RedisHostPort(redis, isMaster));
     }
 
-    private void addUnhealthyInstance(String cluster, String dcShardName, HostPort redis) {
+    private void addUnhealthyInstance(String cluster, DcShard dcShard, RedisHostPort redis) {
         if (!unhealthyInstance.containsKey(cluster)) {
             unhealthyCluster++;
             this.unhealthyInstance.put(cluster, new HashMap<>());
         }
 
-        if (!unhealthyInstance.get(cluster).containsKey(dcShardName)) {
+        if (!unhealthyInstance.get(cluster).containsKey(dcShard)) {
             unhealthyShard++;
-            this.unhealthyInstance.get(cluster).put(dcShardName, new HashSet<>());
+            this.unhealthyInstance.get(cluster).put(dcShard, new HashSet<>());
         }
 
-        if (this.unhealthyInstance.get(cluster).get(dcShardName).add(redis)) {
+        if (this.unhealthyInstance.get(cluster).get(dcShard).add(redis)) {
             unhealthyRedis++;
         }
     }
@@ -63,27 +61,19 @@ public class UnhealthyInfoModel {
         return this.unhealthyInstance.keySet();
     }
 
-    public List<Pair<String, String> > getUnhealthyDcShardByCluster(String clusterName) {
-        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
-
-        List<Pair<String, String> > unhealthyDcShard = new ArrayList<>();
-        for (String dcShard: this.unhealthyInstance.get(clusterName).keySet()) {
-            int breakPos = dcShard.indexOf(' ');
-            String dc = dcShard.substring(0, dcShard.indexOf(' '));
-            String shardName = dcShard.substring(breakPos + 1, dcShard.length());
-            unhealthyDcShard.add(new Pair<>(dc, shardName));
-        }
-        return unhealthyDcShard;
+    public Set<DcShard> getUnhealthyDcShardByCluster(String clusterName) {
+        if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptySet();
+        return unhealthyInstance.get(clusterName).keySet();
     }
 
     public List<String> getUnhealthyClusterDesc(String clusterName) {
         if (null == clusterName || !this.unhealthyInstance.containsKey(clusterName)) return Collections.emptyList();
         List<String> messages = new ArrayList<>();
 
-        for (Map.Entry<String, Set<HostPort> > shard : unhealthyInstance.get(clusterName).entrySet()) {
+        for (Map.Entry<DcShard, Set<RedisHostPort> > shard : unhealthyInstance.get(clusterName).entrySet()) {
             StringBuilder sb = new StringBuilder();
             sb.append(shard.getKey()).append(":");
-            for (HostPort redis : shard.getValue()) {
+            for (RedisHostPort redis : shard.getValue()) {
                 sb.append(redis).append(",");
             }
 
@@ -124,11 +114,129 @@ public class UnhealthyInfoModel {
         this.attachFailDc = attachFailDc;
     }
 
-    public Map<String, Map<String, Set<HostPort>>> getUnhealthyInstance() {
+    public Map<String, Map<DcShard, Set<RedisHostPort>>> getUnhealthyInstance() {
         return unhealthyInstance;
     }
 
-    public void setUnhealthyInstance(Map<String, Map<String, Set<HostPort>>> unhealthyInstance) {
+    public void setUnhealthyInstance(Map<String, Map<DcShard, Set<RedisHostPort>>> unhealthyInstance) {
         this.unhealthyInstance = unhealthyInstance;
     }
+
+    public void accept(UnhealthyInstanceConsumer unhealthyInstanceConsumer) {
+        if (null == this.unhealthyInstance || this.unhealthyInstance.isEmpty()) return;
+
+        this.unhealthyInstance.forEach((cluster, dcShards) -> {
+            dcShards.forEach((dcShard, instances) -> {
+                instances.forEach(instance -> {
+                    unhealthyInstanceConsumer.consume(dcShard.getDc(), cluster, dcShard.getShard(), instance.getHostPort(), instance.isMaster());
+                });
+            });
+        });
+    }
+
+    @FunctionalInterface
+    public interface UnhealthyInstanceConsumer {
+
+        void consume(String dc, String cluster, String shard, HostPort hostPort, boolean isMaster);
+
+    }
+
+    public static class RedisHostPort {
+
+        private HostPort hostPort;
+
+        private boolean isMaster;
+
+        public RedisHostPort() {
+
+        }
+
+        public RedisHostPort(HostPort hostPort, boolean isMaster) {
+            this.hostPort = hostPort;
+            this.isMaster = isMaster;
+        }
+
+        public HostPort getHostPort() {
+            return hostPort;
+        }
+
+        public void setHostPort(HostPort hostPort) {
+            this.hostPort = hostPort;
+        }
+
+        public boolean isMaster() {
+            return isMaster;
+        }
+
+        public void setMaster(boolean master) {
+            isMaster = master;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s %s", hostPort, isMaster ? "master" : "slave");
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RedisHostPort that = (RedisHostPort) o;
+            return isMaster == that.isMaster &&
+                    Objects.equals(hostPort, that.hostPort);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(hostPort, isMaster);
+        }
+    }
+
+    public static class DcShard {
+
+        private String dc;
+
+        private String shard;
+
+        public DcShard(String dc, String shard) {
+            this.dc = dc;
+            this.shard = shard;
+        }
+
+        public String getDc() {
+            return dc;
+        }
+
+        public void setDc(String dc) {
+            this.dc = dc;
+        }
+
+        public String getShard() {
+            return shard;
+        }
+
+        public void setShard(String shard) {
+            this.shard = shard;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s %s", dc, shard);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DcShard dcShard = (DcShard) o;
+            return Objects.equals(dc, dcShard.dc) &&
+                    Objects.equals(shard, dcShard.shard);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dc, shard);
+        }
+    }
+
 }
