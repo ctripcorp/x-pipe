@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
@@ -125,7 +126,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             logger.debug("[{}-{}+{}][{}]redis num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, dc, redisMetas.size(), redisMetas);
                             redisMetas.forEach((redisMeta) -> {
                                 try {
-                                    RedisHealthCheckInstance redisInstance = instanceManager.getOrCreate(redisMeta);
+                                    RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
                                     if (super.shouldCheck(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
                                         hellos.put(redisInstance, Sets.newHashSet());
@@ -218,6 +219,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
         resetResults();
 
+        logger.debug("[{}-{}]sub result: {}", LOG_TITLE, instance.getCheckInfo().getClusterId(), contexts);
         contexts.forEach(this::notifyListeners);
     }
 

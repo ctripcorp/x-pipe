@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
@@ -106,10 +107,10 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         when(config.isSentinelAutoProcess()).thenReturn(true);
         when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(true);
         when(persistence.isClusterOnMigration(anyString())).thenReturn(false);
-        when(instanceManager.getOrCreate(activeDcMasterMeta)).thenReturn(activeDcMaster.getRedisCheckInstance());
-        when(instanceManager.getOrCreate(activeDcSlaveMeta)).thenReturn(activeDcSlave.getRedisCheckInstance());
-        when(instanceManager.getOrCreate(backupDcSlave1Meta)).thenReturn(backupDcSlave1.getRedisCheckInstance());
-        when(instanceManager.getOrCreate(backupDcSlave2Meta)).thenReturn(backupDcSlave2.getRedisCheckInstance());
+        when(instanceManager.findRedisHealthCheckInstance(new HostPort(activeDcMasterMeta.getIp(),activeDcMasterMeta.getPort()))).thenReturn(activeDcMaster.getRedisCheckInstance());
+        when(instanceManager.findRedisHealthCheckInstance(new HostPort(activeDcSlaveMeta.getIp(),activeDcSlaveMeta.getPort()))).thenReturn(activeDcSlave.getRedisCheckInstance());
+        when(instanceManager.findRedisHealthCheckInstance(new HostPort(backupDcSlave1Meta.getIp(),backupDcSlave1Meta.getPort()))).thenReturn(backupDcSlave1.getRedisCheckInstance());
+        when(instanceManager.findRedisHealthCheckInstance(new HostPort(backupDcSlave2Meta.getIp(),backupDcSlave2Meta.getPort()))).thenReturn(backupDcSlave2.getRedisCheckInstance());
     }
 
     @After
@@ -262,9 +263,13 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     private void prepareActions() throws Exception {
         activeDcMaster = new SentinelCheckStatus("dc1", activeDc, true);
+        activeDcMasterMeta.setPort(activeDcMaster.redisServer.getPort());
         activeDcSlave = new SentinelCheckStatus("dc1", activeDc, false);
+        activeDcSlaveMeta.setPort(activeDcSlave.redisServer.getPort());
         backupDcSlave1 = new SentinelCheckStatus("dc2", activeDc, false);
+        backupDcSlave1Meta.setPort(backupDcSlave1.redisServer.getPort());
         backupDcSlave2 = new SentinelCheckStatus("dc2", activeDc, false);
+        backupDcSlave2Meta.setPort(backupDcSlave2.redisServer.getPort());
     }
 
     public void prepareMetaCache() {
