@@ -133,6 +133,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DcIgnoredConfigListenerTest.class,
 
+        DefaultProxyChainTest.class,
         DefaultProxyMonitorCollectorManagerTest.class,
         DefaultProxyChainAnalyzerTest.class,
         ProxyPingRecorderTest.class,
