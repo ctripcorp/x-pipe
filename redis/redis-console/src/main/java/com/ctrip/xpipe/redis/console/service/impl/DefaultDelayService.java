@@ -140,6 +140,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
             try {
                 return consoleServiceManager.getUnhealthyInstanceByIdc(dc);
             } catch (Exception e) {
+                logger.debug("[getDcActiveClusterUnhealthyInstance][{}] request remote console fail", dc, e);
                 return null;
             }
         }

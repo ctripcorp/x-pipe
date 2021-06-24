@@ -1,8 +1,17 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 
+import java.io.IOException;
 import java.util.*;
 
 public class UnhealthyInfoModel {
@@ -15,6 +24,7 @@ public class UnhealthyInfoModel {
 
     private List<String> attachFailDc;
 
+    @JsonDeserialize(contentUsing = ClusterUnhealthyInfoDeserializer.class)
     private Map<String, Map<DcShard, Set<RedisHostPort>>> unhealthyInstance;
 
     public UnhealthyInfoModel() {
@@ -198,6 +208,17 @@ public class UnhealthyInfoModel {
 
         private String shard;
 
+        public DcShard(String raw) {
+            if (StringUtil.isEmpty(raw)) {
+                return;
+            }
+            String[] infos = raw.split(" ");
+            if (infos.length >= 2) {
+                this.dc = infos[0];
+                this.shard = infos[1];
+            }
+        }
+
         public DcShard(String dc, String shard) {
             this.dc = dc;
             this.shard = shard;
@@ -236,6 +257,27 @@ public class UnhealthyInfoModel {
         @Override
         public int hashCode() {
             return Objects.hash(dc, shard);
+        }
+    }
+
+    public static class ClusterUnhealthyInfoDeserializer extends StdDeserializer<Map<DcShard, Set<RedisHostPort>>> {
+
+        private static ObjectMapper objectMapper = new ObjectMapper();
+
+        private static TypeReference<Map<DcShard, Set<RedisHostPort>>> typeRef
+                = new TypeReference<Map<DcShard, Set<RedisHostPort>>>() {};
+
+        public ClusterUnhealthyInfoDeserializer() {
+            this(null);
+        }
+
+        public ClusterUnhealthyInfoDeserializer(Class<?> vc) {
+            super(vc);
+        }
+
+        @Override
+        public Map<DcShard, Set<RedisHostPort>> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+            return objectMapper.readValue(jp, typeRef);
         }
     }
 
