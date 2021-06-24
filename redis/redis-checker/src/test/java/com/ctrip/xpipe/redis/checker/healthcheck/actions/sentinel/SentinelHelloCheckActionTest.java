@@ -116,7 +116,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
             redisHealthCheckInstances.put(redisIp, newRandomRedisHealthCheckInstance("dc1", servers.get(redisIp).getPort()));
 
-            when(instanceManager.getOrCreate(redisMetas.get(redisIp))).thenReturn(redisHealthCheckInstances.get(redisIp));
+            when(instanceManager.findRedisHealthCheckInstance(new HostPort(LOCAL_HOST, servers.get(redisIp).getPort()))).thenReturn(redisHealthCheckInstances.get(redisIp));
 
             if (redisIp.contains("activeDc"))
                 when(healthCheckActionController.shouldCheck(redisHealthCheckInstances.get(redisIp))).thenReturn(false);
