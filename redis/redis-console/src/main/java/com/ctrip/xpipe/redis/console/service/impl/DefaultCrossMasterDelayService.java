@@ -76,7 +76,7 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
                 Long delay = targetDcDelay.getValue();
                 if (null == delay || delay < 0 || delay == DelayAction.SAMPLE_LOST_BUT_PONG) {
                     unhealthyInfo.addUnhealthyInstance(dcClusterShard.getClusterId(), dcClusterShard.getDcId(),
-                            dcClusterShard.getShardId(), findMasterOf(dcClusterShard));
+                            dcClusterShard.getShardId(), findMasterOf(dcClusterShard), true);
                     break;
                 }
             }
