@@ -1,18 +1,24 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
+import com.ctrip.xpipe.api.retry.RetryTemplate;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
+import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
+import com.ctrip.xpipe.redis.console.job.retry.RetryNTimesOnCondition;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
+import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
@@ -33,6 +39,7 @@ import javax.annotation.PostConstruct;
 import java.rmi.ServerException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
@@ -468,6 +475,75 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         progress.setActiveDcs(clusterService.getAllCountByActiveDc());
 
         return progress;
+    }
+
+    @Override
+    @DalTransaction
+    public void updateMigrationStatus(MigrationCluster migrationCluster, MigrationStatus status) {
+        try {
+            MigrationClusterTbl migrationClusterTbl = migrationCluster.getMigrationCluster();
+            tryUpdateStartTime(migrationCluster.clusterName(), migrationClusterTbl.getId(), status);
+            updateStorageClusterStatus(migrationClusterTbl.getMigrationEventId(),
+                    migrationCluster.getCurrentCluster().getId(), migrationCluster.clusterName(), status.getClusterStatus());
+            updateStatusAndEndTimeById(migrationClusterTbl.getId(), status, new Date());
+        } catch (Exception e) {
+            logger.error("[updateMigrationStatus] ", e);
+            throw new com.ctrip.xpipe.redis.console.exception.ServerException(e.getMessage());
+        }
+    }
+
+    private void tryUpdateStartTime(String clusterName, long migrationClusterId, MigrationStatus migrationStatus) {
+        try{
+            if(MigrationStatus.updateStartTime(migrationStatus)){
+                logger.info("[tryUpdateStartTime][doUpdate]{}, {}, {}", migrationClusterId, clusterName, migrationStatus);
+                updateMigrationClusterStartTime(migrationClusterId, new Date());
+            }
+        }catch (Exception e){
+            logger.error("[tryUpdateStartTime]" + clusterName, e);
+        }
+    }
+
+    @VisibleForTesting
+    protected void updateStorageClusterStatus(long migrationEventId, long clusterId, String clusterName, ClusterStatus clusterStatus) throws Exception {
+        logger.info("[updateStorageClusterStatus][updatedb]{}, {}", clusterName, clusterStatus);
+        RetryTemplate<String> retryTemplate = new RetryNTimesOnCondition<>(new RetryCondition.AbstractRetryCondition<String>() {
+            @Override
+            public boolean isSatisfied(String s) {
+                return ClusterStatus.isSameClusterStatus(s, clusterStatus);
+            }
+
+            @Override
+            public boolean isExceptionExpected(Throwable th) {
+                if(th instanceof TimeoutException)
+                    return true;
+                return false;
+            }
+        }, 3);
+        retryTemplate.execute(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Exception {
+                try {
+                    clusterService.updateStatusById(clusterId, clusterStatus, migrationEventId);
+                    ClusterTbl newCluster = clusterService.find(clusterName);
+                    future().setSuccess(newCluster.getStatus());
+                } catch (Exception e) {
+                    future().setFailure(e.getCause());
+                }
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return "update cluster status";
+            }
+        });
+
+        ClusterTbl newCluster = clusterService.find(clusterName);
+        logger.info("[updateStorageClusterStatus][getdb]{}, {}", clusterName, newCluster != null ? newCluster.getStatus() : null);
     }
 
     protected DcTbl findToDc(String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
