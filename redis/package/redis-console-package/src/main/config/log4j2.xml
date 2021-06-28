@@ -68,7 +68,7 @@
             <DefaultRolloverStrategy max="15">
                 <Delete basePath="${baseDir}" maxDepth="2">
                     <IfFileName glob="${nettyClient}*.log.gz"/>
-                    <IfLastModified age="2d"/>
+                    <IfLastModified age="7d"/>
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
