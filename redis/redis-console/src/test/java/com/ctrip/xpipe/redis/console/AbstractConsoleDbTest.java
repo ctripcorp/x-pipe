@@ -39,7 +39,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     public static final String MYSQL_TABLE_STRUCTURE = "sql/mysql/xpipedemodbtables.sql";
     public static final String MYSQL_TABLE_DATA = "sql/mysql/xpipedemodbinitdata.sql";
 
-    protected String[] dcNames = new String[]{"jq", "oy", "fra"};
+    protected String[] dcNames = new String[]{"jq", "oy"};
 
     @BeforeClass
     public static void setUp() {

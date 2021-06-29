@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisKillCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
+import com.ctrip.xpipe.redis.integratedtest.console.cmd.ServerStartCmd;
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.zk.ZkTestServer;
@@ -138,6 +139,13 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         int point = Integer.parseInt(parts[1]);
         return new DefaultEndPoint(parts[0], point);
     }
+
+    Map<String, ServerStartCmd> checks = new HashMap<>();
+    void closeCheck(String idc) {
+        ServerStartCmd cmd = checks.get(idc);
+        cmd.killProcess();
+    }
+
     void startCRDTAllServer() throws Exception {
         startDb();
 
@@ -228,7 +236,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
             dcMeta.getMetaServers().stream().forEach(meta -> {
                 startMetaServer(idc, String.format("http://%s",consoles.get(idc) ),  dcMeta.getZkServer().getAddress(),  meta.getPort(), dcinfos);
             });
-            startChecker(checker_port++, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc)));
+            checks.put(idc, startChecker(checker_port++, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc))));
         }
 
     }

@@ -26,11 +26,11 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(5,'unknown',3,'127.0.0.1',38379,'redis',1,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(6,'unknown',3,'127.0.0.1',38380,'redis',0,5,null);
 --proxy
-insert into proxy_tbl (id,dc_id,uri) values(0, 1,'PROXYTCP://127.0.0.1:11080');
-insert into proxy_tbl (id,dc_id,uri) values(1, 1, 'PROXYTLS://127.0.0.1:11443');
+insert into proxy_tbl (id,dc_id,uri,monitor_active) values(0, 1,'PROXYTCP://127.0.0.1:11080',1);
+insert into proxy_tbl (id,dc_id,uri,monitor_active) values(1, 1, 'PROXYTLS://127.0.0.1:11443',1);
 
-insert into proxy_tbl (id,dc_id,uri) values(2, 3,'PROXYTCP://127.0.0.1:11081');
-insert into proxy_tbl (id,dc_id,uri) values(3, 3,'PROXYTLS://127.0.0.1:11444');
+insert into proxy_tbl (id,dc_id,uri,monitor_active) values(2, 3,'PROXYTCP://127.0.0.1:11081',1);
+insert into proxy_tbl (id,dc_id,uri,monitor_active) values(3, 3,'PROXYTLS://127.0.0.1:11444',1);
 
 insert into proxy_tbl (id,dc_id,uri) values(4, 1,'PROXYTCP://127.0.0.1:11082');
 insert into proxy_tbl (id,dc_id,uri) values(5, 1,'PROXYTLS://127.0.0.1:11445');

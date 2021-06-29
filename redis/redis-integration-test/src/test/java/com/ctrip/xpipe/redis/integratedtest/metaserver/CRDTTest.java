@@ -67,6 +67,7 @@ public class CRDTTest extends AbstractMetaServerMultiDcTest {
         p.setProxySize("127.0.0.1", 38379,2);
         waitConditionUntilTimeOut(p::checkProxySize, 100000, 1000);
 
+        closeCheck("jq");
         Endpoint master_point= new DefaultEndPoint("127.0.0.1", 38380);
         Endpoint slave_point= new DefaultEndPoint("127.0.0.1", 38379);
         Command<String> command = new DefaultSlaveOfCommand(
