@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
+import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
@@ -133,6 +134,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DcIgnoredConfigListenerTest.class,
 
+        DefaultProxyChainTest.class,
         DefaultProxyMonitorCollectorManagerTest.class,
         DefaultProxyChainAnalyzerTest.class,
         ProxyPingRecorderTest.class,
@@ -168,6 +170,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ChangeConfigTest.class,
         NettyKeyedPoolClientFactoryTest.class,
         UnhealthyClusterCheckerTest.class,
+        ClusterCheckInterceptorTest.class,
 
         MigrationEventConcurrentCreateTest.class,
         BeaconMetaServiceImplTest.class,

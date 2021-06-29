@@ -6,7 +6,7 @@
 1. 机器xpipe账号准备
 2. 数据准备 ./data
 3. 添加断网定时任务 ./start.sh $dc $hour $minute
-4. 断网恢复 ./stop.sh
+4. 断网恢复 ./stop.sh $hour $minute
 
 ### 具体解释：
 1.数据准备
@@ -24,23 +24,24 @@
 
 2.执行断网
 
-- ./start.sh $dc $hour $minute $upload_sh
+- ./start.sh $dc $hour $minute $beacon $upload_sh
 - 参数含义：
   - $dc: ptjq或ptoy，要隔离的主机房
   - $hour: 断网的小时
   - $minute: 断网的分钟
+  - $beacon: 值为beacon时，表示只断beacon，空或其他值表示断整个机房
   - $upload_sh: 表示是否需要上传脚本到机器，非必填，默认值会上传脚本到机器。第一次执行或脚本有变化时必须上传，耗时较长；n 表示不需上传脚本
         断网触发时间为指定时间的01s~02s20ms之间
 
 3.断网恢复
 
-- ./stop.sh
+- ./stop.sh $hour $minute
   - iptables恢复
-  - crontab定时任务取消
 
 4.查看断网实际触发时间差
 
-- ./analyze_isolate_time.sh
+- ./analyze_isolate_time.sh $recovery
+  - $recovery值为recovery时，表示查看断网恢复时间差; 为空或其他值时，表示查看断网时间差
 
 5.常见问题排查
 

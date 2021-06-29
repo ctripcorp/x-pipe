@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration;
 
+import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.model.*;
@@ -165,6 +166,11 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 				clusterInfo.setGroups(Lists.newArrayList(new GroupInfo()));
 				return clusterInfo;
 			}
+
+			@Override
+			public boolean clusterMigratePreCheck(String clusterName) throws OuterClientException {
+				return true;
+			}
 		});
 		//again
 		migrationCluster.process();
@@ -175,7 +181,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 	}
 
 
-		@Test
+	@Test
 	@DirtiesContext
 	public void testOneFailedOnChecking() {
 
@@ -279,7 +285,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 		ClusterTbl currentCluster = clusterService.find(clusterId);
 		Assert.assertEquals(ClusterStatus.Migrating.toString(), currentCluster.getStatus());
 		Assert.assertEquals(1, currentCluster.getActivedcId());
-		Assert.assertEquals(MigrationStatus.PartialSuccess.toString(), migrationCluster.getStatus().toString());
+		Assert.assertEquals(MigrationStatus.PartialRetryFail.toString(), migrationCluster.getStatus().toString());
 		for(MigrationShard migrationShard : migrationCluster.getMigrationShards()) {
 			if(migrationShard.getCurrentShard().getId() == failPos) {
 				Assert.assertEquals(ShardMigrationResultStatus.FAIL,migrationShard.getShardMigrationResult().getStatus());
@@ -298,7 +304,7 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			Assert.assertNull(migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_OTHER_DC));
 			Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
 		}
-		Assert.assertEquals(MigrationStatus.PartialSuccess, migrationCluster.getStatus());
+		Assert.assertEquals(MigrationStatus.PartialRetryFail, migrationCluster.getStatus());
 
 
 		logger.info("[testOneFailedOnMigration][retry success]");

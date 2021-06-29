@@ -1,6 +1,10 @@
 DIR=`dirname $0`
 DATA_DIR="$DIR/data"
 IPLIST_PATH="$DIR/iplists"
+IPLIST_FILE="$DIR/iplist"
+
+rm -rf $IPLIST_PATH
+rm $IPLIST_FILE
 mkdir -p $IPLIST_PATH
 
 dc=$1
@@ -29,16 +33,19 @@ fi
 #src_iplist
 while read src_ip
 do
+    #iplist=()
     echo $src_ip >> $DIR/iplist
     for iplist_file in ${dst_iplists_files[@]};
     do
         while read dst_ip
         do
+            #iplist+=(dst_ip)
             echo $dst_ip >> $IPLIST_PATH/$src_ip
         done < $iplist_file
     done
     is_src_console=`grep "^$src_ip$" $src_console_file`
     if [ ${#is_src_console} -gt 0 ]; then
+        #iplist+=$dst_a10_ip
         echo $dst_a10_ip >> $IPLIST_PATH/$src_ip
     fi
 done < $src_iplist_file
@@ -49,4 +56,3 @@ do
     echo $dst_console_ip >> $DIR/iplist
     echo $src_a10_ip >> $IPLIST_PATH/$dst_console_ip
 done < $dst_console_file
-

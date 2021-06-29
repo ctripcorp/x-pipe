@@ -1,53 +1,35 @@
 DIR=`dirname $0`
-LOGPATH="$DIR/logs/recovery"
-mkdir -p $LOGPATH
+REMOTE_SCRIPT_DIR=$DIR/remote_cron
+UPLOAD_SCRIPT_DIR=$DIR./upload/
+
+recovery_hour=$1
+recovery_minute=$2
 
 IPLIST_PATH="$DIR/iplist"
 
-username=xpipe
-password=12qwaszx
+if [ -z $recovery_hour ]; then
+    echo "Input Error. Hour cannot be null"
+    exit
+fi
 
-#recovery network
-echo "========================================start recovery network======================================="
-recovering_src_iplist=()
-while read src_ip
-do
-    recovering_src_iplist+=($src_ip)
-done < $IPLIST_PATH
+if [ -z $recovery_minute ]; then
+    echo "Input Error. Minute cannot be null"
+    exit
+fi
 
-sudo_recovery_cmd="echo $password | sudo -S iptables -F"
+#kill all sshpass process before start
+ps -ef | grep sshpass | awk '{print $2,$8}' | grep -v grep | xargs kill -9
 
-while [ ${#recovering_src_iplist[@]} -gt 0 ]; do
-    for src_ip in ${recovering_src_iplist[@]};
-    do
-        nohup sshpass -p"$password" ssh -o StrictHostKeyChecking=no $username@$src_ip $sudo_recovery_cmd > "$LOGPATH/$src_ip.log" 2>&1 &
-    done
+#change add_cron.sh
+echo "sudo sh -c 'echo \"$recovery_minute $recovery_hour * * * sudo ~/remote_cron/recovery_iplist.sh\" > /var/spool/cron/xpipe'" > $REMOTE_SCRIPT_DIR/add_cron.sh
+chmod +x $REMOTE_SCRIPT_DIR/add_cron.sh
 
+#upload remote_cron folder
+#only need upload first time
+echo "============================start upload scripts==============================="
+remote_dir="~"
+    $UPLOAD_SCRIPT_DIR/batch_upload_files.sh $REMOTE_SCRIPT_DIR/add_cron.sh $remote_dir/remote_cron noremove $DIR/iplist
 
-    #while [ $((`ps -ef | grep recovery.sh | grep -v grep | wc -l`)) -gt 0 ]; do
-    count=0
-    while [ $((`ps -ef | grep sshpass | grep -v grep | wc -l`)) -gt 0 ]; do
-        if [ $(($count%10)) -eq 1 ]; then
-            echo "waiting ips:"
-            echo `ps -ef | grep sshpass | grep -v grep | awk '{print $13}' | cut -b 7-`
-        fi
-        count=$(($count+1))
-        sleep 0.5
-    done
-
-    retry_ip=()
-    for src_ip in ${recovering_src_iplist[@]};
-    do
-        if [ $((`cat "$LOGPATH/$src_ip.log" | grep -v UTF| grep -v "Permanently added" | wc -l`)) -ne 0 ]; then
-            retry_ip+=($src_ip)
-            echo "Error. $src_ip recovered failed. Due to:"
-            echo `cat "$LOGPATH/$src_ip.log"`
-        fi
-    done
-    echo "retrylist=${retry_ip[*]}"
-    recovering_src_iplist=(${retry_ip[*]})
-done
-
-echo "========================================start cancel cron======================================="
-#cancel cron
-$DIR/trigger_add_cron.sh cancel
+#ssh trigger add cron
+echo "============================start trigger cron==============================="
+$DIR/trigger_add_cron.sh
