@@ -3,9 +3,13 @@ DIR=`dirname $0`
 SSHCMD_PATH="$DIR./sshcmd"
 SSHCMD_LOG_PATH="$SSHCMD_PATH/logs"
 IPLIST_PATH="$DIR/iplist"
+operation=$1
 
-
-$SSHCMD_PATH/ssh_operate.sh "cat remote_cron/isolate_cron.log" $IPLIST_PATH
+if [ "$operation" == "recovery" ]; then
+    $SSHCMD_PATH/ssh_operate.sh "cat remote_cron/recovery_cron.log" $IPLIST_PATH
+else
+    $SSHCMD_PATH/ssh_operate.sh "cat remote_cron/isolate_cron.log" $IPLIST_PATH
+fi
 start_min=5020642181884
 end_max=0
 interval_max=0

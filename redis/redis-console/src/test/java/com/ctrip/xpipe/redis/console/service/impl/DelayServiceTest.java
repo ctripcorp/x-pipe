@@ -71,10 +71,10 @@ public class DelayServiceTest {
                     String dcName = invocation.getArgumentAt(0, String.class);
                     UnhealthyInfoModel unhealthyInfoModel = new UnhealthyInfoModel();
                     for (String dc: dcs.keySet()) {
-                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard1", new HostPort("127.0.0.1", 1000));
-                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard1", new HostPort("127.0.0.1", 2000));
-                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard2", new HostPort("127.0.0.1", 3000));
-                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard2", new HostPort("127.0.0.1", 4000));
+                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard1", new HostPort("127.0.0.1", 1000), true);
+                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard1", new HostPort("127.0.0.1", 2000), false);
+                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard2", new HostPort("127.0.0.1", 3000), false);
+                        unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard2", new HostPort("127.0.0.1", 4000), false);
                     }
 
                     return unhealthyInfoModel;

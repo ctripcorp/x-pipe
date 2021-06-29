@@ -95,12 +95,12 @@ public class CrossMasterDelayServiceTest extends AbstractCheckerTest {
 
     @Test
     public void testCrossMasterReplicationUnhealthy() {
-        HostPort expectedMaster = new HostPort("127.0.0.1", 6379);
+        UnhealthyInfoModel.RedisHostPort expectedMaster = new UnhealthyInfoModel.RedisHostPort(new HostPort("127.0.0.1", 6379), true);
         Mockito.when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("oy", clusterId, shardId, new HostPort(), null, ClusterType.BI_DIRECTION));
 
         service.onAction(new DelayActionContext(instance, DelayAction.SAMPLE_LOST_BUT_PONG));
         UnhealthyInfoModel infoModel = service.getCurrentDcUnhealthyMasters();
-        HostPort master = infoModel.getUnhealthyInstance().get(clusterId).values().iterator().next().iterator().next();
+        UnhealthyInfoModel.RedisHostPort master = infoModel.getUnhealthyInstance().get(clusterId).values().iterator().next().iterator().next();
         Assert.assertEquals(1, infoModel.getUnhealthyClusterNames().size());
         Assert.assertEquals(expectedMaster, master);
 

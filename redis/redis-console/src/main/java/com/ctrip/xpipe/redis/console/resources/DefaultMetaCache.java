@@ -1,11 +1,8 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -13,17 +10,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
-import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
