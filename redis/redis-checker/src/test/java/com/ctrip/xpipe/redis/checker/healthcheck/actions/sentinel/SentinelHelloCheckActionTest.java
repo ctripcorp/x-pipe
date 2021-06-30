@@ -116,7 +116,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
             redisHealthCheckInstances.put(redisIp, newRandomRedisHealthCheckInstance("dc1", servers.get(redisIp).getPort()));
 
-            when(instanceManager.getOrCreate(redisMetas.get(redisIp))).thenReturn(redisHealthCheckInstances.get(redisIp));
+            when(instanceManager.findRedisHealthCheckInstance(new HostPort(LOCAL_HOST, servers.get(redisIp).getPort()))).thenReturn(redisHealthCheckInstances.get(redisIp));
 
             if (redisIp.contains("activeDc"))
                 when(healthCheckActionController.shouldCheck(redisHealthCheckInstances.get(redisIp))).thenReturn(false);
@@ -148,7 +148,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void testDoScheduledTaskWithProcessOff() {
         action = spy(action);
         when(config.isSentinelAutoProcess()).thenReturn(false);
-        action.doTask();
+        if (action.shouldCheck(instance))
+            action.doTask();
         verify(action, never()).processSentinelHellos();
     }
 
@@ -163,18 +164,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testDoScheduledTaskWithRedisInPrimaryDc() {
-        action = spy(action);
-        when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
-        action.doTask();
-        verify(action, never()).processSentinelHellos();
-    }
-
-    @Test
     public void testDoScheduleTask() {
         action = spy(action);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
-//        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
         sleep(30);
         verify(action, times(1)).processSentinelHellos();
@@ -184,12 +176,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void testDoScheduleTaskInterval() {
         action = spy(action);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
-        when(action.getIntervalMilli()).thenReturn(500);
-//        action.lastStartTime = System.currentTimeMillis() - 500;
-
         ScheduledFuture f = scheduled.scheduleWithFixedDelay(action.new ScheduledHealthCheckTask(), 0, 200, TimeUnit.MILLISECONDS);
 
-        sleep(900);
+        sleep(1000);
         f.cancel(false);
         verify(action, atLeast(3)).processSentinelHellos();
     }
@@ -249,9 +238,21 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }
         });
         Assert.assertEquals(1, action.getListeners().size());
-//        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
-        waitConditionUntilTimeOut(() -> counter.get() == 4, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
+
+        waitConditionUntilTimeOut(() -> counter.get() == 4, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL+1000);
+
+        Assert.assertEquals(1, servers.get(BACKUP_DC_SHARD1_SLAVE1).getConnected());
+        Assert.assertEquals(1, servers.get(BACKUP_DC_SHARD1_SLAVE2).getConnected());
+        Assert.assertEquals(1, servers.get(BACKUP_DC_SHARD2_SLAVE1).getConnected());
+        Assert.assertEquals(1, servers.get(BACKUP_DC_SHARD2_SLAVE2).getConnected());
+
+        action.doStop();
+        sleep(100);
+        Assert.assertEquals(0, servers.get(BACKUP_DC_SHARD1_SLAVE1).getConnected());
+        Assert.assertEquals(0, servers.get(BACKUP_DC_SHARD1_SLAVE2).getConnected());
+        Assert.assertEquals(0, servers.get(BACKUP_DC_SHARD2_SLAVE1).getConnected());
+        Assert.assertEquals(0, servers.get(BACKUP_DC_SHARD2_SLAVE2).getConnected());
     }
 
     @Test
@@ -329,10 +330,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }
         });
         Assert.assertEquals(1, action.getListeners().size());
-//        action.lastStartTime = System.currentTimeMillis() - 3600000;
         action.doTask();
-        waitConditionUntilTimeOut(() -> successResults.get() == 3, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
-        waitConditionUntilTimeOut(() -> failedResults.get() == 1, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
+        waitConditionUntilTimeOut(() -> successResults.get() == 3, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL+1000);
+        waitConditionUntilTimeOut(() -> failedResults.get() == 1, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL+1000);
     }
 
 
