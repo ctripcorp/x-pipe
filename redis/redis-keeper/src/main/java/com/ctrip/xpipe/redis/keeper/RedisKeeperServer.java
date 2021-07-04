@@ -28,7 +28,7 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	
 	RedisClient clientConnected(Channel channel);
 	
-	void clientDisConnected(Channel channel);
+	void clientDisconnected(Channel channel);
 	
 	String getKeeperRunid();
 	
