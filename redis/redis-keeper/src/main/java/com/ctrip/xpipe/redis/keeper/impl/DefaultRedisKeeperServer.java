@@ -96,8 +96,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
     private EventLoopGroup workerGroup;
     private NioEventLoopGroup masterEventLoopGroup;
 
-
-	private Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
+	private final Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
 	
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
@@ -121,7 +120,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private KeeperMonitor keeperMonitor;
 
 	private KeeperResourceManager resourceManager;
-	
+
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
@@ -355,14 +354,23 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	protected void becomeSlave(Channel channel, RedisSlave redisSlave) {
 
-		logger.info("[update][redis client become slave]{}",channel);
-		redisClients.put(channel, redisSlave);
+		logger.info("[update][redis client become slave]{}", channel);
+
+		synchronized (channel) {
+			if (redisClients.get(channel) == null) {
+				logger.info("[update][redis client become slave]{}{}", channel, "slave is already closed");
+				return;
+			}
+			redisClients.put(channel, redisSlave);
+		}
 	}
 
 	@Override
-	public void clientDisConnected(Channel channel) {
-		
-		redisClients.remove(channel);
+	public void clientDisconnected(Channel channel) {
+
+		synchronized (channel) {
+			redisClients.remove(channel);
+		}
 	}
 
 	@Override

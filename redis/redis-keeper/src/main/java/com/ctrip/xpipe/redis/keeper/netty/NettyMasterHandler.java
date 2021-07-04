@@ -48,7 +48,7 @@ public class NettyMasterHandler extends ChannelTrafficStatisticsHandler implemen
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		
-		redisKeeperServer.clientDisConnected(ctx.channel());
+		redisKeeperServer.clientDisconnected(ctx.channel());
 		super.channelInactive(ctx);
 	}
 	
