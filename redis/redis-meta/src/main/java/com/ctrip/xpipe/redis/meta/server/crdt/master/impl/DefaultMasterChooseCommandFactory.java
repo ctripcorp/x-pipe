@@ -72,6 +72,8 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
 
                     currentMetaManager.setPeerMaster(dcId, clusterId, shardId, master.getGid(), master.getIp(), master.getPort(), master.getProxy());
                 }
+            } else {
+               logger.error("[wrapPeerMasterChooseCommand] commandFuture fail: {}", commandFuture.cause());
             }
         });
 
@@ -97,6 +99,8 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
                     logger.info("[operationComplete][setCurrentMaster]{}, {}, {}", clusterId, shardId, master);
                     currentMetaManager.setCurrentCRDTMaster(clusterId, shardId, master.getGid(), master.getIp(), master.getPort());
                 }
+            } else {
+                logger.error("[wrapCurrentMasterChooseCommand] commandFuture fail: {}", commandFuture.cause());
             }
         });
 
