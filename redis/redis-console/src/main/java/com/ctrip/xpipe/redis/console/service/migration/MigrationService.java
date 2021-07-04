@@ -78,4 +78,6 @@ public interface MigrationService {
 
     MigrationProgress buildMigrationProgress(int hours);
 
+    void updateMigrationStatus(MigrationCluster migrationCluster, MigrationStatus status);
+
 }

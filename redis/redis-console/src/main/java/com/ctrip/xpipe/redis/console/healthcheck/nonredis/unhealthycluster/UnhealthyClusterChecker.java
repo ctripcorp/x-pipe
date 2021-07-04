@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
@@ -11,6 +13,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractSiteLeaderInte
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.ServicesUtil;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,7 +44,9 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
 
     private final int checkInterval = Integer.parseInt(System.getProperty("console.unhealthy.cluster.monitor.interval", "60000"));
 
-    private static final String METRIC_TYPE = "unhealthy_cluster";
+    protected static final String UNHEALTHY_CLUSTER_METRIC_TYPE = "unhealthy_cluster";
+
+    protected static final String UNHEALTHY_INSTANCE_METRIC_TYPE = "unhealthy_instance";
 
     private static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
 
@@ -52,11 +57,15 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
         UnhealthyInfoModel unhealthyInfoModel = delayService.getDcActiveClusterUnhealthyInstance(CURRENT_IDC);
         Map<ClusterType, Integer> unhealthyClustersByType = new EnumMap<>(ClusterType.class);
         config.getOwnClusterType().forEach(type -> unhealthyClustersByType.put(ClusterType.lookup(type), 0));
+        Map<String, ClusterType> clusterTypeCache = new HashMap<>();
+        Map<String, String> activeDcCache = new HashMap<>();
 
         unhealthyInfoModel.getUnhealthyClusterNames().forEach(cluster -> {
             try {
                 ClusterType clusterType = metaCache.getClusterType(cluster);
                 if (!unhealthyClustersByType.containsKey(clusterType)) return;
+
+                clusterTypeCache.put(cluster, clusterType);
 
                 int origin = unhealthyClustersByType.get(clusterType);
                 unhealthyClustersByType.put(clusterType, origin + 1);
@@ -66,11 +75,44 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
         });
 
         unhealthyClustersByType.forEach(this::metricUnhealthyClusters);
+
+        unhealthyInfoModel.accept((dc, cluster, shard, hostPort, isMaster) -> {
+            ClusterType clusterType = clusterTypeCache.get(cluster);
+            if (null == clusterType) return;
+
+            String activeDc = null;
+            if (clusterType.supportSingleActiveDC()) {
+                activeDc = activeDcCache.get(cluster);
+                if (null == activeDc) activeDcCache.put(cluster, metaCache.getActiveDc(cluster, shard));
+            }
+
+            metricUnhealthyInstance(clusterType, dc, activeDc, cluster, shard, hostPort, isMaster);
+        });
+    }
+
+    private void metricUnhealthyInstance(ClusterType clusterType, String dc, String activeDc, String cluster, String shard, HostPort hostPort, boolean isMaster) {
+        MetricData data = new MetricData(UNHEALTHY_INSTANCE_METRIC_TYPE, dc, cluster, shard);
+        data.setHostPort(hostPort);
+        data.setValue(1);
+        data.setClusterType(clusterType);
+        data.setTimestampMilli(System.currentTimeMillis());
+        data.addTag("role", isMaster ? Server.SERVER_ROLE.MASTER.name() : Server.SERVER_ROLE.SLAVE.name());
+
+        if (!StringUtil.isEmpty(activeDc)) {
+            data.addTag("activeDc", activeDc);
+            data.addTag("inActiveDc", activeDc.equalsIgnoreCase(dc) ? "1" : "0");
+        }
+
+        try {
+            metricProxy.writeBinMultiDataPoint(data);
+        } catch (Throwable th) {
+            logger.info("[metricUnhealthyInstance] fail", th);
+        }
     }
 
     private void metricUnhealthyClusters(ClusterType clusterType, int unhealthyClusters) {
         logger.debug("[metricUnhealthyClusters] metric {} {}", clusterType, unhealthyClusters);
-        MetricData data = new MetricData(METRIC_TYPE, "-", "-", "-");
+        MetricData data = new MetricData(UNHEALTHY_CLUSTER_METRIC_TYPE, "-", "-", "-");
         data.setValue(unhealthyClusters);
         data.setTimestampMilli(System.currentTimeMillis());
         data.setClusterType(clusterType);

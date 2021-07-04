@@ -94,28 +94,6 @@ public class DefaultMigrationClusterTest2 {
                 dcService, clusterService, shardService, redisService, migrationService);
     }
 
-    @Test
-    public void testUpdateStorageClusterStatus() throws Exception {
-
-        AtomicInteger counter = new AtomicInteger(1);
-        when(clusterService.find(anyString())).thenReturn(clusterTbl);
-        doAnswer(new Answer() {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                int currentCounter = counter.getAndIncrement();
-                if(currentCounter % 3 == 0) {
-                    clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
-                }
-                return null;
-            }
-        }).when(clusterService).updateStatusById(anyLong(), any(), anyLong());
-
-        migrationClusterTbl.setStatus("Checking");
-        migrationCluster.updateStorageClusterStatus();
-
-        Assert.assertEquals(MigrationStatus.Checking.getClusterStatus().toString(), clusterTbl.getStatus());
-    }
-
     @Test(expected = ServerException.class)
     public void testUpdateStat() throws Exception {
         AtomicInteger counter = new AtomicInteger(1);
