@@ -2,7 +2,11 @@ package com.ctrip.xpipe.redis.console.controller.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
@@ -16,10 +20,16 @@ public class ClusterCheckInterceptor extends HandlerInterceptorAdapter {
 
     private MetaCache metaCache;
 
-    public ClusterCheckInterceptor(MetaCache metaCache) {
+    private ClusterService clusterService;
+
+    private static final Logger logger = LoggerFactory.getLogger(ClusterCheckInterceptor.class);
+
+    public ClusterCheckInterceptor(MetaCache metaCache, ClusterService clusterService) {
         this.metaCache = metaCache;
+        this.clusterService = clusterService;
     }
 
+    @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
         ClusterTypeLimit typeLimit = tryParseLimit(handler);
@@ -28,7 +38,7 @@ public class ClusterCheckInterceptor extends HandlerInterceptorAdapter {
         String clusterId = tryParseClusterId(request, typeLimit.clusterFieldName());
         if (null == clusterId) return true;
 
-        ClusterType clusterType = tryParseCLusterType(clusterId);
+        ClusterType clusterType = tryParseClusterType(clusterId);
         for (ClusterType allowType: typeLimit.value()) {
             if (clusterType.equals(allowType)) return true;
         }
@@ -59,8 +69,19 @@ public class ClusterCheckInterceptor extends HandlerInterceptorAdapter {
         return (String) rawValue;
     }
 
-    private ClusterType tryParseCLusterType(String clusterId) {
-        return metaCache.getClusterType(clusterId);
+    protected ClusterType tryParseClusterType(String clusterId) {
+        try {
+            return metaCache.getClusterType(clusterId);
+        } catch (Exception e) {
+            logger.debug("[tryParseClusterType] cache miss", e);
+        }
+
+        ClusterTbl clusterTbl = clusterService.find(clusterId);
+        if (null == clusterTbl) {
+            throw new IllegalArgumentException("unfound cluster " + clusterId);
+        }
+
+        return ClusterType.lookup(clusterTbl.getClusterType());
     }
 
 }

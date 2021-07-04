@@ -140,6 +140,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
             try {
                 return consoleServiceManager.getUnhealthyInstanceByIdc(dc);
             } catch (Exception e) {
+                logger.debug("[getDcActiveClusterUnhealthyInstance][{}] request remote console fail", dc, e);
                 return null;
             }
         }
@@ -162,7 +163,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
                         HEALTH_STATE state = cachedHealthStatus.get(hostPort);
                         if(HEALTH_STATE.DOWN.equals(state) || HEALTH_STATE.SICK.equals(state)) {
-                            unhealthyInfo.addUnhealthyInstance(clusterMeta.getId(), dcMeta.getId(), shardMeta.getId(), hostPort);
+                            unhealthyInfo.addUnhealthyInstance(clusterMeta.getId(), dcMeta.getId(), shardMeta.getId(), hostPort, redisMeta.isMaster());
                         }
                     }
 
