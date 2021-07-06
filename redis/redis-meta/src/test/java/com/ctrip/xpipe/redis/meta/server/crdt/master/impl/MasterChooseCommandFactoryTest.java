@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.crdt.master.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.impl.XpipeRedisProxy;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
@@ -83,7 +80,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
 
         // redis meta change to null
         redisMeta = null;
-        peerMasterMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -92,8 +89,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
 
         // redis meta same
-        redisMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
-        peerMasterMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -105,7 +102,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         currentProxy = new XpipeRedisProxy();
         currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
         currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         redisMeta = null;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
@@ -122,8 +119,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         newProxy = new XpipeRedisProxy();
         newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -133,7 +130,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
 
 
         // new redis meta
-        redisMeta = (ProxyRedisMeta)new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = (RedisProxyMeta)new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         peerMasterMeta = null;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
@@ -143,8 +140,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
                 Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
 
         // redis meta change
-        redisMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
-        peerMasterMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6380).setGid(1L);;
+        redisMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6380).setGid(1L);;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -157,7 +154,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         newProxy = new XpipeRedisProxy();
         newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         peerMasterMeta = null;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
@@ -175,8 +172,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
         newProxy.addServer(new DefaultProxyEndpoint("10.0.0.1",80));
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -194,8 +191,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
 
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -214,8 +211,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
 
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
         currentProxy.addTLS(new DefaultProxyEndpoint("10.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -235,8 +232,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
 
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
@@ -255,8 +252,8 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
 
         newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);

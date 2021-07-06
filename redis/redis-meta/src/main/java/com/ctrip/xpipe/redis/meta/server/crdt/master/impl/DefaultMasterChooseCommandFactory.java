@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.crdt.master.impl;
 
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommand;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommandFactory;
@@ -64,8 +64,8 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
         command.future().addListener(commandFuture -> {
             logger.debug("[peerMasterChooseComplete]{}, {}, {}", dcId, clusterId, shardId);
             if (commandFuture.isSuccess()) {
-                ProxyRedisMeta master = (ProxyRedisMeta)commandFuture.get();
-                ProxyRedisMeta currentMaster = currentMetaManager.getPeerMaster(dcId, clusterId, shardId);
+                RedisProxyMeta master = (RedisProxyMeta)commandFuture.get();
+                RedisProxyMeta currentMaster = currentMetaManager.getPeerMaster(dcId, clusterId, shardId);
 
                 if (checkMasterChange(master, currentMaster) || checkProxyChange(master, currentMaster)) {
                     logger.info("[operationComplete][setPeerMaster]{}, {}, {}, {}, {}", dcId, clusterId, shardId, master, master.getPort());
@@ -119,7 +119,7 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
         return true;
     }
 
-    private boolean checkProxyChange(ProxyRedisMeta newMaster, ProxyRedisMeta currentMaster) {
+    private boolean checkProxyChange(RedisProxyMeta newMaster, RedisProxyMeta currentMaster) {
         if(newMaster == null ) {
             return false;
         }

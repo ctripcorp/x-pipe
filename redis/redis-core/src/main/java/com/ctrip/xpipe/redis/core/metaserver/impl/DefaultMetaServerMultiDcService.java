@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.core.metaserver.impl;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.Route;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 
 import java.util.ArrayList;
@@ -47,8 +45,8 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	}
 
 	@Override
-	public ProxyRedisMeta getPeerMaster(String clusterId, String shardId, RedisProxy proxy) {
-		ProxyRedisMeta meta = ProxyRedisMeta.valueof(restTemplate.getForObject(peerMasterPath, RedisMeta.class, clusterId, shardId)).setProxy(proxy);
+	public RedisProxyMeta getPeerMaster(String clusterId, String shardId, RedisProxy proxy) {
+		RedisProxyMeta meta = RedisProxyMeta.valueof(restTemplate.getForObject(peerMasterPath, RedisMeta.class, clusterId, shardId)).setProxy(proxy);
 		return meta;
 	}
 

@@ -7,12 +7,10 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.impl.XpipeRedisProxy;
 
-import java.lang.reflect.Proxy;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class CheckerPeer {
@@ -23,7 +21,7 @@ public class CheckerPeer {
         this.scheduled = scheduled;
     }
 
-    List<ProxyRedisMeta> getPeerMasters() {
+    List<RedisProxyMeta> getPeerMasters() {
         CRDTInfoCommand infoCommand = new CRDTInfoCommand(clientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled);
         try {
             CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(infoCommand.execute().get());
@@ -44,8 +42,8 @@ public class CheckerPeer {
     }
 
     public boolean checkHadPeer() {
-        List<ProxyRedisMeta> list = getPeerMasters();
-        ProxyRedisMeta meta = findProxyRedisMetaByEndpoint(list, this.checkProxySizeParams.endpoint);
+        List<RedisProxyMeta> list = getPeerMasters();
+        RedisProxyMeta meta = findProxyRedisMetaByEndpoint(list, this.checkProxySizeParams.endpoint);
         if(meta == null) return false;
         return true;
     }
@@ -64,9 +62,9 @@ public class CheckerPeer {
         this.checkProxySizeParams = new CheckProxySizeParams(ip, port, proxySize);
     }
 
-    ProxyRedisMeta findProxyRedisMetaByEndpoint(List<ProxyRedisMeta> metas, Endpoint endpoint) {
+    RedisProxyMeta findProxyRedisMetaByEndpoint(List<RedisProxyMeta> metas, Endpoint endpoint) {
         if(metas == null) return null;
-        for(ProxyRedisMeta meta : metas) {
+        for(RedisProxyMeta meta : metas) {
             if(meta.getIp().equals(endpoint.getHost()) && meta.getPort().equals(endpoint.getPort())) {
                 return meta;
             }
@@ -74,8 +72,8 @@ public class CheckerPeer {
         return null;
     }
     boolean checkProxySize() {
-        List<ProxyRedisMeta> list = getPeerMasters();
-        ProxyRedisMeta meta = findProxyRedisMetaByEndpoint(list, this.checkProxySizeParams.endpoint);
+        List<RedisProxyMeta> list = getPeerMasters();
+        RedisProxyMeta meta = findProxyRedisMetaByEndpoint(list, this.checkProxySizeParams.endpoint);
         if(meta == null) return false;
         XpipeRedisProxy proxy = (XpipeRedisProxy)(meta.getProxy());
         return proxy.getServers().size() == this.checkProxySizeParams.size;

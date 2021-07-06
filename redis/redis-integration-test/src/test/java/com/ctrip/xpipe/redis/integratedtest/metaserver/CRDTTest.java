@@ -2,23 +2,14 @@ package com.ctrip.xpipe.redis.integratedtest.metaserver;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.web.client.RestOperations;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class CRDTTest extends AbstractMetaServerMultiDcTest {
 
@@ -36,7 +27,7 @@ public class CRDTTest extends AbstractMetaServerMultiDcTest {
 
 
     @Test
-    public void RroxyTest() throws Exception {
+    public void ProxyTest() throws Exception {
         String jqConsoleUrl = "127.0.0.1:18080";
         String fraConsoleUrl = "127.0.0.1:18082";
         XpipeNettyClientKeyedObjectPool pool = getXpipeNettyClientKeyedObjectPool();

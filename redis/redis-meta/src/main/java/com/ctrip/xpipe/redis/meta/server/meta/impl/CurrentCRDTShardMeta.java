@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.*;
@@ -11,7 +11,7 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
 
     RedisMeta currentMaster;
 
-    Map<String, ProxyRedisMeta> peerMasters = new ConcurrentHashMap<>();
+    Map<String, RedisProxyMeta> peerMasters = new ConcurrentHashMap<>();
 
     public CurrentCRDTShardMeta(@JsonProperty("clusterId") String clusterId, @JsonProperty("shardId") String shardId) {
         super(clusterId, shardId);
@@ -19,21 +19,21 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
 
     public void setCurrentMaster(RedisMeta master) {
         if (null == master) return;
-        this.currentMaster = ProxyRedisMeta.valueof(master);
+        this.currentMaster = RedisProxyMeta.valueof(master);
     }
 
     public RedisMeta getCurrentMaster() {
-        return cloneMasterMeta((ProxyRedisMeta) currentMaster);
+        return cloneMasterMeta((RedisProxyMeta) currentMaster);
     }
 
-    public void setPeerMaster(String dcId, ProxyRedisMeta peerMaster) {
+    public void setPeerMaster(String dcId, RedisProxyMeta peerMaster) {
         if (null == peerMaster) return;
 
         peerMasters.put(dcId.toLowerCase(), cloneMasterMeta(peerMaster));
     }
 
-    public ProxyRedisMeta getPeerMaster(String dcId) {
-        ProxyRedisMeta peerMaster = peerMasters.get(dcId.toLowerCase());
+    public RedisProxyMeta getPeerMaster(String dcId) {
+        RedisProxyMeta peerMaster = peerMasters.get(dcId.toLowerCase());
         return cloneMasterMeta(peerMaster);
     }
 
@@ -45,13 +45,13 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
         return new HashSet<>(peerMasters.keySet());
     }
 
-    public List<ProxyRedisMeta> getAllPeerMasters() {
+    public List<RedisProxyMeta> getAllPeerMasters() {
         return new ArrayList<>(peerMasters.values());
     }
 
-    private ProxyRedisMeta cloneMasterMeta(ProxyRedisMeta peerMaster) {
+    private RedisProxyMeta cloneMasterMeta(RedisProxyMeta peerMaster) {
         if (null == peerMaster) return null;
-        ProxyRedisMeta meta = ProxyRedisMeta.valueof(peerMaster).setProxy(peerMaster.getProxy());
+        RedisProxyMeta meta = RedisProxyMeta.valueof(peerMaster).setProxy(peerMaster.getProxy());
         return meta;
     }
 

@@ -2,11 +2,8 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.impl.XpipeRedisProxy;
-import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
-import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Test;
 import io.netty.buffer.ByteBuf;
@@ -93,7 +90,7 @@ public class PeerOfCommandTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0\r\n";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<ProxyRedisMeta> metas = re.extractPeerMasters();
+        List<RedisProxyMeta> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 0);
 
 
@@ -128,9 +125,9 @@ public class PeerOfCommandTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<ProxyRedisMeta> metas = re.extractPeerMasters();
+        List<RedisProxyMeta> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        ProxyRedisMeta meta = metas.get(0);
+        RedisProxyMeta meta = metas.get(0);
         Assert.assertEquals(meta.getProxy() , null);
         Assert.assertEquals(meta.getIp(), "127.0.0.1");
         Assert.assertEquals(meta.getPort().intValue(), 0);
@@ -168,9 +165,9 @@ public class PeerOfCommandTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<ProxyRedisMeta> metas = re.extractPeerMasters();
+        List<RedisProxyMeta> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        ProxyRedisMeta meta = metas.get(0);
+        RedisProxyMeta meta = metas.get(0);
         Assert.assertEquals(meta.getIp(), "127.0.0.1");
         Assert.assertEquals(meta.getPort().intValue(), 0);
         XpipeRedisProxy proxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2");
@@ -209,9 +206,9 @@ public class PeerOfCommandTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<ProxyRedisMeta> metas = re.extractPeerMasters();
+        List<RedisProxyMeta> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        ProxyRedisMeta meta = metas.get(0);
+        RedisProxyMeta meta = metas.get(0);
         Assert.assertEquals(meta.getIp(), "127.0.0.1");
         Assert.assertEquals(meta.getPort().intValue(), 0);
         XpipeRedisProxy proxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2 PROXYTLS://127.0.0.1:10,PROXYTLS://127.0.0.1:11");

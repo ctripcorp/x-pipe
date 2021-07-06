@@ -4,10 +4,10 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 import java.util.Objects;
 
-public class ProxyRedisMeta extends RedisMeta {
+public class RedisProxyMeta extends RedisMeta {
     RedisProxy proxy;
 
-    public ProxyRedisMeta setProxy(RedisProxy proxy) {
+    public RedisProxyMeta setProxy(RedisProxy proxy) {
         this.proxy = proxy;
         return this;
     }
@@ -21,7 +21,7 @@ public class ProxyRedisMeta extends RedisMeta {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        ProxyRedisMeta that = (ProxyRedisMeta) o;
+        RedisProxyMeta that = (RedisProxyMeta) o;
         return Objects.equals(proxy, that.proxy);
     }
 
@@ -30,7 +30,7 @@ public class ProxyRedisMeta extends RedisMeta {
         return Objects.hash(super.hashCode(), proxy);
     }
 
-    public static ProxyRedisMeta valueof(RedisMeta meta) {
-        return (ProxyRedisMeta) new ProxyRedisMeta().setGid(meta.getGid()).setId(meta.getId()).setIp(meta.getIp()).setPort(meta.getPort());
+    public static RedisProxyMeta valueof(RedisMeta meta) {
+        return (RedisProxyMeta) new RedisProxyMeta().setGid(meta.getGid()).setId(meta.getId()).setIp(meta.getIp()).setPort(meta.getPort());
     }
 }
