@@ -1,9 +1,19 @@
 package com.ctrip.xpipe.redis.core.proxy.protocols;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
+import com.ctrip.xpipe.redis.core.protocal.cmd.PingCommand;
+import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
+import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
+import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -123,4 +133,46 @@ public class DefaultProxyConnectProtocolTest extends AbstractTest {
         Assert.assertEquals("3.0", protocol.getCompressAlgorithm().version());
         Assert.assertEquals(CompressAlgorithm.AlgorithmType.ZSTD, protocol.getCompressAlgorithm().getType());
     }
+
+    @Test
+    public void testProtocol() {
+        String newContent = "PROXY ROUTE TCP://10.2.24.215:6390 PROXYTCP://10.5.111.111:80 PROXYTLS://10.5.111.148:443;null;";
+        protocol.setContent(newContent);
+        protocol.getParser();
+    }
+
+
+    @Test
+    public void endpoint() {
+        ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(new NaiveNextHopAlgorithm());
+        ProxyEnabledNettyKeyedPoolClientFactory factory = new ProxyEnabledNettyKeyedPoolClientFactory(resourceManager);
+        XpipeNettyClientKeyedObjectPool pool = new XpipeNettyClientKeyedObjectPool(factory);
+        try {
+            pool.initialize();
+            pool.start();
+        }catch (Exception e) {
+            logger.error(e.getMessage());
+            return;
+        }
+        DefaultProxyConnectProtocolParser parser = new DefaultProxyConnectProtocolParser();
+        ProxyConnectProtocol protocol = parser.read("PROXY ROUTE PROXYTCP://127.0.0.1:10080 PROXYTLS://127.0.0.0:10444");
+        Endpoint point = new ProxyEnabledEndpoint("127.0.0.1", 16379, protocol);
+        PingCommand ping_command = new PingCommand(pool.getKeyPool(point), scheduled, 500);
+        try {
+            ping_command.execute().get();
+        }catch (Exception e) {
+            logger.error(e.getMessage());
+            return;
+        }
+
+        point = new DefaultEndPoint("127.0.0.1", 16379);
+        ping_command = new PingCommand(pool.getKeyPool(point), scheduled, 500);
+        try {
+            ping_command.execute().get();
+        }catch (Exception e) {
+            logger.error(e.getMessage());
+            return;
+        }
+    }
+
 }

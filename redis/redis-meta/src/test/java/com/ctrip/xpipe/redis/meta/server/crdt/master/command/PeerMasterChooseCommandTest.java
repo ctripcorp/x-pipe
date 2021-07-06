@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.crdt.master.command;
 
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import org.junit.Assert;
@@ -31,7 +30,7 @@ public class PeerMasterChooseCommandTest extends AbstractMetaServerTest {
 
     @Test
     public void testChoose() {
-        ProxyRedisMeta redisMeta = (ProxyRedisMeta)new ProxyRedisMeta().setProxy(null).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         Mockito.when(multiDcService.getPeerMaster(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(redisMeta);
         RedisMeta result = chooseCommand.choose();
         Assert.assertEquals(redisMeta, result);

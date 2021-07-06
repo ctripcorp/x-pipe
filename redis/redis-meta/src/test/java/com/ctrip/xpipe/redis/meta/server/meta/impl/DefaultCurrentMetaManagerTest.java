@@ -181,18 +181,18 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 			return null;
 		}).when(currentMeta).setPeerMaster(anyString(), anyString(), anyString(), any());
 
-		currentMetaServerMetaManager.setCurrentCRDTMaster(getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
+		currentMetaServerMetaManager.setCurrentCRDTMaster(getClusterId(), getShardId(), new RedisMeta().setGid(1L).setIp("127.0.0.1").setPort(6379));
 		verify(currentMeta, times(1)).setCurrentCRDTMaster(anyString(), anyString(), any());
 		verify(handler, times(1)).currentMasterChanged(getClusterId(), getShardId());
 
-		currentMetaServerMetaManager.setPeerMaster(upstreamDc, getClusterId(), getShardId(), 2, "127.0.0.2", 6379, null);
+		currentMetaServerMetaManager.setPeerMaster(upstreamDc, getClusterId(), getShardId(), new RedisMeta().setGid(2L).setIp("127.0.0.2").setPort(6379));
 		verify(currentMeta, times(1)).setPeerMaster(anyString(), anyString(), anyString(), any());
 		verify(handler, times(1)).peerMasterChanged(upstreamDc, getClusterId(), getShardId());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetCurrentDcPeerMaster() {
-		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), 1, "127.0.0.1", 6379, null);
+		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), new RedisMeta().setGid(1L).setIp("127.0.0.1").setPort(6379));
 	}
 
 }

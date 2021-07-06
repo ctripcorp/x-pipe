@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest2;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
@@ -93,6 +94,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultPeerMasterChooseActionTest.class,
 	MasterChooseCommandFactoryTest.class,
 	PeerMasterAdjustJobTest.class,
+	PeerMasterAdjustJobTest2.class,
 	DefaultPeerMasterStateAdjusterTest.class,
 	DefaultPeerMasterStateManagerTest.class,
 	PeerMasterAdjustActionTest.class,

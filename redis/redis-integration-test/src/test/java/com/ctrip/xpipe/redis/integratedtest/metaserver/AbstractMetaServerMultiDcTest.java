@@ -74,7 +74,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         return prepareDatasFromFile("src/test/resources/xpipe-crdt.sql");
     }
 
-    void startDb() throws Exception {
+    public void startDb() throws Exception {
         //start db
 //        startH2Server();
         setUpTestDataSource(); // init data in h2
@@ -118,7 +118,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         startProxyServer( 11081, 11444);
     }
 
-    void waitConsole(String url, String idc, int wait_time) throws Exception {
+    public void waitConsole(String url, String idc, int wait_time) throws Exception {
         waitForServerAck(String.format("http://%s/api/dc/%s", url, idc), DcMeta.class, wait_time);
     }
 
@@ -232,7 +232,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         int checker_port = 28080;
         for(DcMeta dcMeta: getXpipeMeta().getDcs().values()) {
             String idc = dcMeta.getId();
-            waitConsole(consoles.get(idc), idc, 120000);
+            waitConsole(consoles.get(idc), idc, 200000);
             dcMeta.getMetaServers().stream().forEach(meta -> {
                 startMetaServer(idc, String.format("http://%s",consoles.get(idc) ),  dcMeta.getZkServer().getAddress(),  meta.getPort(), dcinfos);
             });

@@ -4,18 +4,10 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
-import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
-import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyFactory;
 import com.ctrip.xpipe.redis.core.util.OrgUtil;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.slf4j.Logger;
@@ -52,17 +44,13 @@ public class DefaultMultiDcService implements MultiDcService{
 	}
 
 	@Override
-	public ProxyRedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
+	public RedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
 		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
 		if (null == metaServerMultiDcService) return null;
-		RouteMeta meta = getRouteMeta(dcName, clusterId);
-		RedisProxy proxy = null;
-		if(meta != null) {
-			proxy = RedisProxyFactory.create(meta);
-			logger.info("[getPeerMaster] had proxy: {}", proxy.getParams());
-		}
-		return metaServerMultiDcService.getPeerMaster(clusterId, shardId, proxy);
+		RedisMeta redisMeta =  metaServerMultiDcService.getPeerMaster(clusterId, shardId);
+		return redisMeta;
 	}
+
 	@Autowired
 	DefaultDcMetaCache dcMetaCache;
 
@@ -71,7 +59,8 @@ public class DefaultMultiDcService implements MultiDcService{
 		return routes.get(index);
 	}
 
-	RouteMeta getRouteMeta(String dcName, String clusterId) {
+	@Override
+	public RouteMeta getRouteMeta(String dcName, String clusterId) {
 		DcMetaManager dcMetaManager = dcMetaCache.getDcMeta();
 		DcMeta meta = dcMetaManager.getDcMeta();
 		List<RouteMeta> list = meta.getRoutes();
@@ -95,7 +84,6 @@ public class DefaultMultiDcService implements MultiDcService{
 		}
 		return null;
 	}
-
 
 	private MetaServerMultiDcService getMetaServerMultiDcService(String dcName) {
 		dcName = dcName.toLowerCase();

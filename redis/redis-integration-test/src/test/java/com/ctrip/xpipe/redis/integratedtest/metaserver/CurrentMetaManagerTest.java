@@ -16,7 +16,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
@@ -418,9 +418,8 @@ public class CurrentMetaManagerTest extends AbstractLifecycleObservable implemen
     }
 
     @Override
-    public void setCurrentCRDTMaster(String clusterId, String shardId, long gid, String ip, int port) {
-        RedisMeta currentMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
-        currentMeta.setCurrentCRDTMaster(clusterId, shardId, currentMaster);
+    public void setCurrentCRDTMaster(String clusterId, String shardId, RedisMeta meta) {
+        currentMeta.setCurrentCRDTMaster(clusterId, shardId, meta);
         notifyCurrentMasterChanged(clusterId, shardId);
     }
 
@@ -435,18 +434,18 @@ public class CurrentMetaManagerTest extends AbstractLifecycleObservable implemen
     }
 
     @Override
-    public void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port, RedisProxy proxy) {
+    public void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peerMaster) {
         if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
             throw new IllegalArgumentException(String.format("peer master must from other dc %s %s %d %s:%d",
-                    clusterId, shardId, gid, ip, port));
+                    clusterId, shardId, peerMaster.toString()));
         }
-        ProxyRedisMeta peerMaster = (ProxyRedisMeta)new ProxyRedisMeta().setProxy(proxy).setIp(ip).setPort(port).setGid(gid);
+
         currentMeta.setPeerMaster(dcId, clusterId, shardId, peerMaster);
         notifyPeerMasterChange(dcId, clusterId, shardId);
     }
 
     @Override
-    public ProxyRedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
+    public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
         return currentMeta.getPeerMaster(dcId, clusterId, shardId);
     }
 
@@ -455,7 +454,7 @@ public class CurrentMetaManagerTest extends AbstractLifecycleObservable implemen
         return currentMeta.getUpstreamPeerDcs(clusterId, shardId);
     }
 
-    public List<ProxyRedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+    public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
         return currentMeta.getAllPeerMasters(clusterId, shardId);
     }
 

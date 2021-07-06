@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 
 /**
  * @author wenchao.meng
@@ -13,6 +13,7 @@ public interface MultiDcService {
 	
 	KeeperMeta getActiveKeeper(String dcName, String clusterId, String shardId);
 
-	ProxyRedisMeta getPeerMaster(String dcName, String clusterId, String shardId);
+	RedisMeta getPeerMaster(String dcName, String clusterId, String shardId);
 
+	RouteMeta getRouteMeta(String dcName, String clusterId);
 }

@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Sets;
@@ -232,9 +232,8 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		// set PeerMaster
 		RedisMeta redisMeta = new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L);
 		currentMeta.setCurrentCRDTMaster(biClusterId, biShardId, redisMeta);
-		redisMeta.setIp("10.0.0.2");
-		ProxyRedisMeta proxyRedisMeta =  ProxyRedisMeta.valueof(redisMeta).setProxy(null);
-		currentMeta.setPeerMaster("remote-dc", biClusterId, shardId, proxyRedisMeta);
+		RedisProxyMeta peerMaster =  RedisProxyMeta.create(new RedisMeta().setIp("10.0.0.2").setPort(6379).setGid(1L), null);
+		currentMeta.setPeerMaster("remote-dc", biClusterId, shardId, peerMaster);
 		Assert.assertEquals(1, currentMeta.getUpstreamPeerDcs(biClusterId, biShardId).size());
 		Assert.assertEquals(1, currentMeta.getAllPeerMasters(biClusterId, biShardId).size());
 		Assert.assertEquals(Sets.newHashSet("remote-dc"), currentMeta.getUpstreamPeerDcs(biClusterId, biShardId));
@@ -250,7 +249,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetPeerMasterWithErrorType() {
-		currentMeta.setPeerMaster(getDc(), clusterId, shardId, (ProxyRedisMeta) new ProxyRedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L));
+		currentMeta.setPeerMaster(getDc(), clusterId, shardId, (RedisProxyMeta) new RedisProxyMeta().setIp("10.0.0.1").setPort(6379).setGid(1L));
 	}
 
 	@Test(expected = IllegalArgumentException.class)

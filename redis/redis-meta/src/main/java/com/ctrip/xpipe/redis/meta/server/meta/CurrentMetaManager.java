@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -62,19 +62,19 @@ public interface CurrentMetaManager extends Observable {
 
 	void setKeeperMaster(String clusterId, String shardId, String ip, int port);
 
-	void setCurrentCRDTMaster(String clusterId, String shardId, long gid, String ip, int port);
+	void setCurrentCRDTMaster(String clusterId, String shardId, RedisMeta master);
 
 	RedisMeta getCurrentCRDTMaster(String clusterId, String shardId);
 
 	RedisMeta getCurrentMaster(String clusterId, String shardId);
 
-	void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port, RedisProxy proxy);
+	void setPeerMaster(String dcId, String clusterId, String shardId, RedisMeta peer);
 
-	ProxyRedisMeta getPeerMaster(String dcId, String clusterId, String shardId);
+	RedisMeta getPeerMaster(String dcId, String clusterId, String shardId);
 
 	Set<String> getUpstreamPeerDcs(String clusterId, String shardId);
 
-	List<ProxyRedisMeta> getAllPeerMasters(String clusterId, String shardId);
+	List<RedisMeta> getAllPeerMasters(String clusterId, String shardId);
 
 	void removePeerMaster(String dcId, String clusterId, String shardId);
 

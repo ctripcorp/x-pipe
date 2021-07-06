@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.meta.server.crdt.replication.impl;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
 import com.ctrip.xpipe.redis.meta.server.crdt.replication.PeerMasterAdjustJobFactory;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -66,7 +65,7 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
             return null;
         }
 
-        List<ProxyRedisMeta> allPeerMasters = currentMetaManager.getAllPeerMasters(clusterId, shardId);
+        List<RedisMeta> allPeerMasters = currentMetaManager.getAllPeerMasters(clusterId, shardId);
         return new PeerMasterAdjustJob(clusterId, shardId, allPeerMasters,
                 Pair.of(currentMaster.getIp(), currentMaster.getPort()), false,
                 keyedObjectPool.getKeyPool(new DefaultEndPoint(currentMaster.getIp(), currentMaster.getPort())),

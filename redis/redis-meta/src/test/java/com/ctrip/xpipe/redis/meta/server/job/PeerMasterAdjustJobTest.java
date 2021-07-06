@@ -7,7 +7,6 @@ import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.simpleserver.Server;
@@ -175,10 +174,10 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         if (null != redisServer) redisServer.stop();
     }
 
-    private List<ProxyRedisMeta> mockUpstreamPeerMaster() {
-        List<ProxyRedisMeta> upstreamPeerMasters = new ArrayList<>();
+    private List<RedisMeta> mockUpstreamPeerMaster() {
+        List<RedisMeta> upstreamPeerMasters = new ArrayList<>();
         expectPeerMaster.forEach((gid, peerMaster) -> {
-            upstreamPeerMasters.add((ProxyRedisMeta)new ProxyRedisMeta().setGid(gid).setIp(peerMaster.getKey()).setPort(peerMaster.getValue()));
+            upstreamPeerMasters.add(new RedisMeta().setGid(gid).setIp(peerMaster.getKey()).setPort(peerMaster.getValue()));
         });
 
         return upstreamPeerMasters;

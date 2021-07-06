@@ -70,19 +70,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         logger.info("[AbstractConsoleDbTest] setUpTestDataSource");
 
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
-        DataSource dataSource;
-        while(true) {
-            try {
-                dataSource = dsManager.getDataSource(DATA_SOURCE);
-                break;
-            } catch (Exception e) {
-                try {
-                    Thread.currentThread().sleep(1000);
-                } catch (InterruptedException te) {
-
-                }
-            }
-        }
+        DataSource dataSource = dsManager.getDataSource(DATA_SOURCE);
         String driver = dataSource.getDescriptor().getProperty("driver", null);
 
         if (driver != null && driver.equals("org.h2.Driver")) {

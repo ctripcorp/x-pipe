@@ -1,12 +1,9 @@
 package com.ctrip.xpipe.redis.meta.server.crdt.master.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.ProxyRedisMeta;
-import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxy;
+import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.RedisProxyMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.proxy.impl.XpipeRedisProxy;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
@@ -79,190 +76,154 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
+                Mockito.anyString(), Mockito.any());
 
         // redis meta change to null
         redisMeta = null;
-        peerMasterMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
         // redis meta same
-        redisMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
-        peerMasterMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
+                Mockito.anyString(), Mockito.any());
 
         // redis proxy -> null
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         redisMeta = null;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
         //redis proxy  = redis proxy
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
 
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(), Mockito.any());
 
 
         // new redis meta
-        redisMeta = (ProxyRedisMeta)new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = (RedisProxyMeta)new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
         peerMasterMeta = null;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(1)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
+                Mockito.anyString(), Mockito.any());
 
         // redis meta change
-        redisMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
-        peerMasterMeta = new ProxyRedisMeta().setIp("127.0.0.1").setPort(6380).setGid(1L);;
+        redisMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setIp("127.0.0.1").setPort(6380).setGid(1L);;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(2)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
         //null -> redis proxy
 
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         peerMasterMeta = null;
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(3)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
         //redis proxy 1 server -> 2 server
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80,PROXYTCP://10.0.0.1:80 PROXYTLS://127.0.0.1:443");
 
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        newProxy.addServer(new DefaultProxyEndpoint("10.0.0.1",80));
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(4)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
         //redis proxy 2 server -> 1 server
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        currentProxy.addServer(new DefaultProxyEndpoint("10.0.0.1",80));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80,PROXYTCP://10.0.0.1:80 PROXYTLS://127.0.0.1:443");
 
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
 
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(5)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(), Mockito.any());
 
 
         //redis proxy 1 tls -> 2tls
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443,PROXYTLS://10.0.0.1:443");
 
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        currentProxy.addTLS(new DefaultProxyEndpoint("10.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(6)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
 
         //redis proxy 2 tls -> 1 tls
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443,PROXYTLS://10.0.0.1:443");
 
-        currentProxy.addTLS(new DefaultProxyEndpoint("10.0.0.1",443));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
-
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(7)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(), Mockito.any());
 
         //redis proxy 1 server 1 tls -> 2 server 2 tls
-        currentProxy = new XpipeRedisProxy();
-        currentProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
+        currentProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443,PROXYTLS://10.0.0.1:443");
 
-        currentProxy.addTLS(new DefaultProxyEndpoint("10.0.0.1",443));
-        currentProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
 
-        newProxy = new XpipeRedisProxy();
-        newProxy.addServer(new DefaultProxyEndpoint("127.0.0.1",80));
+        newProxy = XpipeRedisProxy.read("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.1:443");
 
-        newProxy.addTLS(new DefaultProxyEndpoint("127.0.0.1",443));
-        peerMasterMeta = new ProxyRedisMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
-        redisMeta = new ProxyRedisMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        peerMasterMeta = new RedisProxyMeta().setProxy(currentProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
+        redisMeta = new RedisProxyMeta().setProxy(newProxy).setIp("127.0.0.1").setPort(6379).setGid(1L);
         commandFuture = new DefaultCommandFuture();
         factory.wrapPeerMasterChooseCommand(dcId, clusterId, shardId, peerMasterCommand);
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(8)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(),  Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
 
     }
@@ -278,7 +239,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt(), Mockito.any());
+                Mockito.anyString(),  Mockito.any());
 
         // redis meta change to null
         redisMeta = null;
@@ -288,7 +249,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setCurrentCRDTMaster(Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.any());
 
         // redis meta same
         redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -298,7 +259,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.never()).setCurrentCRDTMaster(Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.any());
 
         // new redis meta
         redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -308,7 +269,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(1)).setCurrentCRDTMaster(Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.any());
 
         // redis meta change
         redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -318,7 +279,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(2)).setCurrentCRDTMaster(Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.any());
     }
 
     class TestMasterChooseCommand extends AbstractMasterChooseCommand {

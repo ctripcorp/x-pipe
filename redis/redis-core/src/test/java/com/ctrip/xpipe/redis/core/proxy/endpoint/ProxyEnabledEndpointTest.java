@@ -6,9 +6,7 @@ import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,5 +46,4 @@ public class ProxyEnabledEndpointTest {
         Endpoint endpoint = new ProxyEnabledEndpoint("127.0.0.1", 6379, (ProxyConnectProtocol) protocol);
         Codec.DEFAULT.encode(endpoint);
     }
-
 }
