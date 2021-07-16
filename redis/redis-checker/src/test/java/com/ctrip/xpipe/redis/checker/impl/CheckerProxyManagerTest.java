@@ -49,6 +49,8 @@ public class CheckerProxyManagerTest extends AbstractCheckerTest {
 
     private String shardId = "shard1";
 
+    private String peerDcId = "peer-dc";
+
     @Before
     public void setupCheckerProxyManagerTest() {
         this.manager = new CheckerProxyManager(clusterServer, checkerConfig, checkerConsoleService);
@@ -62,14 +64,14 @@ public class CheckerProxyManagerTest extends AbstractCheckerTest {
     @Test
     public void testRefreshProxyTunnels() {
         manager.refreshProxyTunnels();
-        ProxyTunnelInfo proxyTunnelInfo = manager.getProxyTunnelInfo(backupDcId, clusterId, shardId);
+        ProxyTunnelInfo proxyTunnelInfo = manager.getProxyTunnelInfo(backupDcId, clusterId, shardId, peerDcId);
         Assert.assertEquals(mockTunnelInfo(), proxyTunnelInfo);
     }
 
     @Test
     public void testCloseProxyTunnel() {
         manager.refreshProxyTunnels();
-        ProxyTunnelInfo proxyTunnelInfo = manager.getProxyTunnelInfo(backupDcId, clusterId, shardId);
+        ProxyTunnelInfo proxyTunnelInfo = manager.getProxyTunnelInfo(backupDcId, clusterId, shardId, peerDcId);
         manager.closeProxyTunnel(proxyTunnelInfo);
         Mockito.verify(restTemplate, Mockito.times(1)).delete("http://10.0.0.1:8080/api/tunnel/local/port/1001");
         Mockito.verify(restTemplate, Mockito.times(1)).delete("http://10.0.0.2:8080/api/tunnel/local/port/2001");

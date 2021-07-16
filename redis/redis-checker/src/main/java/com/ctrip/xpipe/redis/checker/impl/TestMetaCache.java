@@ -110,4 +110,9 @@ public class TestMetaCache implements MetaCache {
         return ClusterType.ONE_WAY;
     }
 
+    @Override
+    public boolean isMetaChain(HostPort src, HostPort dst) {
+        return false;
+    }
+
 }

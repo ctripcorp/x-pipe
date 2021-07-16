@@ -28,7 +28,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
 
     function switchDc(dc) {
         $scope.currentDcName = dc.dcName;
-        existsRoute($scope.activeDcName, $scope.currentDcName);
+        existsRoute($scope.currentDcName, $scope.clusterName);
         loadShards($scope.clusterName, dc.dcName);
     }
 
@@ -71,9 +71,11 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                         }
 
                         loadShards($scope.clusterName, $scope.currentDcName);
+                        switchDc($scope.dcs[0]);
                     }, function(result) {
                         $scope.currentDcName = $scope.dcs[0].dcName;
                         loadShards($scope.clusterName, $scope.currentDcName);
+                        switchDc($scope.dcs[0]);
                     });
                 }
 
@@ -177,8 +179,8 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
             });
     }
 
-    function existsRoute(activeDcName, backupDcName) {
-        ProxyService.existsRouteBetween(activeDcName, backupDcName)
+    function existsRoute(currentDc, clusterName) {
+        ProxyService.existsClusterRoute(currentDc, clusterName)
             .then(function (result) {
                 $scope.routeAvail = (result.state === 0);
             }, function (result) {
