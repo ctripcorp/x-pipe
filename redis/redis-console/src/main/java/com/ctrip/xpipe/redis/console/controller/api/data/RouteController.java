@@ -89,15 +89,4 @@ public class RouteController {
         }
     }
 
-    @RequestMapping(value = "/exist/route/active/{activeDc}/backup/{backupDc}", method = RequestMethod.GET)
-    public RetMessage existRoutes(@PathVariable String activeDc, @PathVariable String backupDc) {
-        logger.info("[existRoutes] {}, {}", activeDc, backupDc);
-        if(StringUtil.trimEquals(activeDc, backupDc, true)) {
-            return RetMessage.createFailMessage("false");
-        }
-        if(service.existsRouteBetweenDc(activeDc, backupDc)) {
-            return RetMessage.createSuccessMessage();
-        }
-        return RetMessage.createFailMessage("false");
-    }
 }

@@ -15,16 +15,19 @@ public class TunnelModel {
 
     private String shardId;
 
+    private String peerDcId;
+
     private TunnelStatsResult tunnelStatsResult;
 
     private TunnelSocketStatsMetricOverview socketStatsMetricOverview;
 
-    public TunnelModel(String tunnelId, String backupDcId, String clusterId, String shardId,
+    public TunnelModel(String tunnelId, String backupDcId, String clusterId, String shardId, String peerDcId,
                        TunnelStatsResult tunnelStatsResult, TunnelSocketStatsMetricOverview socketStatsMetricOverview) {
         this.tunnelId = tunnelId;
         this.backupDcId = backupDcId;
         this.clusterId = clusterId;
         this.shardId = shardId;
+        this.peerDcId = peerDcId;
         this.tunnelStatsResult = tunnelStatsResult;
         this.socketStatsMetricOverview = socketStatsMetricOverview;
     }
@@ -62,6 +65,15 @@ public class TunnelModel {
 
     public TunnelModel setShardId(String shardId) {
         this.shardId = shardId;
+        return this;
+    }
+
+    public String getPeerDcId() {
+        return peerDcId;
+    }
+
+    public TunnelModel setPeerDcId(String peerDcId) {
+        this.peerDcId = peerDcId;
         return this;
     }
 

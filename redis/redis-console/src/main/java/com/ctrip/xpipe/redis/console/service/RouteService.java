@@ -25,4 +25,6 @@ public interface RouteService {
     void addRoute(RouteModel model);
 
     boolean existsRouteBetweenDc(String activeDc, String backupDc);
+
+    boolean existPeerRoutes(String currentDc, String clusterId);
 }

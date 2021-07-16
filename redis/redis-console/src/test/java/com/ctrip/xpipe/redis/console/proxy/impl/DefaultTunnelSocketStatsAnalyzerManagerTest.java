@@ -23,7 +23,7 @@ public class DefaultTunnelSocketStatsAnalyzerManagerTest extends AbstractConsole
 
     @Test
     public void testAnalyze() {
-        List<TunnelSocketStatsAnalyzer.FrontendAndBackendMetrics> result = manager.analyze(new DefaultProxyChain("FRA-AWS", "cluster", "shard", Lists.newArrayList(
+        List<TunnelSocketStatsAnalyzer.FrontendAndBackendMetrics> result = manager.analyze(new DefaultProxyChain("FRA-AWS", "cluster", "shard", "sharb", Lists.newArrayList(
                 tunnelInfo1(), tunnelInfo2()
         )));
         int index = 1;

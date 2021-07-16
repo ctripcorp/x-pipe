@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -35,13 +36,13 @@ public interface ProxyService extends ProxyManager {
     List<ProxyTbl> getActiveProxyTbls();
 
     /**Proxy Chain related*/
-    ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId);
+    ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId);
 
     ProxyChain getProxyChain(String tunnelId);
 
     List<TunnelInfo> getProxyTunnels(String dcId, String ip);
 
-    List<ProxyChain> getProxyChains(String backupDcId, String clusterId);
+    Map<String, List<ProxyChain>> getProxyChains(String backupDcId, String clusterId);
 
     List<ProxyPingStatsModel> getProxyMonitorCollectors(String dcName);
 

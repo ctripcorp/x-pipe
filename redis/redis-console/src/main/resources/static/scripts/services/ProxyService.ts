@@ -9,17 +9,15 @@ function ProxyService($resource, $q, $http) {
     var resource = $resource('', {}, {
         get_proxy_chain:{
             method: 'GET',
-            url: '/console/chain/:backupDcId/:clusterId/:shardId',
-            isArray: true
+            url: '/console/chain/:backupDcId/:clusterId/:shardId/:peerDcId',
         },
         get_proxy_chains: {
             method: 'GET',
             url: '/console/chain/:backupDcId/:clusterId',
-            isArray: true
         },
-        exists_route_between: {
+        exists_cluster_route: {
             method: 'GET',
-            url: '/api/exist/route/active/:activeDcId/backup/:backupDcId'
+            url: '/console/exist/route/dc/:currentDc/cluster/:clusterName'
         },
         get_proxy_chain_hickwall_addr:{
             method: 'GET',
@@ -55,11 +53,11 @@ function ProxyService($resource, $q, $http) {
         return d.promise;
     }
 
-    function existsRouteBetween(activeDc, backupDc) {
+    function existsClusterRoute(currentDc, clusterName) {
         var d = $q.defer();
-        resource.exists_route_between({
-                activeDcId: activeDc,
-                backupDcId: backupDc
+        resource.exists_cluster_route({
+                currentDc: currentDc,
+                clusterName: clusterName
             },
             function (result) {
                 d.resolve(result);
@@ -128,7 +126,7 @@ function ProxyService($resource, $q, $http) {
 
     return {
         loadAllProxyChainsForDcCluster : loadAllProxyChainsForDcCluster,
-        existsRouteBetween: existsRouteBetween,
+        existsClusterRoute: existsClusterRoute,
         getProxyChainHickwall: getProxyChainHickwall,
         getAllProxyInfo: getAllProxyInfo,
         getProxyTrafficHickwall: getProxyTrafficHickwall,

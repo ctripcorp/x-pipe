@@ -53,4 +53,6 @@ public interface MetaCache {
     long getLastUpdateTime();
 
     ClusterType getClusterType(String clusterId);
+
+    boolean isMetaChain(HostPort src, HostPort dst);
 }

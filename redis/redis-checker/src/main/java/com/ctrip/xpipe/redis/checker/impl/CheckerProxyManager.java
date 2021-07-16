@@ -80,7 +80,7 @@ public class CheckerProxyManager extends AbstractService implements ProxyManager
     }
 
     @Override
-    public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId) {
+    public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId, String peerDcId) {
         if (!clusterServer.amILeader()) return null;
         return proxyTunnelInfos.get(new DcClusterShard(backupDcId, clusterId, shardId));
     }
