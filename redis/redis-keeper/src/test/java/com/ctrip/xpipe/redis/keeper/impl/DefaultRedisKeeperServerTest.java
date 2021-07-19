@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import io.netty.channel.Channel;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -15,6 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -96,7 +99,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		RedisKeeperServerStateBackup backup = new RedisKeeperServerStateBackup(redisKeeperServer);
 		redisKeeperServer.setRedisKeeperServerState(backup);
 
-		Assert.assertFalse(backup.psync(redisClient, new String[] {}));
+		assertFalse(backup.psync(redisClient, new String[] {}));
 		;
 
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
@@ -137,7 +140,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		}
 
 		latch.await();
-		Assert.assertFalse(success.get());
+		assertFalse(success.get());
 	}
 
 
@@ -255,4 +258,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		return "keeper-test.xml";
 	}
 
+	@Test
+	public void fixDeadSlave() throws Exception {
+
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		Channel channel = new EmbeddedChannel();
+		RedisClient client = redisKeeperServer.clientConnected(channel);
+		redisKeeperServer.clientDisconnected(channel);
+		RedisSlave slave = client.becomeSlave();
+		assertFalse(redisKeeperServer.allClients().contains(slave));
+	}
 }
