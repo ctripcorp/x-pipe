@@ -274,7 +274,15 @@ public class DefaultRedisSlave implements RedisSlave {
 			
 			@Override
 			protected void doRun() throws Exception {
-				beginWriteCommands(rdbFileOffset + 1);
+				try {
+					beginWriteCommands(rdbFileOffset + 1);
+				} catch (Throwable th) {
+					logger.error("[sendCommandForFullSync][failed]", th);
+					if (DefaultRedisSlave.this.isOpen()) {
+						logger.error("[sendCommandForFullSync] close slave");
+						DefaultRedisSlave.this.close();
+					}
+				}
 			}
 		});
 	}

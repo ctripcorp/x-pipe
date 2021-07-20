@@ -474,7 +474,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	}
 
-	private void closeSlaves(String reason) {
+	@Override
+	public void closeSlaves(String reason) {
 		
 		for(RedisSlave redisSlave : slaves()){
 			try {

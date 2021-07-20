@@ -28,9 +28,12 @@ public class RedisMasterNewRdbDumperTest {
         ReplicationStoreManager storeManager = mock(ReplicationStoreManager.class);
         doReturn(mock(ReplicationStore.class)).when(storeManager).create();
 
+        RedisKeeperServer redisKeeperServer = mock(RedisKeeperServer.class);
+        doNothing().when(redisKeeperServer).closeSlaves(anyString());
+
         doReturn(storeManager).when(redisMaster).getReplicationStoreManager();
 
-        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, mock(RedisKeeperServer.class), mock(NioEventLoopGroup.class),
+        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(redisMaster, redisKeeperServer, mock(NioEventLoopGroup.class),
                 mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
         doNothing().when(dumper).startRdbOnlyReplication();
 
@@ -39,6 +42,7 @@ public class RedisMasterNewRdbDumperTest {
 
         verify(storeManager, times(1)).create();
         verify(redisMaster, times(1)).reconnect();
+        verify(redisKeeperServer, times(1)).closeSlaves(anyString());
     }
 
     @Test
