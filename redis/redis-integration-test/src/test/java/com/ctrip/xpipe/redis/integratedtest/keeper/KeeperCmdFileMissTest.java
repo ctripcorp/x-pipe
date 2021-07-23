@@ -16,6 +16,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -72,6 +74,8 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
             return spyReplicationStore;
         }).when(spyActiveKeeperServer).getReplicationStore();
 
+        int originRdbDumpCnt = ((DefaultReplicationStore)originActiveKeeperServer.getReplicationStore()).getRdbUpdateCount();
+
         SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(slave.getIp(), slave.getPort()));
         new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
         new SlaveOfCommand(slaveClientPool, activeKeeper.getIp(), activeKeeper.getPort(), scheduled).execute().get();
@@ -88,6 +92,9 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
                 return false;
             }
         }, 30000, 2000);
+
+        int currentRdbDumpCnt = ((DefaultReplicationStore)originActiveKeeperServer.getReplicationStore()).getRdbUpdateCount();
+        Assert.assertEquals(originRdbDumpCnt, currentRdbDumpCnt);
     }
 
 }

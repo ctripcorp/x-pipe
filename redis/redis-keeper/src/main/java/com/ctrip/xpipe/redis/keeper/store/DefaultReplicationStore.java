@@ -53,6 +53,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private KeeperMonitor keeperMonitor;
 
+	public static final String KEY_CMD_RETAIN_TIMEOUT_MILLI = "commandsRetainTimeoutMilli";
+
+	private int commandsRetainTimeoutMilli = Integer.parseInt(System.getProperty(KEY_CMD_RETAIN_TIMEOUT_MILLI, "1800000"));
+
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 			KeeperMonitor keeperMonitor) throws IOException {
 		this.baseDir = baseDir;
@@ -194,11 +198,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			return beginOffset + totalLength - 1;
 		}
 	}
+
+	private long beginOffset() {
+		return metaStore == null? ReplicationStoreMeta.DEFAULT_BEGIN_OFFSET : metaStore.beginOffset();
+	}
 	
 	@Override
 	public long firstAvailableOffset() {
 		
-		long beginOffset = metaStore == null? ReplicationStoreMeta.DEFAULT_BEGIN_OFFSET : metaStore.beginOffset();
+		long beginOffset = beginOffset();
 		
 		long minCmdOffset = cmdStore == null ? 0 : cmdStore.lowestAvailableOffset();
 		long firstAvailableOffset = minCmdOffset + beginOffset;
@@ -268,10 +276,16 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		final FullSyncContext ctx = lockAndCheckIfFullSyncPossible();
 		if (ctx.isFullSyncPossible()) {
-			logger.info("[fullSyncToSlave][reuse current rdb to full sync]{}", fullSyncListener);
 			RdbStore rdbStore = ctx.getRdbStore();
+			if (null != cmdStore && !cmdStore.retainCommands(
+					new DefaultCommandsGuarantee(fullSyncListener, beginOffset(), rdbStore.rdbOffset() + 1, commandsRetainTimeoutMilli))) {
+				logger.info("[fullSyncToSlave][cmd file deleted and terminate]{}", fullSyncListener);
+				rdbStore.decrementRefCount();
+				return false;
+			}
 
 			try {
+				logger.info("[fullSyncToSlave][reuse current rdb to full sync]{}", fullSyncListener);
 				// after rdb send over, command will be sent automatically
 				rdbStore.readRdbFile(fullSyncListener);
 			} finally {
