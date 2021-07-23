@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.store.CommandsGuarantee;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
@@ -23,11 +24,15 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
+import java.util.stream.Collectors;
 
 /**
  * @author qing.gu
@@ -63,6 +68,10 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private Object cmdFileCtxRefLock = new Object();
 	
 	private CommandStoreDelay commandStoreDelay;
+
+	private List<CommandsGuarantee> commandsGuarantees = new CopyOnWriteArrayList<>();
+
+	private ReentrantLock gcLock = new ReentrantLock();
 
 	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitor keeperMonitor) throws IOException {
 		this(file, maxFileSize, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, keeperMonitor);
@@ -491,15 +500,59 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	}
 
 	@Override
-	public void gc() {
-		
-		for (File cmdFile : allFiles()) {
-			long fileStartOffset = extractStartOffset(cmdFile);
-			if (canDeleteCmdFile(lowestReadingOffset(), fileStartOffset, cmdFile.length(),
-					cmdFile.lastModified())) {
-				logger.info("[GC] delete command file {}", cmdFile);
-				cmdFile.delete();
+	public boolean retainCommands(CommandsGuarantee commandsGuarantee) {
+		try {
+			gcLock.lock();
+			long needCmdOffset = commandsGuarantee.getNeededCommandOffset();
+			long minOffset = lowestAvailableOffset();
+			if (minOffset <= needCmdOffset) {
+				this.commandsGuarantees.add(commandsGuarantee);
+				return true;
 			}
+		} finally {
+			gcLock.unlock();
+		}
+
+		return false;
+	}
+
+	private void timeoutGuarantees() {
+		List<CommandsGuarantee> timeoutGuarantees = commandsGuarantees.stream().filter(CommandsGuarantee::isTimeout).collect(Collectors.toList());
+		commandsGuarantees.removeAll(timeoutGuarantees);
+	}
+
+	private void finishGuarantees() {
+		List<CommandsGuarantee> finishGuarantees = commandsGuarantees.stream().filter(CommandsGuarantee::isFinish).collect(Collectors.toList());
+		commandsGuarantees.removeAll(finishGuarantees);
+	}
+
+	private long minGuaranteeOffset() {
+		long minOffset = Long.MAX_VALUE;
+		for (CommandsGuarantee commandsGuarantee : commandsGuarantees) {
+			long offset = commandsGuarantee.getNeededCommandOffset();
+			minOffset = Long.min(offset, minOffset);
+		}
+
+		return minOffset;
+	}
+
+	@Override
+	public void gc() {
+		try {
+			gcLock.lock();
+			timeoutGuarantees();
+			finishGuarantees();
+
+			for (File cmdFile : allFiles()) {
+				long fileStartOffset = extractStartOffset(cmdFile);
+				if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
+						cmdFile.lastModified())) {
+					logger.info("[GC] delete command file {}", cmdFile);
+					cmdFile.delete();
+				}
+			}
+		} finally {
+			gcLock.unlock();
 		}
 	}
 	

@@ -15,4 +15,6 @@ public interface CommandsListener {
 	ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion);
 	
 	void beforeCommand();
+
+	Long processedOffset();
 }

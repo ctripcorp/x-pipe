@@ -133,6 +133,11 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						public void beforeFileData() {
 							
 						}
+
+						@Override
+						public Long processedOffset() {
+							return null;
+						}
 					});
 				}catch(Exception e){
 					logger.info("[exception][fail]" + e.getMessage());

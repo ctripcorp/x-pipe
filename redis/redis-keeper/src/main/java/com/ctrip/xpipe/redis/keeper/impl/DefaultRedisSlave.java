@@ -67,7 +67,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	private ExecutorService psyncExecutor;
 
 	private RedisClient redisClient;
-	
+
 	private ChannelFutureListener writeExceptionListener = new ChannelFutureListener() {
 
 		private AtomicLong atomicLong = new AtomicLong(0);
@@ -174,6 +174,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		ChannelFuture future = channel().writeAndFlush(referenceFileRegion);
 		future.addListener(writeExceptionListener);
 		return future;
+	}
+
+	@Override
+	public Long processedOffset() {
+		return getAck();
 	}
 
 	@Override

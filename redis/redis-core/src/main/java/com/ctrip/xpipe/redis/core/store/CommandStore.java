@@ -25,6 +25,8 @@ public interface CommandStore extends Closeable, Destroyable{
 	long lowestReadingOffset();
 	
 	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
+
+	boolean retainCommands(CommandsGuarantee commandsGuarantee);
 	
 	void gc();
 	
