@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -60,20 +61,20 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int gcAfterCreateMilli = 60000;
 		File commandTemplate = new File(getTestFileDir(), getTestName());
 
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor()){
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor()){
 			@Override
 			public long totalLength() {
 				return initDataKeep * maxFileSize;
 			}
 		};
 
-		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, 0));
+		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, new Date().getTime() - 600000));
 
 		dataKeep.set(19);
-		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, 0));
+		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, new Date().getTime() - 600000));
 
 		dataKeep.set(18);
-		Assert.assertTrue(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, 0));
+		Assert.assertTrue(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, new Date().getTime() - 600000));
 
 	}
 
@@ -385,11 +386,30 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		
 	}
 
+
+	@Test
+	public void testGcOldCmdFile() throws Exception {
+		AtomicInteger maxSecondsKeepCmdFile = new AtomicInteger(60);
+
+		commandStore = new DefaultCommandStore(commandTemplate, 100, maxSecondsKeepCmdFile::get, 0,
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+		appendCommandsToStore(10, 100);
+
+		commandStore.gc();
+		Assert.assertEquals(0, commandStore.lowestAvailableOffset());
+
+		maxSecondsKeepCmdFile.set(1);
+		sleep(1000);
+		appendCommandsToStore(1, 10);
+		commandStore.gc();
+		Assert.assertEquals(1000, commandStore.lowestAvailableOffset());
+	}
+
 	@Test
 	public void testGc() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, 0,
+		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
@@ -405,7 +425,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommands() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, 0,
+		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
@@ -419,7 +439,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsButTimeout() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, 0,
+		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
@@ -434,7 +454,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsButListenerClosed() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, 0,
+		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
@@ -449,7 +469,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsAndFinish() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, 0,
+		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
 				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 

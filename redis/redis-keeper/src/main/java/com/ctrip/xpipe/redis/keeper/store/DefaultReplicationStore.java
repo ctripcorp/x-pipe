@@ -72,12 +72,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			File rdb = new File(baseDir, meta.getRdbFile());
 			if (rdb.isFile()) {
 				rdbStoreRef.set(new DefaultRdbStore(rdb, meta.getRdbLastOffset(), initEofType(meta)));
-				cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize, 
-						config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
-						() -> config.getReplicationStoreCommandFileNumToKeep(),
-						config.getCommandReaderFlyingThreshold(),
-						keeperMonitor);
 			}
+		}
+		if (null != meta && null != meta.getCmdFilePrefix()) {
+			cmdStore = new DefaultCommandStore(new File(baseDir, meta.getCmdFilePrefix()), cmdFileSize,
+					config::getReplicationStoreCommandFileKeepTimeSeconds,
+					config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
+					config::getReplicationStoreCommandFileNumToKeep,
+					config.getCommandReaderFlyingThreshold(),
+					keeperMonitor);
 		}
 
 		removeUnusedRdbFiles();
@@ -122,8 +125,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		rdbStore.addListener(new ReplicationStoreRdbFileListener(rdbStore));
 		rdbStoreRef.set(rdbStore);
 		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize,
+				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
-				() -> config.getReplicationStoreCommandFileNumToKeep(),
+				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
 				keeperMonitor);
 
@@ -162,7 +166,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			logger.info("[rdbUpdated] new file {}, eofType {}, rdbOffset {}", dumpedRdbFile, eofType, rdbOffset);
 			RdbStore oldRdbStore = rdbStoreRef.get();
 			rdbStoreRef.set(dumpedRdbStore);
-			previousRdbStores.put(oldRdbStore, Boolean.TRUE);
+			if (null!= oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
 		}
 	}
 
@@ -386,7 +390,18 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 	
 	@Override
-	public boolean gc() {
+	public boolean gc() throws IOException {
+		synchronized (lock) {
+			RdbStore originRdbStore = rdbStoreRef.get();
+			if (null != originRdbStore && !originRdbStore.isWriting()
+					&& originRdbStore.rdbOffset() + 1 < firstAvailableOffset()
+					&& rdbStoreRef.compareAndSet(originRdbStore, null)) {
+				logger.info("[gc][release rdb for cmd not continue] {}", originRdbStore);
+				previousRdbStores.put(originRdbStore, Boolean.TRUE);
+				metaStore.releaseRdbFile(originRdbStore.getRdbFileName());
+			}
+		}
+
 		// delete old rdb files
 		for (RdbStore rdbStore : previousRdbStores.keySet()) {
 			if (rdbStore.refCount() == 0) {

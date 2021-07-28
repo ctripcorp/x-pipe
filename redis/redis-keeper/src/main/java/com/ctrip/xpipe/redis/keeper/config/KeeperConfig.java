@@ -25,6 +25,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getReplicationStoreGcIntervalSeconds();
 
+	int getReplicationStoreCommandFileKeepTimeSeconds();
+
 	int getReplicationStoreCommandFileNumToKeep();
 
 	/**

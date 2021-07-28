@@ -102,4 +102,28 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			return metaDup;
 		}
 	}
+
+	@Override
+	public void releaseRdbFile(String rdbFile) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta currentMeta = metaRef.get();
+			String currentRdbFile = currentMeta.getRdbFile();
+
+			if (null == currentRdbFile) {
+				logger.info("[releaseRdbFile][{}][already no rdb]", rdbFile);
+			} else if (!currentRdbFile.equals(rdbFile)) {
+				logger.warn("[releaseRdbFile][{}] current {}, skip", rdbFile, currentRdbFile);
+			} else {
+				ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+				metaDup.setRdbFile(null);
+				metaDup.setRdbEofMark(null);
+				metaDup.setRdbFileSize(0);
+				metaDup.setRdbLastOffset(null);
+
+				saveMeta(metaDup);
+			}
+		}
+	}
+
 }
