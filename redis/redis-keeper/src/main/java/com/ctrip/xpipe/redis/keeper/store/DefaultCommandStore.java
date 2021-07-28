@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -54,7 +55,9 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private final int maxFileSize;
 	
 	private final IntSupplier fileNumToKeep;
-	private final int minTimeMilliToGcAfterModified; 
+	private final int minTimeMilliToGcAfterModified;
+
+	private final IntSupplier maxTimeSecondKeeperCmdFileAfterModified;
 
 	private final FilenameFilter fileFilter;
 
@@ -74,14 +77,15 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private ReentrantLock gcLock = new ReentrantLock();
 
 	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitor keeperMonitor) throws IOException {
-		this(file, maxFileSize, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, keeperMonitor);
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, keeperMonitor);
 	}
 
-	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold, KeeperMonitor keeperMonitor) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified, int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold, KeeperMonitor keeperMonitor) throws IOException {
 		
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
+		this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
 		this.fileNumToKeep = fileNumToKeep;
 		this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
 		this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
@@ -566,11 +570,17 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		}
 
 		Date now = new Date();
+		long maxMilliKeepCmd = TimeUnit.SECONDS.toMillis(maxTimeSecondKeeperCmdFileAfterModified.getAsInt());
 		boolean time = now.getTime() - lastModified >= minTimeMilliToGcAfterModified;
+		boolean fresh = now.getTime() - lastModified <= maxMilliKeepCmd;
 
-		logger.debug("[canDeleteCmdFile][time]{}, {} - {} > {}", time, now, new Date(lastModified), minTimeMilliToGcAfterModified);
+		logger.info("[canDeleteCmdFile][time]{}, {} - {} > {}", time, now, new Date(lastModified), minTimeMilliToGcAfterModified);
 		if(!time){
 			return false;
+		}
+		logger.info("[canDeleteCmdFile][fresh]{}, {} - {} < {}", fresh, now, new Date(lastModified), maxMilliKeepCmd);
+		if (!fresh) {
+			return true;
 		}
 
 		long totalLength = totalLength();

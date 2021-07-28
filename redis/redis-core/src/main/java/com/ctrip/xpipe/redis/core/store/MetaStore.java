@@ -66,4 +66,6 @@ public interface MetaStore {
 	void updateKeeperRunid(String keeperRunid) throws IOException;
 
 	boolean isFresh();
+
+	void releaseRdbFile(String rdbFile) throws IOException ;
 }

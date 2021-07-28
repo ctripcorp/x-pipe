@@ -111,6 +111,10 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			public void setRdbFileSize(long rdbFileSize) throws IOException {
 			}
 
+			@Override
+			public void releaseRdbFile(String rdbFile) throws IOException {
+				throw new UnsupportedOperationException();
+			}
 		};
 	}
 

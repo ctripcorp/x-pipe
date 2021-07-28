@@ -48,5 +48,5 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	boolean checkOk();
 
-	boolean gc();
+	boolean gc() throws IOException;
 }
