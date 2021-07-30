@@ -35,9 +35,9 @@ public class SentinelHello {
      */
     public static SentinelHello fromString(String helloStr) {
 
-        String[] split = helloStr.split("\\s*,\\s*");
+        String[] split = helloStr.split(",");
         if (split.length < 8) {
-            throw new IllegalArgumentException("hello not corrent:" + helloStr);
+            throw new IllegalArgumentException("hello not correct:" + helloStr);
         }
 
         SentinelHello hello = new SentinelHello();
