@@ -26,7 +26,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	private BulkStringEofJudger eofJudger;
 	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
 	private BulkStringParserListener bulkStringParserListener;
-	
+	private boolean mustParseCRLF = true;
 	
 	public enum BULK_STRING_STATE{
 		READING_EOF_MARK,
@@ -37,17 +37,18 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	}
 		
 	public BulkStringParser(String content){
-		this(new StringInOutPayload(content), null);
+		this(new StringInOutPayload(content), null, true);
 		
 	}
 	
 	public BulkStringParser(InOutPayload bulkStringPayload) {
-		this(bulkStringPayload, null);
+		this(bulkStringPayload, null , true);
 	}
 	
-	public BulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener) {
+	public BulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener, boolean mustParseCRLF) {
 		super(bulkStringPayload, false, false);
 		this.bulkStringParserListener = bulkStringParserListener;
+		this.mustParseCRLF = mustParseCRLF;
 	}
 
 	public void setBulkStringParserListener(BulkStringParserListener bulkStringParserListener) {
@@ -107,6 +108,9 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 				}
 			case READING_CR:
 				if (byteBuf.readableBytes() == 0) {
+					if(mustParseCRLF) {
+						return null;
+					}
 					return new BulkStringParser(payload);
 				}
 				byte data1 = byteBuf.getByte(byteBuf.readerIndex());
@@ -114,6 +118,9 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 					byteBuf.readByte();
 					bulkStringState = BULK_STRING_STATE.READING_LF;
 				} else {
+					if(mustParseCRLF) {
+						throw new RedisRuntimeException(String.format("Parse the Redis command protocol Error: Here should be '\r' ,but it's %s", data1));
+					}
 					return new BulkStringParser(payload);
 				}
 			case READING_LF:
@@ -124,6 +131,10 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 				if (data1 == '\n') {
 					byteBuf.readByte();
 					bulkStringState = BULK_STRING_STATE.END;
+				} else {
+					if(mustParseCRLF) {
+						throw new RedisRuntimeException(String.format("Parse the Redis command protocol Error: Here should be '\n' ,but it's %s", data1));
+					}
 				}
 				return new BulkStringParser(payload);
 			case END:

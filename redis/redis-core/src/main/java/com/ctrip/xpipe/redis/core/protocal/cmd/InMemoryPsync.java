@@ -50,7 +50,7 @@ public class InMemoryPsync extends AbstractPsync{
 
 	@Override
 	protected BulkStringParser createRdbReader() {
-		return new BulkStringParser(rdb);
+		return new BulkStringParser(rdb, null, false);
 	}
 	
 	@Override
