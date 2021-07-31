@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.AbstractInOutPayload;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringEofMarkJudger;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
@@ -11,6 +12,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
+import java.util.Arrays;
 
 /**
  * @author wenchao.meng
@@ -109,7 +111,51 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		assertResult();
 	}
 
-	
+
+	ByteBuf createByteBuf(String data) {
+		ByteBuf byteBuf = directByteBuf(1);
+		byteBuf.writeBytes(data.getBytes());
+		return byteBuf;
+	}
+
+	@Test
+	public void testReadSomeByteBuf() {
+		String data = "$" +content.length() + "\r\n" + content + "\r\n";
+		String[] bufs = data.split("");
+		RedisClientProtocol<InOutPayload> result = null;
+		for(int i = 0; i < bufs.length; i++) {
+			Assert.assertEquals(result , null);
+			result = bs.read(createByteBuf(bufs[i]));
+		}
+		Assert.assertNotNull(result);
+	}
+
+	@Test
+	public void testCRLF() {
+		String data = "\r\n$" +content.length() + "\r\n" + content + "\r\n";
+		String[] bufs = data.split("");
+		RedisClientProtocol<InOutPayload> result = null;
+		for(int i = 0; i < bufs.length; i++) {
+			Assert.assertEquals(result , null);
+			result = bs.read(createByteBuf(bufs[i]));
+		}
+		Assert.assertNotNull(result);
+	}
+
+
+	@Test
+	public void testRdb() {
+		String data = "$" +content.length() + "\r\n" + content;
+		String[] bufs = data.split("");
+		RedisClientProtocol<InOutPayload> result = null;
+		for(int i = 0; i < bufs.length; i++) {
+			Assert.assertEquals(result , null);
+			result = bs.read(createByteBuf(bufs[i]));
+		}
+		Assert.assertNotNull(result);
+	}
+
+
 	class TestPayload  extends AbstractInOutPayload implements InOutPayload{
 
 		@Override

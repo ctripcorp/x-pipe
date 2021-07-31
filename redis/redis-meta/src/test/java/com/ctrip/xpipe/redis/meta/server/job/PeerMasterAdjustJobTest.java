@@ -191,7 +191,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             index.incrementAndGet();
         });
         String content = sb.toString();
-        return String.format("$%d\r\n%s", content.length(), content);
+        return String.format("$%d\r\n%s\r\n", content.length(), content);
     }
 
     private String mockInfoServerResp() {
@@ -199,7 +199,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         if (null != version) {
             content = "xredis_crdt_version:" + version;
         }
-        return String.format("$%d\r\n%s", content.length(), content);
+        return String.format("$%d\r\n%s\r\n", content.length(), content);
     }
 
     private void mockMaster() throws Exception {

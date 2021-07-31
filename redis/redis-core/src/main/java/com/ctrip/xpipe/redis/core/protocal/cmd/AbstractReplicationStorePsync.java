@@ -72,7 +72,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	protected BulkStringParser createRdbReader() {
 		
 		inOutPayloadReplicationStore = new InOutPayloadReplicationStore();
-		BulkStringParser rdbReader = new BulkStringParser(inOutPayloadReplicationStore);
+		BulkStringParser rdbReader = new BulkStringParser(inOutPayloadReplicationStore, null, false);
 		return rdbReader;
 	}
 

@@ -92,7 +92,7 @@ public class BackStreamingActionTest extends AbstractCheckerTest {
             content = String.format(TMP_HIGH_VERSION_REPLICATION, onBackStreaming ? "1" : "0");
         }
 
-        return String.format("$%d\r\n%s", content.length(), content);
+        return String.format("$%d\r\n%s\r\n", content.length(), content);
     }
 
     @Test
