@@ -6,6 +6,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParaser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 
@@ -28,7 +29,7 @@ public class KinfoCommandHandler extends AbstractCommandHandler {
 		String result = Codec.DEFAULT.encode(keeper.getReplicationStore().getMetaStore().dupReplicationStoreMeta());
 
 		logger.info("[doHandle]{}", result);
-		redisClient.sendMessage(new BulkStringParser(result).format());
+		redisClient.sendMessage(new CommandBulkStringParaser(result).format());
 	}
 
 }

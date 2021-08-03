@@ -49,7 +49,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testEOFSplit(){
-		bs = new BulkStringParser(new TestPayload(), null ,false);
+		bs = new BulkStringParser(new TestPayload(), false);
 		String eof = randomString(BulkStringEofMarkJudger.MARK_LENGTH);
 		String buff = "$EOF:" + eof + "\r\n" + content + eof;
 		String []contents = new String[]{buff, randomString()};
@@ -61,7 +61,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testNoCRLFEnd(){
-		bs = new BulkStringParser(new TestPayload(), null ,false);
+		bs = new BulkStringParser(new TestPayload(), false);
 		String []contents = new String[]{"$" + content.length(), "\r\n", content, "ab"};
 		
 		parse(bs, contents);
@@ -132,7 +132,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testRdb() {
-		bs = new BulkStringParser(new TestPayload(), null ,false);
+		bs = new BulkStringParser(new TestPayload(), false);
 		String data = "$" +content.length() + "\r\n" + content;
 		String[] bufs = data.split("");
 		RedisClientProtocol<InOutPayload> result = null;

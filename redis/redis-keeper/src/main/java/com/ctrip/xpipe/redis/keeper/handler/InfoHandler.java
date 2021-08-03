@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParaser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
@@ -60,7 +61,7 @@ public class InfoHandler extends AbstractCommandHandler{
 		} else {
 			result = doSectionHandler(args[0], redisKeeperServer);
 		}
-		redisClient.sendMessage(new BulkStringParser(result).format());
+		redisClient.sendMessage(new CommandBulkStringParaser(result).format());
 	}
 
 	private String doSectionHandler(String section, RedisKeeperServer redisKeeperServer) {

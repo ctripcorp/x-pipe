@@ -89,9 +89,9 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 									break;
 								case DOLLAR_BYTE:
 									if(inOutPayloadFactory != null) {
-										currentParser = new BulkStringParser(inOutPayloadFactory.create());
+										currentParser = new CommandBulkStringParaser(inOutPayloadFactory.create());
 									} else {
-										currentParser = new BulkStringParser(new ByteArrayOutputStreamPayload());
+										currentParser = new CommandBulkStringParaser(new ByteArrayOutputStreamPayload());
 									}
 									break;
 								case COLON_BYTE:

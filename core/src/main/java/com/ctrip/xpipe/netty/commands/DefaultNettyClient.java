@@ -86,6 +86,11 @@ public class DefaultNettyClient implements NettyClient{
 		}
 	}
 
+	ByteBufReceiver ignoreReceiver = null;
+	public void setIgnoreReceiver(ByteBufReceiver defaultReceiver) {
+		this.ignoreReceiver = defaultReceiver;
+	}
+
 	@Override
 	public void handleResponse(Channel channel, ByteBuf byteBuf) {
 		timeoutCounter.set(0);
@@ -114,14 +119,27 @@ public class DefaultNettyClient implements NettyClient{
 					throw new IllegalStateException("unknown result:" + result);
 			}
 		}else{
+			if (ignoreReceiver != null) {
+				String StrBuf = ByteBufUtils.readToString(Unpooled.copiedBuffer(byteBuf));
+				int readableBytes = byteBuf.readableBytes();
+				ByteBufReceiver.RECEIVER_RESULT result = ignoreReceiver.receive(channel, byteBuf);
 
-			String bufStr = ByteBufUtils.readToString(byteBuf);
-			if(bufStr.length() == 2 && bufStr.equals("\r\n")) {
-				logger.error("[handleResponse][no receiver] {} : buf == '\r\n'", channel);
+				switch (result) {
+					case SUCCESS:
+						logger.error("[handleResponse][ignore]{}, {}, {}", channel, readableBytes, StrBuf);
+						return ;
+					default:
+						logger.error("[handleResponse][no receiver][close client] {}, {}, {}", channel, readableBytes, StrBuf);
+						channel.close();
+						return;
+				}
+
 			} else {
-				logger.error("[handleResponse][no receiver][close client]{}, {}, {}", channel, byteBuf.readableBytes(), bufStr);
+				logger.error("[handleResponse][no receiver][close client]{}, {}, {}", channel, byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf));
 				channel.close();
 			}
+
+
 		}
 	}
 

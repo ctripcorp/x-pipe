@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -35,7 +36,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	private boolean saveCommands;
 
-	private BulkStringParser rdbReader;
+	private AbstractBulkStringParser rdbReader;
 	
 	private String replIdRequest;
 	private long offsetRequest;
@@ -218,7 +219,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected abstract void appendCommands(ByteBuf byteBuf) throws IOException;
 
-	protected abstract BulkStringParser createRdbReader();
+	protected abstract AbstractBulkStringParser createRdbReader();
 
 	protected void doOnFullSync() throws IOException {
 		getLogger().debug("[doOnFullSync]");

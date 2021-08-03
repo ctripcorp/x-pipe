@@ -4,7 +4,9 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
@@ -49,8 +51,8 @@ public class InMemoryPsync extends AbstractPsync{
 	}
 
 	@Override
-	protected BulkStringParser createRdbReader() {
-		return new BulkStringParser(rdb, null, false);
+	protected AbstractBulkStringParser createRdbReader() {
+		return new RdbBulkStringParser(rdb);
 	}
 	
 	@Override

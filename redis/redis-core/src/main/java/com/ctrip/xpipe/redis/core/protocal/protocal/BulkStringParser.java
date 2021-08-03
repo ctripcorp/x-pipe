@@ -26,7 +26,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	private BulkStringEofJudger eofJudger;
 	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
 	private BulkStringParserListener bulkStringParserListener;
-	private boolean mustParseCRLF = true;
+	private final boolean isEndCRLF;
 	
 	public enum BULK_STRING_STATE{
 		READING_EOF_MARK,
@@ -38,17 +38,19 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 		
 	public BulkStringParser(String content){
 		this(new StringInOutPayload(content), null, true);
-		
 	}
-	
 	public BulkStringParser(InOutPayload bulkStringPayload) {
 		this(bulkStringPayload, null , true);
 	}
-	
-	public BulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener, boolean mustParseCRLF) {
+
+	public BulkStringParser(InOutPayload bulkStringPayload,  boolean isEndCRLF) {
+		this(bulkStringPayload, null , isEndCRLF);
+	}
+
+	public BulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener, boolean isEndCRLF) {
 		super(bulkStringPayload, false, false);
 		this.bulkStringParserListener = bulkStringParserListener;
-		this.mustParseCRLF = mustParseCRLF;
+		this.isEndCRLF = isEndCRLF;
 	}
 
 	public void setBulkStringParserListener(BulkStringParserListener bulkStringParserListener) {
@@ -101,27 +103,27 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 					} catch (IOException e) {
 						throw new RedisRuntimeException("[write to payload truncate exception]" + payload, e);
 					}
-					bulkStringState = BULK_STRING_STATE.READING_CR;
+					if(isEndCRLF) {
+						//command callback
+						bulkStringState = BULK_STRING_STATE.READING_CR;
+					} else {
+						//fullsync rdb
+						return new BulkStringParser(payload);
+					}
 					continue;
 				} else {
 					break;
 				}
 			case READING_CR:
 				if (byteBuf.readableBytes() == 0) {
-					if(mustParseCRLF) {
-						return null;
-					}
-					return new BulkStringParser(payload);
+					return null;
 				}
 				byte data1 = byteBuf.getByte(byteBuf.readerIndex());
 				if (data1 == '\r') {
 					byteBuf.readByte();
 					bulkStringState = BULK_STRING_STATE.READING_LF;
 				} else {
-					if(mustParseCRLF) {
-						throw new RedisRuntimeException(String.format("Parse the Redis command protocol Error: Here should be '\r' ,but it's %s", data1));
-					}
-					return new BulkStringParser(payload);
+					throw new RedisRuntimeException(String.format("Parse the Redis command protocol Error: Here should be '\r' ,but it's %s", data1));
 				}
 			case READING_LF:
 				if (byteBuf.readableBytes() == 0) {
@@ -132,9 +134,7 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 					byteBuf.readByte();
 					bulkStringState = BULK_STRING_STATE.END;
 				} else {
-					if(mustParseCRLF) {
-						throw new RedisRuntimeException(String.format("Parse the Redis command protocol Error: Here should be '\n' ,but it's %s", data1));
-					}
+					throw new RedisRuntimeException(String.format("Parse the Redis command protocol Error: Here should be '\n' ,but it's %s", data1));
 				}
 				return new BulkStringParser(payload);
 			case END:

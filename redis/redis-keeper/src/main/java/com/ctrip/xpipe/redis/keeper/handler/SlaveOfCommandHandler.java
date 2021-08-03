@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.keeper.handler;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParaser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
@@ -59,7 +60,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			
 			try {
 				redisClient.getRedisKeeperServer().promoteSlave(ip, port);
-				redisClient.sendMessage(new BulkStringParser(RedisProtocol.OK).format());
+				redisClient.sendMessage(new CommandBulkStringParaser(RedisProtocol.OK).format());
 				return;
 			} catch (RedisSlavePromotionException e) {
 				logger.error("[doHandle]{},{},{}", redisClient, ip, port);
@@ -101,7 +102,7 @@ public class SlaveOfCommandHandler extends AbstractCommandHandler {
 			logger.info("[handleSelf][slaveof]{}", StringUtil.join(" ", args));
 			redisClient.getRedisKeeperServer().getRedisKeeperServerState().setMasterAddress(new DefaultEndPoint(args[0], Integer.parseInt(args[1])));
 		}
-		redisClient.sendMessage(new BulkStringParser(RedisProtocol.OK).format());
+		redisClient.sendMessage(new CommandBulkStringParaser(RedisProtocol.OK).format());
 	}
 
 	private boolean validateArgs(String[] args) {

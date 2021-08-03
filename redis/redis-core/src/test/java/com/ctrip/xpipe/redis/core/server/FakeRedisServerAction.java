@@ -4,6 +4,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParaser;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.gson.JsonDeserializationContext;
@@ -169,8 +170,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			rdb = content.getBytes();
 			waitAckToSendCommands = true;
 		}else{
-			BulkStringParser bulkStringParser = new BulkStringParser(rdbContent);
-			ByteBuf byteBuf = bulkStringParser.format();
+			ByteBuf byteBuf = new CommandBulkStringParaser(rdbContent).format();
 			rdb = ByteBufUtils.readToBytes(byteBuf);
 			rdbStartPos = 3 + String.valueOf(rdbContent.length()).length();
 			waitAckToSendCommands = false;
