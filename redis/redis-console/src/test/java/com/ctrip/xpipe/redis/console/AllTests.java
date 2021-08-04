@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
+import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
@@ -182,6 +183,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MigrationChooseTargetDcCmdTest.class,
         MigrationBuildEventCmdTest.class,
         MigrationDoExecuteCmdTest.class,
+        MultiClusterMigrationTest.class,
 
         DefaultMonitorServiceManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
