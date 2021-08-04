@@ -30,7 +30,7 @@ public class MetaCacheCheck extends AbstractIntervalCheck {
     @Override
     protected void doCheck() {
         if (isMetaCacheOverDue()) {
-            alertManager.alert(null, ALERT_TYPE.META_CACHE_BLOCKED, "meta-cache-not-update-for-long-time");
+            alertManager.alert(null, null, null, ALERT_TYPE.META_CACHE_BLOCKED, "meta-cache-not-update-for-long-time");
         }
     }
 

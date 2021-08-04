@@ -68,6 +68,11 @@ public class AlertManagerTest {
     }
 
     @Test
+    public void testShouldAlertNullCluster() {
+        Assert.assertTrue(alertManager.shouldAlert(null));
+    }
+
+    @Test
     public void testAlertWhiteList() {
         when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
         alertManager.setClusterCreateTime(Collections.emptyMap());
