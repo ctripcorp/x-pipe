@@ -36,7 +36,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	private boolean saveCommands;
 
-	private AbstractBulkStringParser rdbReader;
+	private BulkStringParser rdbReader;
 	
 	private String replIdRequest;
 	private long offsetRequest;
@@ -219,7 +219,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected abstract void appendCommands(ByteBuf byteBuf) throws IOException;
 
-	protected abstract AbstractBulkStringParser createRdbReader();
+	protected abstract BulkStringParser createRdbReader();
 
 	protected void doOnFullSync() throws IOException {
 		getLogger().debug("[doOnFullSync]");

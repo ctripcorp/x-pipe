@@ -13,13 +13,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public abstract class AbstractBulkStringParser extends AbstractRedisClientProtocol<InOutPayload> {
+public abstract class AbstractBulkStringParser extends BulkStringParser {
     public AbstractBulkStringParser(String content) {
-        super(new StringInOutPayload(content), false, false);
+        super(new StringInOutPayload(content));
     }
 
     public AbstractBulkStringParser(InOutPayload bulkStringPayload) {
-        super(bulkStringPayload, false, false);
+        super(bulkStringPayload);
     }
     protected Logger logger = null;
 
@@ -86,7 +86,6 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
     }
 
 
-    protected BulkStringParser.BulkStringParserListener bulkStringParserListener;
 
 
     public void setEofJudger(BulkStringEofJudger eofJudger) {
@@ -94,8 +93,9 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
         if (bulkStringParserListener != null) {
             bulkStringParserListener.onEofType(eofJudger.getEofType());
         }
-        payload.startInput();
     }
+
+
 
     public BulkStringEofJudger.JudgeResult addContext(ByteBuf byteBuf) {
         int readerIndex = byteBuf.readerIndex();
@@ -112,6 +112,10 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
         }
         byteBuf.readerIndex(readerIndex + length);
         return result;
+    }
+
+    public void startInput() {
+        payload.startInput();
     }
 
     public void endInput() {
@@ -141,9 +145,7 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
         }
     }
 
-    public void setBulkStringParserListener(BulkStringParser.BulkStringParserListener bulkStringParserListener) {
-        this.bulkStringParserListener = bulkStringParserListener;
-    }
+
 
     @Override
     public boolean supportes(Class<?> clazz) {

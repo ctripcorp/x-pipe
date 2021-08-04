@@ -19,11 +19,15 @@ public class CommandBulkStringParaser extends AbstractBulkStringParser {
         while(true) {
             switch (bulkStringState) {
                 case READING_EOF_MARK:
+                    /**
+                     * $<count>\r\n<payload>\r\n
+                     */
                     BulkStringEofJudger eofJudger = readEOfMark(byteBuf);
                     if (eofJudger == null) {
                         return null;
                     }
                     setEofJudger(eofJudger);
+                    startInput();
                     bulkStringState = BulkStringParser.BULK_STRING_STATE.READING_CONTENT;
                 case READING_CONTENT:
                     BulkStringEofJudger.JudgeResult result = addContext(byteBuf);

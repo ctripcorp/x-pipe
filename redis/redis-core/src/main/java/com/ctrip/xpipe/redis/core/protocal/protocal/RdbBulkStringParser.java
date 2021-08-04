@@ -28,11 +28,19 @@ public class RdbBulkStringParser extends AbstractBulkStringParser {
         while(true) {
             switch (bulkStringState) {
                 case READING_EOF_MARK:
+                    /*
+                        1.  $EOF:<40 bytes unguessable hex string>\r\n
+                            <rdb>
+                            <40 bytes unguessable hex string>
+                        2. $<rdb file size>\r\n
+                            <rdb>
+                     */
                     BulkStringEofJudger eofJudger = readEOfMark(byteBuf);
                     if (eofJudger == null) {
                         return null;
                     }
                     setEofJudger(eofJudger);
+                    startInput();
                     bulkStringState = BulkStringParser.BULK_STRING_STATE.READING_CONTENT;
                 case READING_CONTENT:
                     BulkStringEofJudger.JudgeResult result = addContext(byteBuf);
@@ -45,7 +53,7 @@ public class RdbBulkStringParser extends AbstractBulkStringParser {
                 case END:
                     return new RdbBulkStringParser(payload);
                 default:
-                    throw new RedisRuntimeException(String.format("read bulkStringState error %s", bulkStringState.toString()));
+                    throw new RedisRuntimeException(String.format("read RdbBulkStringParser error %s", bulkStringState.toString()));
             }
             return null;
         }
