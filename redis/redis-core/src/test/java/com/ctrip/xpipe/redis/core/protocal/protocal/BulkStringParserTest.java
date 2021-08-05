@@ -21,7 +21,7 @@ import java.util.Arrays;
  */
 public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	
-	private BulkStringParser bs = new BulkStringParser(new TestPayload());
+	private BulkStringParser bs = new CommandBulkStringParaser(new TestPayload());
 	
 	private ByteBuf result;
 	
@@ -40,7 +40,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		
 		for(int i=1; i <= eof.length();i++){
 
-			bs = new BulkStringParser(new TestPayload());
+			bs = new RdbBulkStringParser(new TestPayload());
 			String []contents = StringUtil.splitByLen(buff, i);
 			parse(bs, contents);
 			assertResult();
@@ -49,7 +49,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testEOFSplit(){
-		bs = new BulkStringParser(new TestPayload(), false);
+		bs = new RdbBulkStringParser(new TestPayload());
 		String eof = randomString(BulkStringEofMarkJudger.MARK_LENGTH);
 		String buff = "$EOF:" + eof + "\r\n" + content + eof;
 		String []contents = new String[]{buff, randomString()};
@@ -61,7 +61,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testNoCRLFEnd(){
-		bs = new BulkStringParser(new TestPayload(), false);
+		bs = new RdbBulkStringParser(new TestPayload());
 		String []contents = new String[]{"$" + content.length(), "\r\n", content, "ab"};
 		
 		parse(bs, contents);
@@ -132,7 +132,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testRdb() {
-		bs = new BulkStringParser(new TestPayload(), false);
+		bs = new RdbBulkStringParser(new TestPayload());
 		String data = "$" +content.length() + "\r\n" + content;
 		String[] bufs = data.split("");
 		RedisClientProtocol<InOutPayload> result = null;
@@ -159,7 +159,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 			logger.error(e.getMessage());
 		}
 		Assert.assertNotNull(e);
-		Assert.assertEquals(e.getMessage(), String.format("Parse the Redis command protocol Error: Here should be '\r' ,but it's %s", "\n".getBytes()[0]));
+		Assert.assertEquals(e.getMessage(), String.format("Parse the Redis command protocol Error: Here should be '\r' ,but it's %s", '\n'));
 		Assert.assertEquals(result, null);
 	}
 
@@ -179,7 +179,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 			logger.error(e.getMessage());
 		}
 		Assert.assertNotNull(e);
-		Assert.assertEquals(e.getMessage(), String.format("Parse the Redis command protocol Error: Here should be '\n' ,but it's %s", "\t".getBytes()[0]));
+		Assert.assertEquals(e.getMessage(), String.format("Parse the Redis command protocol Error: Here should be '\n' ,but it's %s", '\t'));
 		Assert.assertEquals(result, null);
 	}
 
