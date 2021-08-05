@@ -17,6 +17,7 @@ public interface Psync extends Command<Object>{
 	
 	enum PSYNC_STATE{
 		PSYNC_COMMAND_WAITING_REPONSE,
+		READING_PRE_RDB,
 		READING_RDB,
 		READING_COMMANDS
 	}

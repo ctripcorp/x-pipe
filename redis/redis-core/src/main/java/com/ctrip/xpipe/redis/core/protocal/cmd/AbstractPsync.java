@@ -11,9 +11,9 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringParserListener;
+import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ChannelUtil;
@@ -31,11 +31,11 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  *         2016年3月24日 下午2:24:38
  */
-public abstract class AbstractPsync extends AbstractRedisCommand<Object> implements Psync, BulkStringParserListener {
+public abstract class AbstractPsync extends AbstractRedisCommand<Object> implements Psync, AbstractBulkStringParser.BulkStringParserListener {
 
 	private boolean saveCommands;
 
-	private BulkStringParser rdbReader;
+	private RdbBulkStringParser rdbReader;
 	
 	private String replIdRequest;
 	private long offsetRequest;
@@ -132,15 +132,27 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 					}
 					handleRedisResponse(channel, (String) response);
 					break;
-
+				case READING_PRE_RDB:
+					/* At this stage just a newline works as a PING in order to take
+					 * the connection live. So we refresh our last interaction
+					 * timestamp. */
+					while(true) {
+						if(byteBuf.readableBytes() == 0) {
+							return null;
+						}
+						if(byteBuf.getByte(byteBuf.readerIndex()) == '\n') {
+							byteBuf.readByte();
+						} else {
+							psyncState = PSYNC_STATE.READING_RDB;
+							break;
+						}
+					}
 				case READING_RDB:
-
 					if (rdbReader == null) {
 						getLogger().info("[doReceiveResponse][createRdbReader]{}", ChannelUtil.getDesc(channel));
 						rdbReader = createRdbReader();
-						rdbReader.setBulkStringParserListener(this);
+						rdbReader.setBlukStringParserListener(this);
 					}
-
 					RedisClientProtocol<InOutPayload> payload = rdbReader.read(byteBuf);
 					if (payload != null) {
 						psyncState = PSYNC_STATE.READING_COMMANDS;
@@ -187,7 +199,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			masterRdbOffset = Long.parseLong(split[2]);
 			getLogger().debug("[readRedisResponse]{}, {}, {}, {}", ChannelUtil.getDesc(channel), this, replId,
 					masterRdbOffset);
-			psyncState = PSYNC_STATE.READING_RDB;
+			psyncState = PSYNC_STATE.READING_PRE_RDB;
 
 			doOnFullSync();
 		} else if (split[0].equalsIgnoreCase(PARTIAL_SYNC)) {
@@ -218,7 +230,7 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 	protected abstract void appendCommands(ByteBuf byteBuf) throws IOException;
 
-	protected abstract BulkStringParser createRdbReader();
+	protected abstract RdbBulkStringParser createRdbReader();
 
 	protected void doOnFullSync() throws IOException {
 		getLogger().debug("[doOnFullSync]");

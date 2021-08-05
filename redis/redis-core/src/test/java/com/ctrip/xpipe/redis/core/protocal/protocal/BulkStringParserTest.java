@@ -19,7 +19,7 @@ import java.nio.channels.WritableByteChannel;
  */
 public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	
-	private BulkStringParser bs = new BulkStringParser(new TestPayload());
+	private AbstractBulkStringParser bs = new CommandBulkStringParser(new TestPayload());
 	
 	private ByteBuf result;
 	
@@ -38,7 +38,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		
 		for(int i=1; i <= eof.length();i++){
 
-			bs = new BulkStringParser(new TestPayload());
+			bs = new RdbBulkStringParser(new TestPayload());
 			String []contents = StringUtil.splitByLen(buff, i);
 			parse(bs, contents);
 			assertResult();
@@ -47,7 +47,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testEOFSplit(){
-		
+		bs = new RdbBulkStringParser(new TestPayload());
 		String eof = randomString(BulkStringEofMarkJudger.MARK_LENGTH);
 		String buff = "$EOF:" + eof + "\r\n" + content + eof;
 		String []contents = new String[]{buff, randomString()};
@@ -59,7 +59,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 
 	@Test
 	public void testNoCRLFEnd(){
-
+		bs = new RdbBulkStringParser(new TestPayload());
 		String []contents = new String[]{"$" + content.length(), "\r\n", content, "ab"};
 		
 		parse(bs, contents);

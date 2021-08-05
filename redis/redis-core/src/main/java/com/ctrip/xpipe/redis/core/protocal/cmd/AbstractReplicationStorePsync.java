@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.tuple.Pair;
@@ -69,10 +69,10 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	}
 
 	@Override
-	protected BulkStringParser createRdbReader() {
+	protected RdbBulkStringParser createRdbReader() {
 		
 		inOutPayloadReplicationStore = new InOutPayloadReplicationStore();
-		BulkStringParser rdbReader = new BulkStringParser(inOutPayloadReplicationStore);
+		RdbBulkStringParser rdbReader = new RdbBulkStringParser(inOutPayloadReplicationStore);
 		return rdbReader;
 	}
 
