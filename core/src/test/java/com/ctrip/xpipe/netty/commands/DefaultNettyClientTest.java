@@ -62,12 +62,6 @@ public class DefaultNettyClientTest extends AbstractTest {
     }
 
     @Test
-    public void testCommandEndCRLF() throws Exception {
-        nettyClient.handleResponse(nettyClient.channel, Unpooled.copiedBuffer("\r\n".getBytes()));
-        Assert.assertEquals(nettyClient.channel.isOpen(), true);
-    }
-
-    @Test
     public void testSendOnChannelClose() {
         String msg = "test\r\n";
         nettyClient.channel().close();

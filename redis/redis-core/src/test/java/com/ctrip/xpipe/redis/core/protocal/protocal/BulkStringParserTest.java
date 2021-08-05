@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
-import java.util.Arrays;
 
 /**
  * @author wenchao.meng

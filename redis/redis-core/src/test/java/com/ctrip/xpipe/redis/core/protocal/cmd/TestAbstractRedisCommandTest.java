@@ -83,14 +83,4 @@ public class TestAbstractRedisCommandTest extends AbstractRedisTest {
         verify(pool, times(1)).borrowObject();
     }
 
-    @Test
-    public void testCommandEndCRLF() throws Exception {
-        Server server = startServerWithFlexibleResult(new Callable<String>() {
-            @Override
-            public String call() throws Exception {
-                sleep(50);
-                return "+PONG\r\n";
-            }
-        });
-    }
 }

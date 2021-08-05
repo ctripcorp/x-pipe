@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser.BulkStringParserListener;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;

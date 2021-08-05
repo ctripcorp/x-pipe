@@ -3,7 +3,6 @@ package com.ctrip.xpipe.netty.commands;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -93,6 +92,7 @@ public class DefaultNettyClient implements NettyClient{
 		ByteBufReceiver byteBufReceiver = receivers.peek();
 
 		if(byteBufReceiver != null){
+
 			ByteBufReceiver.RECEIVER_RESULT result = byteBufReceiver.receive(channel, byteBuf);
 			switch (result){
 				case SUCCESS:
@@ -114,8 +114,8 @@ public class DefaultNettyClient implements NettyClient{
 					throw new IllegalStateException("unknown result:" + result);
 			}
 		}else{
-				logger.error("[handleResponse][no receiver][close client]{}, {}, {}", channel, byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf));
-				channel.close();
+			logger.error("[handleResponse][no receiver][close client]{}, {}, {}", channel, byteBuf.readableBytes(), ByteBufUtils.readToString(byteBuf));
+			channel.close();
 		}
 	}
 

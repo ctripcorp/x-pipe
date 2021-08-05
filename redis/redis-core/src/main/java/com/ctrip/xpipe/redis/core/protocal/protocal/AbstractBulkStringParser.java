@@ -54,15 +54,8 @@ public abstract class AbstractBulkStringParser extends BulkStringParser {
         }
         return logger;
     }
-    protected BulkStringParser.BULK_STRING_STATE bulkStringState = BulkStringParser.BULK_STRING_STATE.READING_EOF_MARK;
 
-    public enum BULK_STRING_STATE{
-        READING_EOF_MARK,
-        READING_CONTENT,
-        READING_CR,
-        READING_LF,
-        END
-    }
+    protected BulkStringParser.BULK_STRING_STATE bulkStringState = BulkStringParser.BULK_STRING_STATE.READING_EOF_MARK;
 
     protected BulkStringEofJudger eofJudger;
 
@@ -85,17 +78,12 @@ public abstract class AbstractBulkStringParser extends BulkStringParser {
         return BulkStringEofJuderManager.create(markBytes.getPayload());
     }
 
-
-
-
     public void setEofJudger(BulkStringEofJudger eofJudger) {
         this.eofJudger = eofJudger;
         if (bulkStringParserListener != null) {
             bulkStringParserListener.onEofType(eofJudger.getEofType());
         }
     }
-
-
 
     public BulkStringEofJudger.JudgeResult addContext(ByteBuf byteBuf) {
         int readerIndex = byteBuf.readerIndex();

@@ -162,7 +162,6 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		runData(data);
 	}
 
-
 	@Test
 	public void testPsyncFullRight() throws XpipeException, IOException, InterruptedException{
 		
