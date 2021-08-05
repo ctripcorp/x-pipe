@@ -135,14 +135,14 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    future.cancel(false);
+                    future.cancel(true);
                     EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
                             String.format("[%s]%s+%s", "cancel", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
                 }
             }, context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli(), TimeUnit.MILLISECONDS);
             future.addListener(commandFuture -> {
                 if (!commandFuture.isCancelled())
-                    timeoutFuture.cancel(false);
+                    timeoutFuture.cancel(true);
             });
         } catch (Throwable e) {
             logger.error("[DefaultSentinelHelloCollector]onAction", e);
@@ -161,6 +161,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private void collect(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getCheckInfo();
+        if ((System.currentTimeMillis() - context.getRecvTimeMilli()) > context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli())
+            return;
+
         String cluster = info.getClusterId();
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
@@ -550,11 +553,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         @Override
         protected void doExecute() throws Throwable {
-            try {
-                collect(context);
+            collect(context);
+            if (!future().isDone()) {
                 future().setSuccess();
-            } catch (Throwable e) {
-                future().setFailure(e);
             }
         }
 
