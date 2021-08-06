@@ -86,9 +86,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Autowired
     private SentinelManager sentinelManager;
 
-
-    private ScheduledExecutorService scheduled;
-
     @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
@@ -98,11 +95,11 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private ExecutorService resetExecutor;
 
+    private ScheduledExecutorService scheduled;
+
     @PostConstruct
     public void postConstruct() {
-        leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
         try {
-            leakyBucket.start();
             collectExecutor = new DefaultExecutorFactory(getClass().getSimpleName() + "-collect", 2 * OsUtils.getCpuCount(), 2 * OsUtils.getCpuCount(),
                     new ThreadPoolExecutor.AbortPolicy()).createExecutorService();
             resetExecutor = new DefaultExecutorFactory(getClass().getSimpleName() + "-reset", 2 * OsUtils.getCpuCount(), 2 * OsUtils.getCpuCount(),
@@ -111,6 +108,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     new ScheduledThreadPoolExecutor(Math.min(8, OsUtils.getCpuCount()), XpipeThreadFactory.create(getClass().getSimpleName() + "-scheduled")),
                     THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
             );
+            leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
+            leakyBucket.start();
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
         }
@@ -118,13 +117,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @PreDestroy
     public void preDestroy() {
-        if (leakyBucket != null) {
-            try {
-                leakyBucket.stop();
-            } catch (Exception e) {
-                logger.error("[preDestroy-leakyBucket]", e);
-            }
-        }
         if (collectExecutor != null) {
             try {
                 collectExecutor.shutdownNow();
@@ -144,6 +136,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 scheduled.shutdownNow();
             } catch (Exception e) {
                 logger.error("[preDestroy-scheduled]", e);
+            }
+        }
+        if (leakyBucket != null) {
+            try {
+                leakyBucket.stop();
+            } catch (Exception e) {
+                logger.error("[preDestroy-leakyBucket]", e);
             }
         }
     }
@@ -180,11 +179,15 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     private void collect(SentinelActionContext context) {
-        RedisInstanceInfo info = context.instance().getCheckInfo();
-        if ((System.currentTimeMillis() - context.getRecvTimeMilli()) > context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli())
-            return;
 
+        RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
+
+        if ((System.currentTimeMillis() - context.getRecvTimeMilli()) > context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli()) {
+            logger.warn("[{}-{}+{}] {} expired, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
+            return;
+        }
+
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
