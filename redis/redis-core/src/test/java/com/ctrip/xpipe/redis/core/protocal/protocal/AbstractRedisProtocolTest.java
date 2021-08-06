@@ -9,26 +9,26 @@ import io.netty.buffer.ByteBuf;
  * 2016年4月20日 上午11:55:58
  */
 public class AbstractRedisProtocolTest extends AbstractRedisTest{
-	
-	
+
+
 	private long totalReadLen = 0;
 
 	protected RedisClientProtocol<?> parse(RedisClientProtocol<?> parser, String[] contents) {
-		
+
 		totalReadLen = 0;
-		
+
 		ByteBuf []byteBufs = new ByteBuf[contents.length];
-		
+
 		for(int i = 0; i< contents.length;i++){
-			
+
 			byteBufs[i] = directByteBuf();
 			byteBufs[i].writeBytes(contents[i].getBytes());
 		}
-		
+
 		RedisClientProtocol<?> result = null;
-		
+
 		for(ByteBuf byteBuf : byteBufs){
-			
+
 			int before = byteBuf.readableBytes();
 			result = parser.read(byteBuf);
 			int after = byteBuf.readableBytes();
@@ -39,7 +39,7 @@ public class AbstractRedisProtocolTest extends AbstractRedisTest{
 		}
 		return result;
 	}
-	
+
 	public long getTotalReadLen() {
 		return totalReadLen;
 	}
