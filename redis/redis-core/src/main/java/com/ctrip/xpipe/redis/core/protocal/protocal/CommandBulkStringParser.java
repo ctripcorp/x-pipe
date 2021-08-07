@@ -32,9 +32,8 @@ public class CommandBulkStringParser extends AbstractBulkStringParser {
                 if (byteBuf.readableBytes() == 0) {
                     return null;
                 }
-                byte data1 = byteBuf.getByte(byteBuf.readerIndex());
+                byte data1 = byteBuf.readByte();
                 if (data1 == '\r') {
-                    byteBuf.readByte();
                     commandState = COMMAND_STATE.READING_LF;
                 } else {
                     throw new RedisRuntimeException(String.format("command eof not '\r': %s", data1));
@@ -43,9 +42,8 @@ public class CommandBulkStringParser extends AbstractBulkStringParser {
                 if (byteBuf.readableBytes() == 0) {
                     return null;
                 }
-                data1 = byteBuf.getByte(byteBuf.readerIndex());
+                data1 = byteBuf.readByte();
                 if (data1 == '\n') {
-                    byteBuf.readByte();
                     commandState = COMMAND_STATE.END;
                 } else {
                     throw new RedisRuntimeException(String.format("command eof not '\n': %s", data1));
