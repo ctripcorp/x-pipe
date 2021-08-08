@@ -647,4 +647,12 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         this.checkerDbConfig = checkerDbConfig;
         return this;
     }
+
+    public void setCollectExecutor(ExecutorService collectExecutor) {
+        this.collectExecutor = collectExecutor;
+    }
+
+    public void setResetExecutor(ExecutorService resetExecutor) {
+        this.resetExecutor = resetExecutor;
+    }
 }
