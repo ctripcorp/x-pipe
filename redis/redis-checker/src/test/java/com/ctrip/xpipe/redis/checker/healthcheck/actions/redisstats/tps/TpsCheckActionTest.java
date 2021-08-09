@@ -69,7 +69,7 @@ public class TpsCheckActionTest extends AbstractCheckerTest {
 
     private String mockInfoResp() {
         String content = "instantaneous_ops_per_sec:" + redisTps + "\r\n";
-        return String.format("$%d\r\n%s", content.length(), content);
+        return String.format("$%d\r\n%s\r\n", content.length(), content);
     }
 
     @Test
