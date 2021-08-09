@@ -41,6 +41,6 @@ public class MetaCacheCheckTest {
         doNothing().when(alertManager).alert(any(), any(), any());
         when(metaCache.getLastUpdateTime()).thenReturn(System.currentTimeMillis() - 15 * 1000);
         metaCacheCheck.doCheck();
-        verify(alertManager, times(1)).alert(any(), any(), any());
+        verify(alertManager, times(1)).alert(any(), any(), any(), any(), any());
     }
 }

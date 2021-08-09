@@ -19,9 +19,9 @@ import java.io.IOException;
  *
  * 2016年3月28日 下午2:35:36
  */
-public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> {
+public abstract class AbstractBulkStringParser extends AbstractRedisClientProtocol<InOutPayload> {
 
-	private static final Logger logger = LoggerFactory.getLogger(BulkStringParser.class);
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private BulkStringEofJudger eofJudger;
 	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
@@ -31,21 +31,19 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	public enum BULK_STRING_STATE{
 		READING_EOF_MARK,
 		READING_CONTENT,
-		READING_CR,
-		READING_LF,
 		END
 	}
 		
-	public BulkStringParser(String content){
+	public AbstractBulkStringParser(String content){
 		this(new StringInOutPayload(content), null);
 		
 	}
 	
-	public BulkStringParser(InOutPayload bulkStringPayload) {
+	public AbstractBulkStringParser(InOutPayload bulkStringPayload) {
 		this(bulkStringPayload, null);
 	}
 	
-	public BulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener) {
+	public AbstractBulkStringParser(InOutPayload bulkStringPayload, BulkStringParserListener bulkStringParserListener) {
 		super(bulkStringPayload, false, false);
 		this.bulkStringParserListener = bulkStringParserListener;
 	}
@@ -56,7 +54,6 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 	
 	@Override
 	public RedisClientProtocol<InOutPayload> read(ByteBuf byteBuf){
-	while (true) {
 		switch (bulkStringState) {
 
 			case READING_EOF_MARK:
@@ -72,7 +69,6 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 
 				bulkStringState = BULK_STRING_STATE.READING_CONTENT;
 				payload.startInput();
-				continue;
 			case READING_CONTENT:
 
 				int readerIndex = byteBuf.readerIndex();
@@ -100,40 +96,18 @@ public class BulkStringParser extends AbstractRedisClientProtocol<InOutPayload> 
 					} catch (IOException e) {
 						throw new RedisRuntimeException("[write to payload truncate exception]" + payload, e);
 					}
-					bulkStringState = BULK_STRING_STATE.READING_CR;
-					continue;
+					bulkStringState = BULK_STRING_STATE.END;
 				} else {
-					break;
-				}
-			case READING_CR:
-				if (byteBuf.readableBytes() == 0) {
-					return new BulkStringParser(payload);
-				}
-				byte data1 = byteBuf.getByte(byteBuf.readerIndex());
-				if (data1 == '\r') {
-					byteBuf.readByte();
-					bulkStringState = BULK_STRING_STATE.READING_LF;
-				} else {
-					return new BulkStringParser(payload);
-				}
-			case READING_LF:
-				if (byteBuf.readableBytes() == 0) {
 					return null;
 				}
-				data1 = byteBuf.getByte(byteBuf.readerIndex());
-				if (data1 == '\n') {
-					byteBuf.readByte();
-					bulkStringState = BULK_STRING_STATE.END;
-				}
-				return new BulkStringParser(payload);
 			case END:
-				return new BulkStringParser(payload);
+				return readEnd(byteBuf);
 			default:
-				break;
+				return null;
 		}
-		return null;
 	}
-	}
+
+	protected abstract RedisClientProtocol<InOutPayload> readEnd(ByteBuf byteBuf);
 
 	private LfReader lfReader = null;
 

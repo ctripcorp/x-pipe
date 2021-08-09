@@ -14,7 +14,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringParser;
+import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.tuple.Pair;
@@ -136,7 +136,7 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     protected String toRedisProtocalString(String str) {
 
-        ByteBuf format = new BulkStringParser(str).format();
+        ByteBuf format = new CommandBulkStringParser(str).format();
         return ByteBufUtils.readToString(format);
 
     }
