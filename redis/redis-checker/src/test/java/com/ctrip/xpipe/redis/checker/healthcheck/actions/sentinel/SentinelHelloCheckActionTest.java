@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.netty.channel.ConnectTimeoutException;
 import org.junit.*;
@@ -424,9 +425,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         SentinelHello sentinelHello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), master, monitorName);
         SentinelHello sentinelHello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), master, monitorName);
 
-        Map<RedisHealthCheckInstance, Set<SentinelHello>> hellos = new HashMap<>();
-        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER), Sets.newHashSet(sentinelHello1, sentinelHello2, sentinelHello3, sentinelHello4, sentinelHello5));
-        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_SLAVE), Sets.newHashSet(sentinelHello1, sentinelHello3, sentinelHello5));
+        Map<RedisHealthCheckInstance, SentinelHelloCheckAction.SentinelHellos> hellos = Maps.newConcurrentMap();
+        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER), action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello2, sentinelHello3, sentinelHello4, sentinelHello5)));
+        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_SLAVE), action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello3, sentinelHello5)));
 
 
         Map<RedisHealthCheckInstance, Throwable> errors = new HashMap<>();

@@ -38,7 +38,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     public static final String HELLO_CHANNEL = "__sentinel__:hello";
 
-    private Map<RedisHealthCheckInstance, Set<SentinelHello>> hellos = Maps.newConcurrentMap();
+    private Map<RedisHealthCheckInstance, SentinelHellos> hellos = Maps.newConcurrentMap();
 
     private Map<RedisHealthCheckInstance, Throwable> errors = Maps.newConcurrentMap();
 
@@ -129,7 +129,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                     RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
                                     if (super.shouldCheck(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
-                                        hellos.put(redisInstance, Sets.newHashSet());
+                                        hellos.put(redisInstance, new SentinelHellos());
                                     } else {
                                         redisInstance.getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
                                     }
@@ -164,12 +164,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             return;
 
                         SentinelHello hello = SentinelHello.fromString(message);
-                        Set<SentinelHello> currentInstanceHellos = hellos.get(redisInstanceToCheck);
-                        if (currentInstanceHellos == null) {
-                            hellos.put(redisInstanceToCheck, Sets.newHashSet(hello));
-                        } else {
-                            currentInstanceHellos.add(hello);
-                        }
+                        hellos.get(redisInstanceToCheck).addSentinelHello(hello);
 
                     }
 
@@ -210,7 +205,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             hellos.remove(instance);
 
         for (RedisHealthCheckInstance instance : hellos.keySet()) {
-            contexts.add(new SentinelActionContext(instance, hellos.get(instance)));
+            contexts.add(new SentinelActionContext(instance, hellos.get(instance).getSentinelHellos()));
         }
 
         for (RedisHealthCheckInstance instance : errors.keySet()) {
@@ -256,12 +251,12 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     @VisibleForTesting
-    Map<RedisHealthCheckInstance, Set<SentinelHello>> getHellos() {
+    Map<RedisHealthCheckInstance, SentinelHellos> getHellos() {
         return hellos;
     }
 
     @VisibleForTesting
-    void setHellos(Map<RedisHealthCheckInstance, Set<SentinelHello>> hellos) {
+    void setHellos(Map<RedisHealthCheckInstance, SentinelHellos> hellos) {
         this.hellos = hellos;
     }
 
@@ -273,5 +268,22 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @VisibleForTesting
     void setErrors(Map<RedisHealthCheckInstance, Throwable> errors) {
         this.errors = errors;
+    }
+
+    class SentinelHellos {
+        private Set<SentinelHello> sentinelHellos = Sets.newConcurrentHashSet();
+
+        public void addSentinelHello(SentinelHello sentinelHello) {
+            sentinelHellos.add(sentinelHello);
+        }
+
+        public Set<SentinelHello> getSentinelHellos() {
+            return sentinelHellos;
+        }
+
+        public SentinelHellos addSentinelHellos(Set<SentinelHello> sentinelHellos) {
+            sentinelHellos.addAll(sentinelHellos);
+            return this;
+        }
     }
 }
