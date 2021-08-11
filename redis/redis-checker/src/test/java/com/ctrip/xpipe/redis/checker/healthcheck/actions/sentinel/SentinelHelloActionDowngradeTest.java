@@ -315,7 +315,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     private void allActionDoTask() {
         sleep(sentinelCheckInterval); // wait for check interval
         allActionDoTaskWithoutWait();
-        sleep( sentinelCollectInterval + 600); // wait for hello collect
+        sleep( sentinelCollectInterval+100); // wait for hello collect
     }
 
     private void allActionDoTaskWithoutWait() {

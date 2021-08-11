@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +116,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
                 ClusterMeta clusterMeta = dcMeta.getClusters().get(getActionInstance().getCheckInfo().getClusterId());
                 logger.debug("[{}-{}][{}]found in MetaCache", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, instance.getCheckInfo().getClusterId());
-                if (clusterMeta != null) {
+                if (clusterMeta != null && !metaCache.isCrossRegion(clusterMeta.getActiveDc(), dc)) {
                     Map<String, ShardMeta> clusterShards = clusterMeta.getShards();
                     logger.debug("[{}-{}][{}]shards num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, clusterShards.size(), clusterShards);
                     clusterShards.forEach((shardId, shardMeta) -> {
@@ -271,7 +270,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     class SentinelHellos {
-        private Set<SentinelHello> sentinelHellos = Sets.newConcurrentHashSet();
+        private Set<SentinelHello> sentinelHellos = new HashSet<>();
 
         public void addSentinelHello(SentinelHello sentinelHello) {
             sentinelHellos.add(sentinelHello);
