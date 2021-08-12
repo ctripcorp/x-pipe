@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
 import com.ctrip.xpipe.redis.console.service.RouteService;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +20,11 @@ import java.util.List;
  */
 @RestController
 @RequestMapping(AbstractConsoleController.API_PREFIX)
-public class RouteController {
+public class RouteApiController {
 
     private JsonCodec pretty = new JsonCodec(true, true);
 
-    private static final Logger logger = LoggerFactory.getLogger(RouteController.class);
+    private static final Logger logger = LoggerFactory.getLogger(RouteApiController.class);
 
     @Autowired
     private RouteService service;
