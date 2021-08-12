@@ -9,8 +9,6 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.BulkStringEofJudger.JudgeResult;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -20,8 +18,6 @@ import java.io.IOException;
  * 2016年3月28日 下午2:35:36
  */
 public abstract class AbstractBulkStringParser extends AbstractRedisClientProtocol<InOutPayload> {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private BulkStringEofJudger eofJudger;
 	private BULK_STRING_STATE  bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
@@ -62,7 +58,7 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 					return null;
 				}
 
-				logger.debug("[read]{}", eofJudger);
+				getLogger().debug("[read]{}", eofJudger);
 				if (bulkStringParserListener != null) {
 					bulkStringParserListener.onEofType(eofJudger.getEofType());
 				}
@@ -80,7 +76,7 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 						throw new IllegalStateException(String.format("expected readLen:%d, but real:%d", result.getReadLen(), length));
 					}
 				} catch (IOException e) {
-					logger.error("[read][exception]" + payload, e);
+					getLogger().error("[read][exception]" + payload, e);
 					throw new RedisRuntimeException("[write to payload exception]" + payload, e);
 				}
 				byteBuf.readerIndex(readerIndex + length);
@@ -134,8 +130,8 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 	protected ByteBuf getWriteByteBuf() {
 		
 		if(payload == null){
-			if(logger.isInfoEnabled()){
-				logger.info("[getWriteBytes][payload null]");
+			if(getLogger().isInfoEnabled()){
+				getLogger().info("[getWriteBytes][payload null]");
 			}
 			return Unpooled.wrappedBuffer(new byte[0]);
 		}
@@ -148,16 +144,11 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 				String length = String.valueOf((char)DOLLAR_BYTE) + content.length + RedisClientProtocol.CRLF;
 				return Unpooled.wrappedBuffer(length.getBytes(), content, RedisClientProtocol.CRLF.getBytes()); 
 			} catch (IOException e) {
-				logger.error("[getWriteBytes]", e);
+				getLogger().error("[getWriteBytes]", e);
 				return Unpooled.wrappedBuffer(new byte[0]);
 			}
 		}
 		throw new UnsupportedOperationException();		
-	}
-
-	@Override
-	protected Logger getLogger() {
-		return logger;
 	}
 
 	public static interface BulkStringParserListener{

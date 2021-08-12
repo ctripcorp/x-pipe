@@ -6,9 +6,18 @@ import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CommandBulkStringParser extends AbstractBulkStringParser {
-
+    
+    private static final Logger logger = LoggerFactory.getLogger(CommandBulkStringParser.class);
+    
+    @Override
+    protected Logger getLogger() {
+        return logger;
+    }
+    
     private COMMAND_STATE commandState = COMMAND_STATE.READING_CR;
 
     private enum COMMAND_STATE {
