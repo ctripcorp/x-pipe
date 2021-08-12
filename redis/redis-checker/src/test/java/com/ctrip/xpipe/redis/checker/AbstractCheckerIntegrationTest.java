@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
+import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.BeforeClass;
@@ -144,6 +145,20 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         public ScheduledExecutorService getDelayPingScheduled() {
             ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(2,
                     XpipeThreadFactory.create("RedisHealthCheckInstance-Scheduled-"));
+            ((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
+            ((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+            return scheduled;
+        }
+
+        @Bean(name = HELLO_CHECK_EXECUTORS)
+        public ExecutorService getHelloCheckExecturos() {
+            return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("XPipe-HelloCheck-").createExecutorService();
+        }
+
+        @Bean(name = HELLO_CHECK_SCHEDULED)
+        public ScheduledExecutorService getHelloCheckScheduled() {
+            ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4),
+                    XpipeThreadFactory.create("XPipe-HelloCheck-Scheduled-"));
             ((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
             ((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
             return scheduled;
