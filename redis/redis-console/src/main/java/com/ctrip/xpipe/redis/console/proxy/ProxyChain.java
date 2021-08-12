@@ -12,6 +12,8 @@ public interface ProxyChain {
 
     String getShard();
 
+    String getPeerDcId();
+
     List<TunnelInfo> getTunnels();
 
     ProxyTunnelInfo buildProxyTunnelInfo();

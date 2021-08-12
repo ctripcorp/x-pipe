@@ -2,13 +2,14 @@ package com.ctrip.xpipe.redis.console.proxy;
 
 import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 
 import java.util.List;
 import java.util.Map;
 
 public interface ProxyChainAnalyzer extends LeaderAware {
 
-    ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId);
+    ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId);
 
     ProxyChain getProxyChain(String tunnelId);
 
@@ -19,7 +20,7 @@ public interface ProxyChainAnalyzer extends LeaderAware {
     void removeListener(Listener listener);
 
     interface Listener {
-        void onChange(Map<DcClusterShard, ProxyChain> previous, Map<DcClusterShard, ProxyChain> current);
+        void onChange(Map<DcClusterShardPeer, ProxyChain> previous, Map<DcClusterShardPeer, ProxyChain> current);
     }
 
 }

@@ -18,25 +18,27 @@
 
         <div ng-if="dcs && dcs.length">
             <div class="col-xs-12">
-                <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="proxyChain in chains">
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="(shardId,shardChains) in chains">
                     <header class="panel-heading">
                         <div class="row">
-                            <div class="col-md-6">{{proxyChain.shardId}}</div>
+                            <div class="col-md-6">{{shardId}}</div>
                         </div>
                     </header>
 
-                    <table class="table table-bordered table-hover">
+                    <table class="table table-bordered table-hover" ng-if= "shardChains && shardChains.length">
                         <thead>
                         <tr>
-                            <th>active-dc-proxy</th>
-                            <th>backup-dc-proxy</th>
+                            <th>peerof</th>
+                            <th>remote-dc-proxy</th>
+                            <th>local-dc-proxy</th>
                             <th>delete chain</th>
-                            <th ng-repeat="(key, value) in proxyChain.metrics">{{key}}</th>
+                            <th ng-repeat="(key, value) in shardChains[0].metrics">{{key}}</th>
                         </tr>
 
                         </thead>
                         <tbody>
-                            <tr>
+                            <tr ng-repeat="proxyChain in shardChains" >
+                                <td><span>{{proxyChain.activeDcTunnel.tunnelDcId}}</span></td>
                                 <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.activeDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.activeDcTunnel.proxyModel.dcName})">{{proxyChain.activeDcTunnel.tunnelStatsResult.backend.host}}:{backend: {{proxyChain.activeDcTunnel.tunnelStatsResult.backend.port}}, frontend: {{proxyChain.activeDcTunnel.tunnelStatsResult.frontend.port}} }</a></td>
                                 <td><a ui-sref="proxy_tunnels({proxyIp: proxyChain.backupDcTunnel.proxyModel.hostPort.host, dcId: proxyChain.backupDcTunnel.proxyModel.dcName})">{{proxyChain.backupDcTunnel.tunnelStatsResult.backend.host}}:{backend: {{proxyChain.backupDcTunnel.tunnelStatsResult.backend.port}}, frontend: {{proxyChain.backupDcTunnel.tunnelStatsResult.frontend.port}} }</a></td>
                                 <td>

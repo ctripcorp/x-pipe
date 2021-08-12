@@ -20,14 +20,17 @@ public class DefaultProxyChain implements ProxyChain {
 
     private String shardId;
 
+    private String peerDcId;
+
     private List<TunnelInfo> tunnelInfos;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyChain.class);
 
-    public DefaultProxyChain(String backupDcId, String clusterId, String shardId, List<TunnelInfo> tunnelInfos) {
+    public DefaultProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId, List<TunnelInfo> tunnelInfos) {
         this.backupDcId = backupDcId;
         this.clusterId = clusterId;
         this.shardId = shardId;
+        this.peerDcId = peerDcId;
         this.tunnelInfos = tunnelInfos;
     }
 
@@ -42,9 +45,10 @@ public class DefaultProxyChain implements ProxyChain {
     }
 
     @Override
-    public String getShard() {
-        return shardId;
-    }
+    public String getShard() { return shardId; }
+
+    @Override
+    public String getPeerDcId() {return peerDcId;}
 
     @Override
     public List<TunnelInfo> getTunnels() {
@@ -83,6 +87,7 @@ public class DefaultProxyChain implements ProxyChain {
                 "backupDcId='" + backupDcId + '\'' +
                 ", clusterId='" + clusterId + '\'' +
                 ", shardId='" + shardId + '\'' +
+                ", peerDcId='" + peerDcId + '\'' +
                 ", tunnelInfos=" + Arrays.deepToString(tunnelInfos.toArray(new TunnelInfo[0])) +
                 '}';
     }

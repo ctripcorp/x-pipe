@@ -18,6 +18,8 @@ public class ProxyTunnelInfo {
 
     private String shardId;
 
+    //TODO ADD peerDcId when dealing with proxy health.
+
     private List<TunnelStatsInfo> tunnelStatsInfos;
 
     public ProxyTunnelInfo() {

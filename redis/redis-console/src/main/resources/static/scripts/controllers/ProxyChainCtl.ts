@@ -80,10 +80,13 @@ function ProxyChainCtl($rootScope, $scope, $window, AppUtil, toastr, ProxyServic
         ProxyService.loadAllProxyChainsForDcCluster(dcName, clusterName)
             .then(function (result) {
                 $scope.chains = result;
-                result.forEach(function (chain) {
-                    getMetricHickwalls(clusterName, chain.shardId)
-                        .then(function (value) { chain.metrics = value })
-                });
+                for (var shardId in result.toJSON()) {
+                    var shardChains = result[shardId];
+                    shardChains.forEach(function (chain) {
+                        getMetricHickwalls(clusterName, shardId)
+                            .then(function (value) { chain.metrics = value });
+                     });
+                }
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });

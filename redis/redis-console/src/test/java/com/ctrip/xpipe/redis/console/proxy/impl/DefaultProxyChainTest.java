@@ -31,7 +31,7 @@ public class DefaultProxyChainTest extends AbstractConsoleTest {
         DefaultTunnelInfo tunnelInfo1 = new DefaultTunnelInfo(proxyModel, "test-tunnel1");
         DefaultTunnelInfo tunnelInfo2 = new DefaultTunnelInfo(proxyModel, "test-tunnel2");
         tunnelInfo2.setTunnelStatsResult(new TunnelStatsResult("test-tunnel2", "Tunnel-Established", 0, 0, new HostPort(), new HostPort()));
-        DefaultProxyChain chain = new DefaultProxyChain("oy", "cluster1", "shard1", Arrays.asList(tunnelInfo1, tunnelInfo2));
+        DefaultProxyChain chain = new DefaultProxyChain("oy", "cluster1", "shard1", "sharb", Arrays.asList(tunnelInfo1, tunnelInfo2));
 
         ProxyTunnelInfo proxyTunnelInfo = chain.buildProxyTunnelInfo();
         Assert.assertEquals(1, proxyTunnelInfo.getTunnelStatsInfos().size());
