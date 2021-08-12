@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
@@ -74,24 +75,28 @@ public class ProxyChainController extends AbstractConsoleController {
             }
             TunnelSocketStatsMetricOverview overview = socketStatsAnalyzerManager.analyze(info.getTunnelSocketStatsResult());
             results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDc(), chain.getCluster(), chain.getShard(),
-                    info.getTunnelStatsResult(), overview));
+                    chain.getPeerDcId(), info.getTunnelStatsResult(), overview));
         }
         return results;
     }
 
-    @RequestMapping(value = "/chain/{backupDcId}/{clusterId}/{shardId}", method = RequestMethod.GET)
-    public ProxyChain getProxyChain(@PathVariable String backupDcId, @PathVariable String clusterId, @PathVariable String shardId) {
-        return proxyService.getProxyChain(backupDcId, clusterId, shardId);
+    @RequestMapping(value = "/chain/{backupDcId}/{clusterId}/{shardId}/{peerDcId}", method = RequestMethod.GET)
+    public ProxyChain getProxyChain(@PathVariable String backupDcId, @PathVariable String clusterId, @PathVariable String shardId, @PathVariable String peerDcId) {
+        return proxyService.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
     }
 
     @RequestMapping(value = "/chain/{backupDcId}/{clusterId}", method = RequestMethod.GET)
-    public List<ProxyChainModel> getProxyChains(@PathVariable String backupDcId, @PathVariable String clusterId) throws ResourceNotFoundException {
-        List<ProxyChain> chains = proxyService.getProxyChains(backupDcId, clusterId);
-        List<ProxyChainModel> result = Lists.newArrayListWithCapacity(chains.size());
-        long activeDcId = clusterService.find(clusterId).getActivedcId();
-        String activeDc = dcService.getDcName(activeDcId);
-        for(ProxyChain chain : chains) {
-            result.add(new ProxyChainModel(chain, activeDc, backupDcId));
+    public Map<String,List<ProxyChainModel>> getProxyChains(@PathVariable String backupDcId, @PathVariable String clusterId) throws ResourceNotFoundException {
+        Map<String, List<ProxyChain>> chains = proxyService.getProxyChains(backupDcId, clusterId);
+        Map<String, List<ProxyChainModel>> result = Maps.newHashMap();
+
+        for(Map.Entry<String, List<ProxyChain>> shardChains : chains.entrySet()) {
+            List<ProxyChain> peerChains = shardChains.getValue();
+            List<ProxyChainModel> peerResult = Lists.newArrayListWithCapacity(peerChains.size());
+            for (ProxyChain chain: peerChains) {
+                peerResult.add(new ProxyChainModel(chain, chain.getPeerDcId() , backupDcId));
+            }
+            result.put(shardChains.getKey(), peerResult);
         }
         return result;
     }

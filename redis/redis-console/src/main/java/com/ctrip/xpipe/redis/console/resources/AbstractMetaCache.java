@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.service.meta.KeepercontainerMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -328,6 +329,26 @@ public abstract class AbstractMetaCache implements MetaCache {
         throw new IllegalStateException("[getClusterType] unfound cluster for name:" + clusterId);
     }
 
+    @Override
+    public boolean isMetaChain(HostPort chainSrc, HostPort chainDst) {
+        Pair<String,String> clusterShard = findClusterShard(chainDst);
+        ClusterType clusterType = getClusterType(clusterShard.getKey());
+
+        // currently chainSrc contains random port, which can't be used to validate if chainSrc
+        // is a keeper (for ONE_WAY) or a redis (for BI_DIRECTION).
+        // TODO: check chainSrc if keeper & redis FORWARD_FOR their listening port
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        XpipeMetaManager.MetaDesc dstDesc = xpipeMetaManager.findMetaDesc(chainDst);
+        if (dstDesc == null) return false;
+        Redis redis = dstDesc.getRedis();
+        if (redis == null) return false;
+
+        if ((clusterType.equals(ClusterType.ONE_WAY) && (redis instanceof KeeperMeta)) ||
+                (clusterType.equals(ClusterType.BI_DIRECTION) && (redis instanceof RedisMeta))) {
+            return true;
+        }
+        return false;
+    }
     @VisibleForTesting
     protected AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;
@@ -339,5 +360,4 @@ public abstract class AbstractMetaCache implements MetaCache {
         this.monitor2ClusterShard = monitorMap;
         return this;
     }
-
 }
