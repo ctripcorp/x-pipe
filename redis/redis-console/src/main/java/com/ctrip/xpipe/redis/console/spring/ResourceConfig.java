@@ -71,6 +71,20 @@ public class ResourceConfig extends AbstractRedisConfigContext {
         return scheduled;
     }
 
+    @Bean(name = HELLO_CHECK_EXECUTORS)
+    public ExecutorService getHelloCheckExecturos() {
+        return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("XPipe-HelloCheck-").createExecutorService();
+    }
+
+    @Bean(name = HELLO_CHECK_SCHEDULED)
+    public ScheduledExecutorService getHelloCheckScheduled() {
+        ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4),
+                XpipeThreadFactory.create("XPipe-HelloCheck-Scheduled-"));
+        ((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
+        ((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+        return scheduled;
+    }
+
     private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory(int eventLoopThreads) {
         ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(new NaiveNextHopAlgorithm());
         return new ProxyEnabledNettyKeyedPoolClientFactory(eventLoopThreads, resourceManager);
