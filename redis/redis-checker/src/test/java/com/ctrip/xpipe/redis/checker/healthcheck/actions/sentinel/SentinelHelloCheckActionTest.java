@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.netty.channel.ConnectTimeoutException;
 import org.junit.*;
@@ -59,11 +60,15 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     private static final String ACTIVE_DC_SHARD1_SLAVE = "activeDcShard1Slave";
     private static final String BACKUP_DC_SHARD1_SLAVE1 = "backUpDcShard1Slave1";
     private static final String BACKUP_DC_SHARD1_SLAVE2 = "backUpDcShard1Slave2";
+    private static final String BACKUP_CROSS_REGION_SHARD1_SLAVE = "backUpCrossRegionShard1Slave";
+
 
     private static final String ACTIVE_DC_SHARD2_MASTER = "activeDcShard2Master";
     private static final String ACTIVE_DC_SHARD2_SLAVE = "activeDcShard2Slave";
     private static final String BACKUP_DC_SHARD2_SLAVE1 = "backUpDcShard2Slave1";
     private static final String BACKUP_DC_SHARD2_SLAVE2 = "backUpDcShard2Slave2";
+    private static final String BACKUP_CROSS_REGION_SHARD2_SLAVE = "backUpCrossRegionShard2Slave";
+
 
     private List<String> redisNames = new ArrayList<>();
     private Map<String, Server> servers = new HashMap<>();
@@ -92,8 +97,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     @Before
     public void beforeSentinelHelloCheckActionTest() throws Exception {
         MockitoAnnotations.initMocks(this);
-        redisNames = Lists.newArrayList(ACTIVE_DC_SHARD1_MASTER, ACTIVE_DC_SHARD1_SLAVE, BACKUP_DC_SHARD1_SLAVE1, BACKUP_DC_SHARD1_SLAVE2,
-                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2);
+        redisNames = Lists.newArrayList(ACTIVE_DC_SHARD1_MASTER, ACTIVE_DC_SHARD1_SLAVE, BACKUP_DC_SHARD1_SLAVE1, BACKUP_DC_SHARD1_SLAVE2,BACKUP_CROSS_REGION_SHARD1_SLAVE,
+                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2,BACKUP_CROSS_REGION_SHARD2_SLAVE);
 
         for (String redisIp : redisNames) {
             serverResults.put(redisIp, new Supplier<String>() {
@@ -376,6 +381,10 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         backupDcShard1Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD1_SLAVE1));
         backupDcShard1Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD1_SLAVE2));
 
+        ShardMeta crossRegionDcShard1Meta = new ShardMeta();
+        crossRegionDcShard1Meta.setId(shardName1);
+        crossRegionDcShard1Meta.addRedis(redisMetas.get(BACKUP_CROSS_REGION_SHARD1_SLAVE));
+
 
         ShardMeta activeDcShard2Meta = new ShardMeta();
         activeDcShard2Meta.setId(shardName2);
@@ -385,6 +394,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         backupDcShard2Meta.setId(shardName2);
         backupDcShard2Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD2_SLAVE1));
         backupDcShard2Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD2_SLAVE2));
+        ShardMeta crossRegionDcShard2Meta = new ShardMeta();
+        crossRegionDcShard2Meta.setId(shardName2);
+        crossRegionDcShard2Meta.addRedis(redisMetas.get(BACKUP_CROSS_REGION_SHARD2_SLAVE));
 
         ClusterMeta activeDcClusterMeta = new ClusterMeta();
         activeDcClusterMeta.setId(clusterName);
@@ -396,6 +408,11 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         backupDcClusterMeta.setActiveDc("dc1");
         backupDcClusterMeta.addShard(backupDcShard1Meta);
         backupDcClusterMeta.addShard(backupDcShard2Meta);
+        ClusterMeta crossRegionDcClusterMeta = new ClusterMeta();
+        crossRegionDcClusterMeta.setId(clusterName);
+        crossRegionDcClusterMeta.setActiveDc("dc1");
+        crossRegionDcClusterMeta.addShard(crossRegionDcShard1Meta);
+        crossRegionDcClusterMeta.addShard(crossRegionDcShard2Meta);
 
         DcMeta dc1 = new DcMeta();
         dc1.setId("dc1");
@@ -403,11 +420,16 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         DcMeta dc2 = new DcMeta();
         dc2.setId("dc2");
         dc2.addCluster(backupDcClusterMeta);
+        DcMeta dc3 = new DcMeta();
+        dc3.setId("dc3");
+        dc3.addCluster(crossRegionDcClusterMeta);
 
         XpipeMeta xpipeMeta = new XpipeMeta();
         xpipeMeta.addDc(dc1);
         xpipeMeta.addDc(dc2);
+        xpipeMeta.addDc(dc3);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(metaCache.isCrossRegion("dc1","dc3")).thenReturn(true);
     }
 
     @Test
@@ -424,9 +446,9 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         SentinelHello sentinelHello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), master, monitorName);
         SentinelHello sentinelHello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), master, monitorName);
 
-        Map<RedisHealthCheckInstance, Set<SentinelHello>> hellos = new HashMap<>();
-        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER), Sets.newHashSet(sentinelHello1, sentinelHello2, sentinelHello3, sentinelHello4, sentinelHello5));
-        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_SLAVE), Sets.newHashSet(sentinelHello1, sentinelHello3, sentinelHello5));
+        Map<RedisHealthCheckInstance, SentinelHelloCheckAction.SentinelHellos> hellos = Maps.newConcurrentMap();
+        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER), action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello2, sentinelHello3, sentinelHello4, sentinelHello5)));
+        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_SLAVE), action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello3, sentinelHello5)));
 
 
         Map<RedisHealthCheckInstance, Throwable> errors = new HashMap<>();

@@ -35,11 +35,9 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.StringUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.*;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +54,7 @@ import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.*;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.THREAD_POOL_TIME_OUT;
 
 /**
  * @author chen.zhu
@@ -88,23 +86,30 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Autowired
     private SentinelManager sentinelManager;
 
-    @Resource(name = SCHEDULED_EXECUTOR)
-    private ScheduledExecutorService scheduled;
-
     @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
 
     private SentinelLeakyBucket leakyBucket;
 
-    private ExecutorService executors;
+    private ExecutorService collectExecutor;
+
+    private ExecutorService resetExecutor;
+
+    private ScheduledExecutorService scheduled;
 
     @PostConstruct
     public void postConstruct() {
-        leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
         try {
-            leakyBucket.start();
-            executors = new DefaultExecutorFactory(getClass().getSimpleName(), OsUtils.getMultiCpuOrMax(GLOBAL_THREAD_MULTI_CORE, GLOBAL_THREAD_MAX), 2 * OsUtils.getCpuCount(),
+            collectExecutor = new DefaultExecutorFactory(getClass().getSimpleName() + "-collect", 2 * OsUtils.getCpuCount(), 2 * OsUtils.getCpuCount(),
                     new ThreadPoolExecutor.AbortPolicy()).createExecutorService();
+            resetExecutor = new DefaultExecutorFactory(getClass().getSimpleName() + "-reset", 2 * OsUtils.getCpuCount(), 2 * OsUtils.getCpuCount(),
+                    new ThreadPoolExecutor.AbortPolicy()).createExecutorService();
+            scheduled = MoreExecutors.getExitingScheduledExecutorService(
+                    new ScheduledThreadPoolExecutor(Math.min(8, OsUtils.getCpuCount()), XpipeThreadFactory.create(getClass().getSimpleName() + "-scheduled")),
+                    THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
+            );
+            leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
+            leakyBucket.start();
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
         }
@@ -112,18 +117,32 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @PreDestroy
     public void preDestroy() {
+        if (collectExecutor != null) {
+            try {
+                collectExecutor.shutdownNow();
+            } catch (Exception e) {
+                logger.error("[preDestroy-collectExecutor]", e);
+            }
+        }
+        if (resetExecutor != null) {
+            try {
+                resetExecutor.shutdownNow();
+            } catch (Exception e) {
+                logger.error("[preDestroy-resetExecutor]", e);
+            }
+        }
+        if (scheduled != null) {
+            try {
+                scheduled.shutdownNow();
+            } catch (Exception e) {
+                logger.error("[preDestroy-scheduled]", e);
+            }
+        }
         if (leakyBucket != null) {
             try {
                 leakyBucket.stop();
             } catch (Exception e) {
-                logger.error("[preDestroy]", e);
-            }
-        }
-        if (executors != null) {
-            try {
-                executors.shutdownNow();
-            } catch (Exception e) {
-                logger.error("[preDestroy]", e);
+                logger.error("[preDestroy-leakyBucket]", e);
             }
         }
     }
@@ -131,18 +150,18 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Override
     public void onAction(SentinelActionContext context) {
         try {
-            CommandFuture<Void> future = new SentinelHelloCollectorCommand(context).execute(executors);
+            CommandFuture<Void> future = new SentinelHelloCollectorCommand(context).execute(collectExecutor);
             ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
                 @Override
                 public void run() {
-                    future.cancel(false);
+                    future.cancel(true);
                     EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
                             String.format("[%s]%s+%s", "cancel", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
                 }
             }, context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli(), TimeUnit.MILLISECONDS);
             future.addListener(commandFuture -> {
                 if (!commandFuture.isCancelled())
-                    timeoutFuture.cancel(false);
+                    timeoutFuture.cancel(true);
             });
         } catch (Throwable e) {
             logger.error("[DefaultSentinelHelloCollector]onAction", e);
@@ -160,8 +179,15 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     private void collect(SentinelActionContext context) {
+
         RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
+
+        if ((System.currentTimeMillis() - context.getRecvTimeMilli()) > context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli()) {
+            logger.warn("[{}-{}+{}] {} expired, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
+            return;
+        }
+
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
@@ -268,7 +294,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         currentCollectedMasters.forEach(currentCollectedMaster -> {
             RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(currentCollectedMaster.getHost(), currentCollectedMaster.getPort())), scheduled);
             try {
-                Role role = roleCommand.execute().get(550, TimeUnit.MILLISECONDS);
+                Role role = roleCommand.execute().get(1000, TimeUnit.MILLISECONDS);
                 if (role instanceof MasterRole) {
                     trueMasters.add(currentCollectedMaster);
                 }
@@ -331,55 +357,62 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @VisibleForTesting
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
-        Set<HostPort> allKeepers = metaCache.getAllKeepers();
-        hellos.forEach((hello) -> {
-            HostPort sentinelAddr = hello.getSentinelAddr();
-            Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-            try {
-                List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName);
-                boolean shoudReset = false;
-                String reason = null;
-                Set<HostPort> keepers = new HashSet<>();
 
-                for (HostPort currentSlave : slaves) {
+        resetExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                Set<HostPort> allKeepers = metaCache.getAllKeepers();
+                hellos.forEach((hello) -> {
+                    HostPort sentinelAddr = hello.getSentinelAddr();
+                    Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
+                    try {
+                        List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName);
+                        boolean shoudReset = false;
+                        String reason = null;
+                        Set<HostPort> keepers = new HashSet<>();
 
-                    if (allKeepers.contains(currentSlave)) {
-                        keepers.add(currentSlave);
-                    }
+                        for (HostPort currentSlave : slaves) {
 
-                    Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
-                    if (clusterShard == null) {
-                        if (isKeeperOrDead(currentSlave)) {
-                            shoudReset = true;
-                            reason = String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId);
-                        } else {
-                            String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
-                            alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
+                            if (allKeepers.contains(currentSlave)) {
+                                keepers.add(currentSlave);
+                            }
+
+                            Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
+                            if (clusterShard == null) {
+                                if (isKeeperOrDead(currentSlave)) {
+                                    shoudReset = true;
+                                    reason = String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId);
+                                } else {
+                                    String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
+                                    alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
+                                }
+                                continue;
+                            }
+                            if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
+                                shoudReset = true;
+                                reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
+                                break;
+                            }
                         }
-                        continue;
-                    }
-                    if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
-                        shoudReset = true;
-                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
-                        break;
-                    }
-                }
 
-                if (!shoudReset && keepers.size() >= 2) {
-                    shoudReset = true;
-                    reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
-                }
+                        if (!shoudReset && keepers.size() >= 2) {
+                            shoudReset = true;
+                            reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
+                        }
 
-                if (shoudReset) {
-                    logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
-                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
-                            String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
-                    sentinelManager.reset(sentinel, sentinelMonitorName);
-                }
-            } catch (Exception e) {
-                logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
+                        if (shoudReset) {
+                            logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
+                            EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
+                                    String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
+                            sentinelManager.reset(sentinel, sentinelMonitorName);
+                        }
+                    } catch (Exception e) {
+                        logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
+                    }
+                });
             }
         });
+
     }
 
     @VisibleForTesting
@@ -550,11 +583,11 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         @Override
         protected void doExecute() throws Throwable {
-            try {
+            if (!future().isDone()) {
                 collect(context);
-                future().setSuccess();
-            } catch (Throwable e) {
-                future().setFailure(e);
+                if (!future().isDone()) {
+                    future().setSuccess();
+                }
             }
         }
 
@@ -613,5 +646,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     protected DefaultSentinelHelloCollector setCheckerDbConfig(CheckerDbConfig checkerDbConfig) {
         this.checkerDbConfig = checkerDbConfig;
         return this;
+    }
+
+    public void setCollectExecutor(ExecutorService collectExecutor) {
+        this.collectExecutor = collectExecutor;
+    }
+
+    public void setResetExecutor(ExecutorService resetExecutor) {
+        this.resetExecutor = resetExecutor;
     }
 }

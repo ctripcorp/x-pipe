@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author wenchao.meng
@@ -35,9 +36,9 @@ public class SentinelHello {
      */
     public static SentinelHello fromString(String helloStr) {
 
-        String[] split = helloStr.split("\\s*,\\s*");
+        String[] split = StringUtils.split(helloStr, ",");
         if (split.length < 8) {
-            throw new IllegalArgumentException("hello not corrent:" + helloStr);
+            throw new IllegalArgumentException("hello not correct:" + helloStr);
         }
 
         SentinelHello hello = new SentinelHello();
