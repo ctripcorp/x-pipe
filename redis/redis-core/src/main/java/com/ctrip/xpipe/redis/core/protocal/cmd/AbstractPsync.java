@@ -20,6 +20,7 @@ import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -198,7 +199,12 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			if(split.length >= 2 && split[1].length() == RedisProtocol.RUN_ID_LENGTH){
 				newReplId = split[1];
 			}
-			doOnContinue(newReplId);
+			if (split.length >= 3 && StringUtils.isNumeric(split[2])) {
+				long continueOffset = Long.parseLong(split[2]);
+				doOnKeeperContinue(newReplId, continueOffset);
+			} else {
+				doOnContinue(newReplId);
+			}
 		} else {
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
@@ -241,6 +247,17 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 
 		for (PsyncObserver observer : observers) {
 			observer.onContinue(replIdRequest, newReplId);
+		}
+	}
+
+	protected void doOnKeeperContinue(String replId, long continueOffset) throws IOException {
+		getLogger().debug("[doOnKeeperContinue]{}:{}", replId, continueOffset);
+		notifyKeeperContinue(replId, continueOffset);
+	}
+
+	protected void notifyKeeperContinue(String replId, long beginOffset) {
+		for (PsyncObserver observer : observers) {
+			observer.onKeeperContinue(replId, beginOffset);
 		}
 	}
 

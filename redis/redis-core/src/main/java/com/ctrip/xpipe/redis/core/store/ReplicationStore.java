@@ -18,6 +18,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	// rdb related
 	RdbStore beginRdb(String replId, long rdbOffset, EofType eofType) throws IOException;
+
+	void continueFromOffset(String replId, long continueOffset) throws IOException;
 	
 	DumpedRdbStore prepareNewRdb() throws IOException;
 
@@ -43,6 +45,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	long firstAvailableOffset();
 
 	long beginOffsetWhenCreated();
+
+	long lastReplDataUpdatedAt();
 
 	boolean isFresh();
 

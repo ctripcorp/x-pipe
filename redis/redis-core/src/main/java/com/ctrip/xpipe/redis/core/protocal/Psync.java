@@ -11,6 +11,7 @@ public interface Psync extends Command<Object>{
 	
 	String FULL_SYNC = "FULLRESYNC";
 	String PARTIAL_SYNC = "CONTINUE";
+	long KEEPER_PARTIAL_SYNC_OFFSET = -2;
 	
 	void addPsyncObserver(PsyncObserver observer);
 	

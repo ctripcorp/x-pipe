@@ -15,6 +15,8 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 
 import java.io.IOException;
 
+import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_PARTIAL_SYNC_OFFSET;
+
 /**
  * @author wenchao.meng
  *
@@ -79,7 +81,13 @@ public class PsyncHandler extends AbstractCommandHandler{
 		String 	   replIdRequest = args[0];
 		
 		if(replIdRequest.equals("?")){
-			doFullSync(redisSlave);
+			if (redisSlave.isKeeper() && offsetRequest.equals(KEEPER_PARTIAL_SYNC_OFFSET) && null != keeperRepl.replId()) {
+				logger.info("[innerDoHandler][keeper psync]");
+				long continueOffset = keeperRepl.getEndOffset() + 1; // continue from next byte
+				doKeeperPartialSync(redisSlave, keeperRepl.replId(), continueOffset);
+			} else {
+				doFullSync(redisSlave);
+			}
 		}else if(replIdRequest.equals(keeperRepl.replId()) || (replIdRequest.equals(keeperRepl.replId2()) && offsetRequest <= keeperRepl.secondReplIdOffset())){
 			
 			Long beginOffset = keeperRepl.getBeginOffset();
@@ -156,6 +164,19 @@ public class PsyncHandler extends AbstractCommandHandler{
 		redisSlave.markPsyncProcessed();
 
 		redisSlave.beginWriteCommands(offset);
+		redisSlave.partialSync();
+
+		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();
+	}
+
+	protected void doKeeperPartialSync(RedisSlave redisSlave, String replId, long continueOffset) {
+		SimpleStringParser simpleStringParser = new SimpleStringParser(String.format("%s %s %d",
+				DefaultPsync.PARTIAL_SYNC, replId, continueOffset));
+
+		redisSlave.sendMessage(simpleStringParser.format());
+		redisSlave.markPsyncProcessed();
+
+		redisSlave.beginWriteCommands(continueOffset);
 		redisSlave.partialSync();
 
 		redisSlave.getRedisKeeperServer().getKeeperMonitor().getKeeperStats().increatePartialSync();

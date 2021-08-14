@@ -135,6 +135,24 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public void continueFromOffset(String replId, long continueOffset) throws IOException{
+		makeSureOpen();
+
+		logger.info("[continueFromOffset] {}:{}", replId, continueOffset);
+		baseDir.mkdirs();
+
+		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
+		ReplicationStoreMeta newMeta = metaStore.continueFromOffset(replId, continueOffset, cmdFilePrefix);
+
+		cmdStore = new DefaultCommandStore(new File(baseDir, newMeta.getCmdFilePrefix()), cmdFileSize,
+				config::getReplicationStoreCommandFileKeepTimeSeconds,
+				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
+				config::getReplicationStoreCommandFileNumToKeep,
+				config.getCommandReaderFlyingThreshold(),
+				keeperMonitor);
+	}
+
+	@Override
 	public DumpedRdbStore prepareNewRdb() throws IOException {
 		makeSureOpen();
 
@@ -229,6 +247,20 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if(newReplId != null){
 			this.metaStore.shiftReplicationId(newReplId, getEndOffset());
 		}
+	}
+
+	@Override
+	public long lastReplDataUpdatedAt() {
+		if (null != cmdStore) {
+			return cmdStore.getCommandsLastUpdatedAt();
+		}
+
+		RdbStore rdbStore = rdbStoreRef.get();
+		if (null != rdbStore) {
+			return rdbStore.getRdbFileLastModified();
+		}
+
+		return 0L;
 	}
 
 	private File[] rdbFilesOnFS() {

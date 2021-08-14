@@ -45,4 +45,6 @@ public interface RdbStore extends Destroyable, Closeable{
 
 	boolean isWriting();
 
+	long getRdbFileLastModified();
+
 }

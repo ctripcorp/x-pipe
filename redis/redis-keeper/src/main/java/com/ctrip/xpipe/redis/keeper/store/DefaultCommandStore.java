@@ -541,6 +541,11 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	}
 
 	@Override
+	public long getCommandsLastUpdatedAt() {
+		return cmdFileCtxRef.get().getLastModified();
+	}
+
+	@Override
 	public void gc() {
 		try {
 			gcLock.lock();
@@ -574,11 +579,11 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		boolean time = now.getTime() - lastModified >= minTimeMilliToGcAfterModified;
 		boolean fresh = now.getTime() - lastModified <= maxMilliKeepCmd;
 
-		logger.info("[canDeleteCmdFile][time]{}, {} - {} > {}", time, now, new Date(lastModified), minTimeMilliToGcAfterModified);
+		logger.debug("[canDeleteCmdFile][time]{}, {} - {} > {}", time, now, new Date(lastModified), minTimeMilliToGcAfterModified);
 		if(!time){
 			return false;
 		}
-		logger.info("[canDeleteCmdFile][fresh]{}, {} - {} < {}", fresh, now, new Date(lastModified), maxMilliKeepCmd);
+		logger.debug("[canDeleteCmdFile][fresh]{}, {} - {} < {}", fresh, now, new Date(lastModified), maxMilliKeepCmd);
 		if (!fresh) {
 			return true;
 		}

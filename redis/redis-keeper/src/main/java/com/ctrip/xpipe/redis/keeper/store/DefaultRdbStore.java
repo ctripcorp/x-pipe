@@ -328,4 +328,10 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	public boolean isWriting() {
 		return isRdbWriting(status.get());
 	}
+
+	@Override
+	public long getRdbFileLastModified() {
+		return file.lastModified();
+	}
+
 }

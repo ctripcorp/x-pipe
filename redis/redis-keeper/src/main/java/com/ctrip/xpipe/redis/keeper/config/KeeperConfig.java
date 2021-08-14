@@ -54,4 +54,7 @@ public interface KeeperConfig extends CoreConfig{
     boolean isKeeperRateLimitOpen();
 
     long getReplDownSafeIntervalMilli();
+
+    long getMaxReplKeepSecondsAfterDown();
+
 }
