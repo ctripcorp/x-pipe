@@ -183,6 +183,17 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return replDownSafeIntervalMilli;
 	}
 
+	private long replKeepSecondsAfterDown = 60;
+
+	public void setReplKeepSecondsAfterDown(long replKeepSecondsAfterDown) {
+		this.replKeepSecondsAfterDown = replKeepSecondsAfterDown;
+	}
+
+	@Override
+	public long getMaxReplKeepSecondsAfterDown() {
+		return replKeepSecondsAfterDown;
+	}
+
 	public void setKeeperRateLimit(boolean keeperRateLimit) {
 		this.keeperRateLimit = keeperRateLimit;
 	}

@@ -55,8 +55,11 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 		return createKeeperMeta(randomPort(keeperServerPortMin, keeperServerPortMax));
 	}
 
+	protected  KeeperMeta createKeeperMeta(int port) throws SAXException, IOException {
+		return createKeeperMeta(port, randomString(40));
+	}
 
-	protected KeeperMeta createKeeperMeta(int port) throws SAXException, IOException {
+	protected KeeperMeta createKeeperMeta(int port, String runId) throws SAXException, IOException {
 
 		XpipeMeta xpipe = loadXpipeMeta(getXpipeMetaConfigFile());
 		for(DcMeta dcMeta : xpipe.getDcs().values()){
@@ -65,7 +68,7 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 					for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
 						keeperMeta.setPort(port);
 						keeperMeta.setActive(true);
-						keeperMeta.setId(randomString(40));
+						keeperMeta.setId(runId);
 						return keeperMeta;
 					}
 				}

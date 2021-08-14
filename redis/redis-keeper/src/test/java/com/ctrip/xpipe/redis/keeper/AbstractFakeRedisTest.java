@@ -5,6 +5,7 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
@@ -81,6 +82,21 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		add(redisKeeperServer);
 		
 		return redisKeeperServer;
+	}
+
+	protected RedisKeeperServer startRedisKeeperServer(KeeperConfig keeperConfig, KeeperMeta keeperMeta) throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta));
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		add(redisKeeperServer);
+
+		return redisKeeperServer;
+	}
+
+	protected KeeperConfig newTestKeeperConfig() {
+
+		return new TestKeeperConfig(commandFileSize, 100, allCommandsSize, 1000);
+
 	}
 
 	protected KeeperConfig newTestKeeperConfig(int commandFileSize, int replicationStoreCommandFileNumToKeep, int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate) {
@@ -162,7 +178,12 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 				public void onContinue(String requestReplId, String responseReplId) {
 					
 				}
-				
+
+				@Override
+				public void onKeeperContinue(String replId, long beginOffset) {
+
+				}
+
 				@Override
 				public void endWriteRdb() {
 					new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(masterRdbOffset)).execute();

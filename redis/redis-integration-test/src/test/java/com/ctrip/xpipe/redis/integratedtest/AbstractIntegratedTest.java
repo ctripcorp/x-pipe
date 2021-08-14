@@ -138,6 +138,12 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return redisKeeperServer;
 	}
 
+	protected void stopKeeper(RedisKeeperServer redisKeeperServer) throws Exception {
+		redisKeeperServer.stop();
+		redisKeeperServer.dispose();
+		remove(redisKeeperServer);
+	}
+
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
 			 LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager) {
 

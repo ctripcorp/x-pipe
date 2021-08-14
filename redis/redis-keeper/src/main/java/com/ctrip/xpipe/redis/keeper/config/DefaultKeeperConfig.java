@@ -36,6 +36,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI = "keeper.repl.down.safe.interval.milli";
 
+	private static String KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN = "keeper.repl.keep.seconds.after.down";
+
 	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
 	public DefaultKeeperConfig(){
@@ -146,5 +148,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getReplDownSafeIntervalMilli() {
 		return getLongProperty(KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI, 5L * 60 * 1000); // 5min
+	}
+
+	@Override
+	public long getMaxReplKeepSecondsAfterDown() {
+		return getLongProperty(KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN, 3600L);
 	}
 }

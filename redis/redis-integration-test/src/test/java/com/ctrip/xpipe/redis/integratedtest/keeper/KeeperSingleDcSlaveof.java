@@ -75,7 +75,7 @@ public class KeeperSingleDcSlaveof extends AbstractKeeperIntegratedSingleDc {
 
 		sleep(2000);
 		Set<RedisSlave> slaves = backupKeeperServer.slaves();
-		Assert.assertEquals(3, slaves.size());
+		Assert.assertEquals(4, slaves.size());
 		for (RedisSlave redisSlave : slaves) {
 
 			PARTIAL_STATE dest = PARTIAL_STATE.PARTIAL;

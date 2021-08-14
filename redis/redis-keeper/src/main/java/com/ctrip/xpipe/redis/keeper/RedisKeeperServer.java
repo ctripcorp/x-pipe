@@ -90,4 +90,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	KeeperMonitor getKeeperMonitor();
 
 	void processCommandSequentially(Runnable runnable);
+
+	void tryConnectMaster();
+
+	int getTryConnectMasterCnt();
 }

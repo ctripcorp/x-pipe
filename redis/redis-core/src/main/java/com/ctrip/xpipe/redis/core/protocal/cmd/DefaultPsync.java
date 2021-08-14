@@ -20,12 +20,20 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 	private ReplicationStoreManager replicationStoreManager;
 	
 	private Endpoint masterEndPoint;
-	
+
+	private boolean allowKeeperPsync;
+
+	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool,
+						Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
+		this(clientPool, masterEndPoint, replicationStoreManager, false, scheduled);
+	}
 	
 	public DefaultPsync(SimpleObjectPool<NettyClient> clientPool, 
-			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
+			Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager,
+						boolean allowKeeperPsync, ScheduledExecutorService scheduled) {
 		super(clientPool, true, scheduled);
 		this.masterEndPoint = masterEndPoint;
+		this.allowKeeperPsync = allowKeeperPsync;
 		this.replicationStoreManager = replicationStoreManager;
 		currentReplicationStore = getCurrentReplicationStore();
 	}
@@ -41,6 +49,10 @@ public class DefaultPsync extends AbstractReplicationStorePsync{
 		}
 	}
 
+	@Override
+	protected boolean useKeeperPsync() {
+		return allowKeeperPsync && currentReplicationStore.isFresh();
+	}
 
 	@Override
 	public String toString() {

@@ -66,7 +66,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMetaStoreTest.class,
         TestAbstractMetaStoreTest.class,
         PsyncFailReasonTest.class,
-        DefaultMasterStatsTest.class
+        DefaultMasterStatsTest.class,
+        PsyncForKeeperTest.class
 })
 public class AllTests {
 

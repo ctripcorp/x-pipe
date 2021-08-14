@@ -34,7 +34,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 
 		sleep(2000);
 
-		assertSyncCount(redisKeeperServers);
+		assertSyncCount(redisKeeperServers, 1);
 
 		for (int i = 0; i < testRound; i++) {
 
@@ -65,7 +65,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			redisKeeperServers = currentKeepers;
 
 			sleep(2000);
-			assertSyncCount(redisKeeperServers);
+			assertSyncCount(redisKeeperServers, 1);
 			assertCommandsEquals(redisKeeperServers);
 		}
 	}
@@ -79,7 +79,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 
 	}
 
-	private void assertSyncCount(List<RedisKeeperServer> redisKeeperServers) {
+	private void assertSyncCount(List<RedisKeeperServer> redisKeeperServers, int expectedSyncCnt) {
 
 		logger.info("[assertSyncCount]");
 
@@ -89,7 +89,7 @@ public class KeeperPsync2 extends AbstractKeeperIntegratedSingleDc {
 			partialError += redisKeeperServer.getKeeperMonitor().getKeeperStats().getPartialSyncErrorCount();
 		}
 		Assert.assertEquals(0, partialError);
-		Assert.assertEquals(totalKeepers - 1, full);
+		Assert.assertEquals(expectedSyncCnt, full);
 	}
 
 	private void initKeepers() throws Exception {
