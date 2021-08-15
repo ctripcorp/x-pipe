@@ -71,6 +71,10 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 		for(String clusterId : intersectionClusterIds){
 			ClusterMeta currentMeta = current.findCluster(clusterId);
 			ClusterMeta futureMeta = future.findCluster(clusterId);
+			if(!currentMeta.getType().equals(futureMeta.getType())) {
+				removed.add(currentMeta);
+				added.add(futureMeta);
+			}
 			if(!reflectionEquals(currentMeta, futureMeta)){
 				ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(currentMeta, futureMeta);
 				clusterMetaComparator.compare();

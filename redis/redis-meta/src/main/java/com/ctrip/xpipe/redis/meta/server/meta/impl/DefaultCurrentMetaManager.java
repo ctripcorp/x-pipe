@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.meta.impl;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -159,13 +160,30 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		currentMeta.release();
 		super.doDispose();
 	}
-	
+
+	private void notifyClusterRoutesChange(String clusterId) {
+		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.getAllRoutes());
+		if(changedDcs != null && !changedDcs.isEmpty())  {
+			if(clusterMeta.getType().equals(ClusterType.BI_DIRECTION.name())) {
+				Set<String> shards = clusterMeta.getShards().keySet();
+				for (String shardId : shards) {
+					changedDcs.forEach(dcId -> {
+						notifyPeerMasterChange(dcId, clusterId, shardId);
+					});
+				}
+			}
+		}
+	}
+
 	private void handleClusterChanged(ClusterMetaComparator clusterMetaComparator) {
-		
 		String clusterId = clusterMetaComparator.getCurrent().getId();
 		if(currentMeta.hasCluster(clusterId)){
 			
 			currentMeta.changeCluster(clusterMetaComparator);
+			if(!clusterMetaComparator.getCurrent().getDcs().equals(clusterMetaComparator.getFuture().getDcs())) {
+				notifyClusterRoutesChange(clusterId);
+			}
 			notifyObservers(clusterMetaComparator);
 		}else{
 			logger.warn("[handleClusterChanged][but we do not has it]{}", clusterMetaComparator);
@@ -180,6 +198,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		logger.info("[addCluster]{}, {}", clusterId, clusterMeta);
 		currentMeta.addCluster(clusterMeta);
+		List<RouteMeta> routes = dcMetaCache.getAllRoutes();
+		currentMeta.updateClusterRoutes(clusterMeta, routes);
 		notifyObservers(new NodeAdded<ClusterMeta>(clusterMeta));
 	}
 
@@ -268,7 +288,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@VisibleForTesting
 	protected void dcMetaChange(DcMetaComparator comparator) {
-		
+		/**
+		 *  when cluster type change
+		 *    first remove cluster then add cluster
+		 */
+		for(ClusterMeta clusterMeta : comparator.getRemoved()){
+			if(currentClusterServer.hasKey(clusterMeta.getId())){
+				destroyCluster(clusterMeta);
+			}else{
+				logger.info("[dcMetaChange][destroy][not interested]{}", clusterMeta.getId());
+			}
+		}
+
 		for(ClusterMeta clusterMeta : comparator.getAdded()){
 			if(currentClusterServer.hasKey(clusterMeta.getId())){
 				addCluster(clusterMeta.getId());
@@ -277,14 +308,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			}
 		}
 		
-		for(ClusterMeta clusterMeta : comparator.getRemoved()){
-			if(currentClusterServer.hasKey(clusterMeta.getId())){
-				destroyCluster(clusterMeta);
-			}else{
-				logger.info("[dcMetaChange][destroy][not interested]{}", clusterMeta.getId());
-			}
 
-		}
 		
 		for(@SuppressWarnings("rawtypes") MetaComparator changedComparator : comparator.getMofified()){
 			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) changedComparator;
@@ -300,9 +324,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@VisibleForTesting
 	protected void routeChanges() {
 		for(String clusterId : allClusters()) {
-			if(randomRoute(clusterId) != null) {
-				ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
-				refreshKeeperMaster(clusterMeta);
+			ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+			String clusterType =clusterMeta.getType();
+			if(clusterType.equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
+				if(randomRoute(clusterId) != null) {
+					refreshKeeperMaster(clusterMeta);
+				}
+			} else if(clusterType.equalsIgnoreCase(ClusterType.BI_DIRECTION.name())) {
+				notifyClusterRoutesChange(clusterId);
 			}
 		}
 	}
@@ -460,8 +489,13 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return currentMeta.getUpstreamPeerDcs(clusterId, shardId);
 	}
 
-	public List<RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
+	public Map<String, RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
 		return currentMeta.getAllPeerMasters(clusterId, shardId);
+	}
+
+	@Override
+	public RouteMeta getClusterRouteByDcId(String dcId, String clusterId) {
+		return currentMeta.getClusterRouteByDcId(dcId, clusterId);
 	}
 
 	@Override

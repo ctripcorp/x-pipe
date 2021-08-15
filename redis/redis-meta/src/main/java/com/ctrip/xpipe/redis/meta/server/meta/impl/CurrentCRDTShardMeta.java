@@ -43,8 +43,8 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
         return new HashSet<>(peerMasters.keySet());
     }
 
-    public List<RedisMeta> getAllPeerMasters() {
-        return new ArrayList<>(peerMasters.values());
+    public Map<String, RedisMeta> getAllPeerMasters() {
+        return new ConcurrentHashMap<>(peerMasters);
     }
 
     private RedisMeta cloneMasterMeta(RedisMeta peerMaster) {
