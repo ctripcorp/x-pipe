@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.endpoint;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
@@ -129,12 +131,15 @@ public class DefaultEndPoint implements Endpoint, Serializable{
 				return false;
 		} else if (!uri.equals(other.uri))
 			return false;
-		return true;
+		return ObjectUtils.equals(this.getProxyProtocol(), other.getProxyProtocol());
 	}
 
 	@Override
 	public InetSocketAddress getSocketAddress() {
 		return new InetSocketAddress(getHost(), getPort());
 	}
+
+	@Override
+	public ProxyConnectProtocol getProxyProtocol() { return null; }
 
 }

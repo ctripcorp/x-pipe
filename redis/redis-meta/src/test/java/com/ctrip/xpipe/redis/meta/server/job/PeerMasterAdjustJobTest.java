@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.job;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
@@ -131,15 +132,6 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     }
 
     @Test
-    public void testJobInLowVersion() throws Exception {
-        version = "1.0.3";
-        peerMasterAdjustJob.execute().get();
-        Assert.assertEquals(2, peerofRequest.size());
-        Assert.assertTrue(peerofRequest.contains("peerof 2 10.0.0.2 7379"));
-        Assert.assertTrue(peerofRequest.contains("peerof 4 10.0.0.4 6379"));
-    }
-
-    @Test
     public void testNoChange() throws Exception {
         currentPeerMaster = new HashMap<>(expectPeerMaster);
         peerMasterAdjustJob.execute().get();
@@ -174,10 +166,10 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         if (null != redisServer) redisServer.stop();
     }
 
-    private List<RedisMeta> mockUpstreamPeerMaster() {
-        List<RedisMeta> upstreamPeerMasters = new ArrayList<>();
+    private List<Pair<Long, Endpoint>> mockUpstreamPeerMaster() {
+        List<Pair<Long, Endpoint>> upstreamPeerMasters = new ArrayList<>();
         expectPeerMaster.forEach((gid, peerMaster) -> {
-            upstreamPeerMasters.add(new RedisMeta().setGid(gid).setIp(peerMaster.getKey()).setPort(peerMaster.getValue()));
+            upstreamPeerMasters.add(new Pair(gid, new DefaultEndPoint(peerMaster.getKey(), peerMaster.getValue())));
         });
 
         return upstreamPeerMasters;

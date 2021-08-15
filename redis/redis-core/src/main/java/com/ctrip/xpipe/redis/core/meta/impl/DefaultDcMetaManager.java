@@ -130,6 +130,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<RouteMeta> getAllRoutes() {
+		return metaManager.metaRoutes(currentDc);
+	}
+
+	@Override
 	public List<ClusterMeta> getSpecificActiveDcClusters(String clusterActiveDc) {
 
 		return metaManager.getSpecificActiveDcClusters(currentDc, clusterActiveDc);

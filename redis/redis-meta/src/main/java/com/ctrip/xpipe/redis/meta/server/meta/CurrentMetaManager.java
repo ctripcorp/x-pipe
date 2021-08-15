@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -72,7 +73,9 @@ public interface CurrentMetaManager extends Observable {
 
 	Set<String> getUpstreamPeerDcs(String clusterId, String shardId);
 
-	List<RedisMeta> getAllPeerMasters(String clusterId, String shardId);
+	Map<String, RedisMeta> getAllPeerMasters(String clusterId, String shardId);
+
+	RouteMeta getClusterRouteByDcId(String dcId, String clusterId);
 
 	void removePeerMaster(String dcId, String clusterId, String shardId);
 

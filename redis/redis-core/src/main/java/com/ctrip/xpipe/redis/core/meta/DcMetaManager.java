@@ -20,6 +20,8 @@ public interface DcMetaManager{
 	 */
 	RouteMeta randomRoute(String clusterId);
 
+	List<RouteMeta> getAllRoutes();
+
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc
 	 * @param clusterActiveDc
