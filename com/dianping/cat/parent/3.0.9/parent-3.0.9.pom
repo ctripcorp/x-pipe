@@ -18,13 +18,6 @@
  	</modules>
 	<dependencyManagement>
 		<dependencies>
-                        <dependency>
-                                <groupId>org.unidal.framework</groupId>
-                                <artifactId>framework-bom</artifactId>
-                                <version>${framework.version}</version>
-                                <type>pom</type>
-                                <scope>import</scope>
-                        </dependency>
 			<dependency>
 				<groupId>com.dianping.cat</groupId>
 				<artifactId>cat-client</artifactId>
@@ -273,8 +266,6 @@ encoding/<project>=UTF-8
    </distributionManagement>
 	<properties>
 		<project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
-
-                <framework.version>4.0.0</framework.version>
                 <jetty.version>9.2.9.v20150224</jetty.version>
                 <servlet-api.version>3.1.0</servlet-api.version>
 	</properties>
