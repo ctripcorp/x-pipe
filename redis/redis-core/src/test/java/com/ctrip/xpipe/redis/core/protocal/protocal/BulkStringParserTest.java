@@ -19,7 +19,7 @@ import java.nio.channels.WritableByteChannel;
  */
 public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	
-	private BulkStringParser bs = new BulkStringParser(new TestPayload());
+	private AbstractBulkStringParser bs;
 	
 	private ByteBuf result;
 	
@@ -38,7 +38,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		
 		for(int i=1; i <= eof.length();i++){
 
-			bs = new BulkStringParser(new TestPayload());
+			bs = new RdbBulkStringParser(new TestPayload());
 			String []contents = StringUtil.splitByLen(buff, i);
 			parse(bs, contents);
 			assertResult();
@@ -48,6 +48,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	@Test
 	public void testEOFSplit(){
 		
+		bs = new RdbBulkStringParser(new TestPayload());
 		String eof = randomString(BulkStringEofMarkJudger.MARK_LENGTH);
 		String buff = "$EOF:" + eof + "\r\n" + content + eof;
 		String []contents = new String[]{buff, randomString()};
@@ -60,6 +61,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	@Test
 	public void testNoCRLFEnd(){
 
+		bs = new RdbBulkStringParser(new TestPayload());
 		String []contents = new String[]{"$" + content.length(), "\r\n", content, "ab"};
 		
 		parse(bs, contents);
@@ -72,6 +74,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	@Test
 	public void testSplit(){
 		
+		bs = new CommandBulkStringParser(new TestPayload());
 		String []contents = new String[]{"$" + content.length(), "\r\n", content, "\r\n"};
 		ByteBuf []byteBufs = new ByteBuf[contents.length];
 		
@@ -101,12 +104,39 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	@Test
 	public void testRight() throws IOException{
 		
+		bs = new CommandBulkStringParser(new TestPayload());
 		String data = "$" +content.length() + "\r\n" + content + "\r\n";
 		ByteBuf byteBuf = directByteBuf(1024);
 		byteBuf.writeBytes(data.getBytes());
 		bs.read(byteBuf);
 		
 		assertResult();
+	}
+
+	@Test
+	public void testCommandNoCREndError() {
+		bs = new CommandBulkStringParser(new TestPayload());
+		String []contents = new String[]{"$" + content.length(), "\r\n", content, "ab"};
+		String exceptionMessage = null;
+		try {
+			parse(bs, contents);
+		} catch (Exception exception) {
+			exceptionMessage = exception.getMessage();
+		}
+		Assert.assertEquals(exceptionMessage, String.format("command eof not '\r': %s", "a".getBytes()[0]));
+	}
+
+	@Test
+	public void testCommandNoLFEndError() {
+		bs = new CommandBulkStringParser(new TestPayload());
+		String []contents = new String[]{"$" + content.length(), "\r\n", content, "\rb"};
+		String exceptionMessage = null;
+		try {
+			parse(bs, contents);
+		} catch (Exception exception) {
+			exceptionMessage = exception.getMessage();
+		}
+		Assert.assertEquals(exceptionMessage, String.format("command eof not '\n': %s", "b".getBytes()[0]));
 	}
 
 	

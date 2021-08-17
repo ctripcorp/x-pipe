@@ -16,4 +16,8 @@ public class Resource {
 
     public static final String PING_DELAY_INFO_SCHEDULED = "pingDelayInfoScheduled";
 
+    public static final String HELLO_CHECK_EXECUTORS = "helloCheckExecutors";
+
+    public static final String HELLO_CHECK_SCHEDULED = "helloCheckScheduled";
+
 }

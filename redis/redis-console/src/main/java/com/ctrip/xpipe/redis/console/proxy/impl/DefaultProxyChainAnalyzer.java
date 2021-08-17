@@ -2,12 +2,15 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.RouteService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -44,10 +47,10 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
 
     private Logger logger = LoggerFactory.getLogger(DefaultProxyChainAnalyzer.class);
 
-    private volatile Map<DcClusterShard, ProxyChain> chains = Maps.newConcurrentMap();
+    private volatile Map<DcClusterShardPeer, ProxyChain> chains = Maps.newConcurrentMap();
 
     // tunnelId
-    private volatile Map<String, DcClusterShard> reverseMap = Maps.newConcurrentMap();
+    private volatile Map<String, DcClusterShardPeer> reverseMap = Maps.newConcurrentMap();
 
     private List<Listener> listeners = Lists.newCopyOnWriteArrayList();
 
@@ -73,8 +76,8 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
     public static final int ANALYZE_INTERVAL = Integer.parseInt(System.getProperty("console.proxy.chain.analyze.interval", "30000"));
 
     @Override
-    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId) {
-        return chains.get(new DcClusterShard(backupDcId, clusterId, shardId));
+    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
+        return chains.get(new DcClusterShardPeer(backupDcId, clusterId, shardId, peerDcId));
     }
 
     @Override
@@ -101,7 +104,7 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
     }
 
 
-    private void notifyListeners(Map<DcClusterShard, ProxyChain> expired, Map<DcClusterShard, ProxyChain> current) {
+    private void notifyListeners(Map<DcClusterShardPeer, ProxyChain> expired, Map<DcClusterShardPeer, ProxyChain> current) {
         new SafeLoop<Listener>(executors, listeners) {
             @Override
             protected void doRun0(Listener listener) {
@@ -244,33 +247,43 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
 
         @Override
         protected void doExecute() {
-            Map<DcClusterShard, ProxyChain> results = Maps.newConcurrentMap();
-            Map<String, DcClusterShard> tunnelMapping = Maps.newConcurrentMap();
+            Map<DcClusterShardPeer, ProxyChain> results = Maps.newConcurrentMap();
+            Map<String, DcClusterShardPeer> tunnelMapping = Maps.newConcurrentMap();
             for(Map.Entry<SourceDest, List<TunnelInfo>> entry : notReadyChains.entrySet()) {
-                HostPort activeDcKeeper = getActiveDcKeeper(entry.getKey());
-                Pair<String, String> clusterShard = metaCache.findClusterShard(activeDcKeeper);
-                if(clusterShard == null || StringUtil.isEmpty(clusterShard.getKey()) || StringUtil.isEmpty(clusterShard.getValue())) {
+                HostPort chainSrc = HostPort.fromString(entry.getKey().getKey());
+                HostPort chainDst = getProxyChainDst(entry.getKey());
+                Pair<String, String> peerClusterShard = metaCache.findClusterShard(chainDst);
+                String peerDcId = findDc(chainDst);
+                if(peerClusterShard == null || peerDcId == null ||
+                        StringUtil.isEmpty(peerDcId) ||
+                        StringUtil.isEmpty(peerClusterShard.getKey()) ||
+                        StringUtil.isEmpty(peerClusterShard.getValue())) {
                     continue;
                 }
-                String activeDcId = metaCache.getActiveDc(clusterShard.getKey(), clusterShard.getValue());
+
+                if (!metaCache.isMetaChain(chainSrc, chainDst)) {
+                    continue;
+                }
+
                 String backupDcId = null;
                 for(TunnelInfo info : entry.getValue()) {
                     String tunnelDcId = info.getTunnelDcId();
-                    if(!tunnelDcId.equalsIgnoreCase(activeDcId) && routeService.existsRouteBetweenDc(activeDcId, tunnelDcId)) {
+                    if(!tunnelDcId.equalsIgnoreCase(peerDcId) && routeService.existsRouteBetweenDc(peerDcId, tunnelDcId)) {
                         backupDcId = tunnelDcId;
                         break;
                     }
                 }
                 if(backupDcId != null) {
-                    DcClusterShard key = new DcClusterShard(backupDcId, clusterShard.getKey(), clusterShard.getValue());
-                    results.put(key, new DefaultProxyChain(backupDcId, clusterShard.getKey(), clusterShard.getValue(), entry.getValue()));
+                    DcClusterShardPeer key = new DcClusterShardPeer(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId);
+                    DefaultProxyChain chain = new DefaultProxyChain(backupDcId, peerClusterShard.getKey(), peerClusterShard.getValue(), peerDcId, entry.getValue());
 
+                    results.put(key,chain);
                     entry.getValue().forEach(tunnelInfo -> tunnelMapping.put(tunnelInfo.getTunnelId(), key));
                 }
             }
 
             synchronized (DefaultProxyChainAnalyzer.this) {
-                Map<DcClusterShard, ProxyChain> expired = chains;
+                Map<DcClusterShardPeer, ProxyChain> expired = chains;
                 chains = results;
                 reverseMap = tunnelMapping;
                 notifyListeners(expired, results);
@@ -279,10 +292,19 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
             future().setSuccess();
         }
 
-        private HostPort getActiveDcKeeper(SourceDest sourceDest) {
+        private HostPort getProxyChainDst(SourceDest sourceDest) {
             Endpoint endpoint = new DefaultProxyEndpoint(sourceDest.getValue());
 
             return new HostPort(endpoint.getHost(), endpoint.getPort());
+        }
+
+        private String findDc(HostPort hostPort) {
+            try {
+                return metaCache.getDc(hostPort);
+            } catch (Exception e) {
+                logger.warn("[findDc] error:", e);
+                return null;
+            }
         }
 
         @Override
@@ -295,7 +317,6 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
             return getClass().getSimpleName();
         }
     }
-
 
     private static class SourceDest extends Pair<String, String> {
 

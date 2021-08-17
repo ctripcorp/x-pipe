@@ -104,9 +104,9 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 						break;
 					case RedisClientProtocol.DOLLAR_BYTE:
 						if(inOutPayloadFactory != null) {
-							redisClientProtocol = new BulkStringParser(inOutPayloadFactory.create());
+							redisClientProtocol = new CommandBulkStringParser(inOutPayloadFactory.create());
 						} else {
-							redisClientProtocol = new BulkStringParser(getBulkStringPayload());
+							redisClientProtocol = new CommandBulkStringParser(getBulkStringPayload());
 						}
 						break;
 					case RedisClientProtocol.COLON_BYTE:

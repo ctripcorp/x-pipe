@@ -168,7 +168,7 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
         } else {
             content = String.format(TEMP_STATS_RESP, typeConflict, setConflict, delConflict, setDelConflict, modifyConflict, mergeConflict);
         }
-        return String.format("$%d\r\n%s", content.length(), content);
+        return String.format("$%d\r\n%s\r\n", content.length(), content);
     }
 
 

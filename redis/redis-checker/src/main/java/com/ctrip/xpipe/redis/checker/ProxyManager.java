@@ -12,7 +12,7 @@ public interface ProxyManager {
 
     List<ProxyTunnelInfo> getAllProxyTunnels();
 
-    ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId);
+    ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId, String peerDcId);
 
     void closeProxyTunnel(ProxyTunnelInfo proxyTunnelInfo);
 

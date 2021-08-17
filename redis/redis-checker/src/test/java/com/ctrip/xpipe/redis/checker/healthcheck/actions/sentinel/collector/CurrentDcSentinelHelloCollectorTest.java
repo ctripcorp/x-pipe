@@ -56,6 +56,8 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Before
     public void setupCurrentDcSentinelHelloCollectorTest() {
         collector.setScheduled(scheduled);
+        collector.setCollectExecutor(executors);
+        collector.setResetExecutor(executors);
         dcId = FoundationService.DEFAULT.getDataCenter();
         sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterId, shardId, dcId);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockMeta());
@@ -85,7 +87,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testReset() {
+    public void testReset() throws Exception {
         Mockito.when(metaCache.getAllKeepers()).thenReturn(Collections.emptySet());
         HostPort sentinel1 = new HostPort("10.0.0.1", 5000);
         HostPort sentinel2 = new HostPort("10.0.0.1", 5001);
@@ -111,7 +113,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
         hellos.add(new SentinelHello(sentinel3, masterAddr, sentinelMonitorName));
 
         collector.checkReset(clusterId, shardId, sentinelMonitorName, hellos);
-
+        Thread.sleep(120);
         Mockito.verify(sentinelManager, Mockito.never())
                 .reset(new Sentinel(sentinel1.toString(), sentinel1.getHost(), sentinel1.getPort()), sentinelMonitorName);
         Mockito.verify(sentinelManager, Mockito.times(1))

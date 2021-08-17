@@ -27,7 +27,7 @@ public class ParserManager {
 		parsers.add(new SimpleStringParser());
 		parsers.add(new LongParser());
 		parsers.add(new RedisErrorParser());
-		parsers.add(new BulkStringParser(""));
+		parsers.add(new CommandBulkStringParser(""));
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })

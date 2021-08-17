@@ -126,6 +126,7 @@ public class AlertManager {
     @VisibleForTesting
     public boolean shouldAlert(String cluster) {
         try {
+            if (StringUtil.isEmpty(cluster)) return true;
             Date createTime = getClusterCreateTime(cluster);
             int minutes = alertConfig.getNoAlarmMinutesForClusterUpdate();
             Date current = new Date();

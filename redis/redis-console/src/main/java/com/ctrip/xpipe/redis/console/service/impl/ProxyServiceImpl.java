@@ -7,19 +7,25 @@ import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.*;
+import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChainAnalyzer;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.utils.ExceptionUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +50,9 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Autowired
     private ShardService shardService;
+
+    @Autowired
+    private ClusterService clusterService;
 
     @Override
     public List<ProxyModel> getActiveProxies() {
@@ -92,8 +101,8 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId) {
-        return analyzer.getProxyChain(backupDcId, clusterId, shardId);
+    public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
+        return analyzer.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
     }
 
     @Override
@@ -114,14 +123,23 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public List<ProxyChain> getProxyChains(String backupDcId, String clusterId) {
-        List<ShardTbl> shards = shardService.findAllShardNamesByClusterName(clusterId);
-        List<ProxyChain> proxyChains = Lists.newArrayList();
+    public Map<String, List<ProxyChain>> getProxyChains(String backupDcId, String clusterName) {
+        List<ShardTbl> shards = shardService.findAllShardNamesByClusterName(clusterName);
+        List<DcTbl> peerDcs = clusterService.getClusterRelatedDcs(clusterName);
+        Map<String, List<ProxyChain>> proxyChains = Maps.newHashMap();
         for(ShardTbl shard : shards) {
-            ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterId, shard.getShardName());
-            if(chain != null) {
-                proxyChains.add(chain);
+            List<ProxyChain> peerChains = Lists.newArrayList();
+            String shardId = shard.getShardName();
+            for (DcTbl peerDcTbl : peerDcs) {
+                String peerDc = peerDcTbl.getDcName();
+                if (peerDc.equals(backupDcId)) continue;
+
+                ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterName, shardId, peerDc);
+                if(chain != null) {
+                    peerChains.add(chain);
+                }
             }
+            proxyChains.put(shardId, peerChains);
         }
         return proxyChains;
     }
@@ -175,8 +193,8 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId) {
-        ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterId, shardId);
+    public ProxyTunnelInfo getProxyTunnelInfo(String backupDcId, String clusterId, String shardId, String peerDcId) {
+        ProxyChain chain = analyzer.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
         if (null == chain) return null;
         return chain.buildProxyTunnelInfo();
     }
@@ -209,5 +227,22 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
             }
         }
         return result;
+    }
+
+    @VisibleForTesting
+    public ProxyServiceImpl setShardService(ShardService service) {
+        this.shardService = service;
+        return this;
+    }
+
+    @VisibleForTesting
+    public ProxyServiceImpl setProxyChainAnalyzer(ProxyChainAnalyzer analyzer) {
+        this.analyzer = analyzer;
+        return this;
+    }
+    @VisibleForTesting
+    public ProxyServiceImpl setClusterService(ClusterService service) {
+        this.clusterService = service;
+        return this;
     }
 }
