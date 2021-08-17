@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDaoTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDaoTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
+import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.MultiShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -39,6 +40,7 @@ import org.junit.runners.Suite;
         DefaultShardMigrationResultTest.class,
         MigrationClusterDaoTest.class,
         MigrationEventDaoTest.class,
+        MultiClusterMigrationTest.class,
 
         AdvancedDcMetaServiceTestForRoute.class,
         AdvancedDcMetaServiceTest.class,

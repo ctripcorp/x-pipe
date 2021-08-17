@@ -1,16 +1,18 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
-import com.ctrip.xpipe.redis.console.model.DcIdNameMapper;
-import com.ctrip.xpipe.redis.console.model.RouteModel;
-import com.ctrip.xpipe.redis.console.model.RouteTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RouteService;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -23,6 +25,9 @@ public class RouteServiceImpl implements RouteService {
 
     @Autowired
     private RouteDao routeDao;
+
+    @Autowired
+    private ClusterDao clusterDao;
 
     @Autowired
     private DcService dcService;
@@ -81,6 +86,26 @@ public class RouteServiceImpl implements RouteService {
                     && route.getDstDcName().equalsIgnoreCase(activeDc))
                 return true;
         }
+        return false;
+    }
+
+    @Override
+    public boolean existPeerRoutes(String currentDc, String clusterName) {
+        List<String> peerDcs = new ArrayList<String>();
+        for (DcTbl relatedDc : dcService.findClusterRelatedDc(clusterName)) {
+            peerDcs.add(relatedDc.getDcName());
+        }
+
+        List<RouteModel> routes = getActiveRoutes();
+        for (String peerDc: peerDcs) {
+            if (peerDc.equals(currentDc)) continue;
+            for(RouteModel route : routes) {
+                if(route.getSrcDcName().equalsIgnoreCase(currentDc)
+                        && route.getDstDcName().equalsIgnoreCase(peerDc))
+                    return true;
+            }
+        }
+
         return false;
     }
 }

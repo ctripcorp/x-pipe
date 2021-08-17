@@ -17,8 +17,13 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+
+import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
 
 /**
  * @author chen.zhu
@@ -38,6 +43,12 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
     private MetaCache metaCache;
 
+    @Resource(name = HELLO_CHECK_SCHEDULED)
+    private ScheduledExecutorService helloCheckScheduled;
+
+    @Resource(name = HELLO_CHECK_EXECUTORS)
+    private ExecutorService helloCheckExecutors;
+
     @Autowired
     public SentinelHelloCheckActionFactory(List<SentinelHelloCollector> collectors, List<SentinelActionController> controllers,
                                            CheckerConfig checkerConfig, CheckerDbConfig checkerDbConfig, Persistence persistence, MetaCache metaCache) {
@@ -50,7 +61,7 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
-        SentinelHelloCheckAction action = new SentinelHelloCheckAction(scheduled, instance, executors, checkerDbConfig, persistence, metaCache, healthCheckInstanceManager);
+        SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistence, metaCache, healthCheckInstanceManager);
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         action.addListeners(collectorsByClusterType.get(clusterType));
         action.addControllers(controllersByClusterType.get(clusterType));

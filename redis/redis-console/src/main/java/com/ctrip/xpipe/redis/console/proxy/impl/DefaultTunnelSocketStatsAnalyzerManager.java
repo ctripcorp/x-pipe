@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
@@ -74,7 +75,7 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
         });
         chainAnalyzer.addListener(new ProxyChainAnalyzer.Listener() {
             @Override
-            public void onChange(Map<DcClusterShard, ProxyChain> previous, Map<DcClusterShard, ProxyChain> current) {
+            public void onChange(Map<DcClusterShardPeer, ProxyChain> previous, Map<DcClusterShardPeer, ProxyChain> current) {
                 new SafeLoop<ProxyChain>(executors, current.values()) {
                     @Override
                     protected void doRun0(ProxyChain chain) {

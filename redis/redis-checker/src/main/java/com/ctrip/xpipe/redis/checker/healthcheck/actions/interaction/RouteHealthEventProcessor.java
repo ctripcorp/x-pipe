@@ -94,7 +94,7 @@ public class RouteHealthEventProcessor implements HealthEventProcessor {
     protected void doOnEvent(InstanceHalfSick instanceSick) {
         RedisInstanceInfo instanceInfo = instanceSick.getInstance().getCheckInfo();
         ProxyTunnelInfo proxyTunnelInfo = proxyManager.getProxyTunnelInfo(instanceInfo.getDcId(),
-                instanceInfo.getClusterId(), instanceInfo.getShardId());
+                instanceInfo.getClusterId(), instanceInfo.getShardId(), "UNSET");
         if (proxyTunnelInfo == null) {
             logger.warn("[doOnEvent]proxy chain not found for {}", instanceInfo);
             return;

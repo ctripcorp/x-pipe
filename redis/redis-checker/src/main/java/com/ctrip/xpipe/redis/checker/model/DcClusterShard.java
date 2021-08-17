@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.checker.model;
 
 import java.util.Objects;
 
-public final class DcClusterShard {
+public class DcClusterShard {
 
     private String dcId;
 
