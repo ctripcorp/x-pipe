@@ -66,6 +66,7 @@ import org.junit.runners.Suite.SuiteClasses;
         PingCommandTest.class,
         RedisCommandTest.class,
         DefaultSlaveOfCommandTest.class,
+        PeerOfCommandTest.class,
         ProxyMonitorCommandTest.class,
         ProxyPingCommandTest.class,
         CompressParserTest.class,
