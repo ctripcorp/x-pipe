@@ -53,6 +53,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterMetaComparatorTest.class,
         ShardMetaComparatorTest.class,
         InfoResultExtractorTest.class,
+        CrdtInfoResultExtractorTest.class,
         RoleCommandTest.class,
         KeeperCommandTest.class,
         MasterRoleTest.class,
