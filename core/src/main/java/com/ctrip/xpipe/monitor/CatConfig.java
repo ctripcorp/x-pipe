@@ -13,7 +13,6 @@ import javax.servlet.DispatcherType;
 
 /**
  * @author wenchao.meng
- *
  *         Aug 11, 2016
  */
 @Configuration
