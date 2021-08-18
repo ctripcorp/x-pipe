@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
-import com.ctrip.xpipe.redis.core.entity.Shard;
 
 import java.util.List;
 import java.util.Map;
