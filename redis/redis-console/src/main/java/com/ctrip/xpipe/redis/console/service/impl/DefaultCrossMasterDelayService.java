@@ -71,12 +71,16 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
 
     public UnhealthyInfoModel getCurrentDcUnhealthyMasters() {
         UnhealthyInfoModel unhealthyInfo = new UnhealthyInfoModel();
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+
         for (DcClusterShard dcClusterShard : crossMasterDelays.keySet()) {
+            if (!checkDcClusterShard(xpipeMeta, dcClusterShard)) continue;
+
             for (Pair<HostPort, Long> targetDcDelay : crossMasterDelays.get(dcClusterShard).values()) {
                 Long delay = targetDcDelay.getValue();
                 if (null == delay || delay < 0 || delay == DelayAction.SAMPLE_LOST_BUT_PONG) {
                     unhealthyInfo.addUnhealthyInstance(dcClusterShard.getClusterId(), dcClusterShard.getDcId(),
-                            dcClusterShard.getShardId(), findMasterOf(dcClusterShard), true);
+                            dcClusterShard.getShardId(), findMasterOf(dcClusterShard, xpipeMeta), true);
                     break;
                 }
             }
@@ -85,21 +89,30 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
         return unhealthyInfo;
     }
 
-    private HostPort findMasterOf(DcClusterShard dcClusterShard) {
+    private boolean checkDcClusterShard(XpipeMeta xpipeMeta, DcClusterShard dcClusterShard) {
+        Map<String, DcMeta> dcs = xpipeMeta.getDcs();
+        if (!dcs.containsKey(dcClusterShard.getDcId())) {
+            return false;
+        }
+
+        Map<String, ClusterMeta> clusters = dcs.get(dcClusterShard.getDcId()).getClusters();
+        if (!clusters.containsKey(dcClusterShard.getClusterId())) {
+            return false;
+        }
+
+        Map<String, ShardMeta> shards = clusters.get(dcClusterShard.getClusterId()).getShards();
+        ClusterType clusterType = ClusterType.lookup(clusters.get(dcClusterShard.getClusterId()).getType());
+        return clusterType.supportMultiActiveDC() && shards.containsKey(dcClusterShard.getShardId());
+    }
+
+    private HostPort findMasterOf(DcClusterShard dcClusterShard, XpipeMeta xpipeMeta) {
         String dcId = dcClusterShard.getDcId();
         String clusterId = dcClusterShard.getClusterId();
         String shardId = dcClusterShard.getShardId();
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
 
-        if (!xpipeMeta.getDcs().containsKey(dcId)) return null;
         DcMeta dcMeta = xpipeMeta.getDcs().get(dcId);
-
-        if (!dcMeta.getClusters().containsKey(clusterId)) return null;
         ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
-
-        if (!clusterMeta.getShards().containsKey(shardId)) return null;
         ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
-
         Optional<RedisMeta> masterOptional = shardMeta.getRedises().stream().filter(RedisMeta::isMaster).findFirst();
         if (!masterOptional.isPresent()) return null;
         RedisMeta masterMeta = masterOptional.get();
