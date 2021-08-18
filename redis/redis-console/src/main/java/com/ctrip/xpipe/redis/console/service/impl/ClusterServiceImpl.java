@@ -101,6 +101,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public List<DcTbl> getClusterRelatedDcs(String clusterName) {
 		ClusterTbl clusterTbl = find(clusterName);
+		if (null == clusterTbl) {
+			throw new IllegalArgumentException("cluster not found:" + clusterName);
+		}
+
 		List<DcClusterTbl> dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
 		List<DcTbl> result = Lists.newLinkedList();
 		for(DcClusterTbl dcClusterTbl : dcClusterTbls) {
