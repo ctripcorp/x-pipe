@@ -192,4 +192,14 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public long getConfigCacheTimeoutMilli() {
         return 0L;
     }
+
+    @Override
+    public boolean checkClusterType() {
+        return true;
+    }
+
+    @Override
+    public Set<String> commonClustersSupportSentinelCheck() {
+        return new HashSet<>();
+    }
 }

@@ -222,6 +222,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public boolean checkClusterType() {
+        return getBooleanProperty(KEY_SENTINEL_CHECK_CLUSTER_TYPE, true);
+    }
+
+    @Override
+    public Set<String> commonClustersSupportSentinelCheck() {
+        return getSplitStringSet(getProperty(KEY_SENTINEL_CHECK_CLUSTERS, ""));
+    }
+
+    @Override
     public String getConsoleDomain() {
         return getProperty(KEY_DOMAIN, "127.0.0.1");
     }

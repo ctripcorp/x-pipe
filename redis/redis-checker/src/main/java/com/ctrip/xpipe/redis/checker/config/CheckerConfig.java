@@ -35,6 +35,10 @@ public interface CheckerConfig {
 
     String KEY_SENTINEL_CHECK_INTERVAL = "console.health.sentinel.interval";
 
+    String KEY_SENTINEL_CHECK_CLUSTER_TYPE = "console.health.sentinel.check.type";
+
+    String KEY_SENTINEL_CHECK_CLUSTERS = "console.health.sentinel.check.clusters";
+
     String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
     String KEY_SENTINEL_RATE_LIMIT_OPEN = "console.sentinel.rate.limit.open";
@@ -76,6 +80,10 @@ public interface CheckerConfig {
     int getRedisConfCheckIntervalMilli();
 
     int getSentinelCheckIntervalMilli();
+
+    boolean checkClusterType();
+
+    Set<String> commonClustersSupportSentinelCheck();
 
     int getHealthyDelayMilli();
 

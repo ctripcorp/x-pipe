@@ -2,12 +2,14 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -221,6 +223,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     protected boolean shouldCheck(HealthCheckInstance checkInstance) {
         String cluster = checkInstance.getCheckInfo().getClusterId();
 
+        if(!shouldCheckByClusterType(checkInstance)){
+            logger.warn("[{}][BackupDc] cluster {} is not sentinel check type, quit", LOG_TITLE, cluster);
+            return false;
+        }
+
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.warn("[{}][BackupDc] cluster {} is in sentinel check whitelist, quit", LOG_TITLE, cluster);
             return false;
@@ -232,6 +239,25 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         }
 
         return checkerDbConfig.isSentinelAutoProcess();
+    }
+
+    boolean shouldCheckByClusterType(HealthCheckInstance checkInstance) {
+        return !needToCheckType(checkInstance) || inCheckTypes(checkInstance) || inCheckList(checkInstance);
+    }
+
+    boolean needToCheckType(HealthCheckInstance checkInstance) {
+        return checkInstance.getHealthCheckConfig().checkClusterType();
+    }
+
+    boolean inCheckTypes(HealthCheckInstance checkInstance) {
+        ClusterType clusterType = checkInstance.getCheckInfo().getClusterType();
+        return clusterType.equals(ClusterType.ONE_WAY) || clusterType.equals(ClusterType.BI_DIRECTION);
+    }
+
+    boolean inCheckList(HealthCheckInstance checkInstance) {
+        HealthCheckConfig config = checkInstance.getHealthCheckConfig();
+        Set<String> commonClustersSupportSentinelCheck = config.commonClustersSupportSentinelCheck();
+        return commonClustersSupportSentinelCheck.contains(checkInstance.getCheckInfo().getClusterId());
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
+import java.util.Set;
+
 /**
  * @author chen.zhu
  * <p>
@@ -25,4 +27,7 @@ public interface HealthCheckConfig {
 
     String getMinDiskLessReplVersion();
 
+    boolean checkClusterType();
+
+    Set<String> commonClustersSupportSentinelCheck();
 }

@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -16,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class CurrentDcHelloCollector implements BiDirectionSupport, SentinelHelloCollector {
+public class CurrentDcHelloCollector implements BiDirectionSupport, SingleDcSupport, LocalDcSupport, SentinelHelloCollector {
 
     @Autowired
     private MetaCache metaCache;

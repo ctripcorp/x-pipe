@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 
+import java.util.Set;
+
 /**
  * @author chen.zhu
  * <p>
@@ -48,6 +50,16 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int getSentinelCheckIntervalMilli() {
         return checkerConfig.getSentinelCheckIntervalMilli();
+    }
+
+    @Override
+    public boolean checkClusterType() {
+        return checkerConfig.checkClusterType();
+    }
+
+    @Override
+    public Set<String> commonClustersSupportSentinelCheck() {
+        return checkerConfig.commonClustersSupportSentinelCheck();
     }
 
     @Override
