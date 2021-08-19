@@ -5,8 +5,6 @@ import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
-import com.dianping.cat.kafka.common.utils.ByteUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
