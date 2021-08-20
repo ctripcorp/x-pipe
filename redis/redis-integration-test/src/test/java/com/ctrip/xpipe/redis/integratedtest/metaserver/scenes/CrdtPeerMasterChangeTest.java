@@ -49,7 +49,7 @@ public class CrdtPeerMasterChangeTest extends AbstractMetaServerMultiDcTest{
         XpipeNettyClientKeyedObjectPool pool = getXpipeNettyClientKeyedObjectPool();
         Endpoint master = new DefaultEndPoint("127.0.0.1", 36379);
         RedisChecker redisChecker = new RedisChecker(pool, scheduled);
-        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXTCP://127.0.0.1:11081,PROXTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 200000, 1000);
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 10000, 1000);
         //remove peer
@@ -66,7 +66,7 @@ public class CrdtPeerMasterChangeTest extends AbstractMetaServerMultiDcTest{
         command.execute();
         command = new DefaultSlaveOfCommand(pool.getKeyPool(fqSlaveEndPint), scheduled);
         command.execute();
-        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38380, "PROXY ROUTE PROXTCP://127.0.0.1:11081,PROXTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38380, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 200000, 1000);
 
 

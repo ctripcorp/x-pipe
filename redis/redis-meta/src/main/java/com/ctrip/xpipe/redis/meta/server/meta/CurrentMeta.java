@@ -413,12 +413,26 @@ public class CurrentMeta implements Releasable {
 				List<RouteMeta> dcRoutes = MapUtils.getOrCreate(allDcRoutes, dcName, LinkedList::new);
 				dcRoutes.add(routeMeta);
 			});
-			
-			int orgId = clusterMeta.getOrgId();
-			for (String dcId : clusterMeta.getDcs().split("\\s*,\\s*")) {
-				if (currentDcId.equalsIgnoreCase(dcId)) continue;
-				RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
-				if(route != null) allRoutes.put(dcId, route);
+			int orgId;
+			if(OrgUtil.isDefaultOrg(clusterMeta.getOrgId())) {
+				orgId = 0;
+				logger.error("cluster orgId is defaultOrg: {}", clusterMeta.getOrgId());
+			} else {
+				orgId = clusterMeta.getOrgId();
+			}
+			if(clusterType.equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
+				//TODO ONE_WAY random
+				String dcId = clusterMeta.getActiveDc();
+				if(!currentDcId.equalsIgnoreCase(dcId)) {
+					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
+					if(route != null) allRoutes.put(dcId, route);
+				}
+			} else if(clusterType.equalsIgnoreCase(ClusterType.BI_DIRECTION.name())) {
+				for (String dcId : clusterMeta.getDcs().split("\\s*,\\s*")) {
+					if (currentDcId.equalsIgnoreCase(dcId)) continue;
+					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
+					if(route != null) allRoutes.put(dcId, route);
+				}
 			}
 			return allRoutes;
 		}

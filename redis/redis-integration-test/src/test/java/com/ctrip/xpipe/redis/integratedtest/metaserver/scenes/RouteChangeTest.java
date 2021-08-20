@@ -38,7 +38,6 @@ public class RouteChangeTest extends AbstractMetaServerMultiDcTest {
     }
     @Before
     public void testBefore() throws Exception {
-        stopAllServer();
         startCRDTAllServer(defaultConsoleInfo());
     }
 
@@ -58,7 +57,7 @@ public class RouteChangeTest extends AbstractMetaServerMultiDcTest {
         XpipeNettyClientKeyedObjectPool pool = getXpipeNettyClientKeyedObjectPool();
         Endpoint master = new DefaultEndPoint("127.0.0.1", 36379);
 
-        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXTCP://127.0.0.1:11081,PROXTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        Pair<Long, Endpoint> jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081,PROXYTCP://127.0.0.1:11083 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         ConsoleService jqService = new ConsoleService("jq", jqConsoleUrl);
         RedisChecker redisChecker = new RedisChecker(pool, scheduled);
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 200000, 1000);
@@ -67,12 +66,12 @@ public class RouteChangeTest extends AbstractMetaServerMultiDcTest {
         RouteModel model = new RouteModel();
         model.setId(2).setSrcProxyIds("2").setTag("META").setDstProxyIds("1,5").setSrcDcName("jq").setDstDcName("fra").setActive(true);
         jqService.changeRoute(model);
-        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
+        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443,PROXYTLS://127.0.0.1:11445"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 61000, 1000);
         model.setDstProxyIds("1");
         jqService.changeRoute(model);
 
-        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443"));
+        jq2fraPeerInfo = new Pair<Long, Endpoint>(5L, createProxyEndpoint("127.0.0.1", 38379, "PROXY ROUTE PROXYTCP://127.0.0.1:11081 PROXYTLS://127.0.0.1:11443"));
         waitConditionUntilTimeOut(redisChecker.containsPeer(master, jq2fraPeerInfo) , 61000, 1000);
 
     }
