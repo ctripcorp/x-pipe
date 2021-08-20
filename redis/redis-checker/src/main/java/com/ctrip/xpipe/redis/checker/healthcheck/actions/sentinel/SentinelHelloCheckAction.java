@@ -116,7 +116,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
                 ClusterMeta clusterMeta = dcMeta.getClusters().get(getActionInstance().getCheckInfo().getClusterId());
                 logger.debug("[{}-{}][{}]found in MetaCache", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, instance.getCheckInfo().getClusterId());
-                if (clusterMeta != null && !metaCache.isCrossRegion(clusterMeta.getActiveDc(), dc)) {
+                if (clusterMeta != null) {
                     Map<String, ShardMeta> clusterShards = clusterMeta.getShards();
                     logger.debug("[{}-{}][{}]shards num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, clusterShards.size(), clusterShards);
                     clusterShards.forEach((shardId, shardMeta) -> {
@@ -133,17 +133,17 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                         redisInstance.getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
                                     }
                                 } catch (Exception e) {
-                                    logger.warn("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
+                                    logger.error("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
                             });
                         } catch (Exception e) {
-                            logger.warn("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
+                            logger.error("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
                         }
                     });
                 }
             });
         } catch (Exception e) {
-            logger.warn("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
+            logger.error("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
         }
         return redisHealthCheckInstances;
     }
@@ -173,9 +173,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             return;
 
                         if (ExceptionUtils.isStackTraceUnnecessary(e)) {
-                            logger.error("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
+                            logger.warn("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                         } else {
-                            logger.error("[{}-{}+{}]{} instance {} sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
+                            logger.warn("[{}-{}+{}]{} instance {} sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
                         }
 
                         errors.put(redisInstanceToCheck, e);
