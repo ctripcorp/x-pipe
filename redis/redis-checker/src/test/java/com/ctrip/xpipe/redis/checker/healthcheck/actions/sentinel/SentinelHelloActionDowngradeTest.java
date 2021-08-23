@@ -260,13 +260,6 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         Assert.assertEquals(0, checkActionController.getAllCheckCollectorControllers().size());
     }
 
-    @Test
-    public void shouldCheckTest(){
-        RedisHealthCheckInstance instance=new DefaultRedisHealthCheckInstance();
-
-        downgradeController.shouldCheck(instance);
-    }
-
     private void prepareActions() throws Exception {
         activeDcMaster = new SentinelCheckStatus("dc1", activeDc, true);
         activeDcMasterMeta.setPort(activeDcMaster.redisServer.getPort());

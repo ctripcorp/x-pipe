@@ -132,17 +132,17 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                         redisInstance.getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
                                     }
                                 } catch (Exception e) {
-                                    logger.error("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
+                                    logger.warn("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
                             });
                         } catch (Exception e) {
-                            logger.error("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
+                            logger.warn("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
                         }
                     });
                 }
             });
         } catch (Exception e) {
-            logger.error("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
+            logger.warn("[{}-{}]get redis health check instances from cluster {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), instance.getCheckInfo().getClusterId(), e);
         }
         return redisHealthCheckInstances;
     }
