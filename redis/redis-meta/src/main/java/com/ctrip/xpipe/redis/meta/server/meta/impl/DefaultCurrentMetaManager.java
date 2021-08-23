@@ -162,7 +162,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		super.doDispose();
 	}
 
-	private void notifyClusterRoutesChange(String clusterId) {
+	private void clusterRoutesChange(String clusterId) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
 		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.getAllRoutes());
 		if(changedDcs != null && !changedDcs.isEmpty())  {
@@ -177,7 +177,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
-	private boolean shouldReCreateCluster(ClusterMeta current, ClusterMeta future) {
+	private boolean isReCreateCluster(ClusterMeta current, ClusterMeta future) {
 		//cluster type changed should recreate CurrentClusterMeta
 		return !ObjectUtils.equals(current.getType(), future.getType());
 	}
@@ -187,13 +187,13 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		if(currentMeta.hasCluster(clusterId)){
 			ClusterMeta current = clusterMetaComparator.getCurrent();
 			ClusterMeta future = clusterMetaComparator.getFuture();
-			if(shouldReCreateCluster(current, future)) {
+			if(isReCreateCluster(current, future)) {
 				destroyCluster(current);
 				addCluster(clusterId);
 			} else {
 				currentMeta.changeCluster(clusterMetaComparator);
 				if(!current.getDcs().equals(future.getDcs())) {
-					notifyClusterRoutesChange(clusterId);
+					clusterRoutesChange(clusterId);
 				}
 				notifyObservers(clusterMetaComparator);
 			}
@@ -340,7 +340,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 					refreshKeeperMaster(clusterMeta);
 				}
 			} else if(clusterType.equalsIgnoreCase(ClusterType.BI_DIRECTION.name())) {
-				notifyClusterRoutesChange(clusterId);
+				clusterRoutesChange(clusterId);
 			}
 		}
 	}

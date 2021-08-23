@@ -243,7 +243,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	@Override
 	public List<RouteMeta> getAllRoutes() {
-		return dcMetaManager.get().getAllRoutes();
+		return dcMetaManager.get().getAllMetaRoutes();
 	}
 
 	@Override

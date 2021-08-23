@@ -130,7 +130,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public List<RouteMeta> getAllRoutes() {
+	public List<RouteMeta> getAllMetaRoutes() {
 		return metaManager.metaRoutes(currentDc);
 	}
 

@@ -69,7 +69,7 @@ public class PeerOfCommand extends AbstractRedisCommand {
         if(null == endpoint){
             return String.format("%s: %s %d no one", target, getName(), gid);
         }else{
-            return String.format("%s: %s %d %s %d", target, getName(), gid, endpoint.getHost(), endpoint.getPort());
+            return String.format("%s: %s %d %s %d %s", target, getName(), gid, endpoint.getHost(), endpoint.getPort(), endpoint.getProxyProtocol());
         }
     }
 
@@ -77,5 +77,5 @@ public class PeerOfCommand extends AbstractRedisCommand {
     protected String format(Object payload) {
         return payloadToString(payload);
     }
-
+    
 }

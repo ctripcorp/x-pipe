@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.util.OrgUtil;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentKeeperShardMeta;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.HashCodeChooseRouteStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -421,7 +422,7 @@ public class CurrentMeta implements Releasable {
 				orgId = clusterMeta.getOrgId();
 			}
 			if(clusterType.equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
-				//TODO ONE_WAY random
+				//ONE_WAY unused 
 				String dcId = clusterMeta.getActiveDc();
 				if(!currentDcId.equalsIgnoreCase(dcId)) {
 					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
@@ -481,7 +482,7 @@ public class CurrentMeta implements Releasable {
 
 		public ChooseRouteStrategy getChooseRouteStrategy() {
 			if(chooseRouteStrategy == null) {
-				this.chooseRouteStrategy = new ChooseRouteStrategy.HashCodeChooseRouteStrategy(clusterId.hashCode());
+				this.chooseRouteStrategy = new HashCodeChooseRouteStrategy(clusterId.hashCode());
 			}
 			return this.chooseRouteStrategy;
 		}
