@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
@@ -172,12 +171,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                         if (!collecting)
                             return;
 
-                        if (ExceptionUtils.isStackTraceUnnecessary(e)) {
-                            logger.warn("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
-                        } else {
-                            logger.warn("[{}-{}+{}]{} instance {} sub-failed", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e);
-                        }
-
+                        logger.warn("[{}-{}+{}]{} instance {} sub-failed, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                         errors.put(redisInstanceToCheck, e);
                     }
                 });
@@ -262,6 +256,16 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     @VisibleForTesting
     Map<RedisHealthCheckInstance, Throwable> getErrors() {
         return errors;
+    }
+
+    @VisibleForTesting
+    boolean isCollecting() {
+        return collecting;
+    }
+
+    @VisibleForTesting
+    void setCollecting(boolean collecting) {
+        this.collecting = collecting;
     }
 
     @VisibleForTesting

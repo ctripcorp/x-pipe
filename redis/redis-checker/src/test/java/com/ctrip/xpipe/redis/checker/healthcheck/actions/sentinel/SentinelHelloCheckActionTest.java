@@ -20,7 +20,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -445,5 +448,21 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         verify(listener, times(4)).onAction(any());
         Assert.assertTrue(action.getHellos().isEmpty());
         Assert.assertTrue(action.getErrors().isEmpty());
+    }
+
+    @Test
+    public void stopTest() throws Exception {
+        Map<RedisHealthCheckInstance, SentinelHelloCheckAction.SentinelHellos> sentinelHellos = new HashMap<>();
+        sentinelHellos.put(newRandomRedisHealthCheckInstance(6379), action.new SentinelHellos());
+        action.setHellos(sentinelHellos);
+        Map<RedisHealthCheckInstance, Throwable> sentinelHelloErrors = new HashMap<>();
+        sentinelHelloErrors.put(newRandomRedisHealthCheckInstance(6379), new Exception("test"));
+        action.setErrors(sentinelHelloErrors);
+        action.setCollecting(true);
+
+        action.doStop();
+        Assert.assertTrue(action.getHellos().isEmpty());
+        Assert.assertTrue(action.getErrors().isEmpty());
+        Assert.assertFalse(action.isCollecting());
     }
 }
