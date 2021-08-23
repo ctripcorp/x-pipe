@@ -93,7 +93,9 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		private String []args;
 		
 		private RedisClient redisClient;
-		
+
+		private volatile boolean released = false;
+
 		public PsyncKeeperServerStateObserver(String []args, RedisClient redisClient) {
 			
 			this.args = args;
@@ -104,10 +106,15 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		public void update(Object updateArgs, Observable observable) {
 			
 			logger.info("[update]{},{},{}", redisClient, updateArgs, observable);
-			
+
 			if(updateArgs instanceof KeeperServerStateChanged){
 
 				redisClient.getRedisKeeperServer().processCommandSequentially(()-> {
+					if (released) {
+						logger.info("[update][{}] update but released", redisClient);
+						return;
+					}
+
 					try {
 						new PsyncHandler().handle(args, redisClient);
 					} catch (Exception e) {
@@ -131,6 +138,7 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 		@Override
 		public void release() throws Exception {
 			logger.info("[release]{}", this);
+			released = true;
 			this.redisClient.getRedisKeeperServer().removeObserver(this);
 		}
 	}

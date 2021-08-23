@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -67,6 +68,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	private ExecutorService psyncExecutor;
 
 	private RedisClient redisClient;
+
+	private AtomicBoolean writingCommands = new AtomicBoolean(false);
 
 	private ChannelFutureListener writeExceptionListener = new ChannelFutureListener() {
 
@@ -259,12 +262,16 @@ public class DefaultRedisSlave implements RedisSlave {
 
 		try {
 
-			if(partialState == PARTIAL_STATE.UNKNOWN){
-				partialState = PARTIAL_STATE.PARTIAL;
+			if (writingCommands.compareAndSet(false, true)) {
+				if(partialState == PARTIAL_STATE.UNKNOWN){
+					partialState = PARTIAL_STATE.PARTIAL;
+				}
+				logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
+				slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
+				getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);
+			} else {
+				logger.warn("[beginWriteCommands][already writing]{}, {}", this, beginOffset);
 			}
-			logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
-			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-			getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);
 		} catch (IOException e) {
 			throw new RedisKeeperRuntimeException("[beginWriteCommands]" + beginOffset + "," + this, e);
 		}

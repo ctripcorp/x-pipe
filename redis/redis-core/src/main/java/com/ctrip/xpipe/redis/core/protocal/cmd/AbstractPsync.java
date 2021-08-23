@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.CloseState;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -48,6 +49,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected List<PsyncObserver> observers = new LinkedList<PsyncObserver>();
 
 	protected PSYNC_STATE psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE;
+
+	private final CloseState closeState = new CloseState();
 
 	public AbstractPsync(String host, int port, boolean saveCommands, ScheduledExecutorService scheduled) {
 		super(host, port, scheduled);
@@ -155,10 +158,16 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 					}
 				case READING_COMMANDS:
 					if (saveCommands) {
-						try {
-							appendCommands(byteBuf);
-						} catch (IOException e) {
-							getLogger().error("[doHandleResponse][write commands error]" + this, e);
+						synchronized (closeState) {
+							if (!closeState.isOpen()) {
+								getLogger().info("[doHandleResponse][psync already closed]{}", channel);
+								throw new IllegalStateException("psync already closed");
+							}
+							try {
+								appendCommands(byteBuf);
+							} catch (IOException e) {
+								getLogger().error("[doHandleResponse][write commands error]" + this, e);
+							}
 						}
 					}
 					break;
@@ -299,5 +308,15 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	@Override
 	protected void doReset() {
 		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public void close() {
+		if (!this.closeState.isOpen()) return;
+
+		this.closeState.setClosing();
+		synchronized (closeState) {
+			this.closeState.setClosed();
+		}
 	}
 }

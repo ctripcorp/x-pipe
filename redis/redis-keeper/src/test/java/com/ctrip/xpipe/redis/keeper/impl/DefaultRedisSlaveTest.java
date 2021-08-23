@@ -232,4 +232,13 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         waitConditionUntilTimeOut(() -> !redisSlave.isOpen());
     }
 
+    @Test
+    public void testMultiBeginWritingCmds() throws Exception {
+        when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        redisSlave.beginWriteCommands(0L);
+        redisSlave.beginWriteCommands(0L);
+
+        verify(replicationStore).addCommandsListener(anyLong(), any());
+    }
+
 }

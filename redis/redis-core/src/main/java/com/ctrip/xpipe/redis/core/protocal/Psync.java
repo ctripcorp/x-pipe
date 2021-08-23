@@ -2,12 +2,14 @@ package com.ctrip.xpipe.redis.core.protocal;
 
 import com.ctrip.xpipe.api.command.Command;
 
+import java.io.Closeable;
+
 /**
  * @author wenchao.meng
  *
  * Aug 24, 2016
  */
-public interface Psync extends Command<Object>{
+public interface Psync extends Command<Object>, Closeable {
 	
 	String FULL_SYNC = "FULLRESYNC";
 	String PARTIAL_SYNC = "CONTINUE";
