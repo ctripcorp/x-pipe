@@ -41,7 +41,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private static final String CRDT_REDIS_VERSION_KEY = "xredis_crdt_version";
 
-    private static final String VERSION_SUPPORT_STRICTLY_CHECK = "1.0.4";
+    private static final String MINIMUM_SUPPORTED_VERSION = "1.0.4";
 
     private String clusterId;
 
@@ -51,8 +51,6 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     private List<Pair<Long,Endpoint>> upstreamPeerMasters;
 
     private Pair<String, Integer> currentMaster;
-
-    private String masterVersion;
 
     private List<Pair<Long,Endpoint>> currentPeerMasters;
 
@@ -203,15 +201,25 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         protected void handleResult(String rawInfo) {
             try {
                 InfoResultExtractor extractor = new InfoResultExtractor(rawInfo);
-                masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
+                String masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
 
                 if (StringUtil.isEmpty(masterVersion)) {
                     future().setFailure(new BadRedisVersionException(String.format("master %s:%d is not crdt redis",
                             currentMaster.getKey(), currentMaster.getValue())));
                     return;
                 }
-
-                future().setSuccess();
+                boolean isSupported;
+                try {
+                    isSupported = StringUtil.compareVersion(masterVersion, MINIMUM_SUPPORTED_VERSION) >= 0;
+                } catch (NumberFormatException e) {
+                    isSupported = masterVersion.compareTo(MINIMUM_SUPPORTED_VERSION) >= 0;
+                }
+                if (isSupported) {
+                    future().setSuccess();
+                } else {
+                    future().setFailure(new RuntimeException(String.format("CRDT Redis version(%s) is too low", masterVersion)));
+                }
+                
             } catch (Exception e) {
                 getLogger().info("[handleResult] parse master version fail", e);
                 future().setFailure(e);
@@ -271,38 +279,6 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     }
 
     class PeerMasterCompareCommand extends AbstractCommand<Void> {
-        @Override
-        protected void doExecute() throws Exception {
-            boolean canCompareStrictly;
-            try {
-                canCompareStrictly = StringUtil.compareVersion(masterVersion, VERSION_SUPPORT_STRICTLY_CHECK) >= 0;
-            } catch (NumberFormatException e) {
-                canCompareStrictly = masterVersion.compareTo(VERSION_SUPPORT_STRICTLY_CHECK) >= 0;
-            }
-
-            if (canCompareStrictly) {
-
-                new PeerMasterStrictlyCompareCommand().execute().get();
-            } else {
-                throw new RedisRuntimeException("exist low version crdt redis");
-            }
-
-            future().setSuccess();
-        }
-
-        @Override
-        protected void doReset() {
-
-        }
-
-        @Override
-        public String getName() {
-            return getClass().getSimpleName();
-        }
-    }
-
-
-    class PeerMasterStrictlyCompareCommand extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {

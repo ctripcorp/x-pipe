@@ -65,6 +65,8 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
                     ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
                     peerEndPoint = new ProxyEnabledEndpoint(host, Integer.parseInt(port), protocol);
                     break;
+                default:
+                    logger.warn("[UnKnow CRDT Redis Proxy Protocol type] {}", proxyType);
             }
         }
         if (null == peerEndPoint)  {
