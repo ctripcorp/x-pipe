@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -8,13 +10,17 @@ import java.util.concurrent.ExecutorService;
  */
 public class RedisStartCmd extends AbstractForkProcessCmd {
 
-    private int port;
+    protected int port;
 
     private boolean asSentinel;
 
-    private String os;
+    protected String os;
 
-    private String arch;
+    protected String redisPath;
+
+    protected String arch;
+
+    protected String args = "";
 
     public RedisStartCmd(int port, ExecutorService executors) {
         this(port, false, executors);
@@ -27,26 +33,86 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
         this.os = System.getProperty("os.name");
         this.arch = System.getProperty("os.arch");
     }
+    /**
+     *  0： version1 == version2
+     *  1:  version1 > version2 (1.0.2 > 1.0.1, 1.0.1.1 > 1.0.1)
+     *  -1: version1 < version2
+     */
+    public static int compareVersion(String version1, String version2) {
+        if (version1.equals(version2)) {
+            return 0;
+        }
+        String[] v1Array = version1.split("\\.");
+        String[] v2Array = version2.split("\\.");
+        int v1Len = v1Array.length;
+        int v2Len = v2Array.length;
+        int baseLen = 0;
+        if(v1Len > v2Len){
+            baseLen = v2Len;
+        }else{
+            baseLen = v1Len;
+        }
+
+        for(int i=0;i<baseLen;i++){
+            if(v1Array[i].equals(v2Array[i])){
+                continue;
+            }else{
+                return Integer.parseInt(v1Array[i])>Integer.parseInt(v2Array[i]) ? 1 : -1;
+            }
+        }
+        if(v1Len != v2Len){
+            return v1Len > v2Len ? 1:-1;
+        }else {
+            return 0;
+        }
+    }
+
+    protected boolean isMacM1() {
+        return compareVersion(System.getProperty("os.version"), "11.4") >= 0;
+    }
+
+    protected boolean initExecuteParams() {
+        if (os.startsWith("Mac")) {
+            if(isMacM1()) {
+                //m1
+                redisPath = "src/test/resources/redis/Mac/redis-server-m1";
+            } else {
+                redisPath = "src/test/resources/redis/Mac/redis-server";
+            }
+            return true;
+        }
+        return false;
+    }
 
     @Override
     protected void doExecute() throws Exception {
-        String redisPath = null;
-        if (os.startsWith("Mac")) {
-            redisPath = "src/test/resources/redis/Mac/redis-server";
+        if(redisPath == null) {
+             if(!initExecuteParams()) {
+                throw new RedisRuntimeException("not support this system temporarily");
+            }
         }
-
+        execServer();
+    }
+    protected void execServer() throws Exception {
         if (null == redisPath) {
             future().setFailure(new IllegalArgumentException("no redis-server for os " + os));
         } else {
+            String url = String.format("./src/test/tmp/redis%d", port);
+
             execCmd(new String[]{
                     "/bin/sh",
                     "-c",
                     String.format("mkdir -p src/test/tmp;" +
-                            "touch src/test/tmp/redis%d.conf;" +
-                            "%s src/test/tmp/redis%d.conf --port %d --dir src/test/tmp %s",
-                            port, redisPath, port, port,
+                                    "mkdir -p %s;" +
+                                    "rm -f %s/dump.rdb;" +
+                                    "rm -f %s/redis.conf;" +
+                                    "touch %s/redis.conf;" +
+                                    "%s %s/redis.conf --port %d --logfile redis.log %s %s",
+                            url, url, url, url, redisPath, url, port,
                             asSentinel ? "--sentinel"
-                                    : String.format("--dbfilename dump%d.rdb --repl-backlog-size 100mb --appendonly no", port))
+                                    : String.format("--dir %s --dbfilename dump.rdb --repl-backlog-size 100mb --appendonly no", url),
+                            args)
+
             });
         }
     }
