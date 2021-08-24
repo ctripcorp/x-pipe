@@ -379,7 +379,7 @@ public class CurrentMeta implements Releasable {
 			return clusterType;
 		}
 
-		private RouteMeta chooseRoute(int orgId, List<RouteMeta> dstDcRoutes, ChooseRouteStrategy strategy) {
+		private RouteMeta chooseRoute(Integer orgId, List<RouteMeta> dstDcRoutes, ChooseRouteStrategy strategy) {
 			if(dstDcRoutes == null) return null;
 			List<RouteMeta> resultsCandidates = new LinkedList<>();
 			dstDcRoutes.forEach(routeMeta -> {
@@ -414,25 +414,19 @@ public class CurrentMeta implements Releasable {
 				List<RouteMeta> dcRoutes = MapUtils.getOrCreate(allDcRoutes, dcName, LinkedList::new);
 				dcRoutes.add(routeMeta);
 			});
-			int orgId;
-			if(OrgUtil.isDefaultOrg(clusterMeta.getOrgId())) {
-				orgId = 0;
-				logger.error("cluster orgId is defaultOrg: {}", clusterMeta.getOrgId());
-			} else {
-				orgId = clusterMeta.getOrgId();
-			}
+			Integer orgId = clusterMeta.getOrgId();
 			if(clusterType.equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
 				//ONE_WAY unused 
 				String dcId = clusterMeta.getActiveDc();
 				if(!currentDcId.equalsIgnoreCase(dcId)) {
 					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
-					if(route != null) allRoutes.put(dcId, route);
+					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
 				}
 			} else if(clusterType.equalsIgnoreCase(ClusterType.BI_DIRECTION.name())) {
 				for (String dcId : clusterMeta.getDcs().split("\\s*,\\s*")) {
 					if (currentDcId.equalsIgnoreCase(dcId)) continue;
 					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
-					if(route != null) allRoutes.put(dcId, route);
+					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
 				}
 			}
 			return allRoutes;
@@ -469,7 +463,7 @@ public class CurrentMeta implements Releasable {
 		}
 
 		public RouteMeta getRouteByDcId(String dcId) {
-			return this.outgoingRoutes.get(dcId);
+			return this.outgoingRoutes.get(dcId.toLowerCase());
 		}
 
 		public void setOutgoingRoutes(Map<String, RouteMeta> outgoingRoutes) {
