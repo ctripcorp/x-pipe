@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.integratedtest.console.app.ConsoleApp;
 import com.ctrip.xpipe.redis.integratedtest.console.app.MetaserverApp;
+import com.ctrip.xpipe.redis.integratedtest.console.cmd.CrdtRedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisKillCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.ServerStartCmd;
@@ -105,6 +106,22 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
         return redis;
     }
 
+    protected RedisStartCmd startCrdtRedis(int gid, int port) {
+        RedisStartCmd redis = new CrdtRedisStartCmd(gid, port, executors);
+        redis.execute(executors).addListener(redisFuture -> {
+            if (redisFuture.isSuccess()) {
+                logger.info("[startRedis] redis{} end {}", port, redisFuture.get());
+            } else {
+                logger.info("[startRedis] redis{} fail", port, redisFuture.cause());
+            }
+        });
+
+        redisPorts.add(port);
+        subProcessCmds.add(redis);
+        return redis;
+    }
+
+
     protected RedisStartCmd startSentinel(int port) {
         RedisStartCmd redis = new RedisStartCmd(port, true, executors);
         redis.execute(executors).addListener(redisFuture -> {
@@ -183,6 +200,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
             put("server.port", String.valueOf(port));
             put("cat.client.enabled", "false");
             put("spring.profiles.active", AbstractProfile.PROFILE_NAME_PRODUCTION);
+            put("meta.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
             put(DATA_CENTER_KEY, idc);
             put(KEY_CONSOLE_ADDRESS, console);
             put(KEY_ZK_ADDRESS, zk);
@@ -391,7 +409,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
     protected void cleanupConf() {
         String userDir = System.getProperty("user.dir");
         // TODO: override conf to be clean in sub-class
-        IntStream.of(6379, 7379, 5000, 5001, 5002, 17170, 17171, 17172).forEach(port -> {
+        IntStream.of(36379, 36380, 37379, 37380, 38379, 38380, 6379, 7379, 5000, 5001, 5002, 17170, 17171, 17172).forEach(port -> {
             File conf = new File(userDir + "/src/test/tmp/redis" + port + ".conf");
             try {
                 if (conf.exists()) conf.delete();

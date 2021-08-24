@@ -32,6 +32,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
+import com.ctrip.xpipe.redis.meta.server.meta.ChooseRouteStrategyTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
@@ -66,7 +67,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultCurrentMetaManagerTest.class,
 	ForwardInfoTest.class,
 	AtLeastOneCheckerTest.class,
-	CurrentMetaTest.class,
+	CurrentMetaTest.class, 
+	ChooseRouteStrategyTest.class,
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
 	DefaultKeeperElectorManagerTest.class,

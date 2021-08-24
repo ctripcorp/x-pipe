@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.crdt.replication.impl;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJob;
@@ -18,7 +19,10 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
@@ -41,9 +45,9 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
 
     private RedisMeta currentMaster = new RedisMeta().setGid(1L).setIp("127.0.0.1").setPort(6379);
 
-    private List<RedisMeta> allPeerMasters = new ArrayList<RedisMeta>() {{
-        add(new RedisMeta().setGid(2L).setIp("127.0.0.2").setPort(6379));
-        add(new RedisMeta().setGid(3L).setIp("127.0.0.3").setPort(6379));
+    private Map<String, RedisMeta> allPeerMasters = new ConcurrentHashMap<String, RedisMeta>() {{
+        put("oy", new RedisMeta().setGid(2L).setIp("127.0.0.2").setPort(6379));
+        put("rb",new RedisMeta().setGid(3L).setIp("127.0.0.3").setPort(6379));
     }};
 
     @Before
@@ -81,7 +85,9 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
         Assert.assertEquals(shardId, getInstanceField(job, "shardId"));
         Assert.assertEquals(Pair.of(currentMaster.getIp(), currentMaster.getPort()), getInstanceField(job, "currentMaster"));
         Assert.assertEquals(false, getInstanceField(job, "doDelete"));
-        Assert.assertEquals(allPeerMasters, getInstanceField(job, "upstreamPeerMasters"));
+        Assert.assertEquals(allPeerMasters.entrySet().stream().map(entry -> {
+            return new Pair(entry.getValue().getGid(), new DefaultEndPoint(entry.getValue().getIp(), entry.getValue().getPort()));
+        }).collect(Collectors.toList()), getInstanceField(job, "upstreamPeerMasters"));
     }
 
     private Object getInstanceField(Object instance, String fieldName) throws Exception {

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author chen.zhu
@@ -138,4 +139,13 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
     public String toString() {
         return content;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DefaultProxyConnectProtocol that = (DefaultProxyConnectProtocol) o;
+        return Objects.equals(content, that.content);
+    }
+    
 }
