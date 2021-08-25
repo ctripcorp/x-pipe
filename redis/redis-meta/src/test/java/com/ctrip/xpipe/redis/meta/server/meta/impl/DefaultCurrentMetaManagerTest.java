@@ -205,7 +205,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	}
 	
 	@Test
-	public void updateOneWayClusterMeta() {
+	public void testUpdateOneWayClusterMeta() {
 		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
 		currentMetaServerMetaManager.setSlotManager(slotManager);
 		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
@@ -264,7 +264,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	}
 
 	@Test
-	public void updateBiDirectionClusterMeta() {
+	public void testUpdateBiDirectionClusterMeta() {
 		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
 		currentMetaServerMetaManager.setSlotManager(slotManager);
 		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
@@ -335,7 +335,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	}
 
 	@Test
-	public void changeClusterType() {
+	public void testChangeClusterType() {
 		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
 		currentMetaServerMetaManager.setSlotManager(slotManager);
 		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
