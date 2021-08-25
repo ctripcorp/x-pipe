@@ -938,6 +938,58 @@
                 </pluginRepository>
             </pluginRepositories>
         </profile>
+        <profile>
+            <id>githubAction</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <!--                        <version>${build-plugin.jacoco.version}</version>-->
+                        <configuration>
+                            <destFile>target/coverage-reports/jacoco-unit.exec</destFile>
+                            <dataFile>target/coverage-reports/jacoco-unit.exec</dataFile>
+                            <includes>
+                                <include>**/service/**</include>
+                                <include>**/controller/**</include>
+                                <include>**/*Tests.java</include>
+                                <include>**/*Test.java</include>
+                                <!--<include>**/service/impl/*.class</include>-->
+                            </includes>
+                        </configuration>
+                        <executions>
+                            <!-- Prepares the property pointing to the JaCoCo runtime agent
+                            which is passed as VM argument when Maven the Surefire plugin is executed. -->
+                            <execution>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <!-- Ensures that the code coverage report is created after
+                            all tests have been run. -->
+                            <execution>
+                                <id>generate-report</id>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>cobertura-maven-plugin</artifactId>
+                        <version>${cobertura-maven-plugin.version}</version>
+                        <configuration>
+                            <formats>
+                                <format>html</format>
+                                <format>xml</format>
+                            </formats>
+                            <check />
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <distributionManagement>
