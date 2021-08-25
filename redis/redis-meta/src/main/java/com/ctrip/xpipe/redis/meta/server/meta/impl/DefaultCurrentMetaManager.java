@@ -298,7 +298,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			throw new IllegalArgumentException(String.format("unknown args(%s):%s", args.getClass(), args));
 		}
 	}
-
+	
+	@VisibleForTesting
+	protected void setCurrentClusterServer(CurrentClusterServer currentClusterServer) {
+		this.currentClusterServer = currentClusterServer;
+	}
+	
 	@VisibleForTesting
 	protected void dcMetaChange(DcMetaComparator comparator) {
 		
