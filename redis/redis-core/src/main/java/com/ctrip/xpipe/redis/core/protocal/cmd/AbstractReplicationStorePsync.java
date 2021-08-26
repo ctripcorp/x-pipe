@@ -35,8 +35,10 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		
 		String replIdRequest = null;
 		long offset = -1;
-		
-		if(currentReplicationStore == null){
+		if (useKeeperPsync()) {
+			replIdRequest = "?";
+			offset = KEEPER_PARTIAL_SYNC_OFFSET;
+		} else if(currentReplicationStore == null){
 			replIdRequest = "?";
 			offset = -1;
 		}else{
@@ -46,6 +48,7 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 		return new Pair<String, Long>(replIdRequest, offset);
 	}
 
+	protected abstract boolean useKeeperPsync();
 
 	protected abstract ReplicationStore getCurrentReplicationStore();
 	
@@ -69,8 +72,21 @@ public abstract class AbstractReplicationStorePsync extends AbstractPsync {
 	}
 
 	@Override
+	protected void doOnKeeperContinue(String replId, long beginOffset) throws IOException {
+		try {
+			if(currentReplicationStore == null || !currentReplicationStore.isFresh()){
+				throw new IllegalStateException("keeper-continue to non fresh repl store");
+			}
+			currentReplicationStore.continueFromOffset(replId, beginOffset);
+			super.doOnKeeperContinue(replId, beginOffset);
+		} catch (IOException e) {
+			getLogger().error("[doOnKeeperContinue]" + replId + ":" + beginOffset, e);
+		}
+	}
+
+	@Override
 	protected RdbBulkStringParser createRdbReader() {
-		
+
 		inOutPayloadReplicationStore = new InOutPayloadReplicationStore();
 		RdbBulkStringParser rdbReader = new RdbBulkStringParser(inOutPayloadReplicationStore);
 		return rdbReader;

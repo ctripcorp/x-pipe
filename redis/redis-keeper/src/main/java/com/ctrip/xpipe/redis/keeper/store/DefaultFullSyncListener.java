@@ -94,6 +94,11 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
+	public Long processedOffset() {
+		return redisSlave.getAck();
+	}
+
+	@Override
 	public String toString() {
 		return String.format("%s:%s", getClass().getSimpleName(), redisSlave);
 	}

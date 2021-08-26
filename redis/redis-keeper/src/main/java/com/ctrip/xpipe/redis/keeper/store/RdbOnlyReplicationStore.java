@@ -101,6 +101,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, EofType eofType, long masterOffset, String expectedReplId)
 					throws IOException {
 				throw new UnsupportedOperationException();
@@ -111,6 +116,10 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			public void setRdbFileSize(long rdbFileSize) throws IOException {
 			}
 
+			@Override
+			public void releaseRdbFile(String rdbFile) throws IOException {
+				throw new UnsupportedOperationException();
+			}
 		};
 	}
 
@@ -199,6 +208,16 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void shiftReplicationId(String newReplId) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void continueFromOffset(String replId, long continueOffset) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long lastReplDataUpdatedAt() {
 		throw new UnsupportedOperationException();
 	}
 }

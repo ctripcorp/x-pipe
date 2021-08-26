@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperConfig {
 	
 	public static final String KEY_REPLICATION_STORE_GC_INTERVAL_SECONDS = "replicationstore.gc.interval.seconds";
+	public static final String KEY_REPLICATION_STORE_CMD_KEEP_TIME_SECONDS = "replicationstore.commandfile.keeptime.seconds";
 	public static final String KEY_REPLICATION_STORE_COMMANDFILE_SIZE = "replicationstore.commandfile.size";
 	public static final String KEY_REPLICATION_STORE_COMMANDFILE_NUM_KEEP = "replicationstore.commandfile.num.keep";
 	public static final String KEY_REPLICATION_STORE_MINITIME_GC_AFTERCREATE = "replicationstore.mintime.gc.aftercreate";
@@ -34,6 +35,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KYE_REPLICATION_TRAFFIC_LOW_WATER_MARK = "keeper.repl.traffic.low.water.mark";
 
 	private static String KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI = "keeper.repl.down.safe.interval.milli";
+
+	private static String KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN = "keeper.repl.keep.seconds.after.down";
 
 	private static String KEY_META_SERVER_ADDRESS = "meta.server.address";
 
@@ -74,6 +77,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getReplicationStoreGcIntervalSeconds() {
 		return getIntProperty(KEY_REPLICATION_STORE_GC_INTERVAL_SECONDS, 2);
+	}
+
+	@Override
+	public int getReplicationStoreCommandFileKeepTimeSeconds() {
+		return getIntProperty(KEY_REPLICATION_STORE_CMD_KEEP_TIME_SECONDS, 2 * 86400);
 	}
 
 	@Override
@@ -140,5 +148,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getReplDownSafeIntervalMilli() {
 		return getLongProperty(KYE_REPLICATION_DOWN_SAFE_INTERVAL_MILLI, 5L * 60 * 1000); // 5min
+	}
+
+	@Override
+	public long getMaxReplKeepSecondsAfterDown() {
+		return getLongProperty(KYE_REPLICATION_KEEP_SECONDS_AFTER_DOWN, 3600L);
 	}
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.store.CommandsGuarantee;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
@@ -23,11 +24,16 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
+import java.util.stream.Collectors;
 
 /**
  * @author qing.gu
@@ -49,7 +55,9 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	private final int maxFileSize;
 	
 	private final IntSupplier fileNumToKeep;
-	private final int minTimeMilliToGcAfterModified; 
+	private final int minTimeMilliToGcAfterModified;
+
+	private final IntSupplier maxTimeSecondKeeperCmdFileAfterModified;
 
 	private final FilenameFilter fileFilter;
 
@@ -64,15 +72,20 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	
 	private CommandStoreDelay commandStoreDelay;
 
+	private List<CommandsGuarantee> commandsGuarantees = new CopyOnWriteArrayList<>();
+
+	private ReentrantLock gcLock = new ReentrantLock();
+
 	public DefaultCommandStore(File file, int maxFileSize, KeeperMonitor keeperMonitor) throws IOException {
-		this(file, maxFileSize, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, keeperMonitor);
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, keeperMonitor);
 	}
 
-	public DefaultCommandStore(File file, int maxFileSize, int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold, KeeperMonitor keeperMonitor) throws IOException {
+	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified, int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold, KeeperMonitor keeperMonitor) throws IOException {
 		
 		this.baseDir = file.getParentFile();
 		this.fileNamePrefix = file.getName();
 		this.maxFileSize = maxFileSize;
+		this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
 		this.fileNumToKeep = fileNumToKeep;
 		this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
 		this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
@@ -491,15 +504,64 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 	}
 
 	@Override
-	public void gc() {
-		
-		for (File cmdFile : allFiles()) {
-			long fileStartOffset = extractStartOffset(cmdFile);
-			if (canDeleteCmdFile(lowestReadingOffset(), fileStartOffset, cmdFile.length(),
-					cmdFile.lastModified())) {
-				logger.info("[GC] delete command file {}", cmdFile);
-				cmdFile.delete();
+	public boolean retainCommands(CommandsGuarantee commandsGuarantee) {
+		try {
+			gcLock.lock();
+			long needCmdOffset = commandsGuarantee.getNeededCommandOffset();
+			long minOffset = lowestAvailableOffset();
+			if (minOffset <= needCmdOffset) {
+				this.commandsGuarantees.add(commandsGuarantee);
+				return true;
 			}
+		} finally {
+			gcLock.unlock();
+		}
+
+		return false;
+	}
+
+	private void timeoutGuarantees() {
+		List<CommandsGuarantee> timeoutGuarantees = commandsGuarantees.stream().filter(CommandsGuarantee::isTimeout).collect(Collectors.toList());
+		commandsGuarantees.removeAll(timeoutGuarantees);
+	}
+
+	private void finishGuarantees() {
+		List<CommandsGuarantee> finishGuarantees = commandsGuarantees.stream().filter(CommandsGuarantee::isFinish).collect(Collectors.toList());
+		commandsGuarantees.removeAll(finishGuarantees);
+	}
+
+	private long minGuaranteeOffset() {
+		long minOffset = Long.MAX_VALUE;
+		for (CommandsGuarantee commandsGuarantee : commandsGuarantees) {
+			long offset = commandsGuarantee.getNeededCommandOffset();
+			minOffset = Long.min(offset, minOffset);
+		}
+
+		return minOffset;
+	}
+
+	@Override
+	public long getCommandsLastUpdatedAt() {
+		return cmdFileCtxRef.get().getLastModified();
+	}
+
+	@Override
+	public void gc() {
+		try {
+			gcLock.lock();
+			timeoutGuarantees();
+			finishGuarantees();
+
+			for (File cmdFile : allFiles()) {
+				long fileStartOffset = extractStartOffset(cmdFile);
+				if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
+						cmdFile.lastModified())) {
+					logger.info("[GC] delete command file {}", cmdFile);
+					cmdFile.delete();
+				}
+			}
+		} finally {
+			gcLock.unlock();
 		}
 	}
 	
@@ -513,11 +575,17 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore {
 		}
 
 		Date now = new Date();
+		long maxMilliKeepCmd = TimeUnit.SECONDS.toMillis(maxTimeSecondKeeperCmdFileAfterModified.getAsInt());
 		boolean time = now.getTime() - lastModified >= minTimeMilliToGcAfterModified;
+		boolean fresh = now.getTime() - lastModified <= maxMilliKeepCmd;
 
 		logger.debug("[canDeleteCmdFile][time]{}, {} - {} > {}", time, now, new Date(lastModified), minTimeMilliToGcAfterModified);
 		if(!time){
 			return false;
+		}
+		logger.debug("[canDeleteCmdFile][fresh]{}, {} - {} < {}", fresh, now, new Date(lastModified), maxMilliKeepCmd);
+		if (!fresh) {
+			return true;
 		}
 
 		long totalLength = totalLength();

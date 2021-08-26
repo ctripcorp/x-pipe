@@ -86,6 +86,11 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 					public void beforeCommand() {
 
 					}
+
+					@Override
+					public Long processedOffset() {
+						return null;
+					}
 				});
 			} catch (IOException e) {
 				future.setFailure(e);

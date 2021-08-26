@@ -5,6 +5,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -27,8 +28,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.*;
 
 /**
  * @author wenchao.meng
@@ -45,6 +47,9 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
     @Mock
     public RedisKeeperServer redisKeeperServer;
+
+    @Mock
+    private ReplicationStore replicationStore;
 
     public DefaultRedisSlave redisSlave;
 
@@ -214,6 +219,26 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
         logger.info("{}, {}", listenerCount, notifyCount);
         Assert.assertEquals(listenerCount.get(), notifyCount.get());
+    }
+
+    @Test
+    public void testSlaveClosedWhenSendCommandFail() throws Exception {
+        when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(anyLong(), any());
+
+        redisSlave.beginWriteRdb(new LenEofType(1000), 0);
+        Assert.assertTrue(redisSlave.isOpen());
+        redisSlave.sendCommandForFullSync();
+        waitConditionUntilTimeOut(() -> !redisSlave.isOpen());
+    }
+
+    @Test
+    public void testMultiBeginWritingCmds() throws Exception {
+        when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        redisSlave.beginWriteCommands(0L);
+        redisSlave.beginWriteCommands(0L);
+
+        verify(replicationStore).addCommandsListener(anyLong(), any());
     }
 
 }

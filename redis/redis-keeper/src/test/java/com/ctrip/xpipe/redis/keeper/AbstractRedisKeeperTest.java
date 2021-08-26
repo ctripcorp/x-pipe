@@ -208,6 +208,11 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
+					public Long processedOffset() {
+						return null;
+					}
+
+					@Override
 					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
 						
 						try {
