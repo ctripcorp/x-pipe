@@ -61,6 +61,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	RedisMaster getRedisMaster();
 	
 	void promoteSlave(String ip, int port) throws RedisSlavePromotionException;
+
+	void closeSlaves(String reason);
 	
 	public static enum PROMOTION_STATE{
 		
@@ -88,4 +90,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	KeeperMonitor getKeeperMonitor();
 
 	void processCommandSequentially(Runnable runnable);
+
+	void tryConnectMaster();
+
+	int getTryConnectMasterCnt();
 }

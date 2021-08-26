@@ -31,4 +31,7 @@ public interface PsyncObserver {
 	void endWriteRdb();
 	
 	void onContinue(String requestReplId, String responseReplId);
+
+	void onKeeperContinue(String replId, long beginOffset);
+
 }

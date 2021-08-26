@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng
@@ -35,6 +36,8 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	private volatile PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 
 	private ScheduledFuture<?> replConfFuture;
+
+	private AtomicReference<Psync> currentPsync = new AtomicReference<>();
 
 	public DefaultRedisMasterReplication(RedisMaster redisMaster, RedisKeeperServer redisKeeperServer,
 										 NioEventLoopGroup nioEventLoopGroup, ScheduledExecutorService scheduled,
@@ -110,6 +113,23 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	}
 
+	@Override
+	protected void doDispose() throws Exception {
+		tryCloseCurrentPsync();
+		super.doDispose();
+	}
+
+	private void tryCloseCurrentPsync() {
+		Psync psync = currentPsync.get();
+		if (null != psync) {
+			try {
+				psync.close();
+			} catch (IOException e) {
+				logger.info("[tryCloseCurrentPsync][fail]", e);
+			}
+		}
+	}
+
 	public void setMasterConnectRetryDelaySeconds(int masterConnectRetryDelaySeconds) {
 		this.masterConnectRetryDelaySeconds = masterConnectRetryDelaySeconds;
 	}
@@ -166,10 +186,15 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected Psync createPsync() {
-		
-		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+
+		boolean allowKeeperPsync = redisKeeperServer.getTryConnectMasterCnt() <= 1;
+		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), allowKeeperPsync, scheduled);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
+
+		tryCloseCurrentPsync();
+		currentPsync.set(psync);
+
 		return psync;
 	}
 	

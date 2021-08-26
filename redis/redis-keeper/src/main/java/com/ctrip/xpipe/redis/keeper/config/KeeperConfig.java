@@ -25,6 +25,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getReplicationStoreGcIntervalSeconds();
 
+	int getReplicationStoreCommandFileKeepTimeSeconds();
+
 	int getReplicationStoreCommandFileNumToKeep();
 
 	/**
@@ -52,4 +54,7 @@ public interface KeeperConfig extends CoreConfig{
     boolean isKeeperRateLimitOpen();
 
     long getReplDownSafeIntervalMilli();
+
+    long getMaxReplKeepSecondsAfterDown();
+
 }

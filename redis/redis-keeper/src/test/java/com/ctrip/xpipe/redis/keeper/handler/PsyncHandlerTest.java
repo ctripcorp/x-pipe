@@ -31,6 +31,7 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 	public static final String PARTIAL = "doPartialSync";
 	public static final String FULL = "doFullSync";
 	public static final String WAIT = "waitForoffset";
+	public static final String KEEPER_PARTIAL = "doKeeperPartialSync";
 	
 	
 	private String replId = RunidGenerator.DEFAULT.generateRunid();
@@ -79,6 +80,11 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 			@Override
 			protected void waitForoffset(String[] args, RedisSlave redisSlave, String replId, Long offsetRequest) {
 				function = WAIT;
+			}
+
+			@Override
+			protected void doKeeperPartialSync(RedisSlave redisSlave, String replId, long continueOffset) {
+				function = KEEPER_PARTIAL;
 			}
 		};
 	}
@@ -183,4 +189,21 @@ public class PsyncHandlerTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(PARTIAL, function);
 
 	}
+
+	@Test
+	public void testKeeperPsync() {
+		String args[] = new String[]{
+				"?",
+				"-2"
+		};
+
+		when(redisSlave.isKeeper()).thenReturn(true);
+		psyncHandler.innerDoHandle(args, redisSlave, redisKeeperServer);
+		Assert.assertEquals(KEEPER_PARTIAL, function);
+
+		when(keeperRepl.replId()).thenReturn(null);
+		psyncHandler.innerDoHandle(args, redisSlave, redisKeeperServer);
+		Assert.assertEquals(FULL, function);
+	}
+
 }

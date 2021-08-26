@@ -122,7 +122,15 @@ public class LeakyBucketBasedMasterReplicationListener implements RedisMasterRep
 
     @Override
     public void onContinue(String requestReplId, String responseReplId) {
+        doOnContinue();
+    }
 
+    @Override
+    public void onKeeperContinue(String replId, long beginOffset) {
+        doOnContinue();
+    }
+
+    private void doOnContinue() {
         if(holdToken.get()){
             tryDelayReleaseToken();
         }

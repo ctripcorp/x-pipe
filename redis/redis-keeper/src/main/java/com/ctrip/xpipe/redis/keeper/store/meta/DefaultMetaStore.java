@@ -70,6 +70,21 @@ public class DefaultMetaStore extends AbstractMetaStore{
 	}
 
 	@Override
+	public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			metaDup.setReplId(replId);
+			metaDup.setBeginOffset(beginOffset);
+			metaDup.setCmdFilePrefix(cmdFilePrefix);
+			clearRdb(metaDup);
+
+			saveMeta(metaDup);
+			return metaDup;
+		}
+	}
+
+	@Override
 	public void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid,
 			long newMasterReplOffset) throws IOException {
 		throw new UnsupportedOperationException();
@@ -102,4 +117,30 @@ public class DefaultMetaStore extends AbstractMetaStore{
 			return metaDup;
 		}
 	}
+
+	@Override
+	public void releaseRdbFile(String rdbFile) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta currentMeta = metaRef.get();
+			String currentRdbFile = currentMeta.getRdbFile();
+
+			if (null == currentRdbFile) {
+				logger.info("[releaseRdbFile][{}][already no rdb]", rdbFile);
+			} else if (!currentRdbFile.equals(rdbFile)) {
+				logger.warn("[releaseRdbFile][{}] current {}, skip", rdbFile, currentRdbFile);
+			} else {
+				ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+				clearRdb(metaDup);
+				saveMeta(metaDup);
+			}
+		}
+	}
+
+	private void clearRdb(ReplicationStoreMeta metaDup) {
+		metaDup.setRdbFile(null);
+		metaDup.setRdbEofMark(null);
+		metaDup.setRdbFileSize(0);
+		metaDup.setRdbLastOffset(null);
+	}
+
 }

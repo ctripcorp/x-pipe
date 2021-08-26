@@ -8,7 +8,9 @@ import org.apache.commons.exec.ExecuteException;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wenchao.meng
@@ -18,7 +20,9 @@ import java.util.List;
 public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	
 	
-	private KeeperMeta activeDcKeeperActive;
+	protected KeeperMeta activeDcKeeperActive;
+
+	protected Map<String, LeaderElectorManager> leaderElectorManagers = new HashMap<>();
 	
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
@@ -93,6 +97,18 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		}
 	}
 
+	protected void makeBackupDcKeeperRight(String dc) throws Exception {
+		for(DcMeta backupDc : backupDcs()){
+			if (!backupDc.getId().equalsIgnoreCase(dc)) continue;
+
+			List<KeeperMeta> backupKeepers = getDcKeepers(backupDc.getId(), getClusterId(), getShardId());
+			KeeperStateChangeJob job = new KeeperStateChangeJob(backupKeepers, new Pair<String, Integer>(
+					activeDcKeeperActive.getIp(), activeDcKeeperActive.getPort()), null,
+					getXpipeNettyClientKeyedObjectPool(), scheduled, executors);
+			job.execute().sync();
+		}
+	}
+
 	protected void startRedises() throws ExecuteException, IOException{
 		
 		for(DcMeta dcMeta : getDcMetas()){
@@ -107,6 +123,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		for(DcMeta dcMeta : getDcMetas()){
 			
 			LeaderElectorManager leaderElectorManager = createLeaderElectorManager(dcMeta);
+			leaderElectorManagers.put(dcMeta.getId(), leaderElectorManager);
 			for(KeeperMeta keeperMeta : getDcKeepers(dcMeta.getId(), getClusterId(), getShardId())){
 				startKeeper(keeperMeta, leaderElectorManager);
 			}
