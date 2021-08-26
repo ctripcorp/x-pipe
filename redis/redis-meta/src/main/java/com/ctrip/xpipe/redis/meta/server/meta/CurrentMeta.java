@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.HashCodeChooseRouteStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -415,16 +416,17 @@ public class CurrentMeta implements Releasable {
 				dcRoutes.add(routeMeta);
 			});
 			Integer orgId = clusterMeta.getOrgId();
-			if(clusterType.equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
-				//ONE_WAY unused 
-				String dcId = clusterMeta.getActiveDc();
-				if(!currentDcId.equalsIgnoreCase(dcId)) {
+			if(ClusterType.lookup(clusterType).supportMultiActiveDC()) {
+				String dcs = clusterMeta.getDcs();
+				if(StringUtil.isEmpty(dcs)) return allRoutes;
+				for (String dcId : dcs.split("\\s*,\\s*")) {
+					if (currentDcId.equalsIgnoreCase(dcId)) continue;
 					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
 					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
 				}
-			} else if(clusterType.equalsIgnoreCase(ClusterType.BI_DIRECTION.name())) {
-				for (String dcId : clusterMeta.getDcs().split("\\s*,\\s*")) {
-					if (currentDcId.equalsIgnoreCase(dcId)) continue;
+			} else {
+				String dcId = clusterMeta.getActiveDc();
+				if(!currentDcId.equalsIgnoreCase(dcId)) {
 					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
 					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
 				}

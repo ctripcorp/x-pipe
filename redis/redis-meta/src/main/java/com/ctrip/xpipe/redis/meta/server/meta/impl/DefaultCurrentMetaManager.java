@@ -181,6 +181,20 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		//cluster type changed should recreate CurrentClusterMeta
 		return !ObjectUtils.equals(current.getType(), future.getType());
 	}
+	
+	private boolean needUpdateClusterRoutesWhenClusterChange(ClusterMeta current, ClusterMeta future) {
+		ClusterType clusterType = ClusterType.lookup(future.getType());
+		if(clusterType == null) {
+			logger.error("[unknown cluster type] cluster id: {}, type :{}", future.getId(), future.getType());
+			return false;
+		}
+		if(clusterType.supportMultiActiveDC()) {
+			//arraylist join ","  
+			return !ObjectUtils.equals(current.getDcs(), future.getDcs());
+		} else {
+			return !ObjectUtils.equals(current.getActiveDc(), future.getActiveDc());
+		}
+	}
 
 	private void handleClusterChanged(ClusterMetaComparator clusterMetaComparator) {
 		String clusterId = clusterMetaComparator.getCurrent().getId();
@@ -192,7 +206,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 				addCluster(clusterId);
 			} else {
 				currentMeta.changeCluster(clusterMetaComparator);
-				if(!current.getDcs().equals(future.getDcs())) {
+				if(needUpdateClusterRoutesWhenClusterChange(current, future)) {
 					clusterRoutesChange(clusterId);
 				}
 				notifyObservers(clusterMetaComparator);
@@ -298,7 +312,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			throw new IllegalArgumentException(String.format("unknown args(%s):%s", args.getClass(), args));
 		}
 	}
-
+	
+	@VisibleForTesting
+	protected void setCurrentClusterServer(CurrentClusterServer currentClusterServer) {
+		this.currentClusterServer = currentClusterServer;
+	}
+	
 	@VisibleForTesting
 	protected void dcMetaChange(DcMetaComparator comparator) {
 		
