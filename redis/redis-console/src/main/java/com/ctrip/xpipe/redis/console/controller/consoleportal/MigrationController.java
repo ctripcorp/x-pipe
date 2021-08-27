@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -95,16 +97,22 @@ public class MigrationController extends AbstractConsoleController {
 				migrationService.findByOperator(operator, size, size * page), size, page, totalSize);
 	}
 
-	@RequestMapping(value = "/migration/events/by/migration/status", method = RequestMethod.GET)
-	public PageModal<MigrationModel> getEventAndClusterByMigrationStatus(@RequestParam String status, @RequestParam Long size, @RequestParam Long page) {
+	@RequestMapping(value = "/migration/events/by/migration/status/type", method = RequestMethod.GET)
+	public PageModal<MigrationModel> getEventAndClusterByMigrationStatus(@RequestParam String type, @RequestParam Long size, @RequestParam Long page) {
 		if (null == size || size <=0) size = 10L;
 		if (null == page || page < 0) page = 0L;
 
-		long totalSize = migrationService.countAllByStatus(status);
+		List<MigrationStatus> statuses = MigrationStatus.getByType(type);
+		long totalSize = 0;
+		for (MigrationStatus status : statuses) {
+			totalSize += migrationService.countAllByStatus(status.toString());
+		}
 		if (page * size >= totalSize) return new PageModal<>(Collections.emptyList(), size, page, totalSize);
-
-		return new PageModal<>(
-				migrationService.findByStatus(status, size, size * page), size, page, totalSize);
+		List<MigrationModel> models = Lists.newArrayList();
+		for (MigrationStatus status : statuses) {
+		    models.addAll(migrationService.findByStatus(status.toString(), size, size * page));
+		}
+		return new PageModal<>(models, size, page, totalSize);
 	}
 
 	@RequestMapping(value = "/migration/events/all", method = RequestMethod.GET) 

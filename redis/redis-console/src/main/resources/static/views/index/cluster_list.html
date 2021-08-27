@@ -7,7 +7,7 @@
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showUnhealthy')">问题集群</a>
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showErrorMigrating')">迁移异常集群</a>
                     <a type="button" class="btn btn-info btn-xs" ng-click="showClusters('showMigrating')">迁移中集群</a>
-                    <div ng-if="showUnhealthy || showErrorMigrating || showMigrating">
+                    <div>
                         <a class="btn btn-round btn-xs" ng-click="selectDisplayed()">当前页全选</a>
                         <a class="btn btn-round btn-xs" ng-click="selectFiltered()">跨页全选</a>
                         <a class="btn btn-round btn-xs" ng-click="selectAll()">无视筛选条件全选</a>
@@ -16,6 +16,7 @@
                 </div>
                 <div class="col-md-4 text-right" ng-if="showAll">
                     <a ng-if="showAll" type="button" class="btn btn-info btn-xs" href="/#/cluster_form?clusterName=&type=create">创建Cluster</a>
+                    <a class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
                 </div>
                 <div class="col-md-4 text-right" ng-if="showUnhealthy">
                     <a class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
@@ -33,7 +34,7 @@
 
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat-start="cluster in $data">
-                <td ng-if="showUnhealthy || showErrorMigrating || showMigrating">
+                <td>
                     <input type="checkbox" ng-checked="cluster.isChecked" ng-model="cluster.isChecked">
                 </td>
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">

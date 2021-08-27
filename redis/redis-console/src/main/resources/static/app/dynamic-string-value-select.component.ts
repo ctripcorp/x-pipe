@@ -20,7 +20,7 @@ export class DynamicStringValueSelectComponent implements OnInit {
 
     onClusterTypeChange(event) {
         console.log("DynamicStringValueSelectComponent: selected", event);
-        this.valueChange.emit(event.value);
-        this.selected.emit(event.value);
+        this.valueChange.emit(event.target.value);
+        this.selected.emit(event.target.value);
     }
 }
