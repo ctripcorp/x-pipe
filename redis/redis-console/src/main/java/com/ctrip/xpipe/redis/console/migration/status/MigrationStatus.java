@@ -4,6 +4,9 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author shyin
@@ -86,5 +89,9 @@ public enum MigrationStatus {
 
 	public String getType() {
 		return type;
+	}
+
+	public static List<MigrationStatus> getByType(String type) {
+		return Arrays.stream(MigrationStatus.values()).filter(s -> s.type.equals(type)).collect(Collectors.toList());
 	}
 }
