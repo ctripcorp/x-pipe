@@ -167,6 +167,20 @@ public class CRedisService extends AbstractOuterClientService {
 		});
 	}
 
+	@Override
+	public DcMeta getOutClientDcMeta(String dc) throws Exception {
+		return catTransactionMonitor.logTransaction(TYPE, String.format("getIdcClusters:%s", dc), new Callable<DcMeta>() {
+			@Override
+			public DcMeta call() throws Exception {
+
+				String address = CREDIS_SERVICE.QUERY_DC_META.getRealPath(credisConfig.getCredisServiceAddress());
+				DcMeta dcMeta = restOperations.getForObject(address + "?idc={dc}", DcMeta.class, dc);
+				dcMeta.mapIdc(DC_TRANSFORM_DIRECTION.OUTER_TO_INNER);
+				return dcMeta;
+			}
+		});
+	}
+
 	String convertDcName(String dc) {
 		return DcMapper.INSTANCE.getDc(dc);
 	}

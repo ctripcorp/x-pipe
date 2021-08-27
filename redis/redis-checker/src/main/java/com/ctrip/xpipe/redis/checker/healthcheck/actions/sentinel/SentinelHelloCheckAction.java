@@ -155,7 +155,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             try {
                 RedisInstanceInfo info = redisInstanceToCheck.getCheckInfo();
                 if (redisInstanceToCheck.getCheckInfo().isInActiveDc()) {
-                    logger.info("[{}-{}+{}]{} instance {} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
+                    logger.debug("[{}-{}+{}]{} instance {} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
                             info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
                 }
                 redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {

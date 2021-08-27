@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * for client router system
@@ -37,6 +39,8 @@ public interface OuterClientService extends Ordered{
 	MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName, InetSocketAddress newMaster) throws OuterClientException;
 
 	ClusterInfo getClusterInfo(String clusterName) throws Exception;
+
+	DcMeta getOutClientDcMeta(String dc) throws Exception;
 
 	abstract class AbstractInfo {
 
@@ -334,4 +338,291 @@ public interface OuterClientService extends Ordered{
 			this.status = status;
 		}
 	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class DcMeta extends AbstractInfo{
+		private String dcName;
+
+		private long regionId;
+
+		private Map<String, ClusterMeta> clusters = new ConcurrentHashMap<>();
+
+		public String getDcName() {
+			return dcName;
+		}
+
+		public void setDcName(String dcName) {
+			this.dcName = dcName;
+		}
+
+		public long getRegionId() {
+			return regionId;
+		}
+
+		public void setRegionId(long regionId) {
+			this.regionId = regionId;
+		}
+
+		public Map<String, ClusterMeta> getClusters() {
+			return clusters;
+		}
+
+		public void setClusters(Map<String, ClusterMeta> clusters) {
+			this.clusters = clusters;
+		}
+
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			dcName = direction.transform(dcName);
+			clusters.values().forEach(clusterMeta -> {
+				clusterMeta.mapIdc(direction);
+			});
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class ClusterMeta extends AbstractInfo{
+
+		private String name;
+
+		private String lastModifiedTime;
+
+		private String activeIDC;
+
+		private ClusterType clusterType;
+
+		private Integer orgId;
+
+		private String ownerEmails;
+
+		private Map<String, GroupMeta> groups = new ConcurrentHashMap<>();
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getLastModifiedTime() {
+			return lastModifiedTime;
+		}
+
+		public void setLastModifiedTime(String lastModifiedTime) {
+			this.lastModifiedTime = lastModifiedTime;
+		}
+
+		public String getActiveIDC() {
+			return activeIDC;
+		}
+
+		public void setActiveIDC(String activeIDC) {
+			this.activeIDC = activeIDC;
+		}
+
+		public ClusterType getClusterType() {
+			return clusterType;
+		}
+
+		public void setClusterType(ClusterType clusterType) {
+			this.clusterType = clusterType;
+		}
+
+		public Map<String, GroupMeta> getGroups() {
+			return groups;
+		}
+
+		public void setGroups(Map<String, GroupMeta> groups) {
+			this.groups = groups;
+		}
+
+		public Integer getOrgId() {
+			return orgId;
+		}
+
+		public void setOrgId(Integer orgId) {
+			this.orgId = orgId;
+		}
+
+		public String getOwnerEmails() {
+			return ownerEmails;
+		}
+
+		public void setOwnerEmails(String ownerEmails) {
+			this.ownerEmails = ownerEmails;
+		}
+
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			activeIDC = direction.transform(activeIDC);
+
+			if (groups != null) {
+				groups.values().forEach(groupMeta -> groupMeta.mapIdc(direction));
+			}
+		}
+
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class GroupMeta {
+
+		private String clusterName;
+
+		private String groupName;
+
+		private List<RedisMeta> redises;
+
+		public String getClusterName() {
+			return clusterName;
+		}
+
+		public void setClusterName(String clusterName) {
+			this.clusterName = clusterName;
+		}
+
+		public String getGroupName() {
+			return groupName;
+		}
+
+		public void setGroupName(String groupName) {
+			this.groupName = groupName;
+		}
+
+		public List<RedisMeta> getRedises() {
+			return redises;
+		}
+
+		public void setRedises(List<RedisMeta> redises) {
+			this.redises = redises;
+		}
+
+		public RedisMeta getMaster() {
+			for (RedisMeta redisMeta : redises) {
+				if (redisMeta.master)
+					return redisMeta;
+			}
+			return null;
+		}
+
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+
+			if (redises != null) {
+				redises.forEach(redisMeta -> redisMeta.mapIdc(direction));
+			}
+		}
+
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class RedisMeta {
+
+		private String host;
+
+		private int port;
+
+		private boolean master;
+
+		private InstanceStatus status;
+
+		private String idc;
+
+		public void mapIdc(DC_TRANSFORM_DIRECTION direction){
+			idc = direction.transform(idc);
+		}
+
+		public String getHost() {
+			return host;
+		}
+
+		public void setHost(String host) {
+			this.host = host;
+		}
+
+		public int getPort() {
+			return port;
+		}
+
+		public void setPort(int port) {
+			this.port = port;
+		}
+
+		public boolean isMaster() {
+			return master;
+		}
+
+		public void setMaster(boolean master) {
+			this.master = master;
+		}
+
+		public InstanceStatus getStatus() {
+			return status;
+		}
+
+		public void setStatus(InstanceStatus status) {
+			this.status = status;
+		}
+
+		public String getIdc() {
+			return idc;
+		}
+
+		public void setIdc(String idc) {
+			this.idc = idc;
+		}
+
+	}
+
+	enum ClusterType {
+		SINGEL_DC(0),
+		LOCAL_DC(2),
+		XPIPE_ONE_WAY(3),
+		XPIPE_BI_DIRECT(4),
+		TROCKS(5);
+
+		private Integer intVal;
+
+		ClusterType(int intVal) {
+			this.intVal = intVal;
+		}
+
+		public Integer getIntVal() {
+			return intVal;
+		}
+
+		public static ClusterType valueOf(Integer intVal){
+			for (ClusterType type : ClusterType.values()) {
+				if (type.getIntVal().equals(intVal)) {
+					return type;
+				}
+			}
+			return SINGEL_DC;
+		}
+	}
+
+	enum InstanceStatus {
+		MANUAL_MARKDOWN(-2),
+		INACTIVE(0),
+		ACTIVE(1);
+
+		private Integer intVal;
+
+		InstanceStatus(int intVal) {
+			this.intVal = intVal;
+		}
+
+		public Integer intValue() {
+			return intVal;
+		}
+
+		public static InstanceStatus valueOf(Integer intVal){
+			for (InstanceStatus status : InstanceStatus.values()) {
+				if (status.intValue().equals(intVal)) {
+					return status;
+				}
+			}
+			return InstanceStatus.INACTIVE;
+		}
+	}
+
 }

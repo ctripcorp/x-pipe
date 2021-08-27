@@ -86,4 +86,8 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 		return clusterInfo;
 	}
 
+	@Override
+	public DcMeta getOutClientDcMeta(String dc) throws Exception {
+		return new DcMeta();
+	}
 }

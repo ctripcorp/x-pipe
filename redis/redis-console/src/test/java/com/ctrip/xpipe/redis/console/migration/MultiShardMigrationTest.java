@@ -147,6 +147,11 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 			public ClusterInfo getClusterInfo(String clusterName) throws Exception {
 				return null;
 			}
+
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
 		});
 
 		ClusterTbl originalCluster = clusterService.find(clusterId);
@@ -160,6 +165,12 @@ public class MultiShardMigrationTest extends AbstractMigrationTest {
 
 
 		((DefaultMigrationCluster)migrationCluster).setOuterClientService(new AbstractOuterClientService() {
+
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
+
 			@Override
 			public ClusterInfo getClusterInfo(String clusterName) throws Exception {
 				ClusterInfo clusterInfo = new ClusterInfo();
