@@ -28,7 +28,7 @@ public class ClusterMetaSynchronizer {
     private DcService dcService;
     private OrganizationService organizationService;
 
-    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService) {
+    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService, OrganizationService organizationService) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -36,6 +36,7 @@ public class ClusterMetaSynchronizer {
         this.clusterService = clusterService;
         this.shardService = shardService;
         this.redisService = redisService;
+        this.organizationService = organizationService;
     }
 
     public void sync() {
