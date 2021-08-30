@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,43 +45,74 @@ public class ClusterMetaSynchronizer {
     }
 
     void remove() {
-        removed.forEach(clusterMeta -> clusterService.deleteCluster(clusterMeta.getId()));
+        try {
+            removed.forEach(clusterMeta -> {
+                try {
+                    clusterService.deleteCluster(clusterMeta.getId());
+                } catch (Exception e) {
+                    logger.error("ClusterMetaSynchronizer.remove:{}", clusterMeta.toString(), e);
+                }
+            });
+        } catch (Exception e) {
+            logger.error("ClusterMetaSynchronizer.remove", e);
+        }
     }
 
     void add() {
-        long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
-        if (!added.isEmpty()) {
-            added.forEach(clusterMeta -> {
-                ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails()).setClusterOrgId(clusterMeta.getOrgId()).setClusterDescription(clusterMeta.getId());
-                if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
-                    clusterTbl.setActivedcId(currentDcId);
-                }
-                ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
-                clusterService.createCluster(clusterModel);
-                Map<String, ShardMeta> shardMetaMap = clusterMeta.getShards();
-                new ShardMetaSynchronizer(Sets.newHashSet(shardMetaMap.values()), null, null, redisService, shardService).sync();
-            });
+        try {
+            long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
+            if (!added.isEmpty()) {
+                added.forEach(clusterMeta -> {
+                    try {
+                        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
+                                .setClusterOrgId(clusterMeta.getOrgId()).setClusterDescription(clusterMeta.getId())
+                                .setClusterOrgName(organizationService.getOrganization(clusterMeta.getOrgId()).getOrgName());
+                        if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
+                            clusterTbl.setActivedcId(currentDcId);
+                        }
+                        ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
+                        if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+                            clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
+                        }
+                        clusterService.createCluster(clusterModel);
+                        Map<String, ShardMeta> shardMetaMap = clusterMeta.getShards();
+                        new ShardMetaSynchronizer(Sets.newHashSet(shardMetaMap.values()), null, null, redisService, shardService).sync();
+                    } catch (Exception e) {
+                        logger.error("ClusterMetaSynchronizer.add:{}", clusterMeta.toString(), e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            logger.error("ClusterMetaSynchronizer.add", e);
         }
     }
 
     void update() {
-        long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
-        modified.forEach(metaComparator -> {
-            ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) metaComparator;
-            ClusterMeta future = clusterMetaComparator.getFuture();
-            ClusterTbl current = clusterService.find(future.getId());
-            if (needUpdate(future, current, currentDcId)) {
-                if (current.getClusterOrgId() != future.getOrgId()) {
-                    current.setClusterOrgId(future.getOrgId()).setClusterOrgName(organizationService.getOrganizationTblByCMSOrganiztionId(future.getOrgId()).getOrgName());
+        try {
+            long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
+            modified.forEach(metaComparator -> {
+                try {
+                    ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) metaComparator;
+                    ClusterMeta future = clusterMetaComparator.getFuture();
+                    ClusterTbl current = clusterService.find(future.getId());
+                    if (needUpdate(future, current, currentDcId)) {
+                        if (current.getClusterOrgId() != future.getOrgId()) {
+                            current.setClusterOrgId(future.getOrgId()).setClusterOrgName(organizationService.getOrganization(future.getOrgId()).getOrgName());
+                        }
+                        current.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
+                        if (ClusterType.lookup(future.getType()).supportSingleActiveDC()) {
+                            current.setActivedcId(currentDcId);
+                        }
+                        clusterService.update(current);
+                    }
+                    new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService).sync();
+                } catch (Exception e) {
+                    logger.error("ClusterMetaSynchronizer.update:{}->{}", ((ClusterMetaComparator) metaComparator).getCurrent(), ((ClusterMetaComparator) metaComparator).getFuture(), e);
                 }
-                current.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
-                if (ClusterType.lookup(future.getType()).supportSingleActiveDC()) {
-                    current.setActivedcId(currentDcId);
-                }
-                clusterService.update(current);
-            }
-            new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService).sync();
-        });
+            });
+        } catch (Exception e) {
+            logger.error("ClusterMetaSynchronizer.update", e);
+        }
     }
 
     boolean needUpdate(ClusterMeta future, ClusterTbl current, long currentDcId) {

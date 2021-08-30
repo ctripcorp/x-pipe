@@ -8,11 +8,13 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
 public class ShardMetaSynchronizer implements MetaSynchronizer {
-
+    private static Logger logger = LoggerFactory.getLogger(ShardMetaSynchronizer.class);
     private Set<ShardMeta> added;
     private Set<ShardMeta> removed;
     private Set<MetaComparator> modified;
@@ -34,26 +36,50 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
     }
 
     void remove() {
-        if (!(removed == null || removed.isEmpty()))
-            removed.forEach(shardMeta -> {
-                shardService.deleteShard(shardMeta.parent().getId(), shardMeta.getId());
-            });
+        try {
+            if (!(removed == null || removed.isEmpty()))
+                removed.forEach(shardMeta -> {
+                    try {
+                        shardService.deleteShard(shardMeta.parent().getId(), shardMeta.getId());
+                    } catch (Exception e) {
+                        logger.error("ShardMetaSynchronizer.remove:{}", shardMeta, e);
+                    }
+                });
+        } catch (Exception e) {
+            logger.error("ShardMetaSynchronizer.remove", e);
+        }
     }
 
     void add() {
-        if (!(added == null || added.isEmpty()))
-            added.forEach(shardMeta -> {
-                shardService.createShard(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getSentinelMonitorName()), null);
-                new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService).sync();
-            });
+        try {
+            if (!(added == null || added.isEmpty()))
+                added.forEach(shardMeta -> {
+                    try {
+                        shardService.createShard(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getSentinelMonitorName()), null);
+                        new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService).sync();
+                    } catch (Exception e) {
+                        logger.error("ShardMetaSynchronizer.add:{}", shardMeta.toString(), e);
+                    }
+                });
+        } catch (Exception e) {
+            logger.error("ShardMetaSynchronizer.add", e);
+        }
     }
 
     void update() {
-        if (!(modified == null || modified.isEmpty()))
-            modified.forEach(metaComparator -> {
-                ShardMetaComparator shardMetaComparator = (ShardMetaComparator) metaComparator;
-                new RedisMetaSynchronizer(shardMetaComparator.getAdded(), shardMetaComparator.getRemoved(), shardMetaComparator.getMofified(), redisService).sync();
-            });
+        try {
+            if (!(modified == null || modified.isEmpty()))
+                modified.forEach(metaComparator -> {
+                    try {
+                        ShardMetaComparator shardMetaComparator = (ShardMetaComparator) metaComparator;
+                        new RedisMetaSynchronizer(shardMetaComparator.getAdded(), shardMetaComparator.getRemoved(), shardMetaComparator.getMofified(), redisService).sync();
+                    } catch (Exception e) {
+                        logger.error("ShardMetaSynchronizer.update:{}->{}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture(), e);
+                    }
+                });
+        } catch (Exception e) {
+            logger.error("ShardMetaSynchronizer.update", e);
+        }
     }
 
 }

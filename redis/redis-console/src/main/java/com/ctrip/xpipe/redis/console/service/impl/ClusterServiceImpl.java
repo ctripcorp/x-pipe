@@ -394,9 +394,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterDao.bindDc(cluster, dc, sentinel);
+				if (bindSentinel(cluster))
+					return clusterDao.bindDc(cluster, dc, sentinel);
+				else
+					return clusterDao.bindDc(cluster, dc, null);
 			}
 		});
+	}
+
+	boolean bindSentinel(ClusterTbl clusterTbl) {
+		return consoleConfig.bindSentinelForOuterClusterTypes() || !consoleConfig.getOuterClusterTypes().contains(clusterTbl.getClusterType());
 	}
 
 	@Override

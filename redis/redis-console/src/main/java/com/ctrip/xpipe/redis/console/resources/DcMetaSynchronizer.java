@@ -83,9 +83,13 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     }
 
     void refreshAllOrganizations() {
-        List<OrganizationTbl> organizationTbls = organizationService.getAllOrganizations();
-        for (OrganizationTbl organizationTbl : organizationTbls) {
-            organizations.put(organizationTbl.getOrgId(), organizationTbl);
+        try {
+            List<OrganizationTbl> organizationTbls = organizationService.getAllOrganizations();
+            for (OrganizationTbl organizationTbl : organizationTbls) {
+                organizations.put(organizationTbl.getOrgId(), organizationTbl);
+            }
+        } catch (Exception e) {
+            logger.error("DcMetaSynchronizer.refreshAllOrganizations", e);
         }
     }
 
@@ -124,8 +128,10 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         if (outer.getClusterType().equals(OuterClientService.ClusterType.SINGEL_DC)) {
             clusterMeta.setType(ClusterType.SINGLE_DC.name());
             clusterMeta.setActiveDc(currentDcId);
-        } else
+        } else {
             clusterMeta.setType(ClusterType.LOCAL_DC.name());
+            clusterMeta.setDcs(currentDcId);
+        }
         clusterMeta.setAdminEmails(outer.getOwnerEmails());
         OrganizationTbl organization = organizations.get((long) outer.getOrgId());
         if (organization != null)
