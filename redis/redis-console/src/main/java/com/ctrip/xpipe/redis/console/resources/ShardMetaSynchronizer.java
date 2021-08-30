@@ -55,7 +55,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
             if (!(added == null || added.isEmpty()))
                 added.forEach(shardMeta -> {
                     try {
-                        shardService.createShard(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getSentinelMonitorName()), null);
+                        shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getSentinelMonitorName()), null);
                         new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService).sync();
                     } catch (Exception e) {
                         logger.error("ShardMetaSynchronizer.add:{}", shardMeta.toString(), e);

@@ -49,9 +49,9 @@ public class ClusterMetaSynchronizer {
         try {
             removed.forEach(clusterMeta -> {
                 try {
-                    clusterService.deleteCluster(clusterMeta.getId());
+                    clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                 } catch (Exception e) {
-                    logger.error("ClusterMetaSynchronizer.remove:{}", clusterMeta.toString(), e);
+                    logger.error("ClusterMetaSynchronizer.unbindDc:{},{}", clusterMeta.toString(), DcMetaSynchronizer.currentDcId, e);
                 }
             });
         } catch (Exception e) {
@@ -65,19 +65,23 @@ public class ClusterMetaSynchronizer {
             if (!added.isEmpty()) {
                 added.forEach(clusterMeta -> {
                     try {
-                        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
-                                .setClusterOrgId(clusterMeta.getOrgId()).setClusterDescription(clusterMeta.getId())
-                                .setClusterOrgName(organizationService.getOrganization(clusterMeta.getOrgId()).getOrgName());
-                        if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
-                            clusterTbl.setActivedcId(currentDcId);
+                        if (clusterService.find(clusterMeta.getId()) != null) {
+                            clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
+                            new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
+                        } else {
+                            ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
+                                    .setClusterOrgId(clusterMeta.getOrgId()).setClusterDescription(clusterMeta.getId())
+                                    .setClusterOrgName(organizationService.getOrganization(clusterMeta.getOrgId()).getOrgName());
+                            if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
+                                clusterTbl.setActivedcId(currentDcId);
+                            }
+                            ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
+                            if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+                                clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
+                            }
+                            clusterService.createCluster(clusterModel);
+                            new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         }
-                        ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
-                        if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
-                            clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
-                        }
-                        clusterService.createCluster(clusterModel);
-                        Map<String, ShardMeta> shardMetaMap = clusterMeta.getShards();
-                        new ShardMetaSynchronizer(Sets.newHashSet(shardMetaMap.values()), null, null, redisService, shardService).sync();
                     } catch (Exception e) {
                         logger.error("ClusterMetaSynchronizer.add:{}", clusterMeta.toString(), e);
                     }
