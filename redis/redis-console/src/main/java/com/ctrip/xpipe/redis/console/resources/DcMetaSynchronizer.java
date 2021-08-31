@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,8 +77,8 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
             DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
             dcMetaComparator.compare();
-            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService).sync();
             logger.info("[DcMetaSynchronizer][sync]added:{}, removed:{}, modified:{}", dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified());
+            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService).sync();
         } catch (Exception e) {
             logger.error("[DcMetaSynchronizer][sync]", e);
         }
@@ -157,7 +158,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
 
     ShardMeta outerShardToInner(OuterClientService.GroupMeta outer) {
         ShardMeta shardMeta = new ShardMeta(outer.getGroupName());
-        shardMeta.setSentinelMonitorName(outer.getGroupName());
+        shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(outer.getClusterName(), outer.getGroupName(), currentDcId));
         List<OuterClientService.RedisMeta> redisMetaList = outer.getRedises();
         for (OuterClientService.RedisMeta redisMeta : redisMetaList) {
             shardMeta.addRedis(outerRedisToInner(redisMeta).setParent(shardMeta));

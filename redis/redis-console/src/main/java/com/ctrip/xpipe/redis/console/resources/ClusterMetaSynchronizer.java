@@ -47,8 +47,8 @@ public class ClusterMetaSynchronizer {
         try {
             removed.forEach(clusterMeta -> {
                 try {
-                    clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                     logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
+                    clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                 } catch (Exception e) {
                     logger.error("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId, e);
                 }
@@ -65,8 +65,8 @@ public class ClusterMetaSynchronizer {
                 added.forEach(clusterMeta -> {
                     try {
                         if (clusterService.find(clusterMeta.getId()) != null) {
-                            clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                             logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
+                            clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                             new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         } else {
                             ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
@@ -79,8 +79,8 @@ public class ClusterMetaSynchronizer {
                             if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                                 clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
                             }
-                            clusterService.createCluster(clusterModel);
                             logger.info("[ClusterMetaSynchronizer][createCluster]{}", clusterMeta);
+                            clusterService.createCluster(clusterModel);
                             new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         }
                     } catch (Exception e) {
@@ -100,17 +100,17 @@ public class ClusterMetaSynchronizer {
                 try {
                     ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) metaComparator;
                     ClusterMeta future = clusterMetaComparator.getFuture();
-                    ClusterTbl current = clusterService.find(future.getId());
-                    if (needUpdate(future, current, currentDcId)) {
-                        if (current.getClusterOrgId() != future.getOrgId()) {
-                            current.setClusterOrgId(future.getOrgId()).setClusterOrgName(organizationService.getOrganization(future.getOrgId()).getOrgName());
+                    ClusterTbl currentClusterTbl = clusterService.find(future.getId());
+                    if (needUpdate(future, currentClusterTbl, currentDcId)) {
+                        if (currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
+                            currentClusterTbl.setClusterOrgId(future.getOrgId()).setClusterOrgName(organizationService.getOrganization(future.getOrgId()).getOrgName());
                         }
-                        current.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
+                        currentClusterTbl.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
                         if (ClusterType.lookup(future.getType()).supportSingleActiveDC()) {
-                            current.setActivedcId(currentDcId);
+                            currentClusterTbl.setActivedcId(currentDcId);
                         }
-                        clusterService.update(current);
-                        logger.info("[ClusterMetaSynchronizer][update]{} -> {}", current, future);
+                        logger.info("[ClusterMetaSynchronizer][update]{} -> {}, toUpdateTbl: {}", clusterMetaComparator.getCurrent(), future, currentClusterTbl);
+                        clusterService.update(currentClusterTbl);
                     }
                     new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService).sync();
                 } catch (Exception e) {

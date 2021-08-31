@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -48,8 +47,8 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
                 clusterId = ((RedisMeta) redis).parent().parent().getId();
                 shardId = ((RedisMeta) redis).parent().getId();
             }
-            redisService.deleteRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toDeleted);
             logger.info("[RedisMetaSynchronizer][deleteRedises]{}", removed);
+            redisService.deleteRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toDeleted);
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][deleteRedises]", e);
         }
@@ -67,8 +66,8 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
                 clusterId = ((RedisMeta) redis).parent().parent().getId();
                 shardId = ((RedisMeta) redis).parent().getId();
             }
-            redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
+            redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
         }
@@ -78,32 +77,31 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
         try {
             if (modified == null || modified.isEmpty())
                 return;
-            ShardModel shardModel = new ShardModel();
+
             String clusterId = "";
             String shardId = "";
-            List<RedisMeta> futureList = new ArrayList<>();
+            List<RedisMeta> futureMetaList = new ArrayList<>();
             for (MetaComparator metaComparator : modified) {
                 RedisMeta redisMeta = (RedisMeta) ((RedisComparator) metaComparator).getFuture();
-                futureList.add(redisMeta);
+                futureMetaList.add(redisMeta);
                 clusterId = redisMeta.parent().parent().getId();
                 shardId = redisMeta.parent().getId();
             }
 
-            List<RedisTbl> targetList = redisService.findAllByDcClusterShard(DcMetaSynchronizer.currentDcId, clusterId, shardId);
-
-            for (RedisMeta target : futureList) {
-                for (RedisTbl existed : targetList) {
-                    if (existed.getRedisIp().equals(target.getIp()) || existed.getRedisPort() == target.getPort()) {
-                        if (shouldUpdate(target, existed)) {
-                            shardModel.addRedis(existed.setMaster(target.isMaster()));
+            List<RedisTbl> currentTblList = redisService.findRedisesByDcClusterShard(DcMetaSynchronizer.currentDcId, clusterId, shardId);
+            List<RedisTbl> futureTblList = new ArrayList<>();
+            for (RedisMeta future : futureMetaList) {
+                for (RedisTbl current : currentTblList) {
+                    if (current.getRedisIp().equals(future.getIp()) || current.getRedisPort() == future.getPort()) {
+                        if (shouldUpdate(future, current)) {
+                            futureTblList.add(current.setMaster(future.isMaster()));
                         }
                         break;
                     }
                 }
             }
-
-            redisService.updateRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, shardModel);
-            logger.info("[RedisMetaSynchronizer][updateRedises]{}", shardModel);
+            logger.info("[RedisMetaSynchronizer][updateRedises]{}", futureTblList);
+            redisService.updateBatchMaster(futureTblList);
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][updateRedises]", e);
         }
