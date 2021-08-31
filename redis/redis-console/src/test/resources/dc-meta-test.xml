@@ -7,7 +7,7 @@
 		<metaServer ip="127.0.0.1" port="9747" master="true"/>
 		<cluster id="cluster1" active-dc="jq" phase ="1" type="one_way">
 			<shard id="shard1" sentinelId="2" sentinelMonitorName="cluster1+shard1+jq">
-				<redis ip="127.0.0.1" port="6379" master="true" />
+				<redis ip="127.0.0.1" port="6379" master="" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:8000" ip="127.0.0.1" port="6000" active="true" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6001" active="false" />
 				<redis ip="127.0.0.1" port="8000" master=""/>
@@ -16,7 +16,7 @@
 		</cluster>
 		<cluster id="cluster3" type="bi_direction" dcs="jq,oy">
 			<shard id="shard1" sentinelId="2" sentinelMonitorName="cluster3+shard1+jq">
-				<redis ip="10.0.0.1" port="6379" master="true" />
+				<redis ip="10.0.0.1" port="6379" master="" />
 			</shard>
 		</cluster>
 	</dc>
@@ -41,12 +41,12 @@
         </cluster>
 		<cluster id="cluster3" type="bi_direction" dcs="jq,oy">
 			<shard id="shard1" sentinelId="2" sentinelMonitorName="cluster3+shard1+oy">
-				<redis ip="10.0.0.2" port="6379" master="true" />
+				<redis ip="10.0.0.2" port="6379" master="" />
 			</shard>
 		</cluster>
 		<cluster id="cluster4" type="bi_direction" dcs="oy">
 			<shard id="shard1" sentinelId="2" sentinelMonitorName="cluster4+shard1+oy">
-				<redis ip="10.0.0.2" port="6479" master="true" />
+				<redis ip="10.0.0.2" port="6479" master="" />
 			</shard>
 		</cluster>
 	</dc>

@@ -260,7 +260,6 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         Assert.assertEquals(0, checkActionController.getAllCheckCollectorControllers().size());
     }
 
-
     private void prepareActions() throws Exception {
         activeDcMaster = new SentinelCheckStatus("dc1", activeDc, true);
         activeDcMasterMeta.setPort(activeDcMaster.redisServer.getPort());
