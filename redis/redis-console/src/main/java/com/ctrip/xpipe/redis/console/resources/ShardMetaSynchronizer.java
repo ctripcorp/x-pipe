@@ -41,12 +41,13 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                 removed.forEach(shardMeta -> {
                     try {
                         shardService.deleteShard(shardMeta.parent().getId(), shardMeta.getId());
+                        logger.info("[ShardMetaSynchronizer][deleteShard]{}", shardMeta);
                     } catch (Exception e) {
-                        logger.error("ShardMetaSynchronizer.remove:{}", shardMeta, e);
+                        logger.error("[ShardMetaSynchronizer][deleteShard]{}", shardMeta, e);
                     }
                 });
         } catch (Exception e) {
-            logger.error("ShardMetaSynchronizer.remove", e);
+            logger.error("[ShardMetaSynchronizer][remove]", e);
         }
     }
 
@@ -56,13 +57,14 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                 added.forEach(shardMeta -> {
                     try {
                         shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getSentinelMonitorName()), null);
+                        logger.info("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta);
                         new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService).sync();
                     } catch (Exception e) {
-                        logger.error("ShardMetaSynchronizer.add:{}", shardMeta.toString(), e);
+                        logger.error("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta, e);
                     }
                 });
         } catch (Exception e) {
-            logger.error("ShardMetaSynchronizer.add", e);
+            logger.error("[ShardMetaSynchronizer][add]", e);
         }
     }
 
@@ -72,13 +74,14 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                 modified.forEach(metaComparator -> {
                     try {
                         ShardMetaComparator shardMetaComparator = (ShardMetaComparator) metaComparator;
+                        logger.info("[ShardMetaSynchronizer][update]{} -> {}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture());
                         new RedisMetaSynchronizer(shardMetaComparator.getAdded(), shardMetaComparator.getRemoved(), shardMetaComparator.getMofified(), redisService).sync();
                     } catch (Exception e) {
-                        logger.error("ShardMetaSynchronizer.update:{}->{}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture(), e);
+                        logger.error("[ShardMetaSynchronizer][update]{} -> {}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture(), e);
                     }
                 });
         } catch (Exception e) {
-            logger.error("ShardMetaSynchronizer.update", e);
+            logger.error("[ShardMetaSynchronizer][update]", e);
         }
     }
 

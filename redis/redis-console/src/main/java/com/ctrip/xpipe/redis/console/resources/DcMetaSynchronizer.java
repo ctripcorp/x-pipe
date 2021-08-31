@@ -77,8 +77,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
             dcMetaComparator.compare();
             new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService).sync();
+            logger.info("[DcMetaSynchronizer][sync]added:{}, removed:{}, modified:{}", dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified());
         } catch (Exception e) {
-            logger.error("DcMetaSynchronizer sync error", e);
+            logger.error("[DcMetaSynchronizer][sync]", e);
         }
     }
 
@@ -89,7 +90,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                 organizations.put(organizationTbl.getOrgId(), organizationTbl);
             }
         } catch (Exception e) {
-            logger.error("DcMetaSynchronizer.refreshAllOrganizations", e);
+            logger.error("[DcMetaSynchronizer][refreshAllOrganizations]", e);
         }
     }
 

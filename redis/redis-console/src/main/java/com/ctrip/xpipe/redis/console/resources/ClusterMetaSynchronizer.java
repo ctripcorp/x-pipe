@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.google.common.collect.Lists;
@@ -14,7 +13,6 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Set;
 
 public class ClusterMetaSynchronizer {
@@ -50,12 +48,13 @@ public class ClusterMetaSynchronizer {
             removed.forEach(clusterMeta -> {
                 try {
                     clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
+                    logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
                 } catch (Exception e) {
-                    logger.error("ClusterMetaSynchronizer.unbindDc:{},{}", clusterMeta.toString(), DcMetaSynchronizer.currentDcId, e);
+                    logger.error("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId, e);
                 }
             });
         } catch (Exception e) {
-            logger.error("ClusterMetaSynchronizer.remove", e);
+            logger.error("[ClusterMetaSynchronizer][remove]", e);
         }
     }
 
@@ -67,6 +66,7 @@ public class ClusterMetaSynchronizer {
                     try {
                         if (clusterService.find(clusterMeta.getId()) != null) {
                             clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
+                            logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
                             new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         } else {
                             ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
@@ -80,15 +80,16 @@ public class ClusterMetaSynchronizer {
                                 clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
                             }
                             clusterService.createCluster(clusterModel);
+                            logger.info("[ClusterMetaSynchronizer][createCluster]{}", clusterMeta);
                             new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         }
                     } catch (Exception e) {
-                        logger.error("ClusterMetaSynchronizer.add:{}", clusterMeta.toString(), e);
+                        logger.error("[ClusterMetaSynchronizer][add]{}", clusterMeta, e);
                     }
                 });
             }
         } catch (Exception e) {
-            logger.error("ClusterMetaSynchronizer.add", e);
+            logger.error("[ClusterMetaSynchronizer][add]", e);
         }
     }
 
@@ -109,14 +110,15 @@ public class ClusterMetaSynchronizer {
                             current.setActivedcId(currentDcId);
                         }
                         clusterService.update(current);
+                        logger.info("[ClusterMetaSynchronizer][update]{} -> {}", current, future);
                     }
                     new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService).sync();
                 } catch (Exception e) {
-                    logger.error("ClusterMetaSynchronizer.update:{}->{}", ((ClusterMetaComparator) metaComparator).getCurrent(), ((ClusterMetaComparator) metaComparator).getFuture(), e);
+                    logger.error("[ClusterMetaSynchronizer][update]{} -> {}", ((ClusterMetaComparator) metaComparator).getCurrent(), ((ClusterMetaComparator) metaComparator).getFuture(), e);
                 }
             });
         } catch (Exception e) {
-            logger.error("ClusterMetaSynchronizer.update", e);
+            logger.error("[ClusterMetaSynchronizer][update]", e);
         }
     }
 

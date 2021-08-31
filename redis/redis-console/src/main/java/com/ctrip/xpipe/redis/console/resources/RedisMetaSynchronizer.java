@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
-import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.core.meta.comparator.RedisComparator;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
@@ -31,13 +31,9 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
     }
 
     public void sync() {
-        try {
-            remove();
-            add();
-            update();
-        } catch (Exception e) {
-            logger.error("RedisMetaSynchronizer sync error", e);
-        }
+        remove();
+        add();
+        update();
     }
 
     void remove() {
@@ -53,8 +49,9 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
                 shardId = ((RedisMeta) redis).parent().getId();
             }
             redisService.deleteRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toDeleted);
+            logger.info("[RedisMetaSynchronizer][deleteRedises]{}", removed);
         } catch (Exception e) {
-            logger.error("RedisMetaSynchronizer remove error", e);
+            logger.error("[RedisMetaSynchronizer][deleteRedises]", e);
         }
     }
 
@@ -71,8 +68,9 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
                 shardId = ((RedisMeta) redis).parent().getId();
             }
             redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
+            logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
         } catch (Exception e) {
-            logger.error("RedisMetaSynchronizer add error", e);
+            logger.error("[RedisMetaSynchronizer][insertRedises]", e);
         }
     }
 
@@ -105,8 +103,9 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             }
 
             redisService.updateRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, shardModel);
+            logger.info("[RedisMetaSynchronizer][updateRedises]{}", shardModel);
         } catch (Exception e) {
-            logger.error("RedisMetaSynchronizer update error", e);
+            logger.error("[RedisMetaSynchronizer][updateRedises]", e);
         }
     }
 
