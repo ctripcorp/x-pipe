@@ -4,6 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -13,6 +14,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class ClusterMetaSynchronizer {
@@ -69,9 +71,19 @@ public class ClusterMetaSynchronizer {
                             clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                             new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         } else {
+
                             ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
-                                    .setClusterOrgId(clusterMeta.getOrgId()).setClusterDescription(clusterMeta.getId())
-                                    .setClusterOrgName(organizationService.getOrganization(clusterMeta.getOrgId()).getOrgName());
+                                    .setClusterDescription(clusterMeta.getId());
+                            if (clusterMeta.getOrgId() != null) {
+                                clusterTbl.setClusterOrgId(clusterMeta.getOrgId());
+                                try {
+                                    OrganizationTbl orgTbl = organizationService.getOrganization(clusterMeta.getOrgId());
+                                    if (orgTbl != null)
+                                        clusterTbl.setClusterOrgName(orgTbl.getOrgName());
+                                } catch (Exception e) {
+                                    logger.warn("[ClusterMetaSynchronizer][bindDc]orgId not found:{},{}", clusterMeta.getId(), clusterMeta.getOrgId());
+                                }
+                            }
                             if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
                                 clusterTbl.setActivedcId(currentDcId);
                             }
@@ -102,8 +114,11 @@ public class ClusterMetaSynchronizer {
                     ClusterMeta future = clusterMetaComparator.getFuture();
                     ClusterTbl currentClusterTbl = clusterService.find(future.getId());
                     if (needUpdate(future, currentClusterTbl, currentDcId)) {
-                        if (currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
-                            currentClusterTbl.setClusterOrgId(future.getOrgId()).setClusterOrgName(organizationService.getOrganization(future.getOrgId()).getOrgName());
+                        if (future.getOrgId() != null && currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
+                            currentClusterTbl.setClusterOrgId(future.getOrgId());
+                            OrganizationTbl existedOrgTbl = organizationService.getOrganization(future.getOrgId());
+                            if (existedOrgTbl != null)
+                                currentClusterTbl.setClusterOrgName(existedOrgTbl.getOrgName());
                         }
                         currentClusterTbl.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
                         if (ClusterType.lookup(future.getType()).supportSingleActiveDC()) {
@@ -123,11 +138,11 @@ public class ClusterMetaSynchronizer {
     }
 
     boolean needUpdate(ClusterMeta future, ClusterTbl current, long currentDcId) {
-        return !(current.getClusterName().equals(future.getId()) &&
-                current.getClusterOrgId() == future.getOrgId() &&
-                current.getClusterAdminEmails().equals(future.getAdminEmails()) &&
-                current.getClusterType().equals(future.getType()) &&
-                current.getActivedcId() == currentDcId);
+        return !(Objects.equals(current.getClusterName(), future.getId())) &&
+                Objects.equals(current.getClusterOrgId(), future.getOrgId()) &&
+                Objects.equals(current.getClusterAdminEmails(), future.getAdminEmails()) &&
+                Objects.equals(current.getClusterType(), future.getType()) &&
+                Objects.equals(current.getActivedcId(), currentDcId);
     }
 
 }

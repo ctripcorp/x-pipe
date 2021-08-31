@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class RedisMetaSynchronizer implements MetaSynchronizer {
@@ -108,8 +109,8 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
     }
 
     boolean shouldUpdate(RedisMeta future, RedisTbl current) {
-        return !(current.getRedisIp().equals(future.getIp()) &&
-                current.getRedisPort() == future.getPort() &&
-                current.isMaster() == future.isMaster());
+        return !(Objects.equals(current.getRedisIp(), future.getIp()) &&
+                Objects.equals(current.getRedisPort(), future.getPort()) &&
+                Objects.equals(current.isMaster(), future.isMaster()));
     }
 }
