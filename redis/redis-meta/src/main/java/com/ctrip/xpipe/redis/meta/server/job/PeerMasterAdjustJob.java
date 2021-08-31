@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.*;
@@ -12,7 +13,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.retry.RetryDelay;
@@ -23,7 +24,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
 
 public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
@@ -41,19 +41,18 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private static final String CRDT_REDIS_VERSION_KEY = "xredis_crdt_version";
 
-    private static final String VERSION_SUPPORT_STRICTLY_CHECK = "1.0.4";
+    private static final String MINIMUM_SUPPORTED_VERSION = "1.0.4";
 
     private String clusterId;
 
     private String shardId;
 
-    private List<RedisMeta> upstreamPeerMasters;
+    //gid + endpoint
+    private List<Pair<Long,Endpoint>> upstreamPeerMasters;
 
     private Pair<String, Integer> currentMaster;
 
-    private String masterVersion;
-
-    private List<RedisMeta> currentPeerMasters;
+    private List<Pair<Long,Endpoint>> currentPeerMasters;
 
     private SimpleObjectPool<NettyClient> clientPool;
 
@@ -65,22 +64,22 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private Executor executors;
 
-    private Map<Long, NodeDeleted<HostPort>> peerMasterDeleted;
+    private Map<Long, NodeDeleted<Endpoint>> peerMasterDeleted;
 
-    private Map<Long, NodeAdded<HostPort>> peerMasterAdded;
+    private Map<Long, NodeAdded<Endpoint>> peerMasterAdded;
 
-    private Map<Long, NodeModified<HostPort>> peerMasterChanged;
+    private Map<Long, NodeModified<Endpoint>> peerMasterChanged;
 
     private boolean doDelete = true;
 
-    public PeerMasterAdjustJob(String clusterId, String shardId, List<RedisMeta> upstreamPeerMasters,
+    public PeerMasterAdjustJob(String clusterId, String shardId, List<Pair<Long,Endpoint>> upstreamPeerMasters,
                                Pair<String, Integer> currentMaster, boolean doDelete,
                                SimpleObjectPool<NettyClient> clientPool
             , ScheduledExecutorService scheduled, Executor executors) {
         this(clusterId, shardId, upstreamPeerMasters, currentMaster, doDelete, clientPool, 1000, 5, scheduled, executors);
     }
 
-    public PeerMasterAdjustJob(String clusterId, String shardId, List<RedisMeta> upstreamPeerMasters,
+    public PeerMasterAdjustJob(String clusterId, String shardId, List<Pair<Long,Endpoint>> upstreamPeerMasters,
                                Pair<String, Integer> currentMaster, boolean doDelete,
                                SimpleObjectPool<NettyClient> clientPool
             , int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors) {
@@ -126,14 +125,14 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     private void doPeerMasterAdjust() {
         SequenceCommandChain sequenceCommandChain = new SequenceCommandChain(true);
         peerMasterChanged.forEach((gid, nodeModified) -> {
-            HostPort peerMaster = nodeModified.getNewNode();
+            Endpoint peerMaster = nodeModified.getNewNode();
             logOperation(PEER_CHANGE, currentMaster, gid, nodeModified);
-            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getHost(), peerMaster.getPort(), scheduled)));
+            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster, scheduled)));
         });
         peerMasterAdded.forEach((gid, nodeAdded) -> {
-            HostPort peerMaster = nodeAdded.getNode();
+            Endpoint peerMaster = nodeAdded.getNode();
             logOperation(PEER_ADD, currentMaster, gid, nodeAdded);
-            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster.getHost(), peerMaster.getPort(), scheduled)));
+            sequenceCommandChain.add(retryCommandWrap(new PeerOfCommand(clientPool, gid, peerMaster, scheduled)));
         });
         peerMasterDeleted.forEach((gid, nodeDeleted) -> {
             if (doDelete) {
@@ -165,7 +164,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     @Override
     public String toString() {
         return String.format("[%s] master: %s",
-                StringUtil.join(",", (peerMaster) -> String.format("%d %s:%d", peerMaster.getGid(), peerMaster.getIp(), peerMaster.getPort()), upstreamPeerMasters),
+                StringUtil.join(",", (peerMaster) -> String.format("%d %s", peerMaster.getKey(), peerMaster.getValue()), upstreamPeerMasters),
                 currentMaster);
     }
 
@@ -202,15 +201,25 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         protected void handleResult(String rawInfo) {
             try {
                 InfoResultExtractor extractor = new InfoResultExtractor(rawInfo);
-                masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
+                String masterVersion = extractor.extract(CRDT_REDIS_VERSION_KEY);
 
                 if (StringUtil.isEmpty(masterVersion)) {
                     future().setFailure(new BadRedisVersionException(String.format("master %s:%d is not crdt redis",
                             currentMaster.getKey(), currentMaster.getValue())));
                     return;
                 }
-
-                future().setSuccess();
+                boolean isSupported;
+                try {
+                    isSupported = StringUtil.compareVersion(masterVersion, MINIMUM_SUPPORTED_VERSION) >= 0;
+                } catch (NumberFormatException e) {
+                    isSupported = masterVersion.compareTo(MINIMUM_SUPPORTED_VERSION) >= 0;
+                }
+                if (isSupported) {
+                    future().setSuccess();
+                } else {
+                    future().setFailure(new RuntimeException(String.format("CRDT Redis version(%s) is too low", masterVersion)));
+                }
+                
             } catch (Exception e) {
                 getLogger().info("[handleResult] parse master version fail", e);
                 future().setFailure(e);
@@ -270,74 +279,11 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     }
 
     class PeerMasterCompareCommand extends AbstractCommand<Void> {
-        @Override
-        protected void doExecute() throws Exception {
-            boolean canCompareStrictly;
-            try {
-                canCompareStrictly = StringUtil.compareVersion(masterVersion, VERSION_SUPPORT_STRICTLY_CHECK) >= 0;
-            } catch (NumberFormatException e) {
-                canCompareStrictly = masterVersion.compareTo(VERSION_SUPPORT_STRICTLY_CHECK) >= 0;
-            }
-
-            if (canCompareStrictly) {
-
-                new PeerMasterStrictlyCompareCommand().execute().get();
-            } else {
-                new PeerMasterNormallyCompareCommand().execute().get();
-            }
-
-            future().setSuccess();
-        }
-
-        @Override
-        protected void doReset() {
-
-        }
-
-        @Override
-        public String getName() {
-            return getClass().getSimpleName();
-        }
-    }
-
-    class PeerMasterNormallyCompareCommand extends AbstractCommand<Void> {
-        @Override
-        protected void doExecute() throws Exception {
-            // can not filter peer master change and delete in normal compare
-            peerMasterChanged = new HashMap<>();
-            peerMasterDeleted = new HashMap<>();
-            peerMasterAdded = new HashMap<>();
-            Set<HostPort> currentPeerMasterAddrSet = currentPeerMasters.stream()
-                    .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
-                    .collect(Collectors.toSet());
-
-            upstreamPeerMasters.forEach(redisMeta -> {
-                HostPort peerMaster = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-                if (!currentPeerMasterAddrSet.contains(peerMaster)) {
-                    peerMasterAdded.put(redisMeta.getGid(), new NodeAdded<>(peerMaster));
-                }
-            });
-
-            future().setSuccess();
-        }
-
-        @Override
-        protected void doReset() {
-
-        }
-
-        @Override
-        public String getName() {
-            return getClass().getSimpleName();
-        }
-    }
-
-    class PeerMasterStrictlyCompareCommand extends AbstractCommand<Void> {
 
         @Override
         protected void doExecute() throws Exception {
-            Map<Long, HostPort> flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
-            Map<Long, HostPort> flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
+            Map<Long, Endpoint> flatExpectedPeerMaster = parsePeerMasters(upstreamPeerMasters);
+            Map<Long, Endpoint> flatCurrentPeerMaster = parsePeerMasters(currentPeerMasters);
             Set<Long> retainGidSet = new HashSet<>(flatExpectedPeerMaster.keySet());
             Set<Long> currentGidSet = flatCurrentPeerMaster.keySet();
             retainGidSet.retainAll(currentGidSet);
@@ -349,13 +295,13 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             future().setSuccess();
         }
 
-        private Map<Long, HostPort> parsePeerMasters(List<RedisMeta> peerMasters) {
-            Map<Long, HostPort> flatPeerMasterInfo = new HashMap<>();
-            peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getGid(), new HostPort(peerMaster.getIp(), peerMaster.getPort())));
+        private Map<Long, Endpoint> parsePeerMasters(List<Pair<Long, Endpoint>> peerMasters) {
+            Map<Long, Endpoint> flatPeerMasterInfo = new HashMap<>();
+            peerMasters.forEach(peerMaster -> flatPeerMasterInfo.put(peerMaster.getKey(), peerMaster.getValue()));
             return flatPeerMasterInfo;
         }
 
-        private void makePeerMasterChange(Map<Long, HostPort> expectedPeerMaster, Map<Long, HostPort> currentPeerMaster, Set<Long> retainGid) {
+        private void makePeerMasterChange(Map<Long, Endpoint> expectedPeerMaster, Map<Long,  Endpoint> currentPeerMaster, Set<Long> retainGid) {
             peerMasterChanged = new HashMap<>();
 
             retainGid.forEach(gid -> {
@@ -365,7 +311,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             });
         }
 
-        private void makePeerMasterAdded(Map<Long, HostPort> expectedPeerMaster, Set<Long> retainGid) {
+        private void makePeerMasterAdded(Map<Long, Endpoint> expectedPeerMaster, Set<Long> retainGid) {
             peerMasterAdded = new HashMap<>();
             expectedPeerMaster.forEach((gid, peerMaster) -> {
                 if (!retainGid.contains(gid)) {
@@ -374,7 +320,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
             });
         }
 
-        private void makePeerMasterDeleted(Map<Long, HostPort> currentPeerMaster, Set<Long> retainGid) {
+        private void makePeerMasterDeleted(Map<Long, Endpoint> currentPeerMaster, Set<Long> retainGid) {
             peerMasterDeleted = new HashMap<>();
 
             currentPeerMaster.forEach((gid, peerMaster) -> {

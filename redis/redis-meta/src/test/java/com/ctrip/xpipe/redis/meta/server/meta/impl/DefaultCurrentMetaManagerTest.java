@@ -1,11 +1,16 @@
 package com.ctrip.xpipe.redis.meta.server.meta.impl;
 
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.Route;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.observer.NodeAdded;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.RouteMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
@@ -33,6 +38,9 @@ import static org.mockito.Mockito.*;
 public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest {
 
 	private DefaultCurrentMetaManager currentMetaServerMetaManager;
+	
+	@Mock
+	private CurrentClusterServer currentClusterServer; 
 
 	@Mock
 	private SlotManager slotManager;
@@ -45,6 +53,9 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 	@Mock
 	private CurrentMeta currentMeta;
+	
+	@Mock
+	private Observer observer; 
 
 	private String upstreamDc = "upstream-dc";
 
@@ -192,5 +203,188 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	public void testSetCurrentDcPeerMaster() {
 		currentMetaServerMetaManager.setPeerMaster(getDc(), getClusterId(), getShardId(), 1, "127.0.0.1", 6379);
 	}
+	
+	@Test
+	public void testUpdateOneWayClusterMeta() {
+		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
+		currentMetaServerMetaManager.setSlotManager(slotManager);
+		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
+		currentMetaServerMetaManager.setCurrentMeta(currentMeta);
+		currentMetaServerMetaManager.setCurrentClusterServer(currentClusterServer);
+		currentMetaServerMetaManager.addObserver(observer);
+		String clusterName = "cluster1";
+		Mockito.when(currentClusterServer.hasKey(clusterName)).thenReturn(true);
+		
+		DcMeta currentDcMeta = new DcMeta().setId("jq");
+		ClusterMeta currentClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy");
+		ShardMeta currentShardMeta = new ShardMeta().setId("cluster1_1");
+		RedisMeta currentMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379);
+		RedisMeta currentSlave = new RedisMeta().setIp("127.0.0.1").setPort(6380).setMaster("127.0.0.1:6379");
+		KeeperMeta currentActive = new KeeperMeta().setIp("127.0.0.1").setPort(16379).setActive(true);
+		KeeperMeta currentKeeper= new KeeperMeta().setIp("127.0.0.1").setPort(16380);
+		currentShardMeta.addRedis(currentMaster).addRedis(currentSlave).addKeeper(currentActive).addKeeper(currentKeeper);
+		currentClusterMeta.addShard(currentShardMeta);
+		currentDcMeta.addCluster(currentClusterMeta);
 
+
+		Mockito.when(dcMetaCache.getClusterMeta(clusterName)).thenReturn(currentClusterMeta);
+		
+		//init
+		currentMetaServerMetaManager.update(DcMetaComparator.buildClusterChanged(null, currentClusterMeta), null);
+		doAnswer(invocation -> {
+			Object node = invocation.getArgumentAt(0, Object.class);
+			Assert.assertTrue(node instanceof NodeAdded);
+			return null;
+		}).when(observer).update(any(), any());
+		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
+		verify(observer, times(1)).update(any(), any());
+		
+		DcMeta futureDcMeta = new DcMeta().setId("jq");
+		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy");
+		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1");
+		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379);
+		RedisMeta futureSlave = new RedisMeta().setIp("127.0.0.1").setPort(6380).setMaster("127.0.0.1:6379");
+		KeeperMeta futureActive = new KeeperMeta().setIp("127.0.0.1").setPort(1630).setActive(true);
+		KeeperMeta futureKeeper= new KeeperMeta().setIp("127.0.0.1").setPort(16379);
+		futureShardMeta.addRedis(futureMaster).addRedis(futureSlave).addKeeper(futureActive).addKeeper(futureKeeper);
+		currentClusterMeta.addShard(futureShardMeta);
+		futureDcMeta.addCluster(futureClusterMeta);
+		
+		DcMetaComparator dcMetaComparator = new DcMetaComparator(currentDcMeta, futureDcMeta);
+		dcMetaComparator.compare();
+		Mockito.when(currentMeta.hasCluster(clusterName)).thenReturn(true);
+		doAnswer(invocation -> {
+			Object node = invocation.getArgumentAt(0, Object.class);
+			Assert.assertTrue(node instanceof ClusterMetaComparator);
+			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) node;
+			Assert.assertEquals(clusterMetaComparator.getFuture().getActiveDc(), "oy");
+			return null;
+		}).when(observer).update(any(),any());
+		currentMetaServerMetaManager.update(dcMetaComparator, null);
+	}
+
+	@Test
+	public void testUpdateBiDirectionClusterMeta() {
+		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
+		currentMetaServerMetaManager.setSlotManager(slotManager);
+		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
+		currentMetaServerMetaManager.setCurrentMeta(currentMeta);
+		currentMetaServerMetaManager.setCurrentClusterServer(currentClusterServer);
+		currentMetaServerMetaManager.addObserver(observer);
+		String clusterName = "cluster1";
+		Mockito.when(currentClusterServer.hasKey(clusterName)).thenReturn(true);
+
+		DcMeta currentDcMeta = new DcMeta().setId("jq");
+		ClusterMeta currentClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDcs("jq,oy");
+		ShardMeta currentShardMeta = new ShardMeta().setId("cluster1_1");
+		RedisMeta currentMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+		RedisMeta currentSlave = new RedisMeta().setIp("127.0.0.1").setPort(6380).setGid(1L).setMaster("127.0.0.1:6379");
+		KeeperMeta currentActive = new KeeperMeta().setIp("127.0.0.1").setPort(16379).setActive(true);
+		KeeperMeta currentKeeper= new KeeperMeta().setIp("127.0.0.1").setPort(16380);
+		currentShardMeta.addRedis(currentMaster).addRedis(currentSlave).addKeeper(currentActive).addKeeper(currentKeeper);
+		currentClusterMeta.addShard(currentShardMeta);
+		currentDcMeta.addCluster(currentClusterMeta);
+
+
+		Mockito.when(dcMetaCache.getClusterMeta(clusterName)).thenReturn(currentClusterMeta);
+		doAnswer(invocation -> {
+			Object node = invocation.getArgumentAt(0, Object.class);
+			Assert.assertTrue(node instanceof NodeAdded);
+			return null;
+		}).when(observer).update(any(), any());
+		//init
+		currentMetaServerMetaManager.update(DcMetaComparator.buildClusterChanged(null, currentClusterMeta), null);
+		
+		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
+		verify(observer, times(1)).update(any(), any());
+		verify(currentMeta, times(1)).updateClusterRoutes(any(), any());
+		
+		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1));
+		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDcs("jq,oy,fq");
+		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1");
+		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+		RedisMeta futureSlave = new RedisMeta().setIp("127.0.0.1").setPort(6380).setGid(1L).setMaster("127.0.0.1:6379");
+		futureShardMeta.addRedis(futureMaster).addRedis(futureSlave);
+		currentClusterMeta.addShard(futureShardMeta);
+		futureDcMeta.addCluster(futureClusterMeta);
+
+		DcMetaComparator dcMetaComparator = new DcMetaComparator(currentDcMeta, futureDcMeta);
+		dcMetaComparator.compare();
+		Mockito.when(currentMeta.hasCluster(clusterName)).thenReturn(true);
+		doAnswer(invocation -> {
+			Object node = invocation.getArgumentAt(0, Object.class);
+			Assert.assertTrue(node instanceof ClusterMetaComparator);
+			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) node;
+			Assert.assertEquals(clusterMetaComparator.getFuture().getDcs(), "jq,oy,fq");
+			return null;
+		}).when(observer).update(any(),any());
+		currentMetaServerMetaManager.update(dcMetaComparator, null);
+		//no exec addCluster
+		verify(currentMeta, times(1)).addCluster(any());
+		verify(currentMeta, times(2)).updateClusterRoutes(any(), any());
+		
+		DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(currentDcMeta, futureDcMeta);
+		dcRouteMetaComparator.compare();
+		Set<String> allClusters = new HashSet<>();
+		allClusters.add(clusterName);
+		Mockito.when(currentMeta.allClusters()).thenReturn(allClusters);
+		currentMetaServerMetaManager.update(dcRouteMetaComparator, null);
+		//no exec addCluster
+		verify(currentMeta, times(1)).addCluster(any());
+		verify(currentMeta, times(3)).updateClusterRoutes(any(), any());
+	}
+
+	@Test
+	public void testChangeClusterType() {
+		currentMetaServerMetaManager = spy(new DefaultCurrentMetaManager());
+		currentMetaServerMetaManager.setSlotManager(slotManager);
+		currentMetaServerMetaManager.setDcMetaCache(dcMetaCache);
+		currentMetaServerMetaManager.setCurrentMeta(currentMeta);
+		currentMetaServerMetaManager.setCurrentClusterServer(currentClusterServer);
+		currentMetaServerMetaManager.addObserver(observer);
+		String clusterName = "cluster1";
+		Mockito.when(currentClusterServer.hasKey(clusterName)).thenReturn(true);
+
+		DcMeta currentDcMeta = new DcMeta().setId("jq");
+		ClusterMeta currentClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy");
+		ShardMeta currentShardMeta = new ShardMeta().setId("cluster1_1");
+		RedisMeta currentMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379);
+		RedisMeta currentSlave = new RedisMeta().setIp("127.0.0.1").setPort(6380).setMaster("127.0.0.1:6379");
+		KeeperMeta currentActive = new KeeperMeta().setIp("127.0.0.1").setPort(16379).setActive(true);
+		KeeperMeta currentKeeper= new KeeperMeta().setIp("127.0.0.1").setPort(16380);
+		currentShardMeta.addRedis(currentMaster).addRedis(currentSlave).addKeeper(currentActive).addKeeper(currentKeeper);
+		currentClusterMeta.addShard(currentShardMeta);
+		currentDcMeta.addCluster(currentClusterMeta);
+
+
+		Mockito.when(dcMetaCache.getClusterMeta(clusterName)).thenReturn(currentClusterMeta);
+
+		//init
+		currentMetaServerMetaManager.update(DcMetaComparator.buildClusterChanged(null, currentClusterMeta), null);
+		doAnswer(invocation -> {
+			Object node = invocation.getArgumentAt(0, Object.class);
+			Assert.assertTrue(node instanceof NodeAdded);
+			return null;
+		}).when(observer).update(any(), any());
+		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
+		verify(observer, times(1)).update(any(), any());
+
+		DcMeta futureDcMeta = new DcMeta().setId("jq").addRoute(new RouteMeta().setId(1));
+		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDcs("jq,oy,fq");
+		ShardMeta futureShardMeta = new ShardMeta().setId("cluster1_1");
+		RedisMeta futureMaster = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
+		RedisMeta futureSlave = new RedisMeta().setIp("127.0.0.1").setPort(6380).setGid(1L).setMaster("127.0.0.1:6379");
+		futureShardMeta.addRedis(futureMaster).addRedis(futureSlave);
+		currentClusterMeta.addShard(futureShardMeta);
+		futureDcMeta.addCluster(futureClusterMeta);
+
+		DcMetaComparator dcMetaComparator = new DcMetaComparator(currentDcMeta, futureDcMeta);
+		dcMetaComparator.compare();
+		Mockito.when(currentMeta.hasCluster(clusterName)).thenReturn(true);
+		currentMetaServerMetaManager.update(dcMetaComparator, null);
+		//remove
+		verify(currentMeta, times(1)).removeCluster(clusterName);
+		//add
+		verify(currentMeta, times(2)).addCluster(currentClusterMeta);
+	}
 }

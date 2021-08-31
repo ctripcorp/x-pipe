@@ -4,8 +4,8 @@ x-pipe
 [![Build Status](https://travis-ci.com/ctripcorp/x-pipe.svg?branch=master)](https://travis-ci.com/ctripcorp/x-pipe)
 [![Coverage Status](https://coveralls.io/repos/github/ctripcorp/x-pipe/badge.svg?branch=master)](https://coveralls.io/github/ctripcorp/x-pipe?branch=master)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/8884/badge.svg)](https://scan.coverity.com/projects/ctripcorp-x-pipe)
-[![QualityGate](https://cloud.quality-gate.com/dashboard/api/badge?projectName=ctripcorp_x-pipe&branchName=master)](https://cloud.quality-gate.com/dashboard/branches/3169#overview)
-
+[![github CI](https://github.com/ctripcorp/x-pipe/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/ctripcorp/x-pipe/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/ctripcorp/x-pipe/branch/master/graph/badge.svg?token=wj3MUNTPcF)](https://codecov.io/gh/ctripcorp/x-pipe)
 
 <!-- MarkdownTOC -->
 

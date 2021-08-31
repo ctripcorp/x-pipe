@@ -144,10 +144,21 @@ public class MetaUpdate extends AbstractConsoleController {
 
     //synchronizelly delete cluster, including meta server
     @RequestMapping(value = "/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
-    public RetMessage deleteCluster(@PathVariable String clusterName) {
+    public RetMessage deleteCluster(@PathVariable String clusterName, @RequestParam(defaultValue = "false") boolean checkEmpty) {
         logger.info("[deleteCluster]{}", clusterName);
         try {
             List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+            if (checkEmpty) {
+                for (DcTbl dcTbl: dcTbls) {
+                    String dcName = dcTbl.getDcName();
+                    List<RedisTbl> redises = redisService.findAllRedisesByDcClusterName(dcName, clusterName);
+                    if (!redises.isEmpty()) {
+                        logger.info("[deleteCluster][{}] check empty fail for dc {}", clusterName, dcName);
+                        return RetMessage.createFailMessage("cluster not empty in dc " + dcName);
+                    }
+                }
+            }
+
             clusterService.deleteCluster(clusterName);
             for(DcTbl dcTbl : dcTbls) {
                 try {

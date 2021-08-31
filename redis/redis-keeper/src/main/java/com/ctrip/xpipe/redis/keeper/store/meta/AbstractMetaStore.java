@@ -96,7 +96,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 	}
 
 	@Override
-	public final ReplicationStoreMeta dupReplicationStoreMeta() {
+	public ReplicationStoreMeta dupReplicationStoreMeta() {
 		return new ReplicationStoreMeta(metaRef.get());
 	}
 
