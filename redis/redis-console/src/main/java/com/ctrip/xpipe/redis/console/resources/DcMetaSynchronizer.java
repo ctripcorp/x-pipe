@@ -77,7 +77,6 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
             DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
             dcMetaComparator.compare();
-            logger.info("[DcMetaSynchronizer][sync]added:{}, removed:{}, modified:{}", dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified());
             new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService).sync();
         } catch (Exception e) {
             logger.error("[DcMetaSynchronizer][sync]", e);
