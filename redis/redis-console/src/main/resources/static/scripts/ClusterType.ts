@@ -27,7 +27,7 @@ function ClusterType() {
                 healthCheck: false,
             },
             'local_dc': {
-                name: 'ben机房缓存',
+                name: '本机房缓存',
                 value: 'local_dc',
                 multiActiveDcs: true,
                 useKeeper: false,
