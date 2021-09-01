@@ -10,25 +10,23 @@ function ActiveDcMigrationEventListCtl($rootScope, $scope, $window, $stateParams
     $scope.size = 10
     $scope.clusterName = $stateParams.clusterName
     $scope.operator = undefined;
-    $scope.status = undefined;
-    $scope.statuses = ["Initiated", "Checking", "CheckingFail", "Migrating", "PartialSuccess", "PartialRetryFail",
-        "Publish", "PublishFail", "RollBack", "RollBackFail",
-        "Aborted", "Success", "ForceEnd"];
+    $scope.type = undefined;
+    $scope.types = ["All", "Init", "Processing", "Success", "Fail"];
 
     $scope.onClusterChange = function() {
         $scope.operator = undefined;
-        $scope.status = undefined;
+        $scope.type = undefined;
         $scope.refresh();
     }
 
     $scope.onOperatorChange = function() {
         $scope.clusterName = undefined;
-        $scope.status = undefined;
+        $scope.type = undefined;
         $scope.refresh();
     }
 
-    $scope.onStatusChange = function(status) {
-        console.log("ActiveDcMigrationEventListCtl: onStatusChange", status);
+    $scope.onStatusChange = function(type) {
+        console.log("ActiveDcMigrationEventListCtl: onStatusChange", type);
         $scope.clusterName = undefined;
         $scope.operator = undefined;
         $scope.refresh();
@@ -45,8 +43,8 @@ function ActiveDcMigrationEventListCtl($rootScope, $scope, $window, $stateParams
             let deferred = $q.defer()
 
             let promise;
-            if (!!$scope.status) {
-                promise = MigrationService.findByMigrationStatus($scope.page - 1, $scope.size, $scope.status);
+            if (!!$scope.type && $scope.type != "All") {
+                promise = MigrationService.findByMigrationStatusType($scope.page - 1, $scope.size, $scope.type);
             } else if (!!$scope.operator) {
                 promise = MigrationService.findByOperator($scope.page - 1, $scope.size, $scope.operator);
             } else {
