@@ -14,6 +14,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -49,8 +50,14 @@ public class ClusterMetaSynchronizer {
         try {
             removed.forEach(clusterMeta -> {
                 try {
-                    logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
-                    clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
+                    List<DcTbl> relatedDcs = clusterService.getClusterRelatedDcs(clusterMeta.getId());
+                    if (relatedDcs.size() == 0 || relatedDcs.size() == 1 && relatedDcs.get(0).getDcName().equalsIgnoreCase(DcMetaSynchronizer.currentDcId)) {
+                        logger.info("[ClusterMetaSynchronizer][remove]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
+                        clusterService.deleteCluster(clusterMeta.getId());
+                    } else {
+                        logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
+                        clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
+                    }
                 } catch (Exception e) {
                     logger.error("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId, e);
                 }
@@ -71,7 +78,6 @@ public class ClusterMetaSynchronizer {
                             clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                             new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                         } else {
-
                             ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
                                     .setClusterDescription(clusterMeta.getId());
                             if (clusterMeta.getOrgId() != null) {
