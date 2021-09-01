@@ -18,6 +18,20 @@ function ClusterType() {
                 multiActiveDcs: true,
                 useKeeper: false,
                 healthCheck: true,
+            },
+            'single_dc': {
+                name: '单机房缓存',
+                value: 'single_dc',
+                multiActiveDcs: false,
+                useKeeper: false,
+                healthCheck: false,
+            },
+            'local_dc': {
+                name: 'ben机房缓存',
+                value: 'local_dc',
+                multiActiveDcs: true,
+                useKeeper: false,
+                healthCheck: false,
             }
         },
         lookup(typeName) {
