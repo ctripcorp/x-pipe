@@ -67,13 +67,15 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
         message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));
         executionLog.info("[prepare]" + keeperMaster);
 
+        // no need to deal with Redis 2.x whose master_repl_offset will be reset after master changed
+        // since all redis version GET 4.x in Ctrip
+        makeMasterReadOnly(clusterId, shardId, keeperMaster, true, executionLog);
+
         RedisInfo redisInfo = getInfoReplication(keeperMaster, executionLog);
         MasterInfo masterInfo = convert(redisInfo, executionLog);
         message.setMasterInfo(masterInfo);
 
         logger.info("[prepare]{}, {}, {}", keeperMaster, redisInfo, masterInfo);
-
-        makeMasterReadOnly(clusterId, shardId, keeperMaster, true, executionLog);
 
         removeSentinel(clusterId, shardId, executionLog);
 
