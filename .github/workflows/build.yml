@@ -9,7 +9,7 @@ on:
       - master
       - dev
       - coverity_scan
-      - final_gtihub_action
+      - add_test_2CI
   pull_request:
     branches:
       - master
@@ -42,10 +42,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Build with Maven
-        run: mvn install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
-
-      - name: generate report
-        run: mvn -Dlog.console.close=true  clean generate-resources --no-transfer-progress cobertura:cobertura -Dcobertura.report.format=xml
+        run: mvn install -Dlog.console.close=true -Dmaven.javadoc.skip=true -B -V
 
       - name: codecov
         uses: codecov/codecov-action@v2.0.1
