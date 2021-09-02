@@ -55,35 +55,6 @@ public class SentinelUpdateControllerTest {
     @Before
     public void before() {
         MockitoAnnotations.initMocks(this);
-        when(clusterService.reBalanceSentinels(anyString(), anyInt(), anyBoolean())).thenReturn(Arrays.asList(clusters));
-        when(clusterService.reBalanceSentinels("jq",0, true)).thenReturn(Collections.emptyList());
-    }
-
-    @Test
-    public void validateMock() {
-        Assert.assertEquals(Collections.emptyList(), clusterService.reBalanceSentinels("jq", 0, true));
-        Assert.assertEquals(Arrays.asList(clusters), clusterService.reBalanceSentinels("test", 2, true));
-    }
-
-    @Test
-    public void testReBalanceSentinels() throws Exception {
-        RetMessage message = RetMessage.createSuccessMessage("clusters: " + jsonCodec.encode(Arrays.asList(clusters)));
-        Assert.assertEquals(message.getMessage(), controller.reBalanceSentinels("sfo", 3).getMessage());
-    }
-
-    @Test
-    public void reBalanceSentinels1() throws Exception {
-        RetMessage message = RetMessage.createSuccessMessage("clusters: " + jsonCodec.encode(Arrays.asList(clusters)));
-        Assert.assertEquals(message.getMessage(), controller.reBalanceSentinels("oy", null).getMessage());
-    }
-
-    @Test
-    public void reBalanceSentinels2() throws Exception {
-        String expectedMessage = "Expected Message";
-        when(clusterService.reBalanceSentinels("fra", -1, true)).thenThrow(new RuntimeException(expectedMessage));
-        RetMessage message = controller.reBalanceSentinels("fra", -1);
-        Assert.assertEquals(-1, message.getState());
-        Assert.assertEquals(expectedMessage, message.getMessage());
     }
 
     @Test

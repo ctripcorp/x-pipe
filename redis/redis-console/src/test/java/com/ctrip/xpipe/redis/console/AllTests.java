@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceTest;
+import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
@@ -155,7 +156,6 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
         SentinelConfigCheckTest.class,
-        ClusterServiceImplTest4.class,
         DelayServiceTest.class,
         ShardMetaServiceImplTest.class,
         CrossDcLeaderElectionActionTest.class,
@@ -190,7 +190,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultClusterMonitorModifiedNotifierTest.class,
 
         DefaultPersistenceTest.class,
-        DefaultCheckerManagerTest.class
+        DefaultCheckerManagerTest.class,
+        DefaultSentinelBalanceServiceTest.class
 })
 public class AllTests {
 

@@ -35,8 +35,6 @@ public interface ClusterService {
 	void bindDc(String clusterName, String dcName);
 	void unbindDc(String clusterName, String dcName);
 	void update(ClusterTbl cluster);
-	List<String> reBalanceSentinels(String dcName, int numOfClusters, boolean activeOnly);
-	void reBalanceClusterSentinels(String dcName, List<String> clusterNames);
 
 	List<ClusterTbl> findErrorMigratingClusters();
 	List<ClusterTbl> findMigratingClusters();

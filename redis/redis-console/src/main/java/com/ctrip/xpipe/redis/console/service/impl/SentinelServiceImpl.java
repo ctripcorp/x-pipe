@@ -94,27 +94,6 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 		return result;
 	}
 
-	@Override
-	public Map<Long, SetinelTbl> eachRandomSentinelByDc() {
-
-		Map<Long, List<SetinelTbl>> allSentinelsByDc = allSentinelsByDc();
-		
-		Map<Long, SetinelTbl>  result = randomChose(allSentinelsByDc);
-
-		return result;
-	}
-
-	private Map<Long,SetinelTbl> randomChose(Map<Long, List<SetinelTbl>> allSentinelsByDc) {
-
-		Map<Long, SetinelTbl>  result = new HashMap<>();
-
-		allSentinelsByDc.forEach((dcId, setinels) -> {
-			result.put(dcId, random(setinels));
-		});
-
-		return result;
-	}
-
 	protected SetinelTbl random(List<SetinelTbl> setinels) {
 
 		Random random = new Random();
@@ -172,13 +151,18 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 	}
 
 	@Override
-	public Map<String, SentinelUsageModel> getAllSentinelsUsage() {
-		List<SetinelTbl> sentinels = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
+	public List<SetinelTbl> getAllSentinelsWithUsage() {
+		return queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
 			@Override
 			public List<SetinelTbl> doQuery() throws DalException {
 				return dao.findSentinelUsage(SetinelTblEntity.READSET_SENTINEL_USAGE);
 			}
 		});
+	}
+
+	@Override
+	public Map<String, SentinelUsageModel> getAllSentinelsUsage() {
+		List<SetinelTbl> sentinels = getAllSentinelsWithUsage();
 		Map<String, SentinelUsageModel> result = Maps.newHashMapWithExpectedSize(sentinels.size());
 		for(SetinelTbl sentinelTbl : sentinels) {
 			if(StringUtil.isEmpty(sentinelTbl.getSetinelAddress()))
@@ -186,7 +170,7 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 			String dcName = sentinelTbl.getDcInfo().getDcName();
 			result.putIfAbsent(dcName, new SentinelUsageModel(dcName));
 			SentinelUsageModel usage = result.get(dcName);
-			usage.addSentinelUsage(sentinelTbl.getSetinelAddress(), sentinelTbl.getCount());
+			usage.addSentinelUsage(sentinelTbl.getSetinelAddress(), sentinelTbl.getShardCount());
 		}
 		return result;
 	}
