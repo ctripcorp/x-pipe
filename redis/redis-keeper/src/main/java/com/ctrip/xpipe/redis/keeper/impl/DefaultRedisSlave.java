@@ -338,6 +338,7 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public void processPsyncSequentially(Runnable runnable) {
+		closeState.makeSureNotClosed();
 		psyncExecutor.execute(runnable);
 	}
 
