@@ -27,7 +27,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.55.173\",\n" +
+            "                            \"ip\": \".55.173\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -36,7 +36,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.25.214\",\n" +
+            "                            \"ip\": \".25.214\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -49,7 +49,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 2,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.48.237\",\n" +
+            "                            \"ip\": \".48.237\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"c639714d94aaba161c449fb749fe6d8159201f74\",\n" +
             "                            \"offset\": null\n" +
@@ -59,7 +59,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 1,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.42.209\",\n" +
+            "                            \"ip\": \".42.209\",\n" +
             "                            \"port\": 6450,\n" +
             "                            \"id\": \"c639714d94aaba161c449fb749fe6d8159201f74\",\n" +
             "                            \"offset\": null\n" +
@@ -75,7 +75,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.55.173\",\n" +
+            "                            \"ip\": \".55.173\",\n" +
             "                            \"port\": 6479,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -84,7 +84,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.25.214\",\n" +
+            "                            \"ip\": \".25.214\",\n" +
             "                            \"port\": 6479,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -97,7 +97,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 2,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.48.237\",\n" +
+            "                            \"ip\": \".48.237\",\n" +
             "                            \"port\": 6381,\n" +
             "                            \"id\": \"13ed1e1a51caf7491cb52947eac371b5ef4ccef7\",\n" +
             "                            \"offset\": null\n" +
@@ -107,7 +107,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 11,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.5.109.218\",\n" +
+            "                            \"ip\": \".109.218\",\n" +
             "                            \"port\": 6543,\n" +
             "                            \"id\": \"13ed1e1a51caf7491cb52947eac371b5ef4ccef7\",\n" +
             "                            \"offset\": null\n" +
@@ -123,7 +123,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.55.173\",\n" +
+            "                            \"ip\": \".55.173\",\n" +
             "                            \"port\": 6579,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -132,7 +132,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.25.214\",\n" +
+            "                            \"ip\": \".25.214\",\n" +
             "                            \"port\": 6579,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -145,7 +145,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 2,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.48.237\",\n" +
+            "                            \"ip\": \".48.237\",\n" +
             "                            \"port\": 6388,\n" +
             "                            \"id\": \"740c580236c93c10e328665508a504f1127a113d\",\n" +
             "                            \"offset\": null\n" +
@@ -155,7 +155,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 1,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.42.209\",\n" +
+            "                            \"ip\": \".42.209\",\n" +
             "                            \"port\": 6452,\n" +
             "                            \"id\": \"740c580236c93c10e328665508a504f1127a113d\",\n" +
             "                            \"offset\": null\n" +
@@ -171,7 +171,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.55.173\",\n" +
+            "                            \"ip\": \".55.173\",\n" +
             "                            \"port\": 6679,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -180,7 +180,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.25.214\",\n" +
+            "                            \"ip\": \".25.214\",\n" +
             "                            \"port\": 6679,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -193,7 +193,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 1,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.42.209\",\n" +
+            "                            \"ip\": \".42.209\",\n" +
             "                            \"port\": 6386,\n" +
             "                            \"id\": \"5e86224ff3a2ee3efded105ce8c98e3e27677217\",\n" +
             "                            \"offset\": null\n" +
@@ -203,7 +203,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 2,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.48.237\",\n" +
+            "                            \"ip\": \".48.237\",\n" +
             "                            \"port\": 6393,\n" +
             "                            \"id\": \"5e86224ff3a2ee3efded105ce8c98e3e27677217\",\n" +
             "                            \"offset\": null\n" +
@@ -219,7 +219,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.55.173\",\n" +
+            "                            \"ip\": \".55.173\",\n" +
             "                            \"port\": 6779,\n" +
             "                            \"id\": \"20180118165508724-20180118165508723-unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -228,7 +228,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.25.214\",\n" +
+            "                            \"ip\": \".25.214\",\n" +
             "                            \"port\": 6779,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -241,7 +241,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 1,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.42.209\",\n" +
+            "                            \"ip\": \".42.209\",\n" +
             "                            \"port\": 6388,\n" +
             "                            \"id\": \"b20d11e632d4a82cb96ba1ceaafd7d8b10d1b840\",\n" +
             "                            \"offset\": null\n" +
@@ -251,7 +251,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 7,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.217\",\n" +
+            "                            \"ip\": \".24.217\",\n" +
             "                            \"port\": 6399,\n" +
             "                            \"id\": \"b20d11e632d4a82cb96ba1ceaafd7d8b10d1b840\",\n" +
             "                            \"offset\": null\n" +
@@ -280,7 +280,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.217\",\n" +
+            "                            \"ip\": \".24.217\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -289,7 +289,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.218\",\n" +
+            "                            \"ip\": \".24.218\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -302,7 +302,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 8,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.218\",\n" +
+            "                            \"ip\": \".24.218\",\n" +
             "                            \"port\": 6380,\n" +
             "                            \"id\": \"09e2842b560b184e2e4e834a4b0777658af5fa84\",\n" +
             "                            \"offset\": null\n" +
@@ -312,7 +312,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 1,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.42.209\",\n" +
+            "                            \"ip\": \".42.209\",\n" +
             "                            \"port\": 5000,\n" +
             "                            \"id\": \"09e2842b560b184e2e4e834a4b0777658af5fa84\",\n" +
             "                            \"offset\": null\n" +
@@ -328,7 +328,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.217\",\n" +
+            "                            \"ip\": \".24.217\",\n" +
             "                            \"port\": 16379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -341,7 +341,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 8,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.218\",\n" +
+            "                            \"ip\": \".24.218\",\n" +
             "                            \"port\": 6381,\n" +
             "                            \"id\": \"73bf92d7f99b74c8c859b0c05050efe03eaede90\",\n" +
             "                            \"offset\": null\n" +
@@ -351,7 +351,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 11,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.5.109.218\",\n" +
+            "                            \"ip\": \".109.218\",\n" +
             "                            \"port\": 6412,\n" +
             "                            \"id\": \"73bf92d7f99b74c8c859b0c05050efe03eaede90\",\n" +
             "                            \"offset\": null\n" +
@@ -380,7 +380,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.254.65\",\n" +
+            "                            \"ip\": \"254.65\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -389,7 +389,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.219.96\",\n" +
+            "                            \"ip\": \"219.96\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -407,7 +407,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.27.226\",\n" +
+            "                            \"ip\": \"2.27.226\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -416,7 +416,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.221.31\",\n" +
+            "                            \"ip\": \"221.31\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -434,7 +434,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.221.247\",\n" +
+            "                            \"ip\": \"221.247\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -443,7 +443,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.27.124\",\n" +
+            "                            \"ip\": \"2.27.124\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -461,7 +461,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.219.248\",\n" +
+            "                            \"ip\": \"219.248\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -470,7 +470,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.235.138\",\n" +
+            "                            \"ip\": \"235.138\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -488,7 +488,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.249.13\",\n" +
+            "                            \"ip\": \"249.13\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -497,7 +497,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.235.117\",\n" +
+            "                            \"ip\": \"235.117\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -515,7 +515,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.27.62\",\n" +
+            "                            \"ip\": \"2.27.62\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -524,7 +524,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.222.143\",\n" +
+            "                            \"ip\": \"222.143\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -542,7 +542,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.252.124\",\n" +
+            "                            \"ip\": \"252.124\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -551,7 +551,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.222.134\",\n" +
+            "                            \"ip\": \"222.134\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -569,7 +569,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.222.127\",\n" +
+            "                            \"ip\": \"222.127\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -578,7 +578,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.27.242\",\n" +
+            "                            \"ip\": \"2.27.242\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -609,7 +609,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.254.226\",\n" +
+            "                            \"ip\": \"254.226\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -618,7 +618,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.223.209\",\n" +
+            "                            \"ip\": \"223.209\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -649,7 +649,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.253.250\",\n" +
+            "                            \"ip\": \"253.250\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -658,7 +658,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.223.243\",\n" +
+            "                            \"ip\": \"223.243\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -689,7 +689,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.216.198\",\n" +
+            "                            \"ip\": \"216.198\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -698,7 +698,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.219.37\",\n" +
+            "                            \"ip\": \"219.37\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -729,7 +729,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.239.86\",\n" +
+            "                            \"ip\": \"239.86\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -738,7 +738,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.219.200\",\n" +
+            "                            \"ip\": \"219.200\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -769,7 +769,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.125.210\",\n" +
+            "                            \"ip\": \"2.125.210\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -778,7 +778,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.27.179\",\n" +
+            "                            \"ip\": \"2.27.179\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -809,7 +809,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.221.194\",\n" +
+            "                            \"ip\": \"221.194\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -818,7 +818,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.222.154\",\n" +
+            "                            \"ip\": \"222.154\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -836,7 +836,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.222.32\",\n" +
+            "                            \"ip\": \"222.32\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -845,7 +845,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.221.181\",\n" +
+            "                            \"ip\": \"221.181\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -876,7 +876,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.22.76.64\",\n" +
+            "                            \"ip\": \"2.76.64\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -889,7 +889,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 1,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.42.209\",\n" +
+            "                            \"ip\": \".42.209\",\n" +
             "                            \"port\": 6239,\n" +
             "                            \"id\": \"9013a135ac83fd856677bb218c28003266d2e5f5\",\n" +
             "                            \"offset\": null\n" +
@@ -899,7 +899,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 2,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.48.237\",\n" +
+            "                            \"ip\": \".48.237\",\n" +
             "                            \"port\": 6296,\n" +
             "                            \"id\": \"9013a135ac83fd856677bb218c28003266d2e5f5\",\n" +
             "                            \"offset\": null\n" +
@@ -928,7 +928,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.4.73.140\",\n" +
+            "                            \"ip\": \"73.140\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -937,7 +937,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.4.66.236\",\n" +
+            "                            \"ip\": \"66.236\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -955,7 +955,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.4.73.135\",\n" +
+            "                            \"ip\": \"73.135\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -964,7 +964,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.4.66.185\",\n" +
+            "                            \"ip\": \"66.185\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -982,7 +982,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.4.73.173\",\n" +
+            "                            \"ip\": \"73.173\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -991,7 +991,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.4.66.254\",\n" +
+            "                            \"ip\": \"66.254\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1022,7 +1022,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.253.95\",\n" +
+            "                            \"ip\": \"253.95\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1031,7 +1031,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.223.218\",\n" +
+            "                            \"ip\": \"223.218\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1044,7 +1044,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 8,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.24.218\",\n" +
+            "                            \"ip\": \".24.218\",\n" +
             "                            \"port\": 6383,\n" +
             "                            \"id\": \"541eb3921ba3ad734a3c17498d4ed70be51eda49\",\n" +
             "                            \"offset\": null\n" +
@@ -1054,7 +1054,7 @@ public class JsonUtil {
             "                            \"active\": false,\n" +
             "                            \"keeperContainerId\": 2,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.2.48.237\",\n" +
+            "                            \"ip\": \".48.237\",\n" +
             "                            \"port\": 6395,\n" +
             "                            \"id\": \"541eb3921ba3ad734a3c17498d4ed70be51eda49\",\n" +
             "                            \"offset\": null\n" +
@@ -1083,7 +1083,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.21.179\",\n" +
+            "                            \"ip\": \"21.179\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1092,7 +1092,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.7.159\",\n" +
+            "                            \"ip\": \"7.159\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1105,7 +1105,7 @@ public class JsonUtil {
             "                }\n" +
             "            },\n" +
             "            \"backupDcs\": null,\n" +
-            "            \"adminEmails\": null,\n" +
+            "            \"adminEmails\": \"test@ctrip.com\",\n" +
             "            \"phase\": null,\n" +
             "            \"type\": \"LOCAL_DC\",\n" +
             "            \"id\": \"LocalDcCacheCluster\",\n" +
@@ -1113,7 +1113,7 @@ public class JsonUtil {
             "        },\n" +
             "        \"SingleDcCacheCluster\": {\n" +
             "            \"dcs\": null,\n" +
-            "            \"orgId\": 18,\n" +
+            "            \"orgId\": 8,\n" +
             "            \"activeDc\": \"NTGXH\",\n" +
             "            \"shards\": {\n" +
             "                \"credis_test_cluster_1_1\": {\n" +
@@ -1123,7 +1123,7 @@ public class JsonUtil {
             "                            \"master\": \"\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.7.111\",\n" +
+            "                            \"ip\": \"7.111\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1132,7 +1132,7 @@ public class JsonUtil {
             "                            \"master\": \"0.0.0.0:0\",\n" +
             "                            \"gid\": null,\n" +
             "                            \"survive\": null,\n" +
-            "                            \"ip\": \"10.6.251.113\",\n" +
+            "                            \"ip\": \"251.113\",\n" +
             "                            \"port\": 6379,\n" +
             "                            \"id\": \"unknown\",\n" +
             "                            \"offset\": null\n" +
@@ -1145,7 +1145,7 @@ public class JsonUtil {
             "                }\n" +
             "            },\n" +
             "            \"backupDcs\": \"\",\n" +
-            "            \"adminEmails\": null,\n" +
+            "            \"adminEmails\": \"test@ctrip.com\",\n" +
             "            \"phase\": null,\n" +
             "            \"type\": \"SINGLE_DC\",\n" +
             "            \"id\": \"SingleDcCacheCluster\",\n" +
@@ -1154,41 +1154,41 @@ public class JsonUtil {
             "    },\n" +
             "    \"sentinels\": {\n" +
             "        \"1\": {\n" +
-            "            \"address\": \"10.2.48.234:5000,10.2.48.234:5001,10.2.48.234:5002,10.2.48.234:5003,10.2.48.234:5004\",\n" +
+            "            \"address\": \".48.234:5000,.48.234:5001,.48.234:5002,.48.234:5003,.48.234:5004\",\n" +
             "            \"id\": 1\n" +
             "        },\n" +
             "        \"3\": {\n" +
-            "            \"address\": \"10.2.38.97:5000,10.2.38.97:5001,10.2.38.97:5002,10.2.38.97:5003,10.2.38.97:5004\",\n" +
+            "            \"address\": \".38.97:5000,.38.97:5001,.38.97:5002,.38.97:5003,.38.97:5004\",\n" +
             "            \"id\": 3\n" +
             "        },\n" +
             "        \"151\": {\n" +
-            "            \"address\": \"10.2.27.105:5004,10.2.27.98:5004,10.2.27.97:5004,10.2.27.96:5004,10.2.27.104:5004\",\n" +
+            "            \"address\": \".27.105:5004,.27.98:5004,.27.97:5004,.27.96:5004,.27.104:5004\",\n" +
             "            \"id\": 151\n" +
             "        }\n" +
             "    },\n" +
             "    \"keeperContainers\": [\n" +
             "        {\n" +
-            "            \"ip\": \"10.2.42.209\",\n" +
+            "            \"ip\": \".42.209\",\n" +
             "            \"port\": 8080,\n" +
             "            \"id\": 1\n" +
             "        },\n" +
             "        {\n" +
-            "            \"ip\": \"10.2.48.237\",\n" +
+            "            \"ip\": \".48.237\",\n" +
             "            \"port\": 8080,\n" +
             "            \"id\": 2\n" +
             "        },\n" +
             "        {\n" +
-            "            \"ip\": \"10.2.24.217\",\n" +
+            "            \"ip\": \".24.217\",\n" +
             "            \"port\": 8080,\n" +
             "            \"id\": 7\n" +
             "        },\n" +
             "        {\n" +
-            "            \"ip\": \"10.2.24.218\",\n" +
+            "            \"ip\": \".24.218\",\n" +
             "            \"port\": 8080,\n" +
             "            \"id\": 8\n" +
             "        },\n" +
             "        {\n" +
-            "            \"ip\": \"10.5.109.218\",\n" +
+            "            \"ip\": \".109.218\",\n" +
             "            \"port\": 8080,\n" +
             "            \"id\": 11\n" +
             "        }\n" +
@@ -1201,7 +1201,7 @@ public class JsonUtil {
             "    \"lastModifiedTime\": \"201612051157001\"\n" +
             "}";
 
-    static final String credisMetaString="{\"id\":0,\"dcName\":null,\"regionId\":0,\"sentinels\":{},\"clusters\":{\"LocalDcCacheCluster\":{\"clusterId\":2830,\"name\":\"LocalDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:21\",\"rootGroup\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_ClusterGroup\",\"groupId\":1000000457,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1882675799,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.6.7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.6.21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"10.6.21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"10.6.7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"10.6.21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"10.6.7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"LOCAL_DC\",\"ownerEmails\":\"lilj@ctrip.com\",\"orgId\":45,\"groups\":{\"credis_test_cluster_3_1\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.6.7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.6.21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"10.6.21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"10.6.7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"xredis_crdt\":{\"clusterId\":3635,\"name\":\"xredis_crdt\",\"lastModifiedTime\":\"2020-07-02 15:13:31\",\"rootGroup\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_ClusterGroup\",\"groupId\":1000002322,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1092314443,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.2.37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.2.37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\"10.2.37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\"10.2.37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.2.37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.2.37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\"10.2.37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\"10.2.37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"xredis_crdt_2\":[{\"host\":\"10.2.37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\"10.2.37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\"10.2.37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\"10.2.37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":5,\"dbNumber\":0,\"clusterType\":\"XPIPE_BI_DIRECT\",\"ownerEmails\":\"gd.zhou@trip.com\",\"orgId\":56,\"groups\":{\"xredis_crdt_2\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.2.37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.2.37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\"10.2.37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\"10.2.37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"xredis_crdt_1\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.2.37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.2.37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\"10.2.37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\"10.2.37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"SingleDcCacheCluster\":{\"clusterId\":2822,\"name\":\"SingleDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:39\",\"rootGroup\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_ClusterGroup\",\"groupId\":1000000448,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-508745800,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.6.7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.6.251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"10.6.7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"10.6.251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"10.6.7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"10.6.251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":0,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"SINGEL_DC\",\"ownerEmails\":\"lilj@ctrip.com\",\"orgId\":45,\"groups\":{\"credis_test_cluster_1_1\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.6.7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.6.251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"10.6.7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"10.6.251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"XPipe_ReadActiveDc_Cluster\":{\"clusterId\":2824,\"name\":\"XPipe_ReadActiveDc_Cluster\",\"lastModifiedTime\":\"2020-07-02 14:53:09\",\"rootGroup\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_ClusterGroup\",\"groupId\":1000000449,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1235929418,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.6.68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.6.7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"10.6.68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"10.6.7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"10.6.68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"10.6.7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"NTGXH\",\"excludedIdcs\":\"\",\"routeStrategy\":2,\"dbNumber\":0,\"clusterType\":\"XPIPE_ONE_WAY\",\"ownerEmails\":\"lilj@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_10_1\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"10.6.68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"10.6.7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"10.6.68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"10.6.7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}}}}";
+    static final String credisMetaString="{\"id\":0,\"dcName\":null,\"regionId\":0,\"sentinels\":{},\"clusters\":{\"LocalDcCacheCluster\":{\"clusterId\":2830,\"name\":\"LocalDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:21\",\"rootGroup\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_ClusterGroup\",\"groupId\":1000000457,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1882675799,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"LOCAL_DC\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":45,\"groups\":{\"credis_test_cluster_3_1\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"xredis_crdt\":{\"clusterId\":3635,\"name\":\"xredis_crdt\",\"lastModifiedTime\":\"2020-07-02 15:13:31\",\"rootGroup\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_ClusterGroup\",\"groupId\":1000002322,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1092314443,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":5,\"dbNumber\":0,\"clusterType\":\"XPIPE_BI_DIRECT\",\"ownerEmails\":\"gd.zhou@trip.com\",\"orgId\":56,\"groups\":{\"xredis_crdt_2\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"xredis_crdt_1\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"SingleDcCacheCluster\":{\"clusterId\":2822,\"name\":\"SingleDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:39\",\"rootGroup\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_ClusterGroup\",\"groupId\":1000000448,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-508745800,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":0,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"SINGEL_DC\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_1_1\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"XPipe_ReadActiveDc_Cluster\":{\"clusterId\":2824,\"name\":\"XPipe_ReadActiveDc_Cluster\",\"lastModifiedTime\":\"2020-07-02 14:53:09\",\"rootGroup\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_ClusterGroup\",\"groupId\":1000000449,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1235929418,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"NTGXH\",\"excludedIdcs\":\"\",\"routeStrategy\":2,\"dbNumber\":0,\"clusterType\":\"XPIPE_ONE_WAY\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_10_1\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}}}}";
 
     public static <T> T fromJson(String value, TypeReference<T> type) {
         T result = null;

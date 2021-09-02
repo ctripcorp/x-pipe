@@ -402,8 +402,9 @@ public interface OuterClientService extends Ordered{
 			return name;
 		}
 
-		public void setName(String name) {
+		public ClusterMeta setName(String name) {
 			this.name = name;
+			return this;
 		}
 
 		public String getLastModifiedTime() {
@@ -478,24 +479,26 @@ public interface OuterClientService extends Ordered{
 			return clusterName;
 		}
 
-		public void setClusterName(String clusterName) {
+		public GroupMeta setClusterName(String clusterName) {
 			this.clusterName = clusterName;
+			return this;
 		}
 
 		public String getGroupName() {
 			return groupName;
 		}
 
-		public void setGroupName(String groupName) {
+		public GroupMeta setGroupName(String groupName) {
 			this.groupName = groupName;
+			return this;
 		}
 
 		public List<RedisMeta> getRedises() {
 			return redises;
 		}
 
-		public void setRedises(List<RedisMeta> redises) {
-			this.redises = redises;
+		public GroupMeta setRedises(List<RedisMeta> redises) {
+			this.redises = redises;return this;
 		}
 
 		public RedisMeta getMaster() {
@@ -536,24 +539,25 @@ public interface OuterClientService extends Ordered{
 			return host;
 		}
 
-		public void setHost(String host) {
+		public RedisMeta setHost(String host) {
 			this.host = host;
+			return this;
 		}
 
 		public int getPort() {
 			return port;
 		}
 
-		public void setPort(int port) {
-			this.port = port;
+		public RedisMeta setPort(int port) {
+			this.port = port;return this;
 		}
 
 		public boolean isMaster() {
 			return master;
 		}
 
-		public void setMaster(boolean master) {
-			this.master = master;
+		public RedisMeta setMaster(boolean master) {
+			this.master = master;return this;
 		}
 
 		public InstanceStatus getStatus() {

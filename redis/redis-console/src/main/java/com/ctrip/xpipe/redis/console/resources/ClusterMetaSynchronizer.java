@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ClusterSyncMetaComparator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -116,10 +117,10 @@ public class ClusterMetaSynchronizer {
             long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
             modified.forEach(metaComparator -> {
                 try {
-                    ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) metaComparator;
+                    ClusterSyncMetaComparator clusterMetaComparator = (ClusterSyncMetaComparator) metaComparator;
                     ClusterMeta future = clusterMetaComparator.getFuture();
                     ClusterTbl currentClusterTbl = clusterService.find(future.getId());
-                    if (needUpdate(future, currentClusterTbl, currentDcId)) {
+                    if (needUpdate(future, currentClusterTbl)) {
                         if (future.getOrgId() != null && currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
                             currentClusterTbl.setClusterOrgId(future.getOrgId());
                             OrganizationTbl existedOrgTbl = organizationService.getOrganization(future.getOrgId());
@@ -129,6 +130,8 @@ public class ClusterMetaSynchronizer {
                         currentClusterTbl.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
                         if (ClusterType.lookup(future.getType()).supportSingleActiveDC()) {
                             currentClusterTbl.setActivedcId(currentDcId);
+                        } else {
+                            currentClusterTbl.setActivedcId(0);
                         }
                         logger.info("[ClusterMetaSynchronizer][update]{} -> {}, toUpdateTbl: {}", clusterMetaComparator.getCurrent(), future, currentClusterTbl);
                         clusterService.update(currentClusterTbl);
@@ -143,12 +146,11 @@ public class ClusterMetaSynchronizer {
         }
     }
 
-    boolean needUpdate(ClusterMeta future, ClusterTbl current, long currentDcId) {
+    boolean needUpdate(ClusterMeta future, ClusterTbl current) {
         return !(Objects.equals(current.getClusterName(), future.getId()) &&
-                Objects.equals(current.getClusterOrgId(), future.getOrgId()) &&
+                Objects.equals(current.getClusterOrgId(), Long.valueOf(future.getOrgId())) &&
                 Objects.equals(current.getClusterAdminEmails(), future.getAdminEmails()) &&
-                Objects.equals(current.getClusterType(), future.getType()) &&
-                Objects.equals(current.getActivedcId(), currentDcId));
+                Objects.equals(current.getClusterType(), future.getType()));
     }
 
 }
