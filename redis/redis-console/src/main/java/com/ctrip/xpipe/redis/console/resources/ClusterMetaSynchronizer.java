@@ -144,11 +144,11 @@ public class ClusterMetaSynchronizer {
     }
 
     boolean needUpdate(ClusterMeta future, ClusterTbl current, long currentDcId) {
-        return !(Objects.equals(current.getClusterName(), future.getId())) &&
+        return !(Objects.equals(current.getClusterName(), future.getId()) &&
                 Objects.equals(current.getClusterOrgId(), future.getOrgId()) &&
                 Objects.equals(current.getClusterAdminEmails(), future.getAdminEmails()) &&
                 Objects.equals(current.getClusterType(), future.getType()) &&
-                Objects.equals(current.getActivedcId(), currentDcId);
+                Objects.equals(current.getActivedcId(), currentDcId));
     }
 
 }

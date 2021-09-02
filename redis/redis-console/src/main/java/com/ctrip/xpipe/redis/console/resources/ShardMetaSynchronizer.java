@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class ShardMetaSynchronizer implements MetaSynchronizer {
@@ -72,17 +73,23 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
         try {
             if (!(modified == null || modified.isEmpty()))
                 modified.forEach(metaComparator -> {
-                    try {
-                        ShardMetaComparator shardMetaComparator = (ShardMetaComparator) metaComparator;
-                        logger.info("[ShardMetaSynchronizer][update]{} -> {}", shardMetaComparator.getCurrent(), shardMetaComparator.getFuture());
-                        new RedisMetaSynchronizer(shardMetaComparator.getAdded(), shardMetaComparator.getRemoved(), shardMetaComparator.getMofified(), redisService).sync();
-                    } catch (Exception e) {
-                        logger.error("[ShardMetaSynchronizer][update]{} -> {}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture(), e);
+                    ShardMetaComparator shardMetaComparator = (ShardMetaComparator) metaComparator;
+                    if (needUpdate(shardMetaComparator)) {
+                        try {
+                            logger.info("[ShardMetaSynchronizer][update]{} -> {}", shardMetaComparator.getCurrent(), shardMetaComparator.getFuture());
+                            new RedisMetaSynchronizer(shardMetaComparator.getAdded(), shardMetaComparator.getRemoved(), shardMetaComparator.getMofified(), redisService).sync();
+                        } catch (Exception e) {
+                            logger.error("[ShardMetaSynchronizer][update]{} -> {}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture(), e);
+                        }
                     }
                 });
         } catch (Exception e) {
             logger.error("[ShardMetaSynchronizer][update]", e);
         }
+    }
+
+    boolean needUpdate(ShardMetaComparator metaComparator) {
+        return !Objects.equals(Sets.newHashSet(metaComparator.getCurrent().getRedises()), Sets.newHashSet(metaComparator.getFuture().getRedises()));
     }
 
 }

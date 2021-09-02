@@ -36,19 +36,19 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     private MetaCache metaCache;
 
     @Autowired
-    public RedisService redisService;
+    private RedisService redisService;
 
     @Autowired
-    public ShardService shardService;
+    private ShardService shardService;
 
     @Autowired
-    public ClusterService clusterService;
+    private ClusterService clusterService;
 
     @Autowired
-    public DcService dcService;
+    private DcService dcService;
 
     @Autowired
-    public OrganizationService organizationService;
+    private OrganizationService organizationService;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -147,7 +147,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     }
 
     ClusterMeta newClusterMeta(ClusterMeta origin) {
-        ClusterMeta clusterMeta = new ClusterMeta(origin.getId()).setType(origin.getType()).setAdminEmails(origin.getAdminEmails()).setOrgId(origin.getOrgId());
+        ClusterMeta clusterMeta = new ClusterMeta(origin.getId()).setType(origin.getType()).setAdminEmails(origin.getAdminEmails()).setOrgId(origin.getOrgId()).setActiveDc(origin.getActiveDc());
         Map<String, ShardMeta> groups = origin.getShards();
         for (ShardMeta shard : groups.values()) {
             clusterMeta.addShard(newShardMeta(shard).setParent(clusterMeta));

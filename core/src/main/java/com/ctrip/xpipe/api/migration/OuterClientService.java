@@ -351,8 +351,9 @@ public interface OuterClientService extends Ordered{
 			return dcName;
 		}
 
-		public void setDcName(String dcName) {
+		public DcMeta setDcName(String dcName) {
 			this.dcName = dcName;
+			return this;
 		}
 
 		public long getRegionId() {
