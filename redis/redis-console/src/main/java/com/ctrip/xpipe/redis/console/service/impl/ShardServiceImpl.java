@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;

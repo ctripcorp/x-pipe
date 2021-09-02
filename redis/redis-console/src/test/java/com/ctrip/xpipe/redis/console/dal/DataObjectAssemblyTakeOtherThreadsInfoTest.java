@@ -148,7 +148,7 @@ public class DataObjectAssemblyTakeOtherThreadsInfoTest extends AbstractConsoleI
         ClusterTbl clusterTbl = clusterService.createCluster(buildClusterModel(clusterMeta));
         for(Map.Entry<String, ShardMeta> shardMetaEntry : clusterMeta.getShards().entrySet()) {
             ShardMeta shardMeta = shardMetaEntry.getValue();
-            shardService.createShard(clusterMeta.getId(), buildShardTbl(shardMeta, clusterTbl), null);
+            shardService.createShard(clusterMeta.getId(), buildShardTbl(shardMeta, clusterTbl), Collections.emptyMap());
             List<Pair<String, Integer>> pairs = new ArrayList<>();
             for(RedisMeta redisMeta : shardMeta.getRedises()) {
                 pairs.add(new Pair<> (redisMeta.getIp(), redisMeta.getPort()));

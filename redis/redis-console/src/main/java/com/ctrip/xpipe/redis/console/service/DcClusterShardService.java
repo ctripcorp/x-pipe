@@ -15,4 +15,6 @@ public interface DcClusterShardService {
 	void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException;
 	List<DcClusterShardTbl> findAllByDcId(long dcId);
 	List<DcClusterShardTbl> findAllByDcIdAndInClusterTypes(long dcId, Set<String> clusterTypes);
+	List<DcClusterShardTbl> findBackupDcShardsBySentinel(long sentinelId);
+	List<DcClusterShardTbl> findAllShardsBySentinel(long sentinelId);
 }
