@@ -81,23 +81,27 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		for (final RedisSlave redisSlave : redisKeeperServer.slaves()) {
 			if (redisSlave.getSlaveState() == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING) {
 				getLogger().info("[doWhenDumping][slave waiting for rdb, resume]{}", redisSlave);
-				redisSlave.processPsyncSequentially(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							redisKeeperServer.fullSyncToSlave(redisSlave);
-						} catch (Throwable th) {
+				try {
+					redisSlave.processPsyncSequentially(new Runnable() {
+						@Override
+						public void run() {
 							try {
-								getLogger().error(String.format("fullsync to slave:%s", redisSlave), th);
-								if(redisSlave.isOpen()){
-									redisSlave.close();
+								redisKeeperServer.fullSyncToSlave(redisSlave);
+							} catch (Throwable th) {
+								try {
+									getLogger().error(String.format("fullsync to slave:%s", redisSlave), th);
+									if(redisSlave.isOpen()){
+										redisSlave.close();
+									}
+								} catch (IOException e) {
+									getLogger().error("[run][close]" + redisSlave, th);
 								}
-							} catch (IOException e) {
-								getLogger().error("[run][close]" + redisSlave, th);
 							}
 						}
-					}
-				});
+					});
+				} catch (Throwable th) {
+					getLogger().info("[doWhenDumping][fail]{}", redisSlave, th);
+				}
 			}
 		}
 	}
