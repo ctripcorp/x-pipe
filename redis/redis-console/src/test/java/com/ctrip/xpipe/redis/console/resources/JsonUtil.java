@@ -18,7 +18,7 @@ public class JsonUtil {
             "        \"xpipe_function\": {\n" +
             "            \"dcs\": null,\n" +
             "            \"orgId\": 8,\n" +
-            "            \"activeDc\": \"NTGXH\",\n" +
+            "            \"activeDc\": \"jq\",\n" +
             "            \"shards\": {\n" +
             "                \"shard1\": {\n" +
             "                    \"sentinelId\": 3,\n" +
@@ -42,7 +42,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard1+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -90,7 +90,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard2+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard2+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -138,7 +138,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard3+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard3+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -186,7 +186,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard4+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_function-shard4+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -234,7 +234,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_functionshard5+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe_function+xpipe_functionshard5+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -271,7 +271,7 @@ public class JsonUtil {
             "        \"xpipe-test\": {\n" +
             "            \"dcs\": null,\n" +
             "            \"orgId\": 44,\n" +
-            "            \"activeDc\": \"NTGXH\",\n" +
+            "            \"activeDc\": \"jq\",\n" +
             "            \"shards\": {\n" +
             "                \"shard-test\": {\n" +
             "                    \"sentinelId\": 3,\n" +
@@ -295,7 +295,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe-test+xpipe-test-shard-test+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe-test+xpipe-test-shard-test+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -334,7 +334,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"xpipe-test+xpipe-testshard-test2+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"xpipe-test+xpipe-testshard-test2+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -369,7 +369,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"HTL_KeyCache_Push_RB\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 9,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -395,7 +395,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_1\"\n" +
@@ -422,7 +422,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_2+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_2+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_2\"\n" +
@@ -449,7 +449,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_3+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_3+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_3\"\n" +
@@ -476,7 +476,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_4+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_4+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_4\"\n" +
@@ -503,7 +503,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_5+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_5+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_5\"\n" +
@@ -530,7 +530,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_6+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_6+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_6\"\n" +
@@ -557,7 +557,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_7+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_7+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_7\"\n" +
@@ -584,7 +584,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_8+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HTL_KeyCache_Push_RB+HTL_KeyCache_Push_RB_8+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"HTL_KeyCache_Push_RB_8\"\n" +
@@ -598,7 +598,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_auto_creation_cluster\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 18,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -624,7 +624,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_auto_creation_cluster+test_auto_creation_cluster_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_auto_creation_cluster+test_auto_creation_cluster_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_auto_creation_cluster_1\"\n" +
@@ -638,7 +638,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_xredis_1.0.10\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 18,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -664,7 +664,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xredis_1.0.10+test_xredis_1.0.10_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xredis_1.0.10+test_xredis_1.0.10_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xredis_1.0.10_1\"\n" +
@@ -678,7 +678,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_xredis_1.0.11\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 18,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -704,7 +704,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xredis_1.0.11+test_xredis_1.0.11_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xredis_1.0.11+test_xredis_1.0.11_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xredis_1.0.11_1\"\n" +
@@ -718,7 +718,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_xredis_1.0.13\": {\n" +
-            "            \"dcs\": \"UAT,NTGXH\",\n" +
+            "            \"dcs\": \"UAT,jq\",\n" +
             "            \"orgId\": 18,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -744,7 +744,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xredis_1.0.13+test_xredis_1.0.13_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xredis_1.0.13+test_xredis_1.0.13_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xredis_1.0.13_1\"\n" +
@@ -758,7 +758,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_xredis_1.0.12\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 18,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -784,7 +784,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xredis_1.0.12+test_xredis_1.0.12_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xredis_1.0.12+test_xredis_1.0.12_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xredis_1.0.12_1\"\n" +
@@ -798,7 +798,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_crdt_migrate\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 18,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -824,7 +824,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_crdt_migrate+test_crdt_migrate_2+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_crdt_migrate+test_crdt_migrate_2+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_crdt_migrate_2\"\n" +
@@ -851,7 +851,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_crdt_migrate+test_crdt_migrate_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_crdt_migrate+test_crdt_migrate_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_crdt_migrate_1\"\n" +
@@ -882,7 +882,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"HotelAllianceDataChangeCache+HotelAllianceDataChangeCache_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"HotelAllianceDataChangeCache+HotelAllianceDataChangeCache_1+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -909,7 +909,7 @@ public class JsonUtil {
             "                    \"id\": \"HotelAllianceDataChangeCache_1\"\n" +
             "                }\n" +
             "            },\n" +
-            "            \"backupDcs\": \"NTGXH\",\n" +
+            "            \"backupDcs\": \"jq\",\n" +
             "            \"adminEmails\": null,\n" +
             "            \"phase\": null,\n" +
             "            \"type\": \"one_way\",\n" +
@@ -917,7 +917,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"test_xpipe_one_way_migrate\": {\n" +
-            "            \"dcs\": \"UAT,NTGXH\",\n" +
+            "            \"dcs\": \"UAT,jq\",\n" +
             "            \"orgId\": 7,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -943,7 +943,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xpipe_one_way_migrate+test_xpipe_one_way_migrate_2+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xpipe_one_way_migrate+test_xpipe_one_way_migrate_2+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xpipe_one_way_migrate_2\"\n" +
@@ -970,7 +970,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xpipe_one_way_migrate+test_xpipe_one_way_migrate_3+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xpipe_one_way_migrate+test_xpipe_one_way_migrate_3+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xpipe_one_way_migrate_3\"\n" +
@@ -997,7 +997,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_xpipe_one_way_migrate+test_xpipe_one_way_migrate_4+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_xpipe_one_way_migrate+test_xpipe_one_way_migrate_4+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"test_xpipe_one_way_migrate_4\"\n" +
@@ -1013,7 +1013,7 @@ public class JsonUtil {
             "        \"test_one_way_migrate2\": {\n" +
             "            \"dcs\": null,\n" +
             "            \"orgId\": 8,\n" +
-            "            \"activeDc\": \"NTGXH\",\n" +
+            "            \"activeDc\": \"jq\",\n" +
             "            \"shards\": {\n" +
             "                \"test_one_way_migrate2_1\": {\n" +
             "                    \"sentinelId\": 3,\n" +
@@ -1037,7 +1037,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"test_one_way_migrate2+test_one_way_migrate2_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"test_one_way_migrate2+test_one_way_migrate2_1+jq\",\n" +
             "                    \"keepers\": [\n" +
             "                        {\n" +
             "                            \"master\": null,\n" +
@@ -1072,7 +1072,7 @@ public class JsonUtil {
             "            \"lastModifiedTime\": null\n" +
             "        },\n" +
             "        \"LocalDcCacheCluster\": {\n" +
-            "            \"dcs\": \"NTGXH,UAT\",\n" +
+            "            \"dcs\": \"jq,UAT\",\n" +
             "            \"orgId\": 9,\n" +
             "            \"activeDc\": null,\n" +
             "            \"shards\": {\n" +
@@ -1098,7 +1098,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"LocalDcCacheCluster+credis_test_cluster_3_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"LocalDcCacheCluster+credis_test_cluster_3_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"credis_test_cluster_3_1\"\n" +
@@ -1114,7 +1114,7 @@ public class JsonUtil {
             "        \"SingleDcCacheCluster\": {\n" +
             "            \"dcs\": null,\n" +
             "            \"orgId\": 8,\n" +
-            "            \"activeDc\": \"NTGXH\",\n" +
+            "            \"activeDc\": \"jq\",\n" +
             "            \"shards\": {\n" +
             "                \"credis_test_cluster_1_1\": {\n" +
             "                    \"sentinelId\": 0,\n" +
@@ -1138,7 +1138,7 @@ public class JsonUtil {
             "                            \"offset\": null\n" +
             "                        }\n" +
             "                    ],\n" +
-            "                    \"sentinelMonitorName\": \"SingleDcCacheCluster+credis_test_cluster_1_1+NTGXH\",\n" +
+            "                    \"sentinelMonitorName\": \"SingleDcCacheCluster+credis_test_cluster_1_1+jq\",\n" +
             "                    \"keepers\": [],\n" +
             "                    \"phase\": null,\n" +
             "                    \"id\": \"credis_test_cluster_1_1\"\n" +
@@ -1197,11 +1197,11 @@ public class JsonUtil {
             "    \"zone\": \"SHA\",\n" +
             "    \"metaServers\": [],\n" +
             "    \"routes\": [],\n" +
-            "    \"id\": \"NTGXH\",\n" +
+            "    \"id\": \"jq\",\n" +
             "    \"lastModifiedTime\": \"201612051157001\"\n" +
             "}";
 
-    static final String credisMetaString="{\"id\":0,\"dcName\":null,\"regionId\":0,\"sentinels\":{},\"clusters\":{\"LocalDcCacheCluster\":{\"clusterId\":2830,\"name\":\"LocalDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:21\",\"rootGroup\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_ClusterGroup\",\"groupId\":1000000457,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1882675799,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"LOCAL_DC\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":45,\"groups\":{\"credis_test_cluster_3_1\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"xredis_crdt\":{\"clusterId\":3635,\"name\":\"xredis_crdt\",\"lastModifiedTime\":\"2020-07-02 15:13:31\",\"rootGroup\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_ClusterGroup\",\"groupId\":1000002322,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1092314443,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":5,\"dbNumber\":0,\"clusterType\":\"XPIPE_BI_DIRECT\",\"ownerEmails\":\"gd.zhou@trip.com\",\"orgId\":56,\"groups\":{\"xredis_crdt_2\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"xredis_crdt_1\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"NTGXH\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"SingleDcCacheCluster\":{\"clusterId\":2822,\"name\":\"SingleDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:39\",\"rootGroup\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_ClusterGroup\",\"groupId\":1000000448,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-508745800,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":0,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"SINGEL_DC\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_1_1\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"XPipe_ReadActiveDc_Cluster\":{\"clusterId\":2824,\"name\":\"XPipe_ReadActiveDc_Cluster\",\"lastModifiedTime\":\"2020-07-02 14:53:09\",\"rootGroup\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_ClusterGroup\",\"groupId\":1000000449,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1235929418,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"NTGXH\",\"excludedIdcs\":\"\",\"routeStrategy\":2,\"dbNumber\":0,\"clusterType\":\"XPIPE_ONE_WAY\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_10_1\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"NTGXH\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}}}}";
+    static final String credisMetaString="{\"id\":0,\"dcName\":null,\"regionId\":0,\"sentinels\":{},\"clusters\":{\"LocalDcCacheCluster\":{\"clusterId\":2830,\"name\":\"LocalDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:21\",\"rootGroup\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_ClusterGroup\",\"groupId\":1000000457,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1882675799,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"LOCAL_DC\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":45,\"groups\":{\"credis_test_cluster_3_1\":{\"clusterName\":\"LocalDcCacheCluster\",\"groupName\":\"credis_test_cluster_3_1\",\"groupId\":1000000476,\"compatibleGroupId\":0,\"parentGroupId\":1000000457,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-102172238,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_3_1\":[{\"host\":\"21.179\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7122,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_3_1\":[{\"host\":\"7.159\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7119,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"xredis_crdt\":{\"clusterId\":3635,\"name\":\"xredis_crdt\",\"lastModifiedTime\":\"2020-07-02 15:13:31\",\"rootGroup\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_ClusterGroup\",\"groupId\":1000002322,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1092314443,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":5,\"dbNumber\":0,\"clusterType\":\"XPIPE_BI_DIRECT\",\"ownerEmails\":\"gd.zhou@trip.com\",\"orgId\":56,\"groups\":{\"xredis_crdt_2\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_2\",\"groupId\":1000002324,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1395255722,\"indexInParent\":1,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_2\":[{\"host\":\".37.77\",\"port\":7479,\"master\":true,\"status\":\"ACTIVE\",\"id\":35226,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_2\":[{\"host\":\".37.75\",\"port\":7479,\"master\":false,\"status\":\"ACTIVE\",\"id\":33898,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"xredis_crdt_1\":{\"clusterName\":\"xredis_crdt\",\"groupName\":\"xredis_crdt_1\",\"groupId\":1000002323,\"compatibleGroupId\":0,\"parentGroupId\":1000002322,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-238644664,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"xredis_crdt_1\":[{\"host\":\".37.75\",\"port\":7379,\"master\":true,\"status\":\"ACTIVE\",\"id\":33794,\"idc\":\"jq\",\"canRead\":false,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"xredis_crdt_1\":[{\"host\":\".37.77\",\"port\":7379,\"master\":false,\"status\":\"ACTIVE\",\"id\":35225,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"SingleDcCacheCluster\":{\"clusterId\":2822,\"name\":\"SingleDcCacheCluster\",\"lastModifiedTime\":\"2020-07-02 14:53:39\",\"rootGroup\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_ClusterGroup\",\"groupId\":1000000448,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-508745800,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":0,\"activeIDC\":\"\",\"excludedIdcs\":\"\",\"routeStrategy\":1,\"dbNumber\":0,\"clusterType\":\"SINGEL_DC\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_1_1\":{\"clusterName\":\"SingleDcCacheCluster\",\"groupName\":\"credis_test_cluster_1_1\",\"groupId\":1000000468,\"compatibleGroupId\":0,\"parentGroupId\":1000000448,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":-1485539207,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_1_1\":[{\"host\":\"7.111\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7114,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_1_1\":[{\"host\":\"251.113\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7123,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}},\"XPipe_ReadActiveDc_Cluster\":{\"clusterId\":2824,\"name\":\"XPipe_ReadActiveDc_Cluster\",\"lastModifiedTime\":\"2020-07-02 14:53:09\",\"rootGroup\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_ClusterGroup\",\"groupId\":1000000449,\"compatibleGroupId\":0,\"parentGroupId\":0,\"leafNode\":false,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":1235929418,\"indexInParent\":-1,\"routingStrategy\":\"ketamahashstrategy\",\"subGroups\":[{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}],\"redises\":null,\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}},\"usingIDC\":1,\"activeIDC\":\"jq\",\"excludedIdcs\":\"\",\"routeStrategy\":2,\"dbNumber\":0,\"clusterType\":\"XPIPE_ONE_WAY\",\"ownerEmails\":\"test@ctrip.com\",\"orgId\":44,\"groups\":{\"credis_test_cluster_10_1\":{\"clusterName\":\"XPipe_ReadActiveDc_Cluster\",\"groupName\":\"credis_test_cluster_10_1\",\"groupId\":1000000470,\"compatibleGroupId\":0,\"parentGroupId\":1000000449,\"leafNode\":true,\"sentinelId\":0,\"sentinelMonitorName\":\"\",\"hashMagicInt\":631660404,\"indexInParent\":0,\"routingStrategy\":\"modhashstrategy\",\"subGroups\":null,\"redises\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"},{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}],\"masters\":{\"credis_test_cluster_10_1\":[{\"host\":\"68.45\",\"port\":6379,\"master\":true,\"status\":\"ACTIVE\",\"id\":7116,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]},\"slaves\":{\"credis_test_cluster_10_1\":[{\"host\":\"7.39\",\"port\":6379,\"master\":false,\"status\":\"ACTIVE\",\"id\":7126,\"idc\":\"jq\",\"canRead\":true,\"dbNumber\":0,\"backStream\":\"available\"}]}}}}}}";
 
     public static <T> T fromJson(String value, TypeReference<T> type) {
         T result = null;

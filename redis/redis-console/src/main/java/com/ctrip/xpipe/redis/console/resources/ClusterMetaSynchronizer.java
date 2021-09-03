@@ -120,7 +120,7 @@ public class ClusterMetaSynchronizer {
                     ClusterSyncMetaComparator clusterMetaComparator = (ClusterSyncMetaComparator) metaComparator;
                     ClusterMeta future = clusterMetaComparator.getFuture();
                     ClusterTbl currentClusterTbl = clusterService.find(future.getId());
-                    if (needUpdate(future, currentClusterTbl)) {
+                    if (needUpdate(future, currentClusterTbl, currentDcId)) {
                         if (future.getOrgId() != null && currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
                             currentClusterTbl.setClusterOrgId(future.getOrgId());
                             OrganizationTbl existedOrgTbl = organizationService.getOrganization(future.getOrgId());
@@ -146,11 +146,12 @@ public class ClusterMetaSynchronizer {
         }
     }
 
-    boolean needUpdate(ClusterMeta future, ClusterTbl current) {
+    boolean needUpdate(ClusterMeta future, ClusterTbl current, long currentDcId) {
         return !(Objects.equals(current.getClusterName(), future.getId()) &&
                 Objects.equals(current.getClusterOrgId(), Long.valueOf(future.getOrgId())) &&
                 Objects.equals(current.getClusterAdminEmails(), future.getAdminEmails()) &&
-                Objects.equals(current.getClusterType(), future.getType()));
+                Objects.equals(current.getClusterType(), future.getType()) &&
+                Objects.equals(current.getActivedcId(), currentDcId));
     }
 
 }

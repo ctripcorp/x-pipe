@@ -54,7 +54,8 @@ public class DcSyncMetaComparator extends AbstractMetaComparator<ClusterMeta, Dc
         return !(Objects.equals(current.getId(), future.getId()) &&
                 Objects.equals(current.getOrgId(), future.getOrgId()) &&
                 Objects.equals(current.getAdminEmails(), future.getAdminEmails()) &&
-                Objects.equals(current.getType(), future.getType()));
+                Objects.equals(current.getType(), future.getType()) &&
+                Objects.equals(current.getActiveDc(), future.getActiveDc()));
     }
 
     boolean clusterShardsChanged(ClusterMeta current, ClusterMeta future) {

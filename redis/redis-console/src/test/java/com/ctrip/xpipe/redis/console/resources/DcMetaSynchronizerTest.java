@@ -91,6 +91,39 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
+    public void syncClusterActiveDcChangedTest() throws Exception {
+        when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
+                new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
+                new OrganizationTbl().setId(9L).setOrgId(45).setOrgName("酒店")
+        ));
+
+        when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
+        when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta().setDcName(DcMetaSynchronizer.currentDcId));
+
+        DcMeta xpipeDcMeta = xpipeDcMeta().setId(DcMetaSynchronizer.currentDcId);
+        xpipeDcMeta.findCluster(singleDcCacheCluster).setActiveDc("oy");
+
+        when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta().addDc(xpipeDcMeta));
+        when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
+        when(clusterService.find(singleDcCacheCluster)).thenReturn(new ClusterTbl().setId(17730).setClusterName(singleDcCacheCluster).setActivedcId(2).setClusterType(ClusterType.SINGLE_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(8));
+        when(clusterService.find(localDcCacheCluster)).thenReturn(new ClusterTbl().setId(17728).setClusterName(localDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.LOCAL_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(9));
+        dcMetaSynchronizer.sync();
+
+        verify(clusterService, never()).bindDc(any(), any());
+        verify(clusterService, never()).createCluster(any());
+        verify(clusterService, never()).unbindDc(any(), any());
+        verify(clusterService, never()).deleteCluster(any());
+        verify(clusterService, times(1)).update(any());
+
+        verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), any());
+        verify(shardService, never()).deleteShard(any(), any());
+
+        verify(redisService, never()).deleteRedises(any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), any());
+        verify(redisService, never()).updateBatchMaster(any());
+    }
+
+    @Test
     public void syncClusterEmailsChangedTest() throws Exception {
         when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
                 new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
@@ -326,7 +359,6 @@ public class DcMetaSynchronizerTest {
         verify(redisService, never()).insertRedises(any(), any(), any(), any());
         verify(redisService, never()).updateBatchMaster(any());
     }
-
 
     @Test
     public void syncRedisChangedTest() throws Exception {
