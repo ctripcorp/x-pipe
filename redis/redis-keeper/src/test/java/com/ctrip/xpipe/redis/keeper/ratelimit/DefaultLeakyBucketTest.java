@@ -88,7 +88,7 @@ public class DefaultLeakyBucketTest extends AbstractTest {
     @Test
     public void testResize() throws InterruptedException {
         AtomicInteger counter = new AtomicInteger();
-        int task = init * 100, newSize = 10;
+        int task = Runtime.getRuntime().availableProcessors(), newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);
         CyclicBarrier barrier = new CyclicBarrier(task + 1);
         executors.execute(new Runnable() {
@@ -107,18 +107,19 @@ public class DefaultLeakyBucketTest extends AbstractTest {
                 public void run() {
                     try {
                         barrier.await();
-                        sleep(randomInt(0, 2));
                     } catch (Exception ignore) {
                     }
-                    if (bucket.tryAcquire()) {
-                        counter.incrementAndGet();
+                    while (counter.get() < newSize) {
+                        if (bucket.tryAcquire()) {
+                            counter.incrementAndGet();
+                        }
+                        Thread.yield();
                     }
                     latch.countDown();
                 }
             });
         }
-        latch.await(1000, TimeUnit.MILLISECONDS);
-        sleep(50);
+        latch.await(5000, TimeUnit.MILLISECONDS);
         Assert.assertEquals(newSize, counter.get());
     }
 
