@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigRewrite;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -68,5 +69,16 @@ public class ConfigRewriteCheckActionTest extends AbstractTest {
 
         verify(alertManager, never()).alert(any(DefaultRedisInstanceInfo.class), any(ALERT_TYPE.class), anyString());
 
+    }
+
+    @Ignore
+    @Test
+    public void testAlertOnlyWhenConfigRewriteExactlyFail() throws Exception {
+        RedisSession redisSession = new RedisSession(new DefaultEndPoint("127.0.0.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool());
+        redisSession.configRewrite((s, t)->{
+            System.out.println("result: " + s);
+            System.out.println("throwable: " + t.getMessage());
+        });
+        Thread.currentThread().join();
     }
 }
