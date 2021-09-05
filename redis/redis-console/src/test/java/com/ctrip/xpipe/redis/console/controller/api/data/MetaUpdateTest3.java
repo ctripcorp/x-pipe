@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -262,4 +263,56 @@ public class MetaUpdateTest3 extends AbstractConsoleIntegrationTest {
 
         metaUpdate.syncBatchDeleteShards(clusterName, Lists.newArrayList(shardName1, shardName2));
     }
+
+    @Test
+    public void testBindDc() {
+        RetMessage ret = metaUpdate.bindDc(clusterName, "fra");
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
+
+        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+        Assert.assertEquals(3, dcTbls.size());
+        Assert.assertTrue(dcTbls.stream().anyMatch(dc -> dc.getDcName().equals("fra")));
+    }
+
+    @Test
+    public void testBindDuplicatedDc() {
+        RetMessage ret = metaUpdate.bindDc(clusterName, "jq");
+        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
+
+        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+        Assert.assertEquals(2, dcTbls.size());
+    }
+
+    @Test
+    public void testUnbindActiveDc() {
+        RetMessage ret = metaUpdate.unbindDc(clusterName, activeDC);
+        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
+
+        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+        Assert.assertEquals(2, dcTbls.size());
+    }
+
+    @Test
+    public void testUnbindBackupDc() {
+        RetMessage ret = metaUpdate.unbindDc(clusterName, backupDC);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
+
+        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+        Assert.assertEquals(1, dcTbls.size());
+        Assert.assertTrue(dcTbls.stream().noneMatch(dc -> dc.getDcName().equals(backupDC)));
+    }
+
+    @Test
+    public void testUnbindNotEmptyDc() {
+        List<RedisCreateInfo> createInfo = createInfo(Lists.newArrayList("192.168.0.1:6379", "192.168.0.1:6380"),
+                Lists.newArrayList("192.168.0.2:6379", "192.168.0.2:6380"));
+        metaUpdate.createShard(clusterName, shardName, createInfo);
+
+        RetMessage ret = metaUpdate.unbindDc(clusterName, backupDC);
+        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
+
+        List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
+        Assert.assertEquals(2, dcTbls.size());
+    }
+
 }
