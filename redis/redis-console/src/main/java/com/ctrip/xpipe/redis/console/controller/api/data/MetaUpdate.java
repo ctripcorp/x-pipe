@@ -530,4 +530,53 @@ public class MetaUpdate extends AbstractConsoleController {
             }
         }
     }
+
+    @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}")
+    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+        logger.info("[bindDc]{},{}", clusterName, dcName);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl || null == clusterTbl) {
+            return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
+        }
+        List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
+        if (dcTbls.stream().anyMatch(dc -> dc.getId() == dcTbl.getId())) {
+            return RetMessage.createFailMessage("cluster has already contain dc " + dcName);
+        }
+
+        clusterService.bindDc(clusterName, dcName);
+        return RetMessage.createSuccessMessage();
+    }
+
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
+    public RetMessage unbindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+        logger.info("[unbindDc]{}, {}", clusterName, dcName);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl || null == clusterTbl) {
+            return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
+        }
+        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+        if (clusterType.supportMultiActiveDC()) {
+            return RetMessage.createFailMessage("cluster not support unbind");
+        }
+
+        List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
+        if (dcTbls.stream().noneMatch(dc -> dc.getId() == dcTbl.getId())) {
+            return RetMessage.createFailMessage("cluster doesn't contain dc " + dcName);
+        }
+        if (clusterTbl.getActivedcId() == dcTbl.getId()) {
+            return RetMessage.createFailMessage("not allow unbind active dc");
+        }
+
+        List<RedisTbl> redises = redisService.findAllRedisesByDcClusterName(dcName, clusterName);
+        if (!redises.isEmpty()) {
+            logger.info("[unbindDc][{}] check empty fail for dc {}", clusterName, dcName);
+            return RetMessage.createFailMessage("cluster not empty in dc " + dcName);
+        }
+
+        clusterService.unbindDc(clusterName, dcName);
+        return RetMessage.createSuccessMessage();
+    }
+
 }
