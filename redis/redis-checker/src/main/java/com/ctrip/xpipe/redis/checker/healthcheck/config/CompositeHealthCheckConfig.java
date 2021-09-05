@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Set;
 
 /**
  * @author chen.zhu
@@ -65,15 +64,9 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public boolean checkClusterType() {
-        return config.checkClusterType();
+    public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
+        return config.supportSentinelHealthCheck(clusterType, clusterName);
     }
-
-    @Override
-    public Set<String> commonClustersSupportSentinelCheck() {
-        return config.commonClustersSupportSentinelCheck();
-    }
-
 
     @Override
     public String getMinXRedisVersion() {

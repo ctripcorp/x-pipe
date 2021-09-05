@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
-import java.util.Set;
+import com.ctrip.xpipe.cluster.ClusterType;
 
 /**
  * @author chen.zhu
@@ -27,7 +27,5 @@ public interface HealthCheckConfig {
 
     String getMinDiskLessReplVersion();
 
-    boolean checkClusterType();
-
-    Set<String> commonClustersSupportSentinelCheck();
+    boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 }

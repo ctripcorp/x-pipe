@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.config;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
@@ -35,9 +36,9 @@ public interface CheckerConfig {
 
     String KEY_SENTINEL_CHECK_INTERVAL = "console.health.sentinel.interval";
 
-    String KEY_SENTINEL_CHECK_CLUSTER_TYPE = "console.health.sentinel.check.type";
+    String KEY_SHOULD_SENTINEL_CHECK_OUTER_TYPES = "console.should.sentinel.check.outer.types";
 
-    String KEY_SENTINEL_CHECK_CLUSTERS = "console.health.sentinel.check.clusters";
+    String KEY_SENTINEL_CHECK_OUTER_CLUSTERS = "console.sentinel.check.outer.clusters";
 
     String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
@@ -81,10 +82,6 @@ public interface CheckerConfig {
 
     int getSentinelCheckIntervalMilli();
 
-    boolean checkClusterType();
-
-    Set<String> commonClustersSupportSentinelCheck();
-
     int getHealthyDelayMilli();
 
     int getHealthyDelayMilliThroughProxy();
@@ -125,4 +122,5 @@ public interface CheckerConfig {
 
     long getConfigCacheTimeoutMilli();
 
+    boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 }

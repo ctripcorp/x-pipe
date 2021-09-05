@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
@@ -194,12 +195,7 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public boolean checkClusterType() {
-        return true;
-    }
-
-    @Override
-    public Set<String> commonClustersSupportSentinelCheck() {
-        return new HashSet<>();
+    public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
+        return clusterType.supportHealthCheck();
     }
 }

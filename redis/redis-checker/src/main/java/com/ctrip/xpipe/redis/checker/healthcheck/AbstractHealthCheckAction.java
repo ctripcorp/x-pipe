@@ -129,6 +129,9 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
     protected abstract Logger getHealthCheckLogger();
 
     protected boolean shouldCheck(HealthCheckInstance instance) {
+        if (!instance.getCheckInfo().getClusterType().supportHealthCheck())
+            return false;
+
         for (HealthCheckActionController controller : controllers) {
             if (!controller.shouldCheck(instance)) {
                 CheckInfo checkInfo = instance.getCheckInfo();

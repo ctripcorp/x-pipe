@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-
-import java.util.Set;
 
 /**
  * @author chen.zhu
@@ -53,16 +52,6 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
-    public boolean checkClusterType() {
-        return checkerConfig.checkClusterType();
-    }
-
-    @Override
-    public Set<String> commonClustersSupportSentinelCheck() {
-        return checkerConfig.commonClustersSupportSentinelCheck();
-    }
-
-    @Override
     public String getMinXRedisVersion() {
         return checkerConfig.getXRedisMinimumRequestVersion();
     }
@@ -70,5 +59,10 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     @Override
     public String getMinDiskLessReplVersion() {
         return checkerConfig.getReplDisklessMinRedisVersion();
+    }
+
+    @Override
+    public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
+        return checkerConfig.supportSentinelHealthCheck(clusterType, clusterName);
     }
 }

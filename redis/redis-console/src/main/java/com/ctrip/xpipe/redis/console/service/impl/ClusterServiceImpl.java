@@ -35,7 +35,6 @@ import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -394,16 +393,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				if (bindSentinel(cluster))
+				if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(cluster.getClusterType()), clusterName))
 					return clusterDao.bindDc(cluster, dc, sentinel);
 				else
 					return clusterDao.bindDc(cluster, dc, null);
 			}
 		});
-	}
-
-	boolean bindSentinel(ClusterTbl clusterTbl) {
-		return consoleConfig.bindSentinelForOuterClusterTypes() || !consoleConfig.getOuterClusterTypes().contains(clusterTbl.getClusterType());
 	}
 
 	@Override
@@ -688,18 +683,21 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private List<String> findActiveClustersNameByDcName(String dcName) {
-		List<ClusterTbl> clusterTbls = findActiveClustersByDcName(dcName);
-		List<String> clustersName = new ArrayList<>(clusterTbls.size());
-
-		for (ClusterTbl clusterTbl : clusterTbls) {
-			clustersName.add(clusterTbl.getClusterName());
-		}
-		return clustersName;
+		return getClusterNames(findActiveClustersByDcName(dcName));
 	}
 
 	private List<String> findAllClustersNameByDcName(String dcName) {
-		List<ClusterTbl> clusterTbls = findAllClustersByDcName(dcName);
-		return clusterTbls.stream().map(ClusterTbl::getClusterName).collect(Collectors.toList());
+		return getClusterNames(findAllClustersByDcName(dcName));
+	}
+
+	private List<String> getClusterNames(List<ClusterTbl> clusterTbls) {
+		List<String> clustersName = new ArrayList<>(clusterTbls.size());
+
+		for (ClusterTbl clusterTbl : clusterTbls) {
+			if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(clusterTbl.getClusterType()), clusterTbl.getClusterName()))
+				clustersName.add(clusterTbl.getClusterName());
+		}
+		return clustersName;
 	}
 
 }

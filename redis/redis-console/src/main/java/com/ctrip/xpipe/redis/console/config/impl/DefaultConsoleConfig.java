@@ -228,16 +228,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public boolean checkClusterType() {
-        return getBooleanProperty(KEY_SENTINEL_CHECK_CLUSTER_TYPE, true);
-    }
-
-    @Override
-    public Set<String> commonClustersSupportSentinelCheck() {
-        return getSplitStringSet(getProperty(KEY_SENTINEL_CHECK_CLUSTERS, ""));
-    }
-
-    @Override
     public String getConsoleDomain() {
         return getProperty(KEY_DOMAIN, "127.0.0.1");
     }
@@ -385,9 +375,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getSplitStringSet(clusterTypes);
     }
 
+    boolean shouldSentinelCheckOuterClientClusters() {
+        return getBooleanProperty(KEY_SHOULD_SENTINEL_CHECK_OUTER_TYPES, false);
+    }
+
+    Set<String> sentinelCheckOuterClientClusters() {
+        return getSplitStringSet(getProperty(KEY_SENTINEL_CHECK_OUTER_CLUSTERS, "").toLowerCase());
+    }
+
+    //	check if outer client clusters support sentinel health check or not
     @Override
-    public boolean bindSentinelForOuterClusterTypes() {
-        return getBooleanProperty(KEY_OUTER_CLIENT_CLUSTER_BIND_SENTINEL, false);
+    public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
+        return clusterType.supportHealthCheck() || shouldSentinelCheckOuterClientClusters() || sentinelCheckOuterClientClusters().contains(clusterName.toLowerCase());
     }
 
     @Override
@@ -470,4 +469,5 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
+
 }
