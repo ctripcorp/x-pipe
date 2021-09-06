@@ -8,13 +8,13 @@ public class DefaultProxyResourceManager implements ProxyResourceManager {
 
     private Random random = new Random();
 
-    private ProxyConnectProtocol proxyConnectProtocol;
+    private final ProxyConnectProtocol proxyConnectProtocol;
 
-    private List<InetSocketAddress> candidates;
+    private final List<ProxyInetSocketAddress> candidates;
 
-    public DefaultProxyResourceManager(ProxyConnectProtocol proxyConnectProtocol) {
+    public DefaultProxyResourceManager(ProxyConnectProtocol proxyConnectProtocol, List<ProxyInetSocketAddress> candidates) {
         this.proxyConnectProtocol = proxyConnectProtocol;
-        this.candidates = proxyConnectProtocol.nextEndpoints();
+        this.candidates = candidates;
     }
 
     @Override
@@ -30,5 +30,4 @@ public class DefaultProxyResourceManager implements ProxyResourceManager {
         int index = random.nextInt(candidates.size());
         return candidates.get(index);
     }
-
 }

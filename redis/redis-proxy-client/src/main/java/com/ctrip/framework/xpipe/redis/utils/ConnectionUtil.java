@@ -2,6 +2,7 @@ package com.ctrip.framework.xpipe.redis.utils;
 
 import com.alibaba.arthas.deps.org.slf4j.Logger;
 import com.alibaba.arthas.deps.org.slf4j.LoggerFactory;
+import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -40,7 +41,13 @@ public class ConnectionUtil {
     }
 
     public static void connectToProxy(Socket socket, InetSocketAddress address, int timeout) throws IOException {
-        socket.connect(address, timeout);
+        try {
+            socket.connect(address, timeout);
+            ((ProxyInetSocketAddress) address).sick = false;
+        } catch (IOException e) {
+            ((ProxyInetSocketAddress) address).sick = true;
+            throw e;
+        }
         byte[] bytes = ProxyUtil.getInstance().getProxyConnectProtocol(socket);
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
