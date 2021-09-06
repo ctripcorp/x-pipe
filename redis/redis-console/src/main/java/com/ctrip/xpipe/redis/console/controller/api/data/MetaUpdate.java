@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -72,6 +73,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private SentinelBalanceService sentinelBalanceService;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -322,7 +326,6 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createFailMessage(e.getMessage());
         }
 
-        Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
         List<String> successShards = new LinkedList<>();
         List<String> failShards = new LinkedList<>();
 
@@ -332,7 +335,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 ShardTbl shardTbl = new ShardTbl()
                         .setSetinelMonitorName(shardCreateInfo.getShardMonitorName())
                         .setShardName(shardCreateInfo.getShardName());
-                shardService.createShard(clusterName, shardTbl, randomSentinelByDc);
+                shardService.createShard(clusterName, shardTbl, sentinelBalanceService.selectMultiDcSentinels());
                 successShards.add(shardCreateInfo.getShardName());
             } catch (Exception e) {
                 logger.error("[createShards]" + clusterName + "," + shardCreateInfo.getShardName(), e);
@@ -466,13 +469,10 @@ public class MetaUpdate extends AbstractConsoleController {
 
         validateRedisCreateInfo(redisCreateInfos);
 
-        // Create shard
-        Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
-
         ShardTbl proto = new ShardTbl()
                 .setSetinelMonitorName(monitorName)
                 .setShardName(shardName);
-        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, randomSentinelByDc);
+        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, sentinelBalanceService.selectMultiDcSentinels());
 
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
