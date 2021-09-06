@@ -5,10 +5,12 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelModel;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -17,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -30,43 +32,59 @@ import java.util.Map;
 public class SentinelUpdateController {
 
     @Autowired
-    private ClusterService clusterService;
+    private SentinelService sentinelService;
 
     @Autowired
-    private SentinelService sentinelService;
+    public SentinelBalanceService sentinelBalanceService;
 
     @Autowired
     private DcService dcService;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final int DEFAULT_NUM_OF_CLUSTERS = 10;
-
     private static final JsonCodec jsonTool = new JsonCodec(true, true);
 
-    @RequestMapping(value = "/rebalance/sentinels/{dcName}/{numOfClusters}", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@PathVariable String dcName, @PathVariable int numOfClusters) {
-        logger.info("[reBalanceSentinels] Start re-balance sentinels for {} clusters", numOfClusters);
-        try {
-            List<String> modifiedClusters = clusterService.reBalanceSentinels(dcName, numOfClusters, true);
-            logger.info("[reBalanceSentinels] Successfully balanced {} clusters", numOfClusters);
-            return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(modifiedClusters));
-        } catch (Exception e) {
-            logger.error("[reBalanceSentinels] {}", e);
-            return RetMessage.createFailMessage(e.getMessage());
+    @PostMapping("/rebalance/sentinels/{dcName}/execute")
+    public RetMessage reBalanceSentinels(@PathVariable String dcName, @RequestParam(defaultValue = "true") boolean backupDcOnly) {
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
+
+        if (backupDcOnly) {
+            sentinelBalanceService.rebalanceBackupDcSentinel(dcTbl.getDcName());
+        } else {
+            sentinelBalanceService.rebalanceDcSentinel(dcTbl.getDcName());
         }
+        return RetMessage.createSuccessMessage();
     }
 
-    @RequestMapping(value = "/rebalance/sentinels/force/{dcName}/{numOfClusters}", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinelsForce(@PathVariable String dcName, @PathVariable int numOfClusters) {
-        logger.info("[reBalanceSentinelsForce] Start re-balance sentinels for {} clusters", numOfClusters);
-        try {
-            List<String> modifiedClusters = clusterService.reBalanceSentinels(dcName, numOfClusters, false);
-            logger.info("[reBalanceSentinelsForce] Successfully balanced {} clusters", numOfClusters);
-            return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(modifiedClusters));
-        } catch (Exception e) {
-            logger.error("[reBalanceSentinelsForce] {}", e);
-            return RetMessage.createFailMessage(e.getMessage());
+    @PostMapping("/rebalance/sentinels/{dcName}/terminate")
+    public RetMessage terminateBalanceSentinels(@PathVariable String dcName) {
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
+
+        sentinelBalanceService.cancelCurrentBalance(dcTbl.getDcName());
+        return RetMessage.createSuccessMessage();
+    }
+
+    @GetMapping("/rebalance/sentinels/{dcName}/process")
+    public RetMessage getSentinelsBalanceProcess(@PathVariable String dcName) {
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
+
+        SentinelBalanceTask balanceTask = sentinelBalanceService.getBalanceTask(dcTbl.getDcName());
+        if (null == balanceTask) {
+            return RetMessage.createSuccessMessage("no task");
+        } else {
+            Map<String, Object> ret = new HashMap<>();
+            ret.put("name", balanceTask.getName());
+            ret.put("targetUsage", balanceTask.getTargetUsages());
+            ret.put("retainShards", balanceTask.getShardsWaitBalances());
+            ret.put("finish", balanceTask.future().isDone());
+            if (balanceTask.future().isDone() && null != balanceTask.future().cause()) {
+                ret.put("err", balanceTask.future().cause().getMessage());
+            }
+
+            return GenericRetMessage.createGenericRetMessage(ret);
         }
     }
 
@@ -105,21 +123,6 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/rebalance/sentinels/{dcName}", method = RequestMethod.POST)
-    public RetMessage reBalanceSentinels(@PathVariable String dcName, @RequestBody(required = false) List<String> clusterNames) {
-        if(clusterNames == null || clusterNames.isEmpty())
-            return reBalanceSentinels(dcName, DEFAULT_NUM_OF_CLUSTERS);
-        logger.info("[reBalanceSentinels] Start re-balance clusters: {}", clusterNames);
-        try {
-            clusterService.reBalanceClusterSentinels(dcName, clusterNames);
-            logger.info("[reBalanceSentinels] Successfully balanced clusters: {}", clusterNames);
-            return RetMessage.createSuccessMessage("clusters: " + jsonTool.encode(clusterNames));
-        } catch (Exception e) {
-            logger.error("[reBalanceSentinels] {}", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
-
     @RequestMapping(value = "/sentinels/usage", method = RequestMethod.GET)
     public RetMessage sentinelUsage() {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
@@ -127,7 +130,7 @@ public class SentinelUpdateController {
             Map<String, SentinelUsageModel> sentienlUsage = sentinelService.getAllSentinelsUsage();
             return GenericRetMessage.createGenericRetMessage(sentienlUsage);
         } catch (Exception e) {
-            logger.error("[reBalanceSentinels] {}", e);
+            logger.error("[sentinelUsage] {}", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

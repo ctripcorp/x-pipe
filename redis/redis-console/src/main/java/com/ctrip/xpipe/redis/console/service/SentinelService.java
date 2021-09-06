@@ -14,13 +14,13 @@ public interface SentinelService {
 
 	Map<Long, List<SetinelTbl>>   allSentinelsByDc();
 
-	Map<Long, SetinelTbl>   eachRandomSentinelByDc();
-
 	SetinelTbl find(long id);
 
 	Map<Long, SetinelTbl> findByShard(long shardId);
 
 	SetinelTbl insert(SetinelTbl setinelTbl);
+
+	List<SetinelTbl> getAllSentinelsWithUsage();
 
 	Map<String, SentinelUsageModel> getAllSentinelsUsage();
 
