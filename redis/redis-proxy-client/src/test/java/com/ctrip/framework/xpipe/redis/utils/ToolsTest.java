@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import java.net.MalformedURLException;
 
+import static com.ctrip.framework.xpipe.redis.instrument.ProxyAgentTool.HotspotVMName;
 import static com.ctrip.framework.xpipe.redis.instrument.ProxyAgentTool.VirtualMachineClassName;
 
 /**
@@ -13,11 +14,11 @@ import static com.ctrip.framework.xpipe.redis.instrument.ProxyAgentTool.VirtualM
  */
 public class ToolsTest {
 
-    @Test(expected = ClassNotFoundException.class)
+    @Test
     public void testNoClass() throws MalformedURLException, ClassNotFoundException {
         String pid = Tools.currentPID();
         Assert.assertTrue(Integer.parseInt(pid) > 0);
-        Class clazz = Tools.loadJDKToolClass(VirtualMachineClassName);
+        Class clazz = Tools.loadJDKToolClass(HotspotVMName);
         Assert.assertNotNull(clazz);
     }
 }

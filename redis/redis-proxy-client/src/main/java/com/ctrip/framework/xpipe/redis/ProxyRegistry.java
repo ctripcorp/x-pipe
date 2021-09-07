@@ -18,5 +18,13 @@ public class ProxyRegistry {
     public static ProxyResourceManager unregisterProxy(String ip, int port) {
         return ProxyUtil.getInstance().unregisterProxy(ip, port);
     }
+    
+    public static void setChecker(ProxyChecker checker) {
+        ProxyUtil.getInstance().setChecker(checker);
+    }
+    
+    public static void setCheckInterval(int interval) {
+        ProxyUtil.getInstance().setCheckInterval(interval);
+    }
 
 }

@@ -53,10 +53,6 @@
             <version>${mockwebserver.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.ctrip.framework.xpipe</groupId>
-            <artifactId>core</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

@@ -1,11 +1,13 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
+import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -34,7 +36,6 @@ public class ConnectionUtilTest extends AbstractProxyTest {
         sa = ConnectionUtil.getAddress(socket, socketAddress);
         Assert.assertNotEquals(sa, socketAddress);
         Assert.assertTrue(sa.equals(new InetSocketAddress(PROXY_IP_1, PROXY_PORT)) || sa.equals(new InetSocketAddress(PROXY_IP_2, PROXY_PORT)));
-
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) socketAddress, 500);  // suppose socketAddress is proxy
         } catch (Throwable t) {
@@ -54,8 +55,8 @@ public class ConnectionUtilTest extends AbstractProxyTest {
         SocketChannel socketChannel = mock(SocketChannel.class);
         try {
 
-            ConnectionUtil.getAddress(socketChannel, socketAddress);
-            boolean connected = ConnectionUtil.connectToProxy(socketChannel, socketAddress);  // suppose socketAddress is proxy
+            SocketAddress proxyAddress = ConnectionUtil.getAddress(socketChannel, socketAddress);
+            boolean connected = ConnectionUtil.connectToProxy(socketChannel, proxyAddress);  // suppose socketAddress is proxy
             Assert.assertFalse(connected);
             ConnectionUtil.sendProtocolToProxy(socketChannel);
             verify(socketChannel, times(1)).write(any(ByteBuffer.class));
@@ -66,5 +67,7 @@ public class ConnectionUtilTest extends AbstractProxyTest {
             ConnectionUtil.removeAddress(socketChannel);
         }
     }
+    
+    
 
 }

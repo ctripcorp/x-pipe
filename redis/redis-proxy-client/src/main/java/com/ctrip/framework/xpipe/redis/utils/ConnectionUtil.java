@@ -45,6 +45,7 @@ public class ConnectionUtil {
             socket.connect(address, timeout);
             ((ProxyInetSocketAddress) address).sick = false;
         } catch (IOException e) {
+            logger.info("address {} {}", address , e);
             ((ProxyInetSocketAddress) address).sick = true;
             throw e;
         }
@@ -57,7 +58,15 @@ public class ConnectionUtil {
     public static boolean connectToProxy(SocketChannel socketChannel, SocketAddress address) throws IOException {
         socketChannelMap.put(socketChannel, new ReentrantLock());
         logger.info("[Connect] to proxy {} through Netty SocketChannel", address);
-        return socketChannel.connect(address);
+        try {
+            boolean result = socketChannel.connect(address);
+            ((ProxyInetSocketAddress) address).sick = !result;
+            return result;
+        } catch (IOException exception) {
+            logger.info("address {} {}", address , exception);
+            ((ProxyInetSocketAddress) address).sick = true;
+            throw exception;
+        }
     }
 
     public static String getString(SocketAddress address) {

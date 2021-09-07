@@ -1,8 +1,7 @@
 package com.ctrip.framework.xpipe.redis;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author Slight
@@ -11,5 +10,6 @@ import java.net.InetSocketAddress;
  */
 public interface ProxyChecker {
 
-    CommandFuture<Boolean> check(InetSocketAddress address);
+    CompletableFuture<Boolean> check(InetSocketAddress address);
+    
 }

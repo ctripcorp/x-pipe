@@ -2,8 +2,6 @@ package com.ctrip.framework.xpipe.redis.utils;
 
 import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.proxy.*;
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.net.InetSocketAddress;
@@ -11,9 +9,9 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.function.BiConsumer;
 
 public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceManager> implements ThreadFactory {
-
     private ConcurrentMap<Object, SocketAddress> socketAddressMap = new ConcurrentHashMap<>();
 
     private static class ProxyResourceHolder {
@@ -29,7 +27,15 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     }
 
     public synchronized ProxyResourceManager unregisterProxy(String ip, int port) {
-        ProxyResourceManager proxyResourceManager = remove(new InetSocketAddress(ip, port));
+        InetSocketAddress address = new InetSocketAddress(ip, port);
+        ProxyResourceManager proxyResourceManager = remove(address);
+        if(proxyResourceManager != null) {
+            proxyResourceManager.nextEndpoints().stream().forEach(endpoint -> {
+                if (--proxies.get(endpoint).reference == 0) {
+                    proxies.remove(endpoint);
+                }
+            });
+        }
         return proxyResourceManager;
     }
 
@@ -76,27 +82,52 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     }
 
     private void check(ProxyInetSocketAddress proxy) {
-        checker.check(proxy).addListener(new CommandFutureListener<Boolean>() {
+        
+        checker.check(proxy).whenComplete(new BiConsumer<Boolean, Throwable>() {
             @Override
-            public void operationComplete(CommandFuture<Boolean> future) throws Exception {
-                if (future.isSuccess()) {
+            public void accept(Boolean aBoolean, Throwable throwable) {
+                if(throwable != null  || aBoolean == false ) {
+                    proxy.down = true;
+                } else {
                     proxy.sick = false;
                     proxy.down = false;
-                } else {
-                    proxy.down = true;
                 }
             }
         });
     }
 
+    private volatile  int checkInterval = 1000; //seconds
+    ScheduledFuture future = null;
     public ProxyUtil() {
-        scheduled.scheduleWithFixedDelay(()->{
-            if (checker != null) {
-                for (ProxyInetSocketAddress proxy : proxies.values()) {
-                    if (proxy.sick) check(proxy);
+        startCheck(); 
+    }
+    
+    void startCheck() {
+        if(future != null) return;
+        future = scheduled.scheduleWithFixedDelay(()->{
+            try {
+                if (checker != null) {
+                    for (ProxyInetSocketAddress proxy : proxies.values()) {
+                        if (proxy.sick) check(proxy);
+                    }
                 }
+            } catch (Throwable e) {
+                e.printStackTrace();
             }
-        }, 0, 5, TimeUnit.SECONDS);
+            
+        }, checkInterval, checkInterval, TimeUnit.MILLISECONDS);
+    }
+    
+    void stopCheck() {
+        if(future == null) return;
+        future.cancel(true);
+        future = null;
+    }
+
+    public void setCheckInterval(int checkInterval) {
+        this.checkInterval = checkInterval;
+        stopCheck();
+        startCheck();
     }
 
     private ConcurrentMap<InetSocketAddress, ProxyInetSocketAddress> proxies = new ConcurrentHashMap<>();
