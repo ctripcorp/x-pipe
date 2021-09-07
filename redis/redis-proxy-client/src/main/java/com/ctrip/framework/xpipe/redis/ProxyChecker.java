@@ -11,5 +11,9 @@ import java.util.concurrent.CompletableFuture;
 public interface ProxyChecker {
 
     CompletableFuture<Boolean> check(InetSocketAddress address);
+
+    int getRetryUpNum();
+    
+    int getRetryDownNum();
     
 }

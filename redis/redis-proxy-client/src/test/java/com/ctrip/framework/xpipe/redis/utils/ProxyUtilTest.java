@@ -57,7 +57,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
     public void testSetChecker() throws InterruptedException {
         proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
         proxyUtil.setCheckInterval(100);
-        proxyUtil.setChecker(new ProxyChecker() {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
@@ -72,7 +72,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
         Thread.sleep(100);
         Assert.assertEquals(sa.down, true);
         Assert.assertEquals(sa.sick, true);
-        proxyUtil.setChecker(new ProxyChecker() {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(true);
@@ -82,13 +82,76 @@ public class ProxyUtilTest extends AbstractProxyTest {
         Assert.assertEquals(sa.down, false);
         Assert.assertEquals(sa.sick, false);
         proxyUtil.unregisterProxy(IP, PORT);
+        proxyUtil.setChecker(null);
+    }
+    
+
+    @Test
+    public void testCheckerUp() throws InterruptedException {
+        proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+        proxyUtil.setCheckInterval(100);
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(10,1) {
+            @Override
+            public CompletableFuture<Boolean> check(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(false);
+            }
+        });
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
+        try {
+            ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
+        } catch (Throwable t) {
+            Assert.assertNotNull(t);
+        }
+        Thread.sleep(110);
+        Assert.assertEquals(sa.down, true);
+        Assert.assertEquals(sa.sick, true);
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(10,1) {
+            @Override
+            public CompletableFuture<Boolean> check(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(true);
+            }
+        });
+        Thread.sleep(900);
+        Assert.assertEquals(sa.down, true);
+        Assert.assertEquals(sa.sick, true);
+        Thread.sleep(200);
+        Assert.assertEquals(sa.down, false);
+        Assert.assertEquals(sa.sick, false);
+        proxyUtil.unregisterProxy(IP, PORT);
+        proxyUtil.setChecker(null);
+    }
+    
+    @Test
+    public void testCheckerDown() throws InterruptedException {
+        proxyUtil.registerProxy(IP, PORT, ROUTE_INFO);
+        proxyUtil.setCheckInterval(100);
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,10) {
+            @Override
+            public CompletableFuture<Boolean> check(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(false);
+            }
+        });
+        ProxyInetSocketAddress sa = (ProxyInetSocketAddress)ConnectionUtil.getAddress(socket, socketAddress);
+        try {
+            ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
+        } catch (Throwable t) {
+            Assert.assertNotNull(t);
+        }
+        Assert.assertEquals(sa.down, false);
+        Assert.assertEquals(sa.sick, true);
+        Thread.sleep(900);
+        Assert.assertEquals(sa.down, false);
+        Assert.assertEquals(sa.sick, true);
+        Thread.sleep(200);
+        Assert.assertEquals(sa.down, true);
+        Assert.assertEquals(sa.sick, true);
     }
 
     @Test
     public void testSetCheckInterval() throws InterruptedException {
         proxyUtil.setCheckInterval(100);
         final AtomicLong counter =new AtomicLong(0);
-        proxyUtil.setChecker(new ProxyChecker() {
+        proxyUtil.setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 counter.addAndGet(1);
@@ -101,11 +164,15 @@ public class ProxyUtilTest extends AbstractProxyTest {
         } catch (Throwable t) {
             Assert.assertNotNull(t);
         }
-        Thread.sleep(150);
-        Assert.assertEquals(counter.get(), 1);
+        long nowTime = System.currentTimeMillis();
+        long nowCounter = counter.get();
+        Thread.sleep(110);
+        Assert.assertEquals(counter.get() - nowCounter , (System.currentTimeMillis() - nowTime) / 100 );
         proxyUtil.setCheckInterval(500);
-        Thread.sleep(550);
-        Assert.assertEquals(counter.get() ,2);
+        nowTime = System.currentTimeMillis();
+        nowCounter = counter.get();
+        Thread.sleep(510);
+        Assert.assertEquals(counter.get() - nowCounter ,(System.currentTimeMillis() - nowTime) / 500);
         
     }
 
@@ -133,7 +200,10 @@ public class ProxyUtilTest extends AbstractProxyTest {
             threads[i].join();
         }
         ProxyInetSocketAddress proxy = proxyUtil.getOrCreateProxy((InetSocketAddress) socketAddress);
-        Assert.assertEquals(proxy.reference , threadNum + 1);
+        Assert.assertEquals(proxy.reference.get() , threadNum + 1);
+        for(int i = 0; i < threadNum +1; i++) {
+            proxyUtil.removeProxy(proxy);
+        }
 
     }
     
@@ -167,6 +237,9 @@ public class ProxyUtilTest extends AbstractProxyTest {
             threads[i].join();
         }
         proxy = proxyUtil.getOrCreateProxy((InetSocketAddress) socketAddress);
-        Assert.assertEquals(proxy.reference ,  1);
+        Assert.assertEquals(proxy.reference.get() ,  1);
+        proxyUtil.removeProxy(proxy);
     }
+    
+    
 }

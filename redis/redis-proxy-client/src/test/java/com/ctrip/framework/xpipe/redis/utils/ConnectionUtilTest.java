@@ -24,8 +24,17 @@ import static org.mockito.Mockito.*;
 public class ConnectionUtilTest extends AbstractProxyTest {
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, InterruptedException {
         super.setUp();
+        ProxyUtil.getInstance().setCheckInterval(100);
+        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
+            @Override
+            public CompletableFuture<Boolean> check(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(true);
+            }
+        });
+        Thread.sleep(110);
+        ProxyUtil.getInstance().setChecker(null);
     }
 
     @Test
@@ -49,8 +58,9 @@ public class ConnectionUtilTest extends AbstractProxyTest {
     
     @Test
     public void testSocketPullOutOneProxy() throws Exception {
+        
         ProxyUtil.getInstance().setCheckInterval(100);
-        ProxyUtil.getInstance().setChecker(new ProxyChecker() {
+        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
@@ -58,6 +68,7 @@ public class ConnectionUtilTest extends AbstractProxyTest {
         });
         ProxyUtil.getInstance().registerProxy(IP, PORT, ROUTE_INFO);
         SocketAddress sa = ConnectionUtil.getAddress(socket, socketAddress);
+        Assert.assertEquals(((ProxyInetSocketAddress)sa).down, false);
         try {
             ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
         } catch (Throwable t) {
@@ -72,12 +83,13 @@ public class ConnectionUtilTest extends AbstractProxyTest {
             Assert.assertNotEquals(sa, sa1);
         }
         ProxyUtil.getInstance().unregisterProxy(IP, PORT);
+        ProxyUtil.getInstance().setChecker(null);
     }
     
     @Test
     public void testSocketPullOutAllProxy() throws Exception {
         ProxyUtil.getInstance().setCheckInterval(100);
-        ProxyUtil.getInstance().setChecker(new ProxyChecker() {
+        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
@@ -105,7 +117,7 @@ public class ConnectionUtilTest extends AbstractProxyTest {
     @Test 
     public void testSocketPullIn() throws InterruptedException {
         ProxyUtil.getInstance().setCheckInterval(100);
-        ProxyUtil.getInstance().setChecker(new ProxyChecker() {
+        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 return CompletableFuture.completedFuture(false);
@@ -125,7 +137,7 @@ public class ConnectionUtilTest extends AbstractProxyTest {
             Assert.assertEquals(endpoint.down, true);
         });
         //pull out all proxy
-        ProxyUtil.getInstance().setChecker(new ProxyChecker() {
+        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override
             public CompletableFuture<Boolean> check(InetSocketAddress address) {
                 if(address.equals(new ProxyInetSocketAddress(PROXY_IP_1, PROXY_PORT)) ) {
@@ -142,6 +154,7 @@ public class ConnectionUtilTest extends AbstractProxyTest {
             Assert.assertEquals(sa, sa1);
         }
         ProxyUtil.getInstance().unregisterProxy(IP, PORT);
+        ProxyUtil.getInstance().setChecker(null);
     }
 
     @Test
@@ -166,7 +179,5 @@ public class ConnectionUtilTest extends AbstractProxyTest {
             ConnectionUtil.removeAddress(socketChannel);
         }
     }
-    
-    
 
 }

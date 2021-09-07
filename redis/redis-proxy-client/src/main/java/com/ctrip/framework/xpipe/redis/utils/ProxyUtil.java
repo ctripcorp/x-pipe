@@ -85,10 +85,9 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
             @Override
             public void accept(Boolean aBoolean, Throwable throwable) {
                 if(throwable != null  || aBoolean == false ) {
-                    proxy.down = true;
+                    proxy.tryDown(checker.getRetryDownNum());
                 } else {
-                    proxy.sick = false;
-                    proxy.down = false;
+                    proxy.tryUp(checker.getRetryUpNum());
                 }
             }
         });
@@ -139,13 +138,13 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     @VisibleForTesting
     ProxyInetSocketAddress getOrCreateProxy(InetSocketAddress endpoint) {
         ProxyInetSocketAddress proxy = proxies.computeIfAbsent(endpoint, e->new ProxyInetSocketAddress(e.getAddress(), e.getPort()));
-        proxy.reference += 1;
+        proxy.reference.addAndGet(1);
         return proxy;
     }
     
     @VisibleForTesting
     ProxyInetSocketAddress removeProxy(ProxyInetSocketAddress endpoint) {
-        if ((--endpoint.reference) == 0) {
+        if ((endpoint.reference.addAndGet(-1)) == 0) {
             return proxies.remove(new InetSocketAddress(endpoint.getAddress(), endpoint.getPort()));
         } else {
             return null;

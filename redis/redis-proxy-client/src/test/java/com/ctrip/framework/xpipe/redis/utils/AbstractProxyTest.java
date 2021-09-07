@@ -29,7 +29,7 @@ public class AbstractProxyTest {
     protected Socket socket;
 
     @Before
-    public void setUp() throws IOException {
+    public void setUp() throws IOException, InterruptedException {
         socket = new Socket();
     }
 

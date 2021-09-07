@@ -23,7 +23,6 @@ import java.net.InetAddress;
         ConnectionUtilTest.class,
         SocketAdapterTest.class,
         SocketChannelImplAdapterTest.class,
-        ToolsTest.class,
         JarFileUrlJarTest.class,
         JdkVersionTest.class,
         ProxyRegistryTest.class
