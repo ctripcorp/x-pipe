@@ -171,66 +171,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertFalse(service.checkEmails(emails));
     }
 
-
-    @Test
-    public void testReBalanceSentinels() {
-        List<String> clusters = clusterService.reBalanceSentinels("jq",1, true);
-        Assert.assertEquals(1, clusters.size());
-        logger.info("Changed clusters: {}", clusters);
-    }
-
-    @Test
-    public void testReBalanceSentinels2() {
-        List<String> clusters = clusterService.reBalanceSentinels("jq", 10, true);
-        Assert.assertEquals(clusterService.findAllClusterNames().size(), clusters.size());
-        logger.info("Changed clusters: {}", clusters);
-    }
-
-    @Test
-    public void testRandomlyChoseSentinels() {
-        List<SetinelTbl> setinelTbls = Arrays.asList(new SetinelTbl().setSetinelId(999L),
-                new SetinelTbl().setSetinelId(1000L), new SetinelTbl().setSetinelId(9999L));
-        ClusterServiceImpl clusterServiceImpl = new ClusterServiceImpl();
-        long id = clusterServiceImpl.randomlyChoseSentinels(setinelTbls);
-        logger.info("id: {}", id);
-    }
-
-    @Test
-    public void testBalanceCluster() throws Exception {
-        List<SetinelTbl> setinelTbls1 = Arrays.asList(new SetinelTbl().setSetinelId(999L),
-                new SetinelTbl().setSetinelId(1000L), new SetinelTbl().setSetinelId(9999L));
-        List<SetinelTbl> setinelTbls2 = Arrays.asList(new SetinelTbl().setSetinelId(1999L),
-                new SetinelTbl().setSetinelId(11000L), new SetinelTbl().setSetinelId(19999L));
-        Map<String, List<SetinelTbl>> map = Maps.newHashMap();
-        map.put(dcNames[0], setinelTbls1);
-        map.put(dcNames[1], setinelTbls2);
-        ClusterTbl clusterTbl = clusterService.find(clusterName);
-
-        List<DcTbl> dcTbls = dcService.findAllDcs();
-        logger.info("dcTbls: {}", dcTbls);
-        long []dcIds = new long[] {dcTbls.get(0).getId(), dcTbls.get(1).getId()};
-
-        Map<Long, SetinelTbl> dcToSentinel = Maps.newHashMap();
-        dcToSentinel.put(dcIds[0], setinelTbls1.get(0));
-        dcToSentinel.put(dcIds[1], setinelTbls2.get(0));
-        ShardTbl shard1 = new ShardTbl().setShardName("cluster1shard1test").setSetinelMonitorName("cluster1shard1monitor")
-                .setClusterId(clusterTbl.getId()).setDeleted(false).setClusterInfo(clusterTbl);
-        ShardTbl shard2 = new ShardTbl().setShardName("cluster1shard2test").setSetinelMonitorName("cluster1shard2monitor")
-                .setClusterId(clusterTbl.getId()).setDeleted(false).setClusterInfo(clusterTbl);
-        shardService.createShard(clusterName, shard1, dcToSentinel);
-        dcToSentinel.put(dcIds[0], setinelTbls1.get(1));
-        dcToSentinel.put(dcIds[1], setinelTbls2.get(1));
-        shardService.createShard(clusterName, shard2, dcToSentinel);
-
-        int checkTimes = 10;
-        while(checkTimes -- > 0) {
-            clusterService.reBalanceSentinels("jq", 10, true);
-            DcClusterShardTbl dcClusterShardTbl1 = dcClusterShardService.find(dcNames[0], clusterName, shard1.getShardName());
-            DcClusterShardTbl dcClusterShardTbl2 = dcClusterShardService.find(dcNames[0], clusterName, shard2.getShardName());
-            Assert.assertEquals(dcClusterShardTbl1.getSetinelId(), dcClusterShardTbl2.getSetinelId());
-        }
-    }
-
     @Test
     public void testBreakLoop() {
         int kCounter = 0, jCounter = 0, iCounter = 0;

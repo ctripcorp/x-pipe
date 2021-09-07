@@ -1,10 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
@@ -14,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -44,6 +42,8 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		currentMeta = new CurrentMeta();
 		currentMeta.addCluster(clusterMeta);
 		currentMeta.addCluster(biClusterMeta);
+		List<RouteMeta> routes = getDcMeta(getDc()).getRoutes(); 
+		currentMeta.updateClusterRoutes(biClusterMeta, routes);
 		
 		clusterId = clusterMeta.getId();
 		shardId = clusterMeta.getShards().keySet().iterator().next();
@@ -265,5 +265,79 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		Assert.assertEquals(new RedisMeta().setIp("10.0.0.1").setPort(6379).setGid(1L), currentMeta.getCurrentMaster(biClusterId, biShardId));
 	}
 
+	@Test
+	public void testGetActiveDc() {
+		ClusterMeta clusterMeta1 = MetaClone.clone(clusterMeta);
+		clusterMeta1.setActiveDc("fq").setBackupDcs("jq,fra");
+		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1");
+		List<RouteMeta> allroutes = new LinkedList<>();
+		allroutes.add(hadOrgIdRoute);
+		
+		List<String> dcs = currentMeta.updateClusterRoutes(clusterMeta1, allroutes);
+		Assert.assertEquals(dcs.size(), 1);
+		Assert.assertEquals(dcs.get(0), clusterMeta1.getActiveDc());
+	}
+	
+	@Test 
+	public void testGetClusterRoute() {
+		RouteMeta route = currentMeta.getClusterRouteByDcId("bi-cluster1", "fq");
+		Assert.assertEquals(route, null);
+		// add jq->fq route (orgid = null)
+		List<RouteMeta> allroutes = new LinkedList<>();
+		RouteMeta noOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2");
+		allroutes.add(noOrgIdRoute);
+		List<String> dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
+		Assert.assertEquals(dcs.size() , 1);
+		Assert.assertEquals(dcs.get(0), "fq");
+		route = currentMeta.getClusterRouteByDcId("bi-cluster1","fq");
+		Assert.assertEquals(route, noOrgIdRoute);
+		// add jq->fq route (orgid = 1)
+		RouteMeta hadOrgIdRoute = new RouteMeta().setOrgId(1).setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1");
+		allroutes.add(hadOrgIdRoute);
+		biClusterMeta.setOrgId(1);
+		dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
+		Assert.assertEquals(dcs.size() , 1);
+		Assert.assertEquals(dcs.get(0), "fq");
+		route = currentMeta.getClusterRouteByDcId("bi-cluster1","fq");
+		Assert.assertEquals(route, hadOrgIdRoute);
+		//add jq->fq route
+		allroutes = new LinkedList<>();
+		allroutes.add(noOrgIdRoute);
+		biClusterMeta.setOrgId(1);
+		dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
+		Assert.assertEquals(dcs.size() , 1);
+		Assert.assertEquals(dcs.get(0), "fq");
+		route = currentMeta.getClusterRouteByDcId("bi-cluster1","fq");
+		Assert.assertEquals(route, noOrgIdRoute);
+		// add 2 route , choose hadOrgIdRoute
+		allroutes = new LinkedList<>();
+		allroutes.add(noOrgIdRoute);
+		allroutes.add(hadOrgIdRoute);
+		biClusterMeta.setOrgId(1);
+		dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
+		Assert.assertEquals(dcs.size() , 1);
+		Assert.assertEquals(dcs.get(0), "fq");
+		route = currentMeta.getClusterRouteByDcId("bi-cluster1","fq");
+		Assert.assertEquals(route, hadOrgIdRoute);
+		//add 2 hadorgid route
+		allroutes = new LinkedList<>();
+		RouteMeta hadOrgIdRoute2 = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(3).setOrgId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:3");
+		allroutes.add(hadOrgIdRoute);
+		allroutes.add(hadOrgIdRoute2);
+		biClusterMeta.setOrgId(1);
+		currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
+		route = currentMeta.getClusterRouteByDcId("bi-cluster1","fq");
+		Assert.assertEquals(route, allroutes.get(Math.abs(("bi-cluster1".hashCode()) % allroutes.size())));
+		//try update 	
+		for(int i = 0; i < 10; i++) {
+			dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
+			Assert.assertEquals(dcs.size() , 0);
+		}
+		
+		
+	}
+
+	
 }
+	
 		

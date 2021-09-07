@@ -39,6 +39,11 @@ public class SimplePsyncObserver implements PsyncObserver {
         online.set(true);
     }
 
+    @Override
+    public void onKeeperContinue(String replId, long beginOffset) {
+        online.set(true);
+    }
+
     public SettableFuture<Boolean> getOnline() {
         return online;
     }

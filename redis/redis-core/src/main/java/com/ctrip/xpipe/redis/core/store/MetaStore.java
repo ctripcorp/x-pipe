@@ -56,6 +56,8 @@ public interface MetaStore {
 	
 	ReplicationStoreMeta rdbBegun(String replId, long beginOffset, String rdbFile, EofType eofType, String cmdFilePrefix) throws IOException;
 
+	ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException;
+
 	void setRdbFileSize(long rdbFileSize) throws IOException;
 
 	@Deprecated
@@ -66,4 +68,6 @@ public interface MetaStore {
 	void updateKeeperRunid(String keeperRunid) throws IOException;
 
 	boolean isFresh();
+
+	void releaseRdbFile(String rdbFile) throws IOException ;
 }

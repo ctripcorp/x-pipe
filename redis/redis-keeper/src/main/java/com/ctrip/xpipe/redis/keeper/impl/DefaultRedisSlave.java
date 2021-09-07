@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -67,7 +68,9 @@ public class DefaultRedisSlave implements RedisSlave {
 	private ExecutorService psyncExecutor;
 
 	private RedisClient redisClient;
-	
+
+	private AtomicBoolean writingCommands = new AtomicBoolean(false);
+
 	private ChannelFutureListener writeExceptionListener = new ChannelFutureListener() {
 
 		private AtomicLong atomicLong = new AtomicLong(0);
@@ -177,6 +180,11 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
+	public Long processedOffset() {
+		return getAck();
+	}
+
+	@Override
 	public Long getAck() {
 		return this.replAckOff;
 	}
@@ -254,12 +262,16 @@ public class DefaultRedisSlave implements RedisSlave {
 
 		try {
 
-			if(partialState == PARTIAL_STATE.UNKNOWN){
-				partialState = PARTIAL_STATE.PARTIAL;
+			if (writingCommands.compareAndSet(false, true)) {
+				if(partialState == PARTIAL_STATE.UNKNOWN){
+					partialState = PARTIAL_STATE.PARTIAL;
+				}
+				logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
+				slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
+				getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);
+			} else {
+				logger.warn("[beginWriteCommands][already writing]{}, {}", this, beginOffset);
 			}
-			logger.info("[beginWriteCommands]{}, {}", this, beginOffset);
-			slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-			getRedisKeeperServer().getReplicationStore().addCommandsListener(beginOffset, this);
 		} catch (IOException e) {
 			throw new RedisKeeperRuntimeException("[beginWriteCommands]" + beginOffset + "," + this, e);
 		}
@@ -274,7 +286,15 @@ public class DefaultRedisSlave implements RedisSlave {
 			
 			@Override
 			protected void doRun() throws Exception {
-				beginWriteCommands(rdbFileOffset + 1);
+				try {
+					beginWriteCommands(rdbFileOffset + 1);
+				} catch (Throwable th) {
+					logger.error("[sendCommandForFullSync][failed]", th);
+					if (DefaultRedisSlave.this.isOpen()) {
+						logger.error("[sendCommandForFullSync] close slave");
+						DefaultRedisSlave.this.close();
+					}
+				}
 			}
 		});
 	}
@@ -318,6 +338,7 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public void processPsyncSequentially(Runnable runnable) {
+		closeState.makeSureNotClosed();
 		psyncExecutor.execute(runnable);
 	}
 

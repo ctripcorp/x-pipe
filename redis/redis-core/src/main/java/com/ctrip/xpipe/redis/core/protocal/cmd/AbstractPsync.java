@@ -17,9 +17,11 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ChannelUtil;
+import com.ctrip.xpipe.utils.CloseState;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -47,6 +49,8 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	protected List<PsyncObserver> observers = new LinkedList<PsyncObserver>();
 
 	protected PSYNC_STATE psyncState = PSYNC_STATE.PSYNC_COMMAND_WAITING_REPONSE;
+
+	private final CloseState closeState = new CloseState();
 
 	public AbstractPsync(String host, int port, boolean saveCommands, ScheduledExecutorService scheduled) {
 		super(host, port, scheduled);
@@ -154,10 +158,16 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 					}
 				case READING_COMMANDS:
 					if (saveCommands) {
-						try {
-							appendCommands(byteBuf);
-						} catch (IOException e) {
-							getLogger().error("[doHandleResponse][write commands error]" + this, e);
+						synchronized (closeState) {
+							if (!closeState.isOpen()) {
+								getLogger().info("[doHandleResponse][psync already closed]{}", channel);
+								throw new IllegalStateException("psync already closed");
+							}
+							try {
+								appendCommands(byteBuf);
+							} catch (IOException e) {
+								getLogger().error("[doHandleResponse][write commands error]" + this, e);
+							}
 						}
 					}
 					break;
@@ -198,7 +208,12 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 			if(split.length >= 2 && split[1].length() == RedisProtocol.RUN_ID_LENGTH){
 				newReplId = split[1];
 			}
-			doOnContinue(newReplId);
+			if (split.length >= 3 && StringUtils.isNumeric(split[2])) {
+				long continueOffset = Long.parseLong(split[2]);
+				doOnKeeperContinue(newReplId, continueOffset);
+			} else {
+				doOnContinue(newReplId);
+			}
 		} else {
 			throw new RedisRuntimeException("unknown reply:" + psync);
 		}
@@ -244,6 +259,17 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 		}
 	}
 
+	protected void doOnKeeperContinue(String replId, long continueOffset) throws IOException {
+		getLogger().debug("[doOnKeeperContinue]{}:{}", replId, continueOffset);
+		notifyKeeperContinue(replId, continueOffset);
+	}
+
+	protected void notifyKeeperContinue(String replId, long beginOffset) {
+		for (PsyncObserver observer : observers) {
+			observer.onKeeperContinue(replId, beginOffset);
+		}
+	}
+
 	@Override
 	public void onEofType(EofType eofType) {
 		beginReadRdb(eofType);
@@ -282,5 +308,15 @@ public abstract class AbstractPsync extends AbstractRedisCommand<Object> impleme
 	@Override
 	protected void doReset() {
 		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public void close() {
+		if (!this.closeState.isOpen()) return;
+
+		this.closeState.setClosing();
+		synchronized (closeState) {
+			this.closeState.setClosed();
+		}
 	}
 }

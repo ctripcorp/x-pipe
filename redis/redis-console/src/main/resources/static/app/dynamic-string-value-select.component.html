@@ -1,9 +1,3 @@
-<mat-form-field>
-    <mat-label>{{title}}</mat-label>
-    <mat-select [(value)]="value" (selectionChange)="onClusterTypeChange($event)">
-        <mat-option>None</mat-option>
-        <mat-option *ngFor="let value of values" [value]="value">
-            {{value}}
-        </mat-option>
-    </mat-select>
-</mat-form-field>
+<select class="form-control" (change)="onClusterTypeChange($event)">
+    <option *ngFor="let value of values" [value]="value">{{value}}</option>
+</select>

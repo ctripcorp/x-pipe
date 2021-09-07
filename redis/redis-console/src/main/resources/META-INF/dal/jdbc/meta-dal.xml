@@ -629,7 +629,7 @@
 
 	<entity name="dc-cluster-shard-tbl" table="DC_CLUSTER_SHARD_TBL" alias="dcst">
 		<member name="cluster-count" value-type="long" select-expr="COUNT(distinct dcst.dc_cluster_id) `cluster-count`" all="false"/>
-		<member name="shard-count" value-type="long" select-expr="COUNT(distinct dcst.shard_id) `cluster-count`" all="false"/>
+		<member name="shard-count" value-type="long" select-expr="COUNT(distinct dcst.shard_id) `shard-count`" all="false"/>
 
 		<var name="dc-id" value-type="Long"/>
 		<var name="dc-name" value-type="String"/>
@@ -795,6 +795,27 @@
        				WHERE <FIELD name='dc-cluster-shard-id'/> = ${dc-cluster-shard-id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
+				</statement>
+			</query>
+			<query name="find-all-shards-by-sentinel" type="SELECT" multiple="true">
+				<param name='setinel-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/> FROM <TABLE/>
+					WHERE <FIELD name='setinel-id'/>=${setinel-id} AND <FIELD name='deleted'/>=0;
+					]]>
+				</statement>
+			</query>
+			<query name="find-backup-dc-shards-by-sentinel" type="SELECT" multiple="true">
+				<param name='setinel-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-cluster-info'/>, <TABLE name='cluster-info'/>
+					WHERE <FIELD name='setinel-id'/>=${setinel-id} AND <FIELD name='deleted' />=0
+					AND <FIELD name='dc-cluster-id'/>=dct.dc_cluster_id AND dct.cluster_id=ct.id
+					AND ct.activedc_id!=0 and ct.activedc_id!=dct.dc_id;
+					]]>
 				</statement>
 			</query>
 		</query-defs>
@@ -1091,14 +1112,18 @@
 		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
+		<member name="shard-count" value-type="long" select-expr="COUNT(dcst.dc_cluster_shard_id) `shard-count`" all="false"/>
 
 		<readsets>
             <readset name="COUNT">
                 <member name="count"/>
             </readset>
+			<readset name="SHARD-COUNT">
+				<member name="shard-count"/>
+			</readset>
 			<readset name="SENTINEL-USAGE">
                 <readset-ref name="FULL"/>
-                <readset-ref name="COUNT"/>
+                <readset-ref name="SHARD-COUNT"/>
                 <readset-ref name="FULL" relation-name="dc-info"/>
 			</readset>
 		</readsets>
@@ -1148,10 +1173,9 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/> left join <TABLE name='dc-cluster-shard-info'/>
+					FROM <TABLE/> left join (select * from dc_cluster_shard_tbl where deleted=0) dcst
 					on <FIELD name='setinel-id'/> = dcst.setinel_id, <TABLE name='dc-info'/>
 					WHERE <FIELD name='deleted'/> = 0
-					AND dcst.deleted = 0
 					AND dt.id = <FIELD name='dc-id'/>
 					GROUP BY <FIELD name='setinel-id'/>
 					]]>

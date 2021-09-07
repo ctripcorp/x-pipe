@@ -58,10 +58,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -121,6 +118,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private KeeperResourceManager resourceManager;
 
+	private AtomicInteger tryConnectMasterCnt = new AtomicInteger();
+
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
@@ -159,12 +158,39 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, ClusterShardAwareThreadFactory.create(clusterId, shardId, "work-"+ threadPoolName));
 		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "master-" + threadPoolName));
 
-
+		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
 	 	logger.info("[doInitialize]{}", this.redisKeeperServerState.keeperState());
 
+	}
+
+	private void resetReplAfterLongTimeDown() {
+		try {
+			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
+			if (null == replicationStore || null == replicationStore.getMetaStore().getReplId()) {
+				logger.debug("[resetReplAfterLongTimeDown][empty] skip");
+				return;
+			}
+
+			long lastReplDataUpdatedAt = replicationStore.lastReplDataUpdatedAt();
+			long currentTime = System.currentTimeMillis();
+			long safeDownTime = TimeUnit.SECONDS.toMillis(keeperConfig.getMaxReplKeepSecondsAfterDown());
+			long replDownTime = currentTime - lastReplDataUpdatedAt;
+			if (replDownTime > safeDownTime) {
+				logger.info("[resetReplAfterLongTimeDown][down long] reset, {} - {} > {}", currentTime, lastReplDataUpdatedAt, safeDownTime);
+				replicationStoreManager.create();
+			} else if (replDownTime < 0) {
+				logger.info("[resetReplAfterLongTimeDown][time rollback] reset {} - {} < 0", currentTime, lastReplDataUpdatedAt);
+				replicationStoreManager.create();
+			} else {
+				logger.debug("[resetReplAfterLongTimeDown][safe] {} - {} <= {}", currentTime, lastReplDataUpdatedAt, safeDownTime);
+			}
+
+		} catch (Throwable th) {
+			logger.info("[resetReplAfterLongTimeDown][fail]", th);
+		}
 	}
 	
 	private RedisKeeperServerState initKeeperServerState() {
@@ -213,17 +239,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
-		this.leaderElector.start();
 		LifecycleHelper.startIfPossible(keeperRedisMaster);
-		
+		this.leaderElector.start();
 	}
 	
 	@Override
 	protected void doStop() throws Exception {
 		keeperMonitor.stop();
 		clearClients();
-		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		this.leaderElector.stop();
+		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
 		replicationStoreManager.stop();
 		super.doStop();
@@ -474,7 +499,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	}
 
-	private void closeSlaves(String reason) {
+	@Override
+	public void closeSlaves(String reason) {
 		
 		for(RedisSlave redisSlave : slaves()){
 			try {
@@ -493,7 +519,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			closeSlaves(String.format("replid changed: %s->%s", requestReplId, responseReplId));
 		}
 	}
-	
+
+	@Override
+	public void onKeeperContinue(String replId, long beginOffset) {
+		// do nothing
+	}
+
 	@Override
 	public String getClusterId() {
 		return this.clusterId;
@@ -747,5 +778,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public RdbDumper rdbDumper() {
 		return rdbDumper.get();
+	}
+
+	@Override
+	public void tryConnectMaster() {
+		logger.debug("[tryConnectMaster] {}", tryConnectMasterCnt.incrementAndGet());
+	}
+
+	@Override
+	public int getTryConnectMasterCnt() {
+		return tryConnectMasterCnt.get();
 	}
 }

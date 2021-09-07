@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -18,11 +17,11 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -31,10 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 @Service
@@ -60,22 +56,19 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private Random random = new Random();
 
 	@Autowired
-	private SentinelService sentinelService;
-
-	@Autowired
-	private ConsoleConfig consoleConfig;
-
-	@Autowired
 	private ClusterDeleteEventFactory clusterDeleteEventFactory;
-
-	@Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
-	private ScheduledExecutorService scheduled;
 
 	@Autowired
 	private DcClusterService dcClusterService;
 
 	@Autowired
 	private RedisService redisService;
+
+	@Autowired
+	private SentinelBalanceService sentinelBalanceService;
+
+	@Autowired
+	private ConsoleConfig consoleConfig;
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -383,18 +376,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		final DcTbl dc = dcService.find(dcName);
 		if(null == dc || null == cluster) throw new BadRequestException("Cannot bind dc due to unknown dc or cluster");
 
-		Map<Long, SetinelTbl> dcMapSentinel = sentinelService.eachRandomSentinelByDc();
-		if (dcMapSentinel == null) {
-			throw new BadRequestException(String.format("Cannot bind dc due to the map of sentinel in dc is null, dcName: %s, clusterName: %s",
-					dcName, clusterName));
-		}
-
-		final SetinelTbl sentinel = dcMapSentinel.get(dc.getId());
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
 				if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(cluster.getClusterType()), clusterName))
-					return clusterDao.bindDc(cluster, dc, sentinel);
+					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName()));
 				else
 					return clusterDao.bindDc(cluster, dc, null);
 			}
@@ -443,57 +429,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return true;
 	}
 
-
-
-	/**
-	 * Randomly re-balance sentinel assignment for clusters among dcs
-	 * */
-	@Override
-	public List<String> reBalanceSentinels(String dcName, final int numOfClusters, final boolean activeOnly) {
-		List<String> optionalClusters = activeOnly ? findActiveClustersNameByDcName(dcName) : findAllClustersNameByDcName(dcName);
-		List<String> clusters = randomlyChosenClusters(optionalClusters, numOfClusters);
-		logger.info("[reBalanceSentinels] pick up clusters: {}, dc: {}", clusters, dcName);
-
-		reBalanceClusterSentinels(dcName, clusters);
-		return clusters;
-	}
-
-	// randomly findRedisHealthCheckInstance 'numOfClusters' cluster names
-	private List<String> randomlyChosenClusters(final List<String> clusters, final int num) {
-		if(clusters == null || clusters.isEmpty() || num >= clusters.size()) return clusters;
-		if(random == null) {
-			random = new Random();
-		}
-		int bound = clusters.size(), index = random.nextInt(bound);
-		Set<String> result = new HashSet<>();
-		for(int count = 0; count < num; count++) {
-			while (index < 0 || !result.add(clusters.get(index))) {
-				index = random.nextInt(bound);
-			}
-		}
-		return new LinkedList<>(result);
-	}
-
-	@Override
-	public void reBalanceClusterSentinels(String dcName, final List<String> clusters) {
-		List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dcName);
-
-		// maxChangeOnce must be smaller than DefaultDcMetaCache.META_MODIFY_PROTECT_COUNT
-		int maxChangeOnce = consoleConfig.getRebalanceSentinelMaxNumOnce(),
-				changingPeriod = consoleConfig.getRebalanceSentinelInterval();
-		if(clusters.size() < maxChangeOnce) {
-			for (String cluster : clusters) {
-				balanceCluster(dcName, sentinels, cluster);
-			}
-		} else {
-			List<String> nextExecutionClusters = clusters.subList(maxChangeOnce, clusters.size());
-			for(int i = 0; i < maxChangeOnce; i++) {
-				balanceCluster(dcName, sentinels, clusters.get(i));
-			}
-			scheduled.schedule(() -> reBalanceClusterSentinels(dcName, nextExecutionClusters), changingPeriod, TimeUnit.SECONDS);
-		}
-	}
-
 	@Override
 	public List<ClusterTbl> findErrorMigratingClusters() {
 		List<ClusterTbl> errorClusters = Lists.newArrayList();
@@ -523,43 +458,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public List<ClusterTbl> findMigratingClusters() {
 		return clusterDao.findMigratingClustersOverview();
-	}
-
-	// Cache {dc name} -> List {SentinelTbl}
-	private Map<String, List<SetinelTbl>> getDcNameMappedSentinels(final List<String> dcNames) {
-		Map<String, List<SetinelTbl>> map = Maps.newHashMap();
-		for(String dc : dcNames) {
-			List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dc);
-			map.put(dc, sentinels);
-		}
-		return map;
-	}
-
-	// Add transaction for one cluster update, rollback if one 'DcClusterShard' update fails
-	@VisibleForTesting
-	@DalTransaction
-	protected void balanceCluster(String dcName, List<SetinelTbl> sentinels, final String cluster) {
-
-		List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
-		if(dcClusterShards == null || sentinels == null || sentinels.isEmpty()) {
-			throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
-		}
-		long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
-		dcClusterShards.forEach(dcClusterShard -> {
-			dcClusterShard.setSetinelId(randomlySelectedSentinelId);
-			try {
-				dcClusterShardService.updateDcClusterShard(dcClusterShard);
-			} catch (DalException e) {
-				throw new XpipeRuntimeException(e.getMessage());
-			}
-		});
-	}
-
-	@VisibleForTesting
-	protected long randomlyChoseSentinels(List<SetinelTbl> sentinels) {
-		int randomNum = Math.abs(random.nextInt());
-		int randomIndex = randomNum % sentinels.size();
-		return sentinels.get(randomIndex).getSetinelId();
 	}
 
 	@Override
@@ -611,11 +509,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			result.add(cluster);
 		}
 		return result;
-	}
-
-	@VisibleForTesting
-	protected void setClusterDao(ClusterDao clusterDao) {
-		this.clusterDao = clusterDao;
 	}
 
 	@Override
@@ -680,24 +573,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		allClusters.forEach(clusterTbl -> parts.get((int) (clusterTbl.getId() % partsCnt)).add(clusterTbl.getClusterName()));
 		return parts;
-	}
-
-	private List<String> findActiveClustersNameByDcName(String dcName) {
-		return getClusterNames(findActiveClustersByDcName(dcName));
-	}
-
-	private List<String> findAllClustersNameByDcName(String dcName) {
-		return getClusterNames(findAllClustersByDcName(dcName));
-	}
-
-	private List<String> getClusterNames(List<ClusterTbl> clusterTbls) {
-		List<String> clustersName = new ArrayList<>(clusterTbls.size());
-
-		for (ClusterTbl clusterTbl : clusterTbls) {
-			if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(clusterTbl.getClusterType()), clusterTbl.getClusterName()))
-				clustersName.add(clusterTbl.getClusterName());
-		}
-		return clustersName;
 	}
 
 }

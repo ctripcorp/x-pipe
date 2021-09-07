@@ -41,4 +41,10 @@ public interface RdbStore extends Destroyable, Closeable{
 	
 	boolean sameRdbFile(File file);
 
+	String getRdbFileName();
+
+	boolean isWriting();
+
+	long getRdbFileLastModified();
+
 }

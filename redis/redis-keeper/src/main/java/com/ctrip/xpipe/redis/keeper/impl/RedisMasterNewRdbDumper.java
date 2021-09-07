@@ -93,6 +93,7 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
             throw new XpipeRuntimeException("[RedisMasterNewRdbDumper][RdbOffsetNotContinuous][RecreateStore]" + redisMaster.getReplicationStoreManager(), e);
         }
         redisMaster.reconnect();
+        redisKeeperServer.closeSlaves("replication reset");
     }
 
 

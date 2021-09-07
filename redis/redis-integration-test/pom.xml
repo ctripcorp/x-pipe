@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.ctrip.framework.xpipe.redis</groupId>
 		<artifactId>redis-parent</artifactId>
-		<version>1.2.4</version>
+		<version>1.2.6</version>
 	</parent>
 	<artifactId>redis-integration-test</artifactId>
 
@@ -27,6 +27,12 @@
 			<artifactId>redis-checker</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-proxy</artifactId>
+			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

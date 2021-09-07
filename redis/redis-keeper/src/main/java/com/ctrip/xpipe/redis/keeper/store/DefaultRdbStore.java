@@ -315,4 +315,23 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		return this.file.equals(file);
 	}
 
+	@Override
+	public String getRdbFileName() {
+		if (null != file) {
+			return file.getName();
+		}
+
+		return null;
+	}
+
+	@Override
+	public boolean isWriting() {
+		return isRdbWriting(status.get());
+	}
+
+	@Override
+	public long getRdbFileLastModified() {
+		return file.lastModified();
+	}
+
 }

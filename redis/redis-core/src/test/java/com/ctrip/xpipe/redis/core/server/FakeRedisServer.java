@@ -123,6 +123,10 @@ public class FakeRedisServer extends AbstractLifecycle{
 	public int getCommandsLength() {
 		return commandsLength;
 	}
+
+	public void setCommandsLength(int commandsLength) {
+		this.commandsLength = commandsLength;
+	}
 	
 	public int getRdbSize() {
 		return rdbSize;

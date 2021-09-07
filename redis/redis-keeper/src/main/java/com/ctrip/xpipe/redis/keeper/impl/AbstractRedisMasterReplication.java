@@ -165,6 +165,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 			return;
 		}
 
+		redisKeeperServer.tryConnectMaster();
 		Bootstrap b = new Bootstrap();
 		b.group(nioEventLoopGroup).channel(NioSocketChannel.class).option(ChannelOption.TCP_NODELAY, true)
 				.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -389,7 +390,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected Psync psyncCommand() {
 
 		if (getLifecycleState().isStopping() || getLifecycleState().isStopped()) {
-			logger.info("[psyncCommand][stopped]{}", this);
+			logger.info("[psyncCommand][stopped][before]{}", this);
 			return null;
 		}
 
@@ -408,7 +409,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 				}
 			}
 		});
-		return psync;
+
+		// double check lifecycle state
+		// avoid replication stop and dispose before create psync
+		if (getLifecycleState().isStopping() || getLifecycleState().isStopped()) {
+			logger.info("[psyncCommand][stopped][after]{}", this);
+			return null;
+		} else return psync;
 	}
 
 	protected abstract Psync createPsync();
@@ -485,6 +492,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	@Override
 	public void onContinue(String requestReplId, String responseReplId) {
+		doOnContinue();
+	}
+
+	@Override
+	public void onKeeperContinue(String replId, long beginOffset) {
 		doOnContinue();
 	}
 

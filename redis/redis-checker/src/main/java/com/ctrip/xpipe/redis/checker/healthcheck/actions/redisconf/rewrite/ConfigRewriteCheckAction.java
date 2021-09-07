@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.rewrite;
 
-import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -47,16 +46,14 @@ public class ConfigRewriteCheckAction extends RedisConfigCheckAction {
     }
 
     private void checkFailReason(Throwable throwable) {
-        if(throwable instanceof CommandTimeoutException) {
-            return;
-        }
-        if(throwable instanceof RedisError) {
-            if(throwable.getMessage().contains("during loading")) {
-                return;
+        if (throwable instanceof RedisError) {
+            logger.warn("[rewrite][checkFailReason]" + throwable.getMessage(), throwable);
+            String message = throwable.getMessage();
+            if (message.contains("Rewriting config file:") || message.contains("The server is running without a config file")) {
+                alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE,
+                        throwable.getClass().getSimpleName());
+                logger.error("[configRewrite] Redis:{}", instance.getCheckInfo(), throwable);
             }
         }
-        alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONF_REWRITE_FAILURE,
-                throwable.getClass().getSimpleName());
-        logger.error("[configRewrite] Redis:{}", instance.getCheckInfo(), throwable);
     }
 }

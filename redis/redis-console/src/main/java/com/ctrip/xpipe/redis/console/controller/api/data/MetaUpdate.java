@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -72,6 +73,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private SentinelBalanceService sentinelBalanceService;
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -322,7 +326,6 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createFailMessage(e.getMessage());
         }
 
-        Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
         List<String> successShards = new LinkedList<>();
         List<String> failShards = new LinkedList<>();
 
@@ -332,7 +335,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 ShardTbl shardTbl = new ShardTbl()
                         .setSetinelMonitorName(shardCreateInfo.getShardMonitorName())
                         .setShardName(shardCreateInfo.getShardName());
-                shardService.createShard(clusterName, shardTbl, randomSentinelByDc);
+                shardService.createShard(clusterName, shardTbl, sentinelBalanceService.selectMultiDcSentinels());
                 successShards.add(shardCreateInfo.getShardName());
             } catch (Exception e) {
                 logger.error("[createShards]" + clusterName + "," + shardCreateInfo.getShardName(), e);
@@ -466,13 +469,10 @@ public class MetaUpdate extends AbstractConsoleController {
 
         validateRedisCreateInfo(redisCreateInfos);
 
-        // Create shard
-        Map<Long, SetinelTbl> randomSentinelByDc = sentinelService.eachRandomSentinelByDc();
-
         ShardTbl proto = new ShardTbl()
                 .setSetinelMonitorName(monitorName)
                 .setShardName(shardName);
-        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, randomSentinelByDc);
+        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, sentinelBalanceService.selectMultiDcSentinels());
 
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
@@ -530,4 +530,53 @@ public class MetaUpdate extends AbstractConsoleController {
             }
         }
     }
+
+    @PostMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}")
+    public RetMessage bindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+        logger.info("[bindDc]{},{}", clusterName, dcName);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl || null == clusterTbl) {
+            return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
+        }
+        List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
+        if (dcTbls.stream().anyMatch(dc -> dc.getId() == dcTbl.getId())) {
+            return RetMessage.createFailMessage("cluster has already contain dc " + dcName);
+        }
+
+        clusterService.bindDc(clusterName, dcName);
+        return RetMessage.createSuccessMessage();
+    }
+
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs/{dcName}", method = RequestMethod.DELETE)
+    public RetMessage unbindDc(@PathVariable String clusterName, @PathVariable String dcName) {
+        logger.info("[unbindDc]{}, {}", clusterName, dcName);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        DcTbl dcTbl = dcService.findByDcName(dcName);
+        if (null == dcTbl || null == clusterTbl) {
+            return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
+        }
+        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+        if (clusterType.supportMultiActiveDC()) {
+            return RetMessage.createFailMessage("cluster not support unbind");
+        }
+
+        List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
+        if (dcTbls.stream().noneMatch(dc -> dc.getId() == dcTbl.getId())) {
+            return RetMessage.createFailMessage("cluster doesn't contain dc " + dcName);
+        }
+        if (clusterTbl.getActivedcId() == dcTbl.getId()) {
+            return RetMessage.createFailMessage("not allow unbind active dc");
+        }
+
+        List<RedisTbl> redises = redisService.findAllRedisesByDcClusterName(dcName, clusterName);
+        if (!redises.isEmpty()) {
+            logger.info("[unbindDc][{}] check empty fail for dc {}", clusterName, dcName);
+            return RetMessage.createFailMessage("cluster not empty in dc " + dcName);
+        }
+
+        clusterService.unbindDc(clusterName, dcName);
+        return RetMessage.createSuccessMessage();
+    }
+
 }

@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ctrip.framework.xpipe</groupId>
     <artifactId>xpipe-parent</artifactId>
-    <version>1.2.4</version>
+    <version>1.2.6</version>
     <packaging>pom</packaging>
 
 
@@ -770,6 +770,23 @@
                     <dataFile>target/jacoco.exec</dataFile>
                     <outputDirectory>target/jacoco</outputDirectory>
                 </configuration>
+                <executions>
+                    <!-- Prepares the property pointing to the JaCoCo runtime agent
+                    which is passed as VM argument when Maven the Surefire plugin is executed. -->
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- Ensures that the code coverage report is created after
+                    all tests have been run. -->
+                    <execution>
+                        <id>generate-report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

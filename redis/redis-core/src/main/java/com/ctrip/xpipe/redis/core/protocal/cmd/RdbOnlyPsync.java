@@ -31,4 +31,9 @@ public class RdbOnlyPsync extends AbstractReplicationStorePsync{
 		// always a fresh ReplicationStore, so do nothing
 	}
 
+	@Override
+	protected boolean useKeeperPsync() {
+		return false;
+	}
+
 }

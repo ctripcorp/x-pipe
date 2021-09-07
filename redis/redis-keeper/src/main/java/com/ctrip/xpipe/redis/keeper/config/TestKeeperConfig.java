@@ -183,6 +183,17 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return replDownSafeIntervalMilli;
 	}
 
+	private long replKeepSecondsAfterDown = 60;
+
+	public void setReplKeepSecondsAfterDown(long replKeepSecondsAfterDown) {
+		this.replKeepSecondsAfterDown = replKeepSecondsAfterDown;
+	}
+
+	@Override
+	public long getMaxReplKeepSecondsAfterDown() {
+		return replKeepSecondsAfterDown;
+	}
+
 	public void setKeeperRateLimit(boolean keeperRateLimit) {
 		this.keeperRateLimit = keeperRateLimit;
 	}
@@ -190,5 +201,16 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public TestKeeperConfig setReplDownSafeIntervalMilli(long replDownSafeIntervalMilli) {
 		this.replDownSafeIntervalMilli = replDownSafeIntervalMilli;
 		return this;
+	}
+
+	private int cmdFileKeepSeconds = 60;
+
+	public void setReplicationStoreCommandFileKeepTimeSeconds(int seconds) {
+		this.cmdFileKeepSeconds = seconds;
+	}
+
+	@Override
+	public int getReplicationStoreCommandFileKeepTimeSeconds() {
+		return cmdFileKeepSeconds;
 	}
 }

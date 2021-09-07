@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.api.endpoint;
 
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+
 import java.net.InetSocketAddress;
 
 public interface Endpoint {
@@ -15,4 +17,6 @@ public interface Endpoint {
 	String getPassword();
 	
 	InetSocketAddress getSocketAddress();
+
+	ProxyConnectProtocol getProxyProtocol();
 }

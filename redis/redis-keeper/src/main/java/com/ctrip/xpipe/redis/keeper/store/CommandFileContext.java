@@ -48,6 +48,10 @@ public class CommandFileContext {
 	public FileChannel getChannel() throws IOException {
 		return controllableFile.getFileChannel();
 	}
+
+	public long getLastModified() {
+		return currentFile.lastModified();
+	}
 	
 	@Override
 	public String toString() {

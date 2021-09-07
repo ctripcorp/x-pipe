@@ -24,9 +24,9 @@ function MigrationService($resource, $q) {
 			method : 'GET',
 			url : '/console/migration/events/by/operator',
 		},
-		findByMigrationStatus: {
+		findByMigrationStatusType: {
 			method : 'GET',
-			url : '/console/migration/events/by/migration/status',
+			url : '/console/migration/events/by/migration/status/type',
 		},
 		find_event_details: {
 			method : 'GET',
@@ -116,9 +116,9 @@ function MigrationService($resource, $q) {
 		return d.promise;
 	}
 
-	function findByMigrationStatus(page, size, status) {
+	function findByMigrationStatusType(page, size, type) {
 		let d = $q.defer();
-		resource.findByMigrationStatus({ page, size, status},
+		resource.findByMigrationStatusType({ page, size, type},
 			function(result) {
 				d.resolve(result);
 			},
@@ -257,7 +257,7 @@ function MigrationService($resource, $q) {
 		findAll : findAll,
 		find: find,
 		findByOperator: findByOperator,
-		findByMigrationStatus: findByMigrationStatus,
+		findByMigrationStatusType: findByMigrationStatusType,
 		findEventDetails : findEventDetails,
 		continueMigrationCluster : continueMigrationCluster,
 		cancelMigrationCluster : cancelMigrationCluster,
