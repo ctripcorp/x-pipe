@@ -3,10 +3,10 @@ angular
 	.controller('ActiveDcMigrationIndexCtl', ActiveDcMigrationIndexCtl);
 
 ActiveDcMigrationIndexCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$interval', 'AppUtil',
-	'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService'];
+	'toastr', 'NgTableParams', 'ClusterService', 'DcService', 'MigrationService', 'ClusterType'];
 
 function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $interval, AppUtil,
-								   toastr, NgTableParams, ClusterService, DcService, MigrationService) {
+								   toastr, NgTableParams, ClusterService, DcService, MigrationService, ClusterType) {
 
 	$scope.sourceDcSelected = sourceDcSelected;
 	$scope.targetDcSelected = targetDcSelected;
@@ -59,7 +59,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 		focusDcByCluster(clusters[0]);
 		const clusterNames = clusters.map(c => c.clusterName);
 		ClusterService.findClustersByNames.apply(ClusterService, clusterNames).then(result=>{
-			$scope.clusters = result.filter(c => !!c.activedcId && !!$scope.sourceDcInfo && c.activedcId == $scope.sourceDcInfo.id);
+			$scope.clusters = result.filter(c => ClusterType.lookup(c.clusterType) && !!c.activedcId && !!$scope.sourceDcInfo && c.activedcId == $scope.sourceDcInfo.id);
 			$scope.tableParams.reload();
 		});
 	}
