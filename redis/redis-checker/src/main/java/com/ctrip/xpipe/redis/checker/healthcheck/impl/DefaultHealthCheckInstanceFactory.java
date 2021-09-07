@@ -77,6 +77,18 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     @Override
+    public void remove(RedisHealthCheckInstance instance) {
+        Endpoint endpoint = instance.getEndpoint();
+        endpointFactory.remove(new HostPort(endpoint.getHost(), endpoint.getPort()));
+        stopCheck(instance);
+    }
+
+    @Override
+    public void remove(ClusterHealthCheckInstance instance) {
+        stopCheck(instance);
+    }
+
+    @Override
     public RedisHealthCheckInstance create(RedisMeta redisMeta) {
 
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
@@ -147,6 +159,15 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             LifecycleHelper.startIfPossible(instance);
         } catch (Exception e) {
             logger.error("[startCheck]", e);
+        }
+    }
+
+
+    private void stopCheck(HealthCheckInstance instance) {
+        try {
+            LifecycleHelper.stopIfPossible(instance);
+        } catch (Exception e) {
+            logger.error("[stopCheck]", e);
         }
     }
 

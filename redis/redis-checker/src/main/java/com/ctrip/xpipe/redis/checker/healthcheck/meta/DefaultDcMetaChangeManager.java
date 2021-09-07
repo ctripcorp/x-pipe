@@ -7,6 +7,7 @@ import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -15,6 +16,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.RouteMetaComparator;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +40,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
-    public DefaultDcMetaChangeManager(HealthCheckInstanceManager instanceManager) {
+    private HealthCheckEndpointFactory healthCheckEndpointFactory;
+    
+
+    public DefaultDcMetaChangeManager(HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory) {
         this.instanceManager = instanceManager;
+        this.healthCheckEndpointFactory = healthCheckEndpointFactory;
     }
 
     @Override
@@ -52,9 +59,17 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         // normal logic
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
         comparator.accept(this);
+        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future);
+        //change routes
+        if(dcRouteMetaComparator.getAdded().size() != 0 
+            || dcRouteMetaComparator.getMofified().size() != 0
+            || dcRouteMetaComparator.getRemoved().size() != 0) {
+            healthCheckEndpointFactory.updateRoutes();
+        }
         current = future;
+        
     }
-
+    
 
     @Override
     public void visitAdded(ClusterMeta added) {

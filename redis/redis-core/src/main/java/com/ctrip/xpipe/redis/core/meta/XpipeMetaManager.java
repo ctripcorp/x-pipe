@@ -140,8 +140,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation, ReadWriteSafe {
 		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
 	}
 
-	default RouteMeta consoleRandomRoute(String currentDc, Integer orgId, String dstDc) {
-		return randomRoute(currentDc, Route.TAG_CONSOLE, orgId, dstDc);
+	default List<RouteMeta> consoleRoutes(String currentDc) {
+		return routes(currentDc, Route.TAG_CONSOLE);
 	}
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -34,6 +35,9 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
+    
+    @Autowired
+    private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
     @Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -84,7 +88,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
         return MapUtils.getOrCreate(dcMetaChangeManagers, dcId, new ObjectFactory<DcMetaChangeManager>() {
                     @Override
                     public DcMetaChangeManager create() {
-                        return new DefaultDcMetaChangeManager(instanceManager);
+                        return new DefaultDcMetaChangeManager(instanceManager, healthCheckEndpointFactory);
                     }
                 });
     }

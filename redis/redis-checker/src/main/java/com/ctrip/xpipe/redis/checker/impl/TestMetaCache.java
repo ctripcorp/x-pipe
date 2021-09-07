@@ -79,6 +79,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RouteMeta> getRoutes() {
+        return null;
+    }
+
+    @Override
     public RouteMeta getRouteIfPossible(HostPort hostPort) {
         return null;
     }
