@@ -31,9 +31,7 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         ProxyResourceManager proxyResourceManager = remove(address);
         if(proxyResourceManager != null) {
             proxyResourceManager.nextEndpoints().stream().forEach(endpoint -> {
-                if (--proxies.get(endpoint).reference == 0) {
-                    proxies.remove(endpoint);
-                }
+                removeProxy(endpoint);
             });
         }
         return proxyResourceManager;
@@ -143,5 +141,14 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         ProxyInetSocketAddress proxy = proxies.computeIfAbsent(endpoint, e->new ProxyInetSocketAddress(e.getAddress(), e.getPort()));
         proxy.reference += 1;
         return proxy;
+    }
+    
+    @VisibleForTesting
+    ProxyInetSocketAddress removeProxy(ProxyInetSocketAddress endpoint) {
+        if ((--endpoint.reference) == 0) {
+            return proxies.remove(new InetSocketAddress(endpoint.getAddress(), endpoint.getPort()));
+        } else {
+            return null;
+        }
     }
 }

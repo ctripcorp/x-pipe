@@ -35,8 +35,14 @@ public class DefaultProxyResourceManager implements ProxyResourceManager {
                 addresses.add(node);
             }
         }
-        int index = random.nextInt(addresses.size());
-        return addresses.get(index);
+        if(addresses.size() == 0) {
+            int index = random.nextInt(candidates.size());
+            return candidates.get(index);
+        } else {
+            int index = random.nextInt(addresses.size());
+            return addresses.get(index);
+        }
+        
     }
     
     public List<ProxyInetSocketAddress> nextEndpoints() {
