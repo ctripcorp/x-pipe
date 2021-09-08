@@ -69,8 +69,9 @@
         <dependency>
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-proxy-client</artifactId>
-            <version>1.2.6</version>
-            <scope>compile</scope>
+            <version>${parent.version}</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../redis-proxy-client/target/redis-proxy-client-${parent.version}.jar</systemPath>
         </dependency>
     </dependencies>
 

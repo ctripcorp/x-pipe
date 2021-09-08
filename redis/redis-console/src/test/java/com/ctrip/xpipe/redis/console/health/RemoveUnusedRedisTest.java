@@ -48,7 +48,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
         // mock datas
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         logger.info("[xpipeMeta] {}", getXpipeMeta());
-        when(metaCache.getRouteIfPossible(any())).thenReturn(null);
+        when(metaCache.getRoutes()).thenReturn(null);
 
         // random port to avoid port conflict
         port = randomPort();

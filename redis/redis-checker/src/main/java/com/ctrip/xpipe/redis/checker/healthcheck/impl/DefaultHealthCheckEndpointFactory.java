@@ -46,24 +46,16 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
 public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFactory {
 
     private ConcurrentMap<HostPort, Endpoint> map = Maps.newConcurrentMap();
-
-    @Autowired
-    private CheckerConfig checkerConfig;
     
     @Autowired
     private MetaCache metaCache;
-
-    @Resource(name = KEYED_NETTY_CLIENT_POOL)
-    private XpipeNettyClientKeyedObjectPool keyedObjectPool;
-
-    @Resource(name = SCHEDULED_EXECUTOR)
-    ScheduledExecutorService scheduled;
     
     Map<String, List<RouteMeta>> routes = new ConcurrentHashMap<>();
     
     @Override
     public void updateRoutes() {
         List<RouteMeta> allRoutes = metaCache.getRoutes();
+        if(allRoutes == null || allRoutes.size() == 0) return;
         ConcurrentHashMap<String, List<RouteMeta>> newRoutes = new ConcurrentHashMap<>();
         allRoutes.forEach(routeMeta -> {
             String dst = routeMeta.getDstDc();
@@ -88,52 +80,21 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     void registerProxy(HostPort hostPort) {
         String dst = metaCache.getDc(hostPort);
         List<RouteMeta> list = routes.get(dst);
-
-        RouteMeta route = selectRoute(list, hostPort);
-        if(route != null) {
+        
+        if(list != null && list.size() != 0) {
+            RouteMeta route = selectRoute(list, hostPort);
             ProxyRegistry.registerProxy(hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));
-        }
+        } 
         
     }
     
-    
-
+    @Autowired
     ProxyChecker proxyChecker;
     
     @PostConstruct
     public void postConstruct() {
         updateRoutes();
-        proxyChecker = new ProxyChecker() {
-            @Override
-            public CompletableFuture<Boolean> check(InetSocketAddress address) {
-                CompletableFuture<Boolean> future = new CompletableFuture();
-                ProxyPingCommand proxyPingCommand = new ProxyPingCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(address.getHostName(), address.getPort())), scheduled);
-                CommandFuture commandFuture = proxyPingCommand.execute();
-                commandFuture.addListener(new CommandFutureListener<ProxyPongEntity>() {
-                    @Override
-                    public void operationComplete(CommandFuture<ProxyPongEntity> commandFuture) throws Exception {
-                        if(commandFuture.isSuccess()) {
-                            future.complete(true);
-                        } else {
-                            future.complete(false);
-                        }
-                    }
-                });
-                return future;
-            }
-
-            @Override
-            public int getRetryUpNum() {
-                return 10;
-            }
-
-            @Override
-            public int getRetryDownNum() {
-                return 1;
-            }
-        };
         ProxyRegistry.setChecker(proxyChecker);
-        
     }
     
     @Override
@@ -164,6 +125,11 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         return String.format("%s %s %s TCP", ProxyConnectProtocol.KEY_WORD, PROXY_OPTION.ROUTE, route.getRouteInfo());
     }
 
+    @VisibleForTesting
+    public MetaCache getMetaCache() {
+        return this.metaCache;
+    }
+    
     @VisibleForTesting
     public DefaultHealthCheckEndpointFactory setMetaCache(MetaCache metaCache) {
         this.metaCache = metaCache;

@@ -14,7 +14,6 @@ public class AgentMain {
 
         ClassLoader parent = ClassLoader.getSystemClassLoader().getParent();
         Class<?> connectionClass = null;
-        System.out.println(agentArgs);
         
         if (parent != null) {
             try {

@@ -85,9 +85,9 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
             @Override
             public void accept(Boolean aBoolean, Throwable throwable) {
                 if(throwable != null  || aBoolean == false ) {
-                    proxy.tryDown(checker.getRetryDownNum());
+                    proxy.tryDown(checker.getRetryDownTimes());
                 } else {
-                    proxy.tryUp(checker.getRetryUpNum());
+                    proxy.tryUp(checker.getRetryUpTimes());
                 }
             }
         });

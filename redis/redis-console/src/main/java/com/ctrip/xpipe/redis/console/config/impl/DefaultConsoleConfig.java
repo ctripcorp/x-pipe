@@ -66,6 +66,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_CHECKER_ACK_TIMEOUT_MILLI = "checker.ack.timeout.milli";
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
+    
+    private static final String KEY_PROXY_CHECK_DOWN_RETRY_TIMES = "proxy.check.down.retry.times";
+    
+    private static final String KEY_PROXY_CHECK_UP_RETRY_TIMES = "proxy.check.up.retry.times";
 
     private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
 
@@ -433,6 +437,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getLongProperty(KEY_CONFIG_CACHE_TIMEOUT_MILLI, 1000L);
     }
 
+    @Override
+    public int getProxyCheckUpRetryTimes() {
+        return getIntProperty(KEY_PROXY_CHECK_UP_RETRY_TIMES, 10);
+    }
+
+    @Override
+    public int getProxyCheckDownRetryTimes() {
+        return getIntProperty(KEY_PROXY_CHECK_DOWN_RETRY_TIMES, 1);
+    }
+    
     @Override
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);

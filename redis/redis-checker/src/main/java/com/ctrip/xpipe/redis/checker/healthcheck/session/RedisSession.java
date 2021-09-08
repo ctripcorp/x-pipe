@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
+import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -52,7 +53,7 @@ public class RedisSession {
         this.endpoint = endpoint;
         this.scheduled = scheduled;
         this.clientPool = keyedObjectPool.getKeyPool(endpoint);
-        if(endpoint instanceof ProxyEnabled) {
+        if(ProxyRegistry.getProxy(endpoint.getHost(), endpoint.getPort()) != null) {
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }
     }

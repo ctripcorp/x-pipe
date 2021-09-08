@@ -3,6 +3,8 @@ package com.ctrip.framework.xpipe.redis;
 import com.ctrip.framework.xpipe.redis.proxy.ProxyResourceManager;
 import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
 
+import java.net.InetSocketAddress;
+
 import static com.ctrip.framework.xpipe.redis.utils.Constants.PROXY_KEY_WORD;
 
 public class ProxyRegistry {
@@ -17,6 +19,10 @@ public class ProxyRegistry {
 
     public static ProxyResourceManager unregisterProxy(String ip, int port) {
         return ProxyUtil.getInstance().unregisterProxy(ip, port);
+    }
+    
+    public static ProxyResourceManager getProxy(String ip, int port) {
+        return ProxyUtil.getInstance().get(new InetSocketAddress(ip, port));
     }
     
     public static void setChecker(ProxyChecker checker) {

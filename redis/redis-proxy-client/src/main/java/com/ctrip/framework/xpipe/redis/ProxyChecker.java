@@ -12,8 +12,8 @@ public interface ProxyChecker {
 
     CompletableFuture<Boolean> check(InetSocketAddress address);
 
-    int getRetryUpNum();
+    int getRetryUpTimes();
     
-    int getRetryDownNum();
+    int getRetryDownTimes();
     
 }

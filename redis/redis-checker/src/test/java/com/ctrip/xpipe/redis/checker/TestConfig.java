@@ -192,4 +192,14 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public long getConfigCacheTimeoutMilli() {
         return 0L;
     }
+
+    @Override
+    public int getProxyCheckUpRetryTimes() {
+        return 10;
+    }
+
+    @Override
+    public int getProxyCheckDownRetryTimes() {
+        return 1;
+    }
 }

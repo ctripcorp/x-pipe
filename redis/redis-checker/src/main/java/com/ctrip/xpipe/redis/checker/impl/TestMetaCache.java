@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -70,7 +71,7 @@ public class TestMetaCache implements MetaCache {
 
     @Override
     public String getDc(HostPort hostPort) {
-        return null;
+        return "oy";
     }
 
     @Override
@@ -80,11 +81,6 @@ public class TestMetaCache implements MetaCache {
 
     @Override
     public List<RouteMeta> getRoutes() {
-        return null;
-    }
-
-    @Override
-    public RouteMeta getRouteIfPossible(HostPort hostPort) {
         return null;
     }
 

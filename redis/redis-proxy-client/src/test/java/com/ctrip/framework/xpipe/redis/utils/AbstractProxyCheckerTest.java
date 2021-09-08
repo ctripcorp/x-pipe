@@ -6,20 +6,20 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractProxyCheckerTest implements ProxyChecker {
-    int retryUpNum;
-    int retryDownNum;
+    int retryUpTimes;
+    int retryDownTimes;
     public AbstractProxyCheckerTest(int retryUpNum, int retryDownNum) {
-        this.retryUpNum = retryUpNum;
-        this.retryDownNum = retryDownNum;
+        this.retryUpTimes = retryUpNum;
+        this.retryDownTimes = retryDownNum;
     }
 
     @Override
-    public int getRetryUpNum() {
-        return retryUpNum;
+    public int getRetryUpTimes() {
+        return retryUpTimes;
     }
 
     @Override
-    public int getRetryDownNum() {
-        return retryDownNum;
+    public int getRetryDownTimes() {
+        return retryDownTimes;
     }
 }
