@@ -144,7 +144,7 @@ public class MetaUpdate extends AbstractConsoleController {
 
     //synchronizelly delete cluster, including meta server
     @RequestMapping(value = "/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
-    public RetMessage deleteCluster(@PathVariable String clusterName, @RequestParam(defaultValue = "false") boolean checkEmpty) {
+    public RetMessage deleteCluster(@PathVariable String clusterName, @RequestParam(defaultValue = "true") boolean checkEmpty) {
         logger.info("[deleteCluster]{}", clusterName);
         try {
             List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs(clusterName);
