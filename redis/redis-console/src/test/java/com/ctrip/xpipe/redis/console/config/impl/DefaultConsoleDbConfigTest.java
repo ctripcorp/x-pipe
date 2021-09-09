@@ -119,6 +119,18 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
     }
 
     @Test
+    public void testSentinelCheckWhiteListCaseIgnore() throws DalException {
+        String key = KEY_SENTINEL_CHECK_EXCLUDE;
+        String mockCluster1 = "test-cluster1";
+        configModel.setKey(key);
+        configModel.setSubKey(mockCluster1);
+        service.stopSentinelCheck(configModel, 1);
+
+        Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster1.toUpperCase()));
+        Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster1.toLowerCase()));
+    }
+
+    @Test
     public void testShouldClusterAlert() throws DalException {
         configModel.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
         configModel.setSubKey("Cluster1");
@@ -136,5 +148,15 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
     }
 
+    @Test
+    public void testShouldClusterAlertCaseIgnore() throws DalException {
+        configModel.setKey(KEY_CLUSTER_ALERT_EXCLUDE);
+        String cluster = "Cluster1";
+        configModel.setSubKey(cluster);
+        service.stopClusterAlert(configModel, 1);
+
+        Assert.assertFalse(consoleDbConfig.shouldClusterAlert(cluster.toUpperCase()));
+        Assert.assertFalse(consoleDbConfig.shouldClusterAlert(cluster.toLowerCase()));
+    }
 
 }
