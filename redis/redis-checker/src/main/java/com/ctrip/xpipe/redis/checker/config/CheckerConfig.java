@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -66,6 +67,12 @@ public interface CheckerConfig {
 
     String KEY_CONFIG_CACHE_TIMEOUT_MILLI = "checker.config.cache.timeout.milli";
 
+    String KEY_PROXY_CHECK_DOWN_RETRY_TIMES = "proxy.check.down.retry.times";
+
+    String KEY_PROXY_CHECK_UP_RETRY_TIMES = "proxy.check.up.retry.times";
+
+    String KEY_PROXY_CHECK_INTERVAL = "proxy.check.interval";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -122,4 +129,5 @@ public interface CheckerConfig {
     
     int getProxyCheckDownRetryTimes();
 
+    void register(List<String> keys, ConfigChangeListener configListener);
 }

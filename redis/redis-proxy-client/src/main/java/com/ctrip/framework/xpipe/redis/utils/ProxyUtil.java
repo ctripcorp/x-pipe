@@ -78,7 +78,7 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         thread.setName("proxy-checker-background-schedule");
         return thread;
     }
-
+    
     private void check(ProxyInetSocketAddress proxy) {
         
         checker.check(proxy).whenComplete(new BiConsumer<Boolean, Throwable>() {

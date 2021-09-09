@@ -35,18 +35,22 @@ public class ProxyInetSocketAddress extends InetSocketAddress {
         super(hostname, port);
     }
     
-    public void tryUp(int max) {
+    public boolean tryUp(int max) {
         retryDownCounter = 0;
         if((++retryUpCounter) >= max) {
             down = false;
             sick = false;
+            return true;
         }
+        return false;
     }
     
-    public void tryDown(int max) {
+    public boolean tryDown(int max) {
         retryUpCounter = 0;
         if((++retryDownCounter) >= max && !down) {
             down = true;
+            return true;
         }
+        return false;
     }
 }

@@ -2,40 +2,32 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.ProxyRegistry;
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.proxy.PROXY_OPTION;
-import com.ctrip.xpipe.redis.core.proxy.command.ProxyPingCommand;
-import com.ctrip.xpipe.redis.core.proxy.command.entity.ProxyPongEntity;
-import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
+import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK_INTERVAL;
 
 /**
  * @author chen.zhu
@@ -91,10 +83,26 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     @Autowired
     ProxyChecker proxyChecker;
     
+    @Autowired
+    CheckerConfig config;
+    
     @PostConstruct
     public void postConstruct() {
         updateRoutes();
         ProxyRegistry.setChecker(proxyChecker);
+        config.register(Lists.newArrayList(KEY_PROXY_CHECK_INTERVAL), new ConfigChangeListener() {
+            @Override
+            public void onChange(String key, String oldValue, String newValue) {
+                switch (key) {
+                    case KEY_PROXY_CHECK_INTERVAL:
+                        int interval = Integer.parseInt(newValue);
+                        if(interval > 0) {
+                            ProxyRegistry.setCheckInterval(interval);
+                        }
+                        break;
+                }
+            }
+        });
     }
     
     @Override

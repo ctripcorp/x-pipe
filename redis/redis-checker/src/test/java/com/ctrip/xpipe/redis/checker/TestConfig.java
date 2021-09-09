@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
@@ -201,5 +202,10 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     @Override
     public int getProxyCheckDownRetryTimes() {
         return 1;
+    }
+
+    @Override
+    public void register(List<String> keys, ConfigChangeListener configListener) {
+        
     }
 }
