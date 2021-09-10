@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 
 import static com.ctrip.framework.xpipe.redis.AllTests.IP;
 import static com.ctrip.framework.xpipe.redis.AllTests.PORT;
@@ -24,13 +27,41 @@ public class AbstractProxyTest {
 
     protected String ROUTE_INFO = String.format("PROXY ROUTE PROXYTCP://%s:%s,PROXYTCP://%s:%s PROXYTLS://127.0.0.0:443 TCP", PROXY_IP_1, PROXY_PORT, PROXY_IP_2, PROXY_PORT);
 
+    protected static final int PROXY_SIZE = 2;
+    
     protected SocketAddress socketAddress = new InetSocketAddress(IP, PORT);
 
     protected Socket socket;
 
     @Before
-    public void setUp() throws IOException, InterruptedException {
+    public void setUp() throws IOException, InterruptedException, TimeoutException {
         socket = new Socket();
     }
+
+    protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli, int intervalMilli) throws TimeoutException {
+
+        long maxTime = System.currentTimeMillis() + waitTimeMilli;
+
+
+        while (true) {
+            boolean result = booleanSupplier.getAsBoolean();
+            if (result) {
+                return;
+            }
+            if (System.currentTimeMillis() >= maxTime) {
+                throw new TimeoutException("timeout still false:" + waitTimeMilli);
+            }
+            sleep(intervalMilli);
+        }
+    }
+
+    protected void sleep(int miliSeconds) {
+
+        try {
+            TimeUnit.MILLISECONDS.sleep(miliSeconds);
+        } catch (InterruptedException e) {
+        }
+    }
+    
 
 }

@@ -23,7 +23,11 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     }
 
     public synchronized void registerProxy(String ip, int port, String routeInfo) {
-        put(new InetSocketAddress(ip, port), getProxyProtocol(ip, port, routeInfo));
+        InetSocketAddress address = new InetSocketAddress(ip, port);
+        if(get(address) != null) {
+            unregisterProxy(ip, port);
+        }
+        put(address, getProxyProtocol(ip, port, routeInfo));
     }
 
     public synchronized ProxyResourceManager unregisterProxy(String ip, int port) {
@@ -112,7 +116,7 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
                 e.printStackTrace();
             }
             
-        }, checkInterval, checkInterval, TimeUnit.MILLISECONDS);
+        }, 1, checkInterval, TimeUnit.MILLISECONDS);
     }
     
     void stopCheck() {
