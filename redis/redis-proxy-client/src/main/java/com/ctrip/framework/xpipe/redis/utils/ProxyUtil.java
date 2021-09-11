@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceManager> implements ThreadFactory {
     private ConcurrentMap<Object, SocketAddress> socketAddressMap = new ConcurrentHashMap<>();
@@ -82,17 +83,31 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
         thread.setName("proxy-checker-background-schedule");
         return thread;
     }
+
+    Consumer<ProxyInetSocketAddress> upAction;
+
+    Consumer<ProxyInetSocketAddress> downAction;
+
+    public void onProxyUp(Consumer<ProxyInetSocketAddress> upAction) {
+        this.upAction = upAction;
+    }
+
+    public void onProxyDown(Consumer<ProxyInetSocketAddress> downAction) {
+        this.downAction = downAction;
+    }
     
     private void check(ProxyInetSocketAddress proxy) {
         
-        checker.check(proxy).whenComplete(new BiConsumer<Boolean, Throwable>() {
-            @Override
-            public void accept(Boolean aBoolean, Throwable throwable) {
-                if(throwable != null  || aBoolean == false ) {
-                    proxy.tryDown(checker.getRetryDownTimes());
-                } else {
-                    proxy.tryUp(checker.getRetryUpTimes());
+        checker.check(proxy).whenComplete((active, throwable) -> {
+            if(active  && throwable == null) {
+                if(proxy.tryUp(checker.getRetryUpTimes())) {
+                    if(upAction != null) upAction.accept(proxy);
                 }
+            } else {
+                if(proxy.tryDown(checker.getRetryDownTimes())) {
+                    if(downAction != null) downAction.accept(proxy);
+                }
+
             }
         });
     }

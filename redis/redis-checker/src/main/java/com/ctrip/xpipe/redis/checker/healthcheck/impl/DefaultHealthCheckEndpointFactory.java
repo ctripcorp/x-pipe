@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.ProxyRegistry;
+import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -17,6 +19,8 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +41,8 @@ import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK
 @Component
 public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFactory {
 
+    static final Logger logger = LoggerFactory.getLogger(DefaultHealthCheckEndpointFactory.class);
+    
     private ConcurrentMap<HostPort, Endpoint> map = Maps.newConcurrentMap();
     
     @Autowired
@@ -85,22 +91,29 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     
     @Autowired
     CheckerConfig config;
-    
+
+    private final String PROXY_UP_EVENT = "proxy.client.up";
+    private final String PROXY_DOWN_EVENT = "proxy.client.down";
     @PostConstruct
     public void postConstruct() {
         updateRoutes();
         ProxyRegistry.setChecker(proxyChecker);
-        config.register(Lists.newArrayList(KEY_PROXY_CHECK_INTERVAL), new ConfigChangeListener() {
-            @Override
-            public void onChange(String key, String oldValue, String newValue) {
-                switch (key) {
-                    case KEY_PROXY_CHECK_INTERVAL:
-                        int interval = Integer.parseInt(newValue);
-                        if(interval > 0) {
-                            ProxyRegistry.setCheckInterval(interval);
-                        }
-                        break;
-                }
+        ProxyRegistry.onProxyUp(proxyInetSocketAddress ->  {
+            logger.info("[proxy-client][up] {}", proxyInetSocketAddress.toString());
+            EventMonitor.DEFAULT.logEvent(PROXY_UP_EVENT, proxyInetSocketAddress.toString());
+        });
+        ProxyRegistry.onProxyDown(proxyInetSocketAddress ->  {
+            logger.info("[proxy-client][down] {}", proxyInetSocketAddress.toString());
+            EventMonitor.DEFAULT.logEvent(PROXY_DOWN_EVENT, proxyInetSocketAddress.toString());
+        });
+        config.register(Lists.newArrayList(KEY_PROXY_CHECK_INTERVAL), (key, oldValue, newValue) -> {
+            switch (key) {
+                case KEY_PROXY_CHECK_INTERVAL:
+                    int interval = Integer.parseInt(newValue);
+                    if(interval > 0) {
+                        ProxyRegistry.setCheckInterval(interval);
+                    }
+                    break;
             }
         });
     }

@@ -1,9 +1,11 @@
 package com.ctrip.framework.xpipe.redis;
 
+import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
 import com.ctrip.framework.xpipe.redis.proxy.ProxyResourceManager;
 import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
 
 import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 
 import static com.ctrip.framework.xpipe.redis.utils.Constants.PROXY_KEY_WORD;
 
@@ -33,4 +35,11 @@ public class ProxyRegistry {
         ProxyUtil.getInstance().setCheckInterval(interval);
     }
 
+    public static void onProxyUp(Consumer<ProxyInetSocketAddress> upAction) {
+        ProxyUtil.getInstance().onProxyUp(upAction);
+    }
+
+    public static void onProxyDown(Consumer<ProxyInetSocketAddress> downAction) {
+        ProxyUtil.getInstance().onProxyDown(downAction);
+    }
 }

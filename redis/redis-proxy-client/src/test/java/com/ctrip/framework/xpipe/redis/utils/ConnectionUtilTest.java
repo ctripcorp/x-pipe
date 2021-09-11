@@ -100,27 +100,8 @@ public class ConnectionUtilTest extends AbstractProxyTest {
         ProxyUtil.getInstance().setChecker(null);
     }
     
-    protected  void setAllProxyStatusDown(int num, int checkInterval) throws TimeoutException {
-        for(int i = 0; i < num; i++) {
-            SocketAddress sa = ConnectionUtil.getAddress(socket, socketAddress);
-            try {
-                ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
-            } catch (Throwable t) {
-                Assert.assertNotNull(t);
-            }
-            waitConditionUntilTimeOut(() -> ((ProxyInetSocketAddress)sa).down, checkInterval, 10);
-        }
-    }
-    
     @Test
     public void testSocketPullOutAllProxy() throws Exception {
-        ProxyUtil.getInstance().setCheckInterval(defaultCheckInterval);
-        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
-            @Override
-            public CompletableFuture<Boolean> check(InetSocketAddress address) {
-                return CompletableFuture.completedFuture(false);
-            }
-        });
         ProxyUtil.getInstance().registerProxy(IP, PORT, ROUTE_INFO);
         setAllProxyStatusDown(PROXY_SIZE, defaultCheckInterval);
         waitConditionUntilTimeOut(() -> ProxyUtil.getInstance().get(socketAddress).nextEndpoints().stream().filter(endpoint -> !endpoint.down).collect(Collectors.toList()).size() == 0, 110, 10);
@@ -134,17 +115,11 @@ public class ConnectionUtilTest extends AbstractProxyTest {
     
     @Test 
     public void testSocketPullIn() throws InterruptedException, TimeoutException {
-        ProxyUtil.getInstance().setCheckInterval(defaultCheckInterval);
-        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
-            @Override
-            public CompletableFuture<Boolean> check(InetSocketAddress address) {
-                return CompletableFuture.completedFuture(false);
-            }
-        });
         ProxyUtil.getInstance().registerProxy(IP, PORT, ROUTE_INFO);
         setAllProxyStatusDown(PROXY_SIZE, defaultCheckInterval);
         waitConditionUntilTimeOut(() -> ProxyUtil.getInstance().get(socketAddress).nextEndpoints().stream().filter(endpoint -> !endpoint.down).collect(Collectors.toList()).size() == 0, 110, 20);
         
+        ProxyUtil.getInstance().setCheckInterval(defaultCheckInterval);
         //pull out all proxy
         ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
             @Override

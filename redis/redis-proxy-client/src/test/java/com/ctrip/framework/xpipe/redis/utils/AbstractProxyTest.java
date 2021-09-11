@@ -1,11 +1,14 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
+import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
@@ -62,6 +65,24 @@ public class AbstractProxyTest {
         } catch (InterruptedException e) {
         }
     }
-    
 
+    protected  void setAllProxyStatusDown(int num, int checkInterval) throws TimeoutException {
+        ProxyUtil.getInstance().setCheckInterval(checkInterval);
+        ProxyUtil.getInstance().setChecker(new AbstractProxyCheckerTest(1,1) {
+            @Override
+            public CompletableFuture<Boolean> check(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(false);
+            }
+        });
+        for(int i = 0; i < num; i++) {
+            SocketAddress sa = ConnectionUtil.getAddress(socket, socketAddress);
+            try {
+                ConnectionUtil.connectToProxy(socket, (InetSocketAddress) sa, 500);
+            } catch (Throwable t) {
+                Assert.assertNotNull(t);
+            }
+            waitConditionUntilTimeOut(() -> ((ProxyInetSocketAddress)sa).down, checkInterval * 2, 10);
+        }
+        ProxyUtil.getInstance().setChecker(null);
+    }
 }
