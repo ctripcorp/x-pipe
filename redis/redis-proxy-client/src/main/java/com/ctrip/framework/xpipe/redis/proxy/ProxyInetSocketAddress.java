@@ -35,7 +35,7 @@ public class ProxyInetSocketAddress extends InetSocketAddress {
         super(hostname, port);
     }
     
-    public boolean tryUp(int max) {
+    public synchronized boolean tryUp(int max) {
         retryDownCounter = 0;
         if((++retryUpCounter) >= max) {
             down = false;
@@ -45,7 +45,7 @@ public class ProxyInetSocketAddress extends InetSocketAddress {
         return false;
     }
     
-    public boolean tryDown(int max) {
+    public synchronized boolean tryDown(int max) {
         retryUpCounter = 0;
         if((++retryDownCounter) >= max && !down) {
             down = true;
