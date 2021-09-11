@@ -70,8 +70,16 @@
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-proxy-client</artifactId>
             <version>${parent.version}</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../redis-proxy-client/target/redis-proxy-client-${parent.version}.jar</systemPath>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.arthas</groupId>
+                    <artifactId>arthas-repackage-asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.arthas</groupId>
+                    <artifactId>arthas-repackage-logger</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
