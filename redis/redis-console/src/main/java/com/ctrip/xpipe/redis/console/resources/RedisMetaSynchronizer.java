@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.core.entity.Redis;
@@ -49,6 +50,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             }
             logger.info("[RedisMetaSynchronizer][deleteRedises]{}", removed);
             redisService.deleteRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toDeleted);
+            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[deleteRedises]%s", toDeleted));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][deleteRedises]", e);
         }
@@ -68,6 +70,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
             redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
+            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", toAdded));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
         }
@@ -100,6 +103,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             }
             logger.info("[RedisMetaSynchronizer][updateRedises]{}", futureTblList);
             redisService.updateBatchMaster(futureTblList);
+            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateBatchMaster]%s", futureMetaList));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][updateRedises]", e);
         }

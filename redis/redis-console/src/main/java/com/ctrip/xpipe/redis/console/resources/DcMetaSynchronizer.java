@@ -72,7 +72,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
 
     public void sync() {
         try {
-            refreshAllOrganizations();
+            refreshOrganizationsCache();
             DcMeta current = extractLocalDcMetaWithInterestedTypes(metaCache.getXpipeMeta(), consoleConfig.getOuterClusterTypes());
             DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
             DcSyncMetaComparator dcMetaComparator = new DcSyncMetaComparator(current, future);
@@ -83,11 +83,17 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         }
     }
 
-    void refreshAllOrganizations() {
+    void refreshOrganizationsCache() {
         try {
             List<OrganizationTbl> organizationTbls = organizationService.getAllOrganizations();
+            Map<Long, OrganizationTbl> future = new HashMap<>();
             for (OrganizationTbl organizationTbl : organizationTbls) {
-                organizations.put(organizationTbl.getOrgId(), organizationTbl);
+                future.put(organizationTbl.getOrgId(), organizationTbl);
+            }
+            if (future.isEmpty()) {
+                logger.warn("[DcMetaSynchronizer][refreshAllOrganizations]{}", "organizationTbls empty");
+            } else {
+                organizations = future;
             }
         } catch (Exception e) {
             logger.error("[DcMetaSynchronizer][refreshAllOrganizations]", e);
@@ -102,14 +108,21 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         DcMeta dcMeta = new DcMeta(outerDcMeta.getDcName());
         Map<String, OuterClientService.ClusterMeta> outerClusterMetas = outerDcMeta.getClusters();
         outerClusterMetas.values().forEach(outerClusterMeta -> {
-            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType())))
-                dcMeta.addCluster(outerClusterToInner(outerClusterMeta));
+            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType()))) {
+                ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
+                if (clusterMeta != null)
+                    dcMeta.addCluster(clusterMeta);
+            }
         });
         return dcMeta;
     }
 
     DcMeta extractLocalDcMetaWithInterestedTypes(XpipeMeta xpipeMeta, Set<String> interestedTypes) {
         DcMeta dcMeta = xpipeMeta.findDc(currentDcId);
+        if (dcMeta == null)
+            return new DcMeta(currentDcId);
+
+        DcMeta dcMetaWithInterestedClusters = new DcMeta(dcMeta.getId());
         List<ClusterMeta> interestedClusters = new ArrayList<>();
         dcMeta.getClusters().values().forEach(clusterMeta -> {
             if (interestedTypes.contains(clusterMeta.getType())) {
@@ -117,7 +130,6 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             }
         });
 
-        DcMeta dcMetaWithInterestedClusters = new DcMeta(dcMeta.getId());
         interestedClusters.forEach(clusterMeta -> {
             dcMetaWithInterestedClusters.addCluster(clusterMeta);
         });
@@ -125,25 +137,29 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     }
 
     ClusterMeta outerClusterToInner(OuterClientService.ClusterMeta outer) {
-        ClusterMeta clusterMeta = new ClusterMeta(outer.getName());
-        if (outer.getClusterType().equals(OuterClientService.ClusterType.SINGEL_DC)) {
-            clusterMeta.setType(ClusterType.SINGLE_DC.name());
-            clusterMeta.setActiveDc(currentDcId);
-        } else {
-            clusterMeta.setType(ClusterType.LOCAL_DC.name());
-            clusterMeta.setDcs(currentDcId);
+        try {
+            ClusterMeta clusterMeta = new ClusterMeta(outer.getName());
+            clusterMeta.setType(innerClusterType(outer.getClusterType()));
+            if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
+                clusterMeta.setActiveDc(currentDcId);
+            } else {
+                clusterMeta.setDcs(currentDcId);
+            }
+            clusterMeta.setAdminEmails(outer.getOwnerEmails());
+            OrganizationTbl organization = organizations.get((long) outer.getOrgId());
+            if (organization != null)
+                clusterMeta.setOrgId(organization.getId().intValue());
+            else
+                clusterMeta.setOrgId(0);
+            Map<String, OuterClientService.GroupMeta> groups = outer.getGroups();
+            for (String groupName : groups.keySet()) {
+                clusterMeta.addShard(outerShardToInner(groups.get(groupName)).setParent(clusterMeta));
+            }
+            return clusterMeta;
+        } catch (Exception e) {
+            logger.error("[DcMetaSynchronizer]outerClusterToInner {}", outer.getName(), e);
+            return null;
         }
-        clusterMeta.setAdminEmails(outer.getOwnerEmails());
-        OrganizationTbl organization = organizations.get((long) outer.getOrgId());
-        if (organization != null)
-            clusterMeta.setOrgId(organization.getId().intValue());
-        else
-            clusterMeta.setOrgId(0);
-        Map<String, OuterClientService.GroupMeta> groups = outer.getGroups();
-        for (String groupName : groups.keySet()) {
-            clusterMeta.addShard(outerShardToInner(groups.get(groupName)).setParent(clusterMeta));
-        }
-        return clusterMeta;
     }
 
     ClusterMeta newClusterMeta(ClusterMeta origin) {

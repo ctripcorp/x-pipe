@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -18,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static com.ctrip.xpipe.redis.core.meta.MetaSynchronizer.META_SYNC;
 
 public class ClusterMetaSynchronizer {
     private static Logger logger = LoggerFactory.getLogger(ClusterMetaSynchronizer.class);
@@ -55,9 +58,11 @@ public class ClusterMetaSynchronizer {
                     if (relatedDcs.size() == 0 || relatedDcs.size() == 1 && relatedDcs.get(0).getDcName().equalsIgnoreCase(DcMetaSynchronizer.currentDcId)) {
                         logger.info("[ClusterMetaSynchronizer][remove]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
                         clusterService.deleteCluster(clusterMeta.getId());
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[delCluster]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
                     } else {
                         logger.info("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
                         clusterService.unbindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[unbindDc]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
                     }
                 } catch (Exception e) {
                     logger.error("[ClusterMetaSynchronizer][unbindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId, e);
@@ -77,7 +82,7 @@ public class ClusterMetaSynchronizer {
                         if (clusterService.find(clusterMeta.getId()) != null) {
                             logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
                             clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
-                            new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
+                            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
                         } else {
                             ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
                                     .setClusterDescription(clusterMeta.getId());
@@ -100,8 +105,9 @@ public class ClusterMetaSynchronizer {
                             }
                             logger.info("[ClusterMetaSynchronizer][createCluster]{}", clusterMeta);
                             clusterService.createCluster(clusterModel);
-                            new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
+                            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
                         }
+                        new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
                     } catch (Exception e) {
                         logger.error("[ClusterMetaSynchronizer][add]{}", clusterMeta, e);
                     }
@@ -135,6 +141,7 @@ public class ClusterMetaSynchronizer {
                         }
                         logger.info("[ClusterMetaSynchronizer][update]{} -> {}, toUpdateTbl: {}", clusterMetaComparator.getCurrent(), future, currentClusterTbl);
                         clusterService.update(currentClusterTbl);
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateCluster]%s-%s", DcMetaSynchronizer.currentDcId, future.getId()));
                     }
                     new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService).sync();
                 } catch (Exception e) {

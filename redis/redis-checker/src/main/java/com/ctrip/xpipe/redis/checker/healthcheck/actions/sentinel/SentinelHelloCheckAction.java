@@ -114,7 +114,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         try {
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
                 ClusterMeta clusterMeta = dcMeta.getClusters().get(getActionInstance().getCheckInfo().getClusterId());
-                logger.debug("[{}-{}][{}]found in MetaCache", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, instance.getCheckInfo().getClusterId());
+                logger.debug("[{}-{}][{}]found in MetaCache", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc);
                 if (clusterMeta != null) {
                     Map<String, ShardMeta> clusterShards = clusterMeta.getShards();
                     logger.debug("[{}-{}][{}]shards num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc, clusterShards.size(), clusterShards);
@@ -162,8 +162,13 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             return;
 
                         SentinelHello hello = SentinelHello.fromString(message);
-                        hellos.get(redisInstanceToCheck).addSentinelHello(hello);
-
+                        SentinelHellos sentinelHellos = hellos.get(redisInstanceToCheck);
+                        if (sentinelHellos == null) {
+                            logger.warn("[{}-{}+{}]{} redisHealthCheckInstance {} not found", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
+                                    info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
+                        } else {
+                            sentinelHellos.addSentinelHello(hello);
+                        }
                     }
 
                     @Override

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
@@ -42,6 +43,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                     try {
                         logger.info("[ShardMetaSynchronizer][deleteShard]{}", shardMeta);
                         shardService.deleteShard(shardMeta.parent().getId(), shardMeta.getId());
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[deleteShard]%s", shardMeta.getId()));
                     } catch (Exception e) {
                         logger.error("[ShardMetaSynchronizer][deleteShard]{}", shardMeta, e);
                     }
@@ -58,6 +60,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                     try {
                         logger.info("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta);
                         shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
+                        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addShard]%s", shardMeta.getId()));
                         new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService).sync();
                     } catch (Exception e) {
                         logger.error("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta, e);
