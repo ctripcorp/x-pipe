@@ -14,6 +14,14 @@
                 <redis ip="127.0.0.1" port="8001" master="127.0.0.1:6000"  />
             </shard>
         </cluster>
+        <cluster id="cluster2" active-dc="oy" phase = "1" type="one_way">
+            <shard id="shard2" upstream="127.0.0.1:6000" sentinelId="2" sentinelMonitorName="cluster2+shard2+oy">
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.2" port="6100" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100" ip="127.0.0.2" port="6101" active="false" />
+                <redis ip="127.0.0.1" port="8002" master="127.0.0.1:6100" />
+                <redis ip="127.0.0.1" port="8003" master="127.0.0.1:6100" />
+            </shard>
+        </cluster>
         <cluster id="cluster3" type="bi_direction" dcs="jq,oy">
             <shard id="shard1" sentinelId="2" sentinelMonitorName="cluster3+shard1+jq">
                 <redis ip="10.0.0.1" port="6379" master="true" />
@@ -33,10 +41,10 @@
         </cluster>
         <cluster id="cluster2" active-dc="oy" phase = "1" type="one_way">
             <shard id="shard2" upstream="127.0.0.1:6000" sentinelId="2" sentinelMonitorName="cluster2+shard2+oy">
-                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.2" port="6100" active="true" />
+                <keeper id="0123456789012345678901234567890123456789" master="127.0.0.2:8100" ip="127.0.0.2" port="6100" active="true" />
                 <keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6100" ip="127.0.0.2" port="6101" active="false" />
-                <redis ip="127.0.0.2" port="8100" master="127.0.0.1:6100" />
-                <redis ip="127.0.0.2" port="8101" master="127.0.0.1:6100" />
+                <redis ip="127.0.0.2" port="8100" master="" />
+                <redis ip="127.0.0.2" port="8101" master="127.0.0.2:8100" />
             </shard>
         </cluster>
         <cluster id="cluster3" type="bi_direction" dcs="jq,oy">
