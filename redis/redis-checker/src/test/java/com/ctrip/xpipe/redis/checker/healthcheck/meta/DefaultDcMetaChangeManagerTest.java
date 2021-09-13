@@ -54,7 +54,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
             return null;
         }).when(instanceManager).remove(any(HostPort.class));
 
-        manager = new DefaultDcMetaChangeManager(instanceManager);
+        manager = new DefaultDcMetaChangeManager("oy", instanceManager);
     }
 
     @Test
@@ -255,6 +255,22 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         verify(manager, atLeastOnce()).visitRemoved(any());
         verify(manager, atLeastOnce()).visitAdded(any());
         verify(manager, never()).visitModified(any());
+        verify(instanceManager, never()).remove("cluster1");
+    }
+
+    @Test
+    public void visitRemovedClusterActiveDc() {
+        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager));
+        manager.compare(getDcMeta("jq"));
+
+        DcMeta dcMeta = MetaClone.clone(getDcMeta("jq"));
+        dcMeta.getClusters().remove("cluster1");
+
+        manager.compare(dcMeta);
+        verify(manager, atLeastOnce()).visitRemoved(any());
+        verify(manager, never()).visitAdded(any());
+        verify(manager, never()).visitModified(any());
+        verify(instanceManager, times(1)).remove("cluster1");
     }
 
     private ClusterHealthCheckInstance mockClusterHealthCheckInstance(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
