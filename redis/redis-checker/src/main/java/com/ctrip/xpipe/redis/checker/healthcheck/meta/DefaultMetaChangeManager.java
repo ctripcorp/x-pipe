@@ -84,7 +84,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
         return MapUtils.getOrCreate(dcMetaChangeManagers, dcId, new ObjectFactory<DcMetaChangeManager>() {
                     @Override
                     public DcMetaChangeManager create() {
-                        return new DefaultDcMetaChangeManager(instanceManager);
+                        return new DefaultDcMetaChangeManager(dcId, instanceManager);
                     }
                 });
     }

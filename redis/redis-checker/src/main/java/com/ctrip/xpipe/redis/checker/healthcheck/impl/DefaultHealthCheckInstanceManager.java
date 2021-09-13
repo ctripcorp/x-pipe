@@ -63,13 +63,13 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     @Override
     public void remove(HostPort hostPort) {
         RedisHealthCheckInstance instance = instances.remove(hostPort);
-        stopCheck(instance);
+        if (null != instance) stopCheck(instance);
     }
 
     @Override
     public void remove(String cluster) {
         ClusterHealthCheckInstance instance = clusterHealthCheckerInstances.remove(cluster.toLowerCase());
-        stopCheck(instance);
+        if (null != instance) stopCheck(instance);
     }
 
     @Override
