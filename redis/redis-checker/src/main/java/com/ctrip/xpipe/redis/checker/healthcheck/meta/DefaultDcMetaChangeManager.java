@@ -37,7 +37,10 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
-    public DefaultDcMetaChangeManager(HealthCheckInstanceManager instanceManager) {
+    private final String dcId;
+
+    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager) {
+        this.dcId = dcId;
         this.instanceManager = instanceManager;
     }
 
@@ -62,6 +65,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             return;
         }
 
+        logger.info("[visitAdded][{}][{}] add cluster health check", dcId, added.getId());
         instanceManager.getOrCreate(added);
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
         clusterMetaVisitor.accept(added);
@@ -120,7 +124,14 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void visitRemoved(ClusterMeta removed) {
-        instanceManager.remove(removed.getId());
+        if (!isInterestedInCluster(removed)) return;
+
+        logger.debug("[visitRemoved][{}][{}]", dcId, removed.getId());
+        if (dcId.equalsIgnoreCase(currentDcId)) {
+            logger.info("[visitRemoved][{}][{}] remove dc current dc, remove cluster health check", dcId, removed.getId());
+            instanceManager.remove(removed.getId());
+        }
+
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
         clusterMetaVisitor.accept(removed);
     }
