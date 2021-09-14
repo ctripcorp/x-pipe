@@ -246,6 +246,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public Map<String, Long> getMigratableClustersCountByActiveDc() {
+		List<DcTbl> dcs = dcService.findAllDcs();
+		Map<String, Long> counts = new HashMap<>();
+
+		dcs.forEach(dcTbl -> {
+			counts.put(dcTbl.getDcName(), getMigratableClustersCountByActiveDcId(dcTbl.getId()));
+		});
+
+		return counts;
+	}
+
+	public long getMigratableClustersCountByActiveDcId(long activeDc) {
+		List<ClusterTbl> dcClusters = findAllClustersByActiveDcId(activeDc);
+		int count = 0;
+		for (ClusterTbl clusterTbl : dcClusters) {
+			if (ClusterType.lookup(clusterTbl.getClusterType()).supportMigration())
+				count++;
+		}
+		return count;
+	}
+
+	public List<ClusterTbl> findAllClustersByActiveDcId(long activeDc) {
+		return clusterDao.findClustersByActiveDcId(activeDc);
+	}
+
+	@Override
 	public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc) {
 		List<ClusterTbl> result = clusterDao.findClustersWithOrgInfoByActiveDcId(activeDc);
 		result = fillClusterOrgName(result);
