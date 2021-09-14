@@ -158,7 +158,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
                     return clusterNameFilter.includes(localCluster.clusterName);
                 });
 			}
-            $scope.clusters = result;
+            $scope.clusters = result.filter(c => ClusterType.lookup(c.clusterType).supportMigration);
 			$scope.tableParams.reload();
 		});
 
