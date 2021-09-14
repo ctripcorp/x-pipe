@@ -125,7 +125,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             redisMetas.forEach((redisMeta) -> {
                                 try {
                                     RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
-                                    if (super.shouldCheck(redisInstance)) {
+                                    if (super.shouldCheckInstance(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
                                         hellos.put(redisInstance, new SentinelHellos());
                                     } else {
