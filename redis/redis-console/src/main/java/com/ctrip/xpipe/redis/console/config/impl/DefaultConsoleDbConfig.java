@@ -65,7 +65,7 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
 
     @Override
     public boolean shouldSentinelCheck(String cluster, boolean disableCache) {
-        return !sentinelCheckWhiteList(disableCache).contains(cluster);
+        return !sentinelCheckWhiteList(disableCache).contains(cluster.toLowerCase());
     }
 
     @Override
