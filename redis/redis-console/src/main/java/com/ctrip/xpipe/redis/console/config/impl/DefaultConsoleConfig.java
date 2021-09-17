@@ -49,8 +49,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OUTER_CLIENT_SYNC_INTERVAL = "console.outer.client.sync.interval";
 
-    private static final String KEY_OUTER_CLIENT_CLUSTER_BIND_SENTINEL = "console.outer.client.bind.sentinel";
-
     private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
