@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +72,9 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
             public void doRun0(V instance) {
                 ClusterType clusterType = instance.getCheckInfo().getClusterType();
                 if ((clusterType.equals(ClusterType.BI_DIRECTION) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof BiDirectionSupport)
-                        || clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport) {
+                        || (clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport
+                        || clusterType.equals(ClusterType.LOCAL_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof LocalDcSupport
+                        || clusterType.equals(ClusterType.SINGLE_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof SingleDcSupport)) {
                     registerTo(instance);
                 }
             }

@@ -102,6 +102,10 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getOutterClientCheckInterval();
 
+	int getOuterClientSyncInterval();
+
+	Set<String> getOuterClusterTypes();
+
 	Map<String, String> getConsoleDomains();
 
 	boolean isSentinelRateLimitOpen();
@@ -129,5 +133,4 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getCheckerAckTimeoutMilli();
 
 	long getMigrationTimeoutMilli();
-
 }

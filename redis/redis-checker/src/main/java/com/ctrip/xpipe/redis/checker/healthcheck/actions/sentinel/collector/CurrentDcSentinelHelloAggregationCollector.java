@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.LocalDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.SingleDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -12,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregationCollector<CurrentDcSentinelHelloCollector> implements BiDirectionSupport {
+public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregationCollector<CurrentDcSentinelHelloCollector> implements BiDirectionSupport, SingleDcSupport, LocalDcSupport {
     protected static Logger logger = LoggerFactory.getLogger(CurrentDcSentinelHelloAggregationCollector.class);
 
     private MetaCache metaCache;

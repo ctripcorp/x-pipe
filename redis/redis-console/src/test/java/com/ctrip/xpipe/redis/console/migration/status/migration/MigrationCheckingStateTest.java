@@ -37,6 +37,11 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
             public boolean clusterMigratePreCheck(String clusterName) throws OuterClientException {
                 return true;
             }
+
+            @Override
+            public DcMeta getOutClientDcMeta(String dc) throws Exception {
+                return null;
+            }
         });
 
         checkingState.action();
@@ -46,6 +51,11 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
             @Override
             public boolean clusterMigratePreCheck(String clusterName) throws OuterClientException {
                 return false;
+            }
+
+            @Override
+            public DcMeta getOutClientDcMeta(String dc) throws Exception {
+                return null;
             }
         });
 

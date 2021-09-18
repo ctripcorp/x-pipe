@@ -472,7 +472,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
         }
         if (progress.getSuccess() > 0) progress.setAvgMigrationSeconds(totalMigrationSeconds / progress.getSuccess());
-        progress.setActiveDcs(clusterService.getAllCountByActiveDc());
+        progress.setActiveDcs(clusterService.getMigratableClustersCountByActiveDc());
 
         return progress;
     }

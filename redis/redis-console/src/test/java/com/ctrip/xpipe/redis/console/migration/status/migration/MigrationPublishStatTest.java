@@ -69,8 +69,11 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		stat.setPublishService(new AbstractOuterClientService() {
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
 
-			
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 					InetSocketAddress newMaster) {
@@ -92,7 +95,11 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		stat.setPublishService(new AbstractOuterClientService() {
-			
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
+
 			@Override
 			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
 					InetSocketAddress newMaster) {
