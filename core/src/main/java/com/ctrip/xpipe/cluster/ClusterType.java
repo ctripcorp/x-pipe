@@ -4,8 +4,8 @@ import com.ctrip.xpipe.utils.StringUtil;
 
 public enum ClusterType {
     ONE_WAY(true, true, true, false),
-    // TODO: BI_DIRECTION support health check
     BI_DIRECTION(false, false, true, true),
+    // TODO: single_dc and local_dc support health check
     SINGLE_DC(false, false, false, false),
     LOCAL_DC(false, false, false, true);
 
