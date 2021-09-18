@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -23,7 +22,6 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -68,6 +66,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private SentinelBalanceService sentinelBalanceService;
+
+	@Autowired
+	private ConsoleConfig consoleConfig;
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -245,6 +246,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public Map<String, Long> getMigratableClustersCountByActiveDc() {
+		List<DcTbl> dcs = dcService.findAllDcs();
+		Map<String, Long> counts = new HashMap<>();
+
+		dcs.forEach(dcTbl -> {
+			counts.put(dcTbl.getDcName(), getMigratableClustersCountByActiveDcId(dcTbl.getId()));
+		});
+
+		return counts;
+	}
+
+	public long getMigratableClustersCountByActiveDcId(long activeDc) {
+		List<ClusterTbl> dcClusters = findAllClustersByActiveDcId(activeDc);
+		int count = 0;
+		for (ClusterTbl clusterTbl : dcClusters) {
+			if (ClusterType.lookup(clusterTbl.getClusterType()).supportMigration())
+				count++;
+		}
+		return count;
+	}
+
+	public List<ClusterTbl> findAllClustersByActiveDcId(long activeDc) {
+		return clusterDao.findClustersByActiveDcId(activeDc);
+	}
+
+	@Override
 	public List<ClusterTbl> findClustersWithOrgInfoByActiveDcId(long activeDc) {
 		List<ClusterTbl> result = clusterDao.findClustersWithOrgInfoByActiveDcId(activeDc);
 		result = fillClusterOrgName(result);
@@ -378,7 +405,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName()));
+				if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(cluster.getClusterType()), clusterName))
+					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName()));
+				else
+					return clusterDao.bindDc(cluster, dc, null);
 			}
 		});
 	}
@@ -456,33 +486,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return clusterDao.findMigratingClustersOverview();
 	}
 
-	// Add transaction for one cluster update, rollback if one 'DcClusterShard' update fails
-	@VisibleForTesting
-	@DalTransaction
-	protected void balanceCluster(String dcName, List<SetinelTbl> sentinels, final String cluster) {
-
-		List<DcClusterShardTbl> dcClusterShards = dcClusterShardService.findAllByDcCluster(dcName, cluster);
-		if(dcClusterShards == null || sentinels == null || sentinels.isEmpty()) {
-			throw new XpipeRuntimeException("DcClusterShard | Sentinels should not be null");
-		}
-		long randomlySelectedSentinelId = randomlyChoseSentinels(sentinels);
-		dcClusterShards.forEach(dcClusterShard -> {
-			dcClusterShard.setSetinelId(randomlySelectedSentinelId);
-			try {
-				dcClusterShardService.updateDcClusterShard(dcClusterShard);
-			} catch (DalException e) {
-				throw new XpipeRuntimeException(e.getMessage());
-			}
-		});
-	}
-
-	@VisibleForTesting
-	protected long randomlyChoseSentinels(List<SetinelTbl> sentinels) {
-		int randomNum = Math.abs(random.nextInt());
-		int randomIndex = randomNum % sentinels.size();
-		return sentinels.get(randomIndex).getSetinelId();
-	}
-
 	@Override
 	public List<ClusterListUnhealthyClusterModel> findUnhealthyClusters() {
 		try {
@@ -532,11 +535,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			result.add(cluster);
 		}
 		return result;
-	}
-
-	@VisibleForTesting
-	protected void setClusterDao(ClusterDao clusterDao) {
-		this.clusterDao = clusterDao;
 	}
 
 	@Override

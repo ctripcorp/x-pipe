@@ -3,9 +3,10 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -15,7 +16,9 @@ import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 @Component
 public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
@@ -28,6 +31,9 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
 
     @Autowired
     private ConsoleDbConfig consoleDbConfig;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.SENTINEL_CONFIG_MISSING);
 
@@ -46,9 +52,12 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalCheck {
         Set<String> whitelist = consoleDbConfig.sentinelCheckWhiteList(false);
 
         for (ClusterMeta cluster: dcMeta.getClusters().values()) {
-            for (ShardMeta shard: cluster.getShards().values()) {
-                if (whitelist.contains(cluster.getId().toLowerCase())) continue;
+            if (whitelist.contains(cluster.getId().toLowerCase())) continue;
 
+            if (!consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(cluster.getType()), cluster.getId()))
+                continue;
+
+            for (ShardMeta shard: cluster.getShards().values()) {
                 if (!isDcClusterShardSafe(dcMeta, cluster, shard)) {
                     clusterShards.add(new DcClusterShard(dcMeta.getId(), cluster.getId(), shard.getId()));
                 }

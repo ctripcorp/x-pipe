@@ -4,8 +4,16 @@ import com.ctrip.xpipe.utils.StringUtil;
 
 public enum ClusterType {
     ONE_WAY(true, true, true, false),
-    // TODO: BI_DIRECTION support health check
-    BI_DIRECTION(false, false, false, true);
+    BI_DIRECTION(false, false, true, true),
+    // TODO: single_dc and local_dc support health check
+    //
+    // Currently, sentinel health check is on for single_dc & local_dc via config/console.sentinel.check.outer.clusters
+    //     sentinel health check is off by default for single_dc & local_dc.
+    //
+    // Finally, config/console.sentinel.check.outer.clusters would be removed 
+    //     and both sentinel & redis health would be controlled by supportHealthCheck flag.
+    SINGLE_DC(false, false, false, false),
+    LOCAL_DC(false, false, false, true);
 
     private boolean supportKeeper;
     private boolean supportMigration;

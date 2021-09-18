@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckActionListener;
@@ -26,6 +27,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DelayActionTest extends AbstractRedisTest {
@@ -68,6 +71,7 @@ public class DelayActionTest extends AbstractRedisTest {
         instance.setHealthCheckConfig(config);
         instance.setInstanceInfo(info);
 
+        when(info.getClusterType()).thenReturn(ClusterType.ONE_WAY);
         action = mockAction();
     }
 
@@ -183,10 +187,10 @@ public class DelayActionTest extends AbstractRedisTest {
     }
 
     private void initConfig() {
-        Mockito.when(config.checkIntervalMilli()).thenReturn(CHECK_INTERVAL);
-        Mockito.when(config.getHealthyDelayMilli()).thenReturn(CHECK_INTERVAL);
-        Mockito.when(info.isMaster()).thenReturn(true);
-        Mockito.when(info.getDcId()).thenReturn(FoundationService.DEFAULT.getDataCenter());
+        when(config.checkIntervalMilli()).thenReturn(CHECK_INTERVAL);
+        when(config.getHealthyDelayMilli()).thenReturn(CHECK_INTERVAL);
+        when(info.isMaster()).thenReturn(true);
+        when(info.getDcId()).thenReturn(FoundationService.DEFAULT.getDataCenter());
     }
 
     private DelayAction mockAction() {
@@ -205,7 +209,7 @@ public class DelayActionTest extends AbstractRedisTest {
             delayHealth.set(result > 0 && result < DelayAction.SAMPLE_LOST_BUT_PONG);
             return null;
         }).when(listener).onAction(Mockito.any());
-        Mockito.when(listener.worksfor(Mockito.any())).thenReturn(true);
+        when(listener.worksfor(Mockito.any())).thenReturn(true);
 
         return action;
     }
