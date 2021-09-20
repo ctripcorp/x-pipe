@@ -10,7 +10,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
@@ -56,16 +56,17 @@ public class DBVariablesCheckTest extends AbstractTest {
         dbVariablesCheck.setConsoleConfig(consoleConfig);
 
         Mockito.when(consoleConfig.getVariablesCheckDataSources()).thenReturn(Collections.singleton("fxxpipe"));
-        Mockito.when(dataSourceManager.getDataSource("fxxpipe")).thenReturn(dataSource);
-        Mockito.when(dataSource.getDescriptor()).thenReturn(mockDataSourceDescriptor());
     }
 
     @Test
     @Ignore
     public void testDoCheck() {
+        Mockito.when(dataSourceManager.getDataSource("fxxpipe")).thenReturn(dataSource);
+        Mockito.when(dataSource.getDescriptor()).thenReturn(mockDataSourceDescriptor());
+
         AtomicInteger checkCnt = new AtomicInteger(0);
         Mockito.doAnswer(invocation -> {
-            DataSource targetDatasource = invocation.getArgumentAt(0, DataSource.class);
+            DataSource targetDatasource = invocation.getArgument(0, DataSource.class);
             logger.info("[testDoCheck] check datasource {}", targetDatasource.getDescriptor());
 
             Matcher matcher = idPattern.matcher(targetDatasource.getDescriptor().getId());

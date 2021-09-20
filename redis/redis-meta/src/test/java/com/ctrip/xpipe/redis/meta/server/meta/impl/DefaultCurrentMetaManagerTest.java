@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -165,9 +165,9 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		currentMetaServerMetaManager.setCurrentMeta(currentMeta);
 
 		doAnswer(invocation -> {
-			String paramClusterId = invocation.getArgumentAt(0, String.class);
-			String paramShardId = invocation.getArgumentAt(1, String.class);
-			RedisMeta paramRedis = invocation.getArgumentAt(2, RedisMeta.class);
+			String paramClusterId = invocation.getArgument(0, String.class);
+			String paramShardId = invocation.getArgument(1, String.class);
+			RedisMeta paramRedis = invocation.getArgument(2, RedisMeta.class);
 
 			Assert.assertEquals(getClusterId(), paramClusterId);
 			Assert.assertEquals(getShardId(), paramShardId);
@@ -177,10 +177,10 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		}).when(currentMeta).setCurrentCRDTMaster(anyString(), anyString(), any());
 
 		doAnswer(invocation -> {
-			String paramDcId = invocation.getArgumentAt(0, String.class);
-			String paramClusterId = invocation.getArgumentAt(1, String.class);
-			String paramShardId = invocation.getArgumentAt(2, String.class);
-			RedisMeta paramRedis = invocation.getArgumentAt(3, RedisMeta.class);
+			String paramDcId = invocation.getArgument(0, String.class);
+			String paramClusterId = invocation.getArgument(1, String.class);
+			String paramShardId = invocation.getArgument(2, String.class);
+			RedisMeta paramRedis = invocation.getArgument(3, RedisMeta.class);
 
 			Assert.assertEquals(upstreamDc, paramDcId);
 			Assert.assertEquals(getClusterId(), paramClusterId);
@@ -231,13 +231,8 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		
 		//init
 		currentMetaServerMetaManager.update(DcMetaComparator.buildClusterChanged(null, currentClusterMeta), null);
-		doAnswer(invocation -> {
-			Object node = invocation.getArgumentAt(0, Object.class);
-			Assert.assertTrue(node instanceof NodeAdded);
-			return null;
-		}).when(observer).update(any(), any());
 		verify(currentMeta, times(1)).addCluster(currentClusterMeta);
-		verify(observer, times(1)).update(any(), any());
+		verify(observer, times(1)).update(any(NodeAdded.class), any());
 		
 		DcMeta futureDcMeta = new DcMeta().setId("jq");
 		ClusterMeta futureClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy");
@@ -254,7 +249,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		dcMetaComparator.compare();
 		Mockito.when(currentMeta.hasCluster(clusterName)).thenReturn(true);
 		doAnswer(invocation -> {
-			Object node = invocation.getArgumentAt(0, Object.class);
+			Object node = invocation.getArgument(0, Object.class);
 			Assert.assertTrue(node instanceof ClusterMetaComparator);
 			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) node;
 			Assert.assertEquals(clusterMetaComparator.getFuture().getActiveDc(), "oy");
@@ -288,7 +283,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 		Mockito.when(dcMetaCache.getClusterMeta(clusterName)).thenReturn(currentClusterMeta);
 		doAnswer(invocation -> {
-			Object node = invocation.getArgumentAt(0, Object.class);
+			Object node = invocation.getArgument(0, Object.class);
 			Assert.assertTrue(node instanceof NodeAdded);
 			return null;
 		}).when(observer).update(any(), any());
@@ -312,7 +307,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		dcMetaComparator.compare();
 		Mockito.when(currentMeta.hasCluster(clusterName)).thenReturn(true);
 		doAnswer(invocation -> {
-			Object node = invocation.getArgumentAt(0, Object.class);
+			Object node = invocation.getArgument(0, Object.class);
 			Assert.assertTrue(node instanceof ClusterMetaComparator);
 			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) node;
 			Assert.assertEquals(clusterMetaComparator.getFuture().getDcs(), "jq,oy,fq");
@@ -362,7 +357,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		//init
 		currentMetaServerMetaManager.update(DcMetaComparator.buildClusterChanged(null, currentClusterMeta), null);
 		doAnswer(invocation -> {
-			Object node = invocation.getArgumentAt(0, Object.class);
+			Object node = invocation.getArgument(0, Object.class);
 			Assert.assertTrue(node instanceof NodeAdded);
 			return null;
 		}).when(observer).update(any(), any());

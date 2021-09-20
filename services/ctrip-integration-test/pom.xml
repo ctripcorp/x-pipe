@@ -13,6 +13,8 @@
 
     <properties>
         <testcontainers.version>1.15.3</testcontainers.version>
+        <joda-time.version>2.9</joda-time.version>
+        <javassist.version>3.20.0-GA</javassist.version>
     </properties>
 
     <dependencyManagement>
@@ -21,6 +23,16 @@
                 <groupId>net.java.dev.jna</groupId>
                 <artifactId>jna</artifactId>
                 <version>5.8.0</version>
+            </dependency>
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${joda-time.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.javassist</groupId>
+                <artifactId>javassist</artifactId>
+                <version>${javassist.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -41,7 +53,6 @@
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-console</artifactId>
             <type>test-jar</type>
-            <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -75,7 +86,6 @@
         <dependency>
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
             <artifactId>redis-console</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.ctrip.framework.xpipe.redis</groupId>
@@ -113,6 +123,12 @@
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-test</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.javassist</groupId>
+                    <artifactId>javassist</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>

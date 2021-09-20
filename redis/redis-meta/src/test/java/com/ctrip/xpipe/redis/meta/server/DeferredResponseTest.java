@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
@@ -79,7 +78,7 @@ public class DeferredResponseTest implements InstantiationAwareBeanPostProcessor
     private ClusterServers<MetaServer> mockClusterServers() {
         ClusterServers<MetaServer> clusterServers = Mockito.mock(ClusterServers.class);
         MetaServer metaServer = mockMetaServer();
-        Mockito.when(clusterServers.getClusterServer(Mockito.anyByte())).thenReturn(metaServer);
+        Mockito.when(clusterServers.getClusterServer(Mockito.anyInt())).thenReturn(metaServer);
         return clusterServers;
     }
 

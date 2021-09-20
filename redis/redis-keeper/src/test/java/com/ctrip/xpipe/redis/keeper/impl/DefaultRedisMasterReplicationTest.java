@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
@@ -83,7 +83,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 				scheduled, replTimeoutMilli, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
 
-		when(redisMaster.isKeeper()).thenReturn(false);
 		when(redisMaster.getCurrentReplicationStore()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);
 		KeeperMonitor keeperMonitor = createkeeperMonitor();
@@ -148,7 +147,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start();
 
-		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2, 5000);
+		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2, 10000);
 	}
 
 	@Test

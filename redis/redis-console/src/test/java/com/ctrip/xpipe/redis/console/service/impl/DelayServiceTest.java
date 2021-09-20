@@ -23,9 +23,10 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DelayServiceTest {
@@ -59,16 +60,10 @@ public class DelayServiceTest {
         Mockito.when(crossMasterDelayService.getCurrentDcUnhealthyMasters()).thenReturn(new UnhealthyInfoModel());
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         Mockito.when(xpipeMeta.getDcs()).thenReturn(dcs);
-        Mockito.when(metaCache.getAllActiveRedisOfDc(Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(Arrays.asList(new HostPort("127.0.0.1", 1000),
-                        new HostPort("127.0.0.1", 2000),
-                        new HostPort("127.0.0.1", 3000),
-                        new HostPort("127.0.0.1", 4000))
-                );
 
         Mockito.when(consoleServiceManager.getUnhealthyInstanceByIdc(Mockito.anyString()))
                 .thenAnswer((invocation) -> {
-                    String dcName = invocation.getArgumentAt(0, String.class);
+                    String dcName = invocation.getArgument(0, String.class);
                     UnhealthyInfoModel unhealthyInfoModel = new UnhealthyInfoModel();
                     for (String dc: dcs.keySet()) {
                         unhealthyInfoModel.addUnhealthyInstance(dcName + "cluster", dc, "shard1", new HostPort("127.0.0.1", 1000), true);
@@ -104,30 +99,6 @@ public class DelayServiceTest {
         Assert.assertEquals(1, unhealthyInfo.getUnhealthyCluster());
         Assert.assertEquals(2, unhealthyInfo.getUnhealthyRedis());
         System.out.println(unhealthyInfo.getUnhealthyDcShardByCluster("cluster1"));
-//        Assert.assertEquals(Arrays.asList(Pair.of(dc, "shard1"), Pair.of("jq", "shard2")),
-//                unhealthyInfo.getUnhealthyDcShardByCluster("cluster1"));
-    }
-
-    @Test
-    @Ignore
-    public void getDcActiveClusterUnhealthyInstanceTest2() {
-        prepareDcMeta();
-        Map<HostPort, Long> redisDelay = new HashMap<HostPort, Long>() {{
-            put(new HostPort("127.0.0.1", 1000), DelayAction.SAMPLE_LOST_BUT_PONG);
-            put(new HostPort("127.0.0.1", 2000), DelayAction.SAMPLE_LOST_AND_NO_PONG);
-            put(new HostPort("127.0.0.1", 3000), 500L);
-        }};
-        redisDelay.forEach((redis, delay) -> {
-            RedisInstanceInfo redisInstanceInfo = new DefaultRedisInstanceInfo(null, null, null, redis, null, ClusterType.ONE_WAY);
-            DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
-            instance.setInstanceInfo(redisInstanceInfo);
-            delayService.onAction(new DelayActionContext(instance, delay));
-        });
-
-        UnhealthyInfoModel unhealthyInfo = delayService.getDcActiveClusterUnhealthyInstance(FoundationService.DEFAULT.getDataCenter());
-        Assert.assertEquals(1, unhealthyInfo.getUnhealthyCluster());
-        Assert.assertEquals(dcs.size(), unhealthyInfo.getUnhealthyShard());
-        Assert.assertEquals(dcs.size() * 2 - 1, unhealthyInfo.getUnhealthyRedis());
     }
 
     private void prepareDcMeta() {
@@ -152,9 +123,6 @@ public class DelayServiceTest {
             clusterMeta.addShard(shardMeta);
             dcMeta.addCluster(clusterMeta);
         }
-
-        Mockito.when(metaCache.getAllActiveRedisOfDc(Mockito.anyString(), Mockito.anyString())).thenReturn(redisList);
-
     }
 
 }

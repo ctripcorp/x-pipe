@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,7 +48,7 @@ public class ChangeConfigTest {
     public void testStopSentinelCheck() throws Exception {
         AtomicInteger expectedMinutes = new AtomicInteger(0);
         Mockito.doAnswer(invocation -> {
-            Integer minutes = invocation.getArgumentAt(1, Integer.class);
+            Integer minutes = invocation.getArgument(1, Integer.class);
             Assert.assertEquals(minutes.intValue(), expectedMinutes.get());
             return null;
         }).when(configService).stopSentinelCheck(Mockito.any(), Mockito.anyInt());

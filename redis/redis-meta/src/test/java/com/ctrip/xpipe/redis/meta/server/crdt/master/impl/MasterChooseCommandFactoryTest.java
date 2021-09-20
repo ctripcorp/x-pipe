@@ -17,7 +17,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.Executor;
 
@@ -102,7 +102,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(1)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.anyLong(), Mockito.anyString(), Mockito.anyInt());
 
         // redis meta change
         redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -112,7 +112,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(2)).setPeerMaster(Mockito.anyString(), Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.anyLong(), Mockito.anyString(), Mockito.anyInt());
     }
 
     @Test
@@ -156,7 +156,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(1)).setCurrentCRDTMaster(Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.anyLong(), Mockito.anyString(), Mockito.anyInt());
 
         // redis meta change
         redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(6379).setGid(1L);
@@ -166,7 +166,7 @@ public class MasterChooseCommandFactoryTest extends AbstractMetaServerTest {
         commandFuture.setSuccess(redisMeta);
         sleep(10);
         Mockito.verify(currentMetaManager, Mockito.times(2)).setCurrentCRDTMaster(Mockito.anyString(),
-                Mockito.anyString(), Mockito.anyInt(), Mockito.anyString(), Mockito.anyInt());
+                Mockito.anyString(), Mockito.anyLong(), Mockito.anyString(), Mockito.anyInt());
     }
 
     class TestMasterChooseCommand extends AbstractMasterChooseCommand {

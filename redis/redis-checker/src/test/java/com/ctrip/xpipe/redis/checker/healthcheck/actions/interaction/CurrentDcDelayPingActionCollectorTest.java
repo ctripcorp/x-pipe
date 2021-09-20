@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
@@ -83,7 +83,7 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
         Mockito.doAnswer(invocation -> {
             pingActionListener.onAction(new PingActionContext(instance, false));
             delayActionListener.onAction(new DelayActionContext(instance, healthyDelayMilli * 2L));
-            ALERT_TYPE type = invocation.getArgumentAt(1, ALERT_TYPE.class);
+            ALERT_TYPE type = invocation.getArgument(1, ALERT_TYPE.class);
             Assert.assertEquals(ALERT_TYPE.CRDT_INSTANCE_DOWN, type);
 
             return null;
@@ -106,7 +106,7 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
         Mockito.doAnswer(invocation -> {
             pingActionListener.onAction(new PingActionContext(instance, false));
             delayActionListener.onAction(new DelayActionContext(instance, healthyDelayMilli * 2L));
-            ALERT_TYPE type = invocation.getArgumentAt(1, ALERT_TYPE.class);
+            ALERT_TYPE type = invocation.getArgument(1, ALERT_TYPE.class);
             logger.info("[testInstanceUpAfterDown][doAlert] {}", type);
             Assert.assertEquals(ALERT_TYPE.CRDT_INSTANCE_UP, type);
 

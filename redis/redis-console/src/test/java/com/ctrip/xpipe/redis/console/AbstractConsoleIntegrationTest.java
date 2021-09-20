@@ -4,11 +4,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = AbstractConsoleIntegrationTest.ConsoleTestConfig.class)
+@SpringBootTest(classes = AbstractConsoleIntegrationTest.ConsoleTestConfig.class)
 public abstract class AbstractConsoleIntegrationTest extends AbstractConsoleDbTest {
 
     @BeforeClass

@@ -17,7 +17,7 @@ import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -93,8 +93,8 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
     }
 
     @Bean
-    public FilterRegistrationBean domainValidateFilter() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+    public FilterRegistrationBean<DomainValidateFilter> domainValidateFilter() {
+        FilterRegistrationBean<DomainValidateFilter> registrationBean = new FilterRegistrationBean<>();
         Supplier<String> expectedDomainName = () -> {
             // toLowerCase() to match metaServerConfig retrieve info
             String dcName = FoundationService.DEFAULT.getDataCenter().toLowerCase();
