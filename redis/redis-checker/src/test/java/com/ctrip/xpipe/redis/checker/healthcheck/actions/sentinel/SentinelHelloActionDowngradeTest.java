@@ -93,6 +93,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     public void beforeSentinelHelloActionDowngradeTest() throws Exception {
         instance = newRandomClusterHealthCheckInstance(activeDc, ClusterType.ONE_WAY);
         ((DefaultClusterHealthCheckInstance)instance).setHealthCheckConfig(healthCheckConfig);
+        when(healthCheckConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence,metaCache,instanceManager);
         downgradeController = new SentinelCheckDowngradeCollectorController(metaCache, sentinelHelloCollector, clusterName, shardName);
         downgradeController = Mockito.spy(downgradeController);

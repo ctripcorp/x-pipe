@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CurrentDcCheckController;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -14,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CurrentDcSentinelCheckController extends CurrentDcCheckController implements SentinelActionController, BiDirectionSupport {
+public class CurrentDcSentinelCheckController extends CurrentDcCheckController implements SentinelActionController, BiDirectionSupport, SingleDcSupport, LocalDcSupport {
 
     @Autowired
     private MetaCache metaCache;

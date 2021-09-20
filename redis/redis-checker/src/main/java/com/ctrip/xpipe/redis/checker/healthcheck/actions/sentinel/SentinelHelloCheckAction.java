@@ -125,7 +125,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             redisMetas.forEach((redisMeta) -> {
                                 try {
                                     RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
-                                    if (super.shouldCheck(redisInstance)) {
+                                    if (super.shouldCheckInstance(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
                                         hellos.put(redisInstance, new SentinelHellos());
                                     } else {
@@ -152,7 +152,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             try {
                 RedisInstanceInfo info = redisInstanceToCheck.getCheckInfo();
                 if (redisInstanceToCheck.getCheckInfo().isInActiveDc()) {
-                    logger.info("[{}-{}+{}]{} instance {} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
+                    logger.debug("[{}-{}+{}]{} instance {} in active dc", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
                             info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
                 }
                 redisInstanceToCheck.getRedisSession().subscribeIfAbsent(HELLO_CHANNEL, new RedisSession.SubscribeCallback() {
@@ -162,8 +162,13 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                             return;
 
                         SentinelHello hello = SentinelHello.fromString(message);
-                        hellos.get(redisInstanceToCheck).addSentinelHello(hello);
-
+                        SentinelHellos sentinelHellos = hellos.get(redisInstanceToCheck);
+                        if (sentinelHellos == null) {
+                            logger.warn("[{}-{}+{}]{} redisHealthCheckInstance {} not found", LOG_TITLE, info.getClusterShardHostport().getClusterName(),
+                                    info.getShardId(), info.getDcId(), redisInstanceToCheck.getCheckInfo().getHostPort());
+                        } else {
+                            sentinelHellos.addSentinelHello(hello);
+                        }
                     }
 
                     @Override
@@ -215,6 +220,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     protected boolean shouldCheck(HealthCheckInstance checkInstance) {
         String cluster = checkInstance.getCheckInfo().getClusterId();
 
+        if (!supportSentinelHealthCheck(checkInstance)) {
+            logger.debug("[{}][BackupDc] cluster {} not support sentinel check, quit", LOG_TITLE, cluster);
+            return false;
+        }
+
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.warn("[{}][BackupDc] cluster {} is in sentinel check whitelist, quit", LOG_TITLE, cluster);
             return false;
@@ -226,6 +236,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         }
 
         return checkerDbConfig.isSentinelAutoProcess();
+    }
+
+    boolean supportSentinelHealthCheck(HealthCheckInstance checkInstance) {
+        CheckInfo checkInfo = checkInstance.getCheckInfo();
+        return checkInstance.getHealthCheckConfig().supportSentinelHealthCheck(checkInfo.getClusterType(), checkInfo.getClusterId());
     }
 
     @Override

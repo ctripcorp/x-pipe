@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -17,6 +18,10 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.when;
+
 @RunWith(MockitoJUnitRunner.class)
 public class SentinelConfigCheckTest {
 
@@ -31,6 +36,9 @@ public class SentinelConfigCheckTest {
 
     @Mock
     private ConsoleDbConfig consoleDbConfig;
+
+    @Mock
+    private ConsoleConfig consoleConfig;
 
     private ClusterType mockClusterType = ClusterType.ONE_WAY;
 
@@ -58,14 +66,14 @@ public class SentinelConfigCheckTest {
 
     @Before
     public void beforeSentinelConfigCheckTest() {
-        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
-        Mockito.when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(Collections.emptySet());
-        Mockito.when(metaCache.getActiveDc(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
+        when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
+        when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(Collections.emptySet());
+        when(metaCache.getActiveDc(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
             String cluster = invocationOnMock.getArgument(0, String.class);
             return activeDcMap.get(cluster);
         });
 
-        Mockito.when(metaCache.isCrossRegion(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
+        when(metaCache.isCrossRegion(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
             String activeDc = invocationOnMock.getArgument(0, String.class);
             String backupDc = invocationOnMock.getArgument(1, String.class);
             for (Set<String> dcSet: regions) {
@@ -90,6 +98,14 @@ public class SentinelConfigCheckTest {
         }).when(alertManager).alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                 Mockito.any(), Mockito.any(), Mockito.any());
 
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(false);
+        sentinelConfigCheck.doCheck();
+
+        Mockito.verify(alertManager, never())
+                .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+                        Mockito.any(), Mockito.any(), Mockito.anyString());
+
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         sentinelConfigCheck.doCheck();
 
         Mockito.verify(alertManager, Mockito.times(6))
@@ -100,8 +116,8 @@ public class SentinelConfigCheckTest {
     @Test
     public void testDoCheckWithBiDirectionCluster() {
         this.mockClusterType = ClusterType.BI_DIRECTION;
-        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
-
+        when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         sentinelConfigCheck.doCheck();
 
         Mockito.verify(alertManager, Mockito.times(12))
@@ -111,7 +127,7 @@ public class SentinelConfigCheckTest {
 
     @Test
     public void testCheckWithSentinelCheckWhitelist() {
-        Mockito.when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(new HashSet<>(mockClusters));
+        when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(new HashSet<>(mockClusters));
         sentinelConfigCheck.doCheck();
         Mockito.verify(alertManager, Mockito.never())
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),

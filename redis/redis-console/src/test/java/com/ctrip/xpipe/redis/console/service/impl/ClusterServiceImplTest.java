@@ -172,15 +172,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testRandomlyChoseSentinels() {
-        List<SetinelTbl> setinelTbls = Arrays.asList(new SetinelTbl().setSetinelId(999L),
-                new SetinelTbl().setSetinelId(1000L), new SetinelTbl().setSetinelId(9999L));
-        ClusterServiceImpl clusterServiceImpl = new ClusterServiceImpl();
-        long id = clusterServiceImpl.randomlyChoseSentinels(setinelTbls);
-        logger.info("id: {}", id);
-    }
-
-    @Test
     public void testBreakLoop() {
         int kCounter = 0, jCounter = 0, iCounter = 0;
         for(int i = 0; i < 10; i++) {
