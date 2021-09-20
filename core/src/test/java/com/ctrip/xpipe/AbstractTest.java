@@ -396,7 +396,7 @@ public class AbstractTest {
         return randomPort(10000, 30000, null);
     }
 
-    public static Set<Integer> usedPorts = new ConcurrentSkipListSet<>();
+    public static Set<Integer> usedPorts = new HashSet<>();
 
     public static Set<Integer> randomPorts(int count) {
 
@@ -424,7 +424,7 @@ public class AbstractTest {
         return randomPort(min, max, null);
     }
 
-    public static int randomPort(int min, int max, Set<Integer> different) {
+    public static synchronized int randomPort(int min, int max, Set<Integer> different) {
 
         Random random = new Random();
 
