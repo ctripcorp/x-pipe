@@ -81,6 +81,8 @@
         <asm.version>5.2</asm.version>
         <mockwebserver.version>3.12.0</mockwebserver.version>
         <mysql-connector.version>5.1.38</mysql-connector.version>
+        <javassist.version>3.20.0-GA</javassist.version>
+        <joda-time.version>2.9</joda-time.version>
     </properties>
 
     <modules>
@@ -190,6 +192,11 @@
             <dependency>
                 <groupId>qunar.tc.qtracer</groupId>
                 <artifactId>qtracer-instrument-lib</artifactId>
+                <version>${qtracer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qtracer</groupId>
+                <artifactId>qtracer-instrument-asm</artifactId>
                 <version>${qtracer.version}</version>
             </dependency>
 
@@ -388,7 +395,47 @@
                 <exclusions>
                     <exclusion>
                         <groupId>io.netty</groupId>
-                        <artifactId>*</artifactId>
+                        <artifactId>netty-handler</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-buffer</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-codec-http</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-codec-socks</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-codec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-transport-native-epoll</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-transport-native-unix-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-transport</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-handler-proxy</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-codec-http2</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -619,12 +666,6 @@
                 <groupId>com.ctriposs.baiji</groupId>
                 <artifactId>baiji-rpc-client</artifactId>
                 <version>${soa.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.ctrip.framework</groupId>
-                        <artifactId>vi</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.ctriposs.baiji</groupId>
@@ -671,6 +712,12 @@
                 <groupId>com.ctrip.soa.artemis</groupId>
                 <artifactId>artemis-client-ctrip</artifactId>
                 <version>${artemis.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.ctrip.framework</groupId>
+                        <artifactId>vi-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.ctrip.soa.caravan</groupId>
@@ -681,6 +728,12 @@
                 <groupId>com.ctrip.soa.caravan</groupId>
                 <artifactId>caravan-ctrip</artifactId>
                 <version>${caravan.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.ctrip.framework</groupId>
+                        <artifactId>vi-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.ctrip.soa.caravan</groupId>
@@ -753,6 +806,16 @@
                 <artifactId>mockwebserver</artifactId>
                 <version>${mockwebserver.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.javassist</groupId>
+                <artifactId>javassist</artifactId>
+                <version>${javassist.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${joda-time.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
