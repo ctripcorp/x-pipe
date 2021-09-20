@@ -13,8 +13,6 @@
 
     <properties>
         <testcontainers.version>1.15.3</testcontainers.version>
-        <joda-time.version>2.9</joda-time.version>
-        <javassist.version>3.20.0-GA</javassist.version>
     </properties>
 
     <dependencyManagement>
@@ -23,16 +21,6 @@
                 <groupId>net.java.dev.jna</groupId>
                 <artifactId>jna</artifactId>
                 <version>5.8.0</version>
-            </dependency>
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>${joda-time.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.javassist</groupId>
-                <artifactId>javassist</artifactId>
-                <version>${javassist.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

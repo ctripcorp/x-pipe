@@ -30,23 +30,6 @@ public class AutoConfiguration {
         }
     }
 
-    @Configuration
-    @Conditional(FilterRegistrationCondition.class)
-    static class ConfigurationOld {
-
-        @Autowired
-        Environment environment;
-
-        @Bean(name = "ProxyFilterRegistrationBeanOld")
-        public org.springframework.boot.context.embedded.FilterRegistrationBean factory() {
-
-            org.springframework.boot.context.embedded.FilterRegistrationBean filter =
-                    new org.springframework.boot.context.embedded.FilterRegistrationBean();
-            initFilter(filter);
-            return filter;
-        }
-    }
-
     private static void initFilter(FilterRegistrationBean filter) {
         filter.setFilter(new ProxyFilter());
         filter.setName("proxy-filter");
