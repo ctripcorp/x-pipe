@@ -39,7 +39,7 @@ public class ExpireSizeMetricListenerTest extends AbstractCheckerTest {
     @Test
     public void testOnAction() throws Exception {
         Mockito.doAnswer(invocation -> {
-            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            MetricData point = invocation.getArgument(0, MetricData.class);
             Assert.assertEquals(ExpireSizeMetricListener.METRIC_TYPE, point.getMetricType());
             Assert.assertEquals(expireSize, point.getValue(), DOUBLE_DELTA);
 

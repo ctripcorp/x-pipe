@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.impl;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
-import com.ctrip.xpipe.api.lifecycle.Startable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -14,8 +13,6 @@ import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.keeper.ClusterTypeAware;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.Set;
 
 /**
  * @author wenchao.meng

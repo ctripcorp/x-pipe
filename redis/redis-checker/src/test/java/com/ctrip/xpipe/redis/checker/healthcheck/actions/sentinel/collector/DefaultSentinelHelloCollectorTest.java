@@ -59,7 +59,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(endpointFactory.getOrCreateEndpoint(any(HostPort.class))).thenAnswer(new Answer<Endpoint>() {
             @Override
             public Endpoint answer(InvocationOnMock invocation) throws Throwable {
-                HostPort hostPort = invocation.getArgumentAt(0, HostPort.class);
+                HostPort hostPort = invocation.getArgument(0, HostPort.class);
                 return new DefaultEndPoint(hostPort.getHost(), hostPort.getPort());
             }
         });

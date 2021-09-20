@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 
@@ -54,7 +54,7 @@ public class CurrentDcSentinelHelloAggregationCollectorTest extends AbstractChec
     public void testOnAction() {
         SentinelActionContext context = new SentinelActionContext(instance, Collections.singleton(new SentinelHello(sentinel, masterAddr, "")));
         Mockito.doAnswer(invocation -> {
-            SentinelActionContext paramContext = invocation.getArgumentAt(0, SentinelActionContext.class);
+            SentinelActionContext paramContext = invocation.getArgument(0, SentinelActionContext.class);
             Assert.assertEquals(Collections.singleton(new SentinelHello(sentinel, masterAddr, "")), paramContext.getResult());
             Assert.assertEquals(instance, paramContext.instance());
             return null;

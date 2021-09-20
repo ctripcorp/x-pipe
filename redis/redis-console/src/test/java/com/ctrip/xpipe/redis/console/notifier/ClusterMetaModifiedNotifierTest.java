@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.Arrays;
@@ -65,8 +65,6 @@ public class ClusterMetaModifiedNotifierTest extends AbstractConsoleTest {
 		notifier.postConstruct();
 
 		when(metaServerConsoleServiceManagerWrapper.get(dcName)).thenReturn(mockedMetaServerConsoleService);
-		doThrow(new ResourceAccessException("test")).when(mockedMetaServerConsoleService).clusterAdded(clusterName,
-				mockedClusterMeta);
 		doThrow(new ResourceAccessException("test")).when(mockedMetaServerConsoleService).clusterDeleted(clusterName);
 		doThrow(new ResourceAccessException("test")).when(mockedMetaServerConsoleService).clusterModified(clusterName,
 				mockedClusterMeta);

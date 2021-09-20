@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MasterChooserTest extends AbstractMetaServerTest {
@@ -63,8 +63,8 @@ public class MasterChooserTest extends AbstractMetaServerTest {
     public void testPeerMasterChooseWork() {
         Mockito.when(factory.buildPeerMasterChooserCommand(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(command);
         Mockito.doAnswer(invocation -> {
-            Pair<String, String> key = invocation.getArgumentAt(0, Pair.class);
-            ParallelCommandChain commandChain = invocation.getArgumentAt(1, ParallelCommandChain.class);
+            Pair<String, String> key = invocation.getArgument(0, Pair.class);
+            ParallelCommandChain commandChain = invocation.getArgument(1, ParallelCommandChain.class);
             Assert.assertEquals(Pair.of(clusterId, shardId), key);
             Assert.assertNotNull(commandChain);
 
@@ -80,8 +80,8 @@ public class MasterChooserTest extends AbstractMetaServerTest {
     public void testCurrentMasterChooseWork() {
         Mockito.when(factory.buildCurrentMasterChooserCommand(Mockito.anyString(), Mockito.anyString())).thenReturn(command);
         Mockito.doAnswer(invocation -> {
-            Pair<String, String> key = invocation.getArgumentAt(0, Pair.class);
-            MasterChooseCommand paramCommand = invocation.getArgumentAt(1, MasterChooseCommand.class);
+            Pair<String, String> key = invocation.getArgument(0, Pair.class);
+            MasterChooseCommand paramCommand = invocation.getArgument(1, MasterChooseCommand.class);
             Assert.assertEquals(Pair.of(clusterId, shardId), key);
             Assert.assertEquals(command, paramCommand);
 

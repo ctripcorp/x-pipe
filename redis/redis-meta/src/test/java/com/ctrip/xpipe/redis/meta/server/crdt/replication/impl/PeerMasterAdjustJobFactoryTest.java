@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -54,8 +54,6 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
     public void setupPeerMasterAdjustJobFactoryTest() throws Exception {
         factory = new DefaultPeerMasterAdjustJobFactory(dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), executors);
 
-        Mockito.when(dcMetaCache.getCurrentDc()).thenReturn(currentDc);
-        Mockito.doAnswer(invocation -> relatedDcs).when(dcMetaCache).getRelatedDcs(Mockito.anyString(), Mockito.anyString());
         Mockito.doAnswer(invocation -> upstreamDcs).when(currentMetaManager).getUpstreamPeerDcs(Mockito.anyString(), Mockito.anyString());
         Mockito.doAnswer(invocation -> currentMaster).when(currentMetaManager).getCurrentCRDTMaster(clusterId, shardId);
         Mockito.doAnswer(invocation -> allPeerMasters).when(currentMetaManager).getAllPeerMasters(clusterId, shardId);

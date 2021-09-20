@@ -52,7 +52,7 @@ public class DefaultNettyClientTest extends AbstractTest {
 
         Mockito.doAnswer(invocation -> {
             callReceive.set(true);
-            ByteBuf byteBuf = invocation.getArgumentAt(1, ByteBuf.class);
+            ByteBuf byteBuf = invocation.getArgument(1, ByteBuf.class);
             Assert.assertEquals(msg, byteBuf.toString());
             return ByteBufReceiver.RECEIVER_RESULT.SUCCESS;
         }).when(receiver).receive(Mockito.any(), Mockito.any());

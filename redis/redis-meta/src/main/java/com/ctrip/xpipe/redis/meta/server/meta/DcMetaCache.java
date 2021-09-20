@@ -5,7 +5,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**

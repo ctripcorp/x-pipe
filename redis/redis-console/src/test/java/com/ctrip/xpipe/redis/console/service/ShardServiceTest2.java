@@ -11,20 +11,18 @@ import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
 import com.google.common.collect.Lists;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -77,22 +75,17 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
     @Before
     public void setUp() throws Exception {
         shardService.dao = shardTblDao;
+        when(clusterTbl.getClusterName()).thenReturn(clusterName);
         when(shardTbl1.getId()).thenReturn(shardId1);
         when(shardTbl2.getId()).thenReturn(shardId2);
-        when(shardTbl1.getShardName()).thenReturn(shardName1);
-        when(shardTbl2.getShardName()).thenReturn(shardName2);
-        when(dcTbl1.getDcName()).thenReturn(idc1);
-        when(dcTbl2.getDcName()).thenReturn(idc2);
-
-        when(clusterService.find(clusterName))
-                .thenReturn(clusterTbl);
         when(sentinelService.findByShard(anyLong()))
                 .thenReturn(null);
+        when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME))
+                .thenReturn(shardTbls);
     }
 
     @Test
     public void deleteShards() throws DalException {
-        when(clusterTbl.getClusterName()).thenReturn(clusterName);
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.name());
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
@@ -107,6 +100,7 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
         doThrow(dalException).when(shardDao).deleteShardsBatch(shardTbls);
         try {
             shardService.deleteShards(clusterTbl, shardNames);
+            Assert.fail();
         } catch (ServerException e) {
             assertEquals(e.getMessage(), dalException.getMessage());
         }

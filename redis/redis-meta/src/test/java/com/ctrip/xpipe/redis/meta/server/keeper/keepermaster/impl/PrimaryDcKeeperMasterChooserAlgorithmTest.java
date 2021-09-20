@@ -38,7 +38,6 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));
 		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Sets.newHashSet(port1))));
 		when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(redises);
-		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(true);
 	}
 	
 	@Test

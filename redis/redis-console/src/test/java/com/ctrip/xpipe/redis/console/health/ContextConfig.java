@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
  *
  *         Dec 1, 2016 1:27:57 PM
  */
-@Configuration
+//@Configuration
 //@EnableAspectJAutoProxy
 //@ComponentScan(basePackages = { //
 //		"com.ctrip.xpipe.redis.console.service", //

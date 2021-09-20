@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 /**
  * @author wenchao.meng

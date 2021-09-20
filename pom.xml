@@ -35,29 +35,33 @@
         <commons-pool.version>2.3</commons-pool.version>
         <commons-lang3.version>3.4</commons-lang3.version>
         <commons-httpclient.version>4.5.2</commons-httpclient.version>
-        <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
-        <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
-        <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
+        <spring-boot.version>2.3.4.RELEASE</spring-boot.version>
+        <spring-boot-test.version>2.3.4.RELEASE</spring-boot-test.version>
+        <spring.version>5.2.9.RELEASE</spring.version>
+        <spring-core.version>5.2.9.RELEASE</spring-core.version>
+        <spring-boot-maven-plugin.version>2.3.4.RELEASE</spring-boot-maven-plugin.version>
+        <spring.velocity.version>1.4.3.RELEASE</spring.velocity.version>
+        <netty3.version>3.10.5.Final</netty3.version>
+        <netty4.version>4.1.52.Final</netty4.version>
         <ctrip-framework-foundation.version>1.8.11</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>3.3.18</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
-        <log4j2.version>2.6.2</log4j2.version>
+        <log4j2.version>2.8.2</log4j2.version>
         <disruptor.version>3.3.6</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <tomcat.version>8.0.33</tomcat.version>
 
         <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
-        <clogging.version>4.1.8</clogging.version>
+        <clogging.version>4.2.6</clogging.version>
         <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
         <qconfig.client.version>1.6.11</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
-        <netty3.version>3.10.5.Final</netty3.version>
         <netty.boringssl.version>2.0.12.Final</netty.boringssl.version>
         <netty4.version>4.1.28.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
@@ -69,6 +73,14 @@
         <ucs.version>0.3.4</ucs.version>
         <artemis.version>1.9.6</artemis.version>
         <caravan.version>1.17.13</caravan.version>
+        <velocity.version>1.7</velocity.version>
+        <lettuce.version>3.2.Final</lettuce.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
+        <commons-digester.version>2.1</commons-digester.version>
+        <h2.version>1.4.191</h2.version>
+        <asm.version>5.2</asm.version>
+        <mockwebserver.version>3.12.0</mockwebserver.version>
+        <mysql-connector.version>5.1.38</mysql-connector.version>
     </properties>
 
     <modules>
@@ -179,11 +191,6 @@
                 <groupId>qunar.tc.qtracer</groupId>
                 <artifactId>qtracer-instrument-lib</artifactId>
                 <version>${qtracer.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty</artifactId>
-                <version>${netty3.version}</version>
             </dependency>
 
 
@@ -368,11 +375,22 @@
                 <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.spring.platform</groupId>
-                <artifactId>platform-bom</artifactId>
-                <version>${spring-platfrom-bom.version}</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-webflux</artifactId>
+                <version>${spring-boot.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -392,12 +410,18 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-velocity</artifactId>
-                <version>${spring-boot.version}</version>
+                <version>${spring.velocity.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-tomcat</artifactId>
                 <version>${spring-boot.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>jakarta.annotation</groupId>
+                        <artifactId>jakarta.annotation-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -408,6 +432,16 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter</artifactId>
                 <version>${spring-boot.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>jakarta.annotation</groupId>
+                        <artifactId>jakarta.annotation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -426,18 +460,42 @@
                         <groupId>org.hibernate</groupId>
                         <artifactId>hibernate-validator</artifactId>
                     </exclusion>
+                    <!-- conflict with spring webflux -->
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.tomcat.embed</groupId>
+                        <artifactId>tomcat-embed-el</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.annotation</groupId>
+                        <artifactId>jakarta.annotation-api</artifactId>
+                    </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>${spring.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-jcl</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-test</artifactId>
                 <version>${spring-boot.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-logging-juli</artifactId>
-                <version>${tomcat.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.lmax</groupId>
@@ -465,6 +523,11 @@
                 <version>${log4j2.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty</artifactId>
+                <version>${netty3.version}</version>
+            </dependency>
             <!--netty ssl handler!-->
             <dependency>
                 <groupId>io.netty</groupId>
@@ -481,6 +544,12 @@
                 <groupId>com.github.luben</groupId>
                 <artifactId>zstd-jni</artifactId>
                 <version>${zstd.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-connector.version}</version>
             </dependency>
 
             <!-- ctrip related -->
@@ -647,6 +716,43 @@
                         <artifactId>commons-beanutils-core</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.velocity</groupId>
+                <artifactId>velocity</artifactId>
+                <version>${velocity.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>biz.paluch.redis</groupId>
+                <artifactId>lettuce</artifactId>
+                <version>${lettuce.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-digester</groupId>
+                <artifactId>commons-digester</artifactId>
+                <version>${commons-digester.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>mockwebserver</artifactId>
+                <version>${mockwebserver.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -822,10 +928,6 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-logging-juli</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>

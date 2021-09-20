@@ -262,7 +262,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, true, res.getErrorMessage());
 						shardMigrationResult.setNewMaster(new HostPort(res.getNewMasterIp(), res.getNewMasterPort()));
 					} else {
-						logger.error("[doNewPrimaryDcMigrate][fail]{},{},");
+						logger.error("[doNewPrimaryDcMigrate][fail]{},{}", cluster, shard);
 						shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC, false, res.getErrorMessage());
 					}
 				} catch (Exception e) {

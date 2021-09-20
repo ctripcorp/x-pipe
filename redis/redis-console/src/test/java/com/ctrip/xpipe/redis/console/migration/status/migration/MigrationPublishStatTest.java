@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -11,7 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.net.InetSocketAddress;
@@ -28,7 +29,7 @@ import static org.mockito.Mockito.*;
  *         Dec 22, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MigrationPublishStatTest extends AbstractMigrationStateTest {
+public class MigrationPublishStatTest extends AbstractConsoleTest {
 	@Mock
 	private MigrationCluster migrationCluster;
 	@Mock
@@ -43,24 +44,7 @@ public class MigrationPublishStatTest extends AbstractMigrationStateTest {
 
 		when(migrationCluster.getScheduled()).thenReturn(scheduled);
 		when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
-		when(migrationCluster.getCurrentCluster()).thenReturn((new ClusterTbl().setClusterName("test-cluster")));
-		when(migrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setDestinationDcId(1));
-
-		Map<Long, ShardTbl> shards = new HashMap<>();
-		shards.put(1L, ((new ShardTbl()).setShardName("test-shard1")));
-		shards.put(2L, ((new ShardTbl()).setShardName("test-shard2")));
-		Map<Long, DcTbl> dcs = new HashMap<>();
-		dcs.put(1L, (new DcTbl()).setDcName("test-dc"));
-		when(migrationCluster.getClusterShards()).thenReturn(shards);
-		when(migrationCluster.getClusterDcs()).thenReturn(dcs);
-
-		when(migrationCluster.getClusterService()).thenReturn(clusterService);
 		when(migrationCluster.getRedisService()).thenReturn(redisService);
-		when(migrationCluster.getMigrationService()).thenReturn(migrationService);
-		when(redisService.findAllByDcClusterShard("test-dc", "test-cluster", "test-shard1"))
-				.thenReturn(Arrays.asList((new RedisTbl()).setMaster(true).setRedisIp("0.0.0.0").setRedisPort(0)));
-		when(redisService.findAllByDcClusterShard("test-dc", "test-cluster", "test-shard2"))
-		.thenReturn(Arrays.asList((new RedisTbl()).setMaster(true).setRedisIp("0.0.0.1").setRedisPort(0)));
 		
 	}
 

@@ -205,7 +205,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                result.set(invocation.getArgumentAt(0, ByteBuf.class));
+                result.set(invocation.getArgument(0, ByteBuf.class));
                 return null;
             }
         }).when(channel).writeAndFlush(any(ByteBuf.class));
