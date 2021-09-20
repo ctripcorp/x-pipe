@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import org.slf4j.Logger;
@@ -60,6 +61,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int getSentinelCheckIntervalMilli() {
         return config.getSentinelCheckIntervalMilli();
+    }
+
+    @Override
+    public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
+        return config.supportSentinelHealthCheck(clusterType, clusterName);
     }
 
     @Override

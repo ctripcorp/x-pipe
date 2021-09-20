@@ -25,6 +25,7 @@ public interface ClusterService {
 	List<String> findAllClusterNames();
 	Long getCountByActiveDc(long activeDcId);
 	Map<String, Long> getAllCountByActiveDc();
+	Map<String, Long> getMigratableClustersCountByActiveDc();
 	Long getAllCount();
 	ClusterTbl createCluster(ClusterModel clusterModel);
 	void updateCluster(String clusterName, ClusterTbl cluster);

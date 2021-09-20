@@ -167,6 +167,10 @@ public class DefaultSentinelMonitorsCheckTest {
         when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.ONE_WAY.toString()));
         Assert.assertTrue(checker.shouldCheck());
         when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.BI_DIRECTION.toString()));
+        Assert.assertTrue(checker.shouldCheck());
+        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.SINGLE_DC.toString()));
+        Assert.assertFalse(checker.shouldCheck());
+        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.LOCAL_DC.toString()));
         Assert.assertFalse(checker.shouldCheck());
 
         when(consoleConfig.isSensitiveForRedundantRedis()).thenReturn(false);
