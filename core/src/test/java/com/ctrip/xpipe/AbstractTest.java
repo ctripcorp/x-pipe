@@ -44,7 +44,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * @author wenchao.meng
@@ -394,8 +393,10 @@ public class AbstractTest {
     }
 
     public static int randomPort() {
-        return randomPort(10000, 20000, null);
+        return randomPort(10000, 30000, null);
     }
+
+    public static Set<Integer> usedPorts = new HashSet<>();
 
     public static Set<Integer> randomPorts(int count) {
 
@@ -408,7 +409,7 @@ public class AbstractTest {
 
 
     public static int randomPort(Set<Integer> different) {
-        return randomPort(10000, 20000, different);
+        return randomPort(10000, 30000, different);
     }
 
     /**
@@ -423,13 +424,14 @@ public class AbstractTest {
         return randomPort(min, max, null);
     }
 
-    public static int randomPort(int min, int max, Set<Integer> different) {
+    public static synchronized int randomPort(int min, int max, Set<Integer> different) {
 
         Random random = new Random();
 
         for (int i = min; i <= max; i++) {
             int port = min + random.nextInt(max - min + 1);
-            if ((different == null || !different.contains(new Integer(port))) && isUsable(port)) {
+            if ((different == null || !different.contains(new Integer(port))) && isUsable(port) && !usedPorts.contains(port) ) {
+                usedPorts.add(port);
                 return port;
             }
         }

@@ -123,6 +123,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 ClusterMeta clusterMeta = new ClusterMeta(cluster.getClusterName());
                 clusterMeta.setParent(dcMeta);
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
+                clusterMeta.setAdminEmails(cluster.getClusterAdminEmails());
                 clusterMeta.setType(cluster.getClusterType());
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {

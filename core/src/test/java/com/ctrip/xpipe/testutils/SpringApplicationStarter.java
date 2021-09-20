@@ -22,8 +22,8 @@ public class SpringApplicationStarter extends AbstractStartStoppable {
 
     private SpringApplication application;
     private ConfigurableApplicationContext context;
-    private int port;
-    private int maxThreads = 200;
+    protected int port;
+    protected int maxThreads = 200;
 
     public SpringApplicationStarter(Class<?> resource, int port) {
         this(resource, port, 200);
@@ -53,7 +53,7 @@ public class SpringApplicationStarter extends AbstractStartStoppable {
         }
     }
 
-    private ConfigurableEnvironment createEnvironment() {
+    protected ConfigurableEnvironment createEnvironment() {
 
         return new MyEnvironment();
     }

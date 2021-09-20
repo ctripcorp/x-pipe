@@ -52,6 +52,8 @@ public class AbstractClientConfigMonitor extends AbstractIntervalCheck {
             }
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (!clusterType.supportHealthCheck())
+                    continue;
                 if (clusterType.supportSingleActiveDC()
                         && !clusterMeta.getActiveDc().equalsIgnoreCase(currentDcId)) {
                     continue;

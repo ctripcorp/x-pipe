@@ -3,16 +3,15 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.impl.CheckerRedisDelayManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
@@ -25,7 +24,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -152,6 +153,7 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
 
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                if (!clusterType.supportHealthCheck()) continue;
                 if (clusterType.supportSingleActiveDC() && !clusterMeta.getActiveDc().equalsIgnoreCase(currentIdc)) continue;
                 if (clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(currentIdc)) continue;
 

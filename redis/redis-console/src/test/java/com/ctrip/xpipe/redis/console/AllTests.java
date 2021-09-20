@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationO
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.*;
+import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceTest;
 import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
@@ -167,6 +168,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
+        DcMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,
         NettyKeyedPoolClientFactoryTest.class,
