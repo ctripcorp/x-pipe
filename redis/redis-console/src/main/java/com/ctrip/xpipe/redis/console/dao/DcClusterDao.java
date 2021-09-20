@@ -40,7 +40,7 @@ public class DcClusterDao extends AbstractXpipeConsoleDAO{
 	
 	@DalTransaction
 	public void deleteDcClustersBatch(List<DcClusterTbl> dcClusters) throws DalException {
-		if(null == dcClusters || !dcClusters.isEmpty()) {
+		if(null == dcClusters || dcClusters.isEmpty()) {
 			logger.warn("[deleteDcClustersBatch] Empty dcClusters list: {}", dcClusters);
 			return;
 		}

@@ -47,9 +47,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OUTTER_CLIENT_CHECK_INTERVAL = "console.outter.client.check.interval";
 
+    private static final String KEY_OUTER_CLIENT_SYNC_INTERVAL = "console.outer.client.sync.interval";
+
     private static final String KEY_VARIABLES_CHECK_DATASOURCE = "console.health.variables.datasource";
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
+
+    private static final String KEY_OUTER_CLUSTER_TYPES = "outer.cluster.types";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
@@ -328,6 +332,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getOuterClientSyncInterval() {
+        return getIntProperty(KEY_OUTER_CLIENT_SYNC_INTERVAL, 10 * 1000);
+    }
+
+    @Override
     public Map<String, String> getConsoleDomains() {
         String property = getProperty(KEY_CONSOLE_DOMAINS, "{}");
         return JsonCodec.INSTANCE.decode(property, Map.class);
@@ -355,6 +364,27 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
 
         return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
+    public Set<String> getOuterClusterTypes() {
+        String clusterTypes = getProperty(KEY_OUTER_CLUSTER_TYPES, "");
+
+        return getSplitStringSet(clusterTypes);
+    }
+
+    boolean shouldSentinelCheckOuterClientClusters() {
+        return getBooleanProperty(KEY_SHOULD_SENTINEL_CHECK_OUTER_TYPES, false);
+    }
+
+    Set<String> sentinelCheckOuterClientClusters() {
+        return getSplitStringSet(getProperty(KEY_SENTINEL_CHECK_OUTER_CLUSTERS, "").toLowerCase());
+    }
+
+    //	check if outer client clusters support sentinel health check or not
+    @Override
+    public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
+        return clusterType.supportHealthCheck() || shouldSentinelCheckOuterClientClusters() || sentinelCheckOuterClientClusters().contains(clusterName.toLowerCase());
     }
 
     @Override
@@ -437,4 +467,5 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
+
 }
