@@ -58,7 +58,7 @@ public class CheckerStatusController {
     @Autowired
     private HealthCheckInstanceManager healthCheckInstanceManager;
 
-    @Value("${server.port}")
+    @Value("${server.port:8080}")
     private int serverPort;
 
     @GetMapping("/status")
