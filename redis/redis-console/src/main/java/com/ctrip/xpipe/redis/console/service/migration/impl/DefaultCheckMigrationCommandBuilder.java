@@ -57,18 +57,10 @@ public class DefaultCheckMigrationCommandBuilder extends AbstractService impleme
             case CHECK_OUTER_CLIENT:
                 return new CheckOuterClientCommand(clusterName);
             case CHECK_METASERVER:
-                Map<String, String> metaServers = fetchMetaServerConfig();
+                Map<String, String> metaServers = consoleConfig.getMetaservers();
                 return new CheckMetaServerCommand(metaServers, clusterName, shardName);
         }
         return null;
-    }
-
-    private Map<String, String> fetchMetaServerConfig() {
-        String metaservers = consoleConfig.getMetaservers();
-        if(null == metaservers) {
-            throw new com.ctrip.xpipe.redis.console.exception.ServerException("Cannot fetch metaservers' config");
-        }
-        return Codec.DEFAULT.decode(metaservers, Map.class);
     }
 
     private Command<RetMessage> checkDatabaseRetryCommand(String clusterName) {

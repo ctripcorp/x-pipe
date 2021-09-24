@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.console.migration.command.ReactorMigrationCommandBuilderImpl;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
@@ -29,6 +30,8 @@ import org.springframework.util.CollectionUtils;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.helper.Lists;
 import org.unidal.lookup.ContainerLoader;
+import reactor.netty.resources.ConnectionProvider;
+import reactor.netty.resources.LoopResources;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -55,6 +58,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 
 	@Resource( name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR )
 	private ScheduledExecutorService scheduled;
+
+	@Autowired
+	private ReactorMigrationCommandBuilderImpl reactorMigrationCommandBuilder;
 
 
 	private MigrationEventTblDao migrationEventTblDao;
@@ -196,7 +202,7 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				migrationCluster.addNewMigrationShard(new DefaultMigrationShard(migrationCluster, shard,
 						migrationCluster.getClusterShards().get(shard.getShardId()),
 						migrationCluster.getClusterDcs(),
-						migrationService));
+						migrationService, reactorMigrationCommandBuilder));
 			}
 			
 			return event;

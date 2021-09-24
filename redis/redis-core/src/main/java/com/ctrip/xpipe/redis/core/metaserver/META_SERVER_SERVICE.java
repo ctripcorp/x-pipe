@@ -51,7 +51,7 @@ public enum META_SERVER_SERVICE {
     public String getRealPath(String host) {
 
         if (!host.startsWith("http")) {
-            host += "http://";
+            host = "http://" + host;
         }
         return String.format("%s%s%s", host, PATH.PATH_PREFIX, getPath());
     }

@@ -17,6 +17,8 @@ import org.junit.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 
 import static org.mockito.Mockito.when;
@@ -50,9 +52,7 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleDbTe
     public void beforeDefaultCheckMigrationCommandBuilderTest() throws Exception {
         MockitoAnnotations.initMocks(this);
         when(consoleConfig.getClusterShardForMigrationSysCheck()).thenReturn(Pair.from(clusterId, shardId));
-        when(consoleConfig.getMetaservers()).thenReturn("{\n" +
-                "    \"localmeta\": \"http://127.0.0.1:54321\"\n" +
-                "}");
+        when(consoleConfig.getMetaservers()).thenReturn(Collections.singletonMap("localmeta", "http://127.0.0.1:54321"));
         builder = new DefaultCheckMigrationCommandBuilder(scheduled, dcService, clusterService, outerClientService, consoleConfig);
     }
 
@@ -115,12 +115,12 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleDbTe
     @Test
     @Ignore
     public void testCheckMetaServerManually() throws Exception {
-        String metaServers = "{\n" +
-                "    \"NTGXH\": \"http://xpipe.meta.fws.qa.nt.ctripcorp.com\",\n" +
-                "    \"FAT\": \"http://xpipe.meta.fat500.qa.nt.ctripcorp.com\",\n" +
-                "    \"FAT-AWS\": \"http://10.2.131.44:8080\"\n" +
-                "}";
-        when(consoleConfig.getMetaservers()).thenReturn(metaServers);
+
+        when(consoleConfig.getMetaservers()).thenReturn(new HashMap<String, String>() {{
+            put("NTGXH", "http://xpipe.meta.fws.qa.nt.ctripcorp.com");
+            put("FAT", "http://xpipe.meta.fat500.qa.nt.ctripcorp.com");
+            put("FAT-AWS", "http://10.2.131.44:8080");
+        }});
         when(consoleConfig.getClusterShardForMigrationSysCheck()).thenReturn(Pair.from("cluster_shyin", "shard1"));
         builder = new DefaultCheckMigrationCommandBuilder(scheduled, dcService, clusterService, outerClientService, consoleConfig);
         RetMessage message = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER).execute().get();

@@ -129,8 +129,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getMetaservers() {
-        return getProperty(KEY_METASERVERS, "{}");
+    public Map<String,String> getMetaservers() {
+        String property = getProperty(KEY_METASERVERS, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 
     @Override
