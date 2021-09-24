@@ -44,8 +44,8 @@ public class WebFluxTest extends AbstractConsoleTest {
         webServer = new MockWebServer();
         webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
 
-        loopResources = LoopResources.create("BeaconHttpLoop", LoopResources.DEFAULT_IO_WORKER_COUNT, true);
-        connectionProvider = ConnectionProvider.builder("BeaconConnProvider").maxConnections(100)
+        loopResources = LoopResources.create("TestHttpLoop", LoopResources.DEFAULT_IO_WORKER_COUNT, true);
+        connectionProvider = ConnectionProvider.builder("TestConnProvider").maxConnections(100)
                 .pendingAcquireTimeout(Duration.ofMillis(1000))
                 .maxIdleTime(Duration.ofMillis(1000)).build();
         client = makeWebClient("http://127.0.0.1:" + webServer.getPort(), connTimeoutMilli, readWriteTimeoutMilli, loopResources, connectionProvider);

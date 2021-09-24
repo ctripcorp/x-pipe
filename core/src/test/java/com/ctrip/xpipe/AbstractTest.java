@@ -32,6 +32,8 @@ import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
+import reactor.netty.resources.ConnectionProvider;
+import reactor.netty.resources.LoopResources;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -39,6 +41,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,6 +68,10 @@ public class AbstractTest {
     private ComponentRegistry componentRegistry;
 
     public static final String LOCAL_HOST = "127.0.0.1";
+
+    protected LoopResources loopResources;
+
+    protected ConnectionProvider connectionProvider;
 
     @Rule
     public TestName name = new TestName();
@@ -94,6 +101,10 @@ public class AbstractTest {
 
         executors = Executors.newCachedThreadPool(XpipeThreadFactory.create(getTestName()));
         scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create(getTestName()));
+
+        loopResources = LoopResources.create("TestHttpLoop", LoopResources.DEFAULT_IO_WORKER_COUNT, true);
+        connectionProvider = ConnectionProvider.builder("TestConnProvider").maxConnections(100)
+                .pendingAcquireTimeout(Duration.ofMillis(1000)).maxIdleTime(Duration.ofMillis(10000)).build();
 
         orginProperties = (Properties) System.getProperties().clone();
 

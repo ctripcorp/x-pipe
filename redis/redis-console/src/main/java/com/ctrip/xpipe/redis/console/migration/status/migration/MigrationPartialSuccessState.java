@@ -39,12 +39,9 @@ public class MigrationPartialSuccessState extends AbstractMigrationMigratingStat
                 String shardName = shard.shardName();
                 logger.info("[doAction][execute]{}, {}", clusterName, shardName);
                 executors.execute(new AbstractExceptionLogTask() {
-
                     @Override
                     public void doRun() {
-                        logger.info("[doMigrate][start]{},{}", clusterName, shardName);
                         shard.doMigrate();
-                        logger.info("[doMigrate][done]{},{}", clusterName, shardName);
                     }
                 });
             });
