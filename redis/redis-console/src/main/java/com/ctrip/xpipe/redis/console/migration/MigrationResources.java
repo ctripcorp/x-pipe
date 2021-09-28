@@ -61,7 +61,9 @@ public class MigrationResources {
 
     @Bean(name = MIGRATION_HTTP_LOOP_RESOURCE)
     public LoopResources getMigrationLoopResource() {
-        return LoopResources.create("MigrationHttpLoopResource", LoopResources.DEFAULT_IO_WORKER_COUNT, true);
+        LoopResources loopResources = LoopResources.create("MigrationHttpLoopResource", LoopResources.DEFAULT_IO_WORKER_COUNT, true);
+        loopResources.onClient(true); // load netty native lib at first, avoid waiting on migration
+        return loopResources;
     }
 
     @Bean(name = MIGRATION_HTTP_CONNECTION_PROVIDER)
