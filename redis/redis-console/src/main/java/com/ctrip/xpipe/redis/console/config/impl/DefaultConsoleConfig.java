@@ -53,6 +53,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
 
+    private static final String KEY_NOTIFY_CLUSTER_TYPES = "console.notify.cluster.types";
+
     private static final String KEY_OUTER_CLUSTER_TYPES = "outer.cluster.types";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
@@ -362,6 +364,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public Set<String> getOwnClusterType() {
         String clusterTypes = getProperty(KEY_OWN_CLUSTER_TYPES, ClusterType.ONE_WAY.toString());
+
+        return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
+    public Set<String> shouldNotifyClusterTypes() {
+        String clusterTypes = getProperty(KEY_NOTIFY_CLUSTER_TYPES, ClusterType.ONE_WAY.toString()+","+ClusterType.BI_DIRECTION.toString());
 
         return getSplitStringSet(clusterTypes);
     }

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -42,6 +43,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected ClusterMonitorModifiedNotifier monitorNotifier;
     @Autowired
     protected DcService dcService;
+    @Autowired
+    protected ConsoleConfig consoleConfig;
 
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
@@ -311,12 +314,14 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         if (null == cluster) throw new IllegalArgumentException("not exist cluster " + clusterName);
 
         ClusterType type = ClusterType.lookup(cluster.getClusterType());
-        if (type.supportMultiActiveDC()) {
-            List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
-            if (null != dcTbls) notifier.notifyClusterUpdate(clusterName,
-                    dcTbls.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
-        } else {
-            notifier.notifyClusterUpdate(clusterName, Collections.singletonList(dcName));
+        if (consoleConfig.shouldNotifyClusterTypes().contains(type.name())) {
+            if (type.supportMultiActiveDC()) {
+                List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
+                if (null != dcTbls) notifier.notifyClusterUpdate(clusterName,
+                        dcTbls.stream().map(DcTbl::getDcName).collect(Collectors.toList()));
+            } else {
+                notifier.notifyClusterUpdate(clusterName, Collections.singletonList(dcName));
+            }
         }
 
         if (type.supportMigration()) {
