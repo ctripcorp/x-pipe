@@ -15,7 +15,6 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.StringUtil;
-import com.sun.javafx.embed.HostInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
