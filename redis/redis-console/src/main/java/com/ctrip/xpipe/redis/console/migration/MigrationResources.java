@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.migration;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.netty.resources.ConnectionProvider;
@@ -23,6 +25,8 @@ public class MigrationResources {
 
     public static final String MIGRATION_PREPARE_EXECUTOR = "MIGRATION_PREPARE_EXECUTOR";
 
+    public static final String MIGRATION_IO_CALLBACK_EXECUTOR = "MIGRATION_IO_CALLBACK_EXECUTOR";
+
     public static final String MIGRATION_HTTP_LOOP_RESOURCE = "MIGRATION_HTTP_LOOP_RESOURCE";
 
     public static final String MIGRATION_HTTP_CONNECTION_PROVIDER = "MIGRATION_HTTP_CONNECTION_PROVIDER";
@@ -31,8 +35,12 @@ public class MigrationResources {
 
     public static final int maxPrepareThreads = 128;
 
+    public static final int maxIOCallbackThreads = 100;
+
+    private static final Logger logger = LoggerFactory.getLogger(MigrationResources.class);
+
     @Bean(name = MIGRATION_EXECUTOR)
-    public ExecutorService getMigrationlExecutor() {
+    public ExecutorService getMigrationExecutor() {
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxExecuteThreads,
                 maxExecuteThreads,
                 120L, TimeUnit.SECONDS,
@@ -46,13 +54,33 @@ public class MigrationResources {
     }
 
     @Bean(name = MIGRATION_PREPARE_EXECUTOR)
-    public ExecutorService getMigrationlPrepareExecutor() {
+    public ExecutorService getMigrationPrepareExecutor() {
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxPrepareThreads,
                 maxPrepareThreads,
                 120L, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(maxExecuteThreads),
                 XpipeThreadFactory.create(MIGRATION_PREPARE_EXECUTOR),
                 new ThreadPoolExecutor.AbortPolicy());
+        poolExecutor.allowCoreThreadTimeOut(true);
+        return MoreExecutors.getExitingExecutorService(
+                poolExecutor,
+                AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
+    }
+
+    @Bean(name = MIGRATION_IO_CALLBACK_EXECUTOR)
+    public ExecutorService getMigrationIOCallbackExecutor() {
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(maxIOCallbackThreads,
+                maxIOCallbackThreads,
+                120L, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(),
+                XpipeThreadFactory.create(MIGRATION_IO_CALLBACK_EXECUTOR),
+                new ThreadPoolExecutor.DiscardPolicy() {
+                    @Override
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+                        super.rejectedExecution(r, e);
+                        logger.info("[migration-io-callback][rejectedExecution] {}", r);
+                    }
+                });
         poolExecutor.allowCoreThreadTimeOut(true);
         return MoreExecutors.getExitingExecutorService(
                 poolExecutor,
