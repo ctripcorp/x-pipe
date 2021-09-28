@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
+import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -11,12 +13,16 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.Defa
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.sun.javafx.embed.HostInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
@@ -31,9 +37,12 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     private MetaCache metaCache;
 
-    public SentinelCheckDowngradeCollectorController(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterId, String shardId) {
+    private CheckerConfig checkerConfig;
+
+    public SentinelCheckDowngradeCollectorController(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterId, String shardId, CheckerConfig checkerConfig) {
         super(sentinelHelloCollector, clusterId, shardId);
         this.metaCache = metaCache;
+        this.checkerConfig = checkerConfig;
     }
 
     @Override
@@ -66,7 +75,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
                 // handle backup dc hello when all right
                 if (info.isInActiveDc()) return;
                 if (collectHello(context) >= countBackDcRedis()) {
-                    if (checkFinishedInstance.size() == checkFailInstance.size()) {
+                    if (shouldDowngrade()) {
                         logger.warn("[{}-{}+{}]backup dc {} all sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
                         beginDowngrade();
                         return;
@@ -90,6 +99,10 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     public void stopWatch(HealthCheckAction action) {
         super.stopWatch(action);
         needDowngrade.set(false);
+    }
+
+    private boolean shouldDowngrade() {
+        return DowngradeStrategy.lookUp(checkerConfig.sentinelCheckDowngradeStrategy()).needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
     }
 
     private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
@@ -131,6 +144,37 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     private void beginDowngrade() {
         needDowngrade.compareAndSet(false, true);
         resetCheckResult();
+    }
+
+    enum DowngradeStrategy {
+        lessThanHalf {
+            @Override
+            boolean needDowngrade(Set<SentinelHello> checkResult, QuorumConfig quorumConfig) {
+                return extractSentinels(checkResult).size() < quorumConfig.getQuorum();
+            }
+        },
+        lessThanAll {
+            @Override
+            boolean needDowngrade(Set<SentinelHello> checkResult, QuorumConfig quorumConfig) {
+                return extractSentinels(checkResult).size() < quorumConfig.getTotal();
+            }
+        };
+
+        Set<HostPort> extractSentinels(Set<SentinelHello> checkResult) {
+            Set<HostPort> sentinels = new HashSet<>();
+            for (SentinelHello sentinelHello : checkResult) {
+                sentinels.add(sentinelHello.getSentinelAddr());
+            }
+            return sentinels;
+        }
+
+        abstract boolean needDowngrade(Set<SentinelHello> checkResult, QuorumConfig quorumConfig);
+
+        public static DowngradeStrategy lookUp(String strategyName) {
+            if (StringUtil.isEmpty(strategyName))
+                throw new IllegalArgumentException("no DowngradeStrategy for name " + strategyName);
+            return valueOf(strategyName.toUpperCase());
+        }
     }
 
 }

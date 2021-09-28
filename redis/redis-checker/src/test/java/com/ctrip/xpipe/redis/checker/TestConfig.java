@@ -198,4 +198,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
         return clusterType.supportHealthCheck();
     }
+
+    @Override
+    public String sentinelCheckDowngradeStrategy() {
+        return "lessThanHalf";
+    }
 }

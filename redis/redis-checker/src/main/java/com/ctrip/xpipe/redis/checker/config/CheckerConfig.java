@@ -40,6 +40,8 @@ public interface CheckerConfig {
 
     String KEY_SENTINEL_CHECK_OUTER_CLUSTERS = "console.sentinel.check.outer.clusters";
 
+    String KEY_SENTINEL_CHECK_DOWNGRADE_STRATEGY = "checker.sentinel.check.downgrade.strategy";
+
     String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
     String KEY_SENTINEL_RATE_LIMIT_OPEN = "console.sentinel.rate.limit.open";
@@ -123,4 +125,6 @@ public interface CheckerConfig {
     long getConfigCacheTimeoutMilli();
 
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
+
+    String sentinelCheckDowngradeStrategy();
 }

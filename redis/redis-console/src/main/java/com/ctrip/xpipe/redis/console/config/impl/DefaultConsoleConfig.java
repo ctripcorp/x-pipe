@@ -397,6 +397,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public String sentinelCheckDowngradeStrategy() {
+        return getProperty(KEY_SENTINEL_CHECK_DOWNGRADE_STRATEGY, "lessThanHalf");
+    }
+
+    @Override
     public String getCrossDcLeaderLeaseName() {
         return getProperty(KEY_CROSS_DC_LEADER_LEASE_NAME, "CROSS_DC_LEADER");
     }
