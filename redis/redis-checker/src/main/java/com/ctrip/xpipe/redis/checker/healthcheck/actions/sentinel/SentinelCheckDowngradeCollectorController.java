@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -74,7 +75,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
                 // handle backup dc hello when all right
                 if (info.isInActiveDc()) return;
                 if (collectHello(context) >= countBackDcRedis()) {
-                    if (shouldDowngrade()) {
+                    if (shouldDowngrade(info)) {
                         logger.warn("[{}-{}+{}]backup dc {} all sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
                         beginDowngrade();
                         return;
@@ -100,8 +101,12 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         needDowngrade.set(false);
     }
 
-    private boolean shouldDowngrade() {
-        return DowngradeStrategy.lookUp(checkerConfig.sentinelCheckDowngradeStrategy()).needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
+    private boolean shouldDowngrade(RedisInstanceInfo info) {
+        DowngradeStrategy strategy = DowngradeStrategy.lookUp(checkerConfig.sentinelCheckDowngradeStrategy());
+        boolean shouldDowngrade = strategy.needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
+        if (shouldDowngrade)
+            CatEventMonitor.DEFAULT.logEvent("sentinel.check.downgrade", String.format("%s-%s-%s", strategy.name(), info.getClusterId(), info.getShardId()));
+        return shouldDowngrade;
     }
 
     private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
