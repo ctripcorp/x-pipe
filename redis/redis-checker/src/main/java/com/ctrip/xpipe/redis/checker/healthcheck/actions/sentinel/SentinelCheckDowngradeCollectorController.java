@@ -76,7 +76,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
                 if (info.isInActiveDc()) return;
                 if (collectHello(context) >= countBackDcRedis()) {
                     if (shouldDowngrade(info)) {
-                        logger.warn("[{}-{}+{}]backup dc {} all sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
+                        logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
                         beginDowngrade();
                         return;
                     }
@@ -177,7 +177,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         public static DowngradeStrategy lookUp(String strategyName) {
             if (StringUtil.isEmpty(strategyName))
                 throw new IllegalArgumentException("no DowngradeStrategy for name " + strategyName);
-            return valueOf(strategyName.toUpperCase());
+            return valueOf(strategyName);
         }
     }
 
