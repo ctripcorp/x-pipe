@@ -19,8 +19,8 @@ import java.util.function.UnaryOperator;
  */
 public class WebClientFactory {
 
-    public static final int MAX_CONNECT_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("reactor.max-conn-timeout.milliseconds", "1200"));
-    public static final int MAX_SO_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("reactor.max-so-timeout.milliseconds", "5000"));
+    public static final int MAX_CONNECT_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("connect-timeout", "1200"));
+    public static final int MAX_SO_TIMEOUT_MILLI = Integer.parseInt(System.getProperty("so-timeout", "6000"));
 
     private WebClientFactory() {}
 
