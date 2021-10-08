@@ -178,7 +178,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return false;
     }
 
-    private void collect(SentinelActionContext context) {
+    void collect(SentinelActionContext context) {
 
         RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
@@ -460,7 +460,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     @VisibleForTesting
-    protected void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
+    void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
                             QuorumConfig quorumConfig) {
         if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
             return;
