@@ -9,12 +9,15 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.AbstractCtripConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMigrationEventDao;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlReadHandler;
 import com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock.MockMysqlWriteHandler;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Sets;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -60,6 +63,8 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
 
     private static boolean onTest = false;
 
+    private static boolean catDev = false;
+
     private static int readDelay = 0;
 
     private static int writeDelay = 0;
@@ -77,11 +82,23 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     private DcService dcService;
 
     @Autowired
+    private RedisService redisService;
+
+    @Autowired
     private ConfigService configService;
 
     private String srcDc = "jq";
 
     private String targetDc = "oy";
+
+    private Map<String, String> redisForDcs = new HashMap<String, String>() {{
+        put(srcDc, "10.0.0.1");
+        put(targetDc, "10.0.0.2");
+    }};
+
+    private int shardsPerCluster = 5;
+
+    private int redisesPerShard = 2;
 
     private int serverPort;
 
@@ -98,7 +115,7 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
         logger.info("[setupBeaconSyncMigrationTest] console start on port {}", serverPort);
 
         applicationContext = new SpringApplicationBuilder(BeaconSyncMigrationTest.class).run(
-                "--server.tomcat.max-threads=1", "--server.port=" + serverPort);
+                "--server.tomcat.max-threads=1", "--server.port=" + serverPort, "--cat.dev.mode="+catDev);
         serverPort = Integer.parseInt(applicationContext.getEnvironment().getProperty("server.port"));
         waitConditionUntilTimeOut(this::checkConsoleHealth, 10000, 1000);
 
@@ -117,9 +134,9 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     }
 
     @Test
-    @Ignore
+//    @Ignore
     public void startAsConsole() throws Exception {
-        fillInCluster(10);
+//        fillInCluster(10);
         waitForAnyKeyToExit();
     }
 
@@ -216,7 +233,25 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     public void fillInCluster(int startIndex, int clusterCnt) {
         List<DcTbl> dcs = dcService.findAllDcs();
         IntStream.range(startIndex, startIndex + clusterCnt).forEach(i -> {
-            clusterService.createCluster(mockCluster(i, dcs));
+            ClusterModel cluster = mockCluster(i, dcs);
+            clusterService.createCluster(cluster);
+            dcs.forEach(dc -> {
+                String redisHost = redisForDcs.get(dc.getDcName());
+                if (StringUtil.isEmpty(redisHost)) return;
+
+                AtomicInteger startPort = new AtomicInteger(1000 + i*shardsPerCluster*redisesPerShard);
+                cluster.getShards().forEach(shard -> {
+                    try {
+                        List<Pair<String, Integer>> redises = new ArrayList<>();
+                        IntStream.range(startPort.get(), startPort.get()+redisesPerShard).forEach(redisPort -> redises.add(Pair.from(redisHost, redisPort)));
+                        startPort.set(startPort.get() + redisesPerShard);
+                        redisService.insertRedises(dc.getDcName(), cluster.getClusterTbl().getClusterName(),
+                                shard.getShardTbl().getShardName(), redises);
+                    } catch (Exception e) {
+                        logger.warn("[fillInCluster][{}] add redis fail", i, e);
+                    }
+                });
+            });
         });
     }
 
@@ -291,7 +326,7 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
         clusterModel.setDcs(dcs);
 
         List<ShardModel> shards = new ArrayList<>();
-        IntStream.range(1, 5).forEach(i -> {
+        IntStream.range(1, 1 + shardsPerCluster).forEach(i -> {
             ShardModel shardModel = new ShardModel();
             ShardTbl shardTbl = new ShardTbl();
             shardTbl.setShardName("shard" + i);
