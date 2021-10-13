@@ -31,6 +31,8 @@ public class DefaultFoundationService implements FoundationService {
 	
 	private String appId = System.getProperty("appId", "appid_xpipe");
 
+	private String localIp = System.getProperty("docker.proxy.localIp");
+
 	public static void setDataCenter(String dataCenter) {
 		DefaultFoundationService.dataCenter = dataCenter;
 	}
@@ -62,6 +64,8 @@ public class DefaultFoundationService implements FoundationService {
 	@Override
 	public String getLocalIp() {
 		try {
+			logger.info(localIp);
+			if(localIp != null) return localIp;
 			return Inet4Address.getLoopbackAddress().getHostAddress();
 		} catch (Exception e) {
 			return "127.0.0.1";
