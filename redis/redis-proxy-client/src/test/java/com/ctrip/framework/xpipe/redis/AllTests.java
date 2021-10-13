@@ -3,6 +3,7 @@ package com.ctrip.framework.xpipe.redis;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketAdapterTest;
 import com.ctrip.framework.xpipe.redis.instrument.adapter.SocketChannelImplAdapterTest;
 import com.ctrip.framework.xpipe.redis.proxy.DefaultProxyConnectProtocolTest;
+import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddressTest;
 import com.ctrip.framework.xpipe.redis.proxy.RouteOptionParserTest;
 import com.ctrip.framework.xpipe.redis.utils.*;
 import okhttp3.mockwebserver.MockWebServer;
@@ -18,12 +19,12 @@ import java.net.InetAddress;
 @Suite.SuiteClasses(value = {
 
         DefaultProxyConnectProtocolTest.class,
+        ProxyInetSocketAddressTest.class,
         RouteOptionParserTest.class,
         ProxyUtilTest.class,
         ConnectionUtilTest.class,
         SocketAdapterTest.class,
         SocketChannelImplAdapterTest.class,
-        ToolsTest.class,
         JarFileUrlJarTest.class,
         JdkVersionTest.class,
         ProxyRegistryTest.class

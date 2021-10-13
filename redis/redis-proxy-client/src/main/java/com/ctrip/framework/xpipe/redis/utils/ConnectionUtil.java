@@ -2,6 +2,7 @@ package com.ctrip.framework.xpipe.redis.utils;
 
 import com.alibaba.arthas.deps.org.slf4j.Logger;
 import com.alibaba.arthas.deps.org.slf4j.LoggerFactory;
+import com.ctrip.framework.xpipe.redis.proxy.ProxyInetSocketAddress;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -40,7 +41,14 @@ public class ConnectionUtil {
     }
 
     public static void connectToProxy(Socket socket, InetSocketAddress address, int timeout) throws IOException {
-        socket.connect(address, timeout);
+        try {
+            socket.connect(address, timeout);
+            ((ProxyInetSocketAddress) address).sick = false;
+        } catch (IOException e) {
+            logger.info("address {} {}", address , e);
+            ((ProxyInetSocketAddress) address).sick = true;
+            throw e;
+        }
         byte[] bytes = ProxyUtil.getInstance().getProxyConnectProtocol(socket);
         socket.getOutputStream().write(bytes);
         socket.getOutputStream().flush();
@@ -50,7 +58,15 @@ public class ConnectionUtil {
     public static boolean connectToProxy(SocketChannel socketChannel, SocketAddress address) throws IOException {
         socketChannelMap.put(socketChannel, new ReentrantLock());
         logger.info("[Connect] to proxy {} through Netty SocketChannel", address);
-        return socketChannel.connect(address);
+        try {
+            boolean result = socketChannel.connect(address);
+            ((ProxyInetSocketAddress) address).sick = !result;
+            return result;
+        } catch (IOException exception) {
+            logger.info("address {} {}", address , exception);
+            ((ProxyInetSocketAddress) address).sick = true;
+            throw exception;
+        }
     }
 
     public static String getString(SocketAddress address) {

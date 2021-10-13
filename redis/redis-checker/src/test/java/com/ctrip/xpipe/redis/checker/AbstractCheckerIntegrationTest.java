@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -63,8 +64,8 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         }
 
         @Bean
-        public TestPersistence persistence() {
-            return new TestPersistence();
+        public TestPersistenceCache persistence() {
+            return new TestPersistenceCache();
         }
 
         @Bean
@@ -73,8 +74,8 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         }
 
         @Bean
-        public CheckerDbConfig checkerDbConfig(Persistence persistence) {
-            return new DefaultCheckerDbConfig(persistence, () -> 0L);
+        public CheckerDbConfig checkerDbConfig(PersistenceCache persistenceCache) {
+            return new DefaultCheckerDbConfig(persistenceCache);
         }
 
         @Bean
@@ -167,6 +168,11 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         private ProxyEnabledNettyKeyedPoolClientFactory getKeyedPoolClientFactory(int eventLoopThreads) {
             ProxyResourceManager resourceManager = new ConsoleProxyResourceManager(new NaiveNextHopAlgorithm());
             return new ProxyEnabledNettyKeyedPoolClientFactory(eventLoopThreads, resourceManager);
+        }
+        
+        @Bean
+        public FoundationService foundationService() {
+            return FoundationService.DEFAULT;
         }
 
     }

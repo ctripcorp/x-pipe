@@ -5,9 +5,9 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
@@ -24,32 +24,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
-/**
- * @author lishanglin
- * date 2021/3/9
- */
-@Component
-public class DefaultPersistence implements Persistence {
 
-    @Autowired
+public class DefaultPersistenceCache extends AbstractPersistenceCache{
+    
     private ClusterDao clusterDao;
-
-    @Autowired
+    
     private RedisDao redisDao;
-
-    @Autowired
+    
     private DcClusterShardService dcClusterShardService;
-
-    @Autowired
+    
     private ConfigDao configDao;
-
-    @Autowired
+    
     private AlertEventService alertEventService;
 
-    private static Logger logger = LoggerFactory.getLogger(DefaultPersistence.class);
+    private static Logger logger = LoggerFactory.getLogger(DefaultPersistenceCache.class);
+    
+    public DefaultPersistenceCache(CheckerConfig config, 
+                                   ScheduledExecutorService scheduled,
+                                   AlertEventService alertEventService,
+                                   ConfigDao configDao,
+                                   DcClusterShardService dcClusterShardService,
+                                   RedisDao redisDao,
+                                   ClusterDao clusterDao) {
+        super(config, scheduled);
+        this.alertEventService = alertEventService;
+        this.configDao = configDao;
+        this.dcClusterShardService = dcClusterShardService;
+        this.redisDao = redisDao;
+        this.clusterDao = clusterDao;
+    }
 
     @Override
     public boolean isClusterOnMigration(String clusterId) {
@@ -94,84 +101,12 @@ public class DefaultPersistence implements Persistence {
             }
         }
     }
-
-    @Override
-    public Set<String> sentinelCheckWhiteList() {
-        return findConfigWhiteList(KEY_SENTINEL_CHECK_EXCLUDE);
-    }
-
-    @Override
-    public Set<String> clusterAlertWhiteList() {
-        return findConfigWhiteList(KEY_CLUSTER_ALERT_EXCLUDE);
-    }
-
-    private Set<String> findConfigWhiteList(String key) {
-        Set<String> whiteList = new HashSet<>();
-        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, String.valueOf(true), new Date());
-        if (null == configTbls) {
-            logger.debug("[findConfigWhiteList][{}] no such config", key);
-            return whiteList;
-        }
-
-        configTbls.forEach(configTbl -> whiteList.add(configTbl.getSubKey()));
-        return whiteList;
-    }
-
-    @Override
-    public boolean isSentinelAutoProcess() {
-        return isConfigOnOrExpired(KEY_SENTINEL_AUTO_PROCESS);
-    }
-
-    @Override
-    public boolean isAlertSystemOn() {
-        return isConfigOnOrExpired(KEY_ALERT_SYSTEM_ON);
-    }
-
-    private boolean isConfigOnOrExpired(String key) {
-        try {
-            ConfigTbl config = configDao.getByKey(key);
-            boolean value = Boolean.parseBoolean(config.getValue());
-            Date expireDate = config.getUntil();
-            return value || (new Date()).after(expireDate);
-        } catch (Throwable th) {
-            logger.info("[isSentinelAutoProcess] fail", th);
-            return true;
-        }
-    }
-
-
-    @Override
-    public Date getClusterCreateTime(String clusterId) {
-        ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterId);
-        if (null == clusterTbl) return null;
-
-        return clusterTbl.getCreateTime();
-    }
-
-
-
-    @Override
-    public Map<String, Date> loadAllClusterCreateTime() {
-        Map<String, Date> clusterCreateTimes = new HashMap<>();
-        List<ClusterTbl> clusterTbls = clusterDao.findAllClustersWithCreateTime();
-        for(ClusterTbl clusterTbl : clusterTbls) {
-            clusterCreateTimes.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
-        }
-
-        return clusterCreateTimes;
-    }
-
-    @Override
-    public void recordAlert(AlertMessageEntity message, EmailResponse response) {
-        EventModel model = createEventModel(message, response);
-        alertEventService.insert(model);
-    }
-
+    
     @VisibleForTesting
     @SuppressWarnings("unchecked")
-    protected EventModel createEventModel(AlertMessageEntity message, EmailResponse response) {
+    protected EventModel createEventModel(String eventOperator, AlertMessageEntity message, EmailResponse response) {
         EventModel model = new EventModel();
-        model.setEventType(EventModel.EventType.ALERT_EMAIL).setEventOperator(FoundationService.DEFAULT.getLocalIp())
+        model.setEventType(EventModel.EventType.ALERT_EMAIL).setEventOperator(eventOperator)
                 .setEventDetail(message.getTitle());
         if(message.getAlert() != null) {
             model.setEventOperation(message.getAlert().getAlertType().name());
@@ -187,5 +122,66 @@ public class DefaultPersistence implements Persistence {
         model.setEventProperty(emailCheckInfo);
         return model;
     }
+    
+    @Override
+    public void recordAlert(String eventOperator, AlertMessageEntity message, EmailResponse response) {
+        EventModel model = createEventModel(eventOperator, message, response);
+        alertEventService.insert(model);
+    }
 
+    private Set<String> findConfigWhiteList(String key) {
+        Set<String> whiteList = new HashSet<>();
+        List<ConfigTbl> configTbls = configDao.findAllByKeyAndValueAndUntilAfter(key, String.valueOf(true), new Date());
+        if (null == configTbls) {
+            logger.debug("[findConfigWhiteList][{}] no such config", key);
+            return whiteList;
+        }
+
+        configTbls.forEach(configTbl -> whiteList.add(configTbl.getSubKey()));
+        return whiteList;
+    }
+    
+    @Override
+    Set<String> doSentinelCheckWhiteList() {
+        return findConfigWhiteList(KEY_SENTINEL_CHECK_EXCLUDE);
+    }
+
+    @Override
+    Set<String> doClusterAlertWhiteList() {
+        return findConfigWhiteList(KEY_CLUSTER_ALERT_EXCLUDE);
+    }
+
+    private boolean isConfigOnOrExpired(String key) {
+        try {
+            ConfigTbl config = configDao.getByKey(key);
+            boolean value = Boolean.parseBoolean(config.getValue());
+            Date expireDate = config.getUntil();
+            return value || (new Date()).after(expireDate);
+        } catch (Throwable th) {
+            logger.info("[isSentinelAutoProcess] fail", th);
+            return true;
+        }
+    }
+    
+    @Override
+    boolean doIsSentinelAutoProcess() {
+        return isConfigOnOrExpired(KEY_SENTINEL_AUTO_PROCESS);
+    }
+
+    @Override
+    boolean doIsAlertSystemOn() {
+        return isConfigOnOrExpired(KEY_ALERT_SYSTEM_ON);
+    }
+
+    @Override
+    Map<String, Date> doLoadAllClusterCreateTime() {
+        Map<String, Date> clusterCreateTimes = new HashMap<>();
+        List<ClusterTbl> clusterTbls = clusterDao.findAllClustersWithCreateTime();
+        for(ClusterTbl clusterTbl : clusterTbls) {
+            clusterCreateTimes.put(clusterTbl.getClusterName(), clusterTbl.getCreateTime());
+        }
+
+        return clusterCreateTimes;
+    }
+    
 }

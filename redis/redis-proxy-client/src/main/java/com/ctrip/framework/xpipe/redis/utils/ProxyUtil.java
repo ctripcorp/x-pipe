@@ -1,18 +1,24 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
-import com.ctrip.framework.xpipe.redis.proxy.DefaultProxyConnectProtocol;
-import com.ctrip.framework.xpipe.redis.proxy.DefaultProxyResourceManager;
-import com.ctrip.framework.xpipe.redis.proxy.ProxyConnectProtocol;
-import com.ctrip.framework.xpipe.redis.proxy.ProxyResourceManager;
+import com.alibaba.arthas.deps.org.slf4j.Logger;
+import com.alibaba.arthas.deps.org.slf4j.LoggerFactory;
+import com.ctrip.framework.xpipe.redis.ProxyChecker;
+import com.ctrip.framework.xpipe.redis.proxy.*;
+import com.google.common.annotations.VisibleForTesting;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.function.Consumer;
 
-public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceManager> {
-
+public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceManager> implements ThreadFactory {
     private ConcurrentMap<Object, SocketAddress> socketAddressMap = new ConcurrentHashMap<>();
+
+    Consumer<ProxyInetSocketAddress> upAction;
+
+    Consumer<ProxyInetSocketAddress> downAction;
 
     private static class ProxyResourceHolder {
         public static final ProxyUtil INSTANCE = new ProxyUtil();
@@ -23,11 +29,21 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     }
 
     public synchronized void registerProxy(String ip, int port, String routeInfo) {
-        put(new InetSocketAddress(ip, port), getProxyProtocol(ip, port, routeInfo));
+        InetSocketAddress address = new InetSocketAddress(ip, port);
+        if(get(address) != null) {
+            unregisterProxy(ip, port);
+        }
+        put(address, getProxyProtocol(ip, port, routeInfo));
     }
 
     public synchronized ProxyResourceManager unregisterProxy(String ip, int port) {
-        ProxyResourceManager proxyResourceManager = remove(new InetSocketAddress(ip, port));
+        InetSocketAddress address = new InetSocketAddress(ip, port);
+        ProxyResourceManager proxyResourceManager = remove(address);
+        if(proxyResourceManager != null) {
+            proxyResourceManager.nextEndpoints().stream().forEach(endpoint -> {
+                removeProxy(endpoint);
+            });
+        }
         return proxyResourceManager;
     }
 
@@ -55,8 +71,100 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
     private ProxyResourceManager getProxyProtocol(String ip, int port, String routeInfo) {
         String protocol = String.format("%s://%s:%s", routeInfo.trim(), ip, port);
         ProxyConnectProtocol proxyConnectProtocol = new DefaultProxyConnectProtocol(protocol);
-        ProxyResourceManager proxyResourceManager = new DefaultProxyResourceManager(proxyConnectProtocol);
+        List<InetSocketAddress> endpoints = proxyConnectProtocol.nextEndpoints();
+        List<ProxyInetSocketAddress> next = new ArrayList<>();
+        for (InetSocketAddress endpoint : endpoints) {
+            next.add(getOrCreateProxy(endpoint));
+        }
+        ProxyResourceManager proxyResourceManager = new DefaultProxyResourceManager(proxyConnectProtocol, next);
         return proxyResourceManager;
     }
 
+    private ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor(this);
+
+    @Override
+    public Thread newThread(Runnable r) {
+        Thread thread = new Thread(r);
+        thread.setName("proxy-checker-background-schedule");
+        return thread;
+    }
+
+    public void onProxyUp(Consumer<ProxyInetSocketAddress> upAction) {
+        this.upAction = upAction;
+    }
+
+    public void onProxyDown(Consumer<ProxyInetSocketAddress> downAction) {
+        this.downAction = downAction;
+    }
+    
+    private void check(ProxyInetSocketAddress proxy) {
+        
+        checker.check(proxy).whenComplete((active, throwable) -> {
+            if(active  && throwable == null) {
+                if(proxy.tryUp(checker.getRetryUpTimes())) {
+                    if(upAction != null) upAction.accept(proxy);
+                }
+            } else {
+                if(proxy.tryDown(checker.getRetryDownTimes())) {
+                    if(downAction != null) downAction.accept(proxy);
+                }
+
+            }
+        });
+    }
+
+    private volatile  int checkInterval = 1000; //seconds
+    ScheduledFuture future = null;
+    
+    public void startCheck() {
+        if(future != null) return;
+        future = scheduled.scheduleWithFixedDelay(()->{
+            try {
+                if (checker != null) {
+                    for (ProxyInetSocketAddress proxy : proxies.values()) {
+                        if (proxy.sick) check(proxy);
+                    }
+                }
+            } catch (Throwable th) {
+                th.printStackTrace();
+            }
+            
+        }, 1, checkInterval, TimeUnit.MILLISECONDS);
+    }
+    
+    public void stopCheck() {
+        if(future == null) return;
+        future.cancel(true);
+        future = null;
+    }
+
+    public void setCheckInterval(int checkInterval) {
+        this.checkInterval = checkInterval;
+        stopCheck();
+        startCheck();
+    }
+
+    private ConcurrentMap<InetSocketAddress, ProxyInetSocketAddress> proxies = new ConcurrentHashMap<>();
+
+    private volatile ProxyChecker checker = null;
+
+    public void setChecker(ProxyChecker checker) {
+        this.checker = checker;
+    }
+
+    @VisibleForTesting
+    ProxyInetSocketAddress getOrCreateProxy(InetSocketAddress endpoint) {
+        ProxyInetSocketAddress proxy = proxies.computeIfAbsent(endpoint, e->new ProxyInetSocketAddress(e.getAddress(), e.getPort()));
+        proxy.reference.addAndGet(1);
+        return proxy;
+    }
+    
+    @VisibleForTesting
+    ProxyInetSocketAddress removeProxy(ProxyInetSocketAddress endpoint) {
+        if ((endpoint.reference.addAndGet(-1)) == 0) {
+            return proxies.remove(new InetSocketAddress(endpoint.getAddress(), endpoint.getPort()));
+        } else {
+            return null;
+        }
+    }
 }

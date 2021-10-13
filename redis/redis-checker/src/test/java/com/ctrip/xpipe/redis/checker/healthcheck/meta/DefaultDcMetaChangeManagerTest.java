@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
@@ -32,6 +33,9 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Mock
     private HealthCheckInstanceManager instanceManager;
+    
+    @Mock
+    private HealthCheckEndpointFactory factory;
 
     private RedisHealthCheckInstance instance = null;
 
@@ -53,8 +57,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
             deletedRedised.add(redis);
             return null;
         }).when(instanceManager).remove(any(HostPort.class));
-
-        manager = new DefaultDcMetaChangeManager("oy", instanceManager);
+        
+        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory);
     }
 
     @Test
@@ -260,7 +264,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void visitRemovedClusterActiveDc() {
-        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager));
+        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory));
         manager.compare(getDcMeta("jq"));
 
         DcMeta dcMeta = MetaClone.clone(getDcMeta("jq"));

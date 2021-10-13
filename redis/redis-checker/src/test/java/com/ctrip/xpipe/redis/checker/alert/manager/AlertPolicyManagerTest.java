@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.checker.alert.manager;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
-import com.ctrip.xpipe.redis.checker.TestPersistence;
+import com.ctrip.xpipe.redis.checker.TestPersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertChannel;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.checker.alert.policy.timing.NaiveRecoveryTimeAlgorithm;
-
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -41,7 +40,7 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
 //    private ConfigService configService;
 
     @Autowired
-    private TestPersistence persistence;
+    private TestPersistenceCache persistenceCache;
 
     @Autowired
     private AlertConfig alertConfig;
@@ -53,7 +52,7 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
     public void beforeAlertPolicyManagerTest() {
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
-        persistence.setAlertSystemOn(true);
+        persistenceCache.setAlertSystemOn(true);
     }
 
     @Test
@@ -94,21 +93,21 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
         EmailReceiverModel expect = new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null);
         Assert.assertEquals(expect, receivers);
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.MARK_INSTANCE_UP);
         EmailReceiverModel receivers2 = policyManager.queryEmailReceivers(alert);
         EmailReceiverModel expect2 = new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null);
         Assert.assertEquals(expect2, receivers2);
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.CLIENT_INCONSIS);
         EmailReceiverModel receivers3 = policyManager.queryEmailReceivers(alert);
         EmailReceiverModel expect3 = new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null);
         Assert.assertEquals(expect3, receivers3);
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.ALERT_SYSTEM_OFF);
         EmailReceiverModel receivers4 = policyManager.queryEmailReceivers(alert);
@@ -123,7 +122,7 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
 
     @Test
     public void testEmptyQueryRecipients() throws Exception {
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
         alert.setAlertType(ALERT_TYPE.MARK_INSTANCE_UP);
         EmailReceiverModel result = policyManager.queryEmailReceivers(alert);
         logger.info("[recipients] {}", result);
@@ -207,7 +206,7 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
 
         Assert.assertEquals(expect, policyManager.queryGroupedEmailReceivers(convertToHolderManager(alerts)));
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null), alerts);
@@ -217,7 +216,7 @@ public class AlertPolicyManagerTest extends AbstractCheckerIntegrationTest {
 
     @After
     public void afterAlertPolicyManagerTest() {
-        persistence.setAlertSystemOn(true);
+        persistenceCache.setAlertSystemOn(true);
     }
 
     private AlertEntityHolderManager convertToHolderManager(Map<ALERT_TYPE, Set<AlertEntity>> alerts) {

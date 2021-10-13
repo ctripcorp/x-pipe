@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.health;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
@@ -48,7 +49,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
         // mock datas
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         logger.info("[xpipeMeta] {}", getXpipeMeta());
-        when(metaCache.getRouteIfPossible(any())).thenReturn(null);
+        when(metaCache.getRoutes()).thenReturn(null);
 
         // random port to avoid port conflict
         port = randomPort();
@@ -76,7 +77,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
         // Build two types connection
         // if ping first, subscribe will reuse connection for ping
         try {
-            session.subscribeIfAbsent(DelayAction.CHECK_CHANNEL, new RedisSession.SubscribeCallback() {
+            session.subscribeIfAbsent("xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp(), new RedisSession.SubscribeCallback() {
                 @Override
                 public void message(String channel, String message) {
 

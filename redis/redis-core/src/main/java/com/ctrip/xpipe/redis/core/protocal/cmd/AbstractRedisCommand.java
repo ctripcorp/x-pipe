@@ -257,10 +257,6 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		this.logRequest = logRequest;
 	}
 
-	protected boolean isProxyEnabled(Endpoint endpoint) {
-		return endpoint instanceof ProxyEnabled;
-	}
-
 	protected AbstractRedisCommand setInOutPayloadFactory(InOutPayloadFactory inOutPayloadFactory) {
 		this.inOutPayloadFactory = inOutPayloadFactory;
 		return this;

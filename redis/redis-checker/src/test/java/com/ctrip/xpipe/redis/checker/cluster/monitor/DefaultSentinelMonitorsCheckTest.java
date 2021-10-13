@@ -1,14 +1,16 @@
-package com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor;
+package com.ctrip.xpipe.redis.checker.cluster.monitor;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.ConsoleDbConfig;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.checker.cluster.allleader.SentinelMonitorsCheckCrossDc;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.impl.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,31 +25,27 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
-/**
- * @author chen.zhu
- * <p>
- * Feb 23, 2018
- */
 public class DefaultSentinelMonitorsCheckTest {
 
     @InjectMocks
-    private DefaultSentinelMonitorsCheckCrossDc checker = new DefaultSentinelMonitorsCheckCrossDc();
+    private SentinelMonitorsCheckCrossDc checker = new SentinelMonitorsCheckCrossDc();
 
     @Mock
     private AlertManager alertManager;
 
     @Mock
-    private MetaCache metaCache;
+    private CheckerAllMetaCache metaCache;
 
     @Mock
     private SentinelManager sentinelManager;
 
     @Mock
-    private ConsoleDbConfig consoleDbConfig;
+    private PersistenceCache persistenceCache;
 
     @Mock
-    private ConsoleConfig consoleConfig;
+    private  CheckerConfig config;
 
     @Before
     public void beforeDefaultSentinelMonitorsCheckTest() {
@@ -140,7 +138,7 @@ public class DefaultSentinelMonitorsCheckTest {
                 "master81:name=xpipe-auto-build-87-shard-2,status=ok,address=10.5.109.151:6465,slaves=2,sentinels=5";
         when(sentinelManager.infoSentinel(any())).thenReturn(result);
         when(alertManager.shouldAlert(any())).thenReturn(true);
-        when(consoleDbConfig.isSentinelAutoProcess()).thenReturn(true);
+        when(persistenceCache.isSentinelAutoProcess()).thenReturn(true);
     }
 
     @Test
@@ -155,29 +153,11 @@ public class DefaultSentinelMonitorsCheckTest {
     @Test
     public void checkSentinel2() throws Exception {
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Pair<>("cluster", "shard"));
+        checker.setMetaCache(metaCache);
         checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, never()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
-    }
-
-    @Test
-    public void testShouldCheck() {
-        when(consoleConfig.isSensitiveForRedundantRedis()).thenReturn(true);
-        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.ONE_WAY.toString()));
-        Assert.assertTrue(checker.shouldCheck());
-        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.BI_DIRECTION.toString()));
-        Assert.assertTrue(checker.shouldCheck());
-        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.SINGLE_DC.toString()));
-        Assert.assertFalse(checker.shouldCheck());
-        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.LOCAL_DC.toString()));
-        Assert.assertFalse(checker.shouldCheck());
-
-        when(consoleConfig.isSensitiveForRedundantRedis()).thenReturn(false);
-        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.ONE_WAY.toString()));
-        Assert.assertFalse(checker.shouldCheck());
-        when(consoleConfig.getOwnClusterType()).thenReturn(Collections.singleton(ClusterType.BI_DIRECTION.toString()));
-        Assert.assertFalse(checker.shouldCheck());
     }
 
 }

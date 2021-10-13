@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.api.cluster.ClusterServer;
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -28,7 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * @author lishanglin
  * date 2021/3/17
  */
-public class HealthCheckReporter implements LeaderAware {
+public class HealthCheckReporter implements GroupCheckerLeaderAware {
 
     private HealthStateService healthStateService;
 

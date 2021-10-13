@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -57,7 +58,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     }
 
     @Before
-    public void before() throws ComponentLookupException, SQLException, IOException {
+    public void before() throws Exception {
         setUpTestDataSource();
     }
 
@@ -66,10 +67,17 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
         ContainerLoader.destroy();
     }
 
-    protected void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException {
+    protected void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException, TimeoutException {
         logger.info("[AbstractConsoleDbTest] setUpTestDataSource");
 
         DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+        waitConditionUntilTimeOut(() -> {
+            try {
+                return dsManager.getDataSource(DATA_SOURCE) != null;
+            } catch (Exception e) {
+                return false;
+            }
+        }, 5000, 200);
         DataSource dataSource = dsManager.getDataSource(DATA_SOURCE);
         String driver = dataSource.getDescriptor().getProperty("driver", null);
 

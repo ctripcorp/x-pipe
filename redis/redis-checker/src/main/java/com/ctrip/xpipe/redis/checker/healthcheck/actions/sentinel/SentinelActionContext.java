@@ -19,4 +19,13 @@ public class SentinelActionContext extends AbstractActionContext<Set<SentinelHel
     public SentinelActionContext(RedisHealthCheckInstance instance, Set<SentinelHello> sentinelHellos) {
         super(instance, sentinelHellos);
     }
+
+    @Override
+    public String toString() {
+        return "SentinelActionContext{" +
+                "c=" + c +
+                ", instance=" + instance +
+                ", cause=" + cause +
+                '}';
+    }
 }

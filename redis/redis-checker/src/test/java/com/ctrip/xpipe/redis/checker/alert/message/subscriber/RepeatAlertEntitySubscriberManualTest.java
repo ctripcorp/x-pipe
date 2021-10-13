@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
-import com.ctrip.xpipe.redis.checker.TestPersistence;
+import com.ctrip.xpipe.redis.checker.TestPersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManager;
@@ -26,7 +26,7 @@ public class RepeatAlertEntitySubscriberManualTest extends AbstractCheckerIntegr
     private AlertPolicyManager policyManager;
 
     @Autowired
-    private TestPersistence persistence;
+    private TestPersistenceCache persistenceCache;
 
     private AlertEntity alert;
 
@@ -34,7 +34,7 @@ public class RepeatAlertEntitySubscriberManualTest extends AbstractCheckerIntegr
     public void beforeRepeatAlertEntitySubscriberTest() {
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.XREDIS_VERSION_NOT_VALID);
-        persistence.setAlertSystemOn(true);
+        persistenceCache.setAlertSystemOn(true);
     }
 
     @Test
@@ -64,7 +64,7 @@ public class RepeatAlertEntitySubscriberManualTest extends AbstractCheckerIntegr
         subscriber.processData(alert3);
         subscriber.processData(alert4);
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
 
         subscriber.scheduledReport();
         Thread.sleep(2000);

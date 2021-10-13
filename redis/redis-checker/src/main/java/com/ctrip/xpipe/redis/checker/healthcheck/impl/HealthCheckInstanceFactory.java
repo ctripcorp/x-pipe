@@ -15,5 +15,9 @@ public interface HealthCheckInstanceFactory {
     RedisHealthCheckInstance create(RedisMeta redisMeta);
 
     ClusterHealthCheckInstance create(ClusterMeta clusterMeta);
+    
+    void remove(RedisHealthCheckInstance instance);
+    
+    void remove(ClusterHealthCheckInstance instance);
 
 }
