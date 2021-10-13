@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.checker.impl.AbstractMetaCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -125,6 +124,16 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         Set<String> requestClusters = clusterParts.get(partIndex);
 
         return createDividedMeta(xpipeMeta, requestClusters);
+    }
+
+    @Override
+    public void pauseUpdate() {
+        
+    }
+
+    @Override
+    public void continueUpdate() {
+
     }
 
 }

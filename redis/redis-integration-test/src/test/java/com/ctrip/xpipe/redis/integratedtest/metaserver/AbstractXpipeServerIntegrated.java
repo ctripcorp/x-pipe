@@ -171,7 +171,7 @@ public class AbstractXpipeServerIntegrated extends AbstractXPipeClusterTest {
         });
     }
 
-    protected ConfigurableApplicationContext startSpingConsoleChecker(int port, String idc, String zk, List<String> localDcConsoles,
+    protected ConfigurableApplicationContext startSpringConsoleChecker(int port, String idc, String zk, List<String> localDcConsoles,
                                                                       Map<String, String> crossDcConsoles, Map<String, String> metaservers,
                                                                       Map<String, String> extras) {
         System.setProperty("DisableLoadProxyAgentJar", "false");
@@ -260,7 +260,7 @@ public class AbstractXpipeServerIntegrated extends AbstractXPipeClusterTest {
             CrdtRedisServer master= masters.get(i);
             waitConditionUntilTimeOut(()-> master.checkRunning(pool, scheduled), 5000, 100);
             for(int j = 0; j < length; j++) {
-                if(i == j) return;
+                if(i == j) continue;
                 master.peerof(masters.get(j),  pool, scheduled);
             }
         }

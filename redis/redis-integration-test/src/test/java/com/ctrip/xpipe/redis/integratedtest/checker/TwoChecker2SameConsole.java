@@ -28,7 +28,8 @@ import static com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig.KEY
 
 public class TwoChecker2SameConsole extends AbstractXpipeServerMultiDcTest {
     
-    private int consolePort = 18080;
+    private int jqConsolePort = 18080;
+    private  int fraConsolePort = 18081;
     
     @Before 
     public void startServers() throws Exception {
@@ -49,20 +50,22 @@ public class TwoChecker2SameConsole extends AbstractXpipeServerMultiDcTest {
         
 //        
         Map<String, String> consoles = new HashMap<>();
-        consoles.put("jq", "http://127.0.0.1:" + consolePort);
-        consoles.put("fra", "http://127.0.0.1:" + consolePort);
+        consoles.put("jq", "http://127.0.0.1:" + jqConsolePort);
+        consoles.put("fra", "http://127.0.0.1:" + fraConsolePort);
         Map<String, String> metaServers = new HashMap<>();
         Map<String, String> extraOptions = new HashMap<>();
         extraOptions.put(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster-dr,cluster-dr-shard1");
         extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
         extraOptions.put("console.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
 
-        startSpringConsole(consolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + consolePort), consoles, metaServers, extraOptions);
+        startSpringConsole(jqConsolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + jqConsolePort), consoles, metaServers, extraOptions);
 
+        startSpringConsoleChecker(fraConsolePort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + fraConsolePort), consoles, metaServers, extraOptions);
+        
         int checkerPort = 18001;
-        startSpringChecker(checkerPort++, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + consolePort), "127.0.0.2");
+        startSpringChecker(checkerPort++, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + jqConsolePort), "127.0.0.2");
 
-        startSpringChecker(checkerPort++, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + consolePort), "127.0.0.3");
+//        startSpringChecker(checkerPort++, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + fraConsolePort), "127.0.0.3");
         
     }
     
@@ -89,8 +92,8 @@ public class TwoChecker2SameConsole extends AbstractXpipeServerMultiDcTest {
     
     @Test
     public void waitConsole() throws InterruptedException, TimeoutException {
-        waitConditionUntilTimeOut(checkDelay(consolePort, JQ_IDC, FRA_IDC), 50000, 1000);
-        waitConditionUntilTimeOut(checkDelay(consolePort, FRA_IDC, JQ_IDC), 50000, 1000);
+        waitConditionUntilTimeOut(checkDelay(fraConsolePort, JQ_IDC, FRA_IDC), 50000, 1000);
+        waitConditionUntilTimeOut(checkDelay(fraConsolePort, FRA_IDC, JQ_IDC), 50000, 1000);
     }
     
     @After

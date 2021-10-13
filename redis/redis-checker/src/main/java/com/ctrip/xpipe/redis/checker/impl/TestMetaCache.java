@@ -116,4 +116,14 @@ public class TestMetaCache implements MetaCache {
         return false;
     }
 
+    @Override
+    public void pauseUpdate() {
+        
+    }
+
+    @Override
+    public void continueUpdate() {
+
+    }
+
 }

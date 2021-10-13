@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
+import com.ctrip.xpipe.redis.checker.cluster.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
@@ -18,6 +22,7 @@ import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultRedisInfoService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -94,5 +99,16 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
     @Bean
     public FoundationService foundationService() {
         return FoundationService.DEFAULT;
+    }
+
+    @Bean
+    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(MetaCache metaCache, PersistenceCache persistenceCache,
+                                                                     CheckerConfig config,
+                                                                     FoundationService foundationService,
+                                                                     CheckerConsoleService service,
+                                                                     SentinelManager manager,
+                                                                     AlertManager alertManager
+    ) {
+        return new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
     }
 }

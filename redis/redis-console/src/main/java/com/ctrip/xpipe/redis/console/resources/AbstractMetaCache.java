@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.impl;
+package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;

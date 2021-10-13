@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.impl;
+package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -9,7 +9,6 @@ import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,6 +24,8 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache 
 
     private DynamicDelayPeriodTask metaLoadTask;
     
+    private boolean pauseing = false;
+    
     public CheckerAllMetaCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         this.config = checkerConfig;
         this.checkerConsoleService = checkerConsoleService;
@@ -34,9 +35,12 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache 
 
     private void loadMeta() {
         try {
-            logger.debug("[loadMeta] start");
-            XpipeMeta xpipeMeta = checkerConsoleService.getXpipeAllMeta(config.getConsoleAddress());
-            refreshMeta(xpipeMeta);
+            synchronized (this) {
+                if(pauseing) return;
+                logger.debug("[loadMeta] start");
+                XpipeMeta xpipeMeta = checkerConsoleService.getXpipeAllMeta(config.getConsoleAddress());
+                refreshMeta(xpipeMeta);
+            }
         } catch (Throwable th) {
             logger.info("[loadMeta] fail", th);
         }
@@ -59,5 +63,26 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache 
             logger.info("[preDestroy] fail", th);
         }
     }
+
+    //Release memory
+    void cleanMetaCache() {
+        this.meta = null;
+        this.allKeepers = null;
+        this.monitor2ClusterShard = null;
+    }
     
+    @Override
+    public void pauseUpdate() {
+        synchronized (this) {
+            this.pauseing = true;
+            stop();
+            cleanMetaCache();
+        }
+    }
+
+    @Override
+    public void continueUpdate() {
+        this.pauseing = false;
+        start();
+    }
 }

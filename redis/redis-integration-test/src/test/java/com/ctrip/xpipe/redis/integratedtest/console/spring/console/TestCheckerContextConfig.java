@@ -2,8 +2,10 @@ package com.ctrip.xpipe.redis.integratedtest.console.spring.console;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.*;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
+import com.ctrip.xpipe.redis.checker.cluster.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
@@ -23,6 +25,7 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
+import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -182,4 +185,14 @@ public class TestCheckerContextConfig {
         return new TestFoundationService();
     }
 
+    @Bean
+    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(PersistenceCache persistenceCache,
+                                                                     CheckerConfig config,
+                                                                     FoundationService foundationService,
+                                                                     CheckerConsoleService service,
+                                                                     SentinelManager manager,
+                                                                     AlertManager alertManager
+    ) {
+        return new SentinelMonitorsCheckCrossDc(new CheckerAllMetaCache(config, service), persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+    }
 }

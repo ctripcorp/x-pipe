@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.impl.AbstractMetaCache;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -69,4 +68,13 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
         }
     }
 
+    @Override
+    public void pauseUpdate() {
+        
+    }
+
+    @Override
+    public void continueUpdate() {
+
+    }
 }

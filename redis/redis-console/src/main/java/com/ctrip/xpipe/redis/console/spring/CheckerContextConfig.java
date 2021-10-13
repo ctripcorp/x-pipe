@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.console.spring;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.*;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
+import com.ctrip.xpipe.redis.checker.cluster.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
@@ -24,6 +25,7 @@ import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.redis.DefaultSentinelManager;
+import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -34,15 +36,11 @@ import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
-import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -191,4 +189,14 @@ public class CheckerContextConfig {
         return FoundationService.DEFAULT;
     }
 
+    @Bean
+    public SentinelMonitorsCheckCrossDc sentinelMonitorsCheckCrossDc(PersistenceCache persistenceCache,
+                                                                     CheckerConfig config, 
+                                                                     FoundationService foundationService, 
+                                                                     CheckerConsoleService service, 
+                                                                     SentinelManager manager,
+                                                                     AlertManager alertManager
+                                                                     ) {
+        return new SentinelMonitorsCheckCrossDc(new CheckerAllMetaCache(config, service), persistenceCache, config, foundationService.getDataCenter(), manager, alertManager);
+    }
 }

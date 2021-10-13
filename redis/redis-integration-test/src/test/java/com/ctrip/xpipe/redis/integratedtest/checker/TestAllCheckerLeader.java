@@ -100,7 +100,7 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         logger.info("========== start jq console ============");
         startSpringConsole(JQConsolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), consoles, metaServers, extraOptions);
         
-        logger.info("========== start fra checker ============");
+//        logger.info("========== start fra checker ============");
         ConfigurableApplicationContext checker = startSpringChecker(FRACheckerPort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), "127.0.0.3");
 
         waitConditionUntilTimeOut(() -> {
@@ -115,7 +115,59 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
 
         int fraSentinelPort = 32222;
         testSentinel(FRA_IDC, fraSentinelPort, checker);
-        
+    }
+
+    @Test
+    public void SentinelCheck2() throws Exception {
+
+        ZkServerMeta jqZk = getZk(JQ_IDC);
+        startZk(jqZk);
+
+        ZkServerMeta fraZk = getZk(FRA_IDC);
+        startZk(fraZk);
+
+        Map<Long, SentinelMeta> sentinel_metas = getXpipeMeta().getDcs().get(FRA_IDC).getSentinels();
+        sentinel_metas.entrySet().stream().forEach(sentinel_meta -> {
+            List<RedisStartCmd> sentinels = startSentinels(sentinel_meta.getValue());
+            for(RedisStartCmd sentinel: sentinels) {
+                try {
+                    waitConditionUntilTimeOut(() -> sentinel.isProcessAlive(), 1000);
+                } catch (TimeoutException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+
+        int JQConsolePort = 18080;
+        int FRACheckerPort = 18082;
+        Map<String, String> consoles = new HashMap<>();
+        consoles.put("jq", "http://127.0.0.1:" + JQConsolePort);
+        consoles.put("fra", "http://127.0.0.1:" + JQConsolePort);
+        Map<String, String> metaServers = new HashMap<>();
+        Map<String, String> extraOptions = new HashMap<>();
+        extraOptions.put(KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK, "cluster-dr,cluster-dr-shard1");
+        extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
+        extraOptions.put("console.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
+        logger.info("========== start jq console ============");
+        ConfigurableApplicationContext checker = startSpringConsoleChecker(FRACheckerPort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + FRACheckerPort), consoles, metaServers, extraOptions);
+
+//        logger.info("========== start fra checker ============");
+//        ConfigurableApplicationContext checker = startSpringChecker(FRACheckerPort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), "127.0.0.3");
+
+        waitConditionUntilTimeOut(() -> {
+            Map<String, Object> healthInfo = restOperations.getForObject(String.format("http://%s:%d/health", localHost, FRACheckerPort), Map.class);
+            return (boolean)healthInfo.get("isLeader");
+        }, 12000);
+
+
+//        waitConditionUntilTimeOut(() -> {
+//            return restOperations.getForObject(String.format("http://%s:%d/health", localHost, JQConsolePort), Boolean.class);
+//        }, 12000);
+
+        int fraSentinelPort = 32222;
+        testSentinel(FRA_IDC, fraSentinelPort, checker);
+
     }
     
     public void testSentinel(String idc, int sentinel_port, ConfigurableApplicationContext checker) throws Exception {

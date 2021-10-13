@@ -1,68 +1,74 @@
 package com.ctrip.xpipe.redis.checker.cluster.allleader;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.allleader.sentinel.SentinelMonitors;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.impl.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
-import org.apache.catalina.Host;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-@Component
+
 public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
-    protected CheckerAllMetaCache metaCache;
+    
+    protected MetaCache metaCache;
+    
+    private PersistenceCache persistenceCache;
+    
+    private CheckerConfig config;
+    
+    private String currentDcId;
+    
+    private SentinelManager sentinelManager;
+    
+    private AlertManager alertManager;
     
     @Autowired
-    PersistenceCache persistenceCache;
+    public SentinelMonitorsCheckCrossDc(
+            MetaCache metaCache,
+            PersistenceCache persistenceCache,
+            CheckerConfig config,
+            String currentDcId,
+            SentinelManager sentinelManager,
+            AlertManager alertManager
+            ) {
+        this.persistenceCache = persistenceCache;
+        this.config = config;
+        this.currentDcId = currentDcId;
+        this.sentinelManager = sentinelManager;
+        this.alertManager = alertManager;
+        this.metaCache = metaCache;
+    }
     
-    @Autowired
-    FoundationService foundationService;
-    
-    @Autowired
-    protected CheckerConfig config;
-    
-    @Autowired
-    CheckerConsoleService checkerConsoleService;
+
 
     @Override
     public void isleader() {
-        if(metaCache == null) {
-            metaCache = new CheckerAllMetaCache(config, checkerConsoleService);
-            metaCache.start();
-        }
         super.isleader();
+        metaCache.continueUpdate();
     }
 
     @Override
     public void notLeader() {
-        if(metaCache != null) {
-            metaCache.stop();
-            metaCache = null; 
-        }
         super.notLeader();
+        metaCache.pauseUpdate();
     }
 
     protected List<DcMeta> dcsToCheck() {
         List<DcMeta> result = Lists.newArrayList();
-        result.add(metaCache.getXpipeMeta().getDcs().get(foundationService.getDataCenter()));
+        result.add(metaCache.getXpipeMeta().getDcs().get(currentDcId));
         Set<String> ignoreDcNames = config.getIgnoredHealthCheckDc();
         List<DcMeta> toRemove = Lists.newArrayList();
         for(DcMeta dcMeta: result) {
@@ -90,11 +96,6 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
         }
     }
     
-    @Autowired
-    protected SentinelManager sentinelManager;
-    
-    @Autowired
-    private AlertManager alertManager;
     
     public void checkSentinel(SentinelMeta sentinelMeta, HostPort sentinelHostPort) {
         Sentinel sentinel = new Sentinel(sentinelHostPort.toString(), sentinelHostPort.getHost(), sentinelHostPort.getPort());
@@ -131,7 +132,7 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     }
     
     @VisibleForTesting
-    public void setMetaCache(CheckerAllMetaCache metaCache) {
+    public void setMetaCache(MetaCache metaCache) {
         this.metaCache= metaCache;
     }
     

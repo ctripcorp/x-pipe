@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.checker.cluster.monitor;
 
-import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -8,18 +8,14 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.cluster.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.impl.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.Collections;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -30,13 +26,13 @@ import static org.mockito.Mockito.when;
 public class DefaultSentinelMonitorsCheckTest {
 
     @InjectMocks
-    private SentinelMonitorsCheckCrossDc checker = new SentinelMonitorsCheckCrossDc();
+    private SentinelMonitorsCheckCrossDc checker;
 
     @Mock
     private AlertManager alertManager;
 
     @Mock
-    private CheckerAllMetaCache metaCache;
+    private MetaCache metaCache;
 
     @Mock
     private SentinelManager sentinelManager;
@@ -49,6 +45,7 @@ public class DefaultSentinelMonitorsCheckTest {
 
     @Before
     public void beforeDefaultSentinelMonitorsCheckTest() {
+        checker = new SentinelMonitorsCheckCrossDc(metaCache, persistenceCache, config, FoundationService.DEFAULT.getDataCenter(), sentinelManager, alertManager);
         MockitoAnnotations.initMocks(this);
         String result = "sentinel_masters:82\n" +
                 "sentinel_tilt:0\n" +
