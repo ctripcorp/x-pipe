@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -47,6 +48,9 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
 
     @Autowired
     private List<DelayPingActionCollector> delayPingCollectors;
+    
+    @Autowired
+    private FoundationService foundationService;
 
     private Map<ClusterType, List<DelayActionListener>> listenersByClusterType;
 
@@ -66,9 +70,9 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
         DelayAction delayAction;
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         if (clusterType.supportMultiActiveDC()) {
-            delayAction = new MultiDcDelayAction(scheduled, instance, executors, pingService);
+            delayAction = new MultiDcDelayAction(scheduled, instance, executors, pingService, foundationService);
         } else {
-            delayAction = new DelayAction(scheduled, instance, executors, pingService);
+            delayAction = new DelayAction(scheduled, instance, executors, pingService, foundationService);
         }
 
         delayAction.addListeners(listenersByClusterType.get(clusterType));

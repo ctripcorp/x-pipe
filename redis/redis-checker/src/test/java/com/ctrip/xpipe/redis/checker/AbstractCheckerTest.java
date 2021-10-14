@@ -21,10 +21,11 @@ import org.junit.BeforeClass;
  * date 2021/3/9
  */
 public class AbstractCheckerTest extends AbstractRedisTest {
-
+    
     @BeforeClass
     public static void beforeAbstractCheckerTest(){
         System.setProperty(HealthChecker.ENABLED, "false");
+        System.setProperty("DisableLoadProxyAgentJar", "true");
     }
 
     protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, String activeDc, int port) throws Exception {

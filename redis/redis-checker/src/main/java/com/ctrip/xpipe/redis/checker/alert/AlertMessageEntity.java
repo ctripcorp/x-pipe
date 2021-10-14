@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.alert;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,10 @@ public class AlertMessageEntity {
 
     public AlertMessageEntity(AlertEntity alert) {
         this(null, null, null, alert);
+    }
+    
+    public AlertMessageEntity() {
+        
     }
 
     public AlertMessageEntity(String title, String content, List<String> receivers) {
@@ -60,7 +66,8 @@ public class AlertMessageEntity {
     public List<String> getReceivers() {
         return m_receivers;
     }
-
+    
+    @JsonIgnore
     public String getReceiverString() {
         StringBuilder builder = new StringBuilder(100);
 
@@ -96,5 +103,17 @@ public class AlertMessageEntity {
 
     public void setAlert(AlertEntity alert) {
         this.alert = alert;
+    }
+    
+    public void setTitle(String m_title) {
+        this.m_title = m_title;
+    }
+
+    public void setParams(Map<String, Object> params) {
+        this.params = params;
+    }
+    
+    public void setReceivers(List<String> m_receivers) {
+        this.m_receivers = m_receivers;
     }
 }

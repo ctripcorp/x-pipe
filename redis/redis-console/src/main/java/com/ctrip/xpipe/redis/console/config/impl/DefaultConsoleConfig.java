@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -71,7 +71,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
-    private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
+    private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
     @Override
     public int getAlertSystemRecoverMinute() {
@@ -295,16 +295,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         if(!listeners.containsKey(key)) {
             return;
         }
-        for(ConsoleConfigListener listener : listeners.get(key)) {
+        for(ConfigChangeListener listener : listeners.get(key)) {
             listener.onChange(key, oldValue, newValue);
         }
     }
 
     @Override
-    public void register(ConsoleConfigListener consoleConfigListener) {
-        for(String key : consoleConfigListener.supportsKeys()) {
+    public void register(List<String> keys, ConfigChangeListener configListener) {
+        for(String key : keys) {
             listeners.putIfAbsent(key, new LinkedList<>());
-            listeners.get(key).add(consoleConfigListener);
+            listeners.get(key).add(configListener);
         }
     }
 
@@ -464,8 +464,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getProxyCheckUpRetryTimes() {
+        return getIntProperty(KEY_PROXY_CHECK_UP_RETRY_TIMES, 10);
+    }
+
+    @Override
+    public int getProxyCheckDownRetryTimes() {
+        return getIntProperty(KEY_PROXY_CHECK_DOWN_RETRY_TIMES, 1);
+    }
+    
+    @Override
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
-
+    
 }

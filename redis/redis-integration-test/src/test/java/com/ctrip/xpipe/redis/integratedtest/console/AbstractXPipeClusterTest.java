@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.integratedtest.console.app.ConsoleApp;
 import com.ctrip.xpipe.redis.integratedtest.console.app.MetaserverApp;
+import com.ctrip.xpipe.redis.integratedtest.console.app.ProxyApp;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.CrdtRedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisKillCmd;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
@@ -34,12 +35,14 @@ import org.junit.BeforeClass;
 import org.springframework.web.client.RestOperations;
 
 import java.io.File;
+import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static com.ctrip.xpipe.foundation.DefaultFoundationService.DATA_CENTER_KEY;
-import static com.ctrip.xpipe.redis.checker.cluster.CheckerLeaderElector.KEY_CHECKER_ID;
+import static com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector.KEY_CHECKER_ID;
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_CHECKER_META_REFRESH_INTERVAL;
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_SENTINEL_CHECK_INTERVAL;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
@@ -85,7 +88,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
     }
 
     @Override
-    public void before() {
+    public void before() throws Exception {
         restTemplate = RestTemplateFactory.createRestTemplate();
         subProcessCmds = new ArrayList<>();
         redisPorts = new ArrayList<>();
@@ -368,9 +371,10 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
 
     /* --------- cleanup --------- */
 
-    protected boolean stopServer(ForkProcessCmd server) {
+    protected boolean stopServer(ForkProcessCmd server) throws TimeoutException {
         if (subProcessCmds.remove(server)) {
             server.killProcess();
+            waitConditionUntilTimeOut(() -> !server.isProcessAlive(), 5000, 100);
             return true;
         }
 
@@ -425,6 +429,7 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
             try {
                 logger.info("[cleanupSubProcesses][{}]", subProcess);
                 subProcess.killProcess();
+                waitConditionUntilTimeOut(() -> !subProcess.isProcessAlive(), 5000, 100);
             } catch (Throwable th) {
                 logger.info("[cleanupSubProcesses][{}] kill thread fail", subProcess, th);
             }
@@ -458,6 +463,24 @@ public abstract class AbstractXPipeClusterTest extends AbstractConsoleDbTest {
                 logger.info("[killRedisServers][{}] fail", port, th);
             }
         });
+    }
+    
+    public ServerStartCmd startProxy(String idc, int tcpPort, int tlsPort) {
+        ServerStartCmd proxyServer = new ServerStartCmd(idc + tcpPort + "-" + tlsPort, ProxyApp.class.getName(), new HashMap<String, String>() {{
+            put("tcp_port", String.valueOf(tcpPort));
+            put("tls_port", String.valueOf(tlsPort));
+        }}, executors);
+        proxyServer.execute(executors).addListener(consoleFuture -> {
+            if (consoleFuture.isSuccess()) {
+                logger.info("[proxyServer] proxyserver {}-{}-{} start {}", idc, tcpPort, tlsPort, consoleFuture.get());
+            } else {
+                logger.info("[proxyServer] proxyserver {}-{}-{} fail", idc, tcpPort, tlsPort, consoleFuture.cause());
+            }
+
+        });
+
+        subProcessCmds.add(proxyServer);
+        return proxyServer;
     }
 
 }

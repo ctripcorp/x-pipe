@@ -1,8 +1,14 @@
 package com.ctrip.xpipe.redis.console.controller.api.checker;
 
+import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
@@ -13,16 +19,22 @@ import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
+import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author lishanglin
@@ -65,6 +77,12 @@ public class ConsoleCheckerController extends AbstractConsoleController {
 
         return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
     }
+    
+    @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META)
+    public String getDividedMeta(@RequestParam(value="format", required = false) String format) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+    }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_PROXY_CHAINS)
     public List<ProxyTunnelInfo> getProxyTunnels() {
@@ -88,5 +106,67 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getRedisAlives()) pingService.updateRedisAlives(checkResult.decodeRedisAlives());
         if (null != checkResult.getRedisStates()) healthStateService.updateHealthState(checkResult.decodeRedisStates());
     }
+
+    @Resource
+    PersistenceCache persistenceCache;
+    
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_CLUSTER_ON_MIGRATION, method = RequestMethod.GET)
+    public boolean isClusterOnMigration(@PathVariable String clusterName) {
+        return persistenceCache.isClusterOnMigration(clusterName);
+    }
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    @RequestMapping(value = ConsoleCheckerPath.PATH_PUT_UPDATE_REDIS_ROLE, method = RequestMethod.PUT)
+    public RetMessage updateRedisRole(@PathVariable String role, @RequestBody String body) {
+        DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
+        DefaultRedisInstanceInfo info;
+        try {
+            info = objectMapper.readValue(body, DefaultRedisInstanceInfo.class);
+        }catch (Exception e) {
+            logger.error("[updateRedisRole] parse json error: {}", body);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+        instance.setInstanceInfo(info);
+        persistenceCache.updateRedisRole(instance, Server.SERVER_ROLE.of(role));
+        return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_SENTINEL_CHECKER_WHITE_LIST, method = RequestMethod.GET)
+    public Set<String> sentinelCheckWhiteList() {
+        return persistenceCache.sentinelCheckWhiteList();
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_CLUSTER_ALERT_WHITE_LIST, method = RequestMethod.GET)
+    public Set<String> clusterAlertWhiteList() {
+        return persistenceCache.clusterAlertWhiteList();
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_SENTINEL_AUTO_PROCESS, method = RequestMethod.GET)
+    public boolean isSentinelAutoProcess() {
+        return persistenceCache.isSentinelAutoProcess();
+    }
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, method = RequestMethod.GET)
+    public boolean isAlertSystemOn() {
+        return persistenceCache.isAlertSystemOn();
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_CLUSTER_CREATE_TIME, method = RequestMethod.GET)
+    public Date getClusterCreateTime(@PathVariable String clusterId) {
+        return persistenceCache.getClusterCreateTime(clusterId);
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_LOAD_ALL_CLUSTER_CREATE_TIME, method = RequestMethod.GET)
+    public Map<String, Date> loadAllClusterCreateTime() {
+        return persistenceCache.loadAllClusterCreateTime();
+    }
+
+    @Autowired
+    AlertEventService alertEventService;
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_POST_RECORD_ALERT, method = RequestMethod.POST)
+    public void recordAlert(@RequestBody CheckerConsoleService.AlertMessage alertMessage) {
+        this.persistenceCache.recordAlert(alertMessage.getEventOperator(), alertMessage.getMessage(), alertMessage.getEmailResponse());
+    }
+
 
 }

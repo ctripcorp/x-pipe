@@ -19,7 +19,7 @@ public class MultiMasterDelayActionControllerTest {
     @Mock
     private RedisHealthCheckInstance instance;
 
-    private MultiMasterDelayActionController controller = new MultiMasterDelayActionController();
+    private MultiMasterDelayActionController controller = new MultiMasterDelayActionController(FoundationService.DEFAULT);
 
     private String currentDc = FoundationService.DEFAULT.getDataCenter();
     private String remoteDc = "remote-dc";

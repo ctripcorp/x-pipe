@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
@@ -38,5 +39,6 @@ public class AbstractHealthCheckActionTest extends AbstractCheckerIntegrationTes
         PingAction action = new PingAction(scheduled, instance, executors);
         action.addListeners(listeners);
         action.notifyListeners(new PingActionContext(instance, true));
+        instanceManager.remove(new HostPort(instance.getEndpoint().getHost(), instance.getEndpoint().getPort()));
     }
 }

@@ -13,6 +13,8 @@ public class CheckerStatus {
     HostPort hostPort;
 
     CheckerRole checkerRole;
+    
+    CheckerRole allCheckerRole;
 
     long lastAckTime;
 
@@ -32,6 +34,14 @@ public class CheckerStatus {
 
     public void setCheckerRole(CheckerRole checkerRole) {
         this.checkerRole = checkerRole;
+    }
+
+    public CheckerRole getAllCheckerRole() {
+        return allCheckerRole;
+    }
+
+    public void setAllCheckerRole(CheckerRole role) {
+        this.allCheckerRole = role;
     }
 
     public long getLastAckTime() {

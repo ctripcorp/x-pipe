@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CurrentDcCheckController;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -16,6 +20,11 @@ public class CurrentDcSentinelCheckController extends CurrentDcCheckController i
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    public CurrentDcSentinelCheckController(FoundationService foundationService) {
+        super(foundationService.getDataCenter());
+    }
 
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getCheckInfo();

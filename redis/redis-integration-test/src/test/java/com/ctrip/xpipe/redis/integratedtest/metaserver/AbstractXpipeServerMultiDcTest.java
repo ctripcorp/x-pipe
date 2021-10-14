@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.KEY_SERVER_MODE;
 import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.*;
 
-public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated {
+public class AbstractXpipeServerMultiDcTest extends AbstractXpipeServerIntegrated {
     protected Map<String, String> metaservers = new HashMap<>();
     @Override
     protected String getXpipeMetaConfigFile() {
@@ -53,7 +53,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
     }
     Map<String, String> zkUrls = new HashMap<>();
     //start zk
-    ZkTestServer startZk(ZkServerMeta zkServerMeta) {
+    public ZkTestServer startZk(ZkServerMeta zkServerMeta) {
         String[] addresses = zkServerMeta.getAddress().split("\\s*,\\s*");
         if (addresses.length != 1) {
             throw new IllegalStateException("zk server test should only be one there!" + zkServerMeta.getAddress());
@@ -68,7 +68,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         return startSentinel(port);
     }
 
-    List<RedisStartCmd> startSentinels(SentinelMeta meta) {
+    protected List<RedisStartCmd> startSentinels(SentinelMeta meta) {
         String address = meta.getAddress();
         String[] ips = address.split(",");
         List<RedisStartCmd> results = new LinkedList<>();
@@ -82,16 +82,11 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         return prepareDatasFromFile("src/test/resources/xpipe-crdt.sql");
     }
 
-    void startDb() throws Exception {
-        //start db
-//        startH2Server();
-        setUpTestDataSource(); // init data in h2
-
-//        xml no proxy info
-
+    protected void startDb() throws Exception {
+        setUpTestDataSource();
     }
 
-    int getGid(String idcName) throws Exception {
+    protected int getGid(String idcName) throws Exception {
         switch (idcName) {
             case "rb":
                 return 1;
@@ -112,7 +107,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         return startCrdtRedis(gid, meta.getPort());
     }
 
-    void stopRedis(RedisMeta meta) {
+    protected void stopRedis(RedisMeta meta) {
         try {
             new RedisKillCmd(meta.getPort(), executors).execute().get();
         } catch (Throwable th) {
@@ -128,22 +123,12 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
     }
 
     void startProxys() throws Exception {
-        //start proxy
         proxys.add(startProxyServer( 11080, 11443));
         proxys.add(startProxyServer( 11081, 11444));
     }
 
     void waitConsole(String url, String idc, int wait_time) throws Exception {
         waitForServerAck(String.format("http://%s/api/dc/%s", url, idc), DcMeta.class, wait_time);
-    }
-
-    RedisMeta findMaster(List<RedisMeta> lists) {
-        for(RedisMeta r : lists) {
-            if(r.isMaster()) {
-                return r;
-            }
-        }
-        return null;
     }
 
     Endpoint parseEndpoint(String uri) {
@@ -299,15 +284,20 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
             if(info != null && info.enable) {
                 switch (info.mode) {
                     case CONSOLE:
+                        logger.info("================= start console server ==================");
                         extraOptions.put(KEY_SERVER_MODE, CONSOLE.name());
                         startConsole(info.console_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc)), consoles, metaservers, extraOptions);
+                        logger.info("================= start checker server ==================");
                         checks.put(idc, new HealthServer("http://127.0.0.1:"+ info.checker_port + "/health" , startChecker(info.checker_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(String.format("127.0.0.1:" + info.console_port)))));
                         break;
                     case CONSOLE_CHECKER:
+                        logger.info("================= start console + checker server ==================");
                         extraOptions.put(KEY_SERVER_MODE, CONSOLE_CHECKER.name());
-                        startConsole(info.console_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc)), consoles, metaservers, extraOptions);
+                        ServerStartCmd console_checker = startConsole(info.console_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(consoles.get(idc)), consoles, metaservers, extraOptions);
+                        checks.put(idc, new HealthServer("http://127.0.0.1:" + info.console_port + "/health", console_checker));
                         break;
                     case CHECKER:
+                        logger.info("================= start checker server ==================");
                         checks.put(idc, new HealthServer("http://127.0.0.1:"+ info.checker_port + "/health" , startChecker(info.checker_port, idc, dcMeta.getZkServer().getAddress(), Collections.singletonList(String.format("127.0.0.1:" + info.console_port)))));
                         break;
 
@@ -320,7 +310,7 @@ public class AbstractMetaServerMultiDcTest extends AbstractMetaServerIntegrated 
         for(DcMeta dcMeta: getXpipeMeta().getDcs().values()) {
             String idc = dcMeta.getId();
             ConsoleInfo info = consoleInfos.get(idc);
-            waitConsole("127.0.0.1:" + info.console_port, idc, 120000);
+            waitConsole("127.0.0.1:" + info.console_port, idc, 52000);
             dcMeta.getMetaServers().stream().forEach(meta -> {
                 startMetaServer(idc, String.format("http://127.0.0.1:%d" , info.console_port),  dcMeta.getZkServer().getAddress(),  meta.getPort(), dcinfos);
             });
