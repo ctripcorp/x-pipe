@@ -511,4 +511,36 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
     }
 
+    @Test
+    public void inFailoverProcessTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        doReturn(Sets.newHashSet(master)).when(sentinelCollector).checkTrueMasters(any(), any());
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+
+        when(sentinelManager.getMasterOfMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(),LOCAL_HOST,5004),monitorName)).thenReturn(master);
+        HostPort oldMaster = new HostPort(LOCAL_HOST, randomPort());
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), oldMaster, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.collect(context);
+
+        verify(sentinelManager, times(1)).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+    }
+
 }
