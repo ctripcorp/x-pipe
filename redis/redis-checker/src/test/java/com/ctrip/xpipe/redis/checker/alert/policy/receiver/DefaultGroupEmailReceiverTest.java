@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.checker.alert.policy.receiver;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
-import com.ctrip.xpipe.redis.checker.TestPersistence;
+import com.ctrip.xpipe.redis.checker.TestPersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
@@ -39,7 +39,7 @@ public class DefaultGroupEmailReceiverTest extends AbstractCheckerIntegrationTes
     private MetaCache metaCache;
 
     @Autowired
-    private TestPersistence persistence;
+    private TestPersistenceCache persistenceCache;
 
     private DefaultGroupEmailReceiver groupEmailReceiver;
 
@@ -106,7 +106,7 @@ public class DefaultGroupEmailReceiverTest extends AbstractCheckerIntegrationTes
 
         Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null), alerts);
@@ -159,7 +159,7 @@ public class DefaultGroupEmailReceiverTest extends AbstractCheckerIntegrationTes
 
         Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null), alerts);
@@ -201,7 +201,7 @@ public class DefaultGroupEmailReceiverTest extends AbstractCheckerIntegrationTes
 
         Assert.assertEquals(expect, groupEmailReceiver.getGroupedEmailReceiver(convertToHolderManager(alerts)));
 
-        persistence.setAlertSystemOn(false);
+        persistenceCache.setAlertSystemOn(false);
 
         expect.clear();
         expect.put(new EmailReceiverModel(Lists.newArrayList(alertConfig.getXPipeAdminEmails()), null), alerts);

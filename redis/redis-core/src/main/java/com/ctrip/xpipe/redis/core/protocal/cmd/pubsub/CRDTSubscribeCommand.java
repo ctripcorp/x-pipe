@@ -26,6 +26,10 @@ public class CRDTSubscribeCommand extends AbstractSubscribe {
         super(clientPool, scheduled, MESSAGE_TYPE.CRDT_MESSAGE, channel);
     }
 
+    public CRDTSubscribeCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled,int commandTimeoutMilli,  String... channel) {
+        super(clientPool, scheduled, commandTimeoutMilli, MESSAGE_TYPE.CRDT_MESSAGE, channel);
+    }
+
     @Override
     public String getName() {
         return CRDT_SUBSCRIBE_COMMAND_NAME;

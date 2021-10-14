@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.service.meta.KeepercontainerMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -19,7 +18,10 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author lishanglin
@@ -160,16 +162,12 @@ public abstract class AbstractMetaCache implements MetaCache {
         return lastUpdateTime;
     }
 
+
     @Override
-    public RouteMeta getRouteIfPossible(HostPort hostPort) {
+    public List<RouteMeta> getRoutes() {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
-        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
-        if (metaDesc == null) {
-            logger.warn("[getRouteIfPossible]HostPort corresponding meta not found: {}", hostPort);
-            return null;
-        }
         return xpipeMetaManager
-                .consoleRandomRoute(CURRENT_IDC, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, metaDesc.getDcId());
+                .consoleRoutes(CURRENT_IDC);
     }
 
     @Override
@@ -350,13 +348,13 @@ public abstract class AbstractMetaCache implements MetaCache {
         return false;
     }
     @VisibleForTesting
-    protected AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
+    public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;
         return this;
     }
 
     @VisibleForTesting
-    protected AbstractMetaCache setMonitor2ClusterShard(Map<String, Pair<String, String>> monitorMap) {
+    public AbstractMetaCache setMonitor2ClusterShard(Map<String, Pair<String, String>> monitorMap) {
         this.monitor2ClusterShard = monitorMap;
         return this;
     }

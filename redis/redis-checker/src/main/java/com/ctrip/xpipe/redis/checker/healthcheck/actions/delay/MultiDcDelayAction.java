@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
@@ -10,8 +11,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class MultiDcDelayAction extends DelayAction {
 
     public MultiDcDelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                       ExecutorService executors, PingService pingService) {
-        super(scheduled, instance, executors, pingService);
+                              ExecutorService executors, PingService pingService, FoundationService foundationService) {
+        super(scheduled, instance, executors, pingService, foundationService);
     }
 
     @Override

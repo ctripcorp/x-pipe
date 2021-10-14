@@ -25,10 +25,6 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     private static final Logger logger = LoggerFactory.getLogger(DelayAction.class);
 
-    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
-
-    public static final String CHECK_CHANNEL = "xpipe-health-check-" + FoundationService.DEFAULT.getLocalIp();
-
     private static final DelayActionContext INIT_CONTEXT = new DelayActionContext(null, HealthStatus.UNSET_TIME);
 
     public static final long SAMPLE_LOST_AND_NO_PONG = -99999L * 1000 * 1000;
@@ -47,11 +43,18 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     private volatile boolean isContextInited = false;
 
+    private String currentDcId;
+    
+    private String channel;
+
     public DelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                       ExecutorService executors, PingService pingService) {
+                       ExecutorService executors, PingService pingService, FoundationService foundationService) {
         super(scheduled, instance, executors);
         this.pingService = pingService;
         expireInterval = instance.getHealthCheckConfig().getHealthyDelayMilli() + DELTA * 2;
+        this.currentDcId = foundationService.getDataCenter();
+        this.channel =  "xpipe-health-check-" + foundationService.getLocalIp();
+
     }
 
     @Override
@@ -60,12 +63,12 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 //        logger.info("[doTask][begin][{}]", instance.getCheckInfo().getClusterShardHostport());
         reportDelay();
         RedisSession session = instance.getRedisSession();
-        doSubscribe(session, CHECK_CHANNEL, callback);
+        doSubscribe(session, channel, callback);
 
         RedisInstanceInfo info = instance.getCheckInfo();
         if (currentDcId.equalsIgnoreCase(info.getDcId()) && info.isMaster()) {
 //            logger.info("[doTask][pub][{}]", instance.getCheckInfo().getClusterShardHostport());
-            doPublish(session, CHECK_CHANNEL, Long.toHexString(System.nanoTime()));
+            doPublish(session, channel, Long.toHexString(System.nanoTime()));
         }
     }
 
@@ -146,7 +149,7 @@ public class DelayAction extends AbstractHealthCheckAction<RedisHealthCheckInsta
 
     @Override
     public void doStop() {
-        instance.getRedisSession().closeSubscribedChannel(CHECK_CHANNEL);
+        instance.getRedisSession().closeSubscribedChannel(channel);
         super.doStop();
     }
 

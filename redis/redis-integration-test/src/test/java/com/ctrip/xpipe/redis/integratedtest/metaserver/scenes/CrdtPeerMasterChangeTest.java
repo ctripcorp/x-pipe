@@ -6,9 +6,10 @@ import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
-import com.ctrip.xpipe.redis.core.protocal.cmd.*;
+import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultSlaveOfCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.PeerOfCommand;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractMetaServerMultiDcTest;
+import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractXpipeServerMultiDcTest;
 import com.ctrip.xpipe.redis.integratedtest.metaserver.scenes.tools.RedisChecker;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.After;
@@ -19,17 +20,17 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
+import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.*;
 
-public class CrdtPeerMasterChangeTest extends AbstractMetaServerMultiDcTest{
-    public Map<String, AbstractMetaServerMultiDcTest.ConsoleInfo> defaultConsoleInfo() {
-        Map<String, AbstractMetaServerMultiDcTest.ConsoleInfo> consoleInfos = new HashMap<>();
+public class CrdtPeerMasterChangeTest extends AbstractXpipeServerMultiDcTest {
+    public Map<String, AbstractXpipeServerMultiDcTest.ConsoleInfo> defaultConsoleInfo() {
+        Map<String, AbstractXpipeServerMultiDcTest.ConsoleInfo> consoleInfos = new HashMap<>();
         //start console + checker 2server
-        consoleInfos.put("jq", new AbstractMetaServerMultiDcTest.ConsoleInfo(CONSOLE).setConsole_port(18080).setChecker_port(28080));
+        consoleInfos.put("jq", new ConsoleInfo(CONSOLE).setConsole_port(18080).setChecker_port(28080));
         //start conset_checker 1server
-        consoleInfos.put("oy", new AbstractMetaServerMultiDcTest.ConsoleInfo(CONSOLE).setConsole_port(18081).setChecker_port(28081));
+        consoleInfos.put("oy", new ConsoleInfo(CONSOLE_CHECKER).setConsole_port(18081).setChecker_port(28081));
         //start checker 1 server
-        consoleInfos.put("fra", new AbstractMetaServerMultiDcTest.ConsoleInfo(CONSOLE).setConsole_port(18082).setChecker_port(28082));
+        consoleInfos.put("fra", new ConsoleInfo(CHECKER).setConsole_port(18080).setChecker_port(28082));
         return consoleInfos;
     }
     @Before

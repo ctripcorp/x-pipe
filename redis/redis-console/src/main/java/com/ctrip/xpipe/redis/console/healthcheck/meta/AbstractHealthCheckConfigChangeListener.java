@@ -26,7 +26,7 @@ public abstract class AbstractHealthCheckConfigChangeListener<T> implements Cons
 
     @PostConstruct
     public void postConstruct() {
-        consoleConfig.register(this);
+        consoleConfig.register(this.supportsKeys(),this);
     }
 
     @Override

@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.api.cluster.ClusterServer;
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
@@ -26,7 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * @author lishanglin
  * date 2021/3/11
  */
-public class CheckerProxyManager extends AbstractService implements ProxyManager, LeaderAware {
+public class CheckerProxyManager extends AbstractService implements ProxyManager, GroupCheckerLeaderAware {
 
     private Map<DcClusterShard, ProxyTunnelInfo> proxyTunnelInfos;
 

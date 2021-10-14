@@ -39,7 +39,7 @@ public interface MetaCache {
 
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
 
-    RouteMeta getRouteIfPossible(HostPort hostPort);
+    List<RouteMeta> getRoutes();
 
     boolean isCrossRegion(String activeDc, String backupDc);
 
@@ -55,4 +55,9 @@ public interface MetaCache {
     ClusterType getClusterType(String clusterId);
 
     boolean isMetaChain(HostPort src, HostPort dst);
+
+    void pauseUpdate();
+    
+    void continueUpdate();
+    
 }

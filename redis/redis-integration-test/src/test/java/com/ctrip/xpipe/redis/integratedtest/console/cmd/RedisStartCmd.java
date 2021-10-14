@@ -107,7 +107,7 @@ public class RedisStartCmd extends AbstractForkProcessCmd {
                                     "rm -f %s/dump.rdb;" +
                                     "rm -f %s/redis.conf;" +
                                     "touch %s/redis.conf;" +
-                                    "%s %s/redis.conf --port %d --logfile redis.log %s %s",
+                                    "%s %s/redis.conf --port %d --logfile redis.log %s %s ",
                             url, url, url, url, redisPath, url, port,
                             asSentinel ? "--sentinel"
                                     : String.format("--dir %s --dbfilename dump.rdb --repl-backlog-size 100mb --appendonly no", url),

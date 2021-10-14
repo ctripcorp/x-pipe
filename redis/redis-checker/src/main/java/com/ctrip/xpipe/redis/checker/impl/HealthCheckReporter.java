@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.api.cluster.ClusterServer;
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -28,7 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * @author lishanglin
  * date 2021/3/17
  */
-public class HealthCheckReporter implements LeaderAware {
+public class HealthCheckReporter implements GroupCheckerLeaderAware {
 
     private HealthStateService healthStateService;
 
@@ -43,6 +43,8 @@ public class HealthCheckReporter implements LeaderAware {
     private CheckerConsoleService checkerConsoleService;
 
     private ClusterServer clusterServer;
+    
+    private ClusterServer allCheckerServer;
 
     private CheckerConfig config;
 
@@ -59,7 +61,7 @@ public class HealthCheckReporter implements LeaderAware {
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
     public HealthCheckReporter(HealthStateService healthStateService, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
-                               ClusterServer clusterServer, RedisDelayManager redisDelayManager,
+                               ClusterServer clusterServer, ClusterServer allCheckerServer, RedisDelayManager redisDelayManager,
                                CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
                                ClusterHealthManager clusterHealthManager, int serverPort) {
         this.healthStateService = healthStateService;
@@ -67,6 +69,7 @@ public class HealthCheckReporter implements LeaderAware {
         this.config = checkerConfig;
         this.checkerConsoleService = checkerConsoleService;
         this.clusterServer = clusterServer;
+        this.allCheckerServer = allCheckerServer;
         this.redisDelayManager = redisDelayManager;
         this.crossMasterDelayManager = crossMasterDelayManager;
         this.pingService = pingService;
@@ -122,6 +125,7 @@ public class HealthCheckReporter implements LeaderAware {
             CheckerStatus status = new CheckerStatus();
             status.setHostPort(new HostPort(FoundationService.DEFAULT.getLocalIp(), serverPort));
             status.setCheckerRole(clusterServer.amILeader() ? CheckerRole.LEADER : CheckerRole.FOLLOWER);
+            status.setAllCheckerRole(allCheckerServer.amILeader()? CheckerRole.LEADER: CheckerRole.FOLLOWER);
             status.setPartIndex(config.getClustersPartIndex());
 
             checkerConsoleService.ack(config.getConsoleAddress(), status);
