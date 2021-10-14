@@ -124,8 +124,8 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     }
 
     @Override
-    public Long getDelay() {
-        return 1000L;
+    public int getDelay() {
+        return this.config.getRedisConfCheckIntervalMilli();
     }
 
     @Override
@@ -137,5 +137,9 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     public void setMetaCache(MetaCache metaCache) {
         this.metaCache= metaCache;
     }
-    
+
+    @Override
+    public List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS);
+    }
 }

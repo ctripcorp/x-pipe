@@ -213,6 +213,7 @@ public class AbstractXpipeServerIntegrated extends AbstractXPipeClusterTest {
                     put(KEY_CHECKER_ID, idc + port);
                     put(KEY_SERVER_MODE, CHECKER.name());
                     put(LOCAL_IP_KEY, localIp);
+                    put(KEY_REDIS_CONF_CHECK_INTERVAL, "1000");
                 }});
         return cac;
     }
