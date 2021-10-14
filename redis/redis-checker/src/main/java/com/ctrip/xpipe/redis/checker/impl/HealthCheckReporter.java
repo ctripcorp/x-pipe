@@ -43,6 +43,8 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
     private CheckerConsoleService checkerConsoleService;
 
     private ClusterServer clusterServer;
+    
+    private ClusterServer allCheckerServer;
 
     private CheckerConfig config;
 
@@ -59,7 +61,7 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckReporter.class);
 
     public HealthCheckReporter(HealthStateService healthStateService, CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
-                               ClusterServer clusterServer, RedisDelayManager redisDelayManager,
+                               ClusterServer clusterServer, ClusterServer allCheckerServer, RedisDelayManager redisDelayManager,
                                CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
                                ClusterHealthManager clusterHealthManager, int serverPort) {
         this.healthStateService = healthStateService;
@@ -67,6 +69,7 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
         this.config = checkerConfig;
         this.checkerConsoleService = checkerConsoleService;
         this.clusterServer = clusterServer;
+        this.allCheckerServer = allCheckerServer;
         this.redisDelayManager = redisDelayManager;
         this.crossMasterDelayManager = crossMasterDelayManager;
         this.pingService = pingService;
@@ -122,6 +125,7 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
             CheckerStatus status = new CheckerStatus();
             status.setHostPort(new HostPort(FoundationService.DEFAULT.getLocalIp(), serverPort));
             status.setCheckerRole(clusterServer.amILeader() ? CheckerRole.LEADER : CheckerRole.FOLLOWER);
+            status.setAllCheckerRole(allCheckerServer.amILeader()? CheckerRole.LEADER: CheckerRole.FOLLOWER);
             status.setPartIndex(config.getClustersPartIndex());
 
             checkerConsoleService.ack(config.getConsoleAddress(), status);

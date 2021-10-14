@@ -170,11 +170,11 @@ public class CheckerContextConfig {
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
     public HealthCheckReporter healthCheckReporter(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
-                                                   GroupCheckerLeaderElector clusterServer, RedisDelayManager redisDelayManager,
+                                                   GroupCheckerLeaderElector clusterServer, AllCheckerLeaderElector allCheckerLeaderElector, RedisDelayManager redisDelayManager,
                                                    CrossMasterDelayManager crossMasterDelayManager, PingService pingService,
                                                    ClusterHealthManager clusterHealthManager, HealthStateService healthStateService,
                                                    @Value("${server.port}") int serverPort) {
-        return new HealthCheckReporter(healthStateService, checkerConfig, checkerConsoleService, clusterServer, redisDelayManager,
+        return new HealthCheckReporter(healthStateService, checkerConfig, checkerConsoleService, clusterServer, allCheckerLeaderElector, redisDelayManager,
                 crossMasterDelayManager, pingService, clusterHealthManager, serverPort);
     }
     
