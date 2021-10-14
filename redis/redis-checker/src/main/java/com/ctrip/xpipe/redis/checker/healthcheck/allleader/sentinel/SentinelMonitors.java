@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.cluster.allleader.sentinel;
+package com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel;
 
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;

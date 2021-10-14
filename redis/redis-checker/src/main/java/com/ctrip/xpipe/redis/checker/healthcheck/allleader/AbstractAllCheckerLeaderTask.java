@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.cluster.allleader;
+package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.cluster.AllCheckerLeaderAware;

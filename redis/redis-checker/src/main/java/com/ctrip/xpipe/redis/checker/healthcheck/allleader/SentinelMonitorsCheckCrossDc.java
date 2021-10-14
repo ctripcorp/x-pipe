@@ -1,11 +1,11 @@
-package com.ctrip.xpipe.redis.checker.cluster.allleader;
+package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.cluster.allleader.sentinel.SentinelMonitors;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelMonitors;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
@@ -57,12 +57,14 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     @Override
     public void isleader() {
         super.isleader();
+        logger.info("[SentinelMonitorsCheckCrossDc] start");
         metaCache.continueUpdate();
     }
 
     @Override
     public void notLeader() {
         super.notLeader();
+        logger.info("[SentinelMonitorsCheckCrossDc] stop");
         metaCache.pauseUpdate();
     }
 

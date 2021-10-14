@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.integratedtest;
 
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import org.unidal.test.jetty.JettyServer;
 
@@ -12,7 +13,6 @@ import java.io.File;
  * Jun 24, 2016
  */
 public class ConsoleStart extends AbstractLifecycle{
-	
 	private int consolePort = 8080;
 	private ConsoleJettyServer consoleJettyServer;
 	
