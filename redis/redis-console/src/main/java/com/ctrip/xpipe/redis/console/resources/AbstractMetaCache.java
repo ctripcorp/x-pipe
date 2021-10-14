@@ -170,18 +170,6 @@ public abstract class AbstractMetaCache implements MetaCache {
                 .consoleRoutes(CURRENT_IDC);
     }
 
-//    @Override
-//    public List<RouteMeta> getRouteIfPossible(HostPort hostPort) {
-//        XpipeMetaManager xpipeMetaManager = meta.getValue();
-//        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
-//        if (metaDesc == null) {
-//            logger.warn("[getRouteIfPossible]HostPort corresponding meta not found: {}", hostPort);
-//            return null;
-//        }
-//        return xpipeMetaManager
-//                .consoleRoutes(CURRENT_IDC);
-//    }
-
     @Override
     public boolean isCrossRegion(String activeDc, String backupDc) {
 

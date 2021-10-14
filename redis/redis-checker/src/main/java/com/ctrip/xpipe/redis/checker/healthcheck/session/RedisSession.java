@@ -95,10 +95,7 @@ public class RedisSession {
     }
 
     public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> {
-            logger.info("[subscribeIfAbsent] channel {}, endpoint {}, set timeout {}", channel, endpoint, commandTimeOut);
-            return new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel);
-        });
+        subscribeIfAbsent(channel, callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
     }
 
     public synchronized void crdtsubscribeIfAbsent(String channel, SubscribeCallback callback) {

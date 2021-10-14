@@ -174,7 +174,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                     @Override
                     public void fail(Throwable e) {
                         if (!collecting) {
-                            logger.warn("[{}-{}+{}]{} instance {} sub-hello-timeout, reason:{}", LOG_TITLE, info.getClusterShardHostport().getClusterName(), info.getShardId(), info.getDcId(), info.getHostPort(), e.getMessage());
                             return;
                         }
 

@@ -59,7 +59,6 @@ public class AlertManagerTest {
     public void testShouldAlert() {
         Map<String, Date> map = Maps.newHashMapWithExpectedSize(1);
         map.put("cluster", new Date());
-//        alertManager.setClusterCreateTime(map);
         alertManager.refreshWhiteList();
 
         Assert.assertFalse(alertManager.shouldAlert("cluster"));
@@ -75,7 +74,6 @@ public class AlertManagerTest {
     @Test
     public void testAlertWhiteList() {
         when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
-//        alertManager.setClusterCreateTime(Collections.emptyMap());
         alertManager.refreshWhiteList();
 
         Assert.assertFalse(alertManager.shouldAlert("cluster1"));

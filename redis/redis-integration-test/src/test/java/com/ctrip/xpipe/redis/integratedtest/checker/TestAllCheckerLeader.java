@@ -66,7 +66,7 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
     final int localPort = 6379;
     final int waitTime = 2000;
     @Test
-    public void SentinelCheck() throws Exception {
+    public void TestCheckerCleanSentinel() throws Exception {
         
         ZkServerMeta jqZk = getZk(JQ_IDC);
         startZk(jqZk);
@@ -100,7 +100,7 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         logger.info("========== start jq console ============");
         startSpringConsole(JQConsolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), consoles, metaServers, extraOptions);
         
-//        logger.info("========== start fra checker ============");
+        logger.info("========== start fra checker ============");
         ConfigurableApplicationContext checker = startSpringChecker(FRACheckerPort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), "127.0.0.3");
 
         waitConditionUntilTimeOut(() -> {
@@ -118,7 +118,7 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
     }
 
     @Test
-    public void SentinelCheck2() throws Exception {
+    public void TestConsoleCheckerCleanSentinel() throws Exception {
 
         ZkServerMeta jqZk = getZk(JQ_IDC);
         startZk(jqZk);
@@ -151,20 +151,12 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         extraOptions.put("console.cluster.types", "one_way,bi_direction,ONE_WAY,BI_DIRECTION");
         logger.info("========== start jq console ============");
         ConfigurableApplicationContext checker = startSpringConsoleChecker(FRACheckerPort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + FRACheckerPort), consoles, metaServers, extraOptions);
-
-//        logger.info("========== start fra checker ============");
-//        ConfigurableApplicationContext checker = startSpringChecker(FRACheckerPort, FRA_IDC, fraZk.getAddress(), Collections.singletonList("127.0.0.1:" + JQConsolePort), "127.0.0.3");
-
+        
         waitConditionUntilTimeOut(() -> {
             Map<String, Object> healthInfo = restOperations.getForObject(String.format("http://%s:%d/health", localHost, FRACheckerPort), Map.class);
             return (boolean)healthInfo.get("isLeader");
         }, 12000);
-
-
-//        waitConditionUntilTimeOut(() -> {
-//            return restOperations.getForObject(String.format("http://%s:%d/health", localHost, JQConsolePort), Boolean.class);
-//        }, 12000);
-
+        
         int fraSentinelPort = 32222;
         testSentinel(FRA_IDC, fraSentinelPort, checker);
 
