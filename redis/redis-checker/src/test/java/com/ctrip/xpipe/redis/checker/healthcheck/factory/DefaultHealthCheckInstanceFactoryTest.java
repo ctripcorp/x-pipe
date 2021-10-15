@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstance
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,16 +36,25 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     private DefaultHealthCheckEndpointFactory endpointFactory;
 
     private MetaCache metaCache;
+    
+    private MetaCache oldMetaCache;
 
     @Before
     public void beforeDefaultHealthCheckRedisInstanceFactoryTest() {
+        oldMetaCache = endpointFactory.getMetaCache();
         metaCache = mock(MetaCache.class);
         endpointFactory.setMetaCache(metaCache);
+    }
+    
+    @After
+    public void afterDefaultHealthCheckRedisInstanceFactoryTest() {
+        endpointFactory.setMetaCache(oldMetaCache);
     }
 
     @Test
     public void testCreate() {
         RedisMeta redisMeta = normalRedisMeta();
+        when(metaCache.getDc(new HostPort(redisMeta.getIp(), redisMeta.getPort()))).thenReturn("oy");
         RedisHealthCheckInstance instance = factory.create(redisMeta);
 
         Assert.assertNotNull(instance.getEndpoint());
@@ -54,6 +64,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
         Assert.assertEquals(instance.getEndpoint(), new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
         Assert.assertTrue(instance.getLifecycleState().isStarted());
+        factory.remove(instance);
     }
 
     @Test
@@ -69,18 +80,20 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         local.addRoute(new RouteMeta().setSrcDc(FoundationService.DEFAULT.getDataCenter())
                 .setDstDc("target").setTag(Route.TAG_CONSOLE).setRouteInfo(routeInfo));
 
-        when(metaCache.getRouteIfPossible(any())).thenReturn(local.getRoutes().get(0));
+        when(metaCache.getRoutes()).thenReturn(local.getRoutes());
         when(metaCache.getXpipeMeta()).thenReturn(meta);
 
         logger.info("{}", metaCache.getXpipeMeta().toString());
-        logger.info("{}", metaCache.getRouteIfPossible(new HostPort(redisMeta.getIp(), redisMeta.getPort())));
+        logger.info("{}", metaCache.getRoutes());
 
-
+        when(metaCache.getDc(new HostPort(redisMeta.getIp(), redisMeta.getPort()))).thenReturn("target");
+        endpointFactory.updateRoutes();
         RedisHealthCheckInstance instance = factory.create(redisMeta);
 
-        Assert.assertTrue(instance.getEndpoint() instanceof ProxyEnabled);
+        Assert.assertTrue(instance.getEndpoint() instanceof DefaultEndPoint);
         Assert.assertEquals(AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI,
                 instance.getRedisSession().getCommandTimeOut());
+        factory.remove(instance);
     }
 
     protected DcMeta newDcMeta(String dcId) {
@@ -101,4 +114,6 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
         return redisMeta;
     }
+    
+    
 }

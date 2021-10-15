@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.checker.alert;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -17,7 +16,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -37,7 +38,7 @@ public class AlertManager {
     private static final String ALERT_TYPE = "Notification";
 
     @Autowired
-    private Persistence persistence;
+    private PersistenceCache persistenceCache;
 
     @Autowired
     private AlertConfig alertConfig;
@@ -56,27 +57,19 @@ public class AlertManager {
 
     private Set<String> alertClusterWhiteList;
 
-    private Map<String, Date> clusterCreateTime = new HashMap<>();
+//    private Map<String, Date> clusterCreateTime = new HashMap<>();
 
     @PostConstruct
     public void postConstruct(){
 
         scheduled.scheduleWithFixedDelay(this::refreshWhiteList, 0, 30, TimeUnit.SECONDS);
 
-        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() throws Exception {
-                logger.info("[clusterCreateTimeMapper][execute]");
-                clusterCreateTime = persistence.loadAllClusterCreateTime();
-            }
-        }, 1, 60, TimeUnit.MINUTES);
-
     }
 
     @VisibleForTesting
     protected void refreshWhiteList() {
         Set<String> whiteList = new HashSet<>();
-        whiteList.addAll(alertDbConfig.clusterAlertWhiteList());
+        whiteList.addAll(persistenceCache.clusterAlertWhiteList());
         whiteList.addAll(alertConfig.getAlertWhileList().stream().map(String::toLowerCase).collect(Collectors.toList()));
         this.alertClusterWhiteList = whiteList;
     }
@@ -86,14 +79,9 @@ public class AlertManager {
             logger.error("[getClusterCreateTime] empty cluster name");
             return null;
         }
-        Date date = clusterCreateTime.get(clusterName);
-        if(date == null) {
-            date = persistence.getClusterCreateTime(clusterName);
-            if (null == date) {
-                logger.error("[getClusterCreateTime] cluster create time not found: {}", clusterName);
-            } else {
-                clusterCreateTime.put(clusterName, date);
-            }
+        Date date = persistenceCache.getClusterCreateTime(clusterName);
+        if (null == date) {
+            logger.error("[getClusterCreateTime] cluster create time not found: {}", clusterName);
         }
         return date;
     }
@@ -171,11 +159,6 @@ public class AlertManager {
             sb.deleteCharAt(sb.length() - 1);
         }
         return sb.toString();
-    }
-
-    @VisibleForTesting
-    protected void setClusterCreateTime(Map<String, Date> map) {
-        this.clusterCreateTime = map;
     }
 
     @VisibleForTesting

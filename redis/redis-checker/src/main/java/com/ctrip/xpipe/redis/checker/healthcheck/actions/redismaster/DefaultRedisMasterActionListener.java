@@ -6,11 +6,11 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.MetaServerManager;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -27,7 +27,7 @@ import java.util.concurrent.Executors;
 @Component
 public class DefaultRedisMasterActionListener implements RedisMasterActionListener, OneWaySupport, BiDirectionSupport {
 
-    private Persistence persistence;
+    private PersistenceCache persistenceCache;
 
     private MetaCache metaCache;
 
@@ -40,9 +40,9 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
     private ExecutorService executors;
 
     @Autowired
-    public DefaultRedisMasterActionListener(Persistence persistence, MetaCache metaCache,
+    public DefaultRedisMasterActionListener(PersistenceCache persistenceCache, MetaCache metaCache,
                                             MetaServerManager metaServerManager) {
-        this.persistence = persistence;
+        this.persistenceCache = persistenceCache;
         this.metaCache = metaCache;
 //        this.metaServerConsoleServiceManagerWrapper = metaServerConsoleServiceManagerWrapper;
         this.metaServerManager = metaServerManager;
@@ -63,7 +63,7 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
         RedisRoleState state = RedisRoleState.getFrom(instance.getCheckInfo().isMaster(), actualMaster);
         if(state.shouldBeCorrect()) {
             logger.info("[onAction][{}] {}", instance.getCheckInfo(), state);
-            persistence.updateRedisRole(instance, redisRole);
+            persistenceCache.updateRedisRole(instance, redisRole);
         }
     }
 
@@ -99,7 +99,7 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
                         logger.info("[handleUnknownRole] meta server consider master this master {}", finalMaster);
                     } else {
                         logger.info("[handleUnknownRole] meta server consider {} as master, not {}", finalMaster, info.getHostPort());
-                        persistence.updateRedisRole(instance, Server.SERVER_ROLE.SLAVE);
+                        persistenceCache.updateRedisRole(instance, Server.SERVER_ROLE.SLAVE);
                     }
                 } else {
                     logger.info("[FinalMasterJudgeCommand][{}-{}-{}] get master from meta server fail", dcId, clusterId, shardId, commandFuture.cause());

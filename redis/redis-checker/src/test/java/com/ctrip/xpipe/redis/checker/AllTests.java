@@ -7,6 +7,7 @@ package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
+import com.ctrip.xpipe.redis.checker.cluster.monitor.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
@@ -115,7 +116,8 @@ import org.junit.runners.Suite;
         DefaultRemoteCheckerManagerTest.class,
 
         HealthCheckResultSerializeTest.class,
-        DefaultCheckerConsoleServiceTest.class
+        DefaultCheckerConsoleServiceTest.class,
+        DefaultSentinelMonitorsCheckTest.class
 })
 public class AllTests {
 }

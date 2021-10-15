@@ -20,13 +20,7 @@ public class RedisKillCmd extends AbstractForkProcessCmd {
         String[] cmd = new String[] {
                 "/bin/sh",
                 "-c",
-                String.format("kill -9 `ps -ef | grep 'redis-serve' | grep \"%d\" | awk '{print $2}'`", port)
-        };
-        execCmd(cmd);
-        cmd = new String[] {
-                "/bin/sh",
-                "-c",
-                String.format("kill -9 `ps -ef | grep 'redis-crdt' | grep \"%d\" | awk '{print $2}'`", port)
+                String.format("kill -9 `ps -ef | grep 'redis-' | grep \"%d\" | awk '{print $2}'`", port)
         };
         execCmd(cmd);
     }

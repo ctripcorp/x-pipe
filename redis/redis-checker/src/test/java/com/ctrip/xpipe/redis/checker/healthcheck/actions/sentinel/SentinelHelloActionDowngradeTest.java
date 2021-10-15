@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.Persistence;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -56,7 +57,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     protected CheckerDbConfig config;
 
     @Mock
-    protected Persistence persistence;
+    protected PersistenceCache persistence;
 
     private int sentinelCollectInterval = 600;
 

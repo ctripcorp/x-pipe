@@ -12,7 +12,7 @@ public class RedisMasterControllerTest extends AbstractCheckerTest {
 
     @Test
     public void testCurrentDcRedisMasterController() throws Exception {
-        CurrentDcRedisMasterController currentDcRedisMasterController = new CurrentDcRedisMasterController();
+        CurrentDcRedisMasterController currentDcRedisMasterController = new CurrentDcRedisMasterController(FoundationService.DEFAULT);
         Assert.assertTrue(currentDcRedisMasterController.shouldCheck(
                 newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, 6379)));
         Assert.assertFalse(currentDcRedisMasterController.shouldCheck(newRandomRedisHealthCheckInstance("remoteDc", ClusterType.BI_DIRECTION, 6379)));

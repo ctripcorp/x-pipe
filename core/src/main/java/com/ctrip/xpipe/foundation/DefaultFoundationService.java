@@ -23,6 +23,10 @@ public class DefaultFoundationService implements FoundationService {
 
 	public static final String DATA_CENTER_KEY = "datacenter";
 
+	public static final String APP_ID_KEY = "appId";
+	
+	public static final String LOCAL_IP_KEY = "localIp";
+	
 	private Config config = Config.DEFAULT;
 
 	private static AtomicBoolean logged = new AtomicBoolean(false);

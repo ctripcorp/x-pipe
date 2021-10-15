@@ -60,8 +60,8 @@ public class DefaultCheckerManager implements CheckerManager {
 
     @Override
     public void refreshCheckerStatus(CheckerStatus checkerStatus) {
-        logger.debug("[refreshCheckerStatus][{}] {}:{}",
-                checkerStatus.getHostPort(), checkerStatus.getPartIndex(), checkerStatus.getCheckerRole());
+        logger.debug("[refreshCheckerStatus][{}] {}:{} {}",
+                checkerStatus.getHostPort(), checkerStatus.getPartIndex(), checkerStatus.getCheckerRole(), checkerStatus.getAllCheckerRole());
         checkerStatus.setLastAckTime(System.currentTimeMillis());
         int partIndex = checkerStatus.getPartIndex();
         List<Map<HostPort, CheckerStatus>> localCheckers = checkers;

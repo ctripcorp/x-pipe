@@ -32,6 +32,10 @@ public class SubscribeCommand extends AbstractSubscribe {
         super(clientPool, scheduled, MESSAGE_TYPE.MESSAGE, channel);
     }
 
+    public SubscribeCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli, String... channel) {
+        super(clientPool, scheduled, commandTimeoutMilli, MESSAGE_TYPE.MESSAGE, channel);
+    }
+
     @Override
     public String getName() {
         return "subscribe";

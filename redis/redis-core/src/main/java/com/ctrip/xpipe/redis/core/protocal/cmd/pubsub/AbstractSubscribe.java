@@ -77,6 +77,14 @@ public abstract class AbstractSubscribe extends AbstractRedisCommand<Object> imp
         this.inOutPayloadFactory = new InOutPayloadFactory.DirectByteBufInOutPayloadFactory();
     }
 
+    public AbstractSubscribe(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, int commandTimeoutMilli,
+                             MESSAGE_TYPE messageType, String... subscribeChannel) {
+        super(clientPool, scheduled, commandTimeoutMilli);
+        this.messageType = messageType;
+        this.subscribeChannel = subscribeChannel;
+        this.inOutPayloadFactory = new InOutPayloadFactory.DirectByteBufInOutPayloadFactory();
+    }
+
     @Override
     public void addChannelListener(SubscribeListener listener) {
         listeners.add(listener);

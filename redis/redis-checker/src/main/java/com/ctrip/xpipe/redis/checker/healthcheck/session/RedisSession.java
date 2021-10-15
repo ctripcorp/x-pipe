@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
+import com.ctrip.framework.xpipe.redis.ProxyRegistry;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
@@ -52,7 +53,8 @@ public class RedisSession {
         this.endpoint = endpoint;
         this.scheduled = scheduled;
         this.clientPool = keyedObjectPool.getKeyPool(endpoint);
-        if(endpoint instanceof ProxyEnabled) {
+        if(ProxyRegistry.getProxy(endpoint.getHost(), endpoint.getPort()) != null) {
+            logger.info("session command timeout {}:{} {}", endpoint.getHost(), endpoint.getPort(), AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI);
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }
     }
@@ -93,11 +95,11 @@ public class RedisSession {
     }
 
     public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> new SubscribeCommand(clientPool, scheduled, channel));
+        subscribeIfAbsent(channel, callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
     }
 
     public synchronized void crdtsubscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, channel));
+        subscribeIfAbsent(channel, callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
     }
 
     private synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier) {

@@ -92,8 +92,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getPingDownAfterMilliThroughProxy();
 
-	void register(ConsoleConfigListener listener);
-
 	Map<String, String> getSocketStatsAnalyzingKeys();
 
 	Pair<String, String> getClusterShardForMigrationSysCheck();
@@ -135,4 +133,5 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getCheckerAckTimeoutMilli();
 
 	long getMigrationTimeoutMilli();
+	
 }

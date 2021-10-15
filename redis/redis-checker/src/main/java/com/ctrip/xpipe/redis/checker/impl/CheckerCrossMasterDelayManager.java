@@ -22,18 +22,24 @@ import java.util.Map;
  */
 public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, DelayActionListener, BiDirectionSupport {
 
-    protected static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
+//    protected static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
     protected Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> crossMasterDelays = Maps.newConcurrentMap();
 
+    protected String currentDcId;
+
+    public CheckerCrossMasterDelayManager(String currentDcId) {
+        this.currentDcId = currentDcId;
+    }
+    
     @Override
     public void onAction(DelayActionContext context) {
         RedisHealthCheckInstance instance = context.instance();
         RedisInstanceInfo info = instance.getCheckInfo();
         String targetDcId = info.getDcId();
-        DcClusterShard key = new DcClusterShard(CURRENT_DC, info.getClusterId(), info.getShardId());
+        DcClusterShard key = new DcClusterShard(currentDcId, info.getClusterId(), info.getShardId());
 
-        if (!CURRENT_DC.equalsIgnoreCase(targetDcId)) {
+        if (!currentDcId.equalsIgnoreCase(targetDcId)) {
             if (!crossMasterDelays.containsKey(key)) crossMasterDelays.put(key, Maps.newConcurrentMap());
             crossMasterDelays.get(key).put(targetDcId, Pair.of(context.instance().getCheckInfo().getHostPort(), context.getResult()));
         }
@@ -43,9 +49,9 @@ public class CheckerCrossMasterDelayManager implements CrossMasterDelayManager, 
     public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
         RedisHealthCheckInstance instance = action.getActionInstance();
         RedisInstanceInfo info = instance.getCheckInfo();
-        DcClusterShard key = new DcClusterShard(CURRENT_DC, info.getClusterId(), info.getShardId());
+        DcClusterShard key = new DcClusterShard(currentDcId, info.getClusterId(), info.getShardId());
 
-        if (CURRENT_DC.equalsIgnoreCase(info.getDcId())) {
+        if (currentDcId.equalsIgnoreCase(info.getDcId())) {
             crossMasterDelays.remove(key);
         } else if (crossMasterDelays.containsKey(key)) {
             crossMasterDelays.get(key).remove(info.getDcId());
