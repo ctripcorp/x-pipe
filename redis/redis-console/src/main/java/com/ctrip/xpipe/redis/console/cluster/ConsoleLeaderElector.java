@@ -17,6 +17,10 @@ public class ConsoleLeaderElector extends AbstractLeaderElector implements Clust
 
     public static String KEY_CONSOLE_ID = "CONSOLE_ID";
 
+    public ConsoleLeaderElector() {
+        setLeaderAwareClass(ConsoleLeaderAware.class);
+    }
+    
     @PostConstruct
     public void postContruct() throws Exception {
         doStart();
