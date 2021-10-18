@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info" shutdownHook="disable" monitorInterval="5">
+
+    <Properties>
+        <Property name="baseDir">/opt/logs/100004374</Property>
+        <Property name="appName">xpipe-console</Property>
+        <Property name="delayLogName">redis-delay</Property>
+        <Property name="nettyClient">netty-client</Property>
+    </Properties>
+
+    <appenders>
+        <console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+        </console>
+
+        <RollingFile name="rollingFileInfo" fileName="${baseDir}/${appName}.log"
+                     filePattern="${baseDir}/${appName}-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10">
+                <Delete basePath="${baseDir}" maxDepth="2">
+                    <IfFileName glob="${appName}*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="rollingHealthCheck" fileName="${baseDir}/health-check.log"
+                     filePattern="${baseDir}/health-check-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="512 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="15">
+                <Delete basePath="${baseDir}" maxDepth="2">
+                    <IfFileName glob="health-check*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="rollingRedisDelay" fileName="${baseDir}/${delayLogName}.log"
+                     filePattern="${baseDir}/${delayLogName}-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="1 GB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="15">
+                <Delete basePath="${baseDir}" maxDepth="2">
+                    <IfFileName glob="${delayLogName}*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="rollingNettyClient" fileName="${baseDir}/${nettyClient}.log"
+                     filePattern="${baseDir}/${nettyClient}-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="15">
+                <Delete basePath="${baseDir}" maxDepth="2">
+                    <IfFileName glob="${nettyClient}*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="zkLogFile" fileName="${baseDir}/${appName}-zk.log"
+                     filePattern="${baseDir}/${appName}-zk-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10">
+                <Delete basePath="${baseDir}" maxDepth="2">
+                    <IfFileName glob="${appName}-zk*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <CatAppender4Log4j2 name="catAppender4Log4j2"/>
+
+    </appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate" level="INFO"/>
+        <logger name="io.netty" level="INFO"/>
+
+        <logger name="com.ctrip.xpipe.redis.console.healthcheck" level="INFO" additivity="false">
+            <appender-ref ref="rollingHealthCheck"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+
+        <logger name="com.ctrip.xpipe.redis.checker.healthcheck" level="INFO" additivity="false">
+            <appender-ref ref="rollingHealthCheck"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+
+        <logger name="com.ctrip.xpipe.netty.commands" level="INFO" additivity="false">
+            <appender-ref ref="rollingNettyClient"/>
+        </logger>
+
+        <logger name="com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus.delay" level="INFO" additivity="false">
+            <appender-ref ref="rollingRedisDelay"/>
+        </logger>
+
+        <logger name="com.ctrip.xpipe.service.metric.HickwallMetric" level="ERROR" additivity="false">
+            <appender-ref ref="rollingFileInfo"/>
+        </logger>
+
+        <logger name="com.ctrip.xpipe.pool.XpipeNettyClientPool" level="WARN" additivity="false">
+            <appender-ref ref="rollingFileInfo"/>
+        </logger>
+
+        <logger name="org.apache.zookeeper" level="INFO" additivity="false">
+            <appender-ref ref="zkLogFile"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+        <logger name="org.apache.curator" level="INFO" additivity="false">
+            <appender-ref ref="zkLogFile"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+
+        <root level="INFO">
+            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </root>
+    </loggers>
+
+</configuration>
