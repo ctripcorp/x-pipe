@@ -18,12 +18,12 @@ public class GroupCheckerLeaderElector extends AbstractCheckerLeaderElector {
     private String groupId;
     
     public GroupCheckerLeaderElector(String groupId) {
+        setLeaderAwareClass(GroupCheckerLeaderAware.class);
         this.groupId = groupId;
     }
     
     @PostConstruct
     public void postContruct() throws Exception {
-        setLeaderAwareClass(GroupCheckerLeaderAware.class);
         doStart();
     }
 
