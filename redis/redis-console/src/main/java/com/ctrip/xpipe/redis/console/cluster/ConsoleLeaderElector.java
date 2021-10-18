@@ -19,6 +19,7 @@ public class ConsoleLeaderElector extends AbstractLeaderElector implements Clust
 
     @PostConstruct
     public void postContruct() throws Exception {
+        setLeaderAwareClass(ConsoleLeaderAware.class);
         doStart();
     }
 
