@@ -74,7 +74,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
 
                 logger.info("[notLeader]{}", getServerId());
                 isLeader = false;
-                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
+                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
                 for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
                     try{
                         logger.info("[notLeader][notify]{}", entry.getKey());
