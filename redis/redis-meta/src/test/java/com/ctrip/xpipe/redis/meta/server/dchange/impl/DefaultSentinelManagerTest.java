@@ -18,6 +18,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -105,7 +106,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	}
 
 	@Test
-	public void testRemove(){
+	public void testRemove() throws TimeoutException {
 		AtomicInteger removeCnt = new AtomicInteger(0);
 
 		requestHandler = new BiFunction<Integer, String, String>() {
@@ -122,8 +123,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 
 		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
 		logger.info("remove: {}", executionLog.getLog());
-		Assert.assertEquals(removeCnt.get(), sentinels.size());
-		
+		waitConditionUntilTimeOut(()->removeCnt.get() == sentinels.size());
 	}
 
 	@Test
