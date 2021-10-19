@@ -90,7 +90,6 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
             public Map<String, Object> getData() {
                 Map<String, Object> transactionData = new HashMap<>();
                 transactionData.put("checkRedisInstances", info);
-                transactionData.put("checkResult", checkResult);
                 return transactionData;
             }
         });
