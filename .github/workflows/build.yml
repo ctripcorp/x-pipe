@@ -42,7 +42,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean install -P local
 
       - name: codecov
         uses: codecov/codecov-action@v2.0.1

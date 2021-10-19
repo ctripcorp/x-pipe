@@ -180,12 +180,12 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                 oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 1));
             }
         });
-        sleep(200);
         waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 10000);
         waitConditionUntilTimeOut(()->taskDone.get() == taskNum, 10000);
-        Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
-        sleep(20);
-        Assert.assertEquals("expected", state.get());
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            Assert.assertTrue(oneThreadTaskExecutor.tasks.isEmpty());
+            Assert.assertEquals("expected", state.get());
+        }));
         logger.info("[task done]{}", taskDone);
     }
 
