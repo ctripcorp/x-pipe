@@ -171,7 +171,15 @@ public class AbstractTest {
         }
     }
 
-
+    protected boolean assertSuccess(Runnable assertion) {
+        try {
+            assertion.run();
+            return true;
+        } catch (Throwable t) {
+            logger.info("assert fail, retry");
+            return false;
+        }
+    }
 
     protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
 
