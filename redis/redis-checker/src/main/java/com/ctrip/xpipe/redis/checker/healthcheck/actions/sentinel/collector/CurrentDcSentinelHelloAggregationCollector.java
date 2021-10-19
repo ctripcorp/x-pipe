@@ -48,7 +48,7 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
                         resetCheckResult();
                         return;
                     }
-                    logger.debug("[{}-{}][onAction] sentinel hello collect finish: {}", clusterId, shardId, checkResult);
+                    logger.debug("[{}-{}][onAction] sentinel hello collect finish: {}", clusterId, shardId, checkResult.toString());
                     handleAllBackupDcHellos(context.instance());
                 }
             }

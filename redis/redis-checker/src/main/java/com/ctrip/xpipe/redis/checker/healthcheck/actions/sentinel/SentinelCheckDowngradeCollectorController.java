@@ -81,7 +81,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
                         return;
                     }
                     needDowngrade.compareAndSet(true, false);
-                    logger.debug("[{}-{}+{}]backup dc {} sub finish", LOG_TITLE, clusterId, shardId, info.getDcId());
+                    logger.debug("[{}-{}+{}]backup dc {} sub finish: {}", LOG_TITLE, clusterId, shardId, info.getDcId(), checkResult.toString());
                     handleAllBackupDcHellos(context.instance());
                 }
             }
