@@ -1,0 +1,341 @@
+version: '3.7'
+services:
+  zoo1:
+    image: zookeeper
+    restart: always
+    container_name: zoo1
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181
+    networks:
+      default:
+        ipv4_address: 172.19.0.2
+  zoo2:
+    image: zookeeper
+    restart: always
+    container_name: zoo2
+    ports:
+      - "2182:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zoo2:2888:3888;2181
+    networks:
+      default:
+        ipv4_address: 172.19.0.22
+
+  mysql:
+    image: mysql:1
+    container_name: mysql
+    build: ./mysql
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d/
+      - ./mysql/sql:/opt/sql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootP#130
+      MYSQL_DATABASE: fxxpipe
+    ports:
+      - "3306:3306"
+    restart: always
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --lower_case_table_names=1
+    networks:
+      default:
+        ipv4_address: 172.19.0.9
+
+  consolejq:
+    image: xpipe-console:1
+    container_name: consolejq
+    build: ./xpipe-console
+    depends_on:
+      - mysql
+      - zoo1
+    restart: always
+    environment:
+      ROLE: console
+      CHECKER_NUMS: 1
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -DFXXPIPE_HOME=config -Dio.netty.maxDirectMemory=0 -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:+CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:opt/logs/100004374/heap_trace.txt -XX:HeapDumpPath=opt/logs/100004374/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=18080 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "8079:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.3
+
+  consoleoy:
+    image: xpipe-console:1
+    container_name: consoleoy
+    depends_on:
+      - mysql
+      - zoo1
+    restart: always
+    environment:
+      DATACENTEROY: oy
+      ROLE: console
+      CHECKER_NUMS: 1
+      ZKADDRESS: zoo2:2181
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -DFXXPIPE_HOME=config -Dio.netty.maxDirectMemory=0 -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:+CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:opt/logs/100004374/heap_trace.txt -XX:HeapDumpPath=opt/logs/100004374/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=18080 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "8081:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.4
+
+  checkerjq1:
+    image: xpipe-console:1
+    container_name: checkerjq1
+    depends_on:
+      - mysql
+      - zoo1
+    restart: always
+    environment:
+      ROLE: checker
+      CHECKER_INDEX: 0
+      CONSOLE_QUORUM: 1
+      CHECKER_ADDRESS_ALL: http://checkerjq1:8080
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -DFXXPIPE_HOME=config -Dio.netty.maxDirectMemory=0 -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:+CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:opt/logs/100004374/heap_trace.txt -XX:HeapDumpPath=opt/logs/100004374/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=18080 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "8078:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.23
+
+  checkeroy1:
+    image: xpipe-console:1
+    container_name: checkeroy1
+    depends_on:
+      - mysql
+      - zoo1
+    restart: always
+    environment:
+      DATACENTEROY: oy
+      ROLE: checker
+      CHECKER_INDEX: 0
+      CONSOLE_ADDRESS: http://consoleoy:8080
+      CONSOLE_QUORUM: 1
+      CHECKER_ADDRESS_ALL: http://checkeroy1:8080
+      ZKADDRESS: zoo2:2181
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -DFXXPIPE_HOME=config -Dio.netty.maxDirectMemory=0 -Dio.netty.maxDirectMemory=0 -Dio.netty.allocator.useCacheForAllThreads=false -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:+CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:opt/logs/100004374/heap_trace.txt -XX:HeapDumpPath=opt/logs/100004374/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=18080 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "8082:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.24
+
+  metajq:
+    image: xpipe-meta:1
+    container_name: metajq
+    build: ./xpipe-meta
+    depends_on:
+      - consolejq
+      - consoleoy
+    restart: always
+    environment:
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/logs/100004375/heap_trace.txt -XX:HeapDumpPath=/opt/logs/100004375/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=19748 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "9747:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.5
+
+  metaoy:
+    image: xpipe-meta:1
+    container_name: metaoy
+    depends_on:
+      - consolejq
+      - consoleoy
+    restart: always
+    environment:
+      DATACENTER: oy
+      METASERVER_ID: 1
+      CONSOLE_ADDRESS: http://consoleoy:8080
+      ZKADDRESS: zoo2:2181
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/logs/100004375/heap_trace.txt -XX:HeapDumpPath=/opt/logs/100004375/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=19748 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "9748:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.6
+
+  keeperjq1:
+    image: xpipe-keeper:1
+    container_name: keeperjq1
+    build: ./xpipe-keeper
+    depends_on:
+      - metajq
+      - metaoy
+    restart: always
+    environment:
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/logs/100004376/heap_trace.txt -XX:HeapDumpPath=/opt/logs/100004376/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=19748 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "7080:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.7
+
+  keeperjq2:
+    image: xpipe-keeper:1
+    container_name: keeperjq2
+    depends_on:
+      - metajq
+      - metaoy
+    restart: always
+    environment:
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/logs/100004376/heap_trace.txt -XX:HeapDumpPath=/opt/logs/100004376/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=19748 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "7081:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.27
+
+  keeperoy1:
+    image: xpipe-keeper:1
+    container_name: keeperoy1
+    depends_on:
+      - metajq
+      - metaoy
+    restart: always
+    environment:
+      DATACENTER: oy
+      ZKADDRESS: zoo2:2181
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/logs/100004376/heap_trace.txt -XX:HeapDumpPath=/opt/logs/100004376/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=19748 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "7180:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.8
+
+  keeperoy2:
+    image: xpipe-keeper:1
+    container_name: keeperoy2
+    depends_on:
+      - metajq
+      - metaoy
+    restart: always
+    environment:
+      DATACENTER: oy
+      ZKADDRESS: zoo2:2181
+      JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -Dserver.port=8080 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/logs/100004376/heap_trace.txt -XX:HeapDumpPath=/opt/logs/100004376/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=19748 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+    ports:
+      - "7181:8080"
+    networks:
+      default:
+        ipv4_address: 172.19.0.28
+
+  redis-6379:
+    image: redis:4.0
+    container_name: redis-6379
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - ./redis/6379/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/6379/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.10
+
+  redis-6479:
+    image: redis:4.0
+    container_name: redis-6479
+    restart: always
+    ports:
+      - 6479:6379
+    volumes:
+      - ./redis/6479/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/6479/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.11
+
+  redis-6579:
+    image: redis:4.0
+    container_name: redis-6579
+    restart: always
+    ports:
+      - 6579:6379
+    volumes:
+      - ./redis/6579/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/6579/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.12
+
+  redis-6679:
+    image: redis:4.0
+    container_name: redis-6679
+    restart: always
+    ports:
+      - 6679:6379
+    volumes:
+      - ./redis/6679/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/6679/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.13
+
+  redis-7379:
+    image: redis:4.0
+    container_name: redis-7379
+    restart: always
+    ports:
+      - 7379:6379
+    volumes:
+      - ./redis/7379/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/7379/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.14
+
+  redis-7479:
+    image: redis:4.0
+    container_name: redis-7479
+    restart: always
+    ports:
+      - 7479:6379
+    volumes:
+      - ./redis/7479/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/7479/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.15
+
+  redis-7579:
+    image: redis:4.0
+    container_name: redis-7579
+    restart: always
+    ports:
+      - 7579:6379
+    volumes:
+      - ./redis/7579/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/7579/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.16
+
+  redis-7679:
+    image: redis:4.0
+    container_name: redis-7679
+    restart: always
+    ports:
+      - 7679:6379
+    volumes:
+      - ./redis/7679/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./redis/7679/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      default:
+        ipv4_address: 172.19.0.17
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: "172.19.0.0/24"
