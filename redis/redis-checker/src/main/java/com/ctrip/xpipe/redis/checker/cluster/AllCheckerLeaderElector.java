@@ -9,12 +9,12 @@ public class AllCheckerLeaderElector extends AbstractCheckerLeaderElector {
     private String currentDcId;
     
     public AllCheckerLeaderElector(String currentDcId) {
+        setLeaderAwareClass(AllCheckerLeaderAware.class);
         this.currentDcId = currentDcId;
     }
     
     @PostConstruct
     public void postConstruct() throws Exception {
-        setLeaderAwareClass(AllCheckerLeaderAware.class);
         doStart();
     }
     
