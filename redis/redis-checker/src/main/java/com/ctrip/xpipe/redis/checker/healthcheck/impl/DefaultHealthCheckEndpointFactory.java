@@ -43,8 +43,18 @@ import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK
 public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFactory {
 
     static final Logger logger = LoggerFactory.getLogger(DefaultHealthCheckEndpointFactory.class);
+
+    private final String PROXY_UP_EVENT = "proxy.client.up";
+    
+    private final String PROXY_DOWN_EVENT = "proxy.client.down";
     
     private ConcurrentMap<HostPort, Endpoint> map = Maps.newConcurrentMap();
+
+    @Autowired
+    ProxyChecker proxyChecker;
+
+    @Autowired
+    CheckerConfig config;
     
     @Autowired
     private MetaCache metaCache;
@@ -85,11 +95,11 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         });
     }
 
-    RouteMeta selectRoute(List<RouteMeta> routes, HostPort hostPort) {
-        return routes.get(hostPort.hashCode() % routes.size());
+    public RouteMeta selectRoute(List<RouteMeta> routes, HostPort hostPort) {
+        return routes.get(Math.abs(hostPort.hashCode()) % routes.size());
     }
 
-    void registerProxy(HostPort hostPort) {
+    private void registerProxy(HostPort hostPort) {
         String dst = metaCache.getDc(hostPort);
         if(routes == null) {
             initRoutes();
@@ -104,14 +114,6 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         
     }
     
-    @Autowired
-    ProxyChecker proxyChecker;
-    
-    @Autowired
-    CheckerConfig config;
-
-    private final String PROXY_UP_EVENT = "proxy.client.up";
-    private final String PROXY_DOWN_EVENT = "proxy.client.down";
     @PostConstruct
     public void postConstruct() {
         ProxyRegistry.setChecker(proxyChecker::check, proxyChecker::getRetryUpTimes, proxyChecker::getRetryDownTimes);
