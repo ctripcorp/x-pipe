@@ -93,8 +93,28 @@ public class DefaultHealthCheckEndpointFactoryTest extends AbstractRedisTest {
         factory.remove(hostport);
         Assert.assertTrue(ProxyRegistry.getProxy(hostport.getHost(), hostport.getPort()) == null);
     }
-    
+
     @Test
+    public void testSelectRoute() {
+        for (int routesize = 1; routesize < 100; routesize++) {
+            List<RouteMeta> routes = new ArrayList<>();
+            for (int i = 0; i < routesize; i++) {
+                routes.add(new RouteMeta());
+            }
+            for (int randomsize = 0; randomsize < 10000; randomsize++) {
+                HostPort endpoint = new HostPort(String.format("%d.%d.%d.%d",
+                        (int) (Math.random() * 256),
+                        (int) (Math.random() * 256),
+                        (int) (Math.random() * 256),
+                        (int) (Math.random() * 256)),
+                        (int) (Math.random() * 65536));
+                RouteMeta meta = factory.selectRoute(routes, endpoint);
+                Assert.assertNotNull(meta);
+            }
+        }
+    }
+
+        @Test
     public void testChecker() {
         
     }
