@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 
@@ -100,7 +101,13 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     }
 
     private void registerProxy(HostPort hostPort) {
-        String dst = metaCache.getDc(hostPort);
+        String dst;
+        try {
+            dst = metaCache.getDc(hostPort);
+        } catch (IllegalStateException notFound) {
+            logger.info("[registerProxy] not found {} {}", hostPort, notFound);
+            return;
+        }
         if(routes == null) {
             initRoutes();
         }
