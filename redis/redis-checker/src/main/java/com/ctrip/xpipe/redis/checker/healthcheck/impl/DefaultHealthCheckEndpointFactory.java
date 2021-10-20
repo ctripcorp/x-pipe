@@ -85,8 +85,8 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         });
     }
 
-    RouteMeta selectRoute(List<RouteMeta> routes, HostPort hostPort) {
-        return routes.get(hostPort.hashCode() % routes.size());
+    public RouteMeta selectRoute(List<RouteMeta> routes, HostPort hostPort) {
+        return routes.get(Math.abs(hostPort.hashCode()) % routes.size());
     }
 
     void registerProxy(HostPort hostPort) {
