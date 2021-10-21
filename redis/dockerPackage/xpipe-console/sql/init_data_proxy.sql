@@ -55,3 +55,6 @@ insert into proxy_tbl (id,dc_id,uri,active,monitor_active,deleted) values (2,1,'
 
 insert into proxy_tbl (id,dc_id,uri,active,monitor_active,deleted) values (3,2,'PROXYTCP://172.19.0.21:80',1,1,0);
 insert into proxy_tbl (id,dc_id,uri,active,monitor_active,deleted) values (4,2,'PROXYTLS://172.19.0.21:443',1,1,0);
+
+insert into route_tbl (id,src_dc_id,dst_dc_id,src_proxy_ids,dst_proxy_ids,active,tag) values(1,1,2,'1','4',1,'meta');
+insert into route_tbl (id,src_dc_id,dst_dc_id,src_proxy_ids,dst_proxy_ids,active,tag) values(2,2,1,'3','2',1,'meta');
