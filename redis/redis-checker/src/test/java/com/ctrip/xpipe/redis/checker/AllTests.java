@@ -5,6 +5,7 @@ package com.ctrip.xpipe.redis.checker;
  * date 2021/3/14
  */
 
+import com.ctrip.xpipe.redis.checker.alert.AlertManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
 import com.ctrip.xpipe.redis.checker.cluster.monitor.DefaultSentinelMonitorsCheckTest;
@@ -117,7 +118,8 @@ import org.junit.runners.Suite;
 
         HealthCheckResultSerializeTest.class,
         DefaultCheckerConsoleServiceTest.class,
-        DefaultSentinelMonitorsCheckTest.class
+        DefaultSentinelMonitorsCheckTest.class,
+        AlertManagerTest.class
 })
 public class AllTests {
 }

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.email.EmailResponse;
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
@@ -18,13 +17,8 @@ import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
@@ -41,16 +35,13 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
     
     private AlertEventService alertEventService;
 
-    private static Logger logger = LoggerFactory.getLogger(DefaultPersistenceCache.class);
-    
     public DefaultPersistenceCache(CheckerConfig config, 
-                                   ScheduledExecutorService scheduled,
                                    AlertEventService alertEventService,
                                    ConfigDao configDao,
                                    DcClusterShardService dcClusterShardService,
                                    RedisDao redisDao,
                                    ClusterDao clusterDao) {
-        super(config, scheduled);
+        super(config);
         this.alertEventService = alertEventService;
         this.configDao = configDao;
         this.dcClusterShardService = dcClusterShardService;

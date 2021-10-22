@@ -31,8 +31,6 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
 
     private MetaCache metaCache;
 
-//    private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
-
     private MetaServerManager metaServerManager;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultRedisMasterActionListener.class);
@@ -44,7 +42,6 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
                                             MetaServerManager metaServerManager) {
         this.persistenceCache = persistenceCache;
         this.metaCache = metaCache;
-//        this.metaServerConsoleServiceManagerWrapper = metaServerConsoleServiceManagerWrapper;
         this.metaServerManager = metaServerManager;
         executors = Executors.newFixedThreadPool(100, XpipeThreadFactory.create("RedisMasterJudgement"));
     }
@@ -130,26 +127,6 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
         return masters;
     }
 
-//    protected void updateRedisRoleInDB(RedisHealthCheckInstance instance, RedisRoleState state) {
-//        RedisInstanceInfo info = instance.getCheckInfo();
-//        try {
-//            List<RedisTbl> redises = redisService.findRedisesByDcClusterShard(info.getDcId(), info.getClusterId(), info.getShardId());
-//            for(RedisTbl redis : redises) {
-//                if(redis.getRedisIp().equals(info.getHostPort().getHost())
-//                        && redis.getRedisPort() == info.getHostPort().getPort()) {
-//                    logger.info("[update redis role][{}] {}", info.getHostPort(), state);
-//                    redis.setMaster(!info.isMaster());
-//                    info.isMaster(redis.isMaster());
-//                    redisService.updateBatchMaster(Lists.newArrayList(redis));
-//                    break;
-//                }
-//            }
-//        } catch (ResourceNotFoundException e) {
-//            logger.error("[updateRedisRoleInDB] ", e);
-//        }
-//
-//    }
-
     protected enum RedisRoleState {
 
         ROLE_MATCHED {
@@ -196,7 +173,6 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
 
         @Override
         protected void doExecute() throws Exception {
-//            RedisMeta master = metaServerConsoleServiceManagerWrapper.getFastService(dcId).getCurrentMaster(clusterId, shardId);
             RedisMeta master = metaServerManager.getCurrentMaster(dcId, clusterId, shardId);
             future().setSuccess(new HostPort(master.getIp(), master.getPort()));
         }
