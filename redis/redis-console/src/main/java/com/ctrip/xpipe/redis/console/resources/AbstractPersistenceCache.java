@@ -4,40 +4,31 @@ import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
 
 public abstract class AbstractPersistenceCache implements PersistenceCache {
     protected CheckerConfig config;
 
-    DynamicDelayPeriodTask loadCacheTask;
-    TimeBoundCache<Set<String>> sentinelCheckWhiteListCache;
-    TimeBoundCache<Set<String>> clusterAlertWhiteListCache;
-    TimeBoundCache<Boolean> isSentinelAutoProcessCache;
-    TimeBoundCache<Boolean> isAlertSystemOnCache;
-    TimeBoundCache<Map<String, Date>> allClusterCreateTimeCache;
+    private TimeBoundCache<Set<String>> sentinelCheckWhiteListCache;
+    private TimeBoundCache<Set<String>> clusterAlertWhiteListCache;
+    private TimeBoundCache<Boolean> isSentinelAutoProcessCache;
+    private TimeBoundCache<Boolean> isAlertSystemOnCache;
+    private TimeBoundCache<Map<String, Date>> allClusterCreateTimeCache;
+
+    protected Logger logger = LoggerFactory.getLogger(getClass());
     
     abstract Set<String> doSentinelCheckWhiteList();
     abstract Set<String> doClusterAlertWhiteList();
     abstract boolean doIsSentinelAutoProcess();
     abstract boolean doIsAlertSystemOn();
     abstract Map<String, Date> doLoadAllClusterCreateTime();
-    public AbstractPersistenceCache(CheckerConfig config, ScheduledExecutorService scheduled) {
+    public AbstractPersistenceCache(CheckerConfig config) {
         setConfig(config);
-        this.loadCacheTask = new DynamicDelayPeriodTask("persistenceCacheLoader", this::loadCache, config::getCheckerMetaRefreshIntervalMilli, scheduled);
-    }
-
-    private void loadCache() {
-        //update
-        sentinelCheckWhiteListCache.getData(true);
-        clusterAlertWhiteListCache.getData(true);
-        isSentinelAutoProcessCache.getData(true);
-        isAlertSystemOnCache.getData(true);
-        allClusterCreateTimeCache.getData(true);
     }
 
     @Override

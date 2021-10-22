@@ -31,14 +31,10 @@ import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
 
-import java.util.concurrent.ScheduledExecutorService;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
  * @author shyin
@@ -133,7 +129,6 @@ public class ConsoleContextConfig {
 
 	@Bean
 	public PersistenceCache persistenceCache3(CheckerConfig config,
-										@Qualifier(value = SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled,
 										AlertEventService alertEventService,
 										ConfigDao configDao,
 										DcClusterShardService dcClusterShardService,
@@ -141,7 +136,6 @@ public class ConsoleContextConfig {
 										ClusterDao clusterDao) {
 		return new DefaultPersistenceCache(
 				config, 
-				scheduled,
 				alertEventService,
 				configDao,
 				dcClusterShardService,

@@ -94,11 +94,6 @@ public class TestConsoleContextConfig {
         return new TestMetaCache();
     }
 
-//    @Bean
-//    public ConsoleConfig consoleConfig() {
-//        return new DefaultConsoleConfig();
-//    }
-
     @Bean
     public ConsoleDbConfig consoleDbConfig() {
         return new DefaultConsoleDbConfig();
@@ -134,7 +129,6 @@ public class TestConsoleContextConfig {
 
     @Bean
     public PersistenceCache persistenceCache3(CheckerConfig config,
-                                              @Qualifier(value = SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled,
                                               AlertEventService alertEventService,
                                               ConfigDao configDao,
                                               DcClusterShardService dcClusterShardService,
@@ -142,7 +136,6 @@ public class TestConsoleContextConfig {
                                               ClusterDao clusterDao) {
         return new DefaultPersistenceCache(
                 config,
-                scheduled,
                 alertEventService,
                 configDao,
                 dcClusterShardService,
