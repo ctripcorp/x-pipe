@@ -5,20 +5,15 @@ import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.config.DefaultConfig;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
@@ -26,127 +21,141 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
-import com.ctrip.xpipe.retry.RetryPolicyFactories;
-import com.ctrip.xpipe.spring.RestTemplateFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.collections.SetUtils;
-import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
 
-import static com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE.INSTANCEUP;
+import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_PERSISTENCE;
 import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
+
     private MockWebServer webServer;
+
+    private CheckerPersistenceCache checkerPersistenceCache;
+
+    private long cacheTimeoutMill = 10L;
+
     @Mock
     CheckerConfig config;
-    @Mock
-    PersistenceCache persistence;
+
+    @Before
+    public void setupCheckerPersistenceCacheTest() throws Exception {
+        this.webServer = new MockWebServer();
+        this.webServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
+
+        when(config.getConsoleAddress()).thenReturn("http://127.0.0.1:" + webServer.getPort());
+        when(config.getConfigCacheTimeoutMilli()).thenReturn(cacheTimeoutMill);
+
+        this.checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
+    }
+
+    @After
+    public void afterCheckerPersistenceCacheTest() throws Exception {
+        this.webServer.close();
+    }
 
     @Test
-    public void mockHttp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-        webServer  = new MockWebServer();
-        ObjectMapper objectMapper = new ObjectMapper();
-        final CheckerConsoleService.AlertMessage[] acceptAlertMessage = new CheckerConsoleService.AlertMessage[1];
-        final DefaultRedisInstanceInfo[]  instanceInfos = new DefaultRedisInstanceInfo[1];
-        final Dispatcher dispatcher = new Dispatcher() {
+    public void testClusterAlertWhitelist() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
+                .setHeader("Content-Type", "application/json"));
 
-            @Override
-            public MockResponse dispatch(RecordedRequest request) throws InterruptedException {
-                switch (request.getPath()) {
-                    case ConsoleCheckerPath.PATH_GET_CLUSTER_ALERT_WHITE_LIST:
-                        try {
-                            return new MockResponse().setResponseCode(200).setBody(objectMapper.writeValueAsString(persistence.clusterAlertWhiteList())).setHeader("Content-Type", "application/json");
-                        } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                        };
-                        break;
-                    case ConsoleCheckerPath.PATH_GET_LOAD_ALL_CLUSTER_CREATE_TIME:
-                        try {
-                            return new MockResponse().setResponseCode(200).setBody(objectMapper.writeValueAsString(persistence.loadAllClusterCreateTime())).setHeader("Content-Type", "application/json");
-                        } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    case ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON:
-                        try {
-                            return new MockResponse().setResponseCode(200).setBody(objectMapper.writeValueAsString(persistence.isAlertSystemOn())).setHeader("Content-Type", "application/json");
-                        } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    case ConsoleCheckerPath.PATH_POST_RECORD_ALERT:
-                        try {
-                            String body = new String(request.getBody().readByteArray());
-                            acceptAlertMessage[0] = objectMapper.readValue(body, CheckerConsoleService.AlertMessage.class);
-                            return new MockResponse().setResponseCode(200);
-                        } catch (IOException ioException) {
-                            ioException.printStackTrace();
-                        }
-                        break;
-                    case ConsoleCheckerPath.PATH_PERSISTENCE + "updateRedisRole/master":
-                        try {
-                            String body = new String(request.getBody().readByteArray());
-                            instanceInfos[0] = objectMapper.readValue(body, DefaultRedisInstanceInfo.class);
-                            return new MockResponse().setResponseCode(200);
-                        } catch (IOException ioException) {
-                            ioException.printStackTrace();
-                        }
-                        break;
-                }
-                return new MockResponse().setResponseCode(404);
+        Set<String> whitelist = checkerPersistenceCache.clusterAlertWhiteList();
+        // turn whitelist into low case for cluster searching with case ignore
+        Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
 
-            }
-        };
-        webServer.setDispatcher(dispatcher);
-        int port = randomPort();
-        webServer.start(port);
-        when(config.getConsoleAddress()).thenReturn("http://127.0.0.1:" + port);
-        when(config.getConfigCacheTimeoutMilli()).thenReturn(10L);
-        Set<String> clusterAlertWhiteList = new LinkedHashSet<>();
-        clusterAlertWhiteList.add("test");
-        when(persistence.clusterAlertWhiteList()).thenReturn(clusterAlertWhiteList);
-        Map<String,Date> map = Maps.newConcurrentMap();
-        map.put("test",new Date(1L));
-        when(persistence.loadAllClusterCreateTime()).thenReturn(map);
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_GET_CLUSTER_ALERT_WHITE_LIST, req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
+    }
 
-        CheckerConsoleService  service = new DefaultCheckerConsoleService();
-        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, service, scheduled);
-        
-       
-        Assert.assertEquals(checkerPersistenceCache.clusterAlertWhiteList().size(), 1);
-        Assert.assertEquals(checkerPersistenceCache.clusterAlertWhiteList().contains("test"), true);
+    @Test
+    public void testRetError() throws Exception {
+        webServer.enqueue(new MockResponse().setResponseCode(500));
+        Assert.assertEquals(Collections.emptySet(), checkerPersistenceCache.clusterAlertWhiteList());
+    }
 
+    @Test
+    public void testSentinelWhitelist() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
+                .setHeader("Content-Type", "application/json"));
 
-        Date d = checkerPersistenceCache.getClusterCreateTime("test");
-        Assert.assertEquals(d, new Date(1));
+        Set<String> whitelist = checkerPersistenceCache.sentinelCheckWhiteList();
+        // turn whitelist into low case for cluster searching with case ignore
+        Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
 
-        when(persistence.isAlertSystemOn()).thenReturn(true);
-        Assert.assertEquals(checkerPersistenceCache.isAlertSystemOn(), true);
-        when(persistence.isAlertSystemOn()).thenReturn(false);
-        Assert.assertEquals(checkerPersistenceCache.isAlertSystemOn(), true);
-        Thread.sleep(10L);
-        Assert.assertEquals(checkerPersistenceCache.isAlertSystemOn(), false);
-        AlertEntity alertEntity = new AlertEntity(new HostPort("", 6379), "dc", "cluster", "shard", "message\nmessage1",
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_GET_SENTINEL_CHECKER_WHITE_LIST, req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
+    }
+
+    @Test
+    public void testSentinelAutoProcess() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setBody("false")
+                .setHeader("Content-Type", "application/json"));
+
+        boolean autoProcess = checkerPersistenceCache.isSentinelAutoProcess();
+        Assert.assertFalse(autoProcess);
+
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_GET_IS_SENTINEL_AUTO_PROCESS, req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
+    }
+
+    @Test
+    public void testAutoProcessExpired() {
+        webServer.enqueue(new MockResponse()
+                .setBody("false")
+                .setHeader("Content-Type", "application/json"));
+        webServer.enqueue(new MockResponse()
+                .setBody("true")
+                .setHeader("Content-Type", "application/json"));
+
+        Assert.assertFalse(checkerPersistenceCache.isSentinelAutoProcess());
+        Assert.assertFalse(checkerPersistenceCache.isSentinelAutoProcess());
+        sleep((int) cacheTimeoutMill);
+        Assert.assertTrue(checkerPersistenceCache.isSentinelAutoProcess());
+    }
+
+    @Test
+    public void testAlertSystemOn() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setBody("false")
+                .setHeader("Content-Type", "application/json"));
+
+        boolean alertSystemOn = checkerPersistenceCache.isAlertSystemOn();
+        Assert.assertFalse(alertSystemOn);
+
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_GET_IS_ALERT_SYSTEM_ON, req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
+    }
+
+    @Test
+    public void testAlertRecord() throws Exception {
+        webServer.enqueue(new MockResponse());
+
+        AlertEntity alertEntity = new AlertEntity(new HostPort("10.0.0.1", 6379),
+                "dc", "cluster", "shard", "message\nmessage1",
                 ALERT_TYPE.CLIENT_INCONSIS);
         AlertMessageEntity alertMessageEntity = new AlertMessageEntity("Test", "test", Lists.newArrayList("test-list"), alertEntity);
         Properties properties = new Properties();
@@ -158,8 +167,22 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
             }
         };
         checkerPersistenceCache.recordAlert(FoundationService.DEFAULT.getLocalIp(), alertMessageEntity, response);
-        Assert.assertEquals(acceptAlertMessage[0].getMessage().toString(), alertMessageEntity.toString());
-        Assert.assertEquals(acceptAlertMessage[0].getEmailResponse().getProperties(), response.getProperties());
+
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_POST_RECORD_ALERT, req.getPath());
+        Assert.assertEquals("POST", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
+
+        CheckerConsoleService.AlertMessage reqMsg = Codec.DEFAULT.decode(req.getBody().readByteArray(), CheckerConsoleService.AlertMessage.class);
+        Assert.assertEquals(alertMessageEntity.toString(), reqMsg.getMessage().toString());
+        Assert.assertEquals(response.getProperties(), reqMsg.getEmailResponse().getProperties());
+    }
+
+    @Test
+    public void testUpdateRedisRole() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(new RetMessage(RetMessage.SUCCESS_STATE)))
+                .setHeader("Content-Type", "application/json"));
 
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(1000);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
@@ -172,13 +195,20 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
         instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
         instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool()));
         checkerPersistenceCache.updateRedisRole(instance, Server.SERVER_ROLE.MASTER);
-        Assert.assertEquals(instanceInfos[0].getDcId(), info.getDcId());
-        Assert.assertEquals(instanceInfos[0].getHostPort(), info.getHostPort()); 
-        Assert.assertEquals(instanceInfos[0].getActiveDc(), info.getActiveDc());
-        Assert.assertEquals(instanceInfos[0].getShardId(), info.getShardId());
-        Assert.assertEquals(instanceInfos[0].getClusterId(), info.getClusterId());
-        Assert.assertEquals(instanceInfos[0].getClusterShardHostport(), info.getClusterShardHostport());
-        Assert.assertEquals(instanceInfos[0].getClusterType(), info.getClusterType());
+
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(PATH_PERSISTENCE + "updateRedisRole/master", req.getPath());
+        Assert.assertEquals("PUT", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
+        DefaultRedisInstanceInfo reqInfo = Codec.DEFAULT.decode(req.getBody().readByteArray(), DefaultRedisInstanceInfo.class);
+
+        Assert.assertEquals(info.getDcId(), reqInfo.getDcId());
+        Assert.assertEquals(info.getHostPort(), reqInfo.getHostPort());
+        Assert.assertEquals(info.getActiveDc(), reqInfo.getActiveDc());
+        Assert.assertEquals(info.getShardId(), reqInfo.getShardId());
+        Assert.assertEquals(info.getClusterId(), reqInfo.getClusterId());
+        Assert.assertEquals(info.getClusterShardHostport(), reqInfo.getClusterShardHostport());
+        Assert.assertEquals(info.getClusterType(), reqInfo.getClusterType());
     }
 
     @Test

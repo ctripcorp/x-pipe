@@ -2,15 +2,12 @@ package com.ctrip.xpipe.redis.checker.config.impl;
 
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.AlertDbConfig;
-import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
-import java.util.function.LongSupplier;
-import java.util.stream.Collectors;
 
 /**
  * @author lishanglin

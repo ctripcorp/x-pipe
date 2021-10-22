@@ -57,8 +57,6 @@ public class AlertManager {
 
     private Set<String> alertClusterWhiteList;
 
-//    private Map<String, Date> clusterCreateTime = new HashMap<>();
-
     @PostConstruct
     public void postConstruct(){
 
@@ -69,7 +67,7 @@ public class AlertManager {
     @VisibleForTesting
     protected void refreshWhiteList() {
         Set<String> whiteList = new HashSet<>();
-        whiteList.addAll(persistenceCache.clusterAlertWhiteList());
+        whiteList.addAll(alertDbConfig.clusterAlertWhiteList());
         whiteList.addAll(alertConfig.getAlertWhileList().stream().map(String::toLowerCase).collect(Collectors.toList()));
         this.alertClusterWhiteList = whiteList;
     }
