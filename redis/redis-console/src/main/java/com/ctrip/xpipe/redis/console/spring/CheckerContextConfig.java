@@ -63,9 +63,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public PersistenceCache persistenceCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService,
-                                             @Qualifier(value = SCHEDULED_EXECUTOR) ScheduledExecutorService scheduled) {
-        return new CheckerPersistenceCache(checkerConfig, checkerConsoleService, scheduled);
+    public PersistenceCache persistenceCache(CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
+        return new CheckerPersistenceCache(checkerConfig, checkerConsoleService);
     }
 
     @Bean

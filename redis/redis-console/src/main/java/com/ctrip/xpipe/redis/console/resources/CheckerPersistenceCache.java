@@ -6,22 +6,29 @@ import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import org.springframework.web.client.RestClientException;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CheckerPersistenceCache extends AbstractPersistenceCache {
     CheckerConsoleService service;
-    public CheckerPersistenceCache(CheckerConfig config, CheckerConsoleService service, ScheduledExecutorService scheduled) {
-        super(config, scheduled);
+    public CheckerPersistenceCache(CheckerConfig config, CheckerConsoleService service) {
+        super(config);
         this.service = service;
     }
 
     @Override
     public boolean isClusterOnMigration(String clusterId) {
-        return service.isClusterOnMigration(config.getConsoleAddress(), clusterId);
+        try {
+            return service.isClusterOnMigration(config.getConsoleAddress(), clusterId);
+        } catch (RestClientException e) {
+            logger.warn("[isClusterOnMigration] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[isClusterOnMigration] fail", th);
+        }
+
+        return false;
     }
 
     @Override
@@ -36,26 +43,68 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
 
     @Override
     public Set<String> doSentinelCheckWhiteList() {
-        return service.sentinelCheckWhiteList(config.getConsoleAddress());
+        try {
+            Set<String> originWhitelist = service.sentinelCheckWhiteList(config.getConsoleAddress());
+            return originWhitelist.stream().map(String::toLowerCase).collect(Collectors.toSet());
+        } catch (RestClientException e) {
+            logger.warn("[doSentinelCheckWhiteList] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[doSentinelCheckWhiteList] fail", th);
+        }
+
+        return Collections.emptySet();
     }
 
     @Override
     public Set<String> doClusterAlertWhiteList() {
-        return service.clusterAlertWhiteList(config.getConsoleAddress());
+        try {
+            Set<String> originWhitelist = service.clusterAlertWhiteList(config.getConsoleAddress());
+            return originWhitelist.stream().map(String::toLowerCase).collect(Collectors.toSet());
+        } catch (RestClientException e) {
+            logger.warn("[doClusterAlertWhiteList] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[doClusterAlertWhiteList] fail", th);
+        }
+
+        return Collections.emptySet();
     }
 
     @Override
     public boolean doIsSentinelAutoProcess() {
-        return service.isSentinelAutoProcess(config.getConsoleAddress());
+        try {
+            return service.isSentinelAutoProcess(config.getConsoleAddress());
+        } catch (RestClientException e) {
+            logger.warn("[doIsSentinelAutoProcess] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[doIsSentinelAutoProcess] fail", th);
+        }
+
+        return true;
     }
 
     @Override
     public boolean doIsAlertSystemOn() {
-        return service.isAlertSystemOn(config.getConsoleAddress());
+        try {
+            return service.isAlertSystemOn(config.getConsoleAddress());
+        } catch (RestClientException e) {
+            logger.warn("[doIsAlertSystemOn] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[doIsAlertSystemOn] fail", th);
+        }
+
+        return true;
     }
 
     @Override
     public Map<String, Date> doLoadAllClusterCreateTime() {
-        return service.loadAllClusterCreateTime(config.getConsoleAddress());
+        try {
+            return service.loadAllClusterCreateTime(config.getConsoleAddress());
+        } catch (RestClientException e) {
+            logger.warn("[doLoadAllClusterCreateTime] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[doLoadAllClusterCreateTime] fail", th);
+        }
+
+        return Collections.emptyMap();
     }
 }

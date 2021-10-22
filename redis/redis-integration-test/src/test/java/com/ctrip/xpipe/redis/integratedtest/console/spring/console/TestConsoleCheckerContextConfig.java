@@ -71,7 +71,6 @@ public class TestConsoleCheckerContextConfig extends TestConsoleContextConfig {
                                              ClusterDao clusterDao) {
         return new DefaultPersistenceCache(
                 config,
-                Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("persistenceCache")),
                 alertEventService,
                 configDao,
                 dcClusterShardService,
