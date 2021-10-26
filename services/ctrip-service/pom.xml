@@ -113,6 +113,16 @@
             <artifactId>common-core</artifactId>
         </dependency>
 
+        <!-- Metric -->
+        <dependency>
+            <groupId>org.influxdb</groupId>
+            <artifactId>influxdb-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+        </dependency>
+
         <!--Email Service-->
         <dependency>
             <groupId>com.ctrip.soa.platform.basesystem.emailservice.v1</groupId>
@@ -123,7 +133,6 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
-            <version>3.12.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
