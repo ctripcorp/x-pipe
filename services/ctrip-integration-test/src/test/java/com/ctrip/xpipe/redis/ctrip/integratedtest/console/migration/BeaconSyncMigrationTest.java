@@ -134,9 +134,9 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
     }
 
     @Test
-//    @Ignore
+    @Ignore
     public void startAsConsole() throws Exception {
-//        fillInCluster(10);
+        fillInCluster(10);
         waitForAnyKeyToExit();
     }
 
@@ -257,7 +257,7 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
 
     private boolean checkConsoleHealth() {
         try {
-            String rst = restOperations.getForObject(String.format("http://127.0.0.1:%d/api/dc/jq", serverPort), String.class);
+            String rst = restOperations.getForObject(String.format("http://127.0.0.1:%d/api/redises/jq/cluster0/shard1", serverPort), String.class);
             logger.info("[checkConsoleHealth] rst {}", rst);
             return true;
         } catch (Exception e) {

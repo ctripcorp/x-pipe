@@ -77,7 +77,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
             registerMySQLFunctions();
             executeSqlScript(FileUtils.readFileAsString(TABLE_STRUCTURE));
             executeSqlScript(FileUtils.readFileAsString(TABLE_DATA));
-        } else {
+        } else if (resetDbData()) {
             executeSqlScript(FileUtils.readFileAsString(MYSQL_TABLE_STRUCTURE));
             executeSqlScript(FileUtils.readFileAsString(MYSQL_TABLE_DATA));
         }
@@ -149,6 +149,10 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     public static String prepareDatasFromFile(String path) throws IOException {
         InputStream ins = FileUtils.getFileInputStream(path);
         return IOUtils.toString(ins);
+    }
+
+    protected boolean resetDbData() {
+        return true;
     }
 
 }
