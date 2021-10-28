@@ -488,11 +488,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             toDelete.forEach((hello -> {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 try {
-                    HostPort currentSentinelMaster = sentinelManager.getMasterOfMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), sentinelMonitorName);
-                    if (currentSentinelMaster.equals(masterAddr)) {
-                        logger.info("[{}-{}][deleted]sentinel {} master {} correct, del stopped", LOG_TITLE, sentinelMonitorName, sentinelAddr, masterAddr);
-                        return;
-                    }
                     CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
                     sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName());
                     logger.info("[{}-{}][deleted]{}", LOG_TITLE, sentinelMonitorName, hello);
