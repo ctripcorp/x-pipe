@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.service.DelayService;
@@ -60,6 +61,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
+
+	@Autowired
+	private ConsoleConfig consoleConfig;
 
 	@Override
 	public ShardTbl find(final long shardId) {
@@ -169,7 +173,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			if(shardEvent != null) {
 				shardEvent.onEvent();
 			}
-    	}
+		}
 
 		clusterModifyNotify(clusterName, cluster);
 	}
@@ -340,7 +344,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		if(null == relatedDcs) return;
 
 		List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
-		notifier.notifyClusterUpdate(clusterName, dcs);
+		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+			notifier.notifyClusterUpdate(clusterName, dcs);
 		if (null != cluster && ClusterType.lookup(cluster.getClusterType()).supportMigration()) {
 			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}

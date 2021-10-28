@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -56,6 +57,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     @Autowired(required = false)
     private ConsoleLeaderElector consoleLeaderElector;
 
+    @Autowired
+    private SentinelBalanceService sentinelBalanceService;
+
     private Map<Long, OrganizationTbl> organizations = new HashMap<>();
 
     @PostConstruct
@@ -77,7 +81,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
             DcSyncMetaComparator dcMetaComparator = new DcSyncMetaComparator(current, future);
             dcMetaComparator.compare();
-            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService).sync();
+            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService, sentinelBalanceService, consoleConfig).sync();
         } catch (Exception e) {
             logger.error("[DcMetaSynchronizer][sync]", e);
         }
