@@ -63,6 +63,7 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
         ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
         if (clusterType.supportMultiActiveDC()) return null;
 
+        clusterDeleteEvent.setClusterType(clusterType);
         List<ShardTbl> shardTbls = shardService.findAllByClusterName(clusterName);
         long activeDcId = clusterService.find(clusterName).getActivedcId();
         String activeDcName = dcService.getDcName(activeDcId);

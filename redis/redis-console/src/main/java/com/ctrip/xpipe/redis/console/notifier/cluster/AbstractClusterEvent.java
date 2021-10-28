@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.notifier.cluster;
 
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -26,6 +27,8 @@ public abstract class AbstractClusterEvent implements ClusterEvent {
     private List<Observer> observers;
 
     private ExecutorService executor;
+
+    private ClusterType clusterType;
 
     protected AbstractClusterEvent(String clusterName, long orgId, ExecutorService executor) {
         this.clusterName = clusterName;
@@ -103,6 +106,15 @@ public abstract class AbstractClusterEvent implements ClusterEvent {
         for(ShardEvent shardEvent : shardEvents) {
             addShardEvent(shardEvent);
         }
+    }
+
+    public void setClusterType(ClusterType clusterType) {
+        this.clusterType = clusterType;
+    }
+
+    @Override
+    public ClusterType getClusterType() {
+        return clusterType;
     }
 
     protected abstract ClusterEvent getSelf();

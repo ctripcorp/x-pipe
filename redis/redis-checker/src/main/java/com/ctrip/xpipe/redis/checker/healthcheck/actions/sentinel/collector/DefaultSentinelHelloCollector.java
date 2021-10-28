@@ -178,7 +178,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         return false;
     }
 
-    private void collect(SentinelActionContext context) {
+    void collect(SentinelActionContext context) {
 
         RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
@@ -460,7 +460,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     @VisibleForTesting
-    protected void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
+    void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
                             QuorumConfig quorumConfig) {
         if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
             return;
@@ -502,26 +502,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 try {
                     Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-                    boolean doAdd = true;
-                    try {
-                        HostPort masterHostPort = sentinelManager.getMasterOfMonitor(sentinel, hello.getMonitorName());
-                        if (masterHostPort != null) {
-                            if (hello.getMasterAddr().equals(masterHostPort)) {
-                                doAdd = false;
-                                logger.info("[{}-{}][already exist]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
-                            } else {
-                                sentinelManager.removeSentinelMonitor(sentinel, hello.getMonitorName());
-                                logger.info("[{}-{}][removed wrong master]{}, {}", LOG_TITLE, sentinelMonitorName, masterHostPort, hello.getSentinelAddr());
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.warn("[{}-{}][check master exist error]{}", LOG_TITLE, sentinelMonitorName, hello.getSentinelAddr());
-                    }
-                    if (doAdd) {
-                        CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
-                        sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
-                        logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
-                    }
+                    CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
+                    sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
+                    logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
+
                 } catch (Exception e) {
                     logger.error("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello, e);
                 }

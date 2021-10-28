@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -57,6 +58,9 @@ public class DcMetaSynchronizerTest {
 
     @Mock
     private OuterClientService outerClientService;
+
+    @Mock
+    private SentinelBalanceService sentinelBalanceService;
 
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
@@ -241,6 +245,7 @@ public class DcMetaSynchronizerTest {
                 setRedises(Lists.newArrayList(new OuterClientService.RedisMeta().setHost("127.0.0.1").setPort(6379).setMaster(true))));
 
         when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(false);
         when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta().addDc(xpipeDcMeta().setId(DcMetaSynchronizer.currentDcId)));
         when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
@@ -254,12 +259,20 @@ public class DcMetaSynchronizerTest {
         verify(clusterService, never()).deleteCluster(any());
         verify(clusterService, never()).update(any());
 
+        verify(consoleConfig, times(1)).supportSentinelHealthCheck(any(), any());
+        verify(sentinelBalanceService, never()).selectMultiDcSentinels();
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
         verify(redisService, never()).updateBatchMaster(any());
+
+
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
+        dcMetaSynchronizer.sync();
+        verify(consoleConfig, times(2)).supportSentinelHealthCheck(any(), any());
+        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels();
     }
 
     @Test
