@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -23,6 +24,9 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private CheckerConfig checkerConfig;
 
     @Autowired
     @Qualifier("defaultSentinelHelloCollector")
@@ -55,7 +59,7 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
         return MapUtils.getOrCreate(controllerMap, key, new ObjectFactory<SentinelCheckDowngradeCollectorController>() {
             @Override
             public SentinelCheckDowngradeCollectorController create() {
-                return new SentinelCheckDowngradeCollectorController(metaCache, sentinelAdjuster, cluster, shard);
+                return new SentinelCheckDowngradeCollectorController(metaCache, sentinelAdjuster, cluster, shard, checkerConfig);
             }
         });
     }

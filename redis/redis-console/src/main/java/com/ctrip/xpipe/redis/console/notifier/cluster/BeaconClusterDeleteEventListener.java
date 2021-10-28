@@ -37,8 +37,8 @@ public class BeaconClusterDeleteEventListener implements ClusterDeleteEventListe
         ClusterDeleteEvent clusterDeleteEvent = (ClusterDeleteEvent) observable;
         String clusterName = clusterDeleteEvent.getClusterName();
         long clusterOrgId = clusterDeleteEvent.getOrgId();
-
-        notifier.notifyClusterDelete(clusterName, clusterOrgId);
+        if (clusterDeleteEvent.getClusterType().supportMigration())
+            notifier.notifyClusterDelete(clusterName, clusterOrgId);
     }
 
 }

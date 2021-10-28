@@ -114,6 +114,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Set<String> getOwnClusterType();
 
+	Set<String> shouldNotifyClusterTypes();
+
 	String getCrossDcLeaderLeaseName();
 
 	boolean isSensitiveForRedundantRedis();

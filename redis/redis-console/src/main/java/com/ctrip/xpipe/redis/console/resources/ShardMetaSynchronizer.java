@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.console.resources;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
@@ -19,15 +23,19 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
     private Set<ShardMeta> added;
     private Set<ShardMeta> removed;
     private Set<MetaComparator> modified;
-    protected RedisService redisService;
-    protected ShardService shardService;
+    private RedisService redisService;
+    private ShardService shardService;
+    private SentinelBalanceService sentinelBalanceService;
+    private ConsoleConfig consoleConfig;
 
-    public ShardMetaSynchronizer(Set<ShardMeta> added, Set<ShardMeta> removed, Set<MetaComparator> modified, RedisService redisService, ShardService shardService) {
+    public ShardMetaSynchronizer(Set<ShardMeta> added, Set<ShardMeta> removed, Set<MetaComparator> modified, RedisService redisService, ShardService shardService, SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
         this.redisService = redisService;
         this.shardService = shardService;
+        this.sentinelBalanceService = sentinelBalanceService;
+        this.consoleConfig = consoleConfig;
     }
 
     public void sync() {
@@ -59,7 +67,14 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                 added.forEach(shardMeta -> {
                     try {
                         logger.info("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta);
-                        shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
+                        ClusterMeta clusterMeta = shardMeta.parent();
+
+                        if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(clusterMeta.getType()), clusterMeta.getId())) {
+                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels());
+                        } else {
+                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
+                        }
+
                         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addShard]%s", shardMeta.getId()));
                         new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService).sync();
                     } catch (Exception e) {

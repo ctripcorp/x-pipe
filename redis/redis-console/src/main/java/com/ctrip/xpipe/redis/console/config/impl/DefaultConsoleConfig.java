@@ -53,6 +53,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
 
+    private static final String KEY_NOTIFY_CLUSTER_TYPES = "console.notify.cluster.types";
+
     private static final String KEY_OUTER_CLUSTER_TYPES = "outer.cluster.types";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
@@ -367,6 +369,13 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public Set<String> shouldNotifyClusterTypes() {
+        String clusterTypes = getProperty(KEY_NOTIFY_CLUSTER_TYPES, ClusterType.ONE_WAY.toString()+","+ClusterType.BI_DIRECTION.toString());
+
+        return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
     public Set<String> getOuterClusterTypes() {
         String clusterTypes = getProperty(KEY_OUTER_CLUSTER_TYPES, "");
 
@@ -385,6 +394,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
         return clusterType.supportHealthCheck() || shouldSentinelCheckOuterClientClusters() || sentinelCheckOuterClientClusters().contains(clusterName.toLowerCase());
+    }
+
+    @Override
+    public String sentinelCheckDowngradeStrategy() {
+        return getProperty(KEY_SENTINEL_CHECK_DOWNGRADE_STRATEGY, "lessThanHalf");
     }
 
     @Override

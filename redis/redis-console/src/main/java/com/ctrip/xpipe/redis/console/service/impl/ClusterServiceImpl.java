@@ -393,7 +393,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (null != clusterEvent) clusterEvent.onEvent();
 
 		/** Notify meta server **/
-		notifier.notifyClusterDelete(clusterName, relatedDcs);
+		if (consoleConfig.shouldNotifyClusterTypes().contains(queryProto.getClusterType()))
+			notifier.notifyClusterDelete(clusterName, relatedDcs);
 	}
 
 	@Override
@@ -427,7 +428,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 
 		/** Notify meta server **/
-		notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
+		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+			notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
 
 	}
 
