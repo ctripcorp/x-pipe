@@ -45,24 +45,10 @@ public class DefaultCheckerDbConfigTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testSentinelWhiteListConfigCacheExpire() {
-        when(config.getConfigCacheTimeoutMilli()).thenReturn(10L);
-        Assert.assertFalse(checkerDbConfig.shouldSentinelCheck("cLuster1"));
-        when(persistenceCache.sentinelCheckWhiteList()).thenReturn(Collections.emptySet());
-//        Assert.assertFalse(checkerDbConfig.shouldSentinelCheck("cLuster1"));
-        sleep(10);
-        Assert.assertTrue(checkerDbConfig.shouldSentinelCheck("cLuster1"));
-    }
-
-    @Test
     public void testClusterAlertWhiteList() {
         Assert.assertFalse(checkerDbConfig.shouldClusterAlert("cLuster1"));
         Assert.assertTrue(checkerDbConfig.shouldClusterAlert("Cluster2"));
         Assert.assertEquals(Collections.singleton("cluster1"), checkerDbConfig.clusterAlertWhiteList());
-        when(persistenceCache.clusterAlertWhiteList()).thenReturn(Collections.emptySet());
-        sleep(10);
-        Assert.assertTrue(checkerDbConfig.shouldClusterAlert("cLuster1"));
-        Assert.assertEquals(Collections.emptySet(), checkerDbConfig.clusterAlertWhiteList());
     }
 
 }

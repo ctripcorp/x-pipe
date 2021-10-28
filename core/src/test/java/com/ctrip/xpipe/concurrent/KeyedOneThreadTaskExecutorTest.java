@@ -70,35 +70,31 @@ public class KeyedOneThreadTaskExecutorTest extends AbstractTest{
 
 
 	@Test
-	public void testSameKey(){
-		
+	public void testSameKey() throws TimeoutException {
 		TestCommand command1 =  new TestCommand("success", sleepInterval);
 		TestCommand command2 =  new TestCommand("success", sleepInterval);
 		
 		keyed.execute("key1", command1);
 		keyed.execute("key1", command2);
-		
-		sleep(sleepInterval/2);
-		
-		Assert.assertTrue(command1.isBeginExecute());
-		Assert.assertFalse(command2.isBeginExecute());
-		
+
+		waitConditionUntilTimeOut(()->assertSuccess(()->{
+			Assert.assertTrue(command1.isBeginExecute());
+			Assert.assertFalse(command2.isBeginExecute());
+		}));
 	}
 
 	@Test
-	public void testDifferentKey(){
-		
+	public void testDifferentKey() throws TimeoutException {
 		TestCommand command1 =  new TestCommand("success", sleepInterval);
 		TestCommand command2 =  new TestCommand("success", sleepInterval);
 		
 		keyed.execute("key1", command1);
 		keyed.execute("key2", command2);
 		
-		sleep(sleepInterval/2);
-		
-		Assert.assertTrue(command1.isBeginExecute());
-		Assert.assertTrue(command2.isBeginExecute());
-		
+		waitConditionUntilTimeOut(()->assertSuccess(()->{
+			Assert.assertTrue(command1.isBeginExecute());
+			Assert.assertTrue(command2.isBeginExecute());
+		}));
 	}
 
 	@After

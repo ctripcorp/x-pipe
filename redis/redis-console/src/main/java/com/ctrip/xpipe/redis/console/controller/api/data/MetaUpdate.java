@@ -556,10 +556,6 @@ public class MetaUpdate extends AbstractConsoleController {
         if (null == dcTbl || null == clusterTbl) {
             return RetMessage.createFailMessage("unknown " + (null == clusterTbl ? "cluster " + clusterName : "dc " + dcName));
         }
-        ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
-        if (clusterType.supportMultiActiveDC()) {
-            return RetMessage.createFailMessage("cluster not support unbind");
-        }
 
         List<DcTbl> dcTbls = dcService.findClusterRelatedDc(clusterName);
         if (dcTbls.stream().noneMatch(dc -> dc.getId() == dcTbl.getId())) {
