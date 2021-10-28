@@ -45,7 +45,7 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
 
     @Override
     public void doStart() {
-        logger.info("[started][{}][{}]", getClass().getSimpleName(), instance.getCheckInfo());
+        logger.debug("[started][{}][{}]", getClass().getSimpleName(), instance.getCheckInfo());
         scheduleTask(getBaseCheckInterval());
     }
 
