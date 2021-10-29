@@ -16,11 +16,11 @@ public class HickwallConfig extends AbstractConfigBean {
 	public static final String KEY_HICKWALL_WRITE_MONITOR = "hickwall.monitor.write";
 
 	public int getHickwallBatchSize() {
-		return Integer.parseInt(System.getProperty(KEY_HICKWALL_BATCH_SIZE, "1000"));
+		return getIntProperty(KEY_HICKWALL_BATCH_SIZE, 1000);
 	}
 
 	public boolean getHickwallWriteMonitor() {
-		return Boolean.parseBoolean(System.getProperty(KEY_HICKWALL_WRITE_MONITOR, "false"));
+		return getBooleanProperty(KEY_HICKWALL_WRITE_MONITOR, false);
 	}
 
 	public int getHickwallQueueSize() {
