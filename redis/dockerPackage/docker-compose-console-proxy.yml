@@ -26,11 +26,8 @@ services:
         ipv4_address: 172.19.0.22
 
   mysql:
-    image: mysql:1
+    image: ctripcorpxpipe/xpipe-mysql:2.0
     container_name: mysql
-    build: ./mysql
-    volumes:
-      - ./mysql/data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: rootP#130
       MYSQL_DATABASE: fxxpipe
@@ -43,9 +40,8 @@ services:
         ipv4_address: 172.19.0.9
 
   consolejq:
-    image: xpipe-console:1
+    image: ctripcorpxpipe/xpipe-console:1.0
     container_name: consolejq
-    build: ./xpipe-console
     depends_on:
       - mysql
       - zoo1
@@ -59,7 +55,7 @@ services:
         ipv4_address: 172.19.0.3
 
   consoleoy:
-    image: xpipe-console:1
+    image: ctripcorpxpipe/xpipe-console:1.0
     container_name: consoleoy
     depends_on:
       - mysql
@@ -76,9 +72,8 @@ services:
         ipv4_address: 172.19.0.4
 
   metajq:
-    image: xpipe-meta:1
+    image: ctripcorpxpipe/xpipe-meta:1.0
     container_name: metajq
-    build: ./xpipe-meta
     depends_on:
       - consolejq
       - consoleoy
@@ -92,7 +87,7 @@ services:
         ipv4_address: 172.19.0.5
 
   metaoy:
-    image: xpipe-meta:1
+    image: ctripcorpxpipe/xpipe-meta:1.0
     container_name: metaoy
     depends_on:
       - consolejq
@@ -111,9 +106,8 @@ services:
         ipv4_address: 172.19.0.6
 
   keeperjq1:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperjq1
-    build: ./xpipe-keeper
     depends_on:
       - metajq
       - metaoy
@@ -127,7 +121,7 @@ services:
         ipv4_address: 172.19.0.7
 
   keeperjq2:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperjq2
     depends_on:
       - metajq
@@ -142,7 +136,7 @@ services:
         ipv4_address: 172.19.0.27
 
   keeperoy1:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperoy1
     depends_on:
       - metajq
@@ -159,7 +153,7 @@ services:
         ipv4_address: 172.19.0.8
 
   keeperoy2:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperoy2
     depends_on:
       - metajq
@@ -176,9 +170,8 @@ services:
         ipv4_address: 172.19.0.28
 
   proxyjq:
-    image: xpipe-proxy:1
+    image: ctripcorpxpipe/xpipe-proxy:1.0
     container_name: proxyjq
-    build: ./xpipe-proxy
     restart: always
     environment:
       JAVA_OPTS: "-Xms200m -Xmx200m -Xmn160m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=100m -Ddocker.proxy.localIp=0.0.0.0 -Dcat.client.enabled=false -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dlogging.config=config/log4j2.xml -Dlog4j.configurationFile=config/log4j2.xml -Dlocalpath=config -Dio.netty.allocator.numDirectArenas=2 -Dio.netty.maxDirectMemory=0 -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=128m -XX:+UseParNewGC -XX:MaxTenuringThreshold=2 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=0 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:/opt/heap_trace.txt -XX:HeapDumpPath=/opt/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=18080 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Djava.security.egd=file:/dev/./urandom"
@@ -191,7 +184,7 @@ services:
         ipv4_address: 172.19.0.20
 
   proxyoy:
-    image: xpipe-proxy:1
+    image: ctripcorpxpipe/xpipe-proxy:1.0
     container_name: proxyoy
     restart: always
     environment:
