@@ -36,14 +36,40 @@ EOF
     fi
 done
 
-if [ -f docker-compose.yml ];then
-    rm -fr docker-compose.yml
+#vars
+DOCKER_ID=${1:-'ctripcorpxpipe'}
+DOCKER_TAG=${2:-'1.0'}
+XPIPE_MODE=${3:-'console-proxy'}
+DOCKER_FILE=docker-compose.yml
+
+if [ -f $DOCKER_FILE ];then
+    rm -fr $DOCKER_FILE
 fi
 
-curl -sSL https://raw.githubusercontent.com/ctripcorp/x-pipe/master/redis/dockerPackage/docker-compose-from-docker-hub.yml > docker-compose.yml
-
-if [ -n "$1" ];then
-  sed -i "s#:1.0#:$1#g" docker-compose.yml
+if [ $XPIPE_MODE == 'console' ];then
+  echo "console mode"
+  curl -sSL https://raw.githubusercontent.com/ctripcorp/x-pipe/master/redis/dockerPackage/docker-compose-console.yml > $DOCKER_FILE
+elif [ $XPIPE_MODE == 'console-checker' ];then
+  echo "console-checker mode "
+  curl -sSL https://raw.githubusercontent.com/ctripcorp/x-pipe/master/redis/dockerPackage/docker-compose-console-checker.yml > $DOCKER_FILE
+elif [ $XPIPE_MODE == 'console-proxy'  ]; then
+  echo "console-proxy mode"
+  curl -sSL https://raw.githubusercontent.com/ctripcorp/x-pipe/master/redis/dockerPackage/docker-compose-console-proxy.yml > $DOCKER_FILE
 fi
+
+if [ $DOCKER_ID != 'ctripcorpxpipe' ];then
+  lines=(`grep -n "ctripcorpxpipe" $DOCKER_FILE | awk -F: '{ print $1 }' | tr '\n' ','` )
+  lines=(`echo $lines | tr ',' ' '` )
+
+  for line in ${lines[@]:1}
+  do
+    sed -i.bak  ''"$line"'s#ctripcorpxpipe#'"$DOCKER_ID"'#' $DOCKER_FILE
+  done
+fi
+
+if [ $DOCKER_TAG != '1.0' ];then
+  sed -i.bak "s#:1.0#:$DOCKER_TAG#g" $DOCKER_FILE
+fi
+rm $DOCKER_FILE.bak
 
 docker-compose up -d --no-recreate

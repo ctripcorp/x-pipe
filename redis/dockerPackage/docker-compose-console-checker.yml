@@ -26,13 +26,8 @@ services:
         ipv4_address: 172.19.0.22
 
   mysql:
-    image: mysql:1
+    image: ctripcorpxpipe/xpipe-mysql
     container_name: mysql
-    build: ./mysql
-    volumes:
-      - ./mysql/data:/var/lib/mysql
-      - ./mysql/init:/docker-entrypoint-initdb.d/
-      - ./mysql/sql:/opt/sql
     environment:
       MYSQL_ROOT_PASSWORD: rootP#130
       MYSQL_DATABASE: fxxpipe
@@ -45,9 +40,8 @@ services:
         ipv4_address: 172.19.0.9
 
   consolejq:
-    image: xpipe-console:1
+    image: ctripcorpxpipe/xpipe-console:1.0
     container_name: consolejq
-    build: ./xpipe-console
     depends_on:
       - mysql
       - zoo1
@@ -63,7 +57,7 @@ services:
         ipv4_address: 172.19.0.3
 
   consoleoy:
-    image: xpipe-console:1
+    image: ctripcorpxpipe/xpipe-console:1.0
     container_name: consoleoy
     depends_on:
       - mysql
@@ -82,7 +76,7 @@ services:
         ipv4_address: 172.19.0.4
 
   checkerjq1:
-    image: xpipe-console:1
+    image: ctripcorpxpipe/xpipe-console:1.0
     container_name: checkerjq1
     depends_on:
       - mysql
@@ -101,7 +95,7 @@ services:
         ipv4_address: 172.19.0.23
 
   checkeroy1:
-    image: xpipe-console:1
+    image: ctripcorpxpipe/xpipe-console:1.0
     container_name: checkeroy1
     depends_on:
       - mysql
@@ -123,9 +117,8 @@ services:
         ipv4_address: 172.19.0.24
 
   metajq:
-    image: xpipe-meta:1
+    image: ctripcorpxpipe/xpipe-meta:1.0
     container_name: metajq
-    build: ./xpipe-meta
     depends_on:
       - consolejq
       - consoleoy
@@ -139,7 +132,7 @@ services:
         ipv4_address: 172.19.0.5
 
   metaoy:
-    image: xpipe-meta:1
+    image: ctripcorpxpipe/xpipe-meta:1.0
     container_name: metaoy
     depends_on:
       - consolejq
@@ -158,9 +151,8 @@ services:
         ipv4_address: 172.19.0.6
 
   keeperjq1:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperjq1
-    build: ./xpipe-keeper
     depends_on:
       - metajq
       - metaoy
@@ -174,7 +166,7 @@ services:
         ipv4_address: 172.19.0.7
 
   keeperjq2:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperjq2
     depends_on:
       - metajq
@@ -189,7 +181,7 @@ services:
         ipv4_address: 172.19.0.27
 
   keeperoy1:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperoy1
     depends_on:
       - metajq
@@ -206,7 +198,7 @@ services:
         ipv4_address: 172.19.0.8
 
   keeperoy2:
-    image: xpipe-keeper:1
+    image: ctripcorpxpipe/xpipe-keeper:1.0
     container_name: keeperoy2
     depends_on:
       - metajq
