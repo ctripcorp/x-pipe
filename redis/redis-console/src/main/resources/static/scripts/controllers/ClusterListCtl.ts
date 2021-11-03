@@ -11,6 +11,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
     $scope.dcsFilterData = [];
+    $scope.organizationNames = [];
     $scope.clusterId = $stateParams.clusterId;
     $scope.clusterName = $stateParams.clusterName;
     $scope.containerId = $stateParams.keepercontainer;
@@ -75,6 +76,18 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
                 });
     		}
     	});
+
+    ClusterService.getOrganizations()
+        .then(function (result) {
+            for(let i = 0 ; i < result.length; ++i) {
+                let org = result[i];
+                $scope.organizationNames.push({
+                    "id": org.orgName,
+                    "title": org.orgName
+                });
+            }
+            console.log($scope.organizationNames);
+        });
 
     ngTableEventsChannel.onAfterDataFiltered(function (params, filtered) {
         const index = params.page() - 1;
