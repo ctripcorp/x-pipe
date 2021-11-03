@@ -1,5 +1,5 @@
 <div class="modal fade" id="{{dialogId}}" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header panel-primary">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"
@@ -8,7 +8,7 @@
                 <h4 class="modal-title">{{title}}</h4>
             </div>
             <div class="modal-body">
-                <pre>{{detail}}</pre>
+                <pre style="color:red;font-weight:bold;font-size:20px">{{detail}}</pre>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal" ng-show="showCancelBtn"
