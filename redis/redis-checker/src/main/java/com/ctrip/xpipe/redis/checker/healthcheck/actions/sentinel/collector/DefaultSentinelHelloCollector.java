@@ -502,6 +502,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 try {
                     Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
+                    sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+                    logger.info("[{}-{}][clean]", LOG_TITLE, sentinelMonitorName);
                     CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
                     sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
                     logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
