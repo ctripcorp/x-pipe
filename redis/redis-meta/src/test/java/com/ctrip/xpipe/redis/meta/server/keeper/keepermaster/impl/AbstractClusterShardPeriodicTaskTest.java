@@ -67,7 +67,7 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
         } catch (Exception ignore) {
         }
         verify(task, times(1)).doStart();
-        countDownLatch.await();
+        Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
         waitConditionUntilTimeOut(() -> counter.get() > 1, 1000, 100);
     }
 
@@ -93,7 +93,7 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
         } catch (Exception ignore) {
         }
         verify(task, times(1)).doStop();
-        countDownLatch.await();
+        Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
         waitConditionUntilTimeOut(() -> counter.get() > 1, 2000, 100);
     }
 
@@ -109,7 +109,7 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
         } catch (Exception ignore) {
         }
         verify(task, times(1)).doStop();
-        countDownLatch.await();
+        Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
         waitConditionUntilTimeOut(() -> counter.get() > 1, 2000, 100);
     }
 }
