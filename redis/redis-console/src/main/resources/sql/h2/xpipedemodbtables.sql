@@ -143,7 +143,7 @@ create table KEEPERCONTAINER_TBL
 	keepercontainer_ip varchar(40) not null,
 	keepercontainer_port int not null,
 	keepercontainer_active tinyint(1) not null default 1,
-    `az_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'available zone id',
+    az_id bigint(20) unsigned NOT NULL DEFAULT 0,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
 	keepercontainer_org_id bigint(20) unsigned NOT NULL DEFAULT 0
@@ -270,6 +270,6 @@ CREATE TABLE `az_tbl` (
   `az_name` varchar(128) not null default '',
   `active` tinyint(1) not null default 0 ,
   `description` varchar(1024) not null default '',
-  `DataChange_LastTime` timestamp not null default CURRENT_TIMESTAMP,
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
 ) ;

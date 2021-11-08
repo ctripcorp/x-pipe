@@ -55,6 +55,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
     List<KeepercontainerTbl> keepercontainerTbls =
         keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
+
     if (keepercontainerTbls.size() < returnCount) {
       throw new IllegalStateException(
           "Organization keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
