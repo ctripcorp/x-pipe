@@ -37,6 +37,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   @Autowired
   private RedisService redisService;
 
+  @Autowired
+  private AzService azService;
+
   private RestOperations restTemplate;
 
   @Override
@@ -105,10 +108,31 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
           kcs = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
               KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         }
+        kcs = removeKeeperFromSameAvailableZone(kcs);
         logger.info("find keeper containers: {}", kcs);
         return kcs;
       }
     });
+  }
+
+  private List<KeepercontainerTbl>  removeKeeperFromSameAvailableZone(List<KeepercontainerTbl> keepercontainerTbls){
+    Set<Long> azs = new HashSet<>();
+    List<KeepercontainerTbl> result = new ArrayList<>();
+    for(KeepercontainerTbl kc : keepercontainerTbls){
+      long azId = kc.getAzId();
+      if(azId == 0) {
+        result.add(kc);
+        continue;
+      }
+      AzTbl azTbl = azService.getAzinfoByid(azId);
+      if(azTbl == null || !azTbl.isActive() || azs.contains(azId)) continue;
+      else {
+        azs.add(azId);
+        result.add(kc);
+      }
+
+    }
+    return result;
   }
 
   protected void update(KeepercontainerTbl keepercontainerTbl) {

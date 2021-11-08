@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
@@ -47,6 +48,12 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
             logger.info("{}", keepercontainerTbl);
         });
 
+    }
+
+    @Test
+    public void testFindBestKeeperContainer(){
+        List<KeepercontainerTbl> kcs = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster6");
+        Assert.assertEquals(2, kcs.size());
     }
 
     @Test
@@ -214,9 +221,9 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
             Assert.assertFalse(StringUtil.isEmpty(info.getDcName()));
         }
 
-        Assert.assertEquals(2, infos.get(0).getClusterCount());
-        Assert.assertEquals(2, infos.get(0).getShardCount());
-        Assert.assertEquals(2, infos.get(0).getKeeperCount());
+        Assert.assertEquals(2, infos.get(1).getClusterCount());
+        Assert.assertEquals(2, infos.get(1).getShardCount());
+        Assert.assertEquals(2, infos.get(1).getKeeperCount());
     }
 
     @Test

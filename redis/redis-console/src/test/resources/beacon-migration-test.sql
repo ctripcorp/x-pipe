@@ -99,10 +99,10 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(41,'unknown',16,'127.0.0.1',6409,'redis',0,0,null);
 insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values(42,'unknown',16,'127.0.0.1',6410,'redis',0,0,null);
 
-insert into MIGRATION_EVENT_TBL (id,event_tag, exec_lock, lock_until) values (1,'migration-1', '', 0);
-insert into MIGRATION_EVENT_TBL (id,event_tag, exec_lock, lock_until) values (2,'migration-2', 'oy', 9999999999999);
-insert into MIGRATION_EVENT_TBL (id,event_tag, exec_lock, lock_until) values (3,'migration-3', '', 0);
-insert into MIGRATION_EVENT_TBL (id,event_tag, exec_lock, lock_until) values (4,'migration-4', '', 0);
+insert into MIGRATION_EVENT_TBL (id,event_tag, ) values (1,'migration-1', );
+insert into MIGRATION_EVENT_TBL (id,event_tag, ) values (2,'migration-2', );
+insert into MIGRATION_EVENT_TBL (id,event_tag, ) values (3,'migration-3', );
+insert into MIGRATION_EVENT_TBL (id,event_tag, ) values (4,'migration-4', );
 
 insert into MIGRATION_CLUSTER_TBL (id,migration_event_id,cluster_id,source_dc_id,destination_dc_id,status) values (1,1,2,1,2,'Initiated');
 insert into MIGRATION_CLUSTER_TBL (id,migration_event_id,cluster_id,source_dc_id,destination_dc_id,status) values (2,2,3,1,2,'Checking');

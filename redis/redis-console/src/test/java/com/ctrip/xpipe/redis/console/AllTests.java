@@ -123,6 +123,7 @@ import org.junit.runners.Suite.SuiteClasses;
         CheckClusterTest.class,
 
         KeeperUpdateControllerTest.class,
+        AzServiceImplTest.class,
         MetaUpdateTest.class,
         MetaUpdateTest2.class,
         MetaUpdateTest3.class,

@@ -1226,6 +1226,7 @@
 				<member name='keepercontainer-ip'/>
 				<member name='keepercontainer-port'/>
 				<member name="keepercontainer-active"/>
+				<member name="az-id"/>
 				<member name="keepercontainer-dc"/>
 				<member name="count"/>
 				<member name="keepercontainer-org-id" />
@@ -2035,6 +2036,43 @@
 	<entity name="zone-tbl" table="zone_tbl" alias="zonetbl">
 		<query-defs>
 			<query name="find-all-zones" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+	<entity name="az-tbl" table="az_tbl" alias="at">
+		<query-defs>
+			<query name="find-available-zone-by-dc" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id'/> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-available-zone-by-dc-and-az" type="SELECT" multiple="false">
+				<param name='dc-id'/>
+				<param name="az-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id'/> = ${dc-id}
+					AND <FIELD name='az-name'/> = ${az-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-available-zone" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
