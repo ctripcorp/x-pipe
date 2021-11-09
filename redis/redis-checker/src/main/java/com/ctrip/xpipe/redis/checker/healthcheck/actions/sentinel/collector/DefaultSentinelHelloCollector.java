@@ -445,7 +445,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         try {
             latch.await(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            logger.error("[isKeeperOrDead]latch await error: {}", e);
+            logger.error("[isKeeperOrDead]latch await error", e);
         }
 
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
@@ -532,7 +532,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         }
 
         if (StringUtil.isEmpty(sentinelMonitorName)) {
-            logger.warn("[{}-{}+{}][checkToAdd][no monitor name]", clusterId, shardId);
+            logger.warn("[{}-{}+{}][checkToAdd][no monitor name]", LOG_TITLE, clusterId, shardId);
             return Sets.newHashSet();
         }
 
