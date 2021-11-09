@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -16,10 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestOperations;
-import org.springframework.web.client.RestTemplate;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class KeeperContainerServiceImpl extends AbstractConsoleService<KeepercontainerTblDao>
@@ -108,31 +109,33 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
           kcs = dao.findKeeperContainerByCluster(dcName, XPipeConsoleConstant.DEFAULT_ORG_ID,
               KeepercontainerTblEntity.READSET_KEEPER_COUNT_BY_CLUSTER);
         }
-        kcs = removeKeeperFromSameAvailableZone(kcs);
+        kcs = filterKeeperFromSameAvailableZone(kcs, dcName);
         logger.info("find keeper containers: {}", kcs);
         return kcs;
       }
     });
   }
 
-  private List<KeepercontainerTbl>  removeKeeperFromSameAvailableZone(List<KeepercontainerTbl> keepercontainerTbls){
-    Set<Long> azs = new HashSet<>();
-    List<KeepercontainerTbl> result = new ArrayList<>();
-    for(KeepercontainerTbl kc : keepercontainerTbls){
-      long azId = kc.getAzId();
-      if(azId == 0) {
-        result.add(kc);
-        continue;
-      }
-      AzTbl azTbl = azService.getAzinfoByid(azId);
-      if(azTbl == null || !azTbl.isActive() || azs.contains(azId)) continue;
-      else {
-        azs.add(azId);
-        result.add(kc);
-      }
+  private List<KeepercontainerTbl>  filterKeeperFromSameAvailableZone(List<KeepercontainerTbl> kcs, String dcName){
+    List<AzTbl> dcAvailableZones = azService.getDcAvailableZonetbl(dcName);
+    if(dcAvailableZones == null){
+      return kcs;
+    }else {
+      Map<Long, Boolean> azs = new HashMap();
+      dcAvailableZones.forEach((az)->{
+        azs.put(az.getId(), false);
+      });
 
+      List<KeepercontainerTbl> result = new ArrayList<>();
+      for (KeepercontainerTbl kc : kcs) {
+        long azId = kc.getAzId();
+        if(azs.get(azId) != null && !azs.get(azId)) {
+          azs.put(azId, true);
+          result.add(kc);
+        }
+      }
+      return result;
     }
-    return result;
   }
 
   protected void update(KeepercontainerTbl keepercontainerTbl) {

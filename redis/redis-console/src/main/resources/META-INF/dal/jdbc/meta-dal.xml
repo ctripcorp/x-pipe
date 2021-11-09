@@ -2056,18 +2056,17 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='dc-id'/> = ${dc-id}
 					AND <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
 					]]>
 				</statement>
 			</query>
-			<query name="find-available-zone-by-dc-and-az" type="SELECT" multiple="false">
-				<param name='dc-id'/>
+			<query name="find-available-zone-by-az" type="SELECT" multiple="false">
 				<param name="az-name"/>
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
 					FROM <TABLE/>
-					WHERE <FIELD name='dc-id'/> = ${dc-id}
-					AND <FIELD name='az-name'/> = ${az-name}
+					WHERE <FIELD name='az-name'/> = ${az-name}
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>

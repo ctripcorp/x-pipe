@@ -35,7 +35,7 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
     @Test(expected = IllegalArgumentException.class)
     public void testAddAzFailByAlreadyExist() {
-        String azName = "G";
+        String azName = "JQ-G";
         addAvailableZone(dcNames[0], true, azName, "Zone for G");
 
         try {
@@ -45,21 +45,14 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
             throw e;
         }
     }
-    @Test
-    public void testAddAzSuccessWithSameAzNameDifferentDcs() {
-        String azName = "G";
-        addAvailableZone(dcNames[0], true, azName, "Zone for G");
-
-        addAvailableZone(dcNames[1], true, azName, "Zone for G");
-    }
 
     @Test
     public void testUpdateAzSuccess() throws DalException {
-        String azName = "G";
+        String azName = "JQ-G";
         long dc_id = dcService.findByDcName(dcNames[0]).getId();
         addAvailableZone(dcNames[0], true, azName, "zone for G");
 
-        AzTbl at = azService.getAvailableZoneBydcAndAzName(azName, dc_id);
+        AzTbl at = azService.getAvailableZoneByAzName(azName);
         Assert.assertEquals("zone for G", at.getDescription());
 
         AzCreateInfo createInfo = new AzCreateInfo()
@@ -70,18 +63,17 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
         azService.updateAvailableZone(createInfo);
 
-        at = azService.getAvailableZoneBydcAndAzName(azName, dc_id);
+        at = azService.getAvailableZoneByAzName(azName);
         Assert.assertEquals("zone for F", at.getDescription());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testUpdateAzFailByWrongDc(){
-        String azName = "G";
+        String azName = "JQ-G";
         String wrongDcName = "XY";
-        long dc_id = dcService.findByDcName(dcNames[0]).getId();
         addAvailableZone(dcNames[0], true, azName, "zone for G");
 
-        AzTbl at = azService.getAvailableZoneBydcAndAzName(azName, dc_id);
+        AzTbl at = azService.getAvailableZoneByAzName(azName);
         Assert.assertEquals("zone for G", at.getDescription());
 
         AzCreateInfo createInfo = new AzCreateInfo()
@@ -118,17 +110,15 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void testDeleteAzSuccess(){
-        String azName = "G";
-        String wrongDcName = "XY";
-        long dc_id = dcService.findByDcName(dcNames[0]).getId();
+        String azName = "JQ-G";
         addAvailableZone(dcNames[0], true, azName, "zone for G");
 
-        AzTbl at = azService.getAvailableZoneBydcAndAzName(azName, dc_id);
+        AzTbl at = azService.getAvailableZoneByAzName(azName);
         Assert.assertNotNull(at);
 
-        azService.deleteAvailableZoneByName(azName, dcNames[0]);
+        azService.deleteAvailableZoneByName(azName);
 
-        at = azService.getAvailableZoneBydcAndAzName(azName, dc_id);
+        at = azService.getAvailableZoneByAzName(azName);
         Assert.assertNull(at);
     }
 
@@ -136,7 +126,7 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
     public void testDeleteAzFailByNonExistAz(){
         String azName = "G";
         try {
-            azService.deleteAvailableZoneByName(azName, dcNames[0]);
+            azService.deleteAvailableZoneByName(azName);
         } catch (Exception e) {
             Assert.assertEquals("availablezone " + azName +  " not found" , e.getMessage());
             throw e;
@@ -145,12 +135,12 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void TestGetAzByDc(){
-        addAvailableZone(dcNames[0], true, "A", "Zone for A");
-        addAvailableZone(dcNames[0], true, "B", "Zone for C");
-        addAvailableZone(dcNames[0], true, "C", "Zone for C");
-        addAvailableZone(dcNames[0], false, "D", "Zone for D");
+        addAvailableZone(dcNames[0], true, "JQ-A", "Zone for A");
+        addAvailableZone(dcNames[0], true, "JQ-B", "Zone for C");
+        addAvailableZone(dcNames[0], true, "JQ-C", "Zone for C");
+        addAvailableZone(dcNames[0], false, "JQ-D", "Zone for D");
 
-        addAvailableZone(dcNames[1], true, "A", "Zone for A");
+        addAvailableZone(dcNames[1], true, "OY-A", "Zone for A");
 
         List<AzCreateInfo> createInfoList = azService.getDcAvailableZones(dcNames[0]);
         Assert.assertEquals(4, createInfoList.size());
@@ -162,12 +152,12 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void TestGetAllAzs(){
-        addAvailableZone(dcNames[0], true, "A", "Zone for A");
-        addAvailableZone(dcNames[0], true, "B", "Zone for C");
-        addAvailableZone(dcNames[0], true, "C", "Zone for C");
+        addAvailableZone(dcNames[0], true, "JQ-A", "Zone for A");
+        addAvailableZone(dcNames[0], true, "JQ-B", "Zone for C");
+        addAvailableZone(dcNames[0], true, "JQ-C", "Zone for C");
 
-        addAvailableZone(dcNames[1], true, "A", "Zone for A");
-        addAvailableZone(dcNames[1], false, "B", "Zone for B");
+        addAvailableZone(dcNames[1], true, "OY-A", "Zone for A");
+        addAvailableZone(dcNames[1], false, "OY-B", "Zone for B");
 
         List<AzCreateInfo> createInfoList = azService.getAllAvailableZones();
         Assert.assertEquals(5, createInfoList.size());
@@ -183,7 +173,7 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
         azService.addAvailableZone(createInfo);
 
-        Assert.assertEquals(true, azService.availableZoneIsExist(createInfo, dcService.find(dcName).getId()));
+        Assert.assertEquals(true, azService.availableZoneIsExist(createInfo));
     }
 
 }

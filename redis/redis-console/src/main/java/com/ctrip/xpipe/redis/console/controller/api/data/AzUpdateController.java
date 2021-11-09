@@ -27,9 +27,9 @@ public class AzUpdateController extends AbstractConsoleController {
         try{
             createInfo.check();
             azService.addAvailableZone(createInfo);
-            return RetMessage.createSuccessMessage(String.format("add available zone %s successfully", createInfo.getAzName()));
+            return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
         }catch (Exception e){
-            logger.error("[addAavilableZone]" + e);
+            logger.error("[addAavilableZone]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
@@ -39,21 +39,21 @@ public class AzUpdateController extends AbstractConsoleController {
         try{
             createInfo.check();
             azService.updateAvailableZone(createInfo);
-            return RetMessage.createSuccessMessage(String.format("update available zone %s successfully", createInfo.getAzName()));
+            return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
         }catch (Exception e){
-            logger.error("[updateAvailableZone]" + e);
+            logger.error("[updateAvailableZone]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
-    @RequestMapping(value = "/az/{dcName}/{azName:.+}", method = RequestMethod.DELETE)
-    public RetMessage delAvailableZoneByName(@PathVariable String dcName, @PathVariable String azName) {
+    @RequestMapping(value = "/az/{azName:.+}", method = RequestMethod.DELETE)
+    public RetMessage delAvailableZoneByName(@PathVariable String azName) {
         try {
             logger.info("[delAvailableZoneByName]{}", azName);
-            azService.deleteAvailableZoneByName(azName, dcName);
-            return RetMessage.createSuccessMessage(String.format("delete available zone %s successfully", azName));
+            azService.deleteAvailableZoneByName(azName);
+            return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
         }catch (Exception e){
-            logger.error("[deleteAvailableZone]" + e);
+            logger.error("[deleteAvailableZone]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

@@ -345,4 +345,4 @@ CREATE TABLE `az_tbl` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_az_name` (`az_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='available zone  Info of keeper';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='available zone  Info';
