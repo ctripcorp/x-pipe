@@ -25,6 +25,8 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class DcMetaSynchronizer implements MetaSynchronizer {
@@ -32,6 +34,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     private ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync"));
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
+    private static final Pattern TEMP_CLUSTER = Pattern.compile("_[v|temp]+[0-9]{8,}?");
 
     @Autowired
     private MetaCache metaCache;
@@ -112,7 +115,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         DcMeta dcMeta = new DcMeta(outerDcMeta.getDcName());
         Map<String, OuterClientService.ClusterMeta> outerClusterMetas = outerDcMeta.getClusters();
         outerClusterMetas.values().forEach(outerClusterMeta -> {
-            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType()))) {
+            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType())) && !isTempCluster(outerClusterMeta.getName())) {
                 ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
                 if (clusterMeta != null)
                     dcMeta.addCluster(clusterMeta);
@@ -129,7 +132,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         DcMeta dcMetaWithInterestedClusters = new DcMeta(dcMeta.getId());
         List<ClusterMeta> interestedClusters = new ArrayList<>();
         dcMeta.getClusters().values().forEach(clusterMeta -> {
-            if (interestedTypes.contains(clusterMeta.getType())) {
+            if (interestedTypes.contains(clusterMeta.getType()) && !isTempCluster(clusterMeta.getId())) {
                 interestedClusters.add(newClusterMeta(clusterMeta));
             }
         });
@@ -226,6 +229,11 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                 return ClusterType.BI_DIRECTION.name();
         }
         return null;
+    }
+
+    boolean isTempCluster(String clusterName) {
+        Matcher match = TEMP_CLUSTER.matcher(clusterName);
+        return match.find();
     }
 
 }
