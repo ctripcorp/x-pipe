@@ -85,7 +85,14 @@ public class ClusterMetaSynchronizer {
             if (!added.isEmpty()) {
                 added.forEach(clusterMeta -> {
                     try {
-                        if (clusterService.find(clusterMeta.getId()) != null) {
+                        ClusterTbl exist = clusterService.find(clusterMeta.getId());
+                        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                        if (exist != null && clusterType.supportSingleActiveDC()) {
+                            logger.warn("[ClusterMetaSynchronizer][createCluster]cannot create single dc cluster {} because it already exist", exist.getClusterName());
+                            return;
+                        }
+
+                        if (exist != null && clusterType.supportMultiActiveDC()) {
                             logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
                             clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
                             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
@@ -102,11 +109,11 @@ public class ClusterMetaSynchronizer {
                                     logger.warn("[ClusterMetaSynchronizer][bindDc]orgId not found:{},{}", clusterMeta.getId(), clusterMeta.getOrgId());
                                 }
                             }
-                            if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
+                            if (clusterType.supportSingleActiveDC()) {
                                 clusterTbl.setActivedcId(currentDcId);
                             }
                             ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
-                            if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+                            if (clusterType.supportMultiActiveDC()) {
                                 clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
                             }
                             logger.info("[ClusterMetaSynchronizer][createCluster]{}", clusterMeta);
