@@ -1,13 +1,13 @@
 #!/bin/bash
 
-if [ -f /opt/settings/server.properties ];then
-    IDC=`cat /opt/settings/server.properties | egrep -i "^idc" | awk -F= '{print $2}'`
-    if [ $IDC != "SHA-ALI" ];then
-        yum remove jdk11
-        rpm -i http://git.dev.sh.ctripcorp.com/baseimage/components/raw/master/jdk11-0.4-1.x86_64.rpm
-        /usr/java/jdk11/bin/java -version
-    fi
-fi
+#if [ -f /opt/settings/server.properties ];then
+#    IDC=`cat /opt/settings/server.properties | egrep -i "^idc" | awk -F= '{print $2}'`
+#    if [ $IDC != "SHA-ALI" ];then
+#        yum remove jdk11
+#        rpm -i http://git.dev.sh.ctripcorp.com/baseimage/components/raw/master/jdk11-0.4-1.x86_64.rpm
+#        /usr/java/jdk11/bin/java -version
+#    fi
+#fi
 
 # enable app bind port at 80 and 443
 if [[ -z "$JAVA_HOME" && -d /usr/java/jdk11/ ]]; then
