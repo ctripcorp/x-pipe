@@ -445,7 +445,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         try {
             latch.await(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            logger.error("[isKeeperOrDead]latch await error: {}", e);
+            logger.error("[isKeeperOrDead]latch await error", e);
         }
 
         if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
@@ -502,6 +502,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 try {
                     Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
+                    sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+                    logger.info("[{}-{}][clean]", LOG_TITLE, sentinelMonitorName);
                     CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
                     sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
                     logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
@@ -530,7 +532,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         }
 
         if (StringUtil.isEmpty(sentinelMonitorName)) {
-            logger.warn("[{}-{}+{}][checkToAdd][no monitor name]", clusterId, shardId);
+            logger.warn("[{}-{}+{}][checkToAdd][no monitor name]", LOG_TITLE, clusterId, shardId);
             return Sets.newHashSet();
         }
 

@@ -382,7 +382,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         SentinelActionContext context = new SentinelActionContext(instance, new HashSet<>());
         sentinelCollector.collect(context);
 
-        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(5)).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(5)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
     }
 
@@ -411,7 +411,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.collect(context);
 
         verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003), monitorName, master, quorumConfig.getQuorum());
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
@@ -474,8 +474,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.collect(context);
 
         verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), "monitorName2");
+        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004),  monitorName);
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
     }
 
@@ -506,8 +507,8 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.collect(context);
 
         verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
-        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName);
+        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName);
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
     }
 
