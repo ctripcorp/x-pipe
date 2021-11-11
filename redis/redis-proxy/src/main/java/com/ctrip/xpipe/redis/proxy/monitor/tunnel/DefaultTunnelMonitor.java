@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.proxy.monitor.stats.TunnelStats;
 import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultTunnelStats;
 import com.ctrip.xpipe.redis.proxy.resource.ResourceManager;
 
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -62,26 +61,38 @@ public class DefaultTunnelMonitor extends AbstractStartStoppable implements Tunn
         return tunnelStats;
     }
 
+    public boolean shouldMonitor() {
+        return resourceManager.getProxyConfig().startMonitor();
+    }
+
+    public void scheduleRecord() {
+        future = resourceManager.getGlobalSharedScheduled().scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() {
+                try {
+                    record(tunnel);
+                } catch (Throwable t) {
+                    logger.error("[TunnelMonitor][record] something wrong when record tunnel, {} {}", tunnel.identity(), t);
+                    throw t;
+                }
+            }
+        }, 5000, 1000, TimeUnit.MILLISECONDS);
+    }
+
     @Override
     public void record(Tunnel tunnel) {
-        if(resourceManager.getProxyConfig().startMonitor()) {
+        if (shouldMonitor()) {
             recorder.record(tunnel);
         }
     }
 
     @Override
     protected void doStart() throws Exception {
-        if(resourceManager.getProxyConfig().startMonitor()) {
+        if(shouldMonitor()) {
             frontendSessionMonitor.start();
             backendSessionMonitor.start();
-            future = resourceManager.getGlobalSharedScheduled().scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-                @Override
-                protected void doRun() {
-                    record(tunnel);
-                }
-            }, 5000, 1000, TimeUnit.MILLISECONDS);
+            scheduleRecord();
         }
-
     }
 
     @Override
