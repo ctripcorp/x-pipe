@@ -89,15 +89,11 @@ public class ClusterMetaSynchronizer {
 
                         if (exist == null) {
                             createCluster(toAdd);
+                        } else if (shouldAddDc(toAdd, exist)) {
+                            bindDc(toAdd);
                         } else {
-
-                            if (shouldAddDc(toAdd, exist)) {
-                                bindDc(toAdd);
-                            } else {
-                                logger.warn("[ClusterMetaSynchronizer][notBind]toAdd:{}, type:{}, exist:{}, type:{}", toAdd.getId(), toAdd.getType(), exist.getClusterName(), exist.getClusterType());
-                                return;
-                            }
-
+                            logger.warn("[ClusterMetaSynchronizer][notBind]toAdd:{}, type:{}, exist:{}, type:{}", toAdd.getId(), toAdd.getType(), exist.getClusterName(), exist.getClusterType());
+                            return;
                         }
 
                         new ShardMetaSynchronizer(Sets.newHashSet(toAdd.getShards().values()), null, null, redisService, shardService, sentinelBalanceService, consoleConfig).sync();
