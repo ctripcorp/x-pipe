@@ -481,10 +481,18 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
-    public void isTempClusterTest() {
-        Assert.assertTrue(dcMetaSynchronizer.isTempCluster("AddServCache_v202111011735"));
-        Assert.assertTrue(dcMetaSynchronizer.isTempCluster("Ai_AdSystem_Cache_temp202103041704"));
-        Assert.assertFalse(dcMetaSynchronizer.isTempCluster("Ai_AdSystem_Cache_v2"));
+    public void shouldFilterTest() {
+        when(consoleConfig.filterOuterClusters()).thenReturn(null);
+        dcMetaSynchronizer.buildFilterPattern();
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
+
+        when(consoleConfig.filterOuterClusters()).thenReturn("_[v|temp]+[0-9]{8,}?");
+        dcMetaSynchronizer.buildFilterPattern();
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
     }
 
     OuterClientService.DcMeta credisDcMeta() {

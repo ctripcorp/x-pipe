@@ -104,6 +104,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Set<String> getOuterClusterTypes();
 
+	String filterOuterClusters();
+
 	Map<String, String> getConsoleDomains();
 
 	boolean isSentinelRateLimitOpen();

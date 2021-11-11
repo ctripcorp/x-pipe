@@ -91,12 +91,13 @@ public class ClusterMetaSynchronizer {
                             createCluster(toAdd);
                         } else {
 
-                            if (notBind(toAdd, exist)) {
+                            if (shouldAddDc(toAdd, exist)) {
+                                bindDc(toAdd);
+                            } else {
                                 logger.warn("[ClusterMetaSynchronizer][notBind]toAdd:{}, type:{}, exist:{}, type:{}", toAdd.getId(), toAdd.getType(), exist.getClusterName(), exist.getClusterType());
                                 return;
                             }
 
-                            bindDc(toAdd);
                         }
 
                         new ShardMetaSynchronizer(Sets.newHashSet(toAdd.getShards().values()), null, null, redisService, shardService, sentinelBalanceService, consoleConfig).sync();
@@ -143,8 +144,8 @@ public class ClusterMetaSynchronizer {
         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
     }
 
-    boolean notBind(ClusterMeta toAdd, ClusterTbl exist) {
-        return existDiffTypeCluster(toAdd, exist) || !crossDcSupported(exist);
+    boolean shouldAddDc(ClusterMeta toAdd, ClusterTbl exist) {
+        return !existDiffTypeCluster(toAdd, exist) && crossDcSupported(exist);
     }
 
     boolean existDiffTypeCluster(ClusterMeta toAdd, ClusterTbl exist) {
