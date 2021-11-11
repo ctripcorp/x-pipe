@@ -4,7 +4,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -289,16 +288,12 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private ShardTbl generateMonitorNameAndReturnShard(ShardTbl dupShardTbl, Set<String> monitorNames,
 													   String clusterName, ShardTbl shard,
 													   Map<Long, SetinelTbl> sentinels) {
-		String monitorName = null;
+		String monitorName;
 		if(dupShardTbl == null) {
-			monitorName = monitorNames.contains(shard.getShardName())
-					? clusterName + "-" + shard.getShardName()
-					: shard.getShardName();
+			monitorName = shard.getShardName();
 			if(monitorNames.contains(monitorName)) {
-				logger.error("[findOrCreateShardIfNotExist] monitor name duplicated with {} and {}",
-						shard.getShardName(), monitorName);
-				throw new IllegalStateException(String.format("Both %s and %s is assigned as sentinel monitor name",
-						shard.getShardName(), monitorName));
+				logger.error("[findOrCreateShardIfNotExist] monitor name {} already exist", monitorName);
+				throw new IllegalStateException(String.format("monitor name %s already exist", shard.getShardName()));
 			}
 			shard.setSetinelMonitorName(monitorName);
 			try {
