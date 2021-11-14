@@ -11,6 +11,10 @@ public class CRDTInfoCommand extends InfoCommand {
         super(clientPool, args, scheduled);
     }
 
+    public CRDTInfoCommand(SimpleObjectPool<NettyClient> clientPool, INFO_TYPE infoType, ScheduledExecutorService scheduled, int commandTimeoutMilli) {
+        super(clientPool, infoType, scheduled, commandTimeoutMilli);
+    }
+
     public CRDTInfoCommand(SimpleObjectPool<NettyClient> clientPool, INFO_TYPE infoType, ScheduledExecutorService scheduled) {
         super(clientPool, infoType, scheduled);
     }

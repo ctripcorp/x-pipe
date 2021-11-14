@@ -86,7 +86,8 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
     protected long getRedisGid(String ip, int port) throws Exception {
         try {
             SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(ip, port));
-            String infoStr = new CRDTInfoCommand(clientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
+            String infoStr = new CRDTInfoCommand(clientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled, checkRedisTimeoutSeconds*1000)
+                    .execute().get(checkRedisTimeoutSeconds, TimeUnit.SECONDS);
             InfoResultExtractor extractor = new InfoResultExtractor(infoStr);
             String rawGid = extractor.extract("gid");
             if (null == rawGid) {

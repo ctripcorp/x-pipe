@@ -41,9 +41,17 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleDbTe
 
     private Server server;
 
+    private static int originTimeout;
+
     @BeforeClass
     public static void beforeDefaultCheckMigrationCommandBuilderTestClass() {
+        originTimeout = AbstractService.DEFAULT_SO_TIMEOUT;
         AbstractService.DEFAULT_SO_TIMEOUT = 10;
+    }
+
+    @AfterClass
+    public static void afterDefaultCheckMigrationCommandBuilderTestClass() {
+        AbstractService.DEFAULT_SO_TIMEOUT = originTimeout;
     }
 
     @Before
