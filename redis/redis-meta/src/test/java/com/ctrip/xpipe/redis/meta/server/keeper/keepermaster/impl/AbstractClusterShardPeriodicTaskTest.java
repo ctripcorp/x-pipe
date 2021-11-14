@@ -11,6 +11,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
 
@@ -20,8 +21,6 @@ import static org.mockito.Mockito.*;
  * Sep 27, 2020
  */
 public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest {
-
-    private AbstractClusterShardPeriodicTask task;
 
     private ScheduledExecutorService scheduled;
 
@@ -35,14 +34,14 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
 
     private AtomicInteger periodSeconds = new AtomicInteger(10);
 
-    private CountDownLatch countDownLatch;
-
     @Before
     public void beforeAbstractClusterShardPeriodicTaskTest() {
         MockitoAnnotations.initMocks(this);
         scheduled = Executors.newScheduledThreadPool(2);
-        countDownLatch = new CountDownLatch(1);
-        task = spy(new AbstractClusterShardPeriodicTask("cluster", "shard", dcMetaCache, currentMetaManager, scheduled) {
+    }
+
+    private AbstractClusterShardPeriodicTask mockTask(CountDownLatch countDownLatch) {
+        return spy(new AbstractClusterShardPeriodicTask("cluster", "shard", dcMetaCache, currentMetaManager, scheduled) {
             @Override
             protected void work() {
                 logger.info("[work]");
@@ -60,6 +59,8 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
     @Test(expected = TimeoutException.class)
     public void testDoStart() throws Exception {
         int startTimes = 10;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AbstractClusterShardPeriodicTask task = mockTask(countDownLatch);
         try {
             for(int i = 0; i < startTimes; i++) {
                 task.start();
@@ -75,6 +76,8 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
     public void testDoStop() throws Exception {
         periodSeconds.set(1);
         int startTimes = 10;
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AbstractClusterShardPeriodicTask task = mockTask(countDownLatch);
         try {
             for(int i = 0; i < startTimes; i++) {
                 task.stop();
@@ -100,7 +103,10 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
     @Test(expected = TimeoutException.class)
     public void testRelease() throws Exception {
         periodSeconds.set(1);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AbstractClusterShardPeriodicTask task = mockTask(countDownLatch);
         task.start();
+        Assert.assertTrue(countDownLatch.await(2, TimeUnit.SECONDS));
         int stopTimes = 10;
         try {
             for(int i = 0; i < stopTimes; i++) {
@@ -109,7 +115,6 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
         } catch (Exception ignore) {
         }
         verify(task, times(1)).doStop();
-        Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
         waitConditionUntilTimeOut(() -> counter.get() > 1, 2000, 100);
     }
 }

@@ -122,6 +122,7 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
     }
 
     protected void write(ChannelFuture future, String sendout) {
+        logger.info("[write] {}", sendout);
         future.channel().writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(sendout.getBytes()));
     }
 

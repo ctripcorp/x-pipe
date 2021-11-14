@@ -44,8 +44,6 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     private MockWebServer webServer;
 
-    private CheckerPersistenceCache checkerPersistenceCache;
-
     private long cacheTimeoutMill = 10L;
 
     @Mock
@@ -58,8 +56,6 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
         when(config.getConsoleAddress()).thenReturn("http://127.0.0.1:" + webServer.getPort());
         when(config.getConfigCacheTimeoutMilli()).thenReturn(cacheTimeoutMill);
-
-        this.checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
     }
 
     @After
@@ -69,6 +65,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testClusterAlertWhitelist() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse()
                 .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
                 .setHeader("Content-Type", "application/json"));
@@ -85,12 +82,14 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testRetError() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse().setResponseCode(500));
         Assert.assertEquals(Collections.emptySet(), checkerPersistenceCache.clusterAlertWhiteList());
     }
 
     @Test
     public void testSentinelWhitelist() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse()
                 .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
                 .setHeader("Content-Type", "application/json"));
@@ -107,6 +106,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testSentinelAutoProcess() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse()
                 .setBody("false")
                 .setHeader("Content-Type", "application/json"));
@@ -122,6 +122,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testAutoProcessExpired() {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse()
                 .setBody("false")
                 .setHeader("Content-Type", "application/json"));
@@ -137,6 +138,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testAlertSystemOn() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse()
                 .setBody("false")
                 .setHeader("Content-Type", "application/json"));
@@ -152,6 +154,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testAlertRecord() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse());
 
         AlertEntity alertEntity = new AlertEntity(new HostPort("10.0.0.1", 6379),
@@ -180,6 +183,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
 
     @Test
     public void testUpdateRedisRole() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse()
                 .setBody(Codec.DEFAULT.encode(new RetMessage(RetMessage.SUCCESS_STATE)))
                 .setHeader("Content-Type", "application/json"));

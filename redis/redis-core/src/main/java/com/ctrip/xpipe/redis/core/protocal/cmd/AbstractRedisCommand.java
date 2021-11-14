@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;

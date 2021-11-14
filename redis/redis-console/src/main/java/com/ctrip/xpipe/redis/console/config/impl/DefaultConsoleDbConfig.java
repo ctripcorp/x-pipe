@@ -83,6 +83,10 @@ public class DefaultConsoleDbConfig extends AbstractConfigBean implements Consol
         return clusterAlertWhitelistCache.getData(false);
     }
 
+    public void refreshAlertWhiteListCache() {
+        clusterAlertWhitelistCache.getData(true);
+    }
+
     private Set<String> refreshSentinelCheckWhiteList() {
         List<ConfigModel> configModels = configService.getActiveSentinelCheckExcludeConfig();
         return configModels.stream().map(model -> model.getSubKey().toLowerCase()).collect(Collectors.toSet());
