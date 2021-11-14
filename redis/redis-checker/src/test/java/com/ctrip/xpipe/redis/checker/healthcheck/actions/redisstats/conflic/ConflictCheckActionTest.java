@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -22,7 +23,7 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
 
     ConflictCheckAction action;
 
-    private int redisDelay = 0;
+    private volatile int redisDelay = 0;
 
     private AtomicInteger redisCallCnt = new AtomicInteger(0);
 
@@ -142,7 +143,7 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
 
     @Test
     public void testRedisHang() {
-        redisDelay = 510;
+        redisDelay = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI + 10;
         AbstractHealthCheckAction.ScheduledHealthCheckTask task = action.new ScheduledHealthCheckTask();
         task.run();
         sleep(redisDelay + 200);
@@ -151,13 +152,13 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
 
     @Test
     public void testDoActionTooQuickly() {
-        redisDelay = 200;
+        redisDelay = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI / 2;
         AbstractHealthCheckAction.ScheduledHealthCheckTask task = action.new ScheduledHealthCheckTask();
         task.run();
-        sleep(10);
+        sleep(1);
         task.run();
 
-        sleep(200);
+        sleep(redisDelay);
         Assert.assertEquals(1, redisCallCnt.get());
     }
 
