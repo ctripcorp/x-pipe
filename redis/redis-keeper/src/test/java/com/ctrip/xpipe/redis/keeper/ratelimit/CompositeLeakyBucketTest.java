@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 /**
@@ -371,7 +372,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
 
     @Test
     public void testReleaseAfterCloseLimit() {
-        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        doReturn(true).when(keeperConfig).isKeeperRateLimitOpen();
         leakyBucket.setScheduled(scheduled);
         leakyBucket.checkKeeperConfigChange();
         sleep(200);
@@ -379,11 +380,11 @@ public class CompositeLeakyBucketTest extends AbstractTest {
         int cnt = 0;
         while(leakyBucket.tryAcquire()) cnt++;
 
-        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
+        doReturn(false).when(keeperConfig).isKeeperRateLimitOpen();
         sleep(200);
 
         IntStream.range(0, cnt).forEach(i -> leakyBucket.release());
-        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        doReturn(true).when(keeperConfig).isKeeperRateLimitOpen();
         sleep(200);
 
         Assert.assertTrue(leakyBucket.tryAcquire());

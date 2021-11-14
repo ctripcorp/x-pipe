@@ -79,7 +79,12 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
 
         ByteBuf expected = UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(message.getBytes());
 
-        Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
+        waitConditionUntilTimeOut(() -> {
+            int rst = ByteBufUtil.compare(expected, byteBufAtomicReference.get());
+            logger.info("[testStability] cmp rst: {}", rst);
+            return 0 == rst;
+        }, 10000, 1000);
+        expected.release();
     }
 
     @Ignore

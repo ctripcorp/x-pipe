@@ -125,6 +125,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         configModel.setKey(key);
         configModel.setSubKey(mockCluster1);
         service.stopSentinelCheck(configModel, 1);
+        consoleDbConfig.shouldSentinelCheck("refresh-cache", true);
 
         Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster1.toUpperCase()));
         Assert.assertFalse(consoleDbConfig.shouldSentinelCheck(mockCluster1.toLowerCase()));
@@ -144,6 +145,7 @@ public class DefaultConsoleDbConfigTest extends AbstractConsoleIntegrationTest{
         configModel.setSubKey("cluster3");
         service.startClusterAlert(configModel);
 
+        consoleDbConfig.refreshAlertWhiteListCache();
         Set<String> whitelist = consoleDbConfig.clusterAlertWhiteList();
         Assert.assertEquals(Collections.singleton("cluster1"), whitelist);
     }

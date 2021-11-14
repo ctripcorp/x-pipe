@@ -129,8 +129,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		
 		handler.keeperActiveElected(clusterId, shardId, null);
 		handler.keeperActiveElected(clusterId, shardId, null);
-		sleep(setStateTimeMilli/2);
-		Assert.assertEquals(1, calledCount.get());
+		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
 		sleep(setStateTimeMilli*3/2);
 		Assert.assertEquals(2, calledCount.get());
 	}
