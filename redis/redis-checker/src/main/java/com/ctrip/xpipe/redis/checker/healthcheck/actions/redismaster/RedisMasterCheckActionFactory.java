@@ -50,6 +50,6 @@ public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealt
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
-        return Lists.newArrayList();
+        return Lists.newArrayList(ALERT_TYPE.REPL_WRONG_SLAVE, ALERT_TYPE.MASTER_OVER_ONE);
     }
 }

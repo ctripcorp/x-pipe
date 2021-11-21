@@ -321,7 +321,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
                 } else {
                     failedResults.incrementAndGet();
                     Assert.assertEquals(servers.get(BACKUP_DC_SHARD2_SLAVE1).getPort(), context.instance().getEndpoint().getPort());
-                    Assert.assertTrue(context.isFail());
+                    Assert.assertFalse(context.isSuccess());
                 }
             }
 

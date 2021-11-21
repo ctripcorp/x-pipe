@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -38,6 +40,8 @@ public class CurrentDcSentinelCheckControllerTest extends AbstractCheckerTest {
     public void setupCurrentDcSentinelCheckControllerTest() {
         dcId = FoundationService.DEFAULT.getDataCenter();
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta(2));
+        Mockito.when(metaCache.getRedisOfDcClusterShard(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Arrays.asList(new RedisMeta(), new RedisMeta()));
         Mockito.when(instance.getCheckInfo()).thenReturn(info);
         Mockito.when(info.getDcId()).thenReturn(dcId);
         Mockito.when(info.getClusterId()).thenReturn(clusterId);
@@ -50,6 +54,8 @@ public class CurrentDcSentinelCheckControllerTest extends AbstractCheckerTest {
         Assert.assertTrue(controller.shouldCheck(instance));
 
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta(1));
+        Mockito.when(metaCache.getRedisOfDcClusterShard(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Collections.singletonList(new RedisMeta()));
         Assert.assertTrue(controller.shouldCheck(instance));
     }
 
@@ -59,6 +65,8 @@ public class CurrentDcSentinelCheckControllerTest extends AbstractCheckerTest {
         Assert.assertFalse(controller.shouldCheck(instance));
 
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta(1));
+        Mockito.when(metaCache.getRedisOfDcClusterShard(Mockito.any(), Mockito.any(), Mockito.any()))
+                .thenReturn(Collections.singletonList(new RedisMeta()));
         Assert.assertTrue(controller.shouldCheck(instance));
     }
 
