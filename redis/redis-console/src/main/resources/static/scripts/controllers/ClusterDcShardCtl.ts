@@ -89,13 +89,11 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         console.log("loadShards", clusterName, dcName)
         ShardService.findClusterDcShards(clusterName, dcName)
             .then(function (result) {
-                console.log("loadShards", result)
                 $scope.shards = result.sort((v1, v2) => {
                     if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
                     else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
                     else return 0;
                 });
-                console.log("loadShards", $scope.shards)
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
