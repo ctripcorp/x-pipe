@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
@@ -43,6 +44,9 @@ public class RedisWrongSlaveMonitorTest extends AbstractCheckerTest {
     @Mock
     private AlertManager alertManager;
 
+    @Mock
+    private PingService pingService;
+
     private int masterPort = 6379;
 
     private int slavePort = 7379;
@@ -61,6 +65,7 @@ public class RedisWrongSlaveMonitorTest extends AbstractCheckerTest {
         when(metaCache.getRedisOfDcClusterShard(anyString(), anyString(), anyString()))
                 .thenReturn(Arrays.asList(new RedisMeta().setIp("127.0.0.1").setPort(masterPort),
                         new RedisMeta().setIp("127.0.0.1").setPort(slavePort).setMaster("127.0.0.1:"+masterPort)));
+        when(pingService.isRedisAlive(any())).thenReturn(true);
     }
 
     @Test
@@ -71,6 +76,14 @@ public class RedisWrongSlaveMonitorTest extends AbstractCheckerTest {
                 .alert(anyString(), anyString(), anyString(),
                         Matchers.eq(new HostPort("127.0.0.1", slavePort)),
                         Matchers.eq(ALERT_TYPE.REPL_WRONG_SLAVE), anyString());
+    }
+
+    @Test
+    public void testSlaveDown_doNothing() throws Exception {
+        when(pingService.isRedisAlive(any())).thenReturn(false);
+        when(masterRole.getSlaveHostPorts()).thenReturn(Collections.emptyList());
+        wrongSlaveMonitor.onAction(mockRoleContext(masterRole));
+        Mockito.verify(alertManager, never()).alert(anyString(), anyString(), anyString(), any(), any(), anyString());
     }
 
     @Test
