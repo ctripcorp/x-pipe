@@ -70,11 +70,10 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                             $scope.showCrossMasterHealthStatus = type.multiActiveDcs;
                         }
 
+                        existsRoute($scope.currentDcName, $scope.clusterName);
                         loadShards($scope.clusterName, $scope.currentDcName);
-                        switchDc($scope.dcs[0]);
                     }, function(result) {
                         $scope.currentDcName = $scope.dcs[0].dcName;
-                        loadShards($scope.clusterName, $scope.currentDcName);
                         switchDc($scope.dcs[0]);
                     });
                 }
