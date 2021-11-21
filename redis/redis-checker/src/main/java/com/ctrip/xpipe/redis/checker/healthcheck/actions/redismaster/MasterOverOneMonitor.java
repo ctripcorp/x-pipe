@@ -92,7 +92,7 @@ public class MasterOverOneMonitor implements RedisMasterActionListener, OneWaySu
                     if (checkResult.isSuccess() && Boolean.TRUE.equals(checkResult.get())) {
                         logger.info("[{}][{}] multi master {}", info.getClusterId(), info.getShardId(), masters);
                         alertManager.alert(dcClusterShard.getDcId(), dcClusterShard.getClusterId(), dcClusterShard.getShardId(),
-                                null, ALERT_TYPE.MASTER_OVER_ONE, masters.toString());
+                                null, ALERT_TYPE.MASTER_OVER_ONE, "multi masters:" + masters.toString());
                     } else {
                         logger.debug("[{}][{}][check fail] multi master {}", info.getClusterId(), info.getShardId(), masters);
                     }

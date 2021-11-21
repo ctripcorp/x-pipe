@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
@@ -28,6 +29,9 @@ public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWay
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private PingService pingService;
 
     @Autowired
     private AlertManager alertManager;
@@ -57,6 +61,10 @@ public class RedisWrongSlaveMonitor implements RedisMasterActionListener, OneWay
 
         for (HostPort expectedSlave: expectedSlaves) {
             if (realSlaves.contains(expectedSlave)) continue;
+            if (!pingService.isRedisAlive(expectedSlave)) {
+                logger.debug("[{}][{}] {} expected slave of {} but down", clusterId, shardId, expectedSlave, master);
+                continue;
+            }
             logger.info("[{}][{}] {} expected slave of {} but not", clusterId, shardId, expectedSlave, master);
             alertManager.alert(dcId, clusterId, shardId, expectedSlave, ALERT_TYPE.REPL_WRONG_SLAVE,
                     String.format("expected slave of %s but not", master));
