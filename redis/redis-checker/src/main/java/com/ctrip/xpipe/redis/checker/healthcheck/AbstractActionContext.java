@@ -49,8 +49,8 @@ public abstract class AbstractActionContext<C, T extends HealthCheckInstance> im
     }
 
     @Override
-    public boolean isFail() {
-        return null != cause;
+    public boolean isSuccess() {
+        return null == cause;
     }
 
     @Override

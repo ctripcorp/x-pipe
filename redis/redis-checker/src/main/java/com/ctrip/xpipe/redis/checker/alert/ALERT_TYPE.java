@@ -458,6 +458,38 @@ public enum ALERT_TYPE {
         public DetailDesc detailDesc() {
             return new DetailDesc("unexpected migration data", "migration info conflict, maybe block migration");
         }
+    },
+    REPL_WRONG_SLAVE("slave repl from wrong master", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return true;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("wrong slave", "slave repl from wrong master");
+        }
+    },
+    MASTER_OVER_ONE("more than one master found", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return true;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("master over one", "more than one master found");
+        }
     };
 
     private String simpleDesc;

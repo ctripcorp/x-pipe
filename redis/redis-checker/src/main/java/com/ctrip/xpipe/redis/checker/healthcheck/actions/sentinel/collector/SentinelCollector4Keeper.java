@@ -64,7 +64,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
     @Override
     public void onAction(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getCheckInfo();
-        if(!info.isInActiveDc() && !context.isFail()) {
+        if(!info.isInActiveDc() && context.isSuccess()) {
             doCollect(context);
         }
     }
