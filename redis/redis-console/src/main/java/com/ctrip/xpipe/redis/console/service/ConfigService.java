@@ -41,6 +41,8 @@ public interface ConfigService {
 
     void stopSentinelCheck(ConfigModel config, int minutes) throws DalException;
 
+    void resetClusterWhitelist(String cluster) throws DalException;
+
     void updateCrossDcLeader(ConfigModel config, Date until) throws DalException;
     
     String getCrossDcLeader() throws DalException;

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.framework.foundation.Foundation;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
@@ -148,6 +150,19 @@ public class ConfigServiceImpl implements ConfigService {
         configDao.setConfigAndUntil(config, date);
     }
 
+    @Override
+    public void resetClusterWhitelist(String cluster) throws DalException {
+        logger.info("[resetClusterWhitelist]: reset all whitelist for cluster {}", cluster);
+        ConfigModel configModel = new ConfigModel().setSubKey(cluster)
+                .setUpdateIP(FoundationService.DEFAULT.getLocalIp()).setUpdateUser("reset");
+        if (!shouldSentinelCheck(cluster)) {
+            startSentinelCheck(configModel);
+        }
+        if (!shouldAlert(cluster)) {
+            startClusterAlert(configModel);
+        }
+    }
+
     public void updateCrossDcLeader(ConfigModel config, Date until) throws DalException {
         logger.info("[updateCrossDcLeader] update lease to {} until {}", config.getVal(), until);
         config.setKey(CrossDcLeaderElectionAction.KEY_LEASE_CONFIG);
@@ -167,6 +182,10 @@ public class ConfigServiceImpl implements ConfigService {
     @Override
     public boolean shouldSentinelCheck(String cluster) {
         return !getConfigBooleanByKeyAndSubKey(KEY_SENTINEL_CHECK_EXCLUDE, cluster, false);
+    }
+
+    public boolean shouldAlert(String cluster) {
+        return !getConfigBooleanByKeyAndSubKey(KEY_CLUSTER_ALERT_EXCLUDE, cluster, false);
     }
 
     private boolean getConfigBooleanByKeyAndSubKey(String key, String subKey, boolean defaultVal) {
