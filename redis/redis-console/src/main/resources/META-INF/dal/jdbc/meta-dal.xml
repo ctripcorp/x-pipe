@@ -1173,10 +1173,10 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/> left join (select * from dc_cluster_shard_tbl where deleted=0) dcst
-					on <FIELD name='setinel-id'/> = dcst.setinel_id, <TABLE name='dc-info'/>
+					FROM <TABLE/> LEFT JOIN <TABLE name='dc-cluster-shard-info'/>
+					ON <FIELD name='setinel-id'/> = dcst.setinel_id AND dcst.deleted=0
+					INNER JOIN <TABLE name='dc-info'/> on <FIELD name='dc-id'/> = dt.id
 					WHERE <FIELD name='deleted'/> = 0
-					AND dt.id = <FIELD name='dc-id'/>
 					GROUP BY <FIELD name='setinel-id'/>
 					]]>
 				</statement>
