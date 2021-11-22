@@ -123,7 +123,14 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
 
     protected void write(ChannelFuture future, String sendout) {
         logger.info("[write] {}", sendout);
-        future.channel().writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(sendout.getBytes()));
+        future.channel().writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(sendout.getBytes()))
+                .addListener(writeFuture -> {
+                    if (writeFuture.isSuccess()) {
+                        logger.info("[write][success] {}", sendout);
+                    } else {
+                        logger.info("[write][fail]", writeFuture.cause());
+                    }
+                });
     }
 
     public ChannelFuture startListenServer(int port) {

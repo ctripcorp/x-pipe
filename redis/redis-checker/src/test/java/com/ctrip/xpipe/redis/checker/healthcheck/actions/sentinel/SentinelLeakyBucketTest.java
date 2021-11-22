@@ -105,6 +105,7 @@ public class SentinelLeakyBucketTest extends AbstractTest {
                     } catch (Exception ignore) {
                         logger.info("[testRelease] await fail", ignore);
                     }
+                    sleep(randomInt(0, 10)); // sleep random time to desync acquire
                     if(leakyBucket.tryAcquire()) {
                         counter.incrementAndGet();
                         leakyBucket.release();
