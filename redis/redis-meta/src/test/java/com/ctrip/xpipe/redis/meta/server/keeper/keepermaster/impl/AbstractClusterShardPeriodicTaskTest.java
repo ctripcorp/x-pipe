@@ -88,6 +88,7 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
         Assert.assertEquals(0, counter.get());
 
         task.start();
+        Assert.assertTrue(countDownLatch.await(2, TimeUnit.SECONDS));
         int stopTimes = 10;
         try {
             for(int i = 0; i < stopTimes; i++) {
@@ -96,7 +97,6 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
         } catch (Exception ignore) {
         }
         verify(task, times(1)).doStop();
-        Assert.assertTrue(countDownLatch.await(10, TimeUnit.SECONDS));
         waitConditionUntilTimeOut(() -> counter.get() > 1, 2000, 100);
     }
 
