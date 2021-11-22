@@ -140,10 +140,10 @@ create table KEEPERCONTAINER_TBL
 (
 	keepercontainer_id bigint unsigned not null auto_increment primary key,
     keepercontainer_dc bigint unsigned not null,
+    az_id bigint(20) unsigned NOT NULL DEFAULT 0,
 	keepercontainer_ip varchar(40) not null,
 	keepercontainer_port int not null,
 	keepercontainer_active tinyint(1) not null default 1,
-    az_id bigint(20) unsigned NOT NULL DEFAULT 0,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
 	keepercontainer_org_id bigint(20) unsigned NOT NULL DEFAULT 0

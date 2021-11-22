@@ -24,24 +24,24 @@ public class AzUpdateController extends AbstractConsoleController {
 
     @RequestMapping(value = "/az", method = RequestMethod.POST)
     public RetMessage addAavilableZone(@RequestBody AzCreateInfo createInfo) {
-        try{
+        try {
             createInfo.check();
             azService.addAvailableZone(createInfo);
-            return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
-        }catch (Exception e){
-            logger.error("[addAavilableZone]", e);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[addAavilableZone] {} fail", createInfo);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
     @RequestMapping(value = "/az", method = RequestMethod.PUT)
     public RetMessage updateAvailableZone(@RequestBody AzCreateInfo createInfo) {
-        try{
+        try {
             createInfo.check();
             azService.updateAvailableZone(createInfo);
-            return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
-        }catch (Exception e){
-            logger.error("[updateAvailableZone]", e);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[updateAvailableZone] {} fail", createInfo);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
@@ -51,9 +51,9 @@ public class AzUpdateController extends AbstractConsoleController {
         try {
             logger.info("[delAvailableZoneByName]{}", azName);
             azService.deleteAvailableZoneByName(azName);
-            return RetMessage.createSuccessMessage(RetMessage.SUCCESS);
-        }catch (Exception e){
-            logger.error("[deleteAvailableZone]", e);
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[deleteAvailableZone] {} fail", azName);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
@@ -63,8 +63,8 @@ public class AzUpdateController extends AbstractConsoleController {
     public List<AzCreateInfo> getAvailableZoneByDc(@PathVariable String dcName) {
         try {
             return azService.getDcAvailableZones(dcName);
-        }catch (Exception e){
-            logger.error("[getAvailableZoneByDc]", e);
+        } catch (Exception e) {
+            logger.error("[getAvailableZoneByDc] {} fail", dcName);
             return Collections.emptyList();
         }
     }
@@ -73,8 +73,8 @@ public class AzUpdateController extends AbstractConsoleController {
     public List<AzCreateInfo> getAllAvailableZone() {
         try {
             return azService.getAllAvailableZones();
-        }catch (Exception e){
-            logger.error("[getAllAvailableZone]", e);
+        } catch (Exception e) {
+            logger.error("[getAllAvailableZone] {} fail", e);
             return Collections.emptyList();
         }
     }

@@ -1305,6 +1305,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-by-az-id" type="SELECT" multiple="true">
+				<param name="az-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='az-id'/> = ${az-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-by-ip-port" type="SELECT" multiple="false">
 				<param name="keepercontainer-ip"/>
 				<param name="keepercontainer-port"/>
@@ -1326,6 +1337,17 @@
 						<TABLE name='dc-info' />
 					where <FIELD name='deleted' /> = 0
 					and <FIELD name='keepercontainer-dc' /> = dt.id
+					]]>
+				</statement>
+			</query>
+			<query name='delete-keeper-container' type='UPDATE' batch='false'>
+				<param name='keepercontainer-id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='keepercontainer-id'/> = ${keepercontainer-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -2048,7 +2070,7 @@
 	</entity>
 	<entity name="az-tbl" table="az_tbl" alias="at">
 		<query-defs>
-			<query name="find-available-zone-by-dc" type="SELECT" multiple="true">
+			<query name="find-active-available-zone-by-dc" type="SELECT" multiple="true">
 				<param name='dc-id'/>
 				<statement>
 					<![CDATA[
@@ -2060,6 +2082,18 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-available-zone-by-dc" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id'/> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+
 			<query name="find-available-zone-by-az" type="SELECT" multiple="false">
 				<param name="az-name"/>
 				<statement>
@@ -2077,6 +2111,18 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='delete-available-zone' type='UPDATE' batch='false'>
+				<param name='id'/>
+				<param name="az-name"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1 , <FIELD name='az-name'/> = ${az-name}
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

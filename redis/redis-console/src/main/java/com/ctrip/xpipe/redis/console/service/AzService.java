@@ -14,6 +14,8 @@ public interface AzService {
 
     void updateAvailableZone(AzCreateInfo createInfo);
 
+    List<AzTbl>  getDcActiveAvailableZones(String dcName);
+
     List<AzTbl> getDcAvailableZonetbl(String dcName);
 
     List<AzCreateInfo> getDcAvailableZones(String dcName);

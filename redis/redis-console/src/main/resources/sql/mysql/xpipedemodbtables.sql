@@ -181,6 +181,7 @@ drop table if exists KEEPERCONTAINER_TBL;
 CREATE TABLE `KEEPERCONTAINER_TBL` (
   `keepercontainer_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `keepercontainer_dc` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference keepercontainer dc',
+  `az_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'available zone id',
   `keepercontainer_ip` varchar(40) NOT NULL DEFAULT '0.0.0.0' COMMENT 'keepercontainer ip',
   `keepercontainer_port` int(11) NOT NULL DEFAULT '0' COMMENT 'keepercontainer port',
   `keepercontainer_active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'keepercontainer active status',
@@ -339,10 +340,10 @@ CREATE TABLE `az_tbl` (
   `dc_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'dc id',
   `active` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'active or not',
   `az_name` varchar(128) NOT NULL DEFAULT '' COMMENT 'available zone name',
-  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for available zone name',
+  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for available zone',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_az_name` (`az_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='available zone  Info';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='available zone Info';

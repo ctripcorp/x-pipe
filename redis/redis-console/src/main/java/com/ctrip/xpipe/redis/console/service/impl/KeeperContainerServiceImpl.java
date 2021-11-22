@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -116,13 +117,23 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  private List<KeepercontainerTbl>  filterKeeperFromSameAvailableZone(List<KeepercontainerTbl> kcs, String dcName){
-    List<AzTbl> dcAvailableZones = azService.getDcAvailableZonetbl(dcName);
-    if(dcAvailableZones == null){
+  @Override
+  public List<KeepercontainerTbl> findKeeperContainerByAz(Long azId) {
+    return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+      @Override
+      public List<KeepercontainerTbl> doQuery() throws DalException {
+        return dao.findByAzId(azId, KeepercontainerTblEntity.READSET_FULL);
+      }
+    });
+  }
+
+  private List<KeepercontainerTbl>  filterKeeperFromSameAvailableZone(List<KeepercontainerTbl> kcs, String dcName) {
+    List<AzTbl> dcAvailableZones = azService.getDcActiveAvailableZones(dcName);
+    if(dcAvailableZones == null || dcAvailableZones.isEmpty()) {
       return kcs;
-    }else {
+    } else {
       Map<Long, Boolean> azs = new HashMap();
-      dcAvailableZones.forEach((az)->{
+      dcAvailableZones.forEach((az)-> {
         azs.put(az.getId(), false);
       });
 
@@ -237,6 +248,25 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         return dao.updateByPK(kc, KeepercontainerTblEntity.UPDATESET_FULL);
       }
     });
+  }
+
+  @Override
+  public void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort) {
+    KeepercontainerTbl kt = findByIpPort(keepercontainerIp, keepercontainerPort);
+    if(null == kt) throw new BadRequestException("Cannot find keepercontainer");
+
+    List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(keepercontainerIp);
+    if(keepers != null && !keepers.isEmpty()) {
+      throw new BadRequestException("This keepercontainer has keepers");
+    }
+
+    KeepercontainerTbl proto = kt;
+    queryHandler.handleDelete(new DalQuery<Integer>() {
+      @Override
+      public Integer doQuery() throws DalException {
+        return dao.deleteKeeperContainer(proto, KeepercontainerTblEntity.UPDATESET_FULL);
+      }
+    }, true);
   }
 
   @Override

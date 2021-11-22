@@ -175,6 +175,17 @@ public class KeeperUpdateController extends AbstractConsoleController {
       logger.error("[updateKeeperContainer]", e);
       return RetMessage.createFailMessage(e.getMessage());
     }
-
   }
+
+  @RequestMapping(value = "/keepercontainer/{keepercontaierIp}/{keepercontainerPort}", method = RequestMethod.DELETE)
+  public RetMessage deleteKeepercontainer(@PathVariable String keepercontaierIp, @PathVariable Integer keepercontainerPort) {
+    try {
+      keeperContainerService.deleteKeeperContainer(keepercontaierIp,keepercontainerPort);
+      return RetMessage.createSuccessMessage();
+    } catch (Exception e) {
+      logger.error("[deleteKeepercontainer] {}:{}", keepercontaierIp, keepercontainerPort);
+      return RetMessage.createFailMessage(e.getMessage());
+    }
+  }
+
 }

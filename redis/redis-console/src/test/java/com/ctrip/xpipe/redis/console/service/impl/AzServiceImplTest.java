@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -21,6 +22,15 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private DcServiceImpl dcService;
+
+    @Autowired
+    private KeeperContainerServiceImpl keeperContainerService;
+
+    @Autowired
+    private KeeperServiceImpl keeperService;
+
+    @Autowired
+    private RedisServiceImpl redisService;
 
     @Test(expected = IllegalArgumentException.class)
     public void testAddAzFailByWrongDc() {
@@ -133,6 +143,23 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         }
     }
 
+    @Test(expected = BadRequestException.class)
+    public void testDeleteAzFailByStillHasKeeperContainer(){
+        String azName = "A";
+        AzTbl at = azService.getAvailableZoneByAzName(azName);
+        Assert.assertNotNull(at);
+
+        try {
+            azService.deleteAvailableZoneByName(azName);
+        } catch (BadRequestException e) {
+            Assert.assertEquals("This keepercontainer has keepers", e.getMessage());
+            at = azService.getAvailableZoneByAzName(azName);
+            Assert.assertNotNull(at);
+            throw  e;
+        }
+
+    }
+
     @Test
     public void TestGetAzByDc(){
         addAvailableZone(dcNames[0], true, "JQ-A", "Zone for A");
@@ -152,15 +179,8 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
     @Test
     public void TestGetAllAzs(){
-        addAvailableZone(dcNames[0], true, "JQ-A", "Zone for A");
-        addAvailableZone(dcNames[0], true, "JQ-B", "Zone for C");
-        addAvailableZone(dcNames[0], true, "JQ-C", "Zone for C");
-
-        addAvailableZone(dcNames[1], true, "OY-A", "Zone for A");
-        addAvailableZone(dcNames[1], false, "OY-B", "Zone for B");
-
         List<AzCreateInfo> createInfoList = azService.getAllAvailableZones();
-        Assert.assertEquals(5, createInfoList.size());
+        Assert.assertEquals(3, createInfoList.size());
     }
 
 
@@ -176,4 +196,8 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(true, azService.availableZoneIsExist(createInfo));
     }
 
+    @Override
+    protected String prepareDatas() throws IOException {
+        return  prepareDatasFromFile("src/test/resources/available-zone-service-impl-test.sql");
+    }
 }

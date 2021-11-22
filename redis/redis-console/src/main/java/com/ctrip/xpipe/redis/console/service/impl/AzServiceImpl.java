@@ -1,13 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
+import com.ctrip.xpipe.redis.console.dao.AzDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.AzTbl;
-import com.ctrip.xpipe.redis.console.model.AzTblDao;
-import com.ctrip.xpipe.redis.console.model.AzTblEntity;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.query.DalQuery;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.AzService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -32,6 +28,12 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     @Autowired
     private DcService dcService;
 
+    @Autowired
+    private AzDao azDao;
+
+    @Autowired
+    private KeeperContainerServiceImpl keeperContainerService;
+
     @Override
     public void addAvailableZone(AzCreateInfo createInfo) {
         AzTbl proto = dao.createLocal();
@@ -47,13 +49,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
                 .setActive(createInfo.isActive())
                 .setAzName(createInfo.getAzName())
                 .setDescription(createInfo.getDescription());
-
-        queryHandler.handleInsert(new DalQuery<Integer>() {
-            @Override
-            public Integer doQuery() throws DalException {
-                return dao.insert(proto);
-            }
-        });
+        azDao.addAvailablezone(proto);
     }
 
     @Override
@@ -73,12 +69,17 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
                 .setAzName(createInfo.getAzName())
                 .setDescription(createInfo.getDescription());
 
-        queryHandler.handleInsert(new DalQuery<Integer>() {
-            @Override
-            public Integer doQuery() throws DalException {
-                return dao.updateByPK(at, AzTblEntity.UPDATESET_FULL);
-            }
-        });
+        azDao.updateAvailableZone(at);
+
+    }
+
+    @Override
+    public List<AzTbl> getDcActiveAvailableZones(String dcName) {
+        DcTbl dcTbl = dcService.find(dcName);
+        if(dcTbl == null)
+            throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
+
+        return azDao.findActiveAvailableZoneByDc(dcTbl.getId());
     }
 
     @Override
@@ -87,8 +88,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         if(dcTbl == null)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
 
-       return queryHandler.handleQuery(()->
-                dao.findAvailableZoneByDc(dcTbl.getId(), AzTblEntity.READSET_FULL));
+        return azDao.findAvailableZoneByDc(dcTbl.getId());
     }
 
 
@@ -111,9 +111,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public List<AzCreateInfo> getAllAvailableZones() {
-        List<AzTbl> azTbls = queryHandler.handleQuery(()->
-                dao.findAllAvailableZone(AzTblEntity.READSET_FULL));
-
+        List<AzTbl> azTbls = azDao.findAllAvailableZone();
         return Lists.newArrayList(Lists.transform(azTbls, new Function<AzTbl, AzCreateInfo>() {
             @Override
             public AzCreateInfo apply(AzTbl azTbl) {
@@ -131,15 +129,20 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public void deleteAvailableZoneByName(String azName) {
-        AzTbl proto =getAvailableZoneByAzName(azName);
-        if(proto == null)
+        AzTbl at =getAvailableZoneByAzName(azName);
+        if(at == null)
             throw new BadRequestException(String.format("availablezone %s not found", azName));
 
-        try {
-            dao.deleteByPK(proto);
-        } catch (DalException e) {
-            throw new ServerException(e.getMessage());
+        List<KeepercontainerTbl> kcs = keeperContainerService.findKeeperContainerByAz(at.getId());
+
+        if(null != kcs && !kcs.isEmpty()) {
+            for (KeepercontainerTbl kc : kcs){
+                keeperContainerService.deleteKeeperContainer(kc.getKeepercontainerIp(), kc.getKeepercontainerPort());
+            }
         }
+
+        AzTbl proto = at;
+        azDao.deleteAvailableZone(proto);
     }
 
     @Override
@@ -147,28 +150,18 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         try {
             return dao.findByPK(id, AzTblEntity.READSET_FULL);
         } catch (DalException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
             return null;
         }
     }
 
-    AzTbl getAvailableZoneByAzName(String azName){
-        return queryHandler.handleQuery(new DalQuery<AzTbl>() {
-            @Override
-            public AzTbl doQuery() throws DalException {
-                return dao.findAvailableZoneByAz(azName, AzTblEntity.READSET_FULL);
-            }
-        });
+    AzTbl getAvailableZoneByAzName(String azName) {
+        return azDao.findAvailableZoneByAz(azName);
     }
 
     @VisibleForTesting
-    boolean availableZoneIsExist(AzCreateInfo createInfo){
-        AzTbl exist = queryHandler.handleQuery(new DalQuery<AzTbl>() {
-            @Override
-            public AzTbl doQuery() throws DalException {
-              return dao.findAvailableZoneByAz(createInfo.getAzName(), AzTblEntity.READSET_FULL);
-            }
-        });
+    boolean availableZoneIsExist(AzCreateInfo createInfo) {
+        AzTbl exist = getAvailableZoneByAzName(createInfo.getAzName());
         return exist != null;
     }
 }
