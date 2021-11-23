@@ -20,10 +20,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.Tes
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.DefaultRedisMasterActionListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterCheckActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingAlertListenerTest;
@@ -70,6 +67,8 @@ import org.junit.runners.Suite;
         DiskLessReplCheckActionTest.class,
         RedisMasterCheckActionTest.class,
         RedisMasterCheckActionFactoryTest.class,
+        RedisWrongSlaveMonitorTest.class,
+        MasterOverOneMonitorTest.class,
         VersionCheckActionFactoryTest.class,
 
         DefaultAlertEntityHolderTest.class,

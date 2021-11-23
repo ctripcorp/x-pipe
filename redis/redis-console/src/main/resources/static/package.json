@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "XPipe-Console",
   "scripts": {
-    "build release": "npx webpack",
+    "build-release": "npx webpack",
     "build": "npx webpack --config webpack.config.dev.js",
     "serve": "npx webpack serve --config webpack.config.dev.js"
   },

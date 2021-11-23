@@ -95,7 +95,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 		ChangePrimaryDcAction changePrimaryDcAction = null;
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
+			changePrimaryDcAction = new BecomePrimaryAction(clusterId, shardId, dcMetaCache, currentMetaManager, sentinelManager,
 					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterId, shardId), scheduled, executors);
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
 					newPrimaryDc, masterInfo);
@@ -120,7 +120,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 			}
 		} else {
 			logger.info("[doChangePrimaryDc][become backup]{}, {}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
+			changePrimaryDcAction = new BecomeBackupAction(clusterId, shardId, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
 			return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
 		}
 	}

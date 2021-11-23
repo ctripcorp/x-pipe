@@ -18,10 +18,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author lishanglin
@@ -257,6 +254,14 @@ public abstract class AbstractMetaCache implements MetaCache {
             throw new MasterNotFoundException(clusterId, shardId);
         }
         return new HostPort(redisMaster.getValue().getIp(), redisMaster.getValue().getPort());
+    }
+
+    @Override
+    public List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+        if (null == shardMeta) return Collections.emptyList();
+        return shardMeta.getRedises();
     }
 
     @Override
