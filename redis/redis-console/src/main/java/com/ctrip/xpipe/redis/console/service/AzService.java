@@ -14,16 +14,14 @@ public interface AzService {
 
     void updateAvailableZone(AzCreateInfo createInfo);
 
-    List<AzTbl>  getDcActiveAvailableZones(String dcName);
+    List<AzTbl> getDcActiveAvailableZoneTbls(String dcName);
 
-    List<AzTbl> getDcAvailableZonetbl(String dcName);
+    List<AzTbl> getDcAvailableZoneTbls(String dcName);
 
-    List<AzCreateInfo> getDcAvailableZones(String dcName);
+    List<AzCreateInfo> getDcAvailableZoneInfos(String dcName);
 
-    List<AzCreateInfo> getAllAvailableZones();
+    List<AzCreateInfo> getAllAvailableZoneInfos();
 
     void deleteAvailableZoneByName(String azName);
-
-    AzTbl getAzinfoByid(long id);
 
 }

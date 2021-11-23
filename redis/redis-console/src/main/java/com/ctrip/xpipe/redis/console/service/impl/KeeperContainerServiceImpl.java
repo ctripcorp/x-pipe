@@ -118,7 +118,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public List<KeepercontainerTbl> findKeeperContainerByAz(Long azId) {
+  public List<KeepercontainerTbl> getKeeperContainerByAz(Long azId) {
     return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
       @Override
       public List<KeepercontainerTbl> doQuery() throws DalException {
@@ -128,7 +128,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   private List<KeepercontainerTbl>  filterKeeperFromSameAvailableZone(List<KeepercontainerTbl> kcs, String dcName) {
-    List<AzTbl> dcAvailableZones = azService.getDcActiveAvailableZones(dcName);
+    List<AzTbl> dcAvailableZones = azService.getDcActiveAvailableZoneTbls(dcName);
     if(dcAvailableZones == null || dcAvailableZones.isEmpty()) {
       return kcs;
     } else {
@@ -267,6 +267,26 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         return dao.deleteKeeperContainer(proto, KeepercontainerTblEntity.UPDATESET_FULL);
       }
     }, true);
+  }
+
+  @Override
+  public void deleteKeeperContainers(List<KeepercontainerTbl> kcs) {
+    for (KeepercontainerTbl kc : kcs) {
+      List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(kc.getKeepercontainerIp());
+      if(keepers != null && !keepers.isEmpty()) {
+        throw new BadRequestException("This keepercontainer has keepers");
+      }
+    }
+
+    for (KeepercontainerTbl kc : kcs) {
+      KeepercontainerTbl proto = kc;
+      queryHandler.handleDelete(new DalQuery<Integer>() {
+        @Override
+        public Integer doQuery() throws DalException {
+          return dao.deleteKeeperContainer(proto, KeepercontainerTblEntity.UPDATESET_FULL);
+        }
+      }, true);
+    }
   }
 
   @Override

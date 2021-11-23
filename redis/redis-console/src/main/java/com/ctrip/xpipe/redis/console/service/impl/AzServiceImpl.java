@@ -3,7 +3,10 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.AzDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.AzTbl;
+import com.ctrip.xpipe.redis.console.model.AzTblDao;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.AzService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -12,7 +15,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
 
@@ -39,7 +41,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         AzTbl proto = dao.createLocal();
 
         DcTbl dcTbl = dcService.find(createInfo.getDcName());
-        if(dcTbl == null)
+        if(null == dcTbl)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", createInfo.getDcName()));
 
         if(availableZoneIsExist(createInfo))
@@ -54,48 +56,40 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public void updateAvailableZone(AzCreateInfo createInfo) {
+        AzTbl at = getAvailableZoneTblByAzName(createInfo.getAzName());
 
-        DcTbl dcTbl = dcService.find(createInfo.getDcName());
-        if(dcTbl == null)
-            throw new IllegalArgumentException(String.format("DC name %s does not exist", createInfo.getDcName()));
-
-        AzTbl at = getAvailableZoneByAzName(createInfo.getAzName());
-
-        if(at == null)
+        if(null == at)
             throw new IllegalArgumentException(String.format("availablezone %s not found", createInfo.getAzName()));
 
-        at.setDcId(dcTbl.getId())
-                .setActive(createInfo.isActive())
-                .setAzName(createInfo.getAzName())
+        at.setActive(createInfo.isActive())
                 .setDescription(createInfo.getDescription());
 
         azDao.updateAvailableZone(at);
-
     }
 
     @Override
-    public List<AzTbl> getDcActiveAvailableZones(String dcName) {
+    public List<AzTbl> getDcActiveAvailableZoneTbls(String dcName) {
         DcTbl dcTbl = dcService.find(dcName);
-        if(dcTbl == null)
+        if(null == dcTbl)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
 
-        return azDao.findActiveAvailableZoneByDc(dcTbl.getId());
+        return azDao.findActiveAvailableZonesByDc(dcTbl.getId());
     }
 
     @Override
-    public List<AzTbl> getDcAvailableZonetbl(String dcName) {
+    public List<AzTbl> getDcAvailableZoneTbls(String dcName) {
         DcTbl dcTbl = dcService.find(dcName);
-        if(dcTbl == null)
+        if(null == dcTbl)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
 
-        return azDao.findAvailableZoneByDc(dcTbl.getId());
+        return azDao.findAvailableZonesByDc(dcTbl.getId());
     }
 
 
     @Override
-    public List<AzCreateInfo> getDcAvailableZones(String dcName) {
+    public List<AzCreateInfo> getDcAvailableZoneInfos(String dcName) {
 
-        return Lists.newArrayList(Lists.transform(getDcAvailableZonetbl(dcName), new Function<AzTbl, AzCreateInfo>() {
+        return Lists.newArrayList(Lists.transform(getDcAvailableZoneTbls(dcName), new Function<AzTbl, AzCreateInfo>() {
             @Override
             public AzCreateInfo apply(AzTbl azTbl) {
                 AzCreateInfo azCreateInfo = new AzCreateInfo()
@@ -110,8 +104,8 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     }
 
     @Override
-    public List<AzCreateInfo> getAllAvailableZones() {
-        List<AzTbl> azTbls = azDao.findAllAvailableZone();
+    public List<AzCreateInfo> getAllAvailableZoneInfos() {
+        List<AzTbl> azTbls = azDao.findAllAvailableZones();
         return Lists.newArrayList(Lists.transform(azTbls, new Function<AzTbl, AzCreateInfo>() {
             @Override
             public AzCreateInfo apply(AzTbl azTbl) {
@@ -129,39 +123,27 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public void deleteAvailableZoneByName(String azName) {
-        AzTbl at =getAvailableZoneByAzName(azName);
-        if(at == null)
+        AzTbl at = getAvailableZoneTblByAzName(azName);
+        if(null == at)
             throw new BadRequestException(String.format("availablezone %s not found", azName));
 
-        List<KeepercontainerTbl> kcs = keeperContainerService.findKeeperContainerByAz(at.getId());
-
-        if(null != kcs && !kcs.isEmpty()) {
-            for (KeepercontainerTbl kc : kcs){
-                keeperContainerService.deleteKeeperContainer(kc.getKeepercontainerIp(), kc.getKeepercontainerPort());
-            }
-        }
+        List<KeepercontainerTbl> kcs = keeperContainerService.getKeeperContainerByAz(at.getId());
+        if(null != kcs && !kcs.isEmpty())
+            keeperContainerService.deleteKeeperContainers(kcs);
 
         AzTbl proto = at;
         azDao.deleteAvailableZone(proto);
     }
 
-    @Override
-    public AzTbl getAzinfoByid(long id) {
-        try {
-            return dao.findByPK(id, AzTblEntity.READSET_FULL);
-        } catch (DalException e) {
-            logger.error(e.getMessage());
-            return null;
-        }
-    }
 
-    AzTbl getAvailableZoneByAzName(String azName) {
+    @VisibleForTesting
+    AzTbl getAvailableZoneTblByAzName(String azName) {
         return azDao.findAvailableZoneByAz(azName);
     }
 
     @VisibleForTesting
     boolean availableZoneIsExist(AzCreateInfo createInfo) {
-        AzTbl exist = getAvailableZoneByAzName(createInfo.getAzName());
+        AzTbl exist = getAvailableZoneTblByAzName(createInfo.getAzName());
         return exist != null;
     }
 }

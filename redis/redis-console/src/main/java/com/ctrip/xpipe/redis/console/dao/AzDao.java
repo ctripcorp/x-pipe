@@ -29,7 +29,6 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         }
     }
 
-    @DalTransaction
     public void deleteAvailableZone(final AzTbl az) {
         AzTbl proto = az;
         proto.setAzName(generateDeletedName(az.getAzName()));
@@ -59,7 +58,6 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         });
     }
 
-    @DalTransaction
     public void updateAvailableZone(AzTbl proto) {
         queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
@@ -69,7 +67,7 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         });
     }
 
-    public List<AzTbl> findActiveAvailableZoneByDc(long dcId) {
+    public List<AzTbl> findActiveAvailableZonesByDc(long dcId) {
         return queryHandler.handleQuery(new DalQuery<List<AzTbl>>() {
             @Override
             public List<AzTbl> doQuery() throws DalException {
@@ -78,7 +76,7 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         });
     }
 
-    public List<AzTbl> findAvailableZoneByDc(long dcId) {
+    public List<AzTbl> findAvailableZonesByDc(long dcId) {
         return queryHandler.handleQuery(new DalQuery<List<AzTbl>>() {
             @Override
             public List<AzTbl> doQuery() throws DalException {
@@ -87,7 +85,7 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         });
     }
 
-    public List<AzTbl> findAllAvailableZone() {
+    public List<AzTbl> findAllAvailableZones() {
         return queryHandler.handleQuery(new DalQuery<List<AzTbl>>() {
             @Override
             public List<AzTbl> doQuery() throws DalException {

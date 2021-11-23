@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +63,7 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         long dc_id = dcService.findByDcName(dcNames[0]).getId();
         addAvailableZone(dcNames[0], true, azName, "zone for G");
 
-        AzTbl at = azService.getAvailableZoneByAzName(azName);
+        AzTbl at = azService.getAvailableZoneTblByAzName(azName);
         Assert.assertEquals("zone for G", at.getDescription());
 
         AzCreateInfo createInfo = new AzCreateInfo()
@@ -73,18 +74,18 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
         azService.updateAvailableZone(createInfo);
 
-        at = azService.getAvailableZoneByAzName(azName);
+        at = azService.getAvailableZoneTblByAzName(azName);
         Assert.assertEquals("zone for F", at.getDescription());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testUpdateAzFailByWrongDc(){
+    @Test
+    public void testDcCanNotBeUpdated(){
         String azName = "JQ-G";
         String wrongDcName = "XY";
         addAvailableZone(dcNames[0], true, azName, "zone for G");
 
-        AzTbl at = azService.getAvailableZoneByAzName(azName);
-        Assert.assertEquals("zone for G", at.getDescription());
+        AzTbl oldAt = azService.getAvailableZoneTblByAzName(azName);
+        Assert.assertNotNull(oldAt);
 
         AzCreateInfo createInfo = new AzCreateInfo()
                 .setDcName(wrongDcName)
@@ -92,12 +93,10 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
                 .setAzName(azName)
                 .setDescription("zone for F");
 
-        try {
-            azService.updateAvailableZone(createInfo);
-        } catch (Exception e) {
-            Assert.assertEquals("DC name " + wrongDcName +  " does not exist" , e.getMessage());
-            throw e;
-        }
+        azService.updateAvailableZone(createInfo);
+
+        AzTbl newAt = azService.getAvailableZoneTblByAzName(azName);
+        Assert.assertEquals(oldAt.getDcId(), newAt.getDcId());
     }
 
 
@@ -123,12 +122,12 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         String azName = "JQ-G";
         addAvailableZone(dcNames[0], true, azName, "zone for G");
 
-        AzTbl at = azService.getAvailableZoneByAzName(azName);
+        AzTbl at = azService.getAvailableZoneTblByAzName(azName);
         Assert.assertNotNull(at);
 
         azService.deleteAvailableZoneByName(azName);
 
-        at = azService.getAvailableZoneByAzName(azName);
+        at = azService.getAvailableZoneTblByAzName(azName);
         Assert.assertNull(at);
     }
 
@@ -144,17 +143,19 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test(expected = BadRequestException.class)
-    public void testDeleteAzFailByStillHasKeeperContainer(){
+    public void testDeleteAzFailByStillHasKeepers(){
         String azName = "A";
-        AzTbl at = azService.getAvailableZoneByAzName(azName);
+        AzTbl at = azService.getAvailableZoneTblByAzName(azName);
         Assert.assertNotNull(at);
-
+        List<KeepercontainerTbl> kcs1 = keeperContainerService.getKeeperContainerByAz(at.getId());
         try {
             azService.deleteAvailableZoneByName(azName);
         } catch (BadRequestException e) {
             Assert.assertEquals("This keepercontainer has keepers", e.getMessage());
-            at = azService.getAvailableZoneByAzName(azName);
+            at = azService.getAvailableZoneTblByAzName(azName);
             Assert.assertNotNull(at);
+            List<KeepercontainerTbl> kcs2 = keeperContainerService.getKeeperContainerByAz(at.getId());
+            Assert.assertEquals(kcs1.size(), kcs2.size());
             throw  e;
         }
 
@@ -169,17 +170,17 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
 
         addAvailableZone(dcNames[1], true, "OY-A", "Zone for A");
 
-        List<AzCreateInfo> createInfoList = azService.getDcAvailableZones(dcNames[0]);
+        List<AzCreateInfo> createInfoList = azService.getDcAvailableZoneInfos(dcNames[0]);
         Assert.assertEquals(4, createInfoList.size());
 
-        createInfoList = azService.getDcAvailableZones(dcNames[1]);
+        createInfoList = azService.getDcAvailableZoneInfos(dcNames[1]);
         Assert.assertEquals(1, createInfoList.size());
 
     }
 
     @Test
     public void TestGetAllAzs(){
-        List<AzCreateInfo> createInfoList = azService.getAllAvailableZones();
+        List<AzCreateInfo> createInfoList = azService.getAllAvailableZoneInfos();
         Assert.assertEquals(3, createInfoList.size());
     }
 

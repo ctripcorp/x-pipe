@@ -101,9 +101,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
       logger.info("[addKeepers]{},{},{},{}", dcId, clusterId, shardId, bestKeepers);
       redisService.insertKeepers(dcId, clusterId, shardId, bestKeepers);
       return RetMessage.createSuccessMessage("insert success:" + bestKeepers);
-    } catch (Exception e) {
-      logger.error("[addKeepers]" + dcId + "," + clusterId + "," + shardId, e);
-      return RetMessage.createFailMessage("insert fail:" + e.getMessage());
+    } catch (Throwable th) {
+      logger.error("[addKeepers]" + dcId + "," + clusterId + "," + shardId, th);
+      return RetMessage.createFailMessage("insert fail:" + th.getMessage());
     }
   }
 
@@ -126,9 +126,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
         message = "success, but already no keepers";
       }
       return RetMessage.createSuccessMessage(message);
-    } catch (Exception e) {
-      logger.error("[deleteKeepers]", e);
-      return RetMessage.createFailMessage(e.getMessage());
+    } catch (Throwable th) {
+      logger.error("[deleteKeepers]", th);
+      return RetMessage.createFailMessage(th.getMessage());
     }
   }
 
@@ -138,9 +138,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
     try {
         boolean result = keeperService.isKeeper(hostPort);
         return GenericRetMessage.createGenericRetMessage(result);
-    } catch (Exception e) {
-        logger.error("[isKeeper]{}", e);
-        return RetMessage.createFailMessage(e.getMessage());
+    } catch (Throwable th) {
+        logger.error("[isKeeper]{}", th);
+        return RetMessage.createFailMessage(th.getMessage());
     }
   }
 
@@ -150,8 +150,8 @@ public class KeeperUpdateController extends AbstractConsoleController {
       createInfo.check();
       keeperContainerService.addKeeperContainer(createInfo);
       return RetMessage.createSuccessMessage("Add KeeperContainer successfully");
-    } catch (Exception e) {
-      return RetMessage.createFailMessage(e.getMessage());
+    } catch (Throwable th) {
+      return RetMessage.createFailMessage(th.getMessage());
     }
   }
 
@@ -159,8 +159,8 @@ public class KeeperUpdateController extends AbstractConsoleController {
   public List<KeeperContainerCreateInfo> getKeeperContainersByDc(@PathVariable String dcName) {
     try {
       return keeperContainerService.getDcAllKeeperContainers(dcName);
-    } catch (Exception e) {
-      logger.error("[getKeeperContainersByDc]", e);
+    } catch (Throwable th) {
+      logger.error("[getKeeperContainersByDc]", th);
     }
     return Collections.emptyList();
   }
@@ -171,9 +171,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
       createInfo.check();
       keeperContainerService.updateKeeperContainer(createInfo);
       return RetMessage.createSuccessMessage();
-    } catch (Exception e) {
-      logger.error("[updateKeeperContainer]", e);
-      return RetMessage.createFailMessage(e.getMessage());
+    } catch (Throwable th) {
+      logger.error("[updateKeeperContainer]", th);
+      return RetMessage.createFailMessage(th.getMessage());
     }
   }
 
@@ -182,9 +182,9 @@ public class KeeperUpdateController extends AbstractConsoleController {
     try {
       keeperContainerService.deleteKeeperContainer(keepercontaierIp,keepercontainerPort);
       return RetMessage.createSuccessMessage();
-    } catch (Exception e) {
-      logger.error("[deleteKeepercontainer] {}:{}", keepercontaierIp, keepercontainerPort);
-      return RetMessage.createFailMessage(e.getMessage());
+    } catch (Throwable th) {
+      logger.error("[deleteKeepercontainer][fail] {}:{}", keepercontaierIp, keepercontainerPort, th);
+      return RetMessage.createFailMessage(th.getMessage());
     }
   }
 

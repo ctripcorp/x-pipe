@@ -9,7 +9,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 public class AzCreateInfo extends AbstractCreateInfo{
     private String dcName;
 
-    private boolean active;
+    private Boolean active;
 
     private String azName;
 
@@ -25,10 +25,6 @@ public class AzCreateInfo extends AbstractCreateInfo{
             throw new CheckFailException("azName empty");
         }
 
-        if(StringUtil.isEmpty(desc)){
-            throw new CheckFailException("desc empty");
-        }
-
     }
 
     public String getDcName() {
@@ -40,11 +36,11 @@ public class AzCreateInfo extends AbstractCreateInfo{
         return this;
     }
 
-    public boolean isActive() {
+    public Boolean isActive() {
         return active;
     }
 
-    public AzCreateInfo setActive(boolean active) {
+    public AzCreateInfo setActive(Boolean active) {
         this.active = active;
         return this;
     }
@@ -71,7 +67,7 @@ public class AzCreateInfo extends AbstractCreateInfo{
     public String toString() {
         return "AzCreateInfo{" +
                 "dcName='" + dcName + '\'' +
-                ", active=" + active +
+                ", active=" + active + '\'' +
                 ", azName='" + azName + '\'' +
                 ", description='" + desc + '\'' +
                 '}';

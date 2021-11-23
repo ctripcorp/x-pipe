@@ -28,9 +28,9 @@ public class AzUpdateController extends AbstractConsoleController {
             createInfo.check();
             azService.addAvailableZone(createInfo);
             return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            logger.error("[addAavilableZone] {} fail", createInfo);
-            return RetMessage.createFailMessage(e.getMessage());
+        } catch (Throwable th) {
+            logger.error("[addAavilableZone][fail] {}", createInfo, th);
+            return RetMessage.createFailMessage(th.getMessage());
         }
     }
 
@@ -40,41 +40,41 @@ public class AzUpdateController extends AbstractConsoleController {
             createInfo.check();
             azService.updateAvailableZone(createInfo);
             return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            logger.error("[updateAvailableZone] {} fail", createInfo);
-            return RetMessage.createFailMessage(e.getMessage());
+        } catch (Throwable th) {
+            logger.error("[updateAvailableZone][fail] {}", createInfo, th);
+            return RetMessage.createFailMessage(th.getMessage());
         }
     }
 
     @RequestMapping(value = "/az/{azName:.+}", method = RequestMethod.DELETE)
     public RetMessage delAvailableZoneByName(@PathVariable String azName) {
         try {
-            logger.info("[delAvailableZoneByName]{}", azName);
+            logger.info("[delAvailableZoneByName] {}", azName);
             azService.deleteAvailableZoneByName(azName);
             return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            logger.error("[deleteAvailableZone] {} fail", azName);
-            return RetMessage.createFailMessage(e.getMessage());
+        } catch (Throwable th) {
+            logger.error("[deleteAvailableZone][fail] {}", azName, th);
+            return RetMessage.createFailMessage(th.getMessage());
         }
     }
 
 
     @RequestMapping(value = "/az/{dcName}", method = RequestMethod.GET)
-    public List<AzCreateInfo> getAvailableZoneByDc(@PathVariable String dcName) {
+    public List<AzCreateInfo> getAvailableZoneInfosByDc(@PathVariable String dcName) {
         try {
-            return azService.getDcAvailableZones(dcName);
-        } catch (Exception e) {
-            logger.error("[getAvailableZoneByDc] {} fail", dcName);
+            return azService.getDcAvailableZoneInfos(dcName);
+        } catch (Throwable th) {
+            logger.error("[getAvailableZoneInfosByDc][fail] {}", dcName, th);
             return Collections.emptyList();
         }
     }
 
     @RequestMapping(value = "/az/all", method = RequestMethod.GET)
-    public List<AzCreateInfo> getAllAvailableZone() {
+    public List<AzCreateInfo> getAllAvailableZoneInfos() {
         try {
-            return azService.getAllAvailableZones();
-        } catch (Exception e) {
-            logger.error("[getAllAvailableZone] {} fail", e);
+            return azService.getAllAvailableZoneInfos();
+        } catch (Throwable th) {
+            logger.error("[getAllAvailableZoneInfos][fail] {}", th);
             return Collections.emptyList();
         }
     }
