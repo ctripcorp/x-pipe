@@ -1,0 +1,87 @@
+/*!
+ * AngularJS Material Design
+ * https://github.com/angular/material
+ * @license MIT
+ * v1.2.2
+ */
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+/**
+     * @license
+     * Copyright Google Inc. All Rights Reserved.
+     *
+     * Use of this source code is governed by an MIT-style license that can be
+     * found in the LICENSE file at https://angular.io/license
+     */
+
+/**
+     * @license
+     * Copyright Google LLC All Rights Reserved.
+     *
+     * Use of this source code is governed by an MIT-style license that can be
+     * found in the LICENSE file at https://angular.io/license
+     */
+
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * @license
+ * Lodash <https://lodash.com/>
+ * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
+
+/**
+ * @license Angular v10.2.5
+ * (c) 2010-2020 Google LLC. https://angular.io/
+ * License: MIT
+ */
+
+/**
+ * @license AngularJS v1.8.2
+ * (c) 2010-2020 Google LLC. http://angularjs.org
+ * License: MIT
+ */
+
+/**
+ * angular-chosen-localytics - Angular Chosen directive is an AngularJS Directive that brings the Chosen jQuery in a Angular way
+ * @version v1.9.2
+ * @link http://github.com/leocaseiro/angular-chosen
+ * @license MIT
+ */
+
+/**
+ * ngTable: Table + Angular JS
+ *
+ * @author Vitalii Savchuk <esvit666@gmail.com>
+ * @url https://github.com/esvit/ng-table/
+ * @license New BSD License <http://creativecommons.org/licenses/BSD/>
+ */
+
+/**
+* @license Angular v9.1.0-next.4+61.sha-e552591.with-local-changes
+* (c) 2010-2020 Google LLC. https://angular.io/
+* License: MIT
+*/

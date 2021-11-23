@@ -145,12 +145,10 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
         Server metaMasterServer = startServer(metaMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
-                + "$9\r\nlocalhost\r\n"
-                + ":" + metaMaster.getPort() + "\r\n");
+                + ":0\r\n*0\r\n");
         Server helloMasterServer = startServer(helloMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
-                + "$9\r\nlocalhost\r\n"
-                + ":" + helloMaster.getPort() + "\r\n");
+                + ":0\r\n*0\r\n");
         trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
         Assert.assertEquals(2, trueMasters.size());
         metaMasterServer.stop();

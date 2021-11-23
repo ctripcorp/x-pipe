@@ -83,7 +83,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
     @Test
     public void testExpectMasterAndMaster() {
         instance.getCheckInfo().isMaster(true);
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.MASTER));
+        listener.onAction(new RedisMasterActionContext(instance, new TestRole(Server.SERVER_ROLE.MASTER)));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
     }
@@ -91,7 +91,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
     @Test
     public void testExpectSlaveAndSlave() {
         instance.getCheckInfo().isMaster(false);
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.SLAVE));
+        listener.onAction(new RedisMasterActionContext(instance, new TestRole(Server.SERVER_ROLE.SLAVE)));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
     }
@@ -99,7 +99,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
     @Test
     public void testExpectMasterButSlave() {
         instance.getCheckInfo().isMaster(true);
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.SLAVE));
+        listener.onAction(new RedisMasterActionContext(instance, new TestRole(Server.SERVER_ROLE.SLAVE)));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(persistenceCache, Mockito.times(1)).updateRedisRole(Mockito.any(), Mockito.any());
         Assert.assertEquals(new HostPort("127.0.0.1", 6379), updateRedis);
@@ -109,7 +109,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
     @Test
     public void testExpectSlaveButMaster() {
         instance.getCheckInfo().isMaster(false);
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.MASTER));
+        listener.onAction(new RedisMasterActionContext(instance, new TestRole(Server.SERVER_ROLE.MASTER)));
         Mockito.verify(listener, Mockito.never()).handleUnknownRole(Mockito.any());
         Mockito.verify(persistenceCache, Mockito.times(1)).updateRedisRole(Mockito.any(), Mockito.any());
         Assert.assertEquals(new HostPort("127.0.0.1", 6379), updateRedis);
@@ -143,7 +143,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
     public void testUnknownAndSlave() {
         instance.getCheckInfo().isMaster(false);
         redises.get(0).setValue(false);
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(listener, Mockito.times(1)).handleUnknownRole(Mockito.any());
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
@@ -154,7 +154,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
     @Test
     public void testUnknownAndMaster() {
         instance.getCheckInfo().isMaster(true);
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
         Mockito.verify(metaServerManager, Mockito.never()).getCurrentMaster(anyString(), anyString(), anyString());
@@ -166,7 +166,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
         instance.getCheckInfo().isMaster(true);
         Mockito.when(metaServerManager.getCurrentMaster(anyString(), anyString(), anyString()))
                 .thenReturn(new RedisMeta().setIp("127.0.0.1").setPort(6379));
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
     }
@@ -177,7 +177,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
         instance.getCheckInfo().isMaster(true);
         Mockito.when(metaServerManager.getCurrentMaster(anyString(), anyString(), anyString()))
                 .thenReturn(new RedisMeta().setIp("127.0.0.1").setPort(6479));
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(persistenceCache, Mockito.times(1)).updateRedisRole(Mockito.any(), Mockito.any());
         Assert.assertEquals(new HostPort("127.0.0.1", 6379), updateRedis);
@@ -190,7 +190,7 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
         instance.getCheckInfo().isMaster(true);
         Mockito.when(metaServerManager.getCurrentMaster(anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException());
-        listener.onAction(new RedisMasterActionContext(instance, Server.SERVER_ROLE.UNKNOWN));
+        listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
     }

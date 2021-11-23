@@ -82,7 +82,8 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         });
 
         ExecutionLog executionLog = new ExecutionLog("refreshDcMetaWithDcChangeTest");
-        BecomePrimaryAction becomePrimaryAction = new CustomBecomePrimaryAction(dcMetaCache, executionLog);
+        BecomePrimaryAction becomePrimaryAction =
+                new CustomBecomePrimaryAction(clusterMeta.getId(), shardMeta.getId(), dcMetaCache, executionLog);
 
         CountDownLatch latch = new CountDownLatch(2);
         CyclicBarrier barrier = new CyclicBarrier(2);
@@ -135,8 +136,8 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
     }
 
     private static class CustomBecomePrimaryAction extends BecomePrimaryAction {
-        public CustomBecomePrimaryAction(DcMetaCache dcMetaCache,  ExecutionLog executionLog) {
-            super(dcMetaCache, null, null, new OffsetWaiter() {
+        public CustomBecomePrimaryAction(String cluster, String shard, DcMetaCache dcMetaCache,  ExecutionLog executionLog) {
+            super(cluster, shard, dcMetaCache, null, null, new OffsetWaiter() {
                         @Override
                         public boolean tryWaitfor(HostPort hostPort, MasterInfo masterInfo, ExecutionLog executionLog) {
                             return false;

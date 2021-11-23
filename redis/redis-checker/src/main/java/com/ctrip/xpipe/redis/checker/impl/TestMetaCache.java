@@ -2,12 +2,14 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -126,4 +128,8 @@ public class TestMetaCache implements MetaCache {
 
     }
 
+    @Override
+    public List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard) {
+        return Collections.emptyList();
+    }
 }
