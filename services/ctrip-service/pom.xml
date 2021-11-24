@@ -10,7 +10,7 @@
     <artifactId>ctrip-service</artifactId>
 
     <properties>
-        <fireman.version>2.0.12</fireman.version>
+        <fireman.version>2.0.13</fireman.version>
     </properties>
 
     <dependencies>
