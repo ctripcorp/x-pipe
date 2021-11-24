@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor;
 
 
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;

@@ -17,6 +17,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayA
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.RouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
