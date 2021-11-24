@@ -90,6 +90,8 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         ShardService.findClusterDcShards(clusterName, dcName)
             .then(function (result) {
                 $scope.shards = result.sort((v1, v2) => {
+                    if (v1.shardTbl.shardName.length != v2.shardTbl.shardName.length)
+                        return v1.shardTbl.shardName.length - v2.shardTbl.shardName.length;
                     if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
                     else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
                     else return 0;
