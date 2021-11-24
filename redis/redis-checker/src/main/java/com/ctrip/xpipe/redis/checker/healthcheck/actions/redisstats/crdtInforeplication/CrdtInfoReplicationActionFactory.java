@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
@@ -12,22 +12,23 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * @author lishanglin
- * date 2021/1/26
- */
 @Component
-public class BackStreamingActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
+public class CrdtInfoReplicationActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
 
     @Autowired
-    private List<BackStreamingListener> listeners;
+    private List<CrdtInfoReplicationListener> listeners;
 
     @Autowired
     private RedisStatsCheckController checkController;
+    
+    @Override
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList(ALERT_TYPE.CRDT_BACKSTREAMING);
+    }
 
     @Override
-    public BackStreamingAction create(RedisHealthCheckInstance instance) {
-        BackStreamingAction action = new BackStreamingAction(scheduled, instance, executors);
+    public CrdtInfoReplicationAction create(RedisHealthCheckInstance instance) {
+        CrdtInfoReplicationAction action = new CrdtInfoReplicationAction(scheduled, instance, executors);
         action.addListeners(listeners);
         action.addController(checkController);
         return action;
@@ -35,12 +36,6 @@ public class BackStreamingActionFactory extends AbstractRedisLeaderAwareHealthCh
 
     @Override
     public Class<? extends SiteLeaderAwareHealthCheckAction> support() {
-        return BackStreamingAction.class;
+         return CrdtInfoReplicationAction.class;
     }
-
-    @Override
-    protected List<ALERT_TYPE> alertTypes() {
-        return Lists.newArrayList(ALERT_TYPE.CRDT_BACKSTREAMING);
-    }
-
 }

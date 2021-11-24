@@ -21,12 +21,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.Disk
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingAlertListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictMetricListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.BackStreamingAlertListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeMetricListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeCheckActionTest;
@@ -93,13 +93,13 @@ import org.junit.runners.Suite;
         BeaconMetaCheckActionTest.class,
         BeaconActiveDcControllerTest.class,
 
-        BackStreamingActionTest.class,
-        BackStreamingAlertListenerTest.class,
-        BackStreamingActionFactoryTest.class,
-
         SentinelHelloTest.class,
         HealthStatusTest.class,
         OuterClientServiceProcessorTest.class,
+
+        CrdtInfoReplicationActionFactoryTest.class,
+        CrdtInfoReplicationActionTest.class,
+        BackStreamingAlertListenerTest.class,
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
         RouteHealthEventProcessorTest.class,
