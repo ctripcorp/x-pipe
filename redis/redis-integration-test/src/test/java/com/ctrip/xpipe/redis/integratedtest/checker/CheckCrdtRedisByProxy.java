@@ -77,7 +77,6 @@ public class CheckCrdtRedisByProxy extends AbstractXpipeServerMultiDcTest {
 
         startSpringConsole(consolePort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + consolePort), consoles, metaServers, extraOptions);
 
-
         startSpringChecker(checkerPort, JQ_IDC, jqZk.getAddress(), Collections.singletonList("127.0.0.1:" + consolePort), "127.0.0.2");
 
     }

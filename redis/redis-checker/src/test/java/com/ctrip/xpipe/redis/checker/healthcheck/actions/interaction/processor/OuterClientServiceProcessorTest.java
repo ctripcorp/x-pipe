@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -11,6 +11,9 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;

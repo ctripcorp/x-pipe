@@ -1,10 +1,10 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route;
 
-import com.ctrip.xpipe.api.cluster.ClusterServer;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
