@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
@@ -11,9 +11,9 @@ import org.slf4j.Logger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class ConflictCheckAction extends RedisStatsCheckAction<String, CrdtConflictStats> {
-
-    public ConflictCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
+public class CrdtInfoStatsAction extends RedisStatsCheckAction<String, InfoResultExtractor> {
+    
+    public CrdtInfoStatsAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);
     }
 
@@ -24,13 +24,13 @@ public class ConflictCheckAction extends RedisStatsCheckAction<String, CrdtConfl
 
     @Override
     protected CommandFuture<String> executeRedisCommandForStats(Callbackable<String> callback) {
-        return instance.getRedisSession().crdtInfoStats(callback);
+        return getActionInstance().getRedisSession().crdtInfoStats(callback);
     }
 
     @Override
-    protected ActionContext<CrdtConflictStats, RedisHealthCheckInstance> generateActionContext(String result) {
+    protected ActionContext<InfoResultExtractor, RedisHealthCheckInstance> generateActionContext(String result) {
         InfoResultExtractor extractor = new InfoResultExtractor(result);
-        return new CrdtConflictCheckContext(instance, new CrdtConflictStats(extractor));
+        return new CrdtInfoStatsContext(instance, extractor);
     }
-
 }
+

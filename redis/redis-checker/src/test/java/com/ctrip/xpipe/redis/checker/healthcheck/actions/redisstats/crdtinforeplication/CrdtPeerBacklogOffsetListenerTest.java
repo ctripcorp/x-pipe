@@ -57,10 +57,26 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
         int offset1 = Math.abs(randomInt());
         int port2 = 7379;
         int offset2 = 0;
+        final String TMP_HIGH_VERSION_REPLICATION = "# CRDT Replication\r\n" +
+                "ovc:1:0;2:0\r\n" +
+                "gcvc:1:0;2:0\r\n" +
+                "gid:1\r\n" +
+                "peer0_host:127.0.0.1\r\n" +
+                "peer0_port:%d\r\n" +
+                "peer0_repl_offset:%d\r\n" +
+                "peer1_host:127.0.0.1\r\n" +
+                "peer1_port:%d\r\n" +
+                "peer1_repl_offset:0\r\n";
+        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_HIGH_VERSION_REPLICATION, port1, offset1, port2, offset2));
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
         Mockito.doAnswer(invocation -> {
             MetricData point = invocation.getArgumentAt(0, MetricData.class);
             Assert.assertEquals(CrdtPeerBacklogOffsetListener.METRIC_TYPE, point.getMetricType());
-            
+            Assert.assertEquals(instance.getCheckInfo().getClusterId(), point.getClusterName());
+            Assert.assertEquals(instance.getCheckInfo().getShardId(), point.getShardName());
+            Assert.assertEquals(instance.getCheckInfo().getClusterType().toString(), point.getClusterType());
+            Assert.assertEquals(instance.getCheckInfo().getDcId(), point.getDcName());
+            Assert.assertEquals(context.getRecvTimeMilli(), point.getTimestampMilli());
             if(point.getHostPort().getPort() == port1) {
                 Assert.assertEquals(offset1, point.getValue(), DOUBLE_DELTA);
             } else if(point.getHostPort().getPort() == port2) {
@@ -69,21 +85,9 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
             return null;
         }).when(proxy).writeBinMultiDataPoint(Mockito.any());
 
-        final String TMP_HIGH_VERSION_REPLICATION = "# CRDT Replication\r\n" +
-                "ovc:1:0;2:0\r\n" +
-                "gcvc:1:0;2:0\r\n" +
-                "gid:1\r\n" +
-                "peer0_host:127.0.0.1\r\n" + 
-                "peer0_port:%d\r\n" + 
-                "peer0_repl_offset:%d\r\n" +
-                "peer1_host:127.0.0.1\r\n" +
-                "peer1_port:%d\r\n" +
-                "peer1_repl_offset:0\r\n";
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_HIGH_VERSION_REPLICATION, port1, offset1, port2, offset2));
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
+        
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
-
-
+        Mockito.verify(proxy, Mockito.times(2)).writeBinMultiDataPoint(Mockito.any());
     }
 }

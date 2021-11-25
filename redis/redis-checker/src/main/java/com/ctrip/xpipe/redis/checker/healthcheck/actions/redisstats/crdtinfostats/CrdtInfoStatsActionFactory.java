@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats;
 
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
@@ -11,19 +11,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
 @Component
-public class ConflictCheckActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
-
+public class CrdtInfoStatsActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory implements BiDirectionSupport {
     @Autowired
-    private List<ConflictCheckListener> listeners;
+    private List<CrdtInfoStatsListener> listeners;
 
     @Autowired
     private RedisStatsCheckController checkController;
 
     @Override
-    public ConflictCheckAction create(RedisHealthCheckInstance instance) {
-        ConflictCheckAction action = new ConflictCheckAction(scheduled, instance, executors);
+    protected List<ALERT_TYPE> alertTypes() {
+        return Lists.newArrayList();
+    }
+
+    @Override
+    public CrdtInfoStatsAction create(RedisHealthCheckInstance instance) {
+        CrdtInfoStatsAction action = new CrdtInfoStatsAction(scheduled, instance, executors);
         action.addListeners(listeners);
         action.addController(checkController);
         return action;
@@ -31,12 +34,6 @@ public class ConflictCheckActionFactory extends AbstractRedisLeaderAwareHealthCh
 
     @Override
     public Class<? extends SiteLeaderAwareHealthCheckAction> support() {
-        return ConflictCheckAction.class;
+        return CrdtInfoStatsAction.class;
     }
-
-    @Override
-    protected List<ALERT_TYPE> alertTypes() {
-        return Lists.newArrayList();
-    }
-
 }

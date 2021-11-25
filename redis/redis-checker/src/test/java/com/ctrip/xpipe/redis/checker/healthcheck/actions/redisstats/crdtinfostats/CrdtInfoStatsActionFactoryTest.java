@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -10,15 +10,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ConflictCheckActionFactoryTest extends AbstractCheckerIntegrationTest {
+public class CrdtInfoStatsActionFactoryTest extends AbstractCheckerIntegrationTest {
 
     @Autowired
-    private ConflictCheckActionFactory factory;
+    private CrdtInfoStatsActionFactory factory;
 
     @Test
     public void testCreate() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, 6379);
-        ConflictCheckAction action = factory.create(instance);
+        CrdtInfoStatsAction action = factory.create(instance);
         action.doStart();
 
         Assert.assertTrue(factory.support().isInstance(action));
