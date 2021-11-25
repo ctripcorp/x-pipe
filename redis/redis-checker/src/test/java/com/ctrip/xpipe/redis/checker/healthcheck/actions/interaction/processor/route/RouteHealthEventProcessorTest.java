@@ -66,16 +66,6 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         processor = spy(processor);
 
-        //decorate proxy service and proxy chain
-//        when(proxyService.deleteProxyChain(anyList())).thenReturn(RetMessage.createSuccessMessage());
-//
-//        List<TunnelInfo> tunnels = Lists.newArrayList(
-//                new DefaultTunnelInfo(new ProxyModel().setHostPort(new HostPort("127.0.0.1", 80)), "tunnel-1")
-//                .setTunnelStatsResult(new TunnelStatsResult("", "", -1L, -1L, new HostPort("127.0.0.1", 443), new HostPort("127.0.0.1", 1024))),
-//                new DefaultTunnelInfo(new ProxyModel().setHostPort(new HostPort("127.0.0.2", 80)), "tunnel-2")
-//                .setTunnelStatsResult(new TunnelStatsResult("", "", -1L, -1L, new HostPort("127.0.0.2", 443), new HostPort("127.0.0.2", 2048)))
-//        );
-//        proxyChain = new DefaultProxyChain("FRA-AWS", "cluster", "shard", tunnels);
         proxyTunnelInfo = new ProxyTunnelInfo();
 
         when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard", new HostPort("127.0.0.3", 6379), "SHAJQ", ClusterType.ONE_WAY));
@@ -86,28 +76,26 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
     @Test
     public void testOnEventWithSickWithNoProxyChain() throws HealthEventProcessorException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
-
         processor.onEvent(new InstanceHalfSick(instance));
-
-        verify(processor, never()).closeProxyChain(any(), any());
+        verify(processor, never()).tryRecover(any(), any());
     }
 
     @Test
     public void testOnEventWithSickWithPartialSync() throws HealthEventProcessorException, InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
         processor.onEvent(new InstanceHalfSick(instance));
-        verify(processor, times(1)).closeProxyChain(any(), any());
+        verify(processor, times(1)).tryRecover(any(), any());
     }
 
     @Test
     public void testOnEventWithSickWithFullSyncBlockNow() throws HealthEventProcessorException, InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
@@ -120,12 +108,12 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(-1L);
         processor.onEvent(new InstanceHalfSick(instance));
-        verify(processor, times(1)).closeProxyChain(any(), any());
+        verify(processor, times(1)).tryRecover(any(), any());
     }
 
     @Test
     public void testOnEventWithSickWithFullSyncBlockFuture() throws HealthEventProcessorException, InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
@@ -139,70 +127,45 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
 
         processor.onEvent(new InstanceHalfSick(instance));
-
-        Thread.sleep(2500);
-        verify(processor, atLeast(2)).isRedisInFullSync(any());
-        verify(processor, times(1)).closeProxyChain(any(), any());
-    }
-
-    @Test
-    public void testOnEventWithSickWithFullSyncNonBlock() throws HealthEventProcessorException, InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
-        when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
-        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
-        when(redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE)).thenReturn(infoResultExtractor);
-        when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(1).thenReturn(0);
-        when(infoResultExtractor.extractAsLong("rdb_last_cow_size")).thenReturn(1024L);
-
-        HealthCheckConfig config = mock(HealthCheckConfig.class);
-        when(config.delayDownAfterMilli()).thenReturn((int) TimeUnit.SECONDS.toMillis(1));
-        when(instance.getHealthCheckConfig()).thenReturn(config);
-
-        when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
-
-        processor.onEvent(new InstanceHalfSick(instance));
-
-        Thread.sleep(2500);
-        verify(processor, atLeast(2)).isRedisInFullSync(any());
-        verify(processor, never()).closeProxyChain(any(), any());
+        waitConditionUntilTimeOut(()->assertSuccess(()->verify(processor, times(1)).undoDedupe(any())), 5000, 500);
     }
 
     @Test
     public void testOnEventWithUp() throws HealthEventProcessorException {
         processor.onEvent(new InstanceUp(instance));
         verify(processor, never()).doOnEvent(any());
-        verify(processor, never()).closeProxyChain(any(), any());
+        verify(processor, never()).tryRecover(any(), any());
     }
 
     @Test
     public void testOnEventWithDown() throws HealthEventProcessorException {
         processor.onEvent(new InstanceDown(instance));
         verify(processor, never()).doOnEvent(any());
-        verify(processor, never()).closeProxyChain(any(), any());
+        verify(processor, never()).tryRecover(any(), any());
     }
 
     @Test
     public void testCloseProxyChain() {
-        doCallRealMethod().when(processor).closeProxyChain(any(), any());
-        processor.closeProxyChain(instance, proxyTunnelInfo);
+        doCallRealMethod().when(processor).tryRecover(any(), any());
+        processor.tryRecover(instance, proxyTunnelInfo);
         verify(proxyManager, times(1)).closeProxyTunnel(proxyTunnelInfo);
     }
 
     @Test
     public void testCloseProxyChainLimiting() throws InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
         processor.onEvent(new InstanceHalfSick(instance));
         processor.onEvent(new InstanceHalfSick(instance));
-        verify(processor, times(1)).closeProxyChain(any(), any());
+        verify(processor, times(1)).tryRecover(any(), any());
     }
 
     @Test
     public void testCloseProxyChainLimitingRelease() throws InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
@@ -210,12 +173,12 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         processor.onEvent(new InstanceHalfSick(instance));
         sleep(200);
         processor.onEvent(new InstanceHalfSick(instance));
-        verify(processor, times(2)).closeProxyChain(any(), any());
+        verify(processor, times(2)).tryRecover(any(), any());
     }
 
     @Test
     public void testCloseProxyChainOnSameShardOnlyOnce() throws InterruptedException, ExecutionException, TimeoutException {
-        doNothing().when(processor).closeProxyChain(any(), any());
+        doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(proxyTunnelInfo);
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
@@ -226,6 +189,6 @@ public class RouteHealthEventProcessorTest extends AbstractTest {
         when(instance2.getRedisSession()).thenReturn(redisSession);
         processor.onEvent(new InstanceHalfSick(instance));
         processor.onEvent(new InstanceHalfSick(instance2));
-        verify(processor, times(1)).closeProxyChain(any(), any());
+        verify(processor, times(1)).tryRecover(any(), any());
     }
 }
