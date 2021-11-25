@@ -13,7 +13,7 @@ public class AzCreateInfo extends AbstractCreateInfo{
 
     private String azName;
 
-    private String desc;
+    private String description;
 
     @Override
     public void check() throws CheckFailException {
@@ -55,11 +55,11 @@ public class AzCreateInfo extends AbstractCreateInfo{
     }
 
     public String getDescription() {
-        return desc;
+        return description;
     }
 
     public AzCreateInfo setDescription(String description) {
-        this.desc = description;
+        this.description = description;
         return this;
     }
 
@@ -69,7 +69,7 @@ public class AzCreateInfo extends AbstractCreateInfo{
                 "dcName='" + dcName + '\'' +
                 ", active=" + active + '\'' +
                 ", azName='" + azName + '\'' +
-                ", description='" + desc + '\'' +
+                ", description='" + description + '\'' +
                 '}';
     }
 }

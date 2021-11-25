@@ -56,15 +56,15 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public void updateAvailableZone(AzCreateInfo createInfo) {
-        AzTbl at = getAvailableZoneTblByAzName(createInfo.getAzName());
+        AzTbl azTbl = getAvailableZoneTblByAzName(createInfo.getAzName());
 
-        if(null == at)
+        if(null == azTbl)
             throw new IllegalArgumentException(String.format("availablezone %s not found", createInfo.getAzName()));
 
-        at.setActive(createInfo.isActive())
+        azTbl.setActive(createInfo.isActive())
                 .setDescription(createInfo.getDescription());
 
-        azDao.updateAvailableZone(at);
+        azDao.updateAvailableZone(azTbl);
     }
 
     @Override
@@ -123,15 +123,15 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
     @Override
     public void deleteAvailableZoneByName(String azName) {
-        AzTbl at = getAvailableZoneTblByAzName(azName);
-        if(null == at)
+        AzTbl azTbl = getAvailableZoneTblByAzName(azName);
+        if(null == azTbl)
             throw new BadRequestException(String.format("availablezone %s not found", azName));
 
-        List<KeepercontainerTbl> kcs = keeperContainerService.getKeeperContainerByAz(at.getId());
-        if(null != kcs && !kcs.isEmpty())
-            keeperContainerService.deleteKeeperContainers(kcs);
+        List<KeepercontainerTbl> keepercontainerTbls = keeperContainerService.getKeeperContainerByAz(azTbl.getId());
+        if(null != keepercontainerTbls && !keepercontainerTbls.isEmpty())
+            keeperContainerService.deleteKeeperContainers(keepercontainerTbls);
 
-        AzTbl proto = at;
+        AzTbl proto = azTbl;
         azDao.deleteAvailableZone(proto);
     }
 

@@ -230,37 +230,37 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Override
   public void updateKeeperContainer(KeeperContainerCreateInfo createInfo) {
-    KeepercontainerTbl kc = findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort());
-    if(kc == null) {
+    KeepercontainerTbl keepercontainerTbl = findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort());
+    if(keepercontainerTbl == null) {
       throw new IllegalArgumentException(String.format("%s:%d keeper container not found",
               createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort()));
     }
     if(createInfo.getKeepercontainerOrgId() != 0L) {
       OrganizationTbl org = organizationService.getOrganizationTblByCMSOrganiztionId(createInfo.getKeepercontainerOrgId());
-      kc.setKeepercontainerOrgId(org.getId());
+      keepercontainerTbl.setKeepercontainerOrgId(org.getId());
     } else {
-      kc.setKeepercontainerOrgId(0L);
+      keepercontainerTbl.setKeepercontainerOrgId(0L);
     }
-    kc.setKeepercontainerActive(createInfo.isActive());
+    keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
       public Integer doQuery() throws DalException {
-        return dao.updateByPK(kc, KeepercontainerTblEntity.UPDATESET_FULL);
+        return dao.updateByPK(keepercontainerTbl, KeepercontainerTblEntity.UPDATESET_FULL);
       }
     });
   }
 
   @Override
   public void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort) {
-    KeepercontainerTbl kt = findByIpPort(keepercontainerIp, keepercontainerPort);
-    if(null == kt) throw new BadRequestException("Cannot find keepercontainer");
+    KeepercontainerTbl keepercontainerTbl = findByIpPort(keepercontainerIp, keepercontainerPort);
+    if(null == keepercontainerTbl) throw new BadRequestException("Cannot find keepercontainer");
 
     List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(keepercontainerIp);
     if(keepers != null && !keepers.isEmpty()) {
       throw new BadRequestException("This keepercontainer has keepers");
     }
 
-    KeepercontainerTbl proto = kt;
+    KeepercontainerTbl proto = keepercontainerTbl;
     queryHandler.handleDelete(new DalQuery<Integer>() {
       @Override
       public Integer doQuery() throws DalException {
@@ -270,16 +270,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public void deleteKeeperContainers(List<KeepercontainerTbl> kcs) {
-    for (KeepercontainerTbl kc : kcs) {
-      List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(kc.getKeepercontainerIp());
+  public void deleteKeeperContainers(List<KeepercontainerTbl> keepercontainerTbls) {
+    for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
+      List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(keepercontainerTbl.getKeepercontainerIp());
       if(keepers != null && !keepers.isEmpty()) {
         throw new BadRequestException("This keepercontainer has keepers");
       }
     }
 
-    for (KeepercontainerTbl kc : kcs) {
-      KeepercontainerTbl proto = kc;
+    for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
+      KeepercontainerTbl proto = keepercontainerTbl;
       queryHandler.handleDelete(new DalQuery<Integer>() {
         @Override
         public Integer doQuery() throws DalException {

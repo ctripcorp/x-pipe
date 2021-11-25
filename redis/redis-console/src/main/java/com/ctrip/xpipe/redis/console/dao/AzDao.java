@@ -29,9 +29,9 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         }
     }
 
-    public void deleteAvailableZone(final AzTbl az) {
-        AzTbl proto = az;
-        proto.setAzName(generateDeletedName(az.getAzName()));
+    public void deleteAvailableZone(final AzTbl azTbl) {
+        AzTbl proto = azTbl;
+        proto.setAzName(generateDeletedName(azTbl.getAzName()));
 
         queryHandler.handleDelete(new DalQuery<Integer>() {
             @Override
