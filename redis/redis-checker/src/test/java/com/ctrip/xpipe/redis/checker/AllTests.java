@@ -18,7 +18,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayL
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.RouteHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
@@ -105,7 +105,7 @@ import org.junit.runners.Suite;
         OuterClientServiceProcessorTest.class,
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
-        RouteHealthEventProcessorTest.class,
+        DefaultRouteHealthEventProcessorTest.class,
         SentinelHelloActionDowngradeTest.class,
         SentinelLeakyBucketTest.class,
         CurrentDcDelayPingActionCollectorTest.class,

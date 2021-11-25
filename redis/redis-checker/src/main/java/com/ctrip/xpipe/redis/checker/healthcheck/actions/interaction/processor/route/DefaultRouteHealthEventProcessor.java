@@ -33,7 +33,7 @@ import java.util.concurrent.TimeoutException;
  * half-sick: we take over at this step, to prevent a predictable data lack*/
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class RouteHealthEventProcessor extends AbstractRouteHealthEventProcessor implements OneWaySupport {
+public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventProcessor implements OneWaySupport {
 
     @Autowired(required = false)
     private MetaCache metaCache;
@@ -81,25 +81,25 @@ public class RouteHealthEventProcessor extends AbstractRouteHealthEventProcessor
     }
 
     @VisibleForTesting
-    public RouteHealthEventProcessor setMetaCache(MetaCache metaCache) {
+    public DefaultRouteHealthEventProcessor setMetaCache(MetaCache metaCache) {
         this.metaCache = metaCache;
         return this;
     }
 
     @VisibleForTesting
-    public RouteHealthEventProcessor setRedisSessionManager(RedisSessionManager redisSessionManager) {
+    public DefaultRouteHealthEventProcessor setRedisSessionManager(RedisSessionManager redisSessionManager) {
         this.redisSessionManager = redisSessionManager;
         return this;
     }
 
     @VisibleForTesting
-    public RouteHealthEventProcessor setProxyManager(ProxyManager proxyManager) {
+    public DefaultRouteHealthEventProcessor setProxyManager(ProxyManager proxyManager) {
         this.proxyManager = proxyManager;
         return this;
     }
 
     @VisibleForTesting
-    public RouteHealthEventProcessor setScheduled(ScheduledExecutorService scheduled) {
+    public DefaultRouteHealthEventProcessor setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
         return this;
     }
