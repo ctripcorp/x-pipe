@@ -26,9 +26,9 @@ import java.util.concurrent.*;
 
 import static org.mockito.Mockito.*;
 
-public class RouteHealthEventProcessorTest extends AbstractTest {
+public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
 
-    private RouteHealthEventProcessor processor = new RouteHealthEventProcessor() {
+    private DefaultRouteHealthEventProcessor processor = new DefaultRouteHealthEventProcessor() {
         @Override
         protected long getHoldingMillis() {
             return 100;
