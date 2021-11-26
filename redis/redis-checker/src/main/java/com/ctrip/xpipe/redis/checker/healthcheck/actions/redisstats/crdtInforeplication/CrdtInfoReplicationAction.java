@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforep
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractInfoCommandAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.RedisStatsCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
@@ -11,15 +12,15 @@ import org.slf4j.Logger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class CrdtInfoReplicationAction extends RedisStatsCheckAction<String, InfoResultExtractor> {
+public class CrdtInfoReplicationAction extends AbstractInfoCommandAction<CrdtInfoReplicationContext> {
 
     public CrdtInfoReplicationAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);
     }
 
     @Override
-    protected Logger getHealthCheckLogger() {
-        return logger;
+    protected CrdtInfoReplicationContext createActionContext(InfoResultExtractor extractor) {
+        return new CrdtInfoReplicationContext(instance, extractor);
     }
 
     @Override
@@ -27,9 +28,5 @@ public class CrdtInfoReplicationAction extends RedisStatsCheckAction<String, Inf
         return getActionInstance().getRedisSession().crdtInfoReplication(callback);
     }
 
-    @Override
-    protected ActionContext<InfoResultExtractor, RedisHealthCheckInstance> generateActionContext(String result) {
-        InfoResultExtractor extractor = new InfoResultExtractor(result);
-        return new CrdtInfoReplicationContext(instance, extractor);
-    }
+    
 }

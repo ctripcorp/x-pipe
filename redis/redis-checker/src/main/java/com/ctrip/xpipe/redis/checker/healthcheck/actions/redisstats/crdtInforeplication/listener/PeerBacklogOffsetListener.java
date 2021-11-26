@@ -11,9 +11,9 @@ import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CrdtBacklogOffsetListener extends AbstractMetricListener<CrdtInfoReplicationContext, HealthCheckAction>  implements CrdtInfoReplicationListener, BiDirectionSupport {
+public class PeerBacklogOffsetListener extends AbstractMetricListener<CrdtInfoReplicationContext, HealthCheckAction>  implements CrdtInfoReplicationListener, BiDirectionSupport {
     
-    public static final String METRIC_TYPE = "redis.crdt.backlog.offset";
+    public static final String METRIC_TYPE = "crdt.peer.backlog_offset";
     @Override
     public void onAction(CrdtInfoReplicationContext context) {
         InfoResultExtractor extractor = context.getResult();

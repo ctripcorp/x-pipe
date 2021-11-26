@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -30,21 +30,23 @@ public class BackStreamingAlertListenerTest extends AbstractCheckerTest {
     public void setupBackStreamingAlertListenerTest() throws Exception {
         listener = new BackStreamingAlertListener(alertManager);
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, randomPort());
-    }
-
-    @Test
-    public void testAlertOnBackStream() {
         Mockito.doAnswer(invocation -> {
             ALERT_TYPE alert_type = invocation.getArgumentAt(1, ALERT_TYPE.class);
             Assert.assertEquals(ALERT_TYPE.CRDT_BACKSTREAMING, alert_type);
             return null;
         }).when(alertManager).alert(Mockito.any(), Mockito.any(), Mockito.anyString());
-        final String TMP_HIGH_VERSION_REPLICATION = "# CRDT Replication\r\n" +
+    }
+
+    final String TMP_REPLICATION = "# CRDT Replication\r\n" +
             "ovc:1:0;2:0\r\n" +
             "gcvc:1:0;2:0\r\n" +
             "gid:1\r\n" +
             "backstreaming:%s\r\n";
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_HIGH_VERSION_REPLICATION, "1"));
+    
+    @Test
+    public void testAlertOnBackStream() {
+        
+        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_REPLICATION, "1"));
         CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
@@ -54,12 +56,7 @@ public class BackStreamingAlertListenerTest extends AbstractCheckerTest {
 
     @Test
     public void testNoBackStream() {
-        final String TMP_HIGH_VERSION_REPLICATION = "# CRDT Replication\r\n" +
-                "ovc:1:0;2:0\r\n" +
-                "gcvc:1:0;2:0\r\n" +
-                "gid:1\r\n" +
-                "backstreaming:%s\r\n";
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_HIGH_VERSION_REPLICATION, "0"));
+        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_REPLICATION, "0"));
         CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
         listener.onAction(context);
         Mockito.verify(alertManager, Mockito.never()).alert(Mockito.any(), Mockito.any(), Mockito.anyString());

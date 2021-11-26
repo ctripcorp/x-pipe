@@ -2,9 +2,10 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfosta
 
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractInfoContext;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 
-public class CrdtInfoStatsContext extends AbstractActionContext<InfoResultExtractor, RedisHealthCheckInstance> {
+public class CrdtInfoStatsContext extends AbstractInfoContext {
     public CrdtInfoStatsContext(RedisHealthCheckInstance instance, InfoResultExtractor extractor) {
         super(instance, extractor);
     }
