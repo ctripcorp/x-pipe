@@ -27,6 +27,7 @@
          <table name="ZONE_TBL"/>
          <table name="proxy_tbl"/>
          <table name="route_tbl"/>
+         <table name="az_tbl"/>
       </group>
    </jdbc>
 </wizard>

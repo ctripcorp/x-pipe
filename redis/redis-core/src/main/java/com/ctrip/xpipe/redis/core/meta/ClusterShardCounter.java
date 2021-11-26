@@ -92,6 +92,11 @@ public class ClusterShardCounter implements IVisitor{
     }
 
     @Override
+    public void visitAz(AzMeta az) {
+
+    }
+
+    @Override
     public void visitShard(ShardMeta shard) {
 
         Set<String> shards = getOrCreate(shard.parent());
