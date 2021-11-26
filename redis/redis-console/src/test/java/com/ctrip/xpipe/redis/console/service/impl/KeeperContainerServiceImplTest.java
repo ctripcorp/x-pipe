@@ -192,7 +192,7 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
         try {
             keeperContainerService.deleteKeeperContainer(ip, port);
         } catch(BadRequestException e) {
-            Assert.assertEquals("This keepercontainer has keepers", e.getMessage());
+            Assert.assertEquals("This keepercontainer " +ip + ":" + port + " is not empty, unable to delete!", e.getMessage());
             kc = keeperContainerService.findByIpPort(ip, port);
             Assert.assertNotNull(kc);
             throw e;

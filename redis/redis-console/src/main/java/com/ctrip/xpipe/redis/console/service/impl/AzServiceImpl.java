@@ -47,6 +47,12 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         if(availableZoneIsExist(createInfo))
             throw new IllegalArgumentException("available zone : " + createInfo.getAzName() + " already exists");
 
+        if(null == createInfo.getDescription())
+            createInfo.setDescription("");
+
+        if(null == createInfo.isActive())
+            createInfo.setActive(true);
+
         proto.setDcId(dcTbl.getId())
                 .setActive(createInfo.isActive())
                 .setAzName(createInfo.getAzName())
@@ -61,8 +67,11 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         if(null == azTbl)
             throw new IllegalArgumentException(String.format("availablezone %s not found", createInfo.getAzName()));
 
-        azTbl.setActive(createInfo.isActive())
-                .setDescription(createInfo.getDescription());
+        if(null != createInfo.isActive())
+            azTbl.setActive(createInfo.isActive());
+
+        if(null != createInfo.getDescription())
+            azTbl.setDescription(createInfo.getDescription());
 
         azDao.updateAvailableZone(azTbl);
     }
@@ -129,7 +138,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
         List<KeepercontainerTbl> keepercontainerTbls = keeperContainerService.getKeeperContainerByAz(azTbl.getId());
         if(null != keepercontainerTbls && !keepercontainerTbls.isEmpty())
-            keeperContainerService.deleteKeeperContainers(keepercontainerTbls);
+            throw new BadRequestException(String.format("This az %s is not empty, can not be deleted", azName));
 
         AzTbl proto = azTbl;
         azDao.deleteAvailableZone(proto);

@@ -269,25 +269,6 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }, true);
   }
 
-  @Override
-  public void deleteKeeperContainers(List<KeepercontainerTbl> keepercontainerTbls) {
-    for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
-      List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(keepercontainerTbl.getKeepercontainerIp());
-      if(keepers != null && !keepers.isEmpty()) {
-        throw new BadRequestException(String.format("This keepercontainer %s:%d is not empty, unable to delete!", keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
-      }
-    }
-
-    for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
-      KeepercontainerTbl proto = keepercontainerTbl;
-      queryHandler.handleDelete(new DalQuery<Integer>() {
-        @Override
-        public Integer doQuery() throws DalException {
-          return dao.deleteKeeperContainer(proto, KeepercontainerTblEntity.UPDATESET_FULL);
-        }
-      }, true);
-    }
-  }
 
   @Override
   public List<KeeperContainerInfoModel> findAllInfos() {

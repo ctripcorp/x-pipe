@@ -151,7 +151,7 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
         try {
             azService.deleteAvailableZoneByName(azName);
         } catch (BadRequestException e) {
-            Assert.assertEquals("This keepercontainer has keepers", e.getMessage());
+            Assert.assertEquals("This az "+azName + " is not empty, can not be deleted", e.getMessage());
             at = azService.getAvailableZoneTblByAzName(azName);
             Assert.assertNotNull(at);
             List<KeepercontainerTbl> kcs2 = keeperContainerService.getKeeperContainerByAz(at.getId());

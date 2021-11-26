@@ -25,5 +25,4 @@ public interface KeeperContainerService {
 	void updateKeeperContainer(KeeperContainerCreateInfo createInfo);
 
 	void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort);
-	void deleteKeeperContainers(List<KeepercontainerTbl> keepercontainerTbls);
 }
