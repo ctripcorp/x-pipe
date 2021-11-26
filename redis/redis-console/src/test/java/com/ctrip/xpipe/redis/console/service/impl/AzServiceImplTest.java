@@ -58,6 +58,20 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    public void testAddAzWithoutActiveAndDesc(){
+        String azName = "JQ-G";
+        AzCreateInfo createInfo = new AzCreateInfo()
+                .setDcName(dcNames[0])
+                .setAzName(azName);
+        azService.addAvailableZone(createInfo);
+
+        AzTbl newAzTbl = azService.getAvailableZoneTblByAzName(azName);
+        Assert.assertNotNull(newAzTbl);
+        Assert.assertEquals("", newAzTbl.getDescription());
+        Assert.assertEquals(true, newAzTbl.isActive());
+    }
+
+    @Test
     public void testUpdateAzSuccess() throws DalException {
         String azName = "JQ-G";
         long dc_id = dcService.findByDcName(dcNames[0]).getId();
