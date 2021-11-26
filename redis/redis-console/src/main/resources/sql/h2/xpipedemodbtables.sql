@@ -140,6 +140,7 @@ create table KEEPERCONTAINER_TBL
 (
 	keepercontainer_id bigint unsigned not null auto_increment primary key,
     keepercontainer_dc bigint unsigned not null,
+    az_id bigint(20) unsigned NOT NULL DEFAULT 0,
 	keepercontainer_ip varchar(40) not null,
 	keepercontainer_port int not null,
 	keepercontainer_active tinyint(1) not null default 1,
@@ -157,8 +158,6 @@ create table MIGRATION_EVENT_TBL
 	break tinyint(1) not null default 0 COMMENT 'break or not',
 	operator varchar(128) not null default 'xpipe',
 	event_tag varchar(150) not null,
-	exec_lock varchar(128) not null default '' COMMENT 'idc which hold migration exec lock',
-    lock_until bigint not null default 0 COMMENT 'hold migration exec lock until',
 	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
@@ -262,3 +261,15 @@ CREATE TABLE `proxy_tbl` (
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
 );
+
+-- az_tbl
+drop table if exists az_tbl;
+CREATE TABLE `az_tbl` (
+  `id` bigint(20) unsigned not null AUTO_INCREMENT primary key,
+  `dc_id` bigint(20) unsigned not null default 0,
+  `active` tinyint(1) not null default 0 ,
+  `az_name` varchar(128) not null default '',
+  `description` varchar(1024) not null default '',
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(4) not null default 0,
+) ;
