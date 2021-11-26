@@ -191,6 +191,10 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       }
     }
 
+    if (createInfo.getAzName() != null) {
+      proto.setAzId(azService.getAvailableZoneTblByAzName(createInfo.getAzName()).getId());
+    }
+
     proto.setKeepercontainerDc(dcTbl.getId())
             .setKeepercontainerIp(createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
@@ -243,6 +247,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     } else {
       keepercontainerTbl.setKeepercontainerOrgId(0L);
     }
+
+    if (createInfo.getAzName() != null) {
+      keepercontainerTbl.setAzId(azService.getAvailableZoneTblByAzName(createInfo.getAzName()).getId());
+    }
+
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override

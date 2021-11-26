@@ -146,8 +146,8 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     }
 
 
-    @VisibleForTesting
-    AzTbl getAvailableZoneTblByAzName(String azName) {
+    @Override
+    public AzTbl getAvailableZoneTblByAzName(String azName) {
         return azDao.findAvailableZoneByAz(azName);
     }
 
