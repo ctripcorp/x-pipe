@@ -49,9 +49,13 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
 
         if(null == createInfo.getDescription())
             proto.setDescription("");
+        else
+            proto.setDescription(createInfo.getDescription());
 
         if(null == createInfo.isActive())
             proto.setActive(true);
+        else
+            proto.setActive(createInfo.isActive());
 
         proto.setDcId(dcTbl.getId()).setAzName(createInfo.getAzName());
         azDao.addAvailablezone(proto);
