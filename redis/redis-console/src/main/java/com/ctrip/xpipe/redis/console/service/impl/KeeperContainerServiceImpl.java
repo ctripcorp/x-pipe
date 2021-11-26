@@ -257,7 +257,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(keepercontainerIp);
     if(keepers != null && !keepers.isEmpty()) {
-      throw new BadRequestException("This keepercontainer has keepers");
+      throw new BadRequestException(String.format("This keepercontainer %s:%d is not empty, unable to delete!", keepercontainerIp, keepercontainerPort));
     }
 
     KeepercontainerTbl proto = keepercontainerTbl;
@@ -274,7 +274,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
       List<RedisTbl> keepers = redisService.findAllRedisWithSameIP(keepercontainerTbl.getKeepercontainerIp());
       if(keepers != null && !keepers.isEmpty()) {
-        throw new BadRequestException("This keepercontainer has keepers");
+        throw new BadRequestException(String.format("This keepercontainer %s:%d is not empty, unable to delete!", keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
       }
     }
 

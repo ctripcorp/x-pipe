@@ -25,7 +25,7 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         try {
             azTblDao = ContainerLoader.getDefaultContainer().lookup(AzTblDao.class);
         } catch (ComponentLookupException e) {
-            throw new ServerException("Cannot construct dao.", e);
+            throw new ServerException("Cannot construct azTblDao.", e);
         }
     }
 
