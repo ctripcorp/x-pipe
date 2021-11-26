@@ -48,15 +48,12 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
             throw new IllegalArgumentException("available zone : " + createInfo.getAzName() + " already exists");
 
         if(null == createInfo.getDescription())
-            createInfo.setDescription("");
+            proto.setDescription("");
 
         if(null == createInfo.isActive())
-            createInfo.setActive(true);
+            proto.setActive(true);
 
-        proto.setDcId(dcTbl.getId())
-                .setActive(createInfo.isActive())
-                .setAzName(createInfo.getAzName())
-                .setDescription(createInfo.getDescription());
+        proto.setDcId(dcTbl.getId()).setAzName(createInfo.getAzName());
         azDao.addAvailablezone(proto);
     }
 
