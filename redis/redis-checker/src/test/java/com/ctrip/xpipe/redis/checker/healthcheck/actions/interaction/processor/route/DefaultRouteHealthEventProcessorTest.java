@@ -55,15 +55,13 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
 
     private ProxyTunnelInfo proxyTunnelInfo;
 
-    private ScheduledExecutorService scheduled;
-
     @Before
     public void beforeRouteHealthEventProcessorTest() {
         MockitoAnnotations.initMocks(this);
-        processor.setMetaCache(metaCache).setProxyManager(proxyManager).setRedisSessionManager(redisSessionManager);
-        scheduled = Executors.newScheduledThreadPool(1);
-        processor.setScheduled(scheduled);
-
+        processor.metaCache = metaCache;
+        processor.proxyManager = proxyManager;
+        processor.redisSessionManager = redisSessionManager;
+        processor.scheduled = Executors.newScheduledThreadPool(1);
         processor = spy(processor);
 
         proxyTunnelInfo = new ProxyTunnelInfo();

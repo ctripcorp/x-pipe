@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -19,7 +18,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -35,11 +33,13 @@ import java.util.concurrent.TimeoutException;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventProcessor implements OneWaySupport {
 
+    @VisibleForTesting
     @Autowired(required = false)
-    private MetaCache metaCache;
+    public MetaCache metaCache;
 
+    @VisibleForTesting
     @Autowired
-    private RedisSessionManager redisSessionManager;
+    public RedisSessionManager redisSessionManager;
 
     @Override
     protected ProxyTunnelInfo findProxyTunnelInfo(AbstractInstanceEvent instanceSick) {
@@ -78,29 +78,5 @@ public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventPr
         long base = 3 * 60; // 3 minutes / per GB size
         long gb = 1024 * 1024 * 1024;
         return base * (rdbSize/gb + 1);
-    }
-
-    @VisibleForTesting
-    public DefaultRouteHealthEventProcessor setMetaCache(MetaCache metaCache) {
-        this.metaCache = metaCache;
-        return this;
-    }
-
-    @VisibleForTesting
-    public DefaultRouteHealthEventProcessor setRedisSessionManager(RedisSessionManager redisSessionManager) {
-        this.redisSessionManager = redisSessionManager;
-        return this;
-    }
-
-    @VisibleForTesting
-    public DefaultRouteHealthEventProcessor setProxyManager(ProxyManager proxyManager) {
-        this.proxyManager = proxyManager;
-        return this;
-    }
-
-    @VisibleForTesting
-    public DefaultRouteHealthEventProcessor setScheduled(ScheduledExecutorService scheduled) {
-        this.scheduled = scheduled;
-        return this;
     }
 }
