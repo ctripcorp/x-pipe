@@ -166,12 +166,14 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
         logger.info("[onInstanceStateChange]{}", args);
         for (HealthEventProcessor processor : healthEventProcessors) {
 
-            executors.execute(new AbstractExceptionLogTask() {
-                @Override
-                protected void doRun() throws Exception {
-                    processor.onEvent((AbstractInstanceEvent) args);
-                }
-            });
+            if (processor instanceof OneWaySupport) {
+                executors.execute(new AbstractExceptionLogTask() {
+                    @Override
+                    protected void doRun() throws Exception {
+                        processor.onEvent((AbstractInstanceEvent) args);
+                    }
+                });
+            }
         }
     }
 
