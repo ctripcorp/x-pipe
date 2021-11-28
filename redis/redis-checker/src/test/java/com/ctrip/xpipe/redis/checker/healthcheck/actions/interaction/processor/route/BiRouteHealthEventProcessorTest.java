@@ -11,8 +11,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -54,5 +53,10 @@ public class BiRouteHealthEventProcessorTest {
         assertFalse(processor.isRedisInFullSyncTo(instance, new HostPort("127.0.0.1", 6379)));
         assertFalse(processor.isRedisInFullSyncTo(instance, new HostPort("127.0.0.10", 6379)));
         assertTrue(processor.isRedisInFullSyncTo(instance, new HostPort("127.0.0.2", 6380)));
+    }
+
+    @Test
+    public void testGetDelaySecondsWithZero() {
+        assertEquals(180, processor.getDelaySeconds(0));
     }
 }
