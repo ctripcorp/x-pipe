@@ -8,7 +8,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceHalfSick;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -32,11 +34,13 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
+    @VisibleForTesting
     @Autowired
-    protected ProxyManager proxyManager;
+    public ProxyManager proxyManager;
 
+    @VisibleForTesting
     @Resource(name = SCHEDULED_EXECUTOR)
-    protected ScheduledExecutorService scheduled;
+    public ScheduledExecutorService scheduled;
 
     @Autowired(required = false)
     private GroupCheckerLeaderElector clusterServer;
