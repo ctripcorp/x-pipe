@@ -271,5 +271,5 @@ CREATE TABLE `az_tbl` (
   `az_name` varchar(128) not null default '',
   `description` varchar(1024) not null default '',
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
-  `deleted` tinyint(4) not null default 0,
+  `deleted` tinyint(1) not null default 0,
 ) ;
