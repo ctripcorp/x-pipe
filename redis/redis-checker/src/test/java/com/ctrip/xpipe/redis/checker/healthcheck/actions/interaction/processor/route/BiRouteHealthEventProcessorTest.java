@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
  */
 public class BiRouteHealthEventProcessorTest {
 
-    private BiRouteHealthEventProcessor processor = new BiRouteHealthEventProcessor(null, null) {
+    private BiRouteHealthEventProcessor processor = new BiRouteHealthEventProcessor() {
         @Override
         protected long getHoldingMillis() {
             return 100;
