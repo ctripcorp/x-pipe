@@ -306,7 +306,6 @@ public class AbstractXpipeServerMultiDcTest extends AbstractXpipeServerIntegrate
             }
 
         }
-        int checker_port = 28080;
         for(DcMeta dcMeta: getXpipeMeta().getDcs().values()) {
             String idc = dcMeta.getId();
             ConsoleInfo info = consoleInfos.get(idc);

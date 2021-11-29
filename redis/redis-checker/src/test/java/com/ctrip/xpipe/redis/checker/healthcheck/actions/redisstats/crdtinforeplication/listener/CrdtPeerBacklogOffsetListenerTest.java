@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.listener.PeerReplicationOffsetListener;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,7 +36,7 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
     public void setupBackStreamingAlertListenerTest() throws Exception {
         listener = new PeerReplicationOffsetListener();
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, randomPort());
-
+        instance.getCheckInfo().isMaster(true);
 
         proxy = Mockito.mock(MetricProxy.class);
         listener.setMetricProxy(proxy);
@@ -49,8 +50,9 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
             Assert.assertTrue(false);
             return null;
         }).when(proxy).writeBinMultiDataPoint(Mockito.any());
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(""));
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
+        String info = String.format("");
+        CRDTInfoResultExtractor executors = new CRDTInfoResultExtractor(info);
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
     }
@@ -61,9 +63,11 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
             "gid:1\r\n" +
             "peer0_host:127.0.0.1\r\n" +
             "peer0_port:%d\r\n" +
+            "peer0_gid:2\r\n" + 
             "peer0_repl_offset:%d\r\n" +
             "peer1_host:127.0.0.1\r\n" +
             "peer1_port:%d\r\n" +
+            "peer1_gid:3\r\n" +
             "peer1_repl_offset:0\r\n";
 
     final String DC_RB = "RB";
@@ -82,9 +86,10 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
         
         Mockito.when(metaCache.getDc(host1)).thenReturn(DC_RB);
         Mockito.when(metaCache.getDc(host2)).thenReturn(DC_XY);
-        
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_REPLICATION, port1, offset1, port2, offset2));
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
+
+        String info = String.format(TMP_REPLICATION, port1, offset1, port2, offset2);
+        CRDTInfoResultExtractor executors = new CRDTInfoResultExtractor(info);
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
         Mockito.doAnswer(invocation -> {
             MetricData point = invocation.getArgumentAt(0, MetricData.class);
             Assert.assertEquals(PeerReplicationOffsetListener.METRIC_TYPE, point.getMetricType());

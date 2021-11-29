@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.listener.ConflictMetricListener;
+import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,10 +40,11 @@ public class ConflictMetricListenerTest extends AbstractCheckerTest {
     @Before
     public void setupConflictMetricListenerTest() throws Exception {
         listener = new ConflictMetricListener();
-        InfoResultExtractor extractors = new InfoResultExtractor(String.format(TEMP_OLD_STATS_RESP, Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt())));
+        String info = String.format(TEMP_OLD_STATS_RESP, Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()));
+        CRDTInfoResultExtractor extractors = new CRDTInfoResultExtractor(info);
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, 6379);
         
-        context = new CrdtInfoStatsContext(instance, extractors);
+        context = new CrdtInfoStatsContext(instance, info);
         stats = new ConflictMetricListener.CrdtConflictStats(extractors);
         proxy = Mockito.mock(MetricProxy.class);
         listener.setMetricProxy(proxy);
@@ -95,8 +97,9 @@ public class ConflictMetricListenerTest extends AbstractCheckerTest {
 
     @Test
     public void testOnAction() throws Exception {
-        InfoResultExtractor extractors = new InfoResultExtractor(String.format(TEMP_STATS_RESP, Math.abs(randomInt()), Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt())));
-        context = new CrdtInfoStatsContext(instance, extractors);
+        String info = String.format(TEMP_STATS_RESP, Math.abs(randomInt()), Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()));
+        CRDTInfoResultExtractor extractors = new CRDTInfoResultExtractor(info);
+        context = new CrdtInfoStatsContext(instance, info);
         stats = new ConflictMetricListener.CrdtConflictStats(extractors);
         listener.onAction(context);
         Assert.assertTrue(listener.worksfor(context));

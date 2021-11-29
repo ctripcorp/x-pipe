@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
@@ -259,7 +260,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         protected void handleResult(String rawInfo) {
             try {
                 CRDTInfoResultExtractor extractor = new CRDTInfoResultExtractor(rawInfo);
-                currentPeerMasters = extractor.extractPeerMasters();
+                currentPeerMasters = extractor.extractPeerMasters().stream().map(peerInfo -> new Pair<Long, Endpoint>(peerInfo.getGid(), peerInfo.getEndpoint())).collect(Collectors.toList());
                 future().setSuccess();
             } catch (Exception e) {
                 getLogger().info("[handleResult] parse current peermaster fail", e);

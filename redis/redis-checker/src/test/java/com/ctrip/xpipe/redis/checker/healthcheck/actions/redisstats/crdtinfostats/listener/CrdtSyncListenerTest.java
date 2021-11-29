@@ -7,6 +7,7 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsContext;
+import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,8 +23,7 @@ public class CrdtSyncListenerTest extends AbstractCheckerTest {
     private RedisHealthCheckInstance instance;
 
     private CrdtInfoStatsContext context;
-
-    private CrdtSyncListener.SyncStats stats;
+    
 
     private MetricProxy proxy;
 
@@ -35,13 +35,13 @@ public class CrdtSyncListenerTest extends AbstractCheckerTest {
     @Before
     public void setupSyncListenerTest() throws Exception {
         listener = new CrdtSyncListener();
-        InfoResultExtractor extractors = new InfoResultExtractor(String.format(TEMP_OLD_STATS_RESP, Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt())));
+        String infoResultExtractor = String.format(TEMP_OLD_STATS_RESP, Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()),Math.abs(randomInt()));
+        CRDTInfoResultExtractor extractors = new CRDTInfoResultExtractor(infoResultExtractor);
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, 6379);
         
-        context = new CrdtInfoStatsContext(instance, extractors);
+        context = new CrdtInfoStatsContext(instance, infoResultExtractor);
         proxy = Mockito.mock(MetricProxy.class);
         listener.setMetricProxy(proxy);
-        stats = new CrdtSyncListener.SyncStats(extractors);
         
         Mockito.doAnswer(invocation -> {
             MetricData point = invocation.getArgumentAt(0, MetricData.class);
@@ -54,13 +54,13 @@ public class CrdtSyncListenerTest extends AbstractCheckerTest {
 
             switch (point.getMetricType()) {
                 case CrdtSyncListener.METRIC_TYPE_SYNC_FULL:
-                    Assert.assertEquals(stats.getSyncFull(), point.getValue(), DOUBLE_DELTA);
+                    Assert.assertEquals(extractors.getSyncFull(), point.getValue(), DOUBLE_DELTA);
                     break;
                 case CrdtSyncListener.METRIC_TYPE_SYNC_PARTIAL_OK:
-                    Assert.assertEquals(stats.getSyncPartialOk(), point.getValue(), DOUBLE_DELTA);
+                    Assert.assertEquals(extractors.getSyncPartialOk(), point.getValue(), DOUBLE_DELTA);
                     break;
                 case CrdtSyncListener.METRIC_TYPE_SYNC_PARTIAL_ERR:
-                    Assert.assertEquals(stats.getSyncPartialErr(), point.getValue(), DOUBLE_DELTA);
+                    Assert.assertEquals(extractors.getSyncPartialErr(), point.getValue(), DOUBLE_DELTA);
                     break;
                 default:
                     Assert.fail();

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.listener.PeerBacklogOffsetListener;
+import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,8 +53,7 @@ public class CrdtBacklogOffsetListenerTest extends AbstractCheckerTest {
         }).when(proxy).writeBinMultiDataPoint(Mockito.any());
 
         
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_REPLICATION, offset));
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, String.format(TMP_REPLICATION, offset));
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
 

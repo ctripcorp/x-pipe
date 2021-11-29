@@ -22,9 +22,8 @@ public abstract class AbstractInfoCommandAction<T extends AbstractActionContext>
 
     @Override
     protected T generateActionContext(String result) {
-        InfoResultExtractor extractor = new InfoResultExtractor(result);
-        return createActionContext(extractor);
+        return createActionContext(result);
     }
 
-    protected abstract T createActionContext(InfoResultExtractor extractor);
+    protected abstract T createActionContext(String extractor);
 }

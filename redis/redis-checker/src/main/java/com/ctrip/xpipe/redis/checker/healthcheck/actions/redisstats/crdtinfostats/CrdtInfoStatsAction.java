@@ -21,7 +21,7 @@ public class CrdtInfoStatsAction extends AbstractInfoCommandAction<CrdtInfoStats
     }
     
     @Override
-    protected CrdtInfoStatsContext createActionContext(InfoResultExtractor extractor) {
+    protected CrdtInfoStatsContext createActionContext(String extractor) {
         return new CrdtInfoStatsContext(instance, extractor);
     }
     

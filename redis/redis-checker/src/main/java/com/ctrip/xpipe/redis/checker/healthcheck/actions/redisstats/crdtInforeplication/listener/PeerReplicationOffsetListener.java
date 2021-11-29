@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractMetr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationListener;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -30,28 +31,30 @@ public class PeerReplicationOffsetListener extends AbstractMetricListener<CrdtIn
     
     @Override
     public void onAction(CrdtInfoReplicationContext context) {
-        InfoResultExtractor extractor = context.getResult();
-        for(int i = 0; i < 16;i++) {
-            String prefix = String.format("peer%d_", i);
-            String peerHost = extractor.extract(prefix + "host");
-            if(peerHost != null) {
-                String peerPort = extractor.extract(prefix + "port");
-                long peerReplOffset = extractor.extractAsLong(prefix + "repl_offset");
+        try {
+            RedisInstanceInfo info = context.instance().getCheckInfo();
+            if(info.isMaster()) {
+                CRDTInfoResultExtractor extractor = (CRDTInfoResultExtractor)context.getResult();
                 long recvTimeMilli = context.getRecvTimeMilli();
-                RedisInstanceInfo info = context.instance().getCheckInfo();
-                MetricData data = getPoint(METRIC_TYPE, peerReplOffset, recvTimeMilli, info);
-                HostPort peer = new HostPort(peerHost , Integer.parseInt(peerPort));
-                data.addTag(KEY_SRC_PEER, peer.toString());
-                String dc;
-                try {
-                    dc = metaCache.getDc(peer);
-                    data.addTag(KEY_SRC_PEER_DC, dc);
-                }catch (Exception ignore){
-                    logger.debug("{} not find peer {} dc", info.getHostPort(), peer);
-                }
-                tryWriteMetric(data);
+                extractor.extractPeerMasters().forEach(peerInfo -> {
+                    MetricData data = getPoint(METRIC_TYPE, peerInfo.getReplOffset(), recvTimeMilli, info);
+                    HostPort peer = new HostPort(peerInfo.getEndpoint().getHost() , peerInfo.getEndpoint().getPort());
+                    data.addTag(KEY_SRC_PEER, peer.toString());
+                    String dc;
+                    try {
+                        dc = metaCache.getDc(peer);
+                        data.addTag(KEY_SRC_PEER_DC, dc);
+                    }catch (Exception ignore){
+                        logger.debug("{} not find peer {} dc", info.getHostPort(), peer);
+                    }
+                    tryWriteMetric(data);
+                });
             }
+            
+        } catch (Throwable throwable) {
+          logger.error("[onAction] {}", context.instance().getCheckInfo().getHostPort(), throwable);  
         }
+        
     }
 
     @VisibleForTesting

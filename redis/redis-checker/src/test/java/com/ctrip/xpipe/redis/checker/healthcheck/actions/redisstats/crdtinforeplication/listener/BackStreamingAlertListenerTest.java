@@ -45,9 +45,9 @@ public class BackStreamingAlertListenerTest extends AbstractCheckerTest {
     
     @Test
     public void testAlertOnBackStream() {
-        
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_REPLICATION, "1"));
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
+        String info = String.format(TMP_REPLICATION, "1");
+        InfoResultExtractor executors = new InfoResultExtractor(info);
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
 
@@ -56,15 +56,17 @@ public class BackStreamingAlertListenerTest extends AbstractCheckerTest {
 
     @Test
     public void testNoBackStream() {
-        InfoResultExtractor executors = new InfoResultExtractor(String.format(TMP_REPLICATION, "0"));
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, executors);
+        String info = String.format(TMP_REPLICATION, "0");
+        InfoResultExtractor executors = new InfoResultExtractor(info);
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
         listener.onAction(context);
         Mockito.verify(alertManager, Mockito.never()).alert(Mockito.any(), Mockito.any(), Mockito.anyString());
     }
 
     @Test
     public void testHandleNull() {
-        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, new InfoResultExtractor(""));
+        String info = "";
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
         listener.onAction(context);
         Mockito.verify(alertManager, Mockito.never()).alert(Mockito.any(), Mockito.any(), Mockito.anyString());
     }

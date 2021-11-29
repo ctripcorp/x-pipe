@@ -19,7 +19,7 @@ public class CrdtInfoReplicationAction extends AbstractInfoCommandAction<CrdtInf
     }
 
     @Override
-    protected CrdtInfoReplicationContext createActionContext(InfoResultExtractor extractor) {
+    protected CrdtInfoReplicationContext createActionContext(String extractor) {
         return new CrdtInfoReplicationContext(instance, extractor);
     }
 
