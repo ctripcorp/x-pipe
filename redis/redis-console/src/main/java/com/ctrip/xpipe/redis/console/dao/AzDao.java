@@ -103,4 +103,13 @@ public class AzDao extends AbstractXpipeConsoleDAO {
         });
     }
 
+    public AzTbl findAvailableZoneById(long azId) {
+        return  queryHandler.handleQuery(new DalQuery<AzTbl>() {
+            @Override
+            public AzTbl doQuery() throws DalException {
+                return azTblDao.findByPK(azId, AzTblEntity.READSET_FULL);
+            }
+        });
+    }
+
 }

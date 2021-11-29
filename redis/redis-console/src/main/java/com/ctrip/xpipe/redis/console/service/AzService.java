@@ -24,6 +24,8 @@ public interface AzService {
 
     AzTbl getAvailableZoneTblByAzName(String azName);
 
+    AzTbl getAvailableZoneTblById(Long azId);
+
     void deleteAvailableZoneByName(String azName);
 
 }

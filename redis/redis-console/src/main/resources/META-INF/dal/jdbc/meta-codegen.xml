@@ -190,10 +190,10 @@
   <entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="keepercontainer-dc" field="keepercontainer_dc" value-type="long" length="20" nullable="false" />
+    <member name="az-id" field="az_id" value-type="long" length="20" nullable="false" />
     <member name="keepercontainer-ip" field="keepercontainer_ip" value-type="String" length="40" nullable="false" />
     <member name="keepercontainer-port" field="keepercontainer_port" value-type="int" length="10" nullable="false" />
     <member name="keepercontainer-active" field="keepercontainer_active" value-type="boolean" nullable="false" />
-    <member name="az-id" field="az_id" value-type="long" length="20" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="keepercontainer-org-id" field="keepercontainer_org_id" value-type="long" length="20" nullable="false" />
@@ -452,11 +452,11 @@
   <entity name="az-tbl" table="az_tbl" alias="at">
     <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
-    <member name="az-name" field="az_name" value-type="String" length="128" nullable="false" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
+    <member name="az-name" field="az_name" value-type="String" length="128" nullable="false" />
     <member name="description" field="description" value-type="String" length="1024" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
-    <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="idx_az_name" unique="true" members="az_name ASC" />

@@ -192,7 +192,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     if (createInfo.getAzName() != null) {
-      proto.setAzId(azService.getAvailableZoneTblByAzName(createInfo.getAzName()).getId());
+      AzTbl aztbl = azService.getAvailableZoneTblByAzName(createInfo.getAzName());
+      if(aztbl == null) {
+        throw new IllegalArgumentException(String.format("available zone %s is not exist", createInfo.getAzName()));
+      }
+      proto.setAzId(aztbl.getId());
     }
 
     proto.setKeepercontainerDc(dcTbl.getId())
@@ -224,10 +228,18 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
                 .setDcName(dc).setActive(input.isKeepercontainerActive())
                 .setKeepercontainerIp(input.getKeepercontainerIp())
                 .setKeepercontainerPort(input.getKeepercontainerPort());
-        if(org != null) {
+        if (org != null) {
           info.setKeepercontainerOrgId(org.getOrgId()).setOrgName(org.getOrgName());
         } else {
           info.setKeepercontainerOrgId(0L);
+        }
+
+        if (input.getAzId() != 0) {
+          AzTbl aztbl = azService.getAvailableZoneTblById(input.getAzId());
+          if(aztbl == null) {
+            throw new XpipeRuntimeException(String.format("dc %s do not has available zone %d", dc, input.getAzId()));
+          }
+          info.setAzName(aztbl.getAzName());
         }
         return info;
       }
@@ -249,7 +261,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     if (createInfo.getAzName() != null) {
-      keepercontainerTbl.setAzId(azService.getAvailableZoneTblByAzName(createInfo.getAzName()).getId());
+      AzTbl aztbl = azService.getAvailableZoneTblByAzName(createInfo.getAzName());
+      if(aztbl == null) {
+        throw new IllegalArgumentException(String.format("available zone %s is not exist", createInfo.getAzName()));
+      }
+      keepercontainerTbl.setAzId(aztbl.getId());
     }
 
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
@@ -292,6 +308,14 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
       model.setDcName(baseInfo.getDcInfo().getDcName());
       model.setOrgName(baseInfo.getOrgInfo().getOrgName());
+
+      if (baseInfo.getAzId() != 0) {
+        AzTbl aztbl = azService.getAvailableZoneTblById(baseInfo.getAzId());
+        if(aztbl == null) {
+          throw new XpipeRuntimeException(String.format("dc %s do not has available zone %d", baseInfo.getDcInfo().getDcName(), baseInfo.getAzId()));
+        }
+        model.setAzName(aztbl.getAzName());
+      }
 
       containerInfoMap.put(model.getId(), model);
     });

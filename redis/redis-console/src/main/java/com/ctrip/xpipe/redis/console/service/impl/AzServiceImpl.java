@@ -41,21 +41,21 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
         AzTbl proto = dao.createLocal();
 
         DcTbl dcTbl = dcService.find(createInfo.getDcName());
-        if(null == dcTbl)
+        if (null == dcTbl)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", createInfo.getDcName()));
 
-        if(availableZoneIsExist(createInfo))
+        if (availableZoneIsExist(createInfo))
             throw new IllegalArgumentException("available zone : " + createInfo.getAzName() + " already exists");
 
-        if(null == createInfo.getDescription())
+        if (null == createInfo.getDescription())
             proto.setDescription("");
         else
             proto.setDescription(createInfo.getDescription());
 
-        if(null == createInfo.isActive())
+        if (null == createInfo.getActive())
             proto.setActive(true);
         else
-            proto.setActive(createInfo.isActive());
+            proto.setActive(createInfo.getActive());
 
         proto.setDcId(dcTbl.getId()).setAzName(createInfo.getAzName());
         azDao.addAvailablezone(proto);
@@ -65,13 +65,13 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     public void updateAvailableZone(AzCreateInfo createInfo) {
         AzTbl azTbl = getAvailableZoneTblByAzName(createInfo.getAzName());
 
-        if(null == azTbl)
+        if (null == azTbl)
             throw new IllegalArgumentException(String.format("availablezone %s not found", createInfo.getAzName()));
 
-        if(null != createInfo.isActive())
-            azTbl.setActive(createInfo.isActive());
+        if (null != createInfo.getActive())
+            azTbl.setActive(createInfo.getActive());
 
-        if(null != createInfo.getDescription())
+        if (null != createInfo.getDescription())
             azTbl.setDescription(createInfo.getDescription());
 
         azDao.updateAvailableZone(azTbl);
@@ -80,7 +80,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     @Override
     public List<AzTbl> getDcActiveAvailableZoneTbls(String dcName) {
         DcTbl dcTbl = dcService.find(dcName);
-        if(null == dcTbl)
+        if (null == dcTbl)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
 
         return azDao.findActiveAvailableZonesByDc(dcTbl.getId());
@@ -89,7 +89,7 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     @Override
     public List<AzTbl> getDcAvailableZoneTbls(String dcName) {
         DcTbl dcTbl = dcService.find(dcName);
-        if(null == dcTbl)
+        if (null == dcTbl)
             throw new IllegalArgumentException(String.format("DC name %s does not exist", dcName));
 
         return azDao.findAvailableZonesByDc(dcTbl.getId());
@@ -134,11 +134,11 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     @Override
     public void deleteAvailableZoneByName(String azName) {
         AzTbl azTbl = getAvailableZoneTblByAzName(azName);
-        if(null == azTbl)
+        if (null == azTbl)
             throw new BadRequestException(String.format("availablezone %s not found", azName));
 
         List<KeepercontainerTbl> keepercontainerTbls = keeperContainerService.getKeeperContainerByAz(azTbl.getId());
-        if(null != keepercontainerTbls && !keepercontainerTbls.isEmpty())
+        if (null != keepercontainerTbls && !keepercontainerTbls.isEmpty())
             throw new BadRequestException(String.format("This az %s is not empty, can not be deleted", azName));
 
         AzTbl proto = azTbl;
@@ -149,6 +149,11 @@ public class AzServiceImpl extends AbstractConsoleService<AzTblDao>
     @Override
     public AzTbl getAvailableZoneTblByAzName(String azName) {
         return azDao.findAvailableZoneByAz(azName);
+    }
+
+    @Override
+    public AzTbl getAvailableZoneTblById(Long azId) {
+        return azDao.findAvailableZoneById(azId);
     }
 
     @VisibleForTesting

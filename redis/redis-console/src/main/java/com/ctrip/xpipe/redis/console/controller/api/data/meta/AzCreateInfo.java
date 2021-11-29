@@ -36,14 +36,6 @@ public class AzCreateInfo extends AbstractCreateInfo{
         return this;
     }
 
-    public Boolean isActive() {
-        return active;
-    }
-
-    public AzCreateInfo setActive(Boolean active) {
-        this.active = active;
-        return this;
-    }
 
     public String getAzName() {
         return azName;
@@ -62,6 +54,16 @@ public class AzCreateInfo extends AbstractCreateInfo{
         this.description = description;
         return this;
     }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public AzCreateInfo setActive(Boolean active) {
+        this.active = active;
+        return this;
+    }
+
 
     @Override
     public String toString() {

@@ -342,7 +342,7 @@ CREATE TABLE `az_tbl` (
   `az_name` varchar(128) NOT NULL DEFAULT '' COMMENT 'available zone name',
   `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for available zone',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
-  `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_az_name` (`az_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
