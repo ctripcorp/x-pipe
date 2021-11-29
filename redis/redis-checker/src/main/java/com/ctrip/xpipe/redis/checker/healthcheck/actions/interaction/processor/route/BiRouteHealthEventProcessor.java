@@ -31,15 +31,12 @@ import java.util.concurrent.TimeoutException;
 public class BiRouteHealthEventProcessor extends AbstractRouteHealthEventProcessor implements BiDirectionSupport {
 
     @VisibleForTesting
-    public final MetaCache metaCache;
+    @Autowired
+    public MetaCache metaCache;
 
     @VisibleForTesting
-    public final RedisSessionManager redisSessionManager;
-
-    public BiRouteHealthEventProcessor(MetaCache metaCache, RedisSessionManager redisSessionManager) {
-        this.metaCache = metaCache;
-        this.redisSessionManager = redisSessionManager;
-    }
+    @Autowired
+    public RedisSessionManager redisSessionManager;
 
     @Override
     protected ProxyTunnelInfo findProxyTunnelInfo(AbstractInstanceEvent instanceSick) {

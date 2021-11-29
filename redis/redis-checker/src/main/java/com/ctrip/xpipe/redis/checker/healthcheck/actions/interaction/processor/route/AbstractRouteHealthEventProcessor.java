@@ -87,6 +87,7 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
             return;
         }
         long expected = isProbablyHealthyInXSeconds(instanceSick);
+        logger.info("[doOnEvent]instance({}) is probably healthy in {} seconds", instanceSick, expected);
         if (0 >= expected) {
             tryRecover(instanceSick.getInstance(), proxyTunnelInfo);
         } else {
