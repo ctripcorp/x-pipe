@@ -28,6 +28,8 @@ public interface RedisMaster extends RedisRole, Lifecycle, LifecycleStateAware, 
 
 	void reconnect();
 
+	void changeReplAddress(Endpoint address);
+
 	RdbDumper createRdbDumper() throws CreateRdbDumperException;
 
 	MASTER_STATE getMasterState();

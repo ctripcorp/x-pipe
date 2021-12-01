@@ -76,8 +76,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));
 	private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
-
-
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
@@ -292,6 +290,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			Endpoint current = keeperRedisMaster.masterEndPoint();
 			if(current != null && isMasterSame(current, target)) {
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
+				return;
+			} else if (!isMasterSame(current, target)) {
+				logger.info("[reconnectMaster][master change]{}->{}", current, target);
+				keeperRedisMaster.changeReplAddress(target);
 				return;
 			}
 		}
@@ -789,4 +791,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public int getTryConnectMasterCnt() {
 		return tryConnectMasterCnt.get();
 	}
+
+	@VisibleForTesting
+	public ReplicationStoreManager getReplicationStoreManager() {
+		return replicationStoreManager;
+	}
+
+	@VisibleForTesting
+	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
+		this.replicationStoreManager = replicationStoreManager;
+	}
+
 }
