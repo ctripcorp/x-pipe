@@ -1,9 +1,11 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.CrdtInfoReplicationContext;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -14,11 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-/**
- * @author lishanglin
- * date 2021/1/26
- */
-public class BackStreamingActionTest extends AbstractCheckerTest {
+public class CrdtInfoReplicationActionTest  extends AbstractCheckerTest  {
 
     private static final String LOW_VERSION_REPLICATION = "# CRDT Replication\r\novc:1:0;2:0\r\ngcvc:1:0;2:0\r\ngid:1\r\n";
     private static final String TMP_HIGH_VERSION_REPLICATION = "# CRDT Replication\r\n" +
@@ -31,7 +29,7 @@ public class BackStreamingActionTest extends AbstractCheckerTest {
 
     private Server redis;
 
-    private BackStreamingAction action;
+    private CrdtInfoReplicationAction action;
 
     private boolean lowVersion = false;
 
@@ -59,7 +57,7 @@ public class BackStreamingActionTest extends AbstractCheckerTest {
         });
 
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, redis.getPort());
-        action = new BackStreamingAction(scheduled, instance, executors);
+        action = new CrdtInfoReplicationAction(scheduled, instance, executors);
 
         action.addListener(new HealthCheckActionListener() {
             @Override
@@ -104,9 +102,9 @@ public class BackStreamingActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
 
-        BackStreamingContext context = (BackStreamingContext) contextRef.get();
+        CrdtInfoReplicationContext context = (CrdtInfoReplicationContext) contextRef.get();
         Assert.assertNotNull(context);
-        Assert.assertTrue(context.getResult());
+        Assert.assertEquals(context.getResult().extract("backstreaming"), "1");
     }
 
     @Test
@@ -118,9 +116,9 @@ public class BackStreamingActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
 
-        BackStreamingContext context = (BackStreamingContext) contextRef.get();
+        CrdtInfoReplicationContext context = (CrdtInfoReplicationContext) contextRef.get();
         Assert.assertNotNull(context);
-        Assert.assertFalse(context.getResult());
+        Assert.assertEquals(context.getResult().extract("backstreaming"), "0");
     }
 
     @Test
@@ -132,9 +130,9 @@ public class BackStreamingActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
 
-        BackStreamingContext context = (BackStreamingContext) contextRef.get();
+        CrdtInfoReplicationContext context = (CrdtInfoReplicationContext) contextRef.get();
         Assert.assertNotNull(context);
-        Assert.assertFalse(context.getResult());
+//        Assert.assertFalse(context.getResult());
+        Assert.assertNull(context.getResult().extract("backstreaming"));
     }
-
 }
