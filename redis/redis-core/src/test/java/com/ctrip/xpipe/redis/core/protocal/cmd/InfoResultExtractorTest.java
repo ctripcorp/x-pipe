@@ -1,8 +1,12 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -64,6 +68,36 @@ public class InfoResultExtractorTest extends AbstractRedisTest {
 
         Assert.assertEquals("name=cluster_shyinshard1,status=ok,address=10.2.58.242:6379,slaves=2,sentinels=3",
                 extractor.extract("master0"));
+
+
+    }
+
+    @Test
+    public void testConcurrentInfoResultExtractor() throws InterruptedException {
+        String info = "";
+        int max = 1000;
+        for(int i = 0; i < max; i++) {
+            info += i + ":" + i + "\r\n";
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(100);
+        InfoResultExtractor extractor = new InfoResultExtractor(info);
+        AtomicInteger success = new AtomicInteger(0);
+        int num = 100;
+        for(int i = 0; i < num; i++) {
+            executors.execute(new Runnable() {
+                @Override
+                public void run() {
+                    String key = String.format("%d", max - 1);
+                    if(key.equals(extractor.extract(key))) {
+                        success.incrementAndGet();
+                    } 
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        countDownLatch.await();
+        Assert.assertEquals(success.get(), num);
+        
 
 
     }

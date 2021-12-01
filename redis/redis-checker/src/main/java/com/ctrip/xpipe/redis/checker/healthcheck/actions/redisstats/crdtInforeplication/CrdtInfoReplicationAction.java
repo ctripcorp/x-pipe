@@ -1,8 +1,9 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.AbstractInfoCommandAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.RedisStatsCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
@@ -11,26 +12,21 @@ import org.slf4j.Logger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class ConflictCheckAction extends RedisStatsCheckAction<String, CrdtConflictStats> {
+public class CrdtInfoReplicationAction extends AbstractInfoCommandAction<CrdtInfoReplicationContext> {
 
-    public ConflictCheckAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
+    public CrdtInfoReplicationAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);
     }
 
     @Override
-    protected Logger getHealthCheckLogger() {
-        return logger;
+    protected CrdtInfoReplicationContext createActionContext(String extractor) {
+        return new CrdtInfoReplicationContext(instance, extractor);
     }
 
     @Override
     protected CommandFuture<String> executeRedisCommandForStats(Callbackable<String> callback) {
-        return instance.getRedisSession().crdtInfoStats(callback);
+        return getActionInstance().getRedisSession().crdtInfoReplication(callback);
     }
 
-    @Override
-    protected ActionContext<CrdtConflictStats, RedisHealthCheckInstance> generateActionContext(String result) {
-        InfoResultExtractor extractor = new InfoResultExtractor(result);
-        return new CrdtConflictCheckContext(instance, new CrdtConflictStats(extractor));
-    }
-
+    
 }

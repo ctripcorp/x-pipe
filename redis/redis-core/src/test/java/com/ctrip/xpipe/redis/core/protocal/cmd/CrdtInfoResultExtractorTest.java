@@ -30,7 +30,7 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0\r\n";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<Pair<Long, Endpoint>> metas = re.extractPeerMasters();
+        List<CRDTInfoResultExtractor.PeerInfo> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 0);
     }
 
@@ -62,12 +62,12 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<Pair<Long, Endpoint>> metas = re.extractPeerMasters();
+        List<CRDTInfoResultExtractor.PeerInfo> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        Pair<Long, Endpoint> meta = metas.get(0);
-        Assert.assertTrue(meta.getKey() == 2L);
-        Assert.assertEquals(meta.getValue().getHost(), "127.0.0.1");
-        Assert.assertFalse(meta.getValue() instanceof ProxyEnabledEndpoint);
+        CRDTInfoResultExtractor.PeerInfo meta = metas.get(0);
+        Assert.assertTrue(meta.getGid() == 2L);
+        Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
+        Assert.assertFalse(meta.getEndpoint() instanceof ProxyEnabledEndpoint);
     }
 
     @Test
@@ -101,14 +101,14 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<Pair<Long, Endpoint>> metas = re.extractPeerMasters();
+        List<CRDTInfoResultExtractor.PeerInfo> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        Pair<Long, Endpoint> meta = metas.get(0);
-        Assert.assertEquals(meta.getValue().getHost(), "127.0.0.1");
-        Assert.assertEquals(meta.getValue().getPort(), 0);
+        CRDTInfoResultExtractor.PeerInfo meta = metas.get(0);
+        Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
+        Assert.assertEquals(meta.getEndpoint().getPort(), 0);
         ProxyConnectProtocol proxy = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2");
-        Assert.assertTrue(meta.getValue() instanceof ProxyEnabled);
-        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getValue()).getProxyProtocol().getRouteInfo());
+        Assert.assertTrue(meta.getEndpoint() instanceof ProxyEnabled);
+        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getEndpoint()).getProxyProtocol().getRouteInfo());
 
     }
 
@@ -144,14 +144,14 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<Pair<Long, Endpoint>> metas = re.extractPeerMasters();
+        List<CRDTInfoResultExtractor.PeerInfo> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        Pair<Long, Endpoint> meta = metas.get(0);
-        Assert.assertEquals(meta.getValue().getHost(), "127.0.0.1");
-        Assert.assertEquals(meta.getValue().getPort(), 0);
+        CRDTInfoResultExtractor.PeerInfo meta = metas.get(0);
+        Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
+        Assert.assertEquals(meta.getEndpoint().getPort(), 0);
         ProxyConnectProtocol proxy = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2 PROXYTLS://127.0.0.1:10,PROXYTLS://127.0.0.1:11");
-        Assert.assertTrue(meta.getValue() instanceof ProxyEnabled);
-        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getValue()).getProxyProtocol().getRouteInfo());
+        Assert.assertTrue(meta.getEndpoint() instanceof ProxyEnabled);
+        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getEndpoint()).getProxyProtocol().getRouteInfo());
 
     }
 
@@ -187,14 +187,14 @@ public class CrdtInfoResultExtractorTest extends AbstractRedisTest {
                 "repl_backlog_first_byte_offset:0\n" +
                 "repl_backlog_histlen:0";
         CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(result);
-        List<Pair<Long, Endpoint>> metas = re.extractPeerMasters();
+        List<CRDTInfoResultExtractor.PeerInfo> metas = re.extractPeerMasters();
         Assert.assertEquals(metas.size() , 1);
-        Pair<Long, Endpoint> meta = metas.get(0);
-        Assert.assertEquals(meta.getValue().getHost(), "127.0.0.1");
-        Assert.assertEquals(meta.getValue().getPort(), 0);
+        CRDTInfoResultExtractor.PeerInfo meta = metas.get(0);
+        Assert.assertEquals(meta.getEndpoint().getHost(), "127.0.0.1");
+        Assert.assertEquals(meta.getEndpoint().getPort(), 0);
         ProxyConnectProtocol proxy = new DefaultProxyConnectProtocolParser().read("PROXY ROUTE PROXYTCP://127.0.0.1:1,PROXYTCP://127.0.0.1:2 PROXYTLS://127.0.0.1:10 PROXYTLS://127.0.0.1:11");
-        Assert.assertTrue(meta.getValue() instanceof ProxyEnabled);
-        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getValue()).getProxyProtocol().getRouteInfo());
+        Assert.assertTrue(meta.getEndpoint() instanceof ProxyEnabled);
+        Assert.assertEquals(proxy.getRouteInfo(), ((ProxyEnabled)meta.getEndpoint()).getProxyProtocol().getRouteInfo());
 
     }
 }

@@ -1,10 +1,12 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.listener.ConflictMetricListener;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -15,13 +17,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class ConflictCheckActionTest extends AbstractCheckerTest {
+public class CrdtInfoStatsActionTest extends AbstractCheckerTest {
 
     private RedisHealthCheckInstance instance;
 
     private Server redis;
 
-    ConflictCheckAction action;
+    CrdtInfoStatsAction action;
 
     private volatile int redisDelay = 0;
 
@@ -66,7 +68,7 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
         });
 
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, redis.getPort());
-        action = new ConflictCheckAction(scheduled, instance, executors);
+        action = new CrdtInfoStatsAction(scheduled, instance, executors);
 
         action.addListener(new HealthCheckActionListener() {
             @Override
@@ -104,15 +106,17 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
 
-        CrdtConflictCheckContext context = (CrdtConflictCheckContext) contextRef.get();
+        CrdtInfoStatsContext context = (CrdtInfoStatsContext) contextRef.get();
+        InfoResultExtractor extractor = context.getResult();
+        ConflictMetricListener.CrdtConflictStats stats = new ConflictMetricListener.CrdtConflictStats(extractor);
         Assert.assertEquals(1, listenerCallCnt.get());
-        Assert.assertEquals(new Long(typeConflict), context.getResult().getTypeConflict());
-        Assert.assertEquals(new Long(nonTypeConflict), context.getResult().getNonTypeConflict());
-        Assert.assertEquals(new Long(mergeConflict), context.getResult().getMergeConflict());
-        Assert.assertEquals(new Long(modifyConflict), context.getResult().getModifyConflict());
-        Assert.assertNull(context.getResult().getSetConflict());
-        Assert.assertNull(context.getResult().getDelConflict());
-        Assert.assertNull(context.getResult().getSetDelConflict());
+        Assert.assertEquals(new Long(typeConflict), stats.getTypeConflict());
+        Assert.assertEquals(new Long(nonTypeConflict), stats.getNonTypeConflict());
+        Assert.assertEquals(new Long(mergeConflict), stats.getMergeConflict());
+        Assert.assertEquals(new Long(modifyConflict), stats.getModifyConflict());
+        Assert.assertNull(stats.getSetConflict());
+        Assert.assertNull(stats.getDelConflict());
+        Assert.assertNull(stats.getSetDelConflict());
     }
 
     @Test
@@ -130,15 +134,17 @@ public class ConflictCheckActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> listenerCallCnt.get() == 1, 1000);
 
-        CrdtConflictCheckContext context = (CrdtConflictCheckContext) contextRef.get();
+        CrdtInfoStatsContext context = (CrdtInfoStatsContext) contextRef.get();
+        InfoResultExtractor extractor = context.getResult();
+        ConflictMetricListener.CrdtConflictStats stats = new ConflictMetricListener.CrdtConflictStats(extractor);
         Assert.assertEquals(1, listenerCallCnt.get());
-        Assert.assertEquals(new Long(typeConflict), context.getResult().getTypeConflict());
-        Assert.assertEquals(new Long(setConflict), context.getResult().getSetConflict());
-        Assert.assertEquals(new Long(delConflict), context.getResult().getDelConflict());
-        Assert.assertEquals(new Long(setDelConflict), context.getResult().getSetDelConflict());
-        Assert.assertEquals(new Long(setConflict + delConflict + setDelConflict), context.getResult().getNonTypeConflict());
-        Assert.assertEquals(new Long(mergeConflict), context.getResult().getMergeConflict());
-        Assert.assertEquals(new Long(modifyConflict), context.getResult().getModifyConflict());
+        Assert.assertEquals(new Long(typeConflict), stats.getTypeConflict());
+        Assert.assertEquals(new Long(setConflict), stats.getSetConflict());
+        Assert.assertEquals(new Long(delConflict), stats.getDelConflict());
+        Assert.assertEquals(new Long(setDelConflict), stats.getSetDelConflict());
+        Assert.assertEquals(new Long(setConflict + delConflict + setDelConflict), stats.getNonTypeConflict());
+        Assert.assertEquals(new Long(mergeConflict), stats.getMergeConflict());
+        Assert.assertEquals(new Long(modifyConflict), stats.getModifyConflict());
     }
 
     @Test
