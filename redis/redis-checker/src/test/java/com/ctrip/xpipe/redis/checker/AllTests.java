@@ -26,8 +26,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.Versi
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.BackStreamingAlertListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.CrdtBacklogOffsetListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.CrdtPeerBacklogOffsetListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.PeerBacklogOffsetListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.PeerReplicationOffsetListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.listener.ConflictMetricListenerTest;
@@ -106,8 +106,8 @@ import org.junit.runners.Suite;
         CrdtInfoReplicationActionFactoryTest.class,
         CrdtInfoReplicationActionTest.class,
         BackStreamingAlertListenerTest.class,
-        CrdtPeerBacklogOffsetListenerTest.class,
-        CrdtBacklogOffsetListenerTest.class,
+        PeerBacklogOffsetListenerTest.class,
+        PeerReplicationOffsetListenerTest.class,
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
         RouteHealthEventProcessorTest.class,

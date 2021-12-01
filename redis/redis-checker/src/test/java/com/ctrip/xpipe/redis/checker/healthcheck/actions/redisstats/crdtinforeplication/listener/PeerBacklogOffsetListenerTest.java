@@ -16,7 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class CrdtBacklogOffsetListenerTest extends AbstractCheckerTest {
+public class PeerBacklogOffsetListenerTest extends AbstractCheckerTest {
     private RedisHealthCheckInstance instance;
 
     private PeerBacklogOffsetListener listener;
@@ -27,7 +27,7 @@ public class CrdtBacklogOffsetListenerTest extends AbstractCheckerTest {
     public void setupBackStreamingAlertListenerTest() throws Exception {
         listener = new PeerBacklogOffsetListener();
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, randomPort());
-
+        
 
         proxy = Mockito.mock(MetricProxy.class);
         listener.setMetricProxy(proxy);
@@ -41,23 +41,32 @@ public class CrdtBacklogOffsetListenerTest extends AbstractCheckerTest {
             "gid:1\r\n" +
             "master_repl_offset:%d\r\n";
 
-    @Test
-    public void testCrdtBacklogOffset() throws MetricProxyException {
+    public void testCrdtBacklogOffset(boolean isMaster, int times) throws MetricProxyException {
         int offset = Math.abs(randomInt());
+        boolean oldIsMasterStats = instance.getCheckInfo().isMaster();
+        instance.getCheckInfo().isMaster(isMaster);
         Mockito.doAnswer(invocation -> {
             MetricData point = invocation.getArgumentAt(0, MetricData.class);
             Assert.assertEquals(PeerBacklogOffsetListener.METRIC_TYPE, point.getMetricType());
             Assert.assertEquals(offset, point.getValue(), DOUBLE_DELTA);
-
             return null;
         }).when(proxy).writeBinMultiDataPoint(Mockito.any());
-
-        
         CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, String.format(TMP_REPLICATION, offset));
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
+        Mockito.verify(proxy, Mockito.times(times)).writeBinMultiDataPoint(Mockito.any());
+        instance.getCheckInfo().isMaster(oldIsMasterStats);
+    }
+    
+    @Test
+    public void testMasterCrdtBacklogOffset() throws MetricProxyException {
+        testCrdtBacklogOffset(true, 1);
+        
+    }
 
-
+    @Test
+    public void testSlaverCrdtBacklogOffset() throws  MetricProxyException {
+        testCrdtBacklogOffset(false, 0);
     }
     
 }

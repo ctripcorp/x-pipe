@@ -22,7 +22,7 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
+public class PeerReplicationOffsetListenerTest extends AbstractCheckerTest {
     private RedisHealthCheckInstance instance;
 
     private PeerReplicationOffsetListener listener;
@@ -37,7 +37,7 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
         listener = new PeerReplicationOffsetListener();
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, randomPort());
         instance.getCheckInfo().isMaster(true);
-
+        
         proxy = Mockito.mock(MetricProxy.class);
         listener.setMetricProxy(proxy);
     }
@@ -115,4 +115,5 @@ public class CrdtPeerBacklogOffsetListenerTest extends AbstractCheckerTest {
         listener.onAction(context);
         Mockito.verify(proxy, Mockito.times(2)).writeBinMultiDataPoint(Mockito.any());
     }
+    
 }
