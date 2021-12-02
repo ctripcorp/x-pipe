@@ -52,7 +52,7 @@ public class GateTest extends AbstractTest {
     public void testOpenClose() throws InterruptedException, TimeoutException {
 
         int passengers = 10;
-        int closeTimeMilli = 50;
+        int closeTimeMilli = 100;
         final AtomicInteger passThroughPassengers = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(passengers);
 

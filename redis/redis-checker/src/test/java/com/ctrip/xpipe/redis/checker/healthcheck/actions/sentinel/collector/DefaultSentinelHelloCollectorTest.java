@@ -74,8 +74,11 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Mock
     private SentinelLeakyBucket leakyBucket;
 
+    private int originTimeout;
+
     @Before
     public void beforeDefaultSentinelCollectorTest() throws Exception {
+        originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
         AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 500;
         HealthCheckEndpointFactory endpointFactory = mock(HealthCheckEndpointFactory.class);
         when(endpointFactory.getOrCreateEndpoint(any(HostPort.class))).thenAnswer(new Answer<Endpoint>() {
@@ -103,6 +106,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @After
     public void afterDefaultSentinelHelloCollectorTest() throws Exception {
+        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
         if (server != null) {
             server.stop();
         }
@@ -141,12 +145,10 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
         Server metaMasterServer = startServer(metaMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
-                + "$9\r\nlocalhost\r\n"
-                + ":" + metaMaster.getPort() + "\r\n");
+                + ":0\r\n*0\r\n");
         Server helloMasterServer = startServer(helloMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
-                + "$9\r\nlocalhost\r\n"
-                + ":" + helloMaster.getPort() + "\r\n");
+                + ":0\r\n*0\r\n");
         trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
         Assert.assertEquals(2, trueMasters.size());
         metaMasterServer.stop();
@@ -221,10 +223,15 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testIsKeeperOrDead() {
-        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
-        boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
-        logger.info("{}", result);
-        Assert.assertTrue(result);
+        int originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+        try {
+            AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
+            boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
+            logger.info("{}", result);
+            Assert.assertTrue(result);
+        } finally {
+            AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
+        }
     }
 
     @Test

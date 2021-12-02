@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
@@ -34,6 +35,8 @@ public interface MetaCache {
     Set<HostPort> getActiveDcSentinels(String clusterId, String shardId);
 
     HostPort findMaster(String clusterId, String shardId) throws MasterNotFoundException;
+
+    List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
 
     String getDc(HostPort hostPort);
 

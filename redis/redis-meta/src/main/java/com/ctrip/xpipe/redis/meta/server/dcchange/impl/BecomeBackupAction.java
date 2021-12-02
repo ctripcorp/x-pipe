@@ -30,10 +30,10 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 
 	private MultiDcService multiDcService;
 	
-	public BecomeBackupAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, ExecutionLog executionLog,
+	public BecomeBackupAction(String cluster, String shard, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, ExecutionLog executionLog,
 							  XpipeNettyClientKeyedObjectPool keyedObjectPool,
 							  MultiDcService multiDcService, ScheduledExecutorService scheduled, Executor executors) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
+		super(cluster, shard, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
 		this.multiDcService = multiDcService;
 	}
 	

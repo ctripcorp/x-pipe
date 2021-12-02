@@ -59,7 +59,7 @@ public class InfoResultExtractor {
         if (keyValues == null) {
             synchronized (this) {
                 if (keyValues == null) {
-                    keyValues = new HashMap<>();
+                    Map<String, String> localMap = new HashMap<>();
                     String[] split = result.split("[\r\n]+");
                     for (String line : split) {
                         if(line == null || line.isEmpty()) {
@@ -74,9 +74,10 @@ public class InfoResultExtractor {
                             continue;
                         }
 
-                        keyValues.put(line.substring(0, splitterIndex).trim(),
+                        localMap.put(line.substring(0, splitterIndex).trim(),
                                 line.substring(splitterIndex + 1).trim());
                     }
+                    keyValues = localMap;
                 }
             }
         }

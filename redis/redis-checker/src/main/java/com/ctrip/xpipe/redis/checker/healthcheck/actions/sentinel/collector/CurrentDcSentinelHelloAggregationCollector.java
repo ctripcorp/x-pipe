@@ -63,16 +63,7 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
     }
 
     private int getRedisCntInCurrentDc() {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta
-                || !xpipeMeta.getDcs().containsKey(dcId)
-                || !xpipeMeta.getDcs().get(dcId).getClusters().containsKey(clusterId)
-                || !xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().containsKey(shardId)) {
-            return 0;
-        }
-
-        List<RedisMeta> currentDcRediss = xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().get(shardId).getRedises();
-        return null == currentDcRediss ? 0 : currentDcRediss.size();
+        return metaCache.getRedisOfDcClusterShard(dcId, clusterId, shardId).size();
     }
 
 }

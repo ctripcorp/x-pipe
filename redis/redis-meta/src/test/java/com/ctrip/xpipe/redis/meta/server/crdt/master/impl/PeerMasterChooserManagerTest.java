@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.MasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +29,11 @@ public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
     @Before
     public void setupPeerMasterChooserManagerTest() throws Exception {
         defaultPeerMasterChooserManager.initialize();
+    }
+
+    @After
+    public void afterPeerMasterChooserManagerTest() throws Exception {
+        defaultPeerMasterChooserManager.dispose();
     }
 
     @Test

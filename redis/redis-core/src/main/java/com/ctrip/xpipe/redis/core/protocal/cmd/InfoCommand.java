@@ -31,6 +31,12 @@ public class InfoCommand extends AbstractRedisCommand<String> {
 		this.args = infoType.cmd();
 	}
 
+	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, INFO_TYPE infoType, ScheduledExecutorService scheduled,
+					   int commandTimeoutMilli) {
+		super(clientPool, scheduled, commandTimeoutMilli);
+		this.args = infoType.cmd();
+	}
+
 	public InfoCommand(SimpleObjectPool<NettyClient> clientPool, String args, ScheduledExecutorService scheduled,
 					   int commandTimeoutMilli) {
 		super(clientPool, scheduled, commandTimeoutMilli);
