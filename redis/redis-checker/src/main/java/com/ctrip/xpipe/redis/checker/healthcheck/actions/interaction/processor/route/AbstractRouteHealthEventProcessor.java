@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
@@ -31,6 +32,8 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  * Nov 25, 2021 1:05 AM
  */
 public abstract class AbstractRouteHealthEventProcessor implements HealthEventProcessor {
+
+    private final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -71,6 +74,9 @@ public abstract class AbstractRouteHealthEventProcessor implements HealthEventPr
     @Override
     public void onEvent(AbstractInstanceEvent event) {
         if (clusterServer != null && !clusterServer.amILeader()) {
+            return;
+        }
+        if (currentDcId.equals(event.getInstance().getCheckInfo().getDcId())) {
             return;
         }
         if (event instanceof InstanceHalfSick) {

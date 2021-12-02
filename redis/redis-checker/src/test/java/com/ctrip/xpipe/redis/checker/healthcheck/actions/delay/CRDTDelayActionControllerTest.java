@@ -14,12 +14,12 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MultiMasterDelayActionControllerTest {
+public class CRDTDelayActionControllerTest {
 
     @Mock
     private RedisHealthCheckInstance instance;
 
-    private MultiMasterDelayActionController controller = new MultiMasterDelayActionController(FoundationService.DEFAULT);
+    private CRDTDelayActionController controller = new CRDTDelayActionController(FoundationService.DEFAULT);
 
     private String currentDc = FoundationService.DEFAULT.getDataCenter();
     private String remoteDc = "remote-dc";

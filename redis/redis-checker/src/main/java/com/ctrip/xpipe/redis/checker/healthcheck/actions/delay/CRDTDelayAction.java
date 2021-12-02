@@ -8,10 +8,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class MultiDcDelayAction extends DelayAction {
+public class CRDTDelayAction extends DelayAction {
 
-    public MultiDcDelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
-                              ExecutorService executors, PingService pingService, FoundationService foundationService) {
+    public CRDTDelayAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
+                           ExecutorService executors, PingService pingService, FoundationService foundationService) {
         super(scheduled, instance, executors, pingService, foundationService);
     }
 
