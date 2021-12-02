@@ -519,17 +519,24 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         KeeperMeta normalKeeperMeta = new KeeperMeta().setIp("localhost").setPort(normalKeeper.getPort()).setActive(false);
         when(currentMetaManager.getSurviveKeepers(clusterId, shardId))
                 .thenReturn(Arrays.asList(timeoutKeeperMeta, normalKeeperMeta));
-        InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
 
-        DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
-        doNothing().when(checker).doCorrect(anyString(), anyString(), anyList());
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        int originTimeout = InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
-        latch.await(1000, TimeUnit.MILLISECONDS);
-        sleep(100);
-        verify(checker, never()).doCorrect(anyString(), anyString(), anyList());
+        try {
+            InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
 
-        timeoutKeeper.stop();
-        normalKeeper.stop();
+            DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
+            doNothing().when(checker).doCorrect(anyString(), anyString(), anyList());
+            checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+
+            latch.await(1000, TimeUnit.MILLISECONDS);
+            sleep(100);
+            verify(checker, never()).doCorrect(anyString(), anyString(), anyList());
+
+            timeoutKeeper.stop();
+            normalKeeper.stop();
+        } finally {
+            InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
+        }
     }
 }

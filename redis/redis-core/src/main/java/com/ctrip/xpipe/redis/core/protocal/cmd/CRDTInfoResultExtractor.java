@@ -22,17 +22,52 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
     private static final String TEMP_PROXY_TYPE = "peer%d_proxy_type";
     private static final String TEMP_PROXY_SERVERS = "peer%d_proxy_servers";
     private static final String TEMP_PROXY_PARAMS = "peer%d_proxy_params";
+    private static final String TEMP_REPL_OFFSET = "peer%d_repl_offset";
 
+
+    private static final String KEY_SYNC_FULL = "sync_full";
+    private static final String KEY_SYNC_PARTIAL_OK = "sync_partial_ok";
+    private static final String KEY_SYNC_PARTIAL_ERR = "sync_partial_err";
+
+    private static final String KEY_MASTER_REPL_OFFSET = "master_repl_offset";
+    
     public CRDTInfoResultExtractor(String result) {
         super(result);
     }
+    
+    public static class PeerInfo {
+        private Endpoint endpoint;
+        private long replOffset;
+        long gid;
+        PeerInfo(long gid, Endpoint endpoint) {
+            this.gid = gid;
+            this.endpoint = endpoint;
+        }
 
-    public List<Pair<Long, Endpoint>> extractPeerMasters() {
-        List<Pair<Long, Endpoint>> peerMasters = new LinkedList<>();
+        public PeerInfo setReplOffset(long replOffset) {
+            this.replOffset = replOffset;
+            return this;
+        }
+
+        public long getReplOffset() {
+            return replOffset;
+        }
+
+        public Endpoint getEndpoint() {
+            return endpoint;
+        }
+
+        public long getGid() {
+            return gid;
+        }
+    }
+
+    public List<PeerInfo> extractPeerMasters() {
+        List<PeerInfo> peerMasters = new LinkedList<>();
 
         int index = 0;
         while (true) {
-            Pair<Long, Endpoint> peerMaster = tryExtractPeerMaster(index);
+            PeerInfo peerMaster = tryExtractPeerMaster(index);
             if (null != peerMaster) {
                 peerMasters.add(peerMaster);
             } else {
@@ -44,8 +79,8 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
 
         return peerMasters;
     }
-
-    private Pair<Long, Endpoint> tryExtractPeerMaster(int index) {
+    
+    private PeerInfo tryExtractPeerMaster(int index) {
         String host = extract(String.format(TEMP_PEER_HOST, index));
         String port = extract(String.format(TEMP_PEER_PORT, index));
         String gid = extract(String.format(TEMP_PEER_GID, index));
@@ -72,7 +107,26 @@ public class CRDTInfoResultExtractor extends InfoResultExtractor {
         if (null == peerEndPoint)  {
             peerEndPoint = new DefaultEndPoint(host, Integer.parseInt(port));
         }
-        return new Pair<>(Long.parseLong(gid), peerEndPoint);
+        PeerInfo info =  new PeerInfo(Long.parseLong(gid), peerEndPoint);
+        long replOffset = extractAsLong(String.format(TEMP_REPL_OFFSET, index));
+        info.setReplOffset(replOffset);
+        return info;
+    }
+    
+    public long getSyncFull() {
+        return extractAsLong(KEY_SYNC_FULL);
     }
 
+    public long getSyncPartialOk() {
+        return extractAsLong(KEY_SYNC_PARTIAL_OK);
+    }
+
+    public long getSyncPartialErr() {
+        return extractAsLong(KEY_SYNC_PARTIAL_ERR);
+    }
+    
+    public long getMasterReplOffset() {
+        return extractAsLong(KEY_MASTER_REPL_OFFSET);
+    }
+    
 }

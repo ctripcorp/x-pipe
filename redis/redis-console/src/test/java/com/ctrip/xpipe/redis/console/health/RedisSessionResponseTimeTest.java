@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Assert;
@@ -105,7 +106,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
         for(int i = 0; i < COUNT; i++) {
             redisSession.role(new RedisSession.RollCallback() {
                 @Override
-                public void role(String role) {
+                public void role(String role, Role detail) {
 
                 }
 

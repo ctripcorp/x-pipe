@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.AbstractAggregationCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -65,7 +66,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
                 if (info.isInActiveDc() && activeDcCollected.compareAndSet(false, true)) {
                     // only deal with success result when downgrade
                     needDowngrade.compareAndSet(true, false);
-                    if (!context.isFail()) {
+                    if (context.isSuccess()) {
                         logger.info("[{}-{}+{}]active dc {} redis {} sub finish", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
                         handleAllActiveDcHellos(context.instance(), context.getResult());
                     }
@@ -139,7 +140,9 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             if (!dcMeta.getClusters().containsKey(clusterId)) continue;
             if (dcMeta.getClusters().get(clusterId).getActiveDc().equalsIgnoreCase(dcMeta.getId())) continue;
-            redisCnt += dcMeta.getClusters().get(clusterId).getShards().get(shardId).getRedises().size();
+            ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
+            if (null == shardMeta) continue; // cluster missing shard when no instances in it
+            redisCnt += shardMeta.getRedises().size();
         }
 
         return redisCnt;

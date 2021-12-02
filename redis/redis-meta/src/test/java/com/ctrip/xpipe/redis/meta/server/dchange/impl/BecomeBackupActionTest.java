@@ -56,7 +56,9 @@ public class BecomeBackupActionTest extends AbstractMetaServerTest{
 	@Test
 	public void test() throws Exception{
 		
-		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, new ExecutionLog(currentTestName()), getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
+		BecomeBackupAction becomeBackupAction = new BecomeBackupAction("cluster", "shard", dcMetaCache,
+				currentMetaManager, sentinelManager, new ExecutionLog(currentTestName()),
+				getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
 		
 		PrimaryDcChangeMessage message = becomeBackupAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
 		

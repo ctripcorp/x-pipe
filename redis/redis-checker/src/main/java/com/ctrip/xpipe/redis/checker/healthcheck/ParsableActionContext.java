@@ -27,8 +27,8 @@ public interface ParsableActionContext<P, C, T extends HealthCheckInstance> exte
     }
 
     @Override
-    default boolean isFail() {
-        return inner().isFail();
+    default boolean isSuccess() {
+        return inner().isSuccess();
     }
 
     @Override

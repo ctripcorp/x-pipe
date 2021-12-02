@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server;
 
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerShardingTest;
-import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServersApiTest;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.crdt.PeerMasterMetaServerStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.impl.*;
@@ -28,7 +26,6 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.AbstractCluste
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeperMasterChooserAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.DefaultDcKeeperMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.PrimaryDcKeeperMasterChooserAlgorithmTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.manager.AddKeeperCommandTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
@@ -36,10 +33,11 @@ import com.ctrip.xpipe.redis.meta.server.meta.ChooseRouteStrategyTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaTest;
 import com.ctrip.xpipe.redis.meta.server.meta.MetaJacksonTest;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultCurrentMetaManagerTest;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheRefreshTest;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.*;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
+import com.ctrip.xpipe.redis.meta.server.dchange.impl.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -103,7 +101,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultMetaServerRefreshPeerMasterTest.class,
 	AbstractClusterShardPeriodicTaskTest.class,
 	DefaultMasterChooserManagerTest.class,
-	ClusterShardCachedNewMasterChooserTest.class
+	ClusterShardCachedNewMasterChooserTest.class,
+	BecomePrimaryActionTest.class
 })
 public class AllTests {
 

@@ -79,7 +79,7 @@ public class RedisMasterCheckActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> null != context, 1000);
         Assert.assertFalse(context.instance().getCheckInfo().isMaster());
-        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.MASTER, context.getResult());
+        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.MASTER, context.getResult().getServerRole());
     }
 
     @Test
@@ -95,7 +95,7 @@ public class RedisMasterCheckActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> null != context, 1000);
         Assert.assertTrue(context.instance().getCheckInfo().isMaster());
-        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.SLAVE, context.getResult());
+        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.SLAVE, context.getResult().getServerRole());
     }
 
     @Test
@@ -108,6 +108,6 @@ public class RedisMasterCheckActionTest extends AbstractCheckerTest {
 
         waitConditionUntilTimeOut(() -> null != context, 1000);
         Assert.assertTrue(context.instance().getCheckInfo().isMaster());
-        Assert.assertEquals(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.UNKNOWN, context.getResult());
+        Assert.assertFalse(context.isSuccess());
     }
 }

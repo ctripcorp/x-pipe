@@ -177,7 +177,7 @@ public class RedisSession {
             @Override
             public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
                 if(commandFuture.isSuccess()) {
-                    callback.role(commandFuture.get().getServerRole().name());
+                    callback.role(commandFuture.get().getServerRole().name(), commandFuture.get());
                 } else {
                     callback.fail(commandFuture.cause());
                 }
@@ -319,7 +319,7 @@ public class RedisSession {
 
     public interface RollCallback {
 
-        void role(String role);
+        void role(String role, Role detail);
 
         void fail(Throwable e);
     }

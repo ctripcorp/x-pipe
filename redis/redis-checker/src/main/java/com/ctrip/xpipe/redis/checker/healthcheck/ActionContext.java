@@ -13,7 +13,7 @@ public interface ActionContext<C, T extends HealthCheckInstance> {
 
     long getRecvTimeMilli();
 
-    boolean isFail();
+    boolean isSuccess();
 
     Throwable getCause();
 }

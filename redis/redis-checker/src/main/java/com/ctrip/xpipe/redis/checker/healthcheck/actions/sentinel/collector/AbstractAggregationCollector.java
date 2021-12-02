@@ -39,7 +39,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     protected synchronized int collectHello(SentinelActionContext context) {
         RedisInstanceInfo info = context.instance().getCheckInfo();
         checkFinishedInstance.add(info.getHostPort());
-        if (!context.isFail()) checkResult.addAll(context.getResult());
+        if (context.isSuccess()) checkResult.addAll(context.getResult());
         else checkFailInstance.add(info.getHostPort());
 
         return checkFinishedInstance.size();

@@ -425,7 +425,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             RedisSession redisSession = sessionManager.findOrCreateSession(hostPort);
             redisSession.role(new RedisSession.RollCallback() {
                 @Override
-                public void role(String roleDesc) {
+                public void role(String roleDesc, Role detail) {
                     role.set(roleDesc);
                     latch.countDown();
                 }
