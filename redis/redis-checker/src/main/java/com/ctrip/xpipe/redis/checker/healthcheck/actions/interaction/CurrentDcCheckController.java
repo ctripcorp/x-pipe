@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckActionController;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 

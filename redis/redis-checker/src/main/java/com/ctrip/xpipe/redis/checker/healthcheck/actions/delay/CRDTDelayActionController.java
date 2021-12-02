@@ -8,10 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MultiMasterDelayActionController extends CurrentDcCheckController implements DelayActionController, BiDirectionSupport {
+public class CRDTDelayActionController extends CurrentDcCheckController implements DelayActionController, BiDirectionSupport {
     
     @Autowired
-    public MultiMasterDelayActionController(FoundationService foundationService) {
+    public CRDTDelayActionController(FoundationService foundationService) {
         super(foundationService.getDataCenter());
     }
 

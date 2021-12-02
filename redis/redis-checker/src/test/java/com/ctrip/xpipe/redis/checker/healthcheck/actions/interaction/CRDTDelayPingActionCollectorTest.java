@@ -24,10 +24,10 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
+public class CRDTDelayPingActionCollectorTest extends AbstractCheckerTest {
 
     @InjectMocks
-    CurrentDcDelayPingActionCollector collector;
+    CRDTDelayPingActionCollector collector;
 
     @Mock
     private AlertManager alertManager;
@@ -52,7 +52,7 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
 
     @Before
     public void setupCurrentDcDelayPingActionCollectorTest() {
-        Mockito.when(instance.getCheckInfo()).thenReturn(remoteMaster);
+        Mockito.when(instance.getCheckInfo()).thenReturn(currentMaster);
         Mockito.when(instance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
         Mockito.when(healthCheckConfig.pingDownAfterMilli()).thenReturn(downAfterMilli);
         Mockito.when(healthCheckConfig.delayDownAfterMilli()).thenReturn(downAfterMilli);
@@ -61,14 +61,6 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
         delayActionListener = collector.createDelayActionListener();
         pingActionListener = collector.createPingActionListener();
         collector.setScheduled(scheduled);
-    }
-
-    @Test
-    public void testSupportInstance() {
-        Mockito.when(instance.getCheckInfo()).thenReturn(currentMaster);
-        Assert.assertTrue(collector.supportInstance(instance));
-        Mockito.when(instance.getCheckInfo()).thenReturn(remoteMaster);
-        Assert.assertFalse(collector.supportInstance(instance));
     }
 
     @Test
@@ -102,7 +94,6 @@ public class CurrentDcDelayPingActionCollectorTest extends AbstractCheckerTest {
     @Test
     public void testInstanceUpAfterDown() {
         testInstanceDown();
-
         Mockito.doAnswer(invocation -> {
             pingActionListener.onAction(new PingActionContext(instance, false));
             delayActionListener.onAction(new DelayActionContext(instance, healthyDelayMilli * 2L));

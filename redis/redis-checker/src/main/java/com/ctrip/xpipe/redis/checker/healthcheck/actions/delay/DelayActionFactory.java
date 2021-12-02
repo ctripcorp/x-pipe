@@ -70,7 +70,7 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
         DelayAction delayAction;
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         if (clusterType.supportMultiActiveDC()) {
-            delayAction = new MultiDcDelayAction(scheduled, instance, executors, pingService, foundationService);
+            delayAction = new CRDTDelayAction(scheduled, instance, executors, pingService, foundationService);
         } else {
             delayAction = new DelayAction(scheduled, instance, executors, pingService, foundationService);
         }
