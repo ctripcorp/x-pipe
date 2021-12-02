@@ -118,6 +118,7 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
         List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
         List<TunnelInfo> tunnels = Lists.newArrayList();
         for(ProxyMonitorCollector collector : collectors) {
+            logger.info("[fullUpdate] {}, {}", collector.getProxyInfo(), collector.getTunnelInfos());
             tunnels.addAll(collector.getTunnelInfos());
         }
 
