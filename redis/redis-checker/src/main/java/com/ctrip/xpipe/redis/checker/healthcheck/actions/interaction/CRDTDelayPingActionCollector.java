@@ -11,10 +11,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -134,12 +131,12 @@ public class CRDTDelayPingActionCollector extends AbstractDelayPingActionCollect
         @Override
         public void update(Object args, Observable observable) {
             logger.info("[peerStateChange]{}", args);
-            if (args instanceof InstanceSick && health.compareAndSet(true, false)) {
-                logger.info("[onCurrentMasterHealthy] cluster {}, shard {} become healthy", clusterId, shardId);
-                alertManager.alert(clusterId, shardId, null, ALERT_TYPE.CRDT_CROSS_DC_REPLICATION_UP, "replication become healthy from " + currentDcId);
-            } else if (args instanceof InstanceUp && health.compareAndSet(false, true)) {
+            if ((args instanceof InstanceSick || args instanceof InstanceHalfSick) && health.compareAndSet(true, false)) {
                 logger.info("[onCurrentMasterUnhealthy] cluster {}, shard {} become unhealthy for target dc {}", clusterId, shardId, targetDc);
                 alertManager.alert(clusterId, shardId, null, ALERT_TYPE.CRDT_CROSS_DC_REPLICATION_DOWN, String.format("replication unhealthy from %s to %s", currentDcId, targetDc));
+            } else if (args instanceof InstanceUp && health.compareAndSet(false, true)) {
+                logger.info("[onCurrentMasterHealthy] cluster {}, shard {} become healthy", clusterId, shardId);
+                alertManager.alert(clusterId, shardId, null, ALERT_TYPE.CRDT_CROSS_DC_REPLICATION_UP, "replication become healthy from " + currentDcId);
             }
         }
     }
