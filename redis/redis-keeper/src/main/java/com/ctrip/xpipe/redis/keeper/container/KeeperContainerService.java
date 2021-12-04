@@ -3,12 +3,10 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.exception.ErrorMessage;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
@@ -90,7 +88,7 @@ public class KeeperContainerService {
             return add(keeperTransMeta);
         }
 
-        start(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
+        start(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
 
         return keeperServer;
     }
@@ -99,7 +97,7 @@ public class KeeperContainerService {
         return Lists.newArrayList(redisKeeperServers.values());
     }
 
-    public void start(String clusterId, String shardId) {
+    public void start(ClusterId clusterId, ShardId shardId) {
         String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
@@ -128,7 +126,7 @@ public class KeeperContainerService {
         }
     }
 
-    public void stop(String clusterId, String shardId) {
+    public void stop(ClusterId clusterId, ShardId shardId) {
         String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
@@ -157,7 +155,7 @@ public class KeeperContainerService {
         }
     }
 
-    public void remove(String clusterId, String shardId) {
+    public void remove(ClusterId clusterId, ShardId shardId) {
         String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
@@ -204,7 +202,9 @@ public class KeeperContainerService {
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
         ClusterMeta clusterMeta = new ClusterMeta(keeperTransMeta.getClusterId());
+        clusterMeta.setDbId(keeperTransMeta.getClusterDbId());
         ShardMeta shardMeta = new ShardMeta(keeperTransMeta.getShardId());
+        shardMeta.setDbId(keeperTransMeta.getShardDbId());
         shardMeta.setParent(clusterMeta);
         keeperMeta.setParent(shardMeta);
     }
@@ -234,10 +234,10 @@ public class KeeperContainerService {
     }
 
     private String assembleKeeperServerKey(KeeperTransMeta keeperTransMeta) {
-        return assembleKeeperServerKey(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
+        return assembleKeeperServerKey(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
     }
 
-    private String assembleKeeperServerKey(String clusterId, String shardId) {
+    private String assembleKeeperServerKey(ClusterId clusterId, ShardId shardId) {
         return String.format("%s-%s", clusterId, shardId);
     }
 }

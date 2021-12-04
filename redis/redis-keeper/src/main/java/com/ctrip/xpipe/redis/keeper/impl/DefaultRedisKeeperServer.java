@@ -19,7 +19,6 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.observer.NodeAdded;
-import com.ctrip.xpipe.redis.core.entity.Cluster;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -75,8 +74,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));
 	private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
-
-
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
 	 */
@@ -97,7 +94,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
 	
-	private final String clusterId, shardId;
+	private final ClusterId clusterId;
+	private final ShardId shardId;
 	
 	private volatile RedisKeeperServerState redisKeeperServerState;
 	private KeeperConfig keeperConfig; 
@@ -122,14 +120,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
-		this.clusterId = currentKeeperMeta.parent().parent().getId();
-		this.shardId = currentKeeperMeta.parent().getId();
+
+		this.clusterId = ClusterId.from(currentKeeperMeta.parent().parent().getDbId());
+		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.keeperConfig = keeperConfig;
 		this.keepersMonitorManager = keepersMonitorManager;
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
-		//TODO: use clusterid & shardid
-		this.replicationStoreManager = new DefaultReplicationStoreManager.IdAndDbIdCompatible(keeperConfig, new ClusterId(0L), new ShardId(0L), currentKeeperMeta.getId(), baseDir, keeperMonitor);
+		this.replicationStoreManager = new DefaultReplicationStoreManager
+				.IdAndDbIdCompatible(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor)
+				.setDeprecatedClusterAndShardName(currentKeeperMeta.parent().parent().getId(), currentKeeperMeta.parent().getId());
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.leaderElectorManager = leaderElectorManager;
 		this.resourceManager = resourceManager;
@@ -149,7 +149,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		replicationStoreManager.initialize();
 		
-		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId, shardId));
+		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId.toString(), shardId.toString()));
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
 		clientExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "RedisClient-" + threadPoolName));
@@ -526,12 +526,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public String getClusterId() {
+	public ClusterId getClusterId() {
 		return this.clusterId;
 	}
 
 	@Override
-	public String getShardId() {
+	public ShardId getShardId() {
 		return this.shardId;
 	}
 
