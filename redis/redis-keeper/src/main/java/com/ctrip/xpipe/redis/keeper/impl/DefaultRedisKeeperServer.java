@@ -19,15 +19,14 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
 import com.ctrip.xpipe.observer.NodeAdded;
+import com.ctrip.xpipe.redis.core.entity.Cluster;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.FullSyncListener;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
@@ -129,7 +128,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.keeperConfig = keeperConfig;
 		this.keepersMonitorManager = keepersMonitorManager;
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
-		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
+		//TODO: use clusterid & shardid
+		this.replicationStoreManager = new DefaultReplicationStoreManager.IdAndDbIdCompatible(keeperConfig, new ClusterId(0L), new ShardId(0L), currentKeeperMeta.getId(), baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.leaderElectorManager = leaderElectorManager;
 		this.resourceManager = resourceManager;
