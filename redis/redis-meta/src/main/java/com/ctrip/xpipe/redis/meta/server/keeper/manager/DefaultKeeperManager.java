@@ -110,31 +110,32 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	@Override
 	protected void handleClusterModified(ClusterMetaComparator comparator) {
 
-		String clusterId = comparator.getCurrent().getId();
-		comparator.accept(new ClusterComparatorVisitor(clusterId));
+		ClusterMeta cluster = comparator.getCurrent();
+		comparator.accept(new ClusterComparatorVisitor(cluster.getId(), cluster.getDbId()));
 	}
 
 	@Override
 	protected void handleClusterDeleted(ClusterMeta clusterMeta) {
 
+		Long clusterDbId = clusterMeta.getDbId();
 		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-				removeKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
+				removeKeeper(clusterMeta.getId(), shardMeta.getId(), clusterDbId, shardMeta.getDbId(), keeperMeta);
 			}
 		}
 	}
 
-	private void removeKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+	private void removeKeeper(String clusterId, String shardId, Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		try {
-			keeperStateController.removeKeeper(new KeeperTransMeta(clusterId, shardId, keeperMeta));
+			keeperStateController.removeKeeper(new KeeperTransMeta(clusterId, shardId, clusterDbId, shardDbId, keeperMeta));
 		} catch (Exception e) {
 			logger.error(String.format("[removeKeeper]%s:%s,%s", clusterId, shardId, keeperMeta), e);
 		}
 	}
 
-	private void addKeeper(String clusterId, String shardId, KeeperMeta keeperMeta) {
+	private void addKeeper(String clusterId, String shardId, Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		try {
-			keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, keeperMeta));
+			keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, clusterDbId, shardDbId, keeperMeta));
 		} catch (Exception e) {
 			logger.error(String.format("[addKeeper]%s:%s,%s", clusterId, shardId, keeperMeta), e);
 		}
@@ -145,7 +146,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 			for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
-				addKeeper(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
+				addKeeper(clusterMeta.getId(), shardMeta.getId(), clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
 			}
 		}
 	}
@@ -203,15 +204,18 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private String clusterId;
 
-		public ClusterComparatorVisitor(String clusterId) {
+		private Long clusterDbId;
+
+		public ClusterComparatorVisitor(String clusterId, Long clusterDbId) {
 			this.clusterId = clusterId;
+			this.clusterDbId = clusterDbId;
 		}
 
 		@Override
 		public void visitAdded(ShardMeta added) {
 			logger.info("[visitAdded][add shard]{}", added);
 			for (KeeperMeta keeperMeta : added.getKeepers()) {
-				addKeeper(clusterId, added.getId(), keeperMeta);
+				addKeeper(clusterId, added.getId(), clusterDbId, added.getDbId(), keeperMeta);
 			}
 		}
 
@@ -219,7 +223,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitModified(@SuppressWarnings("rawtypes") MetaComparator comparator) {
 
 			ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
-			shardMetaComparator.accept(new ShardComparatorVisitor(clusterId, shardMetaComparator.getCurrent().getId()));
+			ShardMeta shard = shardMetaComparator.getCurrent();
+			shardMetaComparator.accept(new ShardComparatorVisitor(clusterId, shard.getId(), clusterDbId, shard.getDbId()));
 
 		}
 
@@ -227,7 +232,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitRemoved(ShardMeta removed) {
 			logger.info("[visitRemoved][remove shard]{}", removed);
 			for (KeeperMeta keeperMeta : removed.getKeepers()) {
-				removeKeeper(clusterId, removed.getId(), keeperMeta);
+				removeKeeper(clusterId, removed.getId(), clusterDbId, removed.getDbId(), keeperMeta);
 			}
 		}
 	}
@@ -236,17 +241,21 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private String clusterId;
 		private String shardId;
+		private Long clusterDbId;
+		private Long shardDbId;
 
-		protected ShardComparatorVisitor(String clusterId, String shardId) {
+		protected ShardComparatorVisitor(String clusterId, String shardId, Long clusterDbId, Long shardDbId) {
 			this.clusterId = clusterId;
 			this.shardId = shardId;
+			this.clusterDbId = clusterDbId;
+			this.shardDbId = shardDbId;
 		}
 
 		@Override
 		public void visitAdded(Redis added) {
 
 			if (added instanceof KeeperMeta) {
-				addKeeper(clusterId, shardId, (KeeperMeta) added);
+				addKeeper(clusterId, shardId, clusterDbId, shardDbId, (KeeperMeta) added);
 			} else {
 				logger.debug("[visitAdded][do nothng]{}", added);
 			}
@@ -262,7 +271,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		public void visitRemoved(Redis removed) {
 
 			if (removed instanceof KeeperMeta) {
-				removeKeeper(clusterId, shardId, (KeeperMeta) removed);
+				removeKeeper(clusterId, shardId, clusterDbId, shardDbId, (KeeperMeta) removed);
 			} else {
 				logger.debug("[visitAdded][do nothng]{}", removed);
 			}
