@@ -23,7 +23,11 @@ public class KeeperTransMeta implements ClusterAware{
 
 	//for json conversion
 	public KeeperTransMeta() {}
-	
+
+	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta){
+		this(null, null, clusterDbId, shardDbId, keeperMeta);
+	}
+
 	public KeeperTransMeta(String clusterId, String shardId, KeeperMeta keeperMeta){
 		this(clusterId, shardId, null, null, keeperMeta);
 	}
