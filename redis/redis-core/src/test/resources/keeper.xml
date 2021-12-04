@@ -13,8 +13,8 @@
 		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>
 
 		
-		<cluster id="cluster1" dbId="1234567890123456789" active-dc="jq" backup-dcs = "oy,fra" org-id="1" phase="1" lastModifiedTime="1234567abc" type="one_way" admin-emails="test@trip.com"><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
-			<shard id="shard1" dbId="1234567890123456789" sentinelId="1" sentinelMonitorName="cluster1-shard1" phase="1"> <!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
+		<cluster id="cluster1" db-id="1234567890123456789" active-dc="jq" backup-dcs = "oy,fra" org-id="1" phase="1" lastModifiedTime="1234567abc" type="one_way" admin-emails="test@trip.com"><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
+			<shard id="shard1" db-id="1234567890123456789" sentinelId="1" sentinelMonitorName="cluster1-shard1" phase="1"> <!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
 				<keeper id="40a" ip="1.1.1.1" port="8888" master="1.1.1.1:1234" active="true" keeperContainerId="1" offset="111111" survive="false"/>
 				<keeper id="40a" ip="1.1.1.2" port="9999" master="1.1.1.1:8888" active="false" keeperContainerId="1" offset="11111" survive="false"/>
 				<redis id="40b" ip="1.1.1.3" port="1234" master="" offset="111111" survive="false"/>
