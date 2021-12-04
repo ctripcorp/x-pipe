@@ -526,10 +526,6 @@
 				<member name="setinel-monitor-name"/>
 			</readset>
 			<readset name="NAME_AND_MONITOR_NAME">
-				<member name="shard-name"/>
-				<member name="setinel-monitor-name"/>
-			</readset>
-			<readset name="ID_NAME_AND_MONITOR_NAME">
 				<member name="id"/>
 				<member name="shard-name"/>
 				<member name="setinel-monitor-name"/>
