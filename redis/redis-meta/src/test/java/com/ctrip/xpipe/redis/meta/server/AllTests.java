@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerT
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.AbstractClusterShardPeriodicTaskTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeperMasterChooserAlgorithmTest;
@@ -70,6 +71,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
 	DefaultKeeperElectorManagerTest.class,
+	MultiPathKeeperElectorManagerTest.class,
 	//AddKeeperCommandTest.class,
 	DeleteKeeperCommandTest.class,
 	BackupDcKeeperMasterChooserAlgorithmTest.class,

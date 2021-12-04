@@ -37,6 +37,10 @@ public class MetaZkConfig {
 		String path = String.format("%s/%s/%s", getZkLeaderLatchRootPath(), clusterId, shardId);
 		return path;
 	}
+
+	public static String getKeeperLeaderLatchPath(long clusterDbId, long shardDbId) {
+		return String.format("%s/cluster_%d/shard_%d", getZkLeaderLatchRootPath(), clusterDbId, shardDbId);
+	}
 	
 	public static String getKeeperLeaderElectionId(KeeperMeta currentKeeperMeta){
 		
