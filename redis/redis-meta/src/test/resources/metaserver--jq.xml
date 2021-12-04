@@ -9,27 +9,27 @@
 			<keeperContainer id="4" ip="127.0.0.1" port="7181" />
 		</keeperContainers>
 
-		<cluster id="cluster1"  active-dc="jq" backup-dcs="oy" type="one_way">
-			<shard id="shard1">
+		<cluster id="cluster1" db-id="1"  active-dc="jq" backup-dcs="oy" type="one_way">
+			<shard id="shard1" db-id="1">
 				<redis ip="127.0.0.1" port="6379" master="" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6379" ip="127.0.0.1" port="6000" active="true" keeperContainerId="1" />
 				<keeper id="0123456789012345678901234567890123456789" master="127.0.0.1:6000" ip="127.0.0.1" port="6001" active="false" keeperContainerId="2" />
 			</shard>
 		</cluster>
-		<cluster id="bi-cluster1"  dcs="jq, oy" type="bi_direction">
-			<shard id="bi-shard1">
+		<cluster id="bi-cluster1" db-id="2"  dcs="jq, oy" type="bi_direction">
+			<shard id="bi-shard1" db-id="2">
 				<redis ip="10.0.0.1" port="6379" />
 			</shard>
 		</cluster>
 	</dc>
 
 	<dc id="oy">
-		<cluster id="cluster1" type="one_way">
-			<shard id="shard1" active-dc="jq">
+		<cluster id="cluster1" db-id="1" type="one_way">
+			<shard id="shard1" db-id="1" active-dc="jq">
 			</shard>
 		</cluster>
-		<cluster id="bi-cluster1"  dcs="jq, oy" type="bi_direction">
-			<shard id="bi-shard1">
+		<cluster id="bi-cluster1" db-id="2" dcs="jq, oy" type="bi_direction">
+			<shard id="bi-shard1" db-id="2">
 				<redis ip="10.0.0.2" port="6379" />
 			</shard>
 		</cluster>

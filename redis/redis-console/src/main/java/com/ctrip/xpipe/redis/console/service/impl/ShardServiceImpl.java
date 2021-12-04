@@ -184,7 +184,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 				@Override
 				public List<ShardTbl> doQuery() throws DalException {
-					return dao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME);
+					return dao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME);
 				}
 			});
 
