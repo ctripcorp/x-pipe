@@ -338,9 +338,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             this.shardId = shardId;
         }
 
-        public void setDeprecatedClusterAndShardName(String clusterName, String shardName) {
+        public IdAndDbIdCompatible setDeprecatedClusterAndShardName(String clusterName, String shardName) {
             this.deprecatedClusterName = clusterName;
             this.deprecatedShardName = shardName;
+            return this;
         }
 
         @Override
@@ -352,6 +353,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
 
         public void renameDeprecatedStore() {
+            if (deprecatedClusterName == null || deprecatedShardName == null) {
+                return;
+            }
+
             File deprecated = new File(keeperBaseDir, deprecatedClusterName + "/" + deprecatedShardName);
             File dest = new File(keeperBaseDir, clusterId + "/" + shardId);
 

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import java.util.Objects;
+
 /**
  * @author Slight
  * <p>
@@ -15,7 +17,7 @@ public class ShardId {
         return new ShardId(id);
     }
 
-    public ShardId(long id) {
+    public ShardId(Long id) {
         this.id = id;
     }
 
@@ -26,6 +28,19 @@ public class ShardId {
 
     public Long id() {
         return id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShardId shardId = (ShardId) o;
+        return Objects.equals(id, shardId.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     public String toString() {
