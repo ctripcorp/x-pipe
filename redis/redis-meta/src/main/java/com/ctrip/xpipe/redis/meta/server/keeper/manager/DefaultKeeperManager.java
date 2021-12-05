@@ -177,7 +177,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 	public class DeadKeeperChecker extends AbstractKeeperStateChecker {
 
-		protected void doCheckShard(String clusterId, ShardMeta shardMeta) {
+		protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
+			String clusterId = clusterMeta.getId();
 			String shardId = shardMeta.getId();
 			List<KeeperMeta> allKeepers = shardMeta.getKeepers();
 			List<KeeperMeta> aliveKeepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
@@ -188,7 +189,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			}
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
-					keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, deadKeeper));
+					keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, clusterMeta.getDbId(), shardMeta.getDbId(), deadKeeper));
 				} catch (ResourceAccessException e) {
 					logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s", clusterId, shardId,
 							deadKeeper, e.getMessage()));
@@ -320,12 +321,12 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterId);
 				if (!supportCluster(clusterMeta)) continue;
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
-					doCheckShard(clusterId, shardMeta);
+					doCheckShard(clusterMeta, shardMeta);
 				}
 			}
 		}
 
-		protected abstract void doCheckShard(String clusterId, ShardMeta shardMeta);
+		protected abstract void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta);
 	}
 
 	private final String STATE = "state";
@@ -335,7 +336,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	public class KeeperStateAlignChecker extends AbstractKeeperStateChecker {
 
 		@Override
-		protected void doCheckShard(String clusterId, ShardMeta shardMeta) {
+		protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
+			String clusterId = clusterMeta.getId();
 			String shardId = shardMeta.getId();
 			List<KeeperMeta> keeperMetas = currentMetaManager.getSurviveKeepers(clusterId, shardId);
 			if (keeperMetas.isEmpty()) return;
