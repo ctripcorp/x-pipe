@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.redis.core.entity;
 
-
-import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.ShardId;
-
 import java.util.Objects;
 
 /**
