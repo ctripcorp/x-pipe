@@ -28,5 +28,6 @@ public class AbstractController {
 	public static final String SHARD_ID_PATH_VARIABLE = "{shardId:.+}";
 
 	public static final String IP_ADDRESS_VARIABLE = "{ipAddress:.+}";
+	public static final String CLUSTER_TYPE_VARIABLE = "{clusterType:.+}";
 
 }

@@ -87,6 +87,24 @@ public class HealthCheckController extends AbstractConsoleController {
         String url = info.getDomain() + template;
         return ImmutableMap.of("addr", url);
     }
+    
+    @RequestMapping(value = "/cluster/health/hickwall/" + CLUSTER_TYPE_VARIABLE + "/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET) 
+    public Map<String, String> getClusterHickwallAddress(@PathVariable String clusterType, @PathVariable String clusterName) {
+        HickwallMetricInfo info = config.getHickwallMetricInfo();
+        ClusterType clusterType1 = ClusterType.lookup(clusterType);
+        String template = "";
+        if (clusterType1.supportMultiActiveDC()) {
+            template = info.getBiDirectionClusterTemplateUrl();
+        } else {
+            template = info.getOneWayClusterTemplateUrl();
+        }
+        if (Strings.isEmpty(template)) {
+            return ImmutableMap.of("addr", "");
+        }
+        String url =  String.format(template, clusterName);
+        return ImmutableMap.of("addr", url);
+    }
+    
 
     @RequestMapping(value = "/cross-master/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{sourceDc}/{destDc}", method = RequestMethod.GET)
     public Map<String, String> getCrossDcDelayHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String sourceDc, @PathVariable String destDc) {

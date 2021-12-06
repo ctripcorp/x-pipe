@@ -164,7 +164,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public HickwallMetricInfo getHickwallMetricInfo() {
-        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "{\"domain\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/UR32kfjWz/fx-xpipe?fullscreen&orgId=1&from=now-1h&to=now\", \"delayPanelId\": 2, \"crossDcDelayPanelId\": 14, \"proxyPingPanelId\": 4, \"proxyTrafficPanelId\": 6, \"proxyCollectionPanelId\": 8}");
+        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "{\"domain\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/UR32kfjWz/fx-xpipe?fullscreen&orgId=1&from=now-1h&to=now\", \"delayPanelId\": 2, \"crossDcDelayPanelId\": 14, \"proxyPingPanelId\": 4, \"proxyTrafficPanelId\": 6, \"proxyCollectionPanelId\": 8, \"biDirectionClusterTemplateUrl\":\"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-metric_number=15&var-idc=All&var-server=All&from=now-24h&to=now&var-redis=%s\" ,\"oneWayClusterTemplateUrl\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/template/redis/%s\" }");
         if(StringUtil.isEmpty(hickwallInfo) || !localInfo.equals(hickwallInfo)) {
             hickwallInfo = localInfo;
             info = JsonCodec.INSTANCE.decode(hickwallInfo, HickwallMetricInfo.class);

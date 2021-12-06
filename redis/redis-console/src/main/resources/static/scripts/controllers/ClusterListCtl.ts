@@ -3,10 +3,10 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
-    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
-                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType) {
+                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
 
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
@@ -21,6 +21,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.unselectAll = unselectAll;
     $scope.getClusterActiveDc = getClusterActiveDc;
     $scope.getTypeName = getTypeName;
+    $scope.gotoClusterHickWall = gotoClusterHickWall;
     $scope.preDeleteCluster = preDeleteCluster;
     $scope.deleteCluster = deleteCluster;
     $scope.preResetClusterStatus = preResetClusterStatus;
@@ -128,6 +129,15 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         var clusterType = ClusterType.lookup(type)
         if (clusterType) return clusterType.name
         else return '未知类型'
+    }
+
+    function gotoClusterHickWall(clusterType, clusterName) {
+        HealthCheckService.getClusterHickwallAddr(clusterType, clusterName)
+            .then(function(result) {
+                if(result.addr) {
+                    $window.open(result.addr, '_blank');
+                }
+            });
     }
 
     function preDeleteCluster(clusterName) {

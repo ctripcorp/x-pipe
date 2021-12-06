@@ -19,6 +19,10 @@ function HealthCheckService($resource, $q) {
 			method: 'GET',
 			url: '/console/redis/health/hickwall/:cluster/:shard/:redisIp/:redisPort'
 		},
+		get_cluster_hickwall_addr: {
+			method: 'GET',
+			url: '/console/cluster/health/hickwall/:clusterType/:cluster'	
+		},
 		get_cross_master_delay: {
 			method: 'GET',
 			url: '/console/cross-master/delay/:clusterType/:dc/:cluster/:shard'
@@ -72,6 +76,20 @@ function HealthCheckService($resource, $q) {
 		});
 		return d.promise;
 	}
+	
+	function getClusterHickwallAddr(clusterType, cluster) {
+		var d = $q.defer();
+		resource.get_cluster_hickwall_addr({
+				clusterType: clusterType,
+				cluster : cluster
+			},
+			function(result) {
+				d.resolve(result);
+			}, function(result) {
+				d.reject(result);
+			});
+		return d.promise;
+	}
 
 	function getCrossMasterDelay(dc, cluster, shard, clusterType) {
 		var d = $q.defer();
@@ -104,6 +122,7 @@ function HealthCheckService($resource, $q) {
 		getReplDelay : getReplDelay,
 		getHickwallAddr : getHickwallAddr,
 		getCrossMasterDelay : getCrossMasterDelay,
-		getCrossMasterHickwallAddr: getCrossMasterHickwallAddr
+		getCrossMasterHickwallAddr: getCrossMasterHickwallAddr,
+		getClusterHickwallAddr: getClusterHickwallAddr
 	}
 }

@@ -17,6 +17,10 @@ public class HickwallMetricInfo {
     private int proxyTrafficPanelId;
 
     private int proxyCollectionPanelId;
+    
+    private String biDirectionClusterTemplateUrl;
+    
+    private String oneWayClusterTemplateUrl;
 
     public String getDomain() {
         return domain;
@@ -64,5 +68,21 @@ public class HickwallMetricInfo {
 
     public void setCrossDcDelayPanelId(int crossDcDelayPanelId) {
         this.crossDcDelayPanelId = crossDcDelayPanelId;
+    }
+
+    public String getBiDirectionClusterTemplateUrl() {
+        return biDirectionClusterTemplateUrl;
+    }
+
+    public void setBiDirectionClusterTemplateUrl(String biDirectionClusterTemplateUrl) {
+        this.biDirectionClusterTemplateUrl = biDirectionClusterTemplateUrl;
+    }
+
+    public String getOneWayClusterTemplateUrl() {
+        return oneWayClusterTemplateUrl;
+    }
+
+    public void setOneWayClusterTemplateUrl(String oneWayClusterTemplateUrl) {
+        this.oneWayClusterTemplateUrl = oneWayClusterTemplateUrl;
     }
 }
