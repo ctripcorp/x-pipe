@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
  *         May 05, 2017
  */
 @Component
-public class CatHealthEventProcessor implements HealthEventProcessor {
+public class CatHealthEventProcessor implements HealthEventProcessor, OneWaySupport {
 
     private static final String TYPE = "HealthEvent";
 
