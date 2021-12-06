@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.HealthEventHandler;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @Component
 @Lazy
-public class OuterClientServiceProcessor implements HealthEventProcessor {
+public class OuterClientServiceProcessor implements HealthEventProcessor, OneWaySupport {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
