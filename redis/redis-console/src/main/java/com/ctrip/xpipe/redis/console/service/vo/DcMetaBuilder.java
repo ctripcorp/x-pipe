@@ -121,6 +121,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             @Override
             public ClusterMeta create() {
                 ClusterMeta clusterMeta = new ClusterMeta(cluster.getClusterName());
+                clusterMeta.setDbId(cluster.getId());
                 clusterMeta.setParent(dcMeta);
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 clusterMeta.setAdminEmails(cluster.getClusterAdminEmails());
@@ -176,6 +177,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             @Override
             public ShardMeta create() {
                 ShardMeta shardMeta = new ShardMeta(shard.getShardName());
+                shardMeta.setDbId(shard.getId());
                 shardMeta.setParent(clusterMeta);
                 shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(clusterId, shard.getSetinelMonitorName(), dcMeta.getId()));
                 shardMeta.setSentinelId(sentinelId);
