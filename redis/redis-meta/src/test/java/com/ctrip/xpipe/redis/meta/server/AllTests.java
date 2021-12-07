@@ -19,8 +19,10 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.AbstractClusterShardPeriodicTaskTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeperMasterChooserAlgorithmTest;
@@ -70,6 +72,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
 	DefaultKeeperElectorManagerTest.class,
+	MultiPathKeeperElectorManagerTest.class,
 	//AddKeeperCommandTest.class,
 	DeleteKeeperCommandTest.class,
 	BackupDcKeeperMasterChooserAlgorithmTest.class,
@@ -102,7 +105,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	AbstractClusterShardPeriodicTaskTest.class,
 	DefaultMasterChooserManagerTest.class,
 	ClusterShardCachedNewMasterChooserTest.class,
-	BecomePrimaryActionTest.class
+	BecomePrimaryActionTest.class,
+	DefaultKeeperContainerServiceTest.class
 })
 public class AllTests {
 
