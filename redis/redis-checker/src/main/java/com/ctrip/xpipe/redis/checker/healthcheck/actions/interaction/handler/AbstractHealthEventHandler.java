@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLoading;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -65,7 +66,11 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.info("[onEvent][master down, do not call client service]{}", event);
             return;
         }
-        quorumMarkInstanceDown(event);
+        if (event instanceof InstanceLoading) {
+            markdown(event);
+        } else {
+            quorumMarkInstanceDown(event);
+        }
     }
 
     protected void quorumMarkInstanceDown(AbstractInstanceEvent event) {
@@ -89,7 +94,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         } else {
             logger.warn("[site-down][not-mark-down] {}", info);
         }
-
     }
 
     protected void doMarkDown(final AbstractInstanceEvent event) {

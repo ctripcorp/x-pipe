@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -59,8 +58,7 @@ public class DefaultRouteHealthEventProcessor extends AbstractRouteHealthEventPr
             RedisSession redisSession = redisSessionManager.findOrCreateSession(hostPort);
             InfoResultExtractor masterInfo = redisSession.syncInfo(InfoCommand.INFO_TYPE.PERSISTENCE);
             long rdbSize = masterInfo.extractAsLong("rdb_last_cow_size");
-            return getDelaySeconds(rdbSize)
-                    - TimeUnit.MILLISECONDS.toSeconds(instance.getHealthCheckConfig().delayDownAfterMilli())/2;
+            return getDelaySeconds(rdbSize);
         } catch (Exception e) {
             logger.error("[isProbablyHealthyInXSeconds]", e);
             return 30;
