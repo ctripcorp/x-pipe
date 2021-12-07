@@ -14,7 +14,8 @@ public class PingActionContext extends AbstractActionContext<Boolean, RedisHealt
         super(instance, pong);
     }
 
-    public PingActionContext(RedisHealthCheckInstance instance, Throwable t) {
+    public PingActionContext(RedisHealthCheckInstance instance, Boolean pong, Throwable t) {
         super(instance, t);
+        c = pong;
     }
 }

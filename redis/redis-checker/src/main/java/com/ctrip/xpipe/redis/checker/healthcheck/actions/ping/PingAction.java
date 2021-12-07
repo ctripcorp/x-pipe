@@ -34,7 +34,7 @@ public class PingAction extends AbstractHealthCheckAction<RedisHealthCheckInstan
             @Override
             public void fail(Throwable th) {
                 if (th.getMessage().contains("LOADING")) {
-                    notifyListeners(new PingActionContext(instance, th));
+                    notifyListeners(new PingActionContext(instance, false, th));
                 } else {
                     notifyListeners(new PingActionContext(instance, false));
                 }
