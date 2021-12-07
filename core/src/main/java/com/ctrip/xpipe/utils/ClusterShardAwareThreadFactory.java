@@ -22,6 +22,18 @@ public final class ClusterShardAwareThreadFactory extends XpipeThreadFactory {
 		return create(cluster, shard, namePrefix, false);
 	}
 
+	public static ThreadFactory create(Object cluster, Object shard, String namePrefix) {
+		String clusterString = null;
+		String shardString = null;
+		if (cluster != null) {
+			clusterString = cluster.toString();
+		}
+		if (shard != null) {
+			shardString = shard.toString();
+		}
+		return create(clusterString, shardString, namePrefix, false);
+	}
+
 	private ClusterShardAwareThreadFactory(String cluster, String shard, String namePrefix, boolean daemon) {
 		super(namePrefix, daemon);
 		this.cluster = cluster;
