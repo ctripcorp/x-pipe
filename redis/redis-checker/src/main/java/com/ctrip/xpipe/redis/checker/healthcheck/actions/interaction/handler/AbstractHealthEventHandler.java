@@ -109,7 +109,7 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
         if(stateUpNow(event)) {
             logger.warn("[markdown] instance state up now, do not mark down, {}", info);
         } else {
-            logger.info("[markdown] mark down redis, {}", event.getInstance().getCheckInfo());
+            logger.info("[markdown] mark down redis, {}, {}", event.getInstance().getCheckInfo(), event.getClass().getSimpleName());
             getHealthStateSetterManager().set(info.getClusterShardHostport(), false);
         }
     }
