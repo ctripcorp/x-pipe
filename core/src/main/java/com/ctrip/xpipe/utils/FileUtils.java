@@ -121,4 +121,11 @@ public class FileUtils {
 		}
 	}
 
+	public static void writeStringToFile(String filename, String content) throws IOException {
+
+		try(BufferedWriter writer = new BufferedWriter(new FileWriter(filename))){
+			writer.write(content);
+		}
+	}
+
 }

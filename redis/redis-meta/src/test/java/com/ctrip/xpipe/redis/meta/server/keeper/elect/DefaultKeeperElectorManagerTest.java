@@ -1,20 +1,14 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
-import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
-import com.ctrip.xpipe.cluster.DefaultLeaderElector;
-import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
-import com.ctrip.xpipe.zk.ZkClient;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -26,6 +20,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,7 +33,7 @@ import static org.mockito.Mockito.*;
  * Sep 13, 2016
  */
 @RunWith(MockitoJUnitRunner.class)
-public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTest{
+public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManagerTest {
 
 	@Mock
 	private CurrentMetaManager currentMetaManager;
@@ -80,7 +75,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 2))));
 		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin))));
 
-		keeperElectorManager.updateShardLeader(prefix, dataList, clusterMeta.getId(), shardMeta.getId());
+		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getId(), shardMeta.getId());
 
 		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), argThat(new BaseMatcher<List<KeeperMeta>>() {
 
@@ -114,7 +109,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		String shardId = shardMeta.getId();
 
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
-		keeperElectorManager.observerShardLeader(clusterId, shardId);
+		keeperElectorManager.observerShardLeader(clusterId, shardId, null, null);
 		addKeeperZkNode(clusterId, shardId, getZkClient());
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
 			verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
@@ -122,7 +117,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 		}));
 
 		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(false);
-		keeperElectorManager.observerShardLeader(clusterId, shardId);
+		keeperElectorManager.observerShardLeader(clusterId, shardId, null, null);
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
 			verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
 			verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
@@ -176,29 +171,5 @@ public class DefaultKeeperElectorManagerTest extends AbstractMetaServerContextTe
 			verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
 		}));
 	}
-
-
-	private void addKeeperZkNode(String clusterId, String shardId, ZkClient zkClient) throws Exception {
-
-		addKeeperZkNode(clusterId, shardId, zkClient, 0);
-
-	}
-
-	private void addKeeperZkNode(String clusterId, String shardId, ZkClient zkClient, int idLen) throws Exception {
-		
-		String leaderElectionZKPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
-		String leaderElectionID;
-		if(idLen == 0){
-			leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(new KeeperMeta());
-		}else{
-			leaderElectionID = MetaZkConfig.getKeeperLeaderElectionId(new KeeperMeta().setId(randomString(idLen)));
-		}
-
-		ElectContext ctx = new ElectContext(leaderElectionZKPath, leaderElectionID);
-		LeaderElector leaderElector = new DefaultLeaderElector(ctx, zkClient.get());
-		leaderElector.elect();
-		
-	}
-
 
 }

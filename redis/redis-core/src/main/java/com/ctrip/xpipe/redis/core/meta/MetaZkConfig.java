@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 
 /**
  * meta related zk config information
@@ -31,11 +33,19 @@ public class MetaZkConfig {
 	public static String getZkLeaderLatchRootPath() {
 		return System.getProperty("zkLeaderLatchRootPath", "/keepers");
 	}
+
+	public static String getKeeperLeaderLatchPath(ClusterId clusterId, ShardId shardId){
+		return getKeeperLeaderLatchPath(clusterId.toString(), shardId.toString());
+	}
 	
 	public static String getKeeperLeaderLatchPath(String clusterId, String shardId){
 		
 		String path = String.format("%s/%s/%s", getZkLeaderLatchRootPath(), clusterId, shardId);
 		return path;
+	}
+
+	public static String getKeeperLeaderLatchPath(long clusterDbId, long shardDbId) {
+		return String.format("%s/cluster_%d/shard_%d", getZkLeaderLatchRootPath(), clusterDbId, shardDbId);
 	}
 	
 	public static String getKeeperLeaderElectionId(KeeperMeta currentKeeperMeta){

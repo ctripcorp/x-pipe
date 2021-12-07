@@ -4,10 +4,14 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.utils.FileUtils;
+import com.google.common.io.Files;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -20,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.spy;
 
 /**
  * @author marsqing
@@ -42,6 +47,36 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		keeperConfig.setMinTimeMilliToGcAfterCreate(minTimeMilliToGcAfterCreate);
 	}
 
+	@Test
+	public void testRenameDeprecatedStore() throws IOException {
+		String insideMessage = randomString();
+
+		String tmpDir = getTestFileDir();
+		String deprecatedClusterName = "deprecatedClusterName";
+		String deprecatedShardName = "deprecatedShardName";
+
+		File deprecatedInside = new File(tmpDir, deprecatedClusterName + "/" + deprecatedShardName + "/1.txt");
+		File deprecated = new File(tmpDir, deprecatedClusterName + "/" + deprecatedShardName);
+		File deprecatedParent = new File(tmpDir, deprecatedClusterName);
+
+		File inside = new File(tmpDir, getClusterId() + "/" + getShardId() + "/1.txt");
+		File dest = new File(tmpDir, getClusterId() + "/" + getShardId());
+		File destParent = new File(tmpDir, getClusterId().toString());
+
+		deprecated.mkdirs();
+		FileUtils.writeStringToFile(deprecatedInside.getAbsolutePath(), insideMessage);
+
+		DefaultReplicationStoreManager.IdAndDbIdCompatible compatible = (DefaultReplicationStoreManager.IdAndDbIdCompatible) createReplicationStoreManager(keeperConfig);
+		compatible.setDeprecatedClusterAndShardName(deprecatedClusterName, deprecatedShardName);
+		compatible.renameDeprecatedStore();
+
+		assertFalse(deprecated.exists());
+		assertFalse(deprecatedParent.exists());
+		assertTrue(dest.exists());
+		assertTrue(destParent.exists());
+
+		assertEquals(insideMessage, FileUtils.readFileAsString(inside.getAbsolutePath()));
+	}
 
 	@Test
 	public void testNotCreateWhileNotInitialized() throws Exception {
@@ -239,8 +274,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		String keeperRunid = randomKeeperRunid();
 		
 		File baseDir = new File(getTestFileDir());
-		String clusterId = "cluster1";
-		String shardId = "shard1";
+		ClusterId clusterId = getClusterId();
+		ShardId shardId = getShardId();
 		DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,
 				shardId, keeperRunid, baseDir);
 
@@ -251,8 +286,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		currentStore = mgr.create();
 
-		assertEquals(clusterId, mgr.getClusterName());
-		assertEquals(shardId, mgr.getShardName());
+		assertEquals(clusterId, mgr.getClusterId());
+		assertEquals(shardId, mgr.getShardId());
 		assertEquals(currentStore, mgr.getCurrent());
 
 		DefaultReplicationStore newCurrentStore = (DefaultReplicationStore) mgr.create();
@@ -268,11 +303,15 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		newCurrentStore.getCommandStore().appendCommands(cmdBuf);
 
 		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(clusterId,shardId, keeperRunid, baseDir);
-		
+		LifecycleHelper.initializeIfPossible(mgr2);
+
 		assertEquals(metaStore.getReplId(), mgr2.getCurrent().getMetaStore().getReplId());
 		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
 		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());
 		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
+
+		LifecycleHelper.disposeIfPossible(mgr);
+		LifecycleHelper.disposeIfPossible(mgr2);
 	}
 
 }
