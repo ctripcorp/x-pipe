@@ -33,7 +33,6 @@
                             </div>
                         </div>
                     </header>
-
                     <table class="table table-bordered table-hover">
                         <thead>
                         <tr>
@@ -50,7 +49,19 @@
                             	状态
                             </th>
                             <th>
-                            	Hickwall
+                                延迟
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="发送给其他master的流量">
+                                出流量
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="接收到其他master的流量">
+                                入流量
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="双向同步全量同步次数">
+                                全量
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="双向同步增量同步次数">
+                                增量
                             </th>
                         </tr>
                         </thead>
@@ -72,7 +83,19 @@
                                 </button>
                                 </span>
                             </td>
-                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td class="hickwall_td"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoInComingTrafficFromPeerHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncFullHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncPartialHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
