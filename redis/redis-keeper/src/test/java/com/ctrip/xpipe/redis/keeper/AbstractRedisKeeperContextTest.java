@@ -64,7 +64,9 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 		XpipeMeta xpipe = loadXpipeMeta(getXpipeMetaConfigFile());
 		for(DcMeta dcMeta : xpipe.getDcs().values()){
 			for(ClusterMeta clusterMeta : dcMeta.getClusters().values()){
+			    clusterMeta.setDbId(getClusterId().id());
 				for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+					shardMeta.setDbId(getShardId().id());
 					for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
 						keeperMeta.setPort(port);
 						keeperMeta.setActive(true);
