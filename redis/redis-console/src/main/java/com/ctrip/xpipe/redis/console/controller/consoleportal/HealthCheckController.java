@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService;
@@ -18,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * @author shyin
@@ -40,7 +44,11 @@ public class HealthCheckController extends AbstractConsoleController {
 
     private static final String INSTANCE_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-address=%s:%d";
     private static final String CROSS_DC_DELAY_TEMPLATE = "&panelId=%d&var-cluster=%s&var-shard=%s&var-source=%s&var-dest=%s";
-
+    private static final String OUTCOMING_TRAFFIC_TO_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
+    private static final String INCOMING_TRAFFIC_FROM_PEER_TEMPLATE = "&panelId=%d&var-address=%s:%d";
+    private static final String PEER_SYNC_FULL_TEMPLATE = "&panelId=%d&var-address=%s:%d";
+    private static final String PEER_SYNC_PARTIAL_TEMPLATE = "&panelId=%d&var-address=%s:%d";
+    
     private static final String ENDCODE_TYPE = "UTF-8";
 
     @RequestMapping(value = "/redis/health/{redisIp}/{redisPort}", method = RequestMethod.GET)
@@ -71,37 +79,79 @@ public class HealthCheckController extends AbstractConsoleController {
         return crossMasterDelayService.getPeerMasterDelayFromSourceDc(type, dcId, clusterId, shardId);
     }
 
-    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
-    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+    String getHickwallUrl(Function<HickwallMetricInfo, String> function) throws Exception {
         HickwallMetricInfo info = config.getHickwallMetricInfo();
         if (Strings.isEmpty(info.getDomain())) {
-            return ImmutableMap.of("addr", "");
+            return "";
         }
-        String template = null;
-        try {
-            template = String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort);
-        } catch (Exception e) {
-            logger.error("[getHickwallAddress]", e);
-            return ImmutableMap.of("addr", "");
-        }
+        String template = function.apply(info);
         String url = info.getDomain() + template;
+        return url;
+    }
+    
+    @RequestMapping(value = "/redis/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String redisIp, @PathVariable int redisPort) {
+        String url = "";
+        try {
+             url = getHickwallUrl(info -> String.format(INSTANCE_DELAY_TEMPLATE, info.getDelayPanelId(), clusterName, shardName, redisIp, redisPort));
+        } catch (Exception e) {
+            logger.error("[getHickwallUrl]", e);
+        }
         return ImmutableMap.of("addr", url);
     }
 
     @RequestMapping(value = "/cross-master/health/hickwall/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/{sourceDc}/{destDc}", method = RequestMethod.GET)
     public Map<String, String> getCrossDcDelayHickwallAddress(@PathVariable String clusterName, @PathVariable String shardName, @PathVariable String sourceDc, @PathVariable String destDc) {
-        HickwallMetricInfo info = config.getHickwallMetricInfo();
-        if (Strings.isEmpty(info.getDomain())) {
-            return ImmutableMap.of("addr", "");
-        }
-        String template;
+        String url = "";
         try {
-            template = String.format(CROSS_DC_DELAY_TEMPLATE, info.getCrossDcDelayPanelId(), clusterName, shardName, sourceDc, destDc);
+            url = getHickwallUrl(info -> String.format(CROSS_DC_DELAY_TEMPLATE, info.getCrossDcDelayPanelId(), clusterName, shardName, sourceDc, destDc));
         } catch (Exception e) {
-            logger.error("[getCrossDcDelayHickwallAddress]", e);
-            return ImmutableMap.of("addr", "");
+            logger.error("[getHickwallUrl]", e);
         }
-        String url = info.getDomain() + template;
+        return ImmutableMap.of("addr", url);
+    }
+
+    @RequestMapping(value = "/redis/outcoming/traffic/to/peer/hickwall/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getOutComingTrafficToPeerHickwallAddress(@PathVariable String redisIp, @PathVariable int redisPort) {
+        String url = "";
+        try {
+            url = getHickwallUrl(info -> String.format(OUTCOMING_TRAFFIC_TO_PEER_TEMPLATE, info.getOutComingTrafficToPeerPanelId(), redisIp, redisPort));
+        } catch (Exception e) {
+            logger.error("[getHickwallUrl]", e);
+        }
+        return ImmutableMap.of("addr", url);
+    }
+    
+    @RequestMapping(value = "/redis/incoming/traffic/from/peer/hickwall/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getInComingTrafficFromPeerHickwallAddress(@PathVariable String redisIp, @PathVariable int redisPort) {
+        String url = "";
+        try {
+            url = getHickwallUrl(info -> String.format(INCOMING_TRAFFIC_FROM_PEER_TEMPLATE, info.getInComingTrafficFromPeerPanelId(), redisIp, redisPort));
+        } catch (Exception e) {
+            logger.error("[getHickwallUrl]", e);
+        }
+        return ImmutableMap.of("addr", url);
+    }
+
+    @RequestMapping(value = "/redis/peer/sync/full/hickwall/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getPeerSyncFullHickwallAddress(@PathVariable String redisIp, @PathVariable int redisPort) {
+        String url = "";
+        try {
+            url = getHickwallUrl(info -> String.format(PEER_SYNC_FULL_TEMPLATE, info.getPeerSyncFullPanelId(), redisIp, redisPort));
+        } catch (Exception e) {
+            logger.error("[getHickwallUrl]", e);
+        }
+        return ImmutableMap.of("addr", url);
+    }
+
+    @RequestMapping(value = "/redis/peer/sync/partial/hickwall/{redisIp}/{redisPort}", method = RequestMethod.GET)
+    public Map<String, String> getPeerSyncPartialHickwallAddress(@PathVariable String redisIp, @PathVariable int redisPort) {
+        String url = "";
+        try {
+            url = getHickwallUrl(info -> String.format(PEER_SYNC_PARTIAL_TEMPLATE, info.getPeerSyncPartialPanelId(), redisIp, redisPort));
+        } catch (Exception e) {
+            logger.error("[getHickwallUrl]", e);
+        }
         return ImmutableMap.of("addr", url);
     }
 }
