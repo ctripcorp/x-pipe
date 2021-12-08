@@ -83,18 +83,18 @@
                                 </button>
                                 </span>
                             </td>
-                            <td class="hickwall_td"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
-                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
+                                <span  class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
-                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoInComingTrafficFromPeerHickwall(redis.redisIp, redis.redisPort)"></span>
+                                <span class="hickwall" aria-hidden="true" ng-click="gotoInComingTrafficFromPeerHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
-                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncFullHickwall(redis.redisIp, redis.redisPort)"></span>
+                                <span class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncFullHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
-                                <span ng-if="redis.master === true" class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncPartialHickwall(redis.redisIp, redis.redisPort)"></span>
+                                <span class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncPartialHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
@@ -119,6 +119,10 @@
                             <span ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></span>
                             </td>
                             <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, redis.redisDc)"></span></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                         </tr>
                         </tbody>
                     </table>
