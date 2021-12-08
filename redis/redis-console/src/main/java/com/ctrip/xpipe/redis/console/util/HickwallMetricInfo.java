@@ -17,6 +17,14 @@ public class HickwallMetricInfo {
     private int proxyTrafficPanelId;
 
     private int proxyCollectionPanelId;
+    
+    private int outComingTrafficToPeerPanelId;
+    
+    private int inComingTrafficFromPeerPanelId;
+    
+    private int peerSyncFullPanelId;
+    
+    private int peerSyncPartialPanelId;
 
     public String getDomain() {
         return domain;
@@ -64,5 +72,37 @@ public class HickwallMetricInfo {
 
     public void setCrossDcDelayPanelId(int crossDcDelayPanelId) {
         this.crossDcDelayPanelId = crossDcDelayPanelId;
+    }
+
+    public int getOutComingTrafficToPeerPanelId() {
+        return outComingTrafficToPeerPanelId;
+    }
+
+    public void setOutComingTrafficToPeerPanelId(int outComingTrafficToPeerPanelId) {
+        this.outComingTrafficToPeerPanelId = outComingTrafficToPeerPanelId;
+    }
+
+    public int getInComingTrafficFromPeerPanelId() {
+        return inComingTrafficFromPeerPanelId;
+    }
+
+    public void setInComingTrafficFromPeerPanelId(int inComingTrafficFromPeerPanelId) {
+        this.inComingTrafficFromPeerPanelId = inComingTrafficFromPeerPanelId;
+    }
+
+    public int getPeerSyncFullPanelId() {
+        return peerSyncFullPanelId;
+    }
+
+    public void setPeerSyncFullPanelId(int peerSyncFullPanelId) {
+        this.peerSyncFullPanelId = peerSyncFullPanelId;
+    }
+
+    public int getPeerSyncPartialPanelId() {
+        return peerSyncPartialPanelId;
+    }
+
+    public void setPeerSyncPartialPanelId(int peerSyncPartialPanelId) {
+        this.peerSyncPartialPanelId = peerSyncPartialPanelId;
     }
 }
