@@ -60,6 +60,7 @@ public class DefaultCheckerManagerTest extends AbstractConsoleTest {
         Mockito.when(config.getCheckerAckTimeoutMilli()).thenReturn(0);
         manager.refreshCheckerStatus(mockCheckerStatus(0, CheckerRole.FOLLOWER));
         Assert.assertEquals(1, manager.getCheckers().get(0).size());
+        sleep(1);
         manager.expireCheckers();
         Assert.assertEquals(0, manager.getCheckers().get(0).size());
     }
