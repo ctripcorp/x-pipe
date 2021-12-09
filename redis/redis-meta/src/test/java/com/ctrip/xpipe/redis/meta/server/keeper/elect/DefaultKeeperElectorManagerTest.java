@@ -51,7 +51,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Before
 	public void beforeDefaultKeeperElectorManagerTest() throws Exception{
 		
-		when(KeeperActiveElectAlgorithmManager.get(anyString(), anyString())).thenReturn(keeperActiveElectAlgorithm);
+		when(KeeperActiveElectAlgorithmManager.get(anyLong(), anyLong())).thenReturn(keeperActiveElectAlgorithm);
 
 		keeperElectorManager = getBean(DefaultKeeperElectorManager.class);
 		keeperElectorManager.initialize();
@@ -75,9 +75,9 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin + 2))));
 		dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(portBegin))));
 
-		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getId(), shardMeta.getId());
+		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
 
-		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), argThat(new BaseMatcher<List<KeeperMeta>>() {
+		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()), argThat(new BaseMatcher<List<KeeperMeta>>() {
 
 			@Override
 			public boolean matches(Object item) {
@@ -107,20 +107,22 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 
 		String clusterId = clusterMeta.getId();
 		String shardId = shardMeta.getId();
+		Long clusterDbId = clusterMeta.getDbId();
+		Long shardDbId = shardMeta.getDbId();
 
-		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
-		keeperElectorManager.observerShardLeader(clusterId, shardId, null, null);
-		addKeeperZkNode(clusterId, shardId, getZkClient());
+		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
+		keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
+		addKeeperZkNode(clusterDbId, shardDbId, getZkClient());
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
-			verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-			verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+			verify(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+			verify(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
 		}));
 
-		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(false);
-		keeperElectorManager.observerShardLeader(clusterId, shardId, null, null);
+		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(false);
+		keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
-			verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-			verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+			verify(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+			verify(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
 		}));
 	}
 
@@ -128,15 +130,15 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Test
 	public void testAddWatch() throws Exception{
 
-		when(currentMetaManager.hasShard(anyString(), anyString())).thenReturn(true);
-		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
+		when(currentMetaManager.hasShard(anyLong(), anyLong())).thenReturn(true);
+		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 		
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 		//change notify
-		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
+		addKeeperZkNode(clusterMeta.getDbId(), shardMeta.getDbId(), getZkClient());
 
 		waitConditionUntilTimeOut(()->assertSuccess(()->{
-			verify(keeperActiveElectAlgorithm, atLeastOnce()).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
+			verify(keeperActiveElectAlgorithm, atLeastOnce()).select(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()), anyList());
 		}));
 	}
 
@@ -144,8 +146,8 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Test
 	public void testRemoveWatch() throws Exception{
 
-		when(currentMetaManager.hasShard(anyString(), anyString())).thenReturn(true);
-		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
+		when(currentMetaManager.hasShard(anyLong(), anyLong())).thenReturn(true);
+		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 		
 		final AtomicReference<Releasable>  release = new AtomicReference<Releasable>(null);
 		doAnswer(new Answer<Void>() {
@@ -155,20 +157,20 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 				release.set((Releasable) invocation.getArguments()[2]);
 				return null;
 			}
-		}).when(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+		}).when(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
 		
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 
-		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
+		addKeeperZkNode(clusterMeta.getDbId(), shardMeta.getDbId(), getZkClient());
 		waitConditionUntilTimeOut(()->assertSuccess(()-> {
-			verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
+			verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()), anyList());
 		}));
 
 		release.get().release();
 
-		addKeeperZkNode(clusterMeta.getId(), shardMeta.getId(), getZkClient());
+		addKeeperZkNode(clusterMeta.getDbId(), shardMeta.getDbId(), getZkClient());
 		waitConditionUntilTimeOut(()->assertSuccess(()-> {
-			verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getId()), eq(shardMeta.getId()), anyList());
+			verify(keeperActiveElectAlgorithm, times(1)).select(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()), anyList());
 		}));
 	}
 

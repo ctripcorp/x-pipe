@@ -16,19 +16,19 @@ public class DefaultPeerMasterChooseAction implements PeerMasterChooseAction {
 
     private MasterChooseCommandFactory masterChooseCommandFactory;
 
-    private KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutors;
+    private KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterChooseExecutors;
 
     @Autowired
     public DefaultPeerMasterChooseAction(MasterChooseCommandFactory masterChooseCommandFactory,
-                                         @Qualifier(PEER_MASTER_CHOOSE_EXECUTOR) KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutors) {
+                                         @Qualifier(PEER_MASTER_CHOOSE_EXECUTOR) KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterChooseExecutors) {
         this.masterChooseCommandFactory = masterChooseCommandFactory;
         this.peerMasterChooseExecutors = peerMasterChooseExecutors;
     }
 
     @Override
-    public void choosePeerMaster(String dcId, String clusterId, String shardId) {
-        MasterChooseCommand chooseCommand = masterChooseCommandFactory.buildPeerMasterChooserCommand(dcId, clusterId, shardId);
-        if (null != chooseCommand) this.peerMasterChooseExecutors.execute(Pair.of(clusterId, shardId), chooseCommand);
+    public void choosePeerMaster(String dcId, Long clusterDbId, Long shardDbId) {
+        MasterChooseCommand chooseCommand = masterChooseCommandFactory.buildPeerMasterChooserCommand(dcId, clusterDbId, shardDbId);
+        if (null != chooseCommand) this.peerMasterChooseExecutors.execute(Pair.of(clusterDbId, shardDbId), chooseCommand);
     }
 
 }

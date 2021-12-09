@@ -71,7 +71,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	private DcMetaCache metaCache;
 
 	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
-	private KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutor;
+	private KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long>> clusterShardExecutor;
 
 	private ScheduledFuture<?> deadCheckFuture;
 
@@ -178,10 +178,10 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	public class DeadKeeperChecker extends AbstractKeeperStateChecker {
 
 		protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
-			String clusterId = clusterMeta.getId();
-			String shardId = shardMeta.getId();
+			Long clusterDbId = clusterMeta.getDbId();
+			Long shardDbId = shardMeta.getDbId();
 			List<KeeperMeta> allKeepers = shardMeta.getKeepers();
-			List<KeeperMeta> aliveKeepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
+			List<KeeperMeta> aliveKeepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
 			List<KeeperMeta> deadKeepers = getDeadKeepers(allKeepers, aliveKeepers);
 
 			if (deadKeepers.size() > 0) {
@@ -189,9 +189,9 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			}
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
-					keeperStateController.addKeeper(new KeeperTransMeta(clusterId, shardId, clusterMeta.getDbId(), shardMeta.getDbId(), deadKeeper));
+					keeperStateController.addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper));
 				} catch (ResourceAccessException e) {
-					logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s", clusterId, shardId,
+					logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s", clusterDbId, shardDbId,
 							deadKeeper, e.getMessage()));
 				} catch (Throwable th) {
 					logger.error("[doCheck]", th);
@@ -283,17 +283,17 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	 * for primary dc, keeper's master should be a redis
 	 * for backup dc, keeper's master should not be a redis
 	 * because the current meta may delay, we need to make sure the relationship is correct*/
-	protected boolean isCurrentMetaKeeperMasterMatch(String clusterId, String shardId) {
-		if(metaCache.isCurrentDcPrimary(clusterId)) {
-			return isKeeperMasterRedis(clusterId, shardId);
+	protected boolean isCurrentMetaKeeperMasterMatch(Long clusterDbId, Long shardDbId) {
+		if(metaCache.isCurrentDcPrimary(clusterDbId)) {
+			return isKeeperMasterRedis(clusterDbId, shardDbId);
 		} else {
-			return !isKeeperMasterRedis(clusterId, shardId);
+			return !isKeeperMasterRedis(clusterDbId, shardDbId);
 		}
 	}
 
-	private boolean isKeeperMasterRedis(String clusterId, String shardId) {
-		List<RedisMeta> redises = metaCache.getShardRedises(clusterId, shardId);
-		Pair<String, Integer> master = currentMetaManager.getKeeperMaster(clusterId, shardId);
+	private boolean isKeeperMasterRedis(Long clusterDbId, Long shardDbId) {
+		List<RedisMeta> redises = metaCache.getShardRedises(clusterDbId, shardDbId);
+		Pair<String, Integer> master = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 		for (RedisMeta redis : redises) {
 			if (redis.getPort().equals(master.getValue()) && redis.getIp().equals(master.getKey())) {
 				return true;
@@ -317,8 +317,8 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 
 		protected void doCheck() {
-			for (String clusterId : currentMetaManager.allClusters()) {
-				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterId);
+			for (Long clusterDbId : currentMetaManager.allClusters()) {
+				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterDbId);
 				if (!supportCluster(clusterMeta)) continue;
 				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 					doCheckShard(clusterMeta, shardMeta);
@@ -337,13 +337,13 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		@Override
 		protected void doCheckShard(ClusterMeta clusterMeta, ShardMeta shardMeta) {
-			String clusterId = clusterMeta.getId();
-			String shardId = shardMeta.getId();
-			List<KeeperMeta> keeperMetas = currentMetaManager.getSurviveKeepers(clusterId, shardId);
+			Long clusterDbId = clusterMeta.getDbId();
+			Long shardDbId = shardMeta.getDbId();
+			List<KeeperMeta> keeperMetas = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
 			if (keeperMetas.isEmpty()) return;
 			
 			SequenceCommandChain sequenceCommandChain =
-					new SequenceCommandChain(String.format("%s-%s-%s", this.getClass().getSimpleName(), clusterId, shardId));
+					new SequenceCommandChain(String.format("%s-%s-%s", this.getClass().getSimpleName(), clusterDbId, shardDbId));
 			for (KeeperMeta keeperMeta : keeperMetas) {
 				InfoCommand infoCommand = new InfoCommand(
 						clientPool.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort())),
@@ -354,34 +354,34 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				infoCommand.logResponse(false);
 				CausalChain causalChain = new CausalChain();
 				causalChain.add(infoCommand);
-				causalChain.add(new KeeperInfoCheckCommand(keeperMeta, clusterId, shardId));
+				causalChain.add(new KeeperInfoCheckCommand(keeperMeta, clusterDbId, shardDbId));
 				sequenceCommandChain.add(causalChain);
 			}
 			sequenceCommandChain.execute(executors).addListener(new CommandFutureListener<Object>() {
 				@Override
 				public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
 					if(!commandFuture.isSuccess()) {
-						doCorrect(clusterId, shardId, keeperMetas);
+						doCorrect(clusterDbId, shardDbId, keeperMetas);
 					}
 				}
 			});
 		}
 
-		protected void doCorrect(String clusterId, String shardId, List<KeeperMeta> survivedKeepers) {
+		protected void doCorrect(Long clusterDbId, Long shardDbId, List<KeeperMeta> survivedKeepers) {
 			//double check again
-			if(!isCurrentMetaKeeperMasterMatch(clusterId, shardId)) {
+			if(!isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId)) {
 				return;
 			}
-			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterId, survivedKeepers,
-					currentMetaManager.getKeeperMaster(clusterId, shardId));
+			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterDbId, survivedKeepers,
+					currentMetaManager.getKeeperMaster(clusterDbId, shardDbId));
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
 				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
 					logger.info("[{}][KeeperInfoCorrect]cluster: {}, shard: {}, result: {}",
-							getClass(), clusterId, shardId, commandFuture.isSuccess());
+							getClass(), clusterDbId, shardDbId, commandFuture.isSuccess());
 				}
 			});
-			clusterShardExecutor.execute(Pair.from(clusterId, shardId), job);
+			clusterShardExecutor.execute(Pair.from(clusterDbId, shardDbId), job);
 		}
 	}
 
@@ -389,20 +389,20 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private KeeperMeta keeperMeta;
 
-		private String clusterId, shardId;
+		private Long clusterDbId, shardDbId;
 
 		private AbstractKeeperInfoChecker infoChecker;
 
-		public KeeperInfoCheckCommand(KeeperMeta keeperMeta, String clusterId, String shardId) {
+		public KeeperInfoCheckCommand(KeeperMeta keeperMeta, Long clusterDbId, Long shardDbId) {
 			this.keeperMeta = keeperMeta;
-			this.clusterId = clusterId;
-			this.shardId = shardId;
+			this.clusterDbId = clusterDbId;
+			this.shardDbId = shardDbId;
 		}
 
 		@Override
 		protected void onSuccess(String info) {
 			InfoResultExtractor extractor = new InfoResultExtractor(info);
-			infoChecker = createKeeperInfoChecker(keeperMeta, clusterId, shardId, extractor);
+			infoChecker = createKeeperInfoChecker(keeperMeta, clusterDbId, shardDbId, extractor);
 			if(infoChecker.isValid() || infoChecker.shouldStop()) {
 				future().setSuccess();
 			} else {
@@ -414,7 +414,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		@Override
 		protected void onFailure(Throwable throwable) {
 			if (ExceptionUtils.getRootCause(throwable) instanceof CommandTimeoutException) {
-				logger.debug("[onFailure][{}-{}] ignore failure for command timeout", clusterId, shardId);
+				logger.debug("[onFailure][{}-{}] ignore failure for command timeout", clusterDbId, shardDbId);
 				future().setSuccess();
 			} else {
 				future().setFailure(throwable);
@@ -424,30 +424,30 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 
 
-	private AbstractKeeperInfoChecker createKeeperInfoChecker(KeeperMeta keeper, String clusterId, String shardId,
+	private AbstractKeeperInfoChecker createKeeperInfoChecker(KeeperMeta keeper, Long clusterDbId, Long shardDbId,
 															  InfoResultExtractor extractor) {
 		if(keeper.isActive()) {
-			return new ActiveKeeperInfoChecker(extractor, clusterId, shardId);
+			return new ActiveKeeperInfoChecker(extractor, clusterDbId, shardDbId);
 		} else {
-			return new BackupKeeperInfoChecker(extractor, clusterId, shardId);
+			return new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId);
 		}
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(String clusterId, List<KeeperMeta> keepers,
+	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterId);
+		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 
 	protected abstract class AbstractKeeperInfoChecker {
 		protected InfoResultExtractor extractor;
-		protected String clusterId, shardId;
+		protected Long clusterDbId, shardDbId;
 
-		public AbstractKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
+		public AbstractKeeperInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId) {
 			this.extractor = extractor;
-			this.clusterId = clusterId;
-			this.shardId = shardId;
+			this.clusterDbId = clusterDbId;
+			this.shardDbId = shardDbId;
 		}
 
 		protected boolean shouldStop() {
@@ -474,14 +474,14 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private Pair<String, Integer> master;
 
-		public ActiveKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
-			super(extractor, clusterId, shardId);
-			master = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		public ActiveKeeperInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId) {
+			super(extractor, clusterDbId, shardDbId);
+			master = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 		}
 
 		@Override
 		protected boolean shouldStop() {
-			return !isCurrentMetaKeeperMasterMatch(clusterId, shardId);
+			return !isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId);
 		}
 
 		@Override
@@ -506,9 +506,9 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private KeeperMeta activeKeeper;
 
-		public BackupKeeperInfoChecker(InfoResultExtractor extractor, String clusterId, String shardId) {
-			super(extractor, clusterId, shardId);
-			activeKeeper = currentMetaManager.getKeeperActive(clusterId, shardId);
+		public BackupKeeperInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId) {
+			super(extractor, clusterDbId, shardDbId);
+			activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
 		}
 
 		@Override
@@ -547,7 +547,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 	}
 
 	@VisibleForTesting
-	protected void setClusterShardExecutor(KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutor) {
+	protected void setClusterShardExecutor(KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long>> clusterShardExecutor) {
 		this.clusterShardExecutor = clusterShardExecutor;
 	}
 

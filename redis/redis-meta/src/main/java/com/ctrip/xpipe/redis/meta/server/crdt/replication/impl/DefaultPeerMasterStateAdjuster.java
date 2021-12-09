@@ -23,25 +23,25 @@ public class DefaultPeerMasterStateAdjuster extends AbstractClusterShardPeriodic
 
     protected PeerMasterAdjustJobFactory peerMasterAdjustJobFactory;
 
-    protected KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutor;
+    protected KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterAdjustExecutor;
 
     private MetaServerConfig config;
 
     private int adjustIntervalSeconds;
 
-    public DefaultPeerMasterStateAdjuster(String clusterId, String shardId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
+    public DefaultPeerMasterStateAdjuster(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
                                           MetaServerConfig config, PeerMasterAdjustJobFactory peerMasterAdjustJobFactory,
-                                          KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutor,
+                                          KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterAdjustExecutor,
                                           ScheduledExecutorService scheduled) {
-        this(clusterId, shardId, dcMetaCache, currentMetaManager, config, peerMasterAdjustJobFactory, peerMasterAdjustExecutor,
+        this(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, config, peerMasterAdjustJobFactory, peerMasterAdjustExecutor,
                 scheduled, DEFAULT_PEER_MASTER_ADJUST_INTERVAL_SECONDS);
     }
 
-    public DefaultPeerMasterStateAdjuster(String clusterId, String shardId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
+    public DefaultPeerMasterStateAdjuster(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
                                           MetaServerConfig config, PeerMasterAdjustJobFactory peerMasterAdjustJobFactory,
-                                          KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutor,
+                                          KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterAdjustExecutor,
                                           ScheduledExecutorService scheduled, int adjustIntervalSeconds) {
-        super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+        super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled);
         this.peerMasterAdjustJobFactory = peerMasterAdjustJobFactory;
         this.peerMasterAdjustExecutor = peerMasterAdjustExecutor;
         this.adjustIntervalSeconds = adjustIntervalSeconds;
@@ -52,8 +52,8 @@ public class DefaultPeerMasterStateAdjuster extends AbstractClusterShardPeriodic
     protected void work() {
         if (!config.shouldCorrectPeerMasterPeriodically()) return;
 
-        PeerMasterAdjustJob adjustJob = peerMasterAdjustJobFactory.buildPeerMasterAdjustJob(clusterId, shardId);
-        if (null != adjustJob) peerMasterAdjustExecutor.execute(Pair.of(clusterId, shardId), adjustJob);
+        PeerMasterAdjustJob adjustJob = peerMasterAdjustJobFactory.buildPeerMasterAdjustJob(clusterDbId, shardDbId);
+        if (null != adjustJob) peerMasterAdjustExecutor.execute(Pair.of(clusterDbId, shardDbId), adjustJob);
     }
 
     @Override

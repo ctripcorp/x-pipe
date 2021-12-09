@@ -22,18 +22,18 @@ public abstract class AbstractKeeperMasterChooserAlgorithm implements KeeperMast
 
 	protected CurrentMetaManager currentMetaManager;
 
-	protected String clusterId, shardId;
+	protected Long clusterDbId, shardDbId;
 	
 	protected ScheduledExecutorService scheduled;
 
 
-	public AbstractKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
+	public AbstractKeeperMasterChooserAlgorithm(long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
 			CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
 
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
-		this.clusterId = clusterId;
-		this.shardId = shardId;
+		this.clusterDbId = clusterDbId;
+		this.shardDbId = shardDbId;
 		this.scheduled = scheduled;
 	}
 

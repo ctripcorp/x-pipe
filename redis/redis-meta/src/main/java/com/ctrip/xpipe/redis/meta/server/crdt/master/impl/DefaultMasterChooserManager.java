@@ -30,7 +30,7 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
     private MasterChooseCommandFactory chooseCommandFactory;
 
     @Resource(name = PEER_MASTER_CHOOSE_EXECUTOR)
-    private KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor;
+    private KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterChooseExecutor;
 
     @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executors;
@@ -50,23 +50,23 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
     }
 
     @Override
-    protected void addShard(String clusterId, String shardId) {
+    protected void addShard(Long clusterDbId, Long shardDbId) {
         try {
-            logger.info("[addShard]{}, {}", clusterId, shardId);
+            logger.info("[addShard]{}, {}", clusterDbId, shardDbId);
 
-            CurrentMasterChooser currentMasterChooser = new CurrentMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager,
+            CurrentMasterChooser currentMasterChooser = new CurrentMasterChooser(clusterDbId, shardDbId, dcMetaCache, currentMetaManager,
                     chooseCommandFactory, executors, peerMasterChooseExecutor, scheduled);
             currentMasterChooser.start();
 
-            MasterChooser peerMasterChooser = new PeerMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager,
+            MasterChooser peerMasterChooser = new PeerMasterChooser(clusterDbId, shardDbId, dcMetaCache, currentMetaManager,
                     chooseCommandFactory, executors, peerMasterChooseExecutor, scheduled);
             peerMasterChooser.start();
 
-            registerJob(clusterId, shardId, currentMasterChooser);
-            registerJob(clusterId, shardId, peerMasterChooser);
+            registerJob(clusterDbId, shardDbId, currentMasterChooser);
+            registerJob(clusterDbId, shardDbId, peerMasterChooser);
 
         } catch (Exception e) {
-            logger.error("[addShard]{}, {}", clusterId, shardId, e);
+            logger.error("[addShard]{}, {}", clusterDbId, shardDbId, e);
         }
     }
 

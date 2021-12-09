@@ -32,7 +32,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Component
 public class DefaultSlotManager extends AbstractLifecycle implements SlotManager, TopElement{
-	
 
 	@Autowired
 	private ZkClient zkClient;

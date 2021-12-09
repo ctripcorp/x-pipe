@@ -10,15 +10,15 @@ public class PeerMasterChooseCommand extends AbstractMasterChooseCommand {
 
     private MultiDcService multiDcService;
 
-    public PeerMasterChooseCommand(String dcId, String clusterId, String shardId, MultiDcService multiDcService) {
-        super(clusterId, shardId);
+    public PeerMasterChooseCommand(String dcId, Long clusterDbId, Long shardDbId, MultiDcService multiDcService) {
+        super(clusterDbId, shardDbId);
         this.dcId = dcId;
         this.multiDcService = multiDcService;
     }
 
     @Override
     public RedisMeta choose() {
-        return multiDcService.getPeerMaster(dcId, clusterId, shardId);
+        return multiDcService.getPeerMaster(dcId, clusterDbId, shardDbId);
     }
 
 }

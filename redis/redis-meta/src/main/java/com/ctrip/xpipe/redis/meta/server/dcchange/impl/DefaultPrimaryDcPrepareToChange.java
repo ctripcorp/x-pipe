@@ -56,20 +56,20 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
     private CurrentClusterServer currentClusterServer;
 
     @Override
-    public MetaServerConsoleService.PreviousPrimaryDcMessage prepare(String clusterId, String shardId) {
+    public MetaServerConsoleService.PreviousPrimaryDcMessage prepare(Long clusterDbId, Long shardDbId) {
 
-        logger.info("[prepare]{}, {}", clusterId, shardId);
+        logger.info("[prepare]{}, {}", clusterDbId, shardDbId);
 
         MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
         ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
-        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
         message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));
         executionLog.info("[prepare]" + keeperMaster);
 
         // no need to deal with Redis 2.x whose master_repl_offset will be reset after master changed
         // since all redis version GET 4.x in Ctrip
-        makeMasterReadOnly(clusterId, shardId, keeperMaster, true, executionLog);
+        makeMasterReadOnly(clusterDbId, shardDbId, keeperMaster, true, executionLog);
 
         RedisInfo redisInfo = getInfoReplication(keeperMaster, executionLog);
         MasterInfo masterInfo = convert(redisInfo, executionLog);
@@ -77,7 +77,7 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
 
         logger.info("[prepare]{}, {}, {}", keeperMaster, redisInfo, masterInfo);
 
-        removeSentinel(clusterId, shardId, executionLog);
+        removeSentinel(clusterDbId, shardDbId, executionLog);
 
         message.setMessage(executionLog.getLog());
         return message;
@@ -85,42 +85,42 @@ public class DefaultPrimaryDcPrepareToChange implements PrimaryDcPrepareToChange
     }
 
     @Override
-    public MetaServerConsoleService.PreviousPrimaryDcMessage deprepare(String clusterId, String shardId) {
+    public MetaServerConsoleService.PreviousPrimaryDcMessage deprepare(Long clusterDbId, Long shardDbId) {
 
-        logger.info("[deprepare]{}, {}", clusterId, shardId);
+        logger.info("[deprepare]{}, {}", clusterDbId, shardDbId);
 
         MetaServerConsoleService.PreviousPrimaryDcMessage message = new MetaServerConsoleService.PreviousPrimaryDcMessage();
         ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
-        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
         message.setMasterAddr(new HostPort(keeperMaster.getKey(), keeperMaster.getValue()));
         executionLog.info("[deprepare]" + keeperMaster);
 
-        makeMasterReadOnly(clusterId, shardId, keeperMaster, false, executionLog);
+        makeMasterReadOnly(clusterDbId, shardDbId, keeperMaster, false, executionLog);
 
-        addSentinel(clusterId, shardId, executionLog);
+        addSentinel(clusterDbId, shardDbId, executionLog);
 
         message.setMessage(executionLog.getLog());
         return message;
     }
 
-    private void addSentinel(String clusterId, String shardId, ExecutionLog executionLog) {
+    private void addSentinel(Long clusterDbId, Long shardDbId, ExecutionLog executionLog) {
 
-        logger.info("[addSentinel]{},{}", clusterId, shardId);
-        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
-        sentinelManager.addSentinel(clusterId, shardId, new HostPort(keeperMaster.getKey(), keeperMaster.getValue()), executionLog);
+        logger.info("[addSentinel]{},{}", clusterDbId, shardDbId);
+        Pair<String, Integer> keeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
+        sentinelManager.addSentinel(clusterDbId, shardDbId, new HostPort(keeperMaster.getKey(), keeperMaster.getValue()), executionLog);
 
     }
 
-    private void removeSentinel(String clusterId, String shardId, ExecutionLog executionLog) {
+    private void removeSentinel(Long clusterDbId, Long shardDbId, ExecutionLog executionLog) {
 
-        logger.info("[removeSentinel]{},{}", clusterId, shardId);
-        sentinelManager.removeSentinel(clusterId, shardId, executionLog);
+        logger.info("[removeSentinel]{},{}", clusterDbId, shardDbId);
+        sentinelManager.removeSentinel(clusterDbId, shardDbId, executionLog);
     }
 
-    private Pair<String, Integer> makeMasterReadOnly(String clusterId, String shardId, Pair<String, Integer> keeperMaster, boolean readOnly, ExecutionLog executionLog) {
+    private Pair<String, Integer> makeMasterReadOnly(Long clusterDbId, Long shardDbId, Pair<String, Integer> keeperMaster, boolean readOnly, ExecutionLog executionLog) {
 
-        logger.info("[makeMasterReadOnly]{},{},{}", clusterId, shardId, readOnly);
+        logger.info("[makeMasterReadOnly]{},{},{}", clusterDbId, shardDbId, readOnly);
 
         RedisReadonly redisReadOnly = RedisReadonly.create(keeperMaster.getKey(), keeperMaster.getValue(), keyedObjectPool, scheduled);
         try {

@@ -4,11 +4,15 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.RejectedExecutionException;
@@ -26,9 +30,11 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 	
 	@Mock
 	private ConsoleService consoleService;
+
+	@Mock
+	private DcMetaCache dcMetaCache;
 	
 	private ConsoleNotifycationTask consoleNotifycationTask;
-	
 	
 	@Before
 	public void beforeConsoleNotifycationTaskTest() throws Exception{
@@ -37,6 +43,7 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 		consoleNotifycationTask.initialize();
 		
 		consoleNotifycationTask.setConsoleService(consoleService);
+		Mockito.when(dcMetaCache.clusterShardDbId2Name(getClusterDbId(), getShardDbId())).thenReturn(Pair.from(getClusterId(), getShardId()));
 	}
 	
 	@Test
@@ -44,7 +51,7 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 
 		int times = 100;
 		for(int i=0;i<times;i++){
-			consoleNotifycationTask.keeperActiveElected("cluster1", "shard1", new KeeperMeta());
+			consoleNotifycationTask.keeperActiveElected(getClusterDbId(), getShardDbId(), new KeeperMeta());
 			sleep(10);
 			verify(consoleService, times(i + 1)).keeperActiveChanged(anyString(), anyString(), anyString(), any(KeeperMeta.class));
 		}
@@ -55,7 +62,7 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 	public void testDispose() throws Exception{
 
 		consoleNotifycationTask.dispose();
-		consoleNotifycationTask.keeperActiveElected("cluster1", "shard1", new KeeperMeta());
+		consoleNotifycationTask.keeperActiveElected(getClusterDbId(), getShardDbId(), new KeeperMeta());
 		
 	}
 	
@@ -69,7 +76,7 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 		
 		doThrow(new Exception()).when(consoleService).keeperActiveChanged(anyString(), anyString(), anyString(), (KeeperMeta) anyObject());
 
-		task.keeperActiveElected("cluster1", "shard1", new KeeperMeta());
+		task.keeperActiveElected(getClusterDbId(), getShardDbId(), new KeeperMeta());
 		
 		sleep(300);
 		verify(consoleService, atLeast(2)).keeperActiveChanged(anyString(), anyString(), anyString(), any(KeeperMeta.class));

@@ -6,13 +6,11 @@ import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommand;
 
 public abstract class AbstractMasterChooseCommand extends AbstractCommand<RedisMeta> implements MasterChooseCommand {
 
-    protected String clusterId;
+    protected Long clusterDbId, shardDbId;
 
-    protected String shardId;
-
-    public AbstractMasterChooseCommand(String clusterId, String shardId) {
-        this.clusterId = clusterId;
-        this.shardId = shardId;
+    public AbstractMasterChooseCommand(Long clusterDbId, Long shardDbId) {
+        this.clusterDbId = clusterDbId;
+        this.shardDbId = shardDbId;
     }
 
     @Override

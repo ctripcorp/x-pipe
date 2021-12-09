@@ -59,22 +59,23 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("PeerMasterAdjustJobSchedule"));
     }
 
-    public PeerMasterAdjustJob buildPeerMasterAdjustJob(String clusterId, String shardId) {
-        Set<String> upstreamPeerDcs = currentMetaManager.getUpstreamPeerDcs(clusterId, shardId);
+    @Override
+    public PeerMasterAdjustJob buildPeerMasterAdjustJob(Long clusterDbId, Long shardDbId) {
+        Set<String> upstreamPeerDcs = currentMetaManager.getUpstreamPeerDcs(clusterDbId, shardDbId);
         if (upstreamPeerDcs.isEmpty()) {
-            logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown any upstream dcs, skip adjust", clusterId, shardId);
+            logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown any upstream dcs, skip adjust", clusterDbId, shardDbId);
             return null;
         }
 
-        RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterId, shardId);
+        RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterDbId, shardDbId);
         if (null == currentMaster) {
-            logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown current master, skip adjust", clusterId, shardId);
+            logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown current master, skip adjust", clusterDbId, shardDbId);
             return null;
         }
-        List<Pair<Long, Endpoint>> allPeerMasters = currentMetaManager.getAllPeerMasters(clusterId, shardId).entrySet().stream().map(entry -> {
+        List<Pair<Long, Endpoint>> allPeerMasters = currentMetaManager.getAllPeerMasters(clusterDbId, shardDbId).entrySet().stream().map(entry -> {
             String dcName = entry.getKey();
             RedisMeta peerMeta = entry.getValue();
-            RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(clusterId, dcName);
+            RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dcName, clusterDbId);
             Endpoint endpoint;
             if(routeMeta != null) {
                 ProxyConnectProtocol proxyProtocol =  new DefaultProxyConnectProtocolParser().read(String.format("%s %s %s", ProxyConnectProtocol.KEY_WORD, PROXY_OPTION.ROUTE, routeMeta.getRouteInfo()));
@@ -84,7 +85,7 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
             }
             return new Pair<>(entry.getValue().getGid(), endpoint);
         }).collect(Collectors.toList());
-        return new PeerMasterAdjustJob(clusterId, shardId, allPeerMasters,
+        return new PeerMasterAdjustJob(clusterDbId, shardDbId, allPeerMasters,
                 Pair.of(currentMaster.getIp(), currentMaster.getPort()), false,
                 keyedObjectPool.getKeyPool(new DefaultEndPoint(currentMaster.getIp(), currentMaster.getPort())),
                 scheduled, executors);
