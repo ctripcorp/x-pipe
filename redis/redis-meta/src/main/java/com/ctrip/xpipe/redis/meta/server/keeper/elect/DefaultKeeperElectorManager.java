@@ -66,7 +66,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 			try {
                 List<PathChildrenCache> pathChildrenCaches = new ArrayList<>();
                 pathChildrenCaches.add(buildPathChildrenCacheByName(clusterId, shardId, client));
-				if (null != clusterDbId || null != shardDbId)
+				if (null != clusterDbId && null != shardDbId)
 					pathChildrenCaches.add(buildPathChildrenCacheByDbId(clusterDbId, shardDbId, client));
 
 				ReentrantLock lock = new ReentrantLock();
