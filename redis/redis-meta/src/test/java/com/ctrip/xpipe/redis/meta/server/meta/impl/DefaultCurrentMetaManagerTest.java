@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.RouteMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerContextTest;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;

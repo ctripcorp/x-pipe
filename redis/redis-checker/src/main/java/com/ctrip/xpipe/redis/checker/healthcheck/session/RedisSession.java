@@ -177,7 +177,7 @@ public class RedisSession {
             @Override
             public void operationComplete(CommandFuture<Role> commandFuture) throws Exception {
                 if(commandFuture.isSuccess()) {
-                    callback.role(commandFuture.get().getServerRole().name());
+                    callback.role(commandFuture.get().getServerRole().name(), commandFuture.get());
                 } else {
                     callback.fail(commandFuture.cause());
                 }
@@ -293,6 +293,12 @@ public class RedisSession {
         return new InfoResultExtractor(info);
     }
 
+    public InfoResultExtractor syncCRDTInfo(InfoCommand.INFO_TYPE infoType) throws InterruptedException, ExecutionException, TimeoutException {
+        CRDTInfoCommand command = new CRDTInfoCommand(clientPool, infoType, scheduled);
+        String info = command.execute().get(2000, TimeUnit.MILLISECONDS);
+        return new InfoResultExtractor(info);
+    }
+
 
     public CommandFuture<RedisInfo> getRedisReplInfo() {
         InfoReplicationCommand command = new InfoReplicationCommand(clientPool, scheduled, commandTimeOut);
@@ -313,7 +319,7 @@ public class RedisSession {
 
     public interface RollCallback {
 
-        void role(String role);
+        void role(String role, Role detail);
 
         void fail(Throwable e);
     }

@@ -92,5 +92,18 @@ public class MetricData {
     public Map<String, String> getTags() {
         return tags;
     }
+
+    @Override
+    public String toString() {
+        return "MetricData{" +
+                "metricType='" + metricType + '\'' +
+                ", dcName='" + dcName + '\'' +
+                ", clusterName='" + clusterName + '\'' +
+                ", shardName='" + shardName + '\'' +
+                ", timestampMilli=" + timestampMilli +
+                ", value=" + value +
+                ", hostPort=" + hostPort +
+                '}';
+    }
 }
 

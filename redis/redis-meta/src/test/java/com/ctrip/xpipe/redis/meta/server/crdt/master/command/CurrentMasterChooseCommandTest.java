@@ -17,7 +17,7 @@ import java.util.function.Function;
 @RunWith(MockitoJUnitRunner.class)
 public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
 
-    private int checkRedisTimeoutSeconds = 1;
+    private int checkRedisTimeoutSeconds = 2;
 
     private CurrentMasterChooseCommand chooseCommand;
 

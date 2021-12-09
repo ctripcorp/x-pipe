@@ -5,7 +5,9 @@ import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
@@ -42,9 +44,9 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 		
 	ReplicationStore getReplicationStore();
 		
-	String getClusterId();
+	ClusterId getClusterId();
 	
-	String getShardId();
+	ShardId getShardId();
 	
 	boolean compareAndDo(RedisKeeperServerState expected, Runnable action);
 	

@@ -34,13 +34,20 @@ import java.util.concurrent.TimeUnit;
  */
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
-	protected String getClusterId() {
-		return currentTestName() + "-clusterId";
+	protected ClusterId getClusterId() {
+		return new ClusterId(currentTestName()  + "-", 0L);
 	}
 
-	protected String getShardId() {
+	protected ClusterId getClusterId(Long id) {
+		return new ClusterId(currentTestName()  + "-", id);
+	}
 
-		return currentTestName() + "-shardId";
+	protected ShardId getShardId() {
+	    return new ShardId(currentTestName() + "-", 0L);
+	}
+
+	protected ShardId getShardId(Long id) {
+		return new ShardId(currentTestName() + "-", id);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(String keeperRunid, KeeperConfig keeperConfig) {
@@ -65,12 +72,12 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return createReplicationStoreManager(getClusterId(), getShardId(), new File(tmpDir));
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, String keeperRunid, File storeDir) {
 
 		return createReplicationStoreManager(clusterId, shardId, keeperRunid, getKeeperConfig(), storeDir);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, File storeDir) {
 
 		return createReplicationStoreManager(clusterId, shardId, getKeeperConfig(), storeDir);
 	}
@@ -79,14 +86,14 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new TestKeeperConfig();
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, KeeperConfig keeperConfig, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, KeeperConfig keeperConfig, File storeDir) {
 		
 		return createReplicationStoreManager(clusterId, shardId, randomKeeperRunid(), keeperConfig, storeDir);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(String clusterId, String shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
+	protected ReplicationStoreManager createReplicationStoreManager(ClusterId clusterId, ShardId shardId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, keeperRunid, storeDir, 
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager.IdAndDbIdCompatible(keeperConfig, clusterId, shardId, keeperRunid, storeDir,
 				createkeeperMonitor());
 		
 		replicationStoreManager.addObserver(new Observer() {

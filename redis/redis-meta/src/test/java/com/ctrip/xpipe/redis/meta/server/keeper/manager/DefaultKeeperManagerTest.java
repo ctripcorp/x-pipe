@@ -7,10 +7,7 @@ import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
@@ -168,7 +165,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         ));
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         sleep(1500);
         Assert.assertEquals(2, infoCount.get());
         Assert.assertEquals(0, keeperCommandCounter.get());
@@ -229,7 +226,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(1, infoCount.get());
@@ -290,7 +287,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
 
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(1, infoCount.get());
@@ -347,7 +344,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(2, infoCount.get());
@@ -404,7 +401,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(2, infoCount.get());
@@ -467,7 +464,7 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
 
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         executors.execute(new Runnable() {
             @Override
             public void run() {
@@ -519,17 +516,24 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         KeeperMeta normalKeeperMeta = new KeeperMeta().setIp("localhost").setPort(normalKeeper.getPort()).setActive(false);
         when(currentMetaManager.getSurviveKeepers(clusterId, shardId))
                 .thenReturn(Arrays.asList(timeoutKeeperMeta, normalKeeperMeta));
-        InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
 
-        DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
-        doNothing().when(checker).doCorrect(anyString(), anyString(), anyList());
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        int originTimeout = InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
-        latch.await(1000, TimeUnit.MILLISECONDS);
-        sleep(100);
-        verify(checker, never()).doCorrect(anyString(), anyString(), anyList());
+        try {
+            InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
 
-        timeoutKeeper.stop();
-        normalKeeper.stop();
+            DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
+            doNothing().when(checker).doCorrect(anyString(), anyString(), anyList());
+            checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
+
+            latch.await(1000, TimeUnit.MILLISECONDS);
+            sleep(100);
+            verify(checker, never()).doCorrect(anyString(), anyString(), anyList());
+
+            timeoutKeeper.stop();
+            normalKeeper.stop();
+        } finally {
+            InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
+        }
     }
 }

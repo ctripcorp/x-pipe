@@ -8,6 +8,8 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import org.junit.*;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,7 +81,12 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
 
         ByteBuf expected = UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(message.getBytes());
 
-        Assert.assertEquals(0, ByteBufUtil.compare(expected, byteBufAtomicReference.get()));
+        waitConditionUntilTimeOut(() -> {
+            int rst = ByteBufUtil.compare(expected, byteBufAtomicReference.get());
+            logger.info("[testStability] cmp rst: {}", rst);
+            return 0 == rst;
+        }, 10000, 1000);
+        expected.release();
     }
 
     @Ignore

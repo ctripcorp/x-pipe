@@ -39,6 +39,7 @@
   </entity>
   <entity name="cluster">
     <attribute name="id" value-type="String" />
+    <attribute name="db-id" value-type="long" />
     <attribute name="active-dc" value-type="String" />
     <attribute name="backup-dcs" value-type="String" />
     <attribute name="org-id" value-type="int" />
@@ -51,6 +52,7 @@
   </entity>
   <entity name="shard">
     <attribute name="id" value-type="String" />
+    <attribute name="db-id" value-type="long" />
     <attribute name="sentinelId" value-type="int" />
     <attribute name="sentinelMonitorName" value-type="String" />
     <attribute name="phase" value-type="int" />

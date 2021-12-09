@@ -100,7 +100,7 @@ public class ProxyProtocolDecoder extends ByteToMessageDecoder {
     private boolean matchProtocolFormat(ByteBuf in) {
         int index = in.readerIndex();
         int totalReadableBytes = in.readableBytes();
-        for(; bufReadIndex < PREFIX.length && bufReadIndex < totalReadableBytes; bufReadIndex++) {
+        for(; bufReadIndex < PREFIX.length && index < totalReadableBytes; bufReadIndex++) {
             if(in.getByte(index) != PREFIX[bufReadIndex]) {
                 logger.warn("not equal: {}, {}", Character.toChars(in.getByte(index)), PREFIX[bufReadIndex]);
                 return false;

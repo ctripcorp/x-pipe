@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,6 +50,9 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
 
     private AtomicInteger configUpdateTimes = new AtomicInteger(0);
 
+    private int originDelay;
+    private int originInterval;
+
     @Before
     public void beforeCrossDcLeaderElectionActionTest() throws Exception {
         fqDc = new MockDcLeader("fq");
@@ -56,8 +60,17 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
         rbDc = new MockDcLeader("rb");
 
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
+
+        originDelay = CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND;
+        originInterval = CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND;
         CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND = 100;
         CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND = 1;
+    }
+
+    @After
+    public void afterCrossDcLeaderElectionActionTest() {
+        CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND = originDelay;
+        CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND = originInterval;
     }
 
     @Test
@@ -85,7 +98,7 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
 
     @Test
     public void onlyOneWayClusterTest() throws Exception {
-        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockBiDirectionXpipeMeta());
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockOneWayXpipeMeta());
         normalTest();
     }
 

@@ -477,6 +477,12 @@ public class AbstractTest {
         return random.nextInt();
     }
 
+    protected long randomLong() {
+
+        Random random = new Random();
+        return random.nextLong();
+    }
+
     protected int randomInt(int start, int end) {
 
         Random random = new Random();
