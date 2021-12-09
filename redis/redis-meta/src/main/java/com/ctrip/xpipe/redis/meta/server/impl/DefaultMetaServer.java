@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -96,7 +97,8 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@Override
 	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		return currentMetaManager.getRedisMaster(clusterId, shardId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		return currentMetaManager.getRedisMaster(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	public void setConfig(MetaServerConfig config) {
@@ -108,19 +110,22 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public KeeperMeta getActiveKeeper(String clusterId, String shardId, ForwardInfo forwardInfo) {
 
 		logger.debug("[getActiveKeeper]{}, {}", clusterId, shardId);
-		return currentMetaManager.getKeeperActive(clusterId, shardId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		return currentMetaManager.getKeeperActive(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
 	public RedisMeta getCurrentCRDTMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
 		logger.debug("[getCurrentCRDTMaster]{}, {}", clusterId, shardId);
-		return currentMetaManager.getCurrentCRDTMaster(clusterId, shardId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		return currentMetaManager.getCurrentCRDTMaster(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
 	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
 		logger.debug("[getCurrentMaster]{}, {}", clusterId, shardId);
-		return currentMetaManager.getCurrentMaster(clusterId, shardId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		return currentMetaManager.getCurrentMaster(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
@@ -171,49 +176,52 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	public void clusterDeleted(String clusterId, ForwardInfo forwardInfo) {
 
 		logger.info("[clusterDeleted]{}", clusterId);
-		dcMetaCache.clusterDeleted(clusterId);
+		dcMetaCache.clusterDeleted(dcMetaCache.clusterId2DbId(clusterId));
 	}
 
 	@Override
 	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
 
-		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		if (!dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())) {
 
 			logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
-			currentMetaManager.setKeeperMaster(clusterId, shardId, ip, port);
+			currentMetaManager.setKeeperMaster(clusterShard.getKey(), clusterShard.getValue(), ip, port);
 		} else {
-			logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterId, shardId, ip,
+			logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterShard.getKey(), clusterShard.getValue(), ip,
 					port);
 		}
 	}
 
 	@Override
 	public void upstreamPeerChange(String upstreamDcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
-		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterShard.getKey());
 		if (null == clusterMeta || !ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
 			logger.info("[upstreamPeerChange] cluster {} not found or not support", clusterId);
 			return;
 		}
 
-		peerMasterChooseAction.choosePeerMaster(upstreamDcId, clusterId, shardId);
+		peerMasterChooseAction.choosePeerMaster(upstreamDcId, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
 	public PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc,
 			ForwardInfo forwardInfo) {
-		
+
 		logger.info("[changePrimaryDcCheck]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, forwardInfo);
-		String currentPrimaryDc = dcMetaCache.getPrimaryDc(clusterId, shardId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		String currentPrimaryDc = dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue());
 		String currentDc = dcMetaCache.getCurrentDc();
-		
+
 		if(newPrimaryDc.equalsIgnoreCase(currentPrimaryDc)){
-			
-			return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.PRIMARY_DC_ALREADY_IS_NEW, String.format("%s already primary dc", newPrimaryDc)); 
+
+			return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.PRIMARY_DC_ALREADY_IS_NEW, String.format("%s already primary dc", newPrimaryDc));
 		}
-		
+
 		if(currentDc.equalsIgnoreCase(newPrimaryDc)){
-			
-			List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
+
+			List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterShard.getKey(), clusterShard.getValue());
 			SimpleErrorMessage result = new AtLeastOneChecker(redises, keyedObjectPool, scheduled).check();
 			if(result.getErrorType() == SIMPLE_RETURN_CODE.SUCCESS){
 				return new PrimaryDcCheckMessage(PRIMARY_DC_CHECK_RESULT.SUCCESS);
@@ -225,20 +233,20 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 
 	@Override
 	public MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo) {
-		
+
 		logger.info("[makeMasterReadOnly]{},{},{}", clusterId, shardId, readOnly);
-		
-		if(!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)){
-			logger.warn("[makeMasterReadOnly]current dc not primary:{}, {}", dcMetaCache.getCurrentDc(), dcMetaCache.getPrimaryDc(clusterId, shardId));
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		if(!dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())){
+			logger.warn("[makeMasterReadOnly]current dc not primary:{}, {}", dcMetaCache.getCurrentDc(), dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()));
 			return null;
 		}
 
 
 		MetaServerConsoleService.PreviousPrimaryDcMessage message = null;
 		if(readOnly){
-			message = primaryDcPrepareToChange.prepare(clusterId, shardId);
+			message = primaryDcPrepareToChange.prepare(clusterShard.getKey(), clusterShard.getValue());
 		}else {
-			message = primaryDcPrepareToChange.deprepare(clusterId, shardId);
+			message = primaryDcPrepareToChange.deprepare(clusterShard.getKey(), clusterShard.getValue());
 		}
 		return message;
 	}
@@ -246,7 +254,8 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	@Override
 	public PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MetaServerConsoleService.PrimaryDcChangeRequest request,
 			ForwardInfo forwardInfo) {
-		ClusterType clusterType = dcMetaCache.getClusterType(clusterId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		ClusterType clusterType = dcMetaCache.getClusterType(clusterShard.getKey());
 		if (!clusterType.supportMigration()) {
 			logger.info("[doChangePrimaryDc] cluster {} type {} not support migration", clusterId, clusterType);
 			return new PrimaryDcChangeMessage(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL,
@@ -254,12 +263,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		}
 
 		logger.info("[doChangePrimaryDc]{}, {}, {}, {}", clusterId, shardId, newPrimaryDc, request);
-		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);
+		dcMetaCache.primaryDcChanged(clusterShard.getKey(), clusterShard.getValue(), newPrimaryDc);
 
 		MasterInfo masterInfo = null;
 		if(request != null){
 			masterInfo = request.getMasterInfo();
 		}
-		return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
+		return changePrimaryDcAction.changePrimaryDc(clusterShard.getKey(), clusterShard.getValue(), newPrimaryDc, masterInfo);
 	}
 }

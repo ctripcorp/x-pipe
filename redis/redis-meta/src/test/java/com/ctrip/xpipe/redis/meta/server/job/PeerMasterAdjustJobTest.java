@@ -39,8 +39,6 @@ import java.util.stream.Collectors;
 @RunWith(MockitoJUnitRunner.class)
 public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
 
-    protected String clusterId = "cluster1", shardId = "shard1";
-
     private String version = "1.0.4";
 
     protected Server redisServer;
@@ -66,7 +64,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     @Before
     public void setupPeerMasterChangeJobTest() throws Exception {
         mockMaster();
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -84,7 +82,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
 
     @Test
     public void testClearPeerMaster() throws Exception {
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, Collections.emptyList(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), Collections.emptyList(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -109,7 +107,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
 
     @Test
     public void testNoDoDeleted() throws Exception {
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), false,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -151,7 +149,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
     public void testHangWhenConnectCloseOnSendRequest() throws Exception {
         scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("PeerMasterAdjustJobSchedule"));
         Bootstrap b = initBootstrap();
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 new FixedObjectPool<>(new ConnectionClosedNettyClient(b.connect("127.0.0.1", redisServer.getPort()))),
                 100, 3, scheduled,  executors);
@@ -196,7 +194,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -218,7 +216,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -240,7 +238,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -262,7 +260,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -284,7 +282,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);
@@ -306,7 +304,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
             put(2L, new DefaultEndPoint("10.0.0.2", 6379)); // peer master unchange
             put(3L, new DefaultEndPoint("10.0.0.3", 6379)); // peer master unchange
         }};
-        peerMasterAdjustJob = new PeerMasterAdjustJob(clusterId, shardId, mockUpstreamPeerMaster(),
+        peerMasterAdjustJob = new PeerMasterAdjustJob(getClusterDbId(), getShardDbId(), mockUpstreamPeerMaster(),
                 Pair.of("127.0.0.1", redisServer.getPort()), true,
                 getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redisServer.getPort()))
                 , scheduled,  executors);

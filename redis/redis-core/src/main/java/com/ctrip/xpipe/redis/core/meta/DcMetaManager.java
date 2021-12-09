@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
 import java.util.Set;
@@ -30,7 +31,7 @@ public interface DcMetaManager{
 	List<ClusterMeta> getSpecificActiveDcClusters(String clusterActiveDc);
 
 
-	Set<String> getClusters();
+	Set<ClusterMeta> getClusters();
 
 	boolean hasCluster(String clusterId);
 	
@@ -90,5 +91,66 @@ public interface DcMetaManager{
 	Set<String> getRelatedDcs(String clusterId, String shardId);
 
 	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
+
+	/* method use clusterDbId, shardDbId */
+
+	String clusterDbId2Name(Long clusterDbId);
+
+	Pair<String, String> clusterShardDbId2Name(Long clusterDbId, Long shardDbId);
+
+	Long clusterId2DbId(String clusterId);
+
+	Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId);
+
+	RouteMeta randomRoute(Long clusterDbId);
+
+	boolean hasCluster(Long clusterDbId);
+
+	boolean hasShard(Long clusterDbId, Long shardDbId);
+
+	ClusterMeta getClusterMeta(Long clusterDbId);
+
+	ClusterType getClusterType(Long clusterDbId);
+
+	String getActiveDc(Long clusterDbId, Long shardDbId);
+
+	SentinelMeta getSentinel(Long clusterDbId, Long shardDbId);
+
+	String getSentinelMonitorName(Long clusterDbId, Long shardDbId);
+
+	ShardMeta getShardMeta(Long clusterDbId, Long shardDbId);
+
+	List<KeeperMeta> getKeepers(Long clusterDbId, Long shardDbId);
+
+	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
+
+	KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId);
+
+	List<KeeperMeta> getKeeperBackup(Long clusterDbId, Long shardDbId);
+
+	/**
+	 * @param clusterDbId
+	 * @param shardDbId
+	 * @return dc and redismeta info
+	 */
+	RedisMeta getRedisMaster(Long clusterDbId, Long shardDbId);
+
+	List<KeeperMeta> getAllSurviveKeepers(Long clusterDbId, Long shardDbId);
+
+	ClusterMeta removeCluster(Long clusterDbId);
+
+	boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper);
+
+	boolean noneKeeperActive(Long clusterDbId, Long shardDbId);
+
+	boolean updateRedisMaster(Long clusterDbId, Long shardDbId, RedisMeta redisMaster);
+
+	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers);
+
+	Set<String> getBackupDcs(Long clusterDbId, Long shardDbId);
+
+	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
+
+	void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc);
 
 }

@@ -9,10 +9,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
@@ -162,15 +159,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		super.doDispose();
 	}
 
-	private void clusterRoutesChange(String clusterId) {
-		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+	private void clusterRoutesChange(Long clusterDbId) {
+		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.getAllRoutes());
 		if(changedDcs != null && !changedDcs.isEmpty())  {
 			if(clusterMeta.getType().equals(ClusterType.BI_DIRECTION.name())) {
-				Set<String> shards = clusterMeta.getShards().keySet();
-				for (String shardId : shards) {
+				for (ShardMeta shard : clusterMeta.getShards().values()) {
 					changedDcs.forEach(dcId -> {
-						notifyPeerMasterChange(dcId, clusterId, shardId);
+						notifyPeerMasterChange(dcId, clusterMeta.getDbId(), shard.getDbId());
 					});
 				}
 			}
@@ -197,33 +193,33 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	private void handleClusterChanged(ClusterMetaComparator clusterMetaComparator) {
-		String clusterId = clusterMetaComparator.getCurrent().getId();
-		if(currentMeta.hasCluster(clusterId)){
+		Long clusterDbId = clusterMetaComparator.getCurrent().getDbId();
+		if(currentMeta.hasCluster(clusterDbId)){
 			ClusterMeta current = clusterMetaComparator.getCurrent();
 			ClusterMeta future = clusterMetaComparator.getFuture();
 			if(isReCreateCluster(current, future)) {
 				destroyCluster(current);
-				addCluster(clusterId);
+				addCluster(clusterDbId);
 			} else {
 				currentMeta.changeCluster(clusterMetaComparator);
 				if(needUpdateClusterRoutesWhenClusterChange(current, future)) {
-					clusterRoutesChange(clusterId);
+					clusterRoutesChange(clusterDbId);
 				}
 				notifyObservers(clusterMetaComparator);
 			}
 
 		}else{
 			logger.warn("[handleClusterChanged][but we do not has it]{}", clusterMetaComparator);
-			addCluster(clusterId);
+			addCluster(clusterDbId);
 		}
 	}
 
 
-	private void addCluster(String clusterId) {
+	private void addCluster(Long clusterDbId) {
 
-		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 
-		logger.info("[addCluster]{}, {}", clusterId, clusterMeta);
+		logger.info("[addCluster]{}, {}", clusterDbId, clusterMeta);
 		currentMeta.addCluster(clusterMeta);
 		List<RouteMeta> routes = dcMetaCache.getAllRoutes();
 		currentMeta.updateClusterRoutes(clusterMeta, routes);
@@ -238,7 +234,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private void removeCluster(ClusterMeta clusterMeta) {
 		
 		logger.info("[removeCluster]{}", clusterMeta.getId());
-		boolean result = currentMeta.removeCluster(clusterMeta.getId()) != null;
+		boolean result = currentMeta.removeCluster(clusterMeta.getDbId()) != null;
 		if(result){
 			notifyObservers(new NodeDeleted<ClusterMeta>(clusterMeta));
 		}
@@ -246,13 +242,14 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 
 
-	private void removeClusterInterested(String clusterId) {
+	private void removeClusterInterested(Long clusterDbId) {
 		//notice
-		removeCluster(new ClusterMeta(clusterId).setType(dcMetaCache.getClusterType(clusterId).toString()));
+		// TODO: ClusterMeta没有clusterName确定没事吗
+		removeCluster(new ClusterMeta().setType(dcMetaCache.getClusterType(clusterDbId).toString()).setDbId(clusterDbId));
 	}
 
 	@Override
-	public Set<String> allClusters() {
+	public Set<Long> allClusters() {
 		return new HashSet<>(currentMeta.allClusters());
 	}
 
@@ -261,11 +258,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		currentSlots.remove(slotId);
 		logger.info("[deleteSlot]{}", slotId);
-		for(String clusterId : new HashSet<>(currentMeta.allClusters())){
-			
-			int currentSlotId = slotManager.getSlotIdByKey(clusterId);
+		for(Long clusterDbId : new HashSet<>(currentMeta.allClusters())){
+			int currentSlotId = slotManager.getSlotIdByKey(clusterDbId);
 			if(currentSlotId == slotId){
-				removeClusterInterested(clusterId);
+				removeClusterInterested(clusterDbId);
 			}
 		}
 	}
@@ -276,11 +272,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		logger.info("[addSlot]{}", slotId);
 		currentSlots.add(slotId);
-		for(String clusterId : dcMetaCache.getClusters()){
-			
-			int currentSlotId = slotManager.getSlotIdByKey(clusterId);
+		for(ClusterMeta clusterMeta : dcMetaCache.getClusters()){
+			String clusterId = clusterMeta.getId();
+			Long clusterDbId = clusterMeta.getDbId();
+			int currentSlotId = slotManager.getSlotIdByKey(clusterDbId);
 			if(currentSlotId == slotId){
-				addCluster(clusterId);
+				addCluster(clusterDbId);
 			}
 		}
 	}
@@ -323,7 +320,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		for(ClusterMeta clusterMeta : comparator.getAdded()){
 			if(currentClusterServer.hasKey(clusterMeta.getId())){
-				addCluster(clusterMeta.getId());
+				addCluster(clusterMeta.getDbId());
 			}else{
 				logger.info("[dcMetaChange][add][not interested]{}", clusterMeta.getId());
 			}
@@ -351,69 +348,69 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@VisibleForTesting
 	protected void routeChanges() {
-		for(String clusterId : allClusters()) {
-			ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
-			String clusterType =clusterMeta.getType();
-			if(clusterType.equalsIgnoreCase(ClusterType.ONE_WAY.name())) {
-				if(randomRoute(clusterId) != null) {
+		for(Long clusterDbId : allClusters()) {
+			ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
+			ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+			if(ClusterType.ONE_WAY.equals(clusterType)) {
+				if(randomRoute(clusterDbId) != null) {
 					refreshKeeperMaster(clusterMeta);
 				}
-			} else if(clusterType.equalsIgnoreCase(ClusterType.BI_DIRECTION.name())) {
-				clusterRoutesChange(clusterId);
+			} else if(ClusterType.BI_DIRECTION.equals(clusterType)) {
+				clusterRoutesChange(clusterMeta.getDbId());
 			}
 		}
 	}
 
 	@VisibleForTesting
 	protected void refreshKeeperMaster(ClusterMeta clusterMeta) {
-		Set<String> shards = clusterMeta.getShards().keySet();
-		String clusterId = clusterMeta.getId();
-		for (String shardId : shards) {
-			notifyKeeperMasterChanged(clusterId, shardId, getKeeperMaster(clusterId, shardId));
+		Collection<ShardMeta> shards = clusterMeta.getShards().values();
+		Long clusterDbId = clusterMeta.getDbId();
+		for (ShardMeta shard : shards) {
+			notifyKeeperMasterChanged(clusterDbId, shard.getDbId(), getKeeperMaster(clusterDbId, shard.getDbId()));
 		}
 	}
 
 	
 	@Override
-	public boolean hasCluster(String clusterId) {
-		return currentMeta.hasCluster(clusterId);
+	public boolean hasCluster(Long clusterDbId) {
+		return currentMeta.hasCluster(clusterDbId);
 	}
 
 	@Override
-	public boolean hasShard(String clusterId, String shardId) {
-		return currentMeta.hasShard(clusterId, shardId);
+	public boolean hasShard(Long clusterDbId, Long shardDbId) {
+		return currentMeta.hasShard(clusterDbId, shardDbId);
 	}
 	
 	@Override
-	public RedisMeta getRedisMaster(String clusterId, String shardId) {
-		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getRedisMaster(clusterId, shardId);
+	public RedisMeta getRedisMaster(Long clusterDbId, Long shardDbId) {
+		return ((DefaultDcMetaCache)dcMetaCache).getDcMeta().getRedisMaster(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public ClusterMeta getClusterMeta(String clusterId) {
-		return dcMetaCache.getClusterMeta(clusterId);
+	public ClusterMeta getClusterMeta(Long clusterDbId) {
+		return dcMetaCache.getClusterMeta(clusterDbId);
 	}
 
 	@Override
-	public RouteMeta randomRoute(String clusterId) {
-		return dcMetaCache.randomRoute(clusterId);
-	}
-
-
-	@Override
-	public Pair<String, Integer> getKeeperMaster(String clusterId, String shardId) {
-		return currentMeta.getKeeperMaster(clusterId, shardId);
+	public RouteMeta randomRoute(Long clusterDbId) {
+		return dcMetaCache.randomRoute(clusterDbId);
 	}
 
 
 	@Override
-	public List<KeeperMeta> getSurviveKeepers(String clusterId, String shardId) {
-		return currentMeta.getSurviveKeepers(clusterId, shardId);
+	public Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getKeeperMaster(clusterDbId, shardDbId);
+	}
+
+
+	@Override
+	public List<KeeperMeta> getSurviveKeepers(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getSurviveKeepers(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public KeeperMeta getKeeperActive(String clusterId, String shardId) {
-		return currentMeta.getKeeperActive(clusterId, shardId);
+	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getKeeperActive(clusterDbId, shardDbId);
 	}
 	
 	@Override
@@ -433,141 +430,141 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	
 	/*******************update dynamic info*************************/
 	@Override
-	public boolean updateKeeperActive(String clusterId, String shardId, KeeperMeta activeKeeper) {
-		boolean result = currentMeta.setKeeperActive(clusterId, shardId, activeKeeper);
-		notifyKeeperActiveElected(clusterId, shardId, activeKeeper);
+	public boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
+		boolean result = currentMeta.setKeeperActive(clusterDbId, shardDbId, activeKeeper);
+		notifyKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
 		return result;
 	}
 	
 	@Override
-	public void addResource(String clusterId, String shardId, Releasable releasable) {
-		currentMeta.addResource(clusterId, shardId, releasable);
+	public void addResource(Long clusterDbId, Long shardDbId, Releasable releasable) {
+		currentMeta.addResource(clusterDbId, shardDbId, releasable);
 	}
 
 
 	@Override
-	public void setSurviveKeepers(String clusterId, String shardId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper) {
-		currentMeta.setSurviveKeepers(clusterId, shardId, surviceKeepers, activeKeeper);
-		notifyKeeperActiveElected(clusterId, shardId, activeKeeper);
+	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper) {
+		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviceKeepers, activeKeeper);
+		notifyKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
 	}
 
 	@Override
-	public void setKeeperMaster(String clusterId, String shardId, String ip, int port) {
+	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
 		
 		
 		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
-		if(currentMeta.setKeeperMaster(clusterId, shardId, keeperMaster)){
-			logger.info("[setKeeperMaster]{},{},{}:{}", clusterId, shardId, ip, port);
-			notifyKeeperMasterChanged(clusterId, shardId, keeperMaster);
+		if(currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster)){
+			logger.info("[setKeeperMaster]{},{},{}:{}", clusterDbId, shardDbId, ip, port);
+			notifyKeeperMasterChanged(clusterDbId, shardDbId, keeperMaster);
 		}else{
-			logger.info("[setKeeperMaster][keeper master not changed!]{},{},{}:{}", clusterId, shardId, ip, port);
+			logger.info("[setKeeperMaster][keeper master not changed!]{},{},{}:{}", clusterDbId, shardDbId, ip, port);
 		}
 		
 	}
 
 	@Override
-	public void setKeeperMaster(String clusterId, String shardId, String addr) {
+	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String addr) {
 		
-		logger.info("[setKeeperMaster]{},{},{}", clusterId, shardId, addr);
+		logger.info("[setKeeperMaster]{},{},{}", clusterDbId, shardDbId, addr);
 		Pair<String, Integer> inetAddr = IpUtils.parseSingleAsPair(addr);
-		setKeeperMaster(clusterId, shardId, inetAddr.getKey(), inetAddr.getValue());
+		setKeeperMaster(clusterDbId, shardDbId, inetAddr.getKey(), inetAddr.getValue());
 	}
 
 	@Override
-	public boolean watchIfNotWatched(String clusterId, String shardId) {
-		return currentMeta.watchIfNotWatched(clusterId, shardId);
+	public boolean watchIfNotWatched(Long clusterDbId, Long shardDbId) {
+		return currentMeta.watchIfNotWatched(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public void setCurrentCRDTMaster(String clusterId, String shardId, long gid, String ip, int port) {
+	public void setCurrentCRDTMaster(Long clusterDbId, Long shardDbId, long gid, String ip, int port) {
 		RedisMeta currentMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
-		currentMeta.setCurrentCRDTMaster(clusterId, shardId, currentMaster);
-		notifyCurrentMasterChanged(clusterId, shardId);
+		currentMeta.setCurrentCRDTMaster(clusterDbId, shardDbId, currentMaster);
+		notifyCurrentMasterChanged(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public RedisMeta getCurrentCRDTMaster(String clusterId, String shardId) {
-		return currentMeta.getCurrentCRDTMaster(clusterId, shardId);
+	public RedisMeta getCurrentCRDTMaster(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getCurrentCRDTMaster(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public RedisMeta getCurrentMaster(String clusterId, String shardId) {
-		return currentMeta.getCurrentMaster(clusterId, shardId);
+	public RedisMeta getCurrentMaster(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getCurrentMaster(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public void setPeerMaster(String dcId, String clusterId, String shardId, long gid, String ip, int port) {
+	public void setPeerMaster(String dcId, Long clusterDbId, Long shardDbId, long gid, String ip, int port) {
 		if (dcMetaCache.getCurrentDc().equalsIgnoreCase(dcId)) {
-			throw new IllegalArgumentException(String.format("peer master must from other dc %s %s %d %s:%d",
-					clusterId, shardId, gid, ip, port));
+			throw new IllegalArgumentException(String.format("peer master must from other dc %d %d %d %s:%d",
+					clusterDbId, shardDbId, gid, ip, port));
 		}
 
 		RedisMeta peerMaster = new RedisMeta().setIp(ip).setPort(port).setGid(gid);
-		currentMeta.setPeerMaster(dcId, clusterId, shardId, peerMaster);
-		notifyPeerMasterChange(dcId, clusterId, shardId);
+		currentMeta.setPeerMaster(dcId, clusterDbId, shardDbId, peerMaster);
+		notifyPeerMasterChange(dcId, clusterDbId, shardDbId);
 	}
 
 	@Override
-	public RedisMeta getPeerMaster(String dcId, String clusterId, String shardId) {
-		return currentMeta.getPeerMaster(dcId, clusterId, shardId);
+	public RedisMeta getPeerMaster(String dcId, Long clusterDbId, Long shardDbId) {
+		return currentMeta.getPeerMaster(dcId, clusterDbId, shardDbId);
 	}
 
 	@Override
-	public Set<String> getUpstreamPeerDcs(String clusterId, String shardId) {
-		return currentMeta.getUpstreamPeerDcs(clusterId, shardId);
+	public Set<String> getUpstreamPeerDcs(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getUpstreamPeerDcs(clusterDbId, shardDbId);
 	}
 
-	public Map<String, RedisMeta> getAllPeerMasters(String clusterId, String shardId) {
-		return currentMeta.getAllPeerMasters(clusterId, shardId);
-	}
-
-	@Override
-	public RouteMeta getClusterRouteByDcId(String clusterId, String dcId) {
-		return currentMeta.getClusterRouteByDcId(clusterId, dcId);
+	public Map<String, RedisMeta> getAllPeerMasters(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getAllPeerMasters(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public void removePeerMaster(String dcId, String clusterId, String shardId) {
-		currentMeta.removePeerMaster(dcId, clusterId, shardId);
+	public RouteMeta getClusterRouteByDcId(String dcId, Long clusterDbId) {
+		return currentMeta.getClusterRouteByDcId(clusterDbId, dcId);
 	}
 
-	private void notifyCurrentMasterChanged(String clusterId, String shardId) {
+	@Override
+	public void removePeerMaster(String dcId, Long clusterDbId, Long shardDbId) {
+		currentMeta.removePeerMaster(dcId, clusterDbId, shardDbId);
+	}
+
+	private void notifyCurrentMasterChanged(Long clusterDbId, Long shardDbId) {
 		for (MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.currentMasterChanged(clusterId, shardId);
+				stateHandler.currentMasterChanged(clusterDbId, shardDbId);
 			} catch (Exception e) {
-				logger.error("[notifyCurrentMasterChanged] {}, {}", clusterId, shardId, e);
+				logger.error("[notifyCurrentMasterChanged] {}, {}", clusterDbId, shardDbId, e);
 			}
 		}
 	}
 
-	private void notifyPeerMasterChange(String dcId, String clusterId, String shardId) {
+	private void notifyPeerMasterChange(String dcId, Long clusterDbId, Long shardDbId) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.peerMasterChanged(dcId, clusterId, shardId);
+				stateHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);
 			} catch (Exception e) {
-				logger.error("[notifyPeerMasterChange] {}, {}, {}", dcId, clusterId, shardId, e);
+				logger.error("[notifyPeerMasterChange] {}, {}, {}", dcId, clusterDbId, shardDbId, e);
 			}
 		}
 	}
 
-	private void notifyKeeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
+	private void notifyKeeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 		
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.keeperActiveElected(clusterId, shardId, activeKeeper);
+				stateHandler.keeperActiveElected(clusterDbId, shardDbId, activeKeeper);
 			} catch (Exception e) {
-				logger.error("[notifyKeeperActiveElected]" + clusterId + "," + shardId + "," + activeKeeper, e);
+				logger.error("[notifyKeeperActiveElected]" + clusterDbId + "," + shardDbId + "," + activeKeeper, e);
 			}
 		}
 	}
 
-	private void notifyKeeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> keeperMaster) {
+	private void notifyKeeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> keeperMaster) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
-				stateHandler.keeperMasterChanged(clusterId, shardId, keeperMaster);
+				stateHandler.keeperMasterChanged(clusterDbId, shardDbId, keeperMaster);
 			} catch (Exception e) {
-				logger.error("[notifyKeeperMasterChanged]" + clusterId + "," + shardId + "," + keeperMaster, e);
+				logger.error("[notifyKeeperMasterChanged]" + clusterDbId + "," + shardDbId + "," + keeperMaster, e);
 			}
 		}
 	}

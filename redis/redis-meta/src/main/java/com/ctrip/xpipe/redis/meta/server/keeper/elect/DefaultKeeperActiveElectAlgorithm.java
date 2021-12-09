@@ -13,7 +13,7 @@ import java.util.List;
 public class DefaultKeeperActiveElectAlgorithm extends AbstractActiveElectAlgorithm{
 
 	@Override
-	public KeeperMeta select(String clusterId, String shardId, List<KeeperMeta> toBeSelected){
+	public KeeperMeta select(Long clusterDbId, Long shardDbId, List<KeeperMeta> toBeSelected){
 		
 		if(toBeSelected.size() > 0){
 			KeeperMeta result = toBeSelected.get(0);

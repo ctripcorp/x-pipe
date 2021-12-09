@@ -12,7 +12,10 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -32,6 +35,9 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	
 	@Autowired
 	private ConsoleService consoleService;
+
+	@Autowired
+	private DcMetaCache dcMetaCache;
 
 	private ExecutorService executors;
 
@@ -66,8 +72,8 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	}
 	
 	@Override
-	public void keeperActiveElected(final String clusterId, final String shardId, final KeeperMeta activeKeeper) {
-		logger.info("[keeperActiveElected][called]{},{},{}",clusterId,shardId,activeKeeper);
+	public void keeperActiveElected(final Long clusterDbId, final Long shardDbId, final KeeperMeta activeKeeper) {
+		logger.info("[keeperActiveElected][called]{},{},{}",clusterDbId,shardDbId,activeKeeper);
 		Command<Void> command = new AbstractCommand<Void>() {
 
 			@Override
@@ -77,8 +83,10 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 
 			@Override
 			protected void doExecute() throws Exception {
-				logger.info("[keeperActiveElected][execute]{},{},{}",clusterId,shardId,activeKeeper);
-				consoleService.keeperActiveChanged(dc, clusterId, shardId, activeKeeper);
+				Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+				logger.info("[keeperActiveElected][execute]{}:{},{}:{},{}",clusterDbId, clusterShard.getKey(),
+						shardDbId, clusterShard.getValue(), activeKeeper);
+				consoleService.keeperActiveChanged(dc, clusterShard.getKey(), clusterShard.getValue(), activeKeeper);
 				future().setSuccess();
 			}
 
@@ -98,6 +106,11 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	
 	public void setConsoleService(ConsoleService consoleService) {
 		this.consoleService = consoleService;
+	}
+
+	@VisibleForTesting
+	protected void setDcMetaCache(DcMetaCache dcMetaCache) {
+		this.dcMetaCache = dcMetaCache;
 	}
 
 }

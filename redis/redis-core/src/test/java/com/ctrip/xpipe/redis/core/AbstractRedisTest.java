@@ -342,7 +342,6 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     protected List<KeeperMeta> getDcKeepers(String dc, String clusterId, String shardId) {
         return getXpipeMeta().getDcs().get(dc).getClusters().get(clusterId).getShards().get(shardId).getKeepers();
-
     }
 
     protected List<RedisMeta> getDcRedises(String dc, String clusterId, String shardId) {
@@ -485,8 +484,11 @@ public abstract class AbstractRedisTest extends AbstractTest {
         DcMeta dcMeta = getDcMeta(dc);
         ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[0]);
         clusterMeta.setId(randomString(10));
+        clusterMeta.setDbId(randomLong());
 
+        Long randomShardDbId = randomLong();
         for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+            shardMeta.setDbId(randomShardDbId++);
             for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
                 keeperMeta.setPort(keeperMeta.getPort() + 10000);
             }

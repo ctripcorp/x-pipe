@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -222,23 +223,43 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public Set<String> getClusters() {
+	public String clusterDbId2Name(Long clusterDbId) {
+		return dcMetaManager.get().clusterDbId2Name(clusterDbId);
+	}
+
+	@Override
+	public Pair<String, String> clusterShardDbId2Name(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().clusterShardDbId2Name(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public Long clusterId2DbId(String clusterId) {
+		return dcMetaManager.get().clusterId2DbId(clusterId);
+	}
+
+	@Override
+	public Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId) {
+		return dcMetaManager.get().clusterShardId2DbId(clusterId, shardId);
+	}
+
+	@Override
+	public Set<ClusterMeta> getClusters() {
 		return dcMetaManager.get().getClusters();
 	}
 
 	@Override
-	public ClusterMeta getClusterMeta(String clusterId) {
-		return dcMetaManager.get().getClusterMeta(clusterId);
+	public ClusterMeta getClusterMeta(Long clusterDbId) {
+		return dcMetaManager.get().getClusterMeta(clusterDbId);
 	}
 
 	@Override
-	public ClusterType getClusterType(String clusterId) {
-		return dcMetaManager.get().getClusterType(clusterId);
+	public ClusterType getClusterType(Long clusterDbId) {
+		return dcMetaManager.get().getClusterType(clusterDbId);
 	}
 
 	@Override
-	public RouteMeta randomRoute(String clusterId) {
-		return dcMetaManager.get().randomRoute(clusterId);
+	public RouteMeta randomRoute(Long clusterDbId) {
+		return dcMetaManager.get().randomRoute(clusterDbId);
 	}
 
 	@Override
@@ -273,11 +294,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public void clusterDeleted(String clusterId) {
+	public void clusterDeleted(Long clusterDbId) {
 
-		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("del:%s", clusterId));
+		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("del:%d", clusterDbId));
 
-		ClusterMeta clusterMeta = dcMetaManager.get().removeCluster(clusterId);
+		ClusterMeta clusterMeta = dcMetaManager.get().removeCluster(clusterDbId);
 		logger.info("[clusterDeleted]{}", clusterMeta);
 		DcMetaComparator dcMetaComparator = DcMetaComparator.buildClusterRemoved(clusterMeta);
 		notifyObservers(dcMetaComparator);
@@ -289,59 +310,59 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public boolean isCurrentDcPrimary(String clusterId, String shardId) {
-		return currentDc.equalsIgnoreCase(dcMetaManager.get().getActiveDc(clusterId, shardId));
+	public boolean isCurrentDcPrimary(Long clusterDbId, Long shardDbId) {
+		return currentDc.equalsIgnoreCase(dcMetaManager.get().getActiveDc(clusterDbId, shardDbId));
 	}
 	
 	@Override
-	public boolean isCurrentDcPrimary(String clusterId) {
-		return isCurrentDcPrimary(clusterId, null);
+	public boolean isCurrentDcPrimary(Long clusterDbId) {
+		return isCurrentDcPrimary(clusterDbId, null);
 	}
 
 
 	@Override
-	public List<KeeperMeta> getShardKeepers(String clusterId, String shardId) {
-		return dcMetaManager.get().getKeepers(clusterId, shardId);
+	public List<KeeperMeta> getShardKeepers(Long clusterDbId, Long shardDbId) {
+			return dcMetaManager.get().getKeepers(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public List<RedisMeta> getShardRedises(String clusterId, String shardId) {
-		return dcMetaManager.get().getRedises(clusterId, shardId);
+	public List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getRedises(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public Set<String> getBakupDcs(String clusterId, String shardId) {
+	public Set<String> getBakupDcs(Long clusterDbId, Long shardDbId) {
 		
-		return dcMetaManager.get().getBackupDcs(clusterId, shardId);
+		return dcMetaManager.get().getBackupDcs(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public Set<String> getRelatedDcs(String clusterId, String shardId) {
-		return dcMetaManager.get().getRelatedDcs(clusterId, shardId);
+	public Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getRelatedDcs(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public String getPrimaryDc(String clusterId, String shardId) {
-		return dcMetaManager.get().getActiveDc(clusterId, shardId);
+	public String getPrimaryDc(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getActiveDc(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public SentinelMeta getSentinel(String clusterId, String shardId) {
-		return dcMetaManager.get().getSentinel(clusterId, shardId);
+	public SentinelMeta getSentinel(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getSentinel(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public String getSentinelMonitorName(String clusterId, String shardId) {
-		return dcMetaManager.get().getSentinelMonitorName(clusterId, shardId);
+	public String getSentinelMonitorName(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getSentinelMonitorName(clusterDbId, shardDbId);
 	}
 
 	@Override
-	public void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc) {
+	public void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc) {
 		synchronized (this) {
 			// serial with dc meta change
 			metaModifyTime.set(System.currentTimeMillis());
 		}
-		dcMetaManager.get().primaryDcChanged(clusterId, shardId, newPrimaryDc);
+		dcMetaManager.get().primaryDcChanged(clusterDbId, shardDbId, newPrimaryDc);
 	}
 
 	private boolean mayMetaUpdateFromConsole(final long metaLoadTime) {

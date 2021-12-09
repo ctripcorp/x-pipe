@@ -46,7 +46,7 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 	private Executor executors;
 
 	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
-	private KeyedOneThreadMutexableTaskExecutor<Pair<String, String> > clusterShardExecutors;
+	private KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long> > clusterShardExecutors;
 
 	private ScheduledFuture<?> future;
 
@@ -81,9 +81,9 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 
 		protected void doRun() throws Exception {
 			
-			for(String clusterId : currentMetaManager.allClusters()){
+			for(Long clusterDbId : currentMetaManager.allClusters()){
 
-				ClusterRedisStateAjustTask adjustTask = buildAdjustTaskForCluster(clusterId);
+				ClusterRedisStateAjustTask adjustTask = buildAdjustTaskForCluster(clusterDbId);
 				if (null != adjustTask) {
 					executors.execute(adjustTask);
 				}
@@ -91,22 +91,22 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 			}
 		}
 
-		private ClusterRedisStateAjustTask buildAdjustTaskForCluster(String clusterId) {
+		private ClusterRedisStateAjustTask buildAdjustTaskForCluster(Long clusterDbId) {
 			ClusterType type;
 
 			try {
-				type = dcMetaCache.getClusterType(clusterId);
+				type = dcMetaCache.getClusterType(clusterDbId);
 			} catch (Exception e) {
-				logger.info("[buildAdjustTaskForCluster] get type for cluster {} fail", clusterId, e);
+				logger.info("[buildAdjustTaskForCluster] get type for cluster {} fail", clusterDbId, e);
 				return null;
 			}
 
 			switch (type) {
 				case ONE_WAY:
-					if (dcMetaCache.isCurrentDcPrimary(clusterId)) {
+					if (dcMetaCache.isCurrentDcPrimary(clusterDbId)) {
 						return new PrimaryDcClusterRedisStateAjust();
 					} else {
-						return new BackupDcClusterRedisStateAjust(clusterId, dcMetaCache, currentMetaManager,
+						return new BackupDcClusterRedisStateAjust(clusterDbId, dcMetaCache, currentMetaManager,
 								keyedObjectPool, scheduled, executors, clusterShardExecutors);
 					}
 				case BI_DIRECTION:

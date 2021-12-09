@@ -40,6 +40,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	private DcMetaCache dcMetaCache;
 	
 	private String clusterId, shardId;
+	private Long clusterDbId, shardDbId;
 	
 	private List<KeeperMeta> keepers;
 
@@ -64,6 +65,8 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		
 		clusterId = getClusterId();
 		shardId = getShardId();
+		clusterDbId = getClusterDbId();
+		shardDbId = getShardDbId();
 		
 		keepers = createRandomKeepers(2);
 		redis = newRandomFakeRedisMeta("localhost", randomPort());
@@ -100,25 +103,25 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 			}
 		});
 
-		when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(keepers);
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(keeperMaster);
-		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(true);
-		when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(Collections.singletonList(redis));
+		when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(keepers);
+		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(keeperMaster);
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(true);
+		when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(Collections.singletonList(redis));
 	}
 	
 	@Test
 	public void testDifferentShardExecute() throws Exception{
 
-		String clusterId1 = clusterId + "1";
-		String shardId1 = shardId + "1";
+		Long clusterDbId1 = clusterDbId + 1;
+		Long shardDbId1 = shardDbId + 1;
 		
-		when(currentMetaManager.getSurviveKeepers(clusterId1, shardId1)).thenReturn(keepers);
-		when(currentMetaManager.getKeeperMaster(clusterId1, shardId1)).thenReturn(keeperMaster);
-		when(dcMetaCache.isCurrentDcPrimary(clusterId1, shardId1)).thenReturn(true);
+		when(currentMetaManager.getSurviveKeepers(clusterDbId1, shardDbId1)).thenReturn(keepers);
+		when(currentMetaManager.getKeeperMaster(clusterDbId1, shardDbId1)).thenReturn(keeperMaster);
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId1, shardDbId1)).thenReturn(true);
 
 
-		handler.keeperActiveElected(clusterId, shardId, null);
-		handler.keeperActiveElected(clusterId1, shardId1, null);
+		handler.keeperActiveElected(clusterDbId, shardDbId, null);
+		handler.keeperActiveElected(clusterDbId1, shardDbId1, null);
 
 		sleep(setStateTimeMilli/2);
 		Assert.assertEquals(2, calledCount.get());
@@ -127,8 +130,8 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	@Test
 	public void testSameShardExecute() throws Exception{
 		
-		handler.keeperActiveElected(clusterId, shardId, null);
-		handler.keeperActiveElected(clusterId, shardId, null);
+		handler.keeperActiveElected(clusterDbId, shardDbId, null);
+		handler.keeperActiveElected(clusterDbId, shardDbId, null);
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
 		sleep(setStateTimeMilli*3/2);
 		Assert.assertEquals(2, calledCount.get());
@@ -137,9 +140,9 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	@Test
 	public void testBackupDcAdjust() throws Exception {
 		setStateTimeMilli = 1;
-		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(false);
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
 
-		handler.keeperActiveElected(clusterId, shardId, keepers.get(0));
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
 		waitConditionUntilTimeOut(() -> 1 <= redisCall.get());
 	}
@@ -147,9 +150,9 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	@Test
 	public void testBackupDcBecomePrimaryDc() throws Exception {
 		setStateTimeMilli = 1;
-		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(false, true);
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false, true);
 
-		handler.keeperActiveElected(clusterId, shardId, keepers.get(0));
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
 		sleep(1000);
 		Assert.assertEquals(0, redisCall.get());
