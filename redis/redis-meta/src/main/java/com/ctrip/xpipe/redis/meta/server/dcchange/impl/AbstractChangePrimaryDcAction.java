@@ -31,6 +31,10 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	public static final int DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS", "2"));
 	
 	protected int waitTimeoutSeconds = DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
+
+	protected String cluster;
+
+	protected String shard;
 	
 	protected ExecutionLog executionLog;
 	
@@ -46,13 +50,16 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 
 	protected Executor executors;
 
-	public AbstractChangePrimaryDcAction(DcMetaCache dcMetaCache,
+	public AbstractChangePrimaryDcAction(String cluster, String shard,
+										 DcMetaCache dcMetaCache,
 										 CurrentMetaManager currentMetaManager,
 										 SentinelManager sentinelManager,
 										 ExecutionLog executionLog,
 										 XpipeNettyClientKeyedObjectPool keyedObjectPool,
 										 ScheduledExecutorService scheduled,
 										 Executor executors) {
+		this.cluster = cluster;
+		this.shard = shard;
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
 		this.sentinelManager = sentinelManager;

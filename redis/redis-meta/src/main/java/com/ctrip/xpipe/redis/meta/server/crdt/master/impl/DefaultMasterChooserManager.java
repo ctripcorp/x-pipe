@@ -44,6 +44,12 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
     }
 
     @Override
+    protected void doDispose() throws Exception {
+        super.doDispose();
+        scheduled.shutdownNow();
+    }
+
+    @Override
     protected void addShard(String clusterId, String shardId) {
         try {
             logger.info("[addShard]{}, {}", clusterId, shardId);

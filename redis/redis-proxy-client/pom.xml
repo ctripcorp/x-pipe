@@ -14,7 +14,6 @@
 
     <properties>
         <enforcer.qBanDuplicateClasses.skip>true</enforcer.qBanDuplicateClasses.skip>
-        <mockwebserver.version>3.12.0</mockwebserver.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <arthas-repackage.version>0.0.6</arthas-repackage.version>
     </properties>
@@ -50,7 +49,6 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
-            <version>${mockwebserver.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

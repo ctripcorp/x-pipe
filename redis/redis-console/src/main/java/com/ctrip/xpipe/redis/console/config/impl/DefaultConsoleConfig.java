@@ -55,7 +55,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_NOTIFY_CLUSTER_TYPES = "console.notify.cluster.types";
 
-    private static final String KEY_OUTER_CLUSTER_TYPES = "outer.cluster.types";
+    private static final String KEY_OUTER_CLUSTER_TYPES = "console.outer.cluster.types";
+
+    private static final String KEY_FILTER_OUTER_CLUSTERS = "console.filter.outer.clusters";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
@@ -380,6 +382,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String clusterTypes = getProperty(KEY_OUTER_CLUSTER_TYPES, "");
 
         return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
+    public String filterOuterClusters() {
+        return getProperty(KEY_FILTER_OUTER_CLUSTERS, "");
     }
 
     boolean shouldSentinelCheckOuterClientClusters() {

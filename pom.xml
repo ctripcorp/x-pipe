@@ -49,8 +49,9 @@
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <tomcat.version>8.0.33</tomcat.version>
+        <okhttp3.version>3.12.0</okhttp3.version>
+        <influxdb.version>2.7</influxdb.version>
 
-        <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
         <clogging.version>4.1.8</clogging.version>
         <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
@@ -464,6 +465,30 @@
                 <artifactId>log4j-web</artifactId>
                 <version>${log4j2.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.influxdb</groupId>
+                <artifactId>influxdb-java</artifactId>
+                <version>${influxdb.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.squareup.okhttp3</groupId>
+                        <artifactId>okhttp</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.squareup.okio</groupId>
+                        <artifactId>okio</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.squareup.retrofit2</groupId>
+                        <artifactId>retrofit</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp3.version}</version>
+            </dependency>
 
             <!--netty ssl handler!-->
             <dependency>
@@ -502,6 +527,12 @@
             </dependency>
 
             <!-- unit test -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>mockwebserver</artifactId>
+                <version>${okhttp3.version}</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>org.unidal.framework</groupId>
                 <artifactId>test-framework</artifactId>

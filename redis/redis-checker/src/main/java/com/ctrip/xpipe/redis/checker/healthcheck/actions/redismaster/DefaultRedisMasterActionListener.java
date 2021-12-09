@@ -48,14 +48,14 @@ public class DefaultRedisMasterActionListener implements RedisMasterActionListen
 
     @Override
     public void onAction(RedisMasterActionContext redisMasterActionContext) {
-        Server.SERVER_ROLE redisRole = redisMasterActionContext.getResult();
         RedisHealthCheckInstance instance = redisMasterActionContext.instance();
 
-        if(redisRole.equals(Server.SERVER_ROLE.UNKNOWN)) {
+        if(!redisMasterActionContext.isSuccess()) {
             handleUnknownRole(instance);
             return;
         }
 
+        Server.SERVER_ROLE redisRole = redisMasterActionContext.getResult().getServerRole();
         boolean actualMaster = redisRole.equals(Server.SERVER_ROLE.MASTER);
         RedisRoleState state = RedisRoleState.getFrom(instance.getCheckInfo().isMaster(), actualMaster);
         if(state.shouldBeCorrect()) {

@@ -70,11 +70,10 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                             $scope.showCrossMasterHealthStatus = type.multiActiveDcs;
                         }
 
+                        existsRoute($scope.currentDcName, $scope.clusterName);
                         loadShards($scope.clusterName, $scope.currentDcName);
-                        switchDc($scope.dcs[0]);
                     }, function(result) {
                         $scope.currentDcName = $scope.dcs[0].dcName;
-                        loadShards($scope.clusterName, $scope.currentDcName);
                         switchDc($scope.dcs[0]);
                     });
                 }
@@ -87,9 +86,16 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     }
 
     function loadShards(clusterName, dcName) {
+        console.log("loadShards", clusterName, dcName)
         ShardService.findClusterDcShards(clusterName, dcName)
             .then(function (result) {
-                $scope.shards = result;
+                $scope.shards = result.sort((v1, v2) => {
+                    if (v1.shardTbl.shardName.length != v2.shardTbl.shardName.length)
+                        return v1.shardTbl.shardName.length - v2.shardTbl.shardName.length;
+                    if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
+                    else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
+                    else return 0;
+                });
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });

@@ -61,7 +61,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
 
     PeerMasterAdjustJob peerMasterAdjustJob;
 
-    private static final String TEMP_CRDT_INFO = "peer%d_host:%s\r\n" + "peer%d_port:%d\r\n" + "peer%d_gid:%d\r\n";
+    private static final String TEMP_CRDT_INFO = "peer%d_host:%s\r\n" + "peer%d_port:%d\r\n" + "peer%d_gid:%d\r\n" + "peer%d_repl_offset:%d\r\n";
 
     @Before
     public void setupPeerMasterChangeJobTest() throws Exception {
@@ -330,7 +330,7 @@ public class PeerMasterAdjustJobTest extends AbstractMetaServerTest {
         StringBuilder sb = new StringBuilder();
         AtomicInteger index = new AtomicInteger(0);
         currentPeerMaster.forEach((gid, peerMaster) -> {
-            sb.append(String.format(TEMP_CRDT_INFO, index.get(), peerMaster.getHost(), index.get(), peerMaster.getPort(), index.get(), gid));
+            sb.append(String.format(TEMP_CRDT_INFO, index.get(), peerMaster.getHost(), index.get(), peerMaster.getPort(), index.get(), gid, index.get(), randomInt()));
             ProxyConnectProtocol protocol = peerMaster.getProxyProtocol();
             if(protocol != null) {
                 RouteOptionParser parser = new RouteOptionParser().read("ROUTE " + protocol.getRouteInfo());

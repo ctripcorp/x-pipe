@@ -9,6 +9,10 @@
     <!-- ctrip related infrastructure -->
     <artifactId>ctrip-service</artifactId>
 
+    <properties>
+        <fireman.version>2.0.13</fireman.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.ctrip.framework.clogging</groupId>
@@ -87,7 +91,7 @@
         <dependency>
             <groupId>com.ctrip.framework.fireman</groupId>
             <artifactId>fireman</artifactId>
-            <version>2.0.4</version>
+            <version>${fireman.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
@@ -105,12 +109,26 @@
                     <groupId>com.alibaba</groupId>
                     <artifactId>fastjson</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.ctrip.framework</groupId>
+                    <artifactId>framework-bom</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
             <groupId>qunar.common</groupId>
             <artifactId>common-core</artifactId>
+        </dependency>
+
+        <!-- Metric -->
+        <dependency>
+            <groupId>org.influxdb</groupId>
+            <artifactId>influxdb-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
         </dependency>
 
         <!--Email Service-->
@@ -123,7 +141,6 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
-            <version>3.12.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
