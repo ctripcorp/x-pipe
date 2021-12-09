@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -99,4 +100,13 @@ public class ClusterMetaServiceTest extends AbstractConsoleIntegrationTest {
             fail();
         }
     }
+
+    @Test
+	public void testGetClusterMeta() throws Exception {
+		ClusterMeta clusterMeta = clusterMetaService.getClusterMeta(dcA, clusterName1);
+		Assert.assertEquals(1L, clusterMeta.getDbId().longValue());
+		for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+			Assert.assertNotNull(shardMeta.getDbId());
+		}
+	}
 }

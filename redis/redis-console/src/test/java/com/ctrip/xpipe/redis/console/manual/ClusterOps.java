@@ -16,7 +16,7 @@ import java.util.ArrayList;
  * @author wenchao.meng
  * Dec 04, 2021
  */
-public class AddCluster extends AbstractTest {
+public class ClusterOps extends AbstractTest {
 
 
     private String clusterName = System.getProperty("clusterName", "cluster_three_dc");
