@@ -71,7 +71,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public ShardMeta getShardMeta(String clusterId, String shardId) {
-		return metaManager.getShardMeta(shardId, clusterId, shardId);
+		return metaManager.getShardMeta(currentDc, clusterId, shardId);
 	}
 
 	@Override
@@ -306,11 +306,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId) {
-		ShardMeta shardMeta = getShardMeta(clusterId, shardId);
-		if (null == shardMeta) {
+		ClusterMeta clusterMeta = getClusterMeta(clusterId);
+		if (null == clusterMeta || !clusterMeta.getShards().containsKey(shardId)) {
 			throw new IllegalArgumentException(String.format("unknown clusterId shardId %s %s", clusterId, shardId));
 		}
-		return Pair.of(shardMeta.parent().getDbId(), shardMeta.getDbId());
+		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
 	}
 
 	@Override
@@ -341,8 +342,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public String getActiveDc(Long clusterDbId, Long shardDbId) {
-		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return getActiveDc(clusterShard.getKey(), clusterShard.getValue());
+		return getActiveDc(clusterDbId2Name(clusterDbId), null);
 	}
 
 	@Override

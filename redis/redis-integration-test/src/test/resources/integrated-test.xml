@@ -3,8 +3,8 @@
 	<dc id="jq">
 		<zkServer address="127.0.0.1:2181"/>
 		<metaServer ip="127.0.0.1" port="9747" master="true"/>
-		<cluster id="cluster1" active-dc="jq" backup-dcs="oy">
-			<shard id="shard1" >
+		<cluster id="cluster1" db-id="1" active-dc="jq" backup-dcs="oy">
+			<shard id="shard1" db-id="1">
 				<redis ip="127.0.0.1" port="6379" master="" />
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6000" active="false" />
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6001" active="false" />
@@ -17,8 +17,8 @@
 	<dc id="oy">
 		<zkServer address="127.0.0.1:2281"/>
 		<metaServer ip="127.0.0.1" port="9847" master="true"/>
-		<cluster id="cluster1" active-dc="jq" backup-dcs="oy">
-			<shard id="shard1">
+		<cluster id="cluster1" db-id="1" active-dc="jq" backup-dcs="oy">
+			<shard id="shard1" db-id="1">
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6100" active="false" />
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6101" active="false" />
 				<redis ip="127.0.0.1" port="8100" master="127.0.0.1:6100" />
