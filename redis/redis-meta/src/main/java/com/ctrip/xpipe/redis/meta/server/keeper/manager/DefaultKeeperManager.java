@@ -189,7 +189,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			}
 			for (KeeperMeta deadKeeper : deadKeepers) {
 				try {
-					keeperStateController.addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper));
+					keeperStateController.addKeeper(new KeeperTransMeta(clusterMeta.getId(), shardMeta.getId(), clusterDbId, shardDbId, deadKeeper));
 				} catch (ResourceAccessException e) {
 					logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s", clusterDbId, shardDbId,
 							deadKeeper, e.getMessage()));

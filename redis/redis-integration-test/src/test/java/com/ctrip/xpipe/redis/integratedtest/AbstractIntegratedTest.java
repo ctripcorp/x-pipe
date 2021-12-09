@@ -52,6 +52,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	private String clusterId = "cluster1", shardId = "shard1";
 
+	private Long clusterDbId = 1L, shardDbId = 1L;
+
 	private int defaultTestMessageCount = 5000;
 
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
@@ -269,6 +271,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	public String getShardId() {
 		return shardId;
+	}
+
+	public Long getClusterDbId() {
+		return clusterDbId;
+	}
+
+	public Long getShardDbId() {
+		return shardDbId;
 	}
 
 	protected void sendMesssageToMasterAndTest(RedisMeta redisMaster, List<RedisMeta> slaves){
