@@ -47,6 +47,7 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		if(null == clusterTbl || null == shardTbl) return shardMeta;
 		
 		shardMeta.setId(shardTbl.getShardName());
+		shardMeta.setDbId(shardTbl.getId());
  		shardMeta.setSentinelId(dcMetaQueryVO.getDcClusterShardMap().get(Pair.of(clusterTbl.getClusterName(), shardTbl.getShardName())).getSetinelId());
 		shardMeta.setSentinelMonitorName(shardTbl.getSetinelMonitorName());
 		for(RedisTbl redis : dcMetaQueryVO.getRedisMap().get(clusterTbl.getClusterName()).get(shardTbl.getShardName())) {
@@ -97,9 +98,12 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 		});
 		
 		try {
-			if(null == future_dcInfo.get() || null == future_clusterInfo.get() || null == future_shardInfo.get()
+			ShardTbl shardInfo = future_shardInfo.get();
+			if (null == shardInfo) throw new DataNotFoundException("Cannot find shard-tbl " + shardName);
+
+			if(null == future_dcInfo.get() || null == future_clusterInfo.get()
 					|| null == future_dcClusterInfo.get() || null == future_dcClusterShardInfo.get()) {
-				return new ShardMeta().setId(shardName);
+				return new ShardMeta(shardName).setDbId(shardInfo.getId());
 			}
 			return getShardMeta(future_dcInfo.get(),future_clusterInfo.get(),future_shardInfo.get(),
 					future_dcClusterInfo.get(), future_dcClusterShardInfo.get());
@@ -140,11 +144,12 @@ public class ShardMetaServiceImpl extends AbstractMetaService implements ShardMe
 	}
 	
 	private ShardMeta getShardMeta(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo, DcClusterTbl dcClusterInfo, DcClusterShardTbl dcClusterShardInfo) {
-		ShardMeta shardMeta = new ShardMeta();
-		if(null == dcInfo || null == clusterInfo || null == shardInfo || null == dcClusterInfo || null == dcClusterShardInfo) {
+		if (null == shardInfo) throw new IllegalArgumentException("shard-tbl can't be null");
+		ShardMeta shardMeta = new ShardMeta(shardInfo.getShardName()).setDbId(shardInfo.getId());
+
+		if(null == dcInfo || null == clusterInfo || null == dcClusterInfo || null == dcClusterShardInfo) {
 			return shardMeta;
 		}
-		
 		shardMeta.setId(shardInfo.getShardName());
 		shardMeta.setSentinelId(dcClusterShardInfo.getSetinelId());
 		shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(clusterInfo.getClusterName(), shardInfo.getSetinelMonitorName(), dcInfo.getDcName()));

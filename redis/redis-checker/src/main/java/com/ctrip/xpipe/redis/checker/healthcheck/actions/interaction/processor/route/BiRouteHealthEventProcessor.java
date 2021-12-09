@@ -57,8 +57,7 @@ public class BiRouteHealthEventProcessor extends AbstractRouteHealthEventProcess
             RedisSession redisSession = redisSessionManager.findOrCreateSession(master);
             InfoResultExtractor masterInfo = redisSession.syncCRDTInfo(InfoCommand.INFO_TYPE.PERSISTENCE);
             long rdbSize = masterInfo.extractAsLong("rdb_last_cow_size");
-            return getDelaySeconds(rdbSize)
-                    - TimeUnit.MILLISECONDS.toSeconds(instance.getHealthCheckConfig().delayDownAfterMilli())/2;
+            return getDelaySeconds(rdbSize);
         } catch (Exception e) {
             return 30;
         }

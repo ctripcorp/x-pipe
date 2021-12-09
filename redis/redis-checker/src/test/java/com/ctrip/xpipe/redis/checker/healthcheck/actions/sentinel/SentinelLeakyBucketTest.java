@@ -106,7 +106,7 @@ public class SentinelLeakyBucketTest extends AbstractTest {
                     } catch (Exception ignore) {
                         logger.info("[testRelease] await fail", ignore);
                     }
-                    sleep(randomInt(0, 10)); // sleep random time to desync acquire
+                    sleep(randomInt(0, 1000)); // sleep random time to desync acquire
                     if(leakyBucket.tryAcquire()) {
                         counter.incrementAndGet();
                         leakyBucket.release();
@@ -115,7 +115,7 @@ public class SentinelLeakyBucketTest extends AbstractTest {
                 }
             });
         }
-        Assert.assertTrue(latch.await(3000, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(leakyBucket.getTotalSize() < counter.get());
     }
 
