@@ -5,10 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceHalfSick;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -98,6 +95,20 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
                 return;
             }
             healthStatusUpdate();
+        }
+    }
+
+    void loading() {
+        HEALTH_STATE preState = state.get();
+        if(preState.equals(preState.afterPingFail())) {
+            return;
+        }
+        if(state.compareAndSet(preState, preState.afterPingFail())) {
+            logStateChange(preState, state.get());
+        }
+        if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()) {
+            logger.info("[setLoading] {}", this);
+            notifyObservers(new InstanceLoading(instance));
         }
     }
 

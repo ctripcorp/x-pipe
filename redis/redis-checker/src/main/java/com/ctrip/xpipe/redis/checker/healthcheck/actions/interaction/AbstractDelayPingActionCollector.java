@@ -49,6 +49,13 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         @Override
         public void onAction(PingActionContext pingActionContext) {
             HealthStatus healthStatus = createOrGetHealthStatus(pingActionContext.instance());
+            if (!pingActionContext.isSuccess()) {
+                if (pingActionContext.getCause().getMessage().contains("LOADING")) {
+                    healthStatus.loading();
+                }
+                return;
+            }
+
             if (pingActionContext.getResult()) {
                 healthStatus.pong();
             } else {
