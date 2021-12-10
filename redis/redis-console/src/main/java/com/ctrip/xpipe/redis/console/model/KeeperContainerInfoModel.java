@@ -12,6 +12,7 @@ public class KeeperContainerInfoModel implements Serializable {
     private HostPort addr;
     private String dcName;
     private String orgName;
+    private String azName;
     private long keeperCount;
     private long shardCount;
     private long clusterCount;
@@ -74,6 +75,14 @@ public class KeeperContainerInfoModel implements Serializable {
 
     public void setOrgName(String orgName) {
         this.orgName = orgName;
+    }
+
+    public String getAzName() {
+        return azName;
+    }
+
+    public void setAzName(String azName) {
+        this.azName = azName;
     }
 
     @Override

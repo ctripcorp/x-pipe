@@ -13,6 +13,8 @@ public interface KeeperContainerService {
 	List<KeepercontainerTbl> findAllActiveByDcName(String dcName);
 	List<KeepercontainerTbl> findKeeperCount(String dcName);
 	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
+	List<KeepercontainerTbl> getKeeperContainerByAz(Long azId);
+
 
 	List<KeeperContainerInfoModel> findAllInfos();
 
@@ -21,4 +23,6 @@ public interface KeeperContainerService {
 	List<KeeperContainerCreateInfo> getDcAllKeeperContainers(String dcName);
 
 	void updateKeeperContainer(KeeperContainerCreateInfo createInfo);
+
+	void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort);
 }
