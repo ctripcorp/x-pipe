@@ -321,18 +321,22 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public boolean hasCluster(Long clusterDbId) {
-		return hasCluster(clusterDbId2Name(clusterDbId));
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		return null!= clusterSummary && hasCluster(clusterSummary.name);
 	}
 
 	@Override
 	public boolean hasShard(Long clusterDbId, Long shardDbId) {
-		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return hasShard(clusterShard.getKey(), clusterShard.getValue());
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		return null != clusterSummary && clusterSummary.shards.containsKey(shardDbId)
+				&& hasShard(clusterSummary.name, clusterSummary.shards.get(shardDbId));
 	}
 
 	@Override
 	public ClusterMeta getClusterMeta(Long clusterDbId) {
-		return getClusterMeta(clusterDbId2Name(clusterDbId));
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary) return null;
+		return getClusterMeta(clusterSummary.name);
 	}
 
 	@Override
@@ -359,8 +363,9 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public ShardMeta getShardMeta(Long clusterDbId, Long shardDbId) {
-		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return getShardMeta(clusterShard.getKey(), clusterShard.getValue());
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary || !clusterSummary.shards.containsKey(shardDbId)) return null;
+		return getShardMeta(clusterSummary.name, clusterSummary.shards.get(shardDbId));
 	}
 
 	@Override

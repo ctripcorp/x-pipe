@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.keeper.ClusterTypeAware;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -91,7 +92,8 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	}
 
 	protected boolean supportCluster(ClusterMeta clusterMeta) {
-		return getSupportClusterTypes().contains(ClusterType.lookup(clusterMeta.getType()));
+		return !StringUtil.isEmpty(clusterMeta.getType())
+				&& getSupportClusterTypes().contains(ClusterType.lookup(clusterMeta.getType()));
 	}
 
 	protected abstract void handleClusterModified(ClusterMetaComparator comparator);
