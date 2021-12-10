@@ -248,7 +248,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         DcMeta dcMeta = MetaClone.clone(getDcMeta("oy"));
 
         ClusterMeta clusterMeta = dcMeta.getClusters().remove("cluster1");
-        clusterMeta.setId("cluster5").getShards().values().forEach(shardMeta -> {
+        clusterMeta.setId("cluster5").setDbId(Math.abs(randomLong())).getShards().values().forEach(shardMeta -> {
             shardMeta.setParent(clusterMeta);
             for (RedisMeta redis : shardMeta.getRedises()) {
                 redis.setParent(shardMeta);
