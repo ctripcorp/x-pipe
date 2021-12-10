@@ -45,11 +45,9 @@ public final class XPipeThrowablePatternConverter extends ThrowablePatternConver
     @Override
     public void format(final LogEvent event, final StringBuilder toAppendTo) {
 
-    	
         final ThrowableProxy proxy = event.getThrownProxy();
         final Throwable throwable = event.getThrown();
-        
-        
+
         //xpipe code
         if(throwable != null){
 	    	if(ExceptionUtils.isSocketIoException(event.getThrown()) || ExceptionUtils.xpipeExceptionLogMessage(throwable)){
@@ -68,28 +66,12 @@ public final class XPipeThrowablePatternConverter extends ThrowablePatternConver
                 super.format(event, toAppendTo);
                 return;
             }
-            final String extStackTrace = proxy.getExtendedStackTraceAsString(options.getPackages());
             final int len = toAppendTo.length();
             if (len > 0 && !Character.isWhitespace(toAppendTo.charAt(len - 1))) {
                 toAppendTo.append(' ');
             }
-            if (!options.allLines() || !Constants.LINE_SEPARATOR.equals(options.getSeparator())) {
-                final StringBuilder sb = new StringBuilder();
-                final String[] array = extStackTrace.split(Constants.LINE_SEPARATOR);
-                final int limit = options.minLines(array.length) - 1;
-                for (int i = 0; i <= limit; ++i) {
-                    sb.append(array[i]);
-                    if (i < limit) {
-                        sb.append(options.getSeparator());
-                    }
-                }
-                toAppendTo.append(sb.toString());
-
-            } else {
-                toAppendTo.append(extStackTrace);
-            }
+            proxy.formatExtendedStackTraceTo(toAppendTo, options.getIgnorePackages(),
+                    options.getTextRenderer(), getSuffix(event), options.getSeparator());
         }
     }
-
-
 }
