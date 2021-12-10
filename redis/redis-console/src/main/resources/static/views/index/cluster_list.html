@@ -38,6 +38,7 @@
                 <td>
                     <input type="checkbox" ng-checked="cluster.isChecked" ng-model="cluster.isChecked">
                 </td>
+                <td ng-if="true" data-title="'ID'" filter="{ id : 'text' }" ng-bind="cluster.id" ></td>
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">
                     <a href="/#/cluster_dc_shards/{{cluster.clusterName}}/">{{ cluster.clusterName }}</a>
                 </td>
