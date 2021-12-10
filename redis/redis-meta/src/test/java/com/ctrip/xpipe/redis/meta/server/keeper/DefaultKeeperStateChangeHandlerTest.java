@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static org.mockito.Mockito.when;
 
@@ -74,10 +75,10 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		LifecycleHelper.startIfPossible(handler);
 		add(handler);
 
-		startServer(keepers.get(0).getPort(), new Callable<String>() {
-
+		startServer(keepers.get(0).getPort(), new Function<String, String>() {
 			@Override
-			public String call() throws Exception {
+			public String apply(String s) {
+				logger.info("callCount:{}, msg:{}", calledCount.get(), s);
 				calledCount.incrementAndGet();
 				sleep(setStateTimeMilli);
 				return "+OK\r\n";
