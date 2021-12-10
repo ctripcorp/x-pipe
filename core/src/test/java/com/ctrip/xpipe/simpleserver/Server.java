@@ -79,7 +79,8 @@ public class Server extends AbstractLifecycle{
 					
 				} catch (IOException e) {
 					logger.warn("[run]" + port + "," + e.getMessage());
-				}finally{
+				} finally {
+					logger.info("[run][stop listening]:{}", ss);
 				}
 			}
 		});
@@ -88,6 +89,7 @@ public class Server extends AbstractLifecycle{
 
 	@Override
 	protected void doStop() throws Exception {
+		logger.info("[run][stop server]{}, connected:{}, totalConnected:{} ", ss, connected, totalConnected);
 		if(ss != null){
 			ss.close();
 		}
@@ -126,9 +128,15 @@ public class Server extends AbstractLifecycle{
 					socket.close();
 				} catch (IOException e) {
 					logger.error("[close]", e);
+				} finally {
+					logger.info("[run][read and wirte done]");
 				}
 			}
 		}
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + port + ", phase:" + super.getLifecycleState().getPhaseName();
+	}
 }

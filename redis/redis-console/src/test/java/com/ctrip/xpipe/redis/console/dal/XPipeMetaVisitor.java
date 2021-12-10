@@ -62,6 +62,11 @@ public class XPipeMetaVisitor implements IVisitor{
     }
 
     @Override
+    public void visitAz(AzMeta az) {
+
+    }
+
+    @Override
     public void visitCluster(ClusterMeta cluster) {
         ClusterMeta clusterMeta = clusterMetaMap.get(cluster.getId());
         Assert.assertTrue(clusterMeta.equals(cluster));

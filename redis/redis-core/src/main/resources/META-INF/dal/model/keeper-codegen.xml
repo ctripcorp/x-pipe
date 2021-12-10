@@ -11,6 +11,7 @@
     <entity-ref name="zkServer" />
     <entity-ref name="keeperContainer" type="list" names="keeperContainers" xml-indent="true" />
     <entity-ref name="sentinel" type="list" names="sentinels" />
+    <entity-ref name="az" type="list" names="azs" xml-indent="true" />
     <entity-ref name="cluster" type="list" names="clusters" />
     <entity-ref name="route" type="list" names="routes" xml-indent="true" />
   </entity>
@@ -26,10 +27,15 @@
     <attribute name="id" value-type="int" />
     <attribute name="ip" value-type="String" />
     <attribute name="port" value-type="int" />
+    <attribute name="az_id" value-type="int" />
   </entity>
   <entity name="sentinel">
     <attribute name="id" value-type="int" />
     <attribute name="address" value-type="String" />
+  </entity>
+  <entity name="az">
+    <attribute name="id" value-type="String" />
+    <attribute name="active" value-type="boolean" />
   </entity>
   <entity name="cluster">
     <attribute name="id" value-type="String" />
