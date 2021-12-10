@@ -16,6 +16,10 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.loadCluster = loadCluster;
     $scope.loadShards = loadShards;
     $scope.gotoHickwall = gotoHickwall;
+    $scope.gotoOutComingTrafficToPeerHickwall = gotoOutComingTrafficToPeerHickwall;
+    $scope.gotoInComingTrafficFromPeerHickwall = gotoInComingTrafficFromPeerHickwall;
+    $scope.gotoPeerSyncFullHickwall = gotoPeerSyncFullHickwall;
+    $scope.gotoPeerSyncPartialHickwall = gotoPeerSyncPartialHickwall;
     $scope.existsRoute = existsRoute;
     $scope.showCrossMasterHealthStatus = false;
     $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall;
@@ -167,22 +171,36 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         return true;
     }
 
+    function openHickwall(promise) {
+        return promise.then(function(result) {
+            if(result.addr) {
+                $window.open(result.addr, '_blank');
+            }
+        });
+    }
+    
     function gotoHickwall(clusterName, shardName, redisIp, redisPort) {
-    	HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort)
-    		.then(function(result) {
-    			if(result.addr) {
-    				$window.open(result.addr, '_blank');
-    			}
-    		});
+        openHickwall(HealthCheckService.getHickwallAddr(clusterName, shardName, redisIp, redisPort));
     }
 
     function gotoCrossMasterHickwall(shardName, destDc) {
-        HealthCheckService.getCrossMasterHickwallAddr($scope.clusterName, shardName, $scope.currentDcName, destDc)
-            .then(function(result) {
-                if(result.addr) {
-                    $window.open(result.addr, '_blank');
-                }
-            });
+        openHickwall(HealthCheckService.getCrossMasterHickwallAddr($scope.clusterName, shardName, $scope.currentDcName, destDc));
+    }
+    
+    function gotoOutComingTrafficToPeerHickwall(redisIp, redisPort) {
+        openHickwall(HealthCheckService.getOutComingTrafficToPeerHickwallAddr(redisIp, redisPort));
+    }
+
+    function gotoInComingTrafficFromPeerHickwall(redisIp, redisPort) {
+        openHickwall(HealthCheckService.getInComingTrafficFromPeerHickwallAddr(redisIp, redisPort));
+    }
+    
+    function gotoPeerSyncFullHickwall(redisIp, redisPort) {
+        openHickwall(HealthCheckService.getPeerSyncFullHickwallAddr(redisIp, redisPort));
+    }
+    
+    function gotoPeerSyncPartialHickwall(redisIp, redisPort) {
+        openHickwall(HealthCheckService.getPeerSyncPartialHickwallAddr(redisIp, redisPort));
     }
 
     function existsRoute(currentDc, clusterName) {
@@ -224,5 +242,5 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.$on('$destroy', function() {
         $interval.cancel($scope.refreshHealthStatus);
         $interval.cancel($scope.refreshCrossMasterHealthStatus)
-      });
+    });
 }

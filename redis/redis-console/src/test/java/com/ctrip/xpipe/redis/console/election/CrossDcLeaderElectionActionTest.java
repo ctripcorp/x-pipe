@@ -78,13 +78,13 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
         // the dc leader with least active cluster is always elected to cross dc leader
         startAllElection();
 
-        // init lease config in the first election, so test from the second election
-        waitConditionUntilTimeOut(() -> configUpdateTimes.get() >= 2, CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 2);
-        sleep(CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND + 100);
-        assertCrossDcLeader("fq", "fq", "fq");
+        //fq will be the leader in short, because we make fq which has least active cluster sleep less
+        waitConditionUntilTimeOut(()->assertSuccess(()-> {
+            assertCrossDcLeader("fq", "fq", "fq");
+        }), CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 5);
 
-        waitConditionUntilTimeOut(() -> configUpdateTimes.get() >= 3, CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000);
-        sleep(CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND + 100);
+        //some time later, fq is still the leader
+        sleep(2000);
         assertCrossDcLeader("fq", "fq", "fq");
 
         stopAllElection();
@@ -105,24 +105,25 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
     @Test
     public void leaderNetworkBrokenTest() throws Exception {
         startAllElection();
-        waitConditionUntilTimeOut(() -> configUpdateTimes.get() >= 2, CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 2);
-        sleep(CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND + 100);
-        assertCrossDcLeader("fq", "fq", "fq");
+        
+        waitConditionUntilTimeOut(()-> assertSuccess(() -> {
+            assertCrossDcLeader("fq", "fq", "fq");
+        }), CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 5);
+        
 
         // fq DC network island
         fqDc.dbWriteAvailable = false;
         fqDc.localConfigTbl = cloneConfig();
-        waitConditionUntilTimeOut(() -> configUpdateTimes.get() >= 3, CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000);
-        sleep(CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND + 100);
-        assertCrossDcLeader(null, "rb", "rb");
-
+        waitConditionUntilTimeOut(()-> assertSuccess(() -> {
+            assertCrossDcLeader(null, "rb", "rb");
+        }), CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 5);
+        
         // fq DC network recover
         fqDc.dbWriteAvailable = true;
         fqDc.localConfigTbl = null;
-        waitConditionUntilTimeOut(() -> configUpdateTimes.get() >= 4, CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000);
-        sleep(CrossDcLeaderElectionAction.MAX_ELECTION_DELAY_MILLISECOND + 100);
-        assertCrossDcLeader("fq", "fq", "fq");
-
+        waitConditionUntilTimeOut(()-> assertSuccess(() -> {
+            assertCrossDcLeader("fq", "fq", "fq");
+        }), CrossDcLeaderElectionAction.ELECTION_INTERVAL_SECOND * 1000 * 5);
         stopAllElection();
     }
 

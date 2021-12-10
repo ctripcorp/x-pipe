@@ -124,6 +124,20 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 		}));
 	}
 
+	@Test
+	public void testObserverShardDbIdNull_observerShardName() throws Exception {
+		String clusterId = clusterMeta.getId();
+		String shardId = shardMeta.getId();
+
+		when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
+		keeperElectorManager.observerShardLeader(clusterId, shardId, clusterMeta.getDbId(), null);
+		addKeeperZkNode(clusterId, shardId, getZkClient());
+		waitConditionUntilTimeOut(()->assertSuccess(()->{
+			verify(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
+			verify(currentMetaManager).addResource(anyString(), anyString(), any(Releasable.class));
+		}));
+	}
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testAddWatch() throws Exception{
