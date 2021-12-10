@@ -17,7 +17,6 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
  */
 public interface MetaServer extends ClusterServer, TopElement{
 
-	// TODO: 内部转集群id分片id
 	PrimaryDcCheckMessage changePrimaryDcCheck(String clusterId, String shardId, String newPrimaryDc, ForwardInfo forwardInfo);
 	
 	MetaServerConsoleService.PreviousPrimaryDcMessage makeMasterReadOnly(String clusterId, String shardId, boolean readOnly, ForwardInfo forwardInfo);

@@ -45,6 +45,19 @@ public class CurrentMeta implements Releasable {
 		return new HashSet<>(currentMetas.keySet());
 	}
 
+	public Set<CurrentClusterMeta> allClusterMetas() {
+		return new HashSet<>(currentMetas.values());
+	}
+
+	public void updateClusterName(Long clusterDbId, String clusterId) {
+		CurrentClusterMeta currentClusterMeta = currentMetas.get(clusterDbId);
+		if (null == currentClusterMeta) {
+			logger.warn("[updateClusterName] unfound cluster {}", clusterDbId);
+			return;
+		}
+		currentClusterMeta.setClusterId(clusterId);
+	}
+
 	public boolean hasCluster(Long clusterDbId) {
 		return currentMetas.get(clusterDbId) != null;
 	}
@@ -232,8 +245,8 @@ public class CurrentMeta implements Releasable {
 
 					@Override
 					public CurrentClusterMeta create() {
-						logger.info("[addCluster][create]{}", clusterMeta.getDbId());
-						return new CurrentClusterMeta(clusterMeta.getDbId(), clusterMeta.getType());
+						logger.info("[addCluster][create]{}:{}", clusterMeta.getId(), clusterMeta.getDbId());
+						return new CurrentClusterMeta(clusterMeta.getId(), clusterMeta.getDbId(), clusterMeta.getType());
 					}
 				});
 
@@ -284,6 +297,7 @@ public class CurrentMeta implements Releasable {
 		@JsonIgnore
 		private static Logger logger = LoggerFactory.getLogger(CurrentClusterMeta.class);
 
+		private String clusterId;
 		private Long clusterDbId;
 		private String clusterType;
 		private Map<Long, CurrentShardMeta> clusterMetas = new ConcurrentHashMap<>();
@@ -295,7 +309,8 @@ public class CurrentMeta implements Releasable {
 
 		}
 
-		public CurrentClusterMeta(Long clusterDbId, String clusterType) {
+		public CurrentClusterMeta(String clusterId, Long clusterDbId, String clusterType) {
+			this.clusterId = clusterId;
 			this.clusterDbId = clusterDbId;
 			this.clusterType = clusterType;
 		}
@@ -368,6 +383,14 @@ public class CurrentMeta implements Releasable {
 				throw new IllegalArgumentException("unfound shard:" + comparator);
 			}
 			// nothing to do
+		}
+
+		public void setClusterId(String clusterId) {
+			this.clusterId = clusterId;
+		}
+
+		public String getClusterId() {
+			return clusterId;
 		}
 
 		public Long getClusterDbId() {
