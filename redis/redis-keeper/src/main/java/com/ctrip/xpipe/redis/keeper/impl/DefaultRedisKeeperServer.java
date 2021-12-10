@@ -293,6 +293,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			if(current != null && isMasterSame(current, target)) {
 				logger.info("[reconnectMaster][master the same]{},{}", current, target);
 				return;
+			} else if (!isMasterSame(current, target)) {
+				logger.info("[reconnectMaster][master change]{}->{}", current, target);
+				keeperRedisMaster.changeReplAddress(target);
+				return;
 			}
 		}
 		
@@ -789,4 +793,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public int getTryConnectMasterCnt() {
 		return tryConnectMasterCnt.get();
 	}
+
+	@VisibleForTesting
+	public ReplicationStoreManager getReplicationStoreManager() {
+		return replicationStoreManager;
+	}
+
+	@VisibleForTesting
+	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
+		this.replicationStoreManager = replicationStoreManager;
+	}
+
 }
