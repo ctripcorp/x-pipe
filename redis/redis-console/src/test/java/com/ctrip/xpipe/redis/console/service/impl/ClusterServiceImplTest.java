@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -207,6 +208,30 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertEquals(2, dcSet.size());
         Assert.assertTrue(dcSet.contains(1L));
         Assert.assertTrue(dcSet.contains(2L));
+    }
+
+    @Test
+    public void testClusterExchangeName() {
+        ClusterTbl former, latter;
+
+        clusterService.exchangeName(101L, "cluster101", 102L, "cluster102");
+        former = clusterService.find(101L);
+        latter = clusterService.find(102L);
+        Assert.assertEquals(former.getClusterName(), "cluster102");
+        Assert.assertEquals(latter.getClusterName(), "cluster101");
+        /* exchange name would fail if retry request */
+        try {
+            clusterService.exchangeName(101L, "cluster101", 102L, "cluster102");
+            Assert.fail("exception expected");
+        } catch (Exception e) {
+            Assert.assertTrue(e.getMessage().contains("not match"));
+        }
+        /* exchange name again to restore original status */
+        clusterService.exchangeName(101L, "cluster102", 102L, "cluster101");
+        former = clusterService.find(101L);
+        latter = clusterService.find(102L);
+        Assert.assertEquals(former.getClusterName(), "cluster101");
+        Assert.assertEquals(latter.getClusterName(), "cluster102");
     }
 
     @Override

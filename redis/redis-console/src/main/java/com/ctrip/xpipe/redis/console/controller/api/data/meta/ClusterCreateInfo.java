@@ -18,6 +18,8 @@ import java.util.List;
  */
 public class ClusterCreateInfo extends AbstractCreateInfo{
 
+    private Long clusterId;
+
     private String clusterName;
 
     private String clusterType = ClusterType.ONE_WAY.toString();
@@ -34,6 +36,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
 
         ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
 
+        clusterCreateInfo.setClusterId(clusterTbl.getId());
         clusterCreateInfo.setDesc(clusterTbl.getClusterDescription());
         clusterCreateInfo.setClusterName(clusterTbl.getClusterName());
         clusterCreateInfo.setClusterType(clusterTbl.getClusterType());
@@ -55,6 +58,14 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
     }
 
     public ClusterCreateInfo(){
+    }
+
+    public Long getClusterId() {
+        return clusterId;
+    }
+
+    public void setClusterId(Long clusterId) {
+        this.clusterId = clusterId;
     }
 
     public Long getOrganizationId() {
