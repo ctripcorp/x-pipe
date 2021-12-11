@@ -47,7 +47,7 @@
                 <redis ip="127.0.0.2" port="8101" master="127.0.0.2:8100" />
             </shard>
         </cluster>
-        <cluster id="cluster3" db-id="3" type="bi_direction" dcs="jq,oy">
+        <cluster id="cluster3" db-id="3" type="bi_direction" dcs="jq,oy" org-id="1">
             <shard id="shard1" db-id="3" sentinelId="2" sentinelMonitorName="cluster3+shard1+oy">
                 <redis ip="10.0.0.2" port="6379" master="true" />
             </shard>
