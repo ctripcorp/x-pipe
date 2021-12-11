@@ -68,7 +68,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
                 .forEach(this::removeCluster);
         comparator.getMofified().stream().map(metaComparator -> ((ClusterMetaComparator) metaComparator).getFuture())
                 .forEach(this::addCluster);
-        
+
+        this.current = future;
     }
 
     private void removeCluster(ClusterMeta removed) {

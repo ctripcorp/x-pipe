@@ -83,7 +83,8 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     @Override
     public String toString() {
-        return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, crossRegion ? "proxied" : "normal");
+        return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, isMaster ? "Master" : "Slave",
+                "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal");
     }
 
     public DefaultRedisInstanceInfo setCrossRegion(boolean crossRegion) {
