@@ -27,8 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +39,7 @@ import static org.mockito.Mockito.when;
 public class DefaultChangePrimaryDcActionTest extends AbstractTest {
 
     @Mock
-    private KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutors;
+    private KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long>> clusterShardExecutors;
 
     @Mock
     private DcMetaCache dcMetaCache;
@@ -73,9 +72,9 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
         expectedResult = new MetaServerConsoleService.PrimaryDcChangeMessage("Succeed", "127.0.0.1", 12345);
         action = new DefaultChangePrimaryDcAction() {
             @Override
-            protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, String clusterId,
-                                                                  String shardId, String newPrimaryDc, MasterInfo masterInfo) {
-                return new ChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId, newPrimaryDc, masterInfo) {
+            protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, Long clusterDbId,
+                                                                  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+                return new ChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo) {
                     @Override
                     protected void doExecute() throws Exception {
                         future().setSuccess(expectedResult);
@@ -93,17 +92,17 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
 
     @Test
     public void testChangePrimaryDcFirstTimeout() {
-        when(currentMetaManager.hasCluster(anyString())).thenReturn(true);
+        when(currentMetaManager.hasCluster(anyLong())).thenReturn(true);
         when(dcMetaCache.getCurrentDc()).thenReturn("SHAOY");
-        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc("cluster", "shard", "SHAOY", new MasterInfo());
+        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc(1L, 1L, "SHAOY", new MasterInfo());
         Assert.assertEquals(expectedResult, result);
     }
 
     @Test
     public void testChangePrimaryDcNotHavingCluster() {
-        when(currentMetaManager.hasCluster(anyString())).thenReturn(false);
+        when(currentMetaManager.hasCluster(anyLong())).thenReturn(false);
         when(dcMetaCache.getCurrentDc()).thenReturn("SHAOY");
-        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc("cluster", "shard", "SHAOY", new MasterInfo());
+        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc(1L, 1L, "SHAOY", new MasterInfo());
         Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL, result.getErrorType());
         logger.info("\n{}", result.getErrorMessage());
     }

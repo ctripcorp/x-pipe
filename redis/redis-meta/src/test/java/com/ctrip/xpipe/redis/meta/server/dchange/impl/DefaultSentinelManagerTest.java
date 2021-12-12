@@ -89,8 +89,8 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 			}
 		});
 
-		when(dcMetaCache.getSentinelMonitorName(getClusterId(), getShardId())).thenReturn(sentinelMonitorName);
-		when(dcMetaCache.getSentinel(getClusterId(), getShardId())).thenReturn(new SentinelMeta().setAddress(String.join(",", sentinels)));
+		when(dcMetaCache.getSentinelMonitorName(getClusterDbId(), getShardDbId())).thenReturn(sentinelMonitorName);
+		when(dcMetaCache.getSentinel(getClusterDbId(), getShardDbId())).thenReturn(new SentinelMeta().setAddress(String.join(",", sentinels)));
 	}
 
 	@After
@@ -121,7 +121,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 			}
 		};
 
-		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
+		sentinelManager.removeSentinel(getClusterDbId(), getShardDbId(), executionLog);
 		logger.info("remove: {}", executionLog.getLog());
 		waitConditionUntilTimeOut(()->removeCnt.get() == sentinels.size());
 	}
@@ -129,7 +129,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	@Test
 	public void testAdd(){
 		
-		sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
+		sentinelManager.addSentinel(getClusterDbId(), getShardDbId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
 		logger.info("addSuccess: {}", executionLog.getLog());
 		servers.forEach(server -> {
 			Assert.assertTrue(executionLog.getLog().contains(String.format("add %s %s:%d 3 to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, port, LOCAL_HOST, server.getPort())));
@@ -140,7 +140,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	public void testAddFailed() throws Exception {
 		servers.get(0).stop();
 		try {
-			sentinelManager.addSentinel(getClusterId(), getShardId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
+			sentinelManager.addSentinel(getClusterDbId(), getShardDbId(), new HostPort(redisMaster.getIp(), redisMaster.getPort()), executionLog);
 			logger.info("addFailed: {}", executionLog.getLog());
 			servers.forEach(server -> {
 				Assert.assertTrue(executionLog.getLog().contains(String.format("add %s %s:%d 3 to sentinel redis://%s:%d", sentinelMonitorName, LOCAL_HOST, port, LOCAL_HOST, server.getPort())));
@@ -153,9 +153,9 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 	@Test
 	public void testEmpty(){
 		
-		when(dcMetaCache.getSentinel(getClusterId(), getShardId())).thenReturn(new SentinelMeta().setAddress(""));
+		when(dcMetaCache.getSentinel(getClusterDbId(), getShardDbId())).thenReturn(new SentinelMeta().setAddress(""));
 		
-		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
+		sentinelManager.removeSentinel(getClusterDbId(), getShardDbId(), executionLog);
 		logger.info("{}", executionLog.getLog());
 		
 	}
@@ -174,7 +174,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 				return "+OK\r\n";
 			}
 		};
-		sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
+		sentinelManager.removeSentinel(getClusterDbId(), getShardDbId(), executionLog);
 		logger.info("test result {}", executionLog.getLog());
 		Assert.assertEquals(removeCnt.get(), 5);
 	}
@@ -197,7 +197,7 @@ public class DefaultSentinelManagerTest extends AbstractMetaServerTest{
 
         servers.get(0).stop();
         try {
-            sentinelManager.removeSentinel(getClusterId(), getShardId(), executionLog);
+            sentinelManager.removeSentinel(getClusterDbId(), getShardDbId(), executionLog);
             logger.info("test result {}", executionLog.getLog());
             servers.forEach(server -> {
                 Assert.assertTrue(executionLog.getLog().contains(String.format("removeSentinel %s from redis://%s:%d", sentinelMonitorName, LOCAL_HOST, server.getPort())));

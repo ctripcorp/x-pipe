@@ -42,10 +42,10 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	public DcMetaCache dcMetaCache;
 
 	@Override
-	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
+	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
-		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
-			logger.info("[keeperActiveElected][current dc backup, do nothing]{}, {}", clusterId, shardId, activeKeeper);
+		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+			logger.info("[keeperActiveElected][current dc backup, do nothing]{}, {}, {}", clusterDbId, shardDbId, activeKeeper);
 			return;
 		}
 		
@@ -54,9 +54,10 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 		}
 
 		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
-		Set<String> backupDcs = dcMetaCache.getBakupDcs(clusterId, shardId);
-		logger.info("[keeperActiveElected][current dc primary, notify backup dc]{}, {}, {}, {}", clusterId, shardId,
-				backupDcs, activeKeeper);
+		Set<String> backupDcs = dcMetaCache.getBakupDcs(clusterDbId, shardDbId);
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		logger.info("[keeperActiveElected][current dc primary, notify backup dc]{}:{}, {}:{}, {}, {}", clusterDbId, clusterShard.getKey(),
+				shardDbId, clusterShard.getValue(), backupDcs, activeKeeper);
 		for (String backupDcName : backupDcs) {
 
 			DcInfo dcInfo = dcInfos.get(backupDcName);
@@ -67,18 +68,21 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 			}
 			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
 					.getOrCreate(dcInfo.getMetaServerAddress());
-			executors.execute(new BackupDcNotifyTask(metaServerMultiDcService, clusterId, shardId, activeKeeper));
+			executors.execute(new BackupDcNotifyTask(metaServerMultiDcService, clusterShard.getKey(), clusterShard.getValue(), activeKeeper));
 		}
 
 	}
 
 	@Override
-	public void currentMasterChanged(String clusterId, String shardId) {
+	public void currentMasterChanged(Long clusterDbId, Long shardDbId) {
 		// notify remote dc for local peer master change
 		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
-		Set<String> relatedDcs = dcMetaCache.getRelatedDcs(clusterId, shardId);
+		Set<String> relatedDcs = dcMetaCache.getRelatedDcs(clusterDbId, shardDbId);
 		String currentDc = dcMetaCache.getCurrentDc();
-		logger.info("[peerMasterChanged][notify related dc]{}, {}, {}", clusterId, shardId, relatedDcs);
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+
+		logger.info("[peerMasterChanged][notify related dc]{}:{}, {}:{}, {}", clusterDbId, clusterShard.getKey(),
+				shardDbId, clusterShard.getValue(), relatedDcs);
 		for (String dcId : relatedDcs) {
 			if (currentDc.equalsIgnoreCase(dcId) || StringUtil.isEmpty(dcId)) {
 				continue;
@@ -91,7 +95,7 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 			}
 			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
 					.getOrCreate(dcInfo.getMetaServerAddress());
-			executors.execute(new PeerDcNotifyTask(metaServerMultiDcService, currentDc, clusterId, shardId));
+			executors.execute(new PeerDcNotifyTask(metaServerMultiDcService, currentDc, clusterShard.getKey(), clusterShard.getValue()));
 		}
 	}
 

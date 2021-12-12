@@ -4,9 +4,12 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,21 +31,25 @@ public class DefaultMultiDcService implements MultiDcService{
 	@Autowired
 	private MetaServerConfig metaServerConfig;
 
+	@Autowired
+	private DcMetaCache dcMetaCache;
+
 	@Override
-	public KeeperMeta getActiveKeeper(String dcName, String clusterId, String shardId) {
+	public KeeperMeta getActiveKeeper(String dcName, Long clusterDbId, Long shardDbId) {
 		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
 		if (null == metaServerMultiDcService) return null;
 
-		KeeperMeta keeperMeta = metaServerMultiDcService.getActiveKeeper(clusterId, shardId);
-		return keeperMeta;
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		return metaServerMultiDcService.getActiveKeeper(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
-	public RedisMeta getPeerMaster(String dcName, String clusterId, String shardId) {
+	public RedisMeta getPeerMaster(String dcName, Long clusterDbId, Long shardDbId) {
 		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
 		if (null == metaServerMultiDcService) return null;
 
-		return metaServerMultiDcService.getPeerMaster(clusterId, shardId);
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		return metaServerMultiDcService.getPeerMaster(clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	private MetaServerMultiDcService getMetaServerMultiDcService(String dcName) {

@@ -19,13 +19,13 @@ public class ClusterDebugInfo {
 	private boolean isLeader;
 	private ClusterServerInfo currentClusterServerInfo;
 	private Set<Integer> inchargeSlots;
-	private Set<String> inchargeClusters;
+	private Set<Long> inchargeClusters;
 	private Map<Integer, ClusterServerInfo> clusterServerInfos;
 	private Map<Integer, SlotInfo> allSlotInfo;
 	private String zkNameSpace;
 
 	public ClusterDebugInfo(int currentServerId, String currentDc, String zkAddress, String zkNameSpace, boolean isLeader, 
-			ClusterServerInfo currentClusterServerInfo, Set<Integer> inchargeSlots, Set<String> inchargeClusters, 
+			ClusterServerInfo currentClusterServerInfo, Set<Integer> inchargeSlots, Set<Long> inchargeClusters,
 			Map<Integer, ClusterServerInfo> clusterServerInfos, 
 			Map<Integer, SlotInfo> allSlotInfo){
 		this.currentServerId = currentServerId;
@@ -74,7 +74,7 @@ public class ClusterDebugInfo {
 	public Set<Integer> getInchargeSlots() {
 		return inchargeSlots;
 	}
-	public Set<String> getInchargeClusters() {
+	public Set<Long> getInchargeClusters() {
 		return inchargeClusters;
 	}
 	

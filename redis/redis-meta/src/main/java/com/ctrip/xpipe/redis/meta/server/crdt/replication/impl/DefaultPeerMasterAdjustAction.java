@@ -16,19 +16,19 @@ public class DefaultPeerMasterAdjustAction implements PeerMasterAdjustAction {
 
     private PeerMasterAdjustJobFactory adjustJobFactory;
 
-    private KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutors;
+    private KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterAdjustExecutors;
 
     @Autowired
     public DefaultPeerMasterAdjustAction(PeerMasterAdjustJobFactory adjustJobFactory,
-                                         @Qualifier(PEER_MASTER_ADJUST_EXECUTOR) KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterAdjustExecutors) {
+                                         @Qualifier(PEER_MASTER_ADJUST_EXECUTOR) KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterAdjustExecutors) {
         this.adjustJobFactory = adjustJobFactory;
         this.peerMasterAdjustExecutors = peerMasterAdjustExecutors;
     }
 
     @Override
-    public void adjustPeerMaster(String clusterId, String shardId) {
-        PeerMasterAdjustJob adjustJob = adjustJobFactory.buildPeerMasterAdjustJob(clusterId, shardId);
-        if (null != adjustJob) peerMasterAdjustExecutors.execute(Pair.of(clusterId, shardId), adjustJob);
+    public void adjustPeerMaster(Long clusterDbId, Long shardDbId) {
+        PeerMasterAdjustJob adjustJob = adjustJobFactory.buildPeerMasterAdjustJob(clusterDbId, shardDbId);
+        if (null != adjustJob) peerMasterAdjustExecutors.execute(Pair.of(clusterDbId, shardDbId), adjustJob);
     }
 
 }

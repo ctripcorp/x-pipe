@@ -9,8 +9,8 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
  */
 public interface PrimaryDcPrepareToChange {
 
-    MetaServerConsoleService.PreviousPrimaryDcMessage prepare(String clusterId, String shardId);
+    MetaServerConsoleService.PreviousPrimaryDcMessage prepare(Long clusterDbId, Long shardDbId);
 
-    MetaServerConsoleService.PreviousPrimaryDcMessage deprepare(String clusterId, String shardId);
+    MetaServerConsoleService.PreviousPrimaryDcMessage deprepare(Long clusterDbId, Long shardDbId);
 
 }

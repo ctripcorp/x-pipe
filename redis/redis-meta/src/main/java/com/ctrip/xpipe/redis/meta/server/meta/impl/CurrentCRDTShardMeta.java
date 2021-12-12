@@ -12,8 +12,8 @@ public class CurrentCRDTShardMeta extends AbstractCurrentShardMeta {
 
     Map<String, RedisMeta> peerMasters = new ConcurrentHashMap<>();
 
-    public CurrentCRDTShardMeta(@JsonProperty("clusterId") String clusterId, @JsonProperty("shardId") String shardId) {
-        super(clusterId, shardId);
+    public CurrentCRDTShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
+        super(clusterDbId, shardDbId);
     }
 
     public void setCurrentMaster(RedisMeta master) {

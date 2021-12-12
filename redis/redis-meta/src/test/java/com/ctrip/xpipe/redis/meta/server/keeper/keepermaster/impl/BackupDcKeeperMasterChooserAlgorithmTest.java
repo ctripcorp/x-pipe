@@ -26,11 +26,11 @@ public class BackupDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperMa
 	@Before
 	public void beforeBackupDcKeeperMasterChooserTest() {
 
-		backupAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, 
+		backupAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId,
 				dcMetaCache, currentMetaManager, multiDcService, scheduled); 
 		
-		when(dcMetaCache.getPrimaryDc(clusterId, shardId)).thenReturn(primaryDc);
-		when(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)).thenReturn(false);
+		when(dcMetaCache.getPrimaryDc(clusterDbId, shardDbId)).thenReturn(primaryDc);
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
 		
 	}
 
@@ -39,28 +39,28 @@ public class BackupDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperMa
 
 		backupAlgorithm.choose();
 		
-		verify(multiDcService, atLeast(1)).getActiveKeeper(primaryDc, clusterId, shardId);
+		verify(multiDcService, atLeast(1)).getActiveKeeper(primaryDc, clusterDbId, shardDbId);
 		
 
 		logger.info("[testGetUpstream][getActiveKeeper give a result]");
 		KeeperMeta keeperMeta = new KeeperMeta();
 		keeperMeta.setIp("localhost");
 		keeperMeta.setPort(randomPort());
-		when(multiDcService.getActiveKeeper(primaryDc, clusterId, shardId)).thenReturn(keeperMeta);
+		when(multiDcService.getActiveKeeper(primaryDc, clusterDbId, shardDbId)).thenReturn(keeperMeta);
 		
 		Assert.assertEquals(new Pair<>(keeperMeta.getIp(), keeperMeta.getPort()), backupAlgorithm.choose());
 				
-		verify(multiDcService, atLeast(1)).getActiveKeeper(primaryDc, clusterId, shardId);
+		verify(multiDcService, atLeast(1)).getActiveKeeper(primaryDc, clusterDbId, shardDbId);
 	}
 
 	@Test
 	public void testVerify(){
 		
-		currentMetaManager.getClusterMeta(clusterId);
-		currentMetaManager.getClusterMeta(clusterId);
-		currentMetaManager.getClusterMeta(clusterId + "1");
-		verify(currentMetaManager, times(2)).getClusterMeta(clusterId);
-		verify(currentMetaManager, times(1)).getClusterMeta(clusterId + "1");
+		currentMetaManager.getClusterMeta(clusterDbId);
+		currentMetaManager.getClusterMeta(clusterDbId);
+		currentMetaManager.getClusterMeta(clusterDbId + 1);
+		verify(currentMetaManager, times(2)).getClusterMeta(clusterDbId);
+		verify(currentMetaManager, times(1)).getClusterMeta(clusterDbId + 1);
 		
 	}
 

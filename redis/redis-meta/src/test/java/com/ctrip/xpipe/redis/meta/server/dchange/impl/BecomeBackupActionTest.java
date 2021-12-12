@@ -50,17 +50,17 @@ public class BecomeBackupActionTest extends AbstractMetaServerTest{
 		redises.add(new RedisMeta().setIp("localhost").setPort(6379));
 		redises.add(new RedisMeta().setIp("localhost").setPort(6479));
 
-		when(dcMetaCache.getShardRedises(getClusterId(), getShardId())).thenReturn(redises);
+		when(dcMetaCache.getShardRedises(getClusterDbId(), getShardDbId())).thenReturn(redises);
 	}
 
 	@Test
 	public void test() throws Exception{
 		
-		BecomeBackupAction becomeBackupAction = new BecomeBackupAction("cluster", "shard", dcMetaCache,
+		BecomeBackupAction becomeBackupAction = new BecomeBackupAction(getClusterDbId(), getShardDbId(), dcMetaCache,
 				currentMetaManager, sentinelManager, new ExecutionLog(currentTestName()),
 				getXpipeNettyClientKeyedObjectPool(), multiDcService, scheduled, executors);
 		
-		PrimaryDcChangeMessage message = becomeBackupAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
+		PrimaryDcChangeMessage message = becomeBackupAction.changePrimaryDc(getClusterDbId(), getShardDbId(), newPrimaryDc, new MasterInfo());
 		
 		logger.info("{}", message);
 	}

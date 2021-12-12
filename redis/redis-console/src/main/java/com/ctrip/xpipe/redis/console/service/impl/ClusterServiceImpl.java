@@ -443,6 +443,53 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 	}
 
+	@Override
+	@DalTransaction
+	public void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName) {
+		ClusterTbl former = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+			@Override
+			public ClusterTbl doQuery() throws DalException {
+				return dao.findClusterByClusterName(formerClusterName, ClusterTblEntity.READSET_FULL);
+			}
+		});
+		ClusterTbl latter = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+			@Override
+			public ClusterTbl doQuery() throws DalException {
+				return dao.findClusterByClusterName(latterClusterName, ClusterTblEntity.READSET_FULL);
+			}
+		});
+
+		if (former == null)  throw new BadRequestException("former cluster not found");
+		if (latter == null)  throw new BadRequestException("latter cluster not found");
+		if (former.getId() != formerClusterId) throw new BadRequestException("former cluster name Id not match");
+		if (latter.getId() != latterClusterId) throw new BadRequestException("latter cluster name Id not match");
+
+		String tmpClusterName = UUID.randomUUID().toString();
+		former.setClusterName(tmpClusterName);
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(former, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+
+		latter.setClusterName(formerClusterName);
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(latter, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+
+		former.setClusterName(latterClusterName);
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(former, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
 	public boolean checkEmails(String emails) {
 		if(emails == null || emails.trim().isEmpty()) {
 			return false;

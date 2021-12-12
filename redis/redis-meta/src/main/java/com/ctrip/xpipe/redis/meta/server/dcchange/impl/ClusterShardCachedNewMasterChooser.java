@@ -37,9 +37,9 @@ public class ClusterShardCachedNewMasterChooser implements NewMasterChooser {
 
     private ScheduledFuture<?> scheduledFuture;
 
-    private static Map<Pair<String, String>, ClusterShardCachedNewMasterChooser> instances;
+    private static Map<Pair<Long, Long>, ClusterShardCachedNewMasterChooser> instances;
 
-    public static ClusterShardCachedNewMasterChooser wrapChooser(String cluster, String shard, NewMasterChooser chooser,
+    public static ClusterShardCachedNewMasterChooser wrapChooser(Long clusterDbId, Long shardDbId, NewMasterChooser chooser,
                                                LongSupplier timeoutMilliSupplier, ScheduledExecutorService scheduled) {
         if (null == instances) {
             synchronized (ClusterShardCachedNewMasterChooser.class) {
@@ -47,7 +47,7 @@ public class ClusterShardCachedNewMasterChooser implements NewMasterChooser {
             }
         }
 
-        Pair<String, String> key = new Pair<>(cluster, shard);
+        Pair<Long, Long> key = new Pair<>(clusterDbId, shardDbId);
         return MapUtils.getOrCreate(instances, key, () ->
                 new ClusterShardCachedNewMasterChooser(chooser, timeoutMilliSupplier, scheduled, (expiredChooser) -> {
                     // release expired cached-chooser even if chooser is hold by others and may exist multi cached-chooser in global

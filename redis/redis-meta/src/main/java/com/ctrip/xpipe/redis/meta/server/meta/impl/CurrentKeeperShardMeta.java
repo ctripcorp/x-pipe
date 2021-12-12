@@ -19,8 +19,8 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
     private List<KeeperMeta> surviveKeepers = new LinkedList<>();
     private Pair<String, Integer> keeperMaster;
 
-    public CurrentKeeperShardMeta(@JsonProperty("clusterId") String clusterId, @JsonProperty("shardId") String shardId) {
-        super(clusterId, shardId);
+    public CurrentKeeperShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
+        super(clusterDbId, shardDbId);
     }
 
     public boolean watchIfNotWatched() {
@@ -61,10 +61,10 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
                         "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
             }
             this.surviveKeepers = (List<KeeperMeta>) MetaClone.clone((Serializable) surviveKeepers);
-            logger.info("[setSurviveKeepers]{},{},{}, {}", clusterId, shardId, surviveKeepers, activeKeeper);
+            logger.info("[setSurviveKeepers]{},{},{}, {}", clusterDbId, shardDbId, surviveKeepers, activeKeeper);
             doSetActive(activeKeeper);
         } else {
-            logger.info("[setSurviveKeepers][survive keeper none, clear]{},{},{}, {}", clusterId, shardId,
+            logger.info("[setSurviveKeepers][survive keeper none, clear]{},{},{}, {}", clusterDbId, shardDbId,
                     surviveKeepers, activeKeeper);
             this.surviveKeepers.clear();
         }
@@ -73,7 +73,7 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
     private boolean doSetActive(KeeperMeta activeKeeper) {
 
         boolean changed = false;
-        logger.info("[doSetActive]{},{},{}", clusterId, shardId, activeKeeper);
+        logger.info("[doSetActive]{},{},{}", clusterDbId, shardDbId, activeKeeper);
         for (KeeperMeta survive : this.surviveKeepers) {
 
             if (MetaUtils.same(survive, activeKeeper)) {
@@ -109,7 +109,7 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
 
     public synchronized boolean setKeeperMaster(Pair<String, Integer> keeperMaster) {
 
-        logger.info("[setKeeperMaster]{},{},{}", clusterId, shardId, keeperMaster);
+        logger.info("[setKeeperMaster]{},{},{}", clusterDbId, shardDbId, keeperMaster);
         if (ObjectUtils.equals(this.keeperMaster, keeperMaster)) {
             return false;
         }
