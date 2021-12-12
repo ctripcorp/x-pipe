@@ -160,8 +160,8 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public Set<String> doGetDcClusters(String dc) {
-		return new HashSet<>(getDirectDcMeta(dc).getClusters().keySet());
+	public Set<ClusterMeta> doGetDcClusters(String dc) {
+		return new HashSet<>(getDirectDcMeta(dc).getClusters().values());
 	}
 
 	@Override
@@ -191,7 +191,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return dcMeta.getClusters().get(clusterId);
 	}
 	
-	protected DcMeta getDirectDcMeta(String dc) {
+	public DcMeta getDirectDcMeta(String dc) {
 
 		for(Map.Entry<String, DcMeta> dentry : xpipeMeta.getDcs().entrySet()){
 			String dcId = dentry.getKey();

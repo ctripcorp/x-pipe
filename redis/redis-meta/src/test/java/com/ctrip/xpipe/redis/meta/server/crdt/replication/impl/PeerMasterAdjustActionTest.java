@@ -19,7 +19,7 @@ public class PeerMasterAdjustActionTest extends AbstractMetaServerTest {
     private PeerMasterAdjustJobFactory adjustJobFactory;
 
     @Mock
-    private KeyedOneThreadTaskExecutor<Pair<String, String>> peerMasterAdjustExecutors;
+    private KeyedOneThreadTaskExecutor<Pair<Long, Long>> peerMasterAdjustExecutors;
 
     @Mock
     private PeerMasterAdjustJob adjustJob;
@@ -29,14 +29,14 @@ public class PeerMasterAdjustActionTest extends AbstractMetaServerTest {
     @Before
     public void setupPeerMasterAdjustActionTest() {
         action = new DefaultPeerMasterAdjustAction(adjustJobFactory, peerMasterAdjustExecutors);
-        Mockito.when(adjustJobFactory.buildPeerMasterAdjustJob(getClusterId(), getShardId())).thenReturn(adjustJob);
+        Mockito.when(adjustJobFactory.buildPeerMasterAdjustJob(getClusterDbId(), getShardDbId())).thenReturn(adjustJob);
     }
 
     @Test
     public void testAdjustPeerMaster() {
-        action.adjustPeerMaster(getClusterId(), getShardId());
-        Mockito.verify(adjustJobFactory, Mockito.times(1)).buildPeerMasterAdjustJob(getClusterId(), getShardId());
-        Mockito.verify(peerMasterAdjustExecutors, Mockito.times(1)).execute(Pair.of(getClusterId(), getShardId()), adjustJob);
+        action.adjustPeerMaster(getClusterDbId(), getShardDbId());
+        Mockito.verify(adjustJobFactory, Mockito.times(1)).buildPeerMasterAdjustJob(getClusterDbId(), getShardDbId());
+        Mockito.verify(peerMasterAdjustExecutors, Mockito.times(1)).execute(Pair.of(getClusterDbId(), getShardDbId()), adjustJob);
     }
 
 }

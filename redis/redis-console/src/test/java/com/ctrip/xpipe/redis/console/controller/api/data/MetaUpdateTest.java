@@ -4,6 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterExchangeNameInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -114,4 +115,45 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(EXPECTED_MESSAGE, retMessage1.getMessage());
     }
 
+    @Test
+    public void testClusterExchangeName() throws Exception{
+        String FORMER_NAME = "cluster101", LATTER_NAME="cluster102";
+        Long FORMER_ID = 101L, LATTER_ID = 102L;
+        ClusterTbl clusterTbl = new ClusterTbl()
+                .setId(FORMER_ID)
+                .setClusterName(FORMER_NAME)
+                .setClusterType(ClusterType.ONE_WAY.toString())
+                .setClusterDescription("")
+                .setActivedcId(1)
+                .setIsXpipeInterested(true)
+                .setStatus("normal")
+                .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
+        clusterDao.createCluster(clusterTbl);
+        clusterTbl.setId(LATTER_ID).setClusterName(LATTER_NAME);
+        clusterDao.createCluster(clusterTbl);
+
+        /* fail on param check. */
+        RetMessage retMessage;
+        ClusterExchangeNameInfo exinfo = new ClusterExchangeNameInfo();
+        retMessage = clusterController.clusterExchangeName(exinfo);
+        Assert.assertEquals(RetMessage.FAIL_STATE, retMessage.getState());
+
+        /* suc on first exchange attempt */
+        exinfo.setFormerClusterId(FORMER_ID);
+        exinfo.setFormerClusterName(FORMER_NAME);
+        exinfo.setLatterClusterId(LATTER_ID);
+        exinfo.setLatterClusterName(LATTER_NAME);
+        retMessage = clusterController.clusterExchangeName(exinfo);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
+
+        /* fail on retry exchange attempt */
+        retMessage = clusterController.clusterExchangeName(exinfo);
+        Assert.assertEquals(RetMessage.FAIL_STATE, retMessage.getState());
+
+        /* suc on exchage back */
+        exinfo.setFormerClusterName(LATTER_NAME);
+        exinfo.setLatterClusterName(FORMER_NAME);
+        retMessage = clusterController.clusterExchangeName(exinfo);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
+    }
 }

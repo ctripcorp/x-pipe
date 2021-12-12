@@ -57,8 +57,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation, ReadWriteSafe {
 	default Set<String> getDcs() { return read(this::doGetDcs); }
 	Set<String> doGetDcs();
 
-	default Set<String> getDcClusters(String dc) { return read(() -> doGetDcClusters(dc)); }
-	Set<String> doGetDcClusters(String dc);
+	default Set<ClusterMeta> getDcClusters(String dc) { return read(() -> doGetDcClusters(dc)); }
+	Set<ClusterMeta> doGetDcClusters(String dc);
 
 	default ClusterMeta getClusterMeta(String dc, String clusterId) { return read(()->doGetClusterMeta(dc, clusterId)); }
 	ClusterMeta doGetClusterMeta(String dc, String clusterId);

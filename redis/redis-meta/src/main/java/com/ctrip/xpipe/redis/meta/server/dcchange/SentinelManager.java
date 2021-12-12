@@ -9,8 +9,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
  */
 public interface SentinelManager {
 	
-	void addSentinel(String clusterId, String shardId, HostPort redisMaster, ExecutionLog executionLog);
+	void addSentinel(Long clusterDbId, Long shardDbId, HostPort redisMaster, ExecutionLog executionLog);
 	
-	void removeSentinel(String clusterId, String shardId, ExecutionLog executionLog);
+	void removeSentinel(Long clusterDbId, Long shardDbId, ExecutionLog executionLog);
 
 }
