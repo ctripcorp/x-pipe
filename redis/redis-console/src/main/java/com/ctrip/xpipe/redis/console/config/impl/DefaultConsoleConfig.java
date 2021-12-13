@@ -183,6 +183,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getInstanceLongDelayMilli() {
+        return getIntProperty(KEY_INSTANCE_LONG_DELAY_MILLI, 3 * 60 * 1000);
+    }
+
+    @Override
     public int getDownAfterCheckNums() {
         return getIntProperty(KEY_DOWN_AFTER_CHECK_NUMS, 5);
     }

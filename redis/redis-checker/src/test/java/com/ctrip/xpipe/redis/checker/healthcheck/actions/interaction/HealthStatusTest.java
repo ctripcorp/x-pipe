@@ -6,7 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceHalfSick;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
@@ -249,7 +249,7 @@ public class HealthStatusTest extends AbstractRedisTest {
             public void update(Object args, Observable observable) {
                 if(args instanceof InstanceUp) {
                     markup.incrementAndGet();
-                } else if (args instanceof InstanceHalfSick) {
+                } else if (args instanceof InstanceLongDelay) {
                     markdown.get();
                 } else {
                     markdown.incrementAndGet();
