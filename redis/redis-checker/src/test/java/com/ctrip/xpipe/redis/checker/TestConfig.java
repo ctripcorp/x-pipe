@@ -106,6 +106,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public int getKFactorOfHalfSick() {
+        return 2;
+    }
+
+    @Override
     public String getReplDisklessMinRedisVersion() {
         return "2.8.22";
     }

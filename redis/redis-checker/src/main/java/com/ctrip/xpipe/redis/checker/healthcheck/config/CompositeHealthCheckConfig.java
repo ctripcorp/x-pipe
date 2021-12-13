@@ -34,6 +34,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int instanceLongDelayMilli() {
+        return config.instanceLongDelayMilli();
+    }
+
+    @Override
     public int pingDownAfterMilli() {
         return config.pingDownAfterMilli();
     }

@@ -11,6 +11,8 @@ public interface HealthCheckConfig {
 
     int delayDownAfterMilli();
 
+    int instanceLongDelayMilli();
+
     int pingDownAfterMilli();
 
     int checkIntervalMilli();

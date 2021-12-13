@@ -20,7 +20,7 @@ import java.util.function.Function;
  * Jul 22, 2016
  */
 public abstract class AbstractConfigBean implements ConfigChangeListener {
-	
+
 	private Config config;
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -133,6 +133,7 @@ public abstract class AbstractConfigBean implements ConfigChangeListener {
 
 						if (configVersion.get() == currentConfigVersion) {
 							cache.put(key, result);
+							logger.info("[config updated] {}, {}", key, result);
 						}
 
 						return result;

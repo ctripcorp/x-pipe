@@ -30,6 +30,8 @@ public interface CheckerConfig {
 
     String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
 
+    String KEY_INSTANCE_LONG_DELAY_MILLI = "console.instance.long.delay.milli";
+
     String KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY = "console.down.after.checknums.through.proxy";
 
     String KEY_PING_DOWN_AFTER_MILLI = "console.ping.down.after.milli";
@@ -95,6 +97,8 @@ public interface CheckerConfig {
     int getHealthyDelayMilli();
 
     int getHealthyDelayMilliThroughProxy();
+
+    int getInstanceLongDelayMilli();
 
     String getReplDisklessMinRedisVersion();
 

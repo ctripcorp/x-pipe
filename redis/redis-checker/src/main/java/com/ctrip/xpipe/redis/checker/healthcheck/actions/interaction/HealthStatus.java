@@ -36,6 +36,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private RedisHealthCheckInstance instance;
     private final IntSupplier delayDownAfterMilli;
+    private final IntSupplier instanceLongDelayMilli;
     private final IntSupplier pingDownAfterMilli;
     private final IntSupplier healthyDelayMilli;
 
@@ -48,6 +49,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         this.instance = instance;
         this.scheduled = scheduled;
         this.pingDownAfterMilli = ()->instance.getHealthCheckConfig().pingDownAfterMilli();
+        this.instanceLongDelayMilli = ()->instance.getHealthCheckConfig().instanceLongDelayMilli();
         this.delayDownAfterMilli = ()->instance.getHealthCheckConfig().delayDownAfterMilli();
         this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
         checkParam();
@@ -157,10 +159,11 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         long delayDownTime = currentTime - lastHealthDelayTime.get();
         final int delayDownAfter = delayDownAfterMilli.getAsInt();
+        final int instanceLongDelay = instanceLongDelayMilli.getAsInt();
 
         if ( delayDownTime > delayDownAfter) {
             setDelayDown();
-        }else if(delayDownTime >= delayDownAfter/2){
+        }else if(delayDownTime >= instanceLongDelay){
             setDelayHalfDown();
         }
     }
@@ -184,7 +187,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
             logStateChange(preState, state.get());
-            notifyObservers(new InstanceHalfSick(instance));
+            notifyObservers(new InstanceLongDelay(instance));
         }
     }
 
