@@ -106,8 +106,8 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public int getKFactorOfHalfSick() {
-        return 2;
+    public int getInstanceLongDelayMilli() {
+        return 3 * 60 * 1000;
     }
 
     @Override

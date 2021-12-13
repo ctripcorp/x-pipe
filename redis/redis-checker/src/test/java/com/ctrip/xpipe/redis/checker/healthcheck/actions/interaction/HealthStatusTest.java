@@ -100,10 +100,11 @@ public class HealthStatusTest extends AbstractRedisTest {
     @Test
     public void testStateSwitchFromUpToUnhealthyToSick() throws Exception {
         markup();
+        when(config.instanceLongDelayMilli()).thenReturn(10);
         when(config.delayDownAfterMilli()).thenReturn(100);
 
         healthStatus.delay(config.getHealthyDelayMilli()/2);
-        Thread.sleep(config.delayDownAfterMilli()/2);
+        Thread.sleep(config.instanceLongDelayMilli());
         healthStatus.pong();
         healthStatus.healthStatusUpdate();
         waitConditionUntilTimeOut(()->HEALTH_STATE.UNHEALTHY == healthStatus.getState(), 1000);
@@ -239,6 +240,7 @@ public class HealthStatusTest extends AbstractRedisTest {
 
         when(config.pingDownAfterMilli()).thenReturn(20);
         when(config.getHealthyDelayMilli()).thenReturn(baseInterval);
+        when(config.instanceLongDelayMilli()).thenReturn(baseInterval * 2);
         when(config.delayDownAfterMilli()).thenReturn(baseInterval * 5);
 
         AtomicInteger markup = new AtomicInteger(0);
