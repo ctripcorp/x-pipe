@@ -33,7 +33,7 @@ import com.ctrip.xpipe.redis.integratedtest.console.config.SpringEnvConsoleConfi
 import com.ctrip.xpipe.redis.integratedtest.console.config.TestFoundationService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
 
