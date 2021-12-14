@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.exception.XpipeException;
@@ -25,6 +26,10 @@ public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
 	RedisMaster redisMaster();
 
 	void reconnectMaster();
+
+	CommandFuture<Void> waitReplConnected();
+
+	CommandFuture<Void> waitReplStopCompletely();
 
 	void updateReplicationObserver(RedisMasterReplicationObserver observer);
 

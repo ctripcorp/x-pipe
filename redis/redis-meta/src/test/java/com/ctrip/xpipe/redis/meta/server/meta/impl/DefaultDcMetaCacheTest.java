@@ -46,8 +46,9 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
         dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis());
 
-        dcMetaCache.clusterAdded(new ClusterMeta().setId("add_" + randomString(5)));
-        dcMetaCache.clusterDeleted("del_" + randomString(5));
+        Long clusterDbId = randomLong();
+        dcMetaCache.clusterAdded(new ClusterMeta().setId("add_" + randomString(5)).setDbId(clusterDbId));
+        dcMetaCache.clusterDeleted(clusterDbId);
 
     }
 
@@ -88,14 +89,14 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         ClusterMeta clusterMeta = (ClusterMeta) dcMeta.getClusters().values().toArray()[0];
         ShardMeta shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
         String newPrimaryDc = clusterMeta.getBackupDcs().split(",")[0];
-        dcMetaCache.primaryDcChanged(clusterMeta.getId(), shardMeta.getId(), newPrimaryDc);
-        Assert.assertEquals(newPrimaryDc, dcMetaCache.getPrimaryDc(clusterMeta.getId(), shardMeta.getId()));
+        dcMetaCache.primaryDcChanged(clusterMeta.getDbId(), shardMeta.getDbId(), newPrimaryDc);
+        Assert.assertEquals(newPrimaryDc, dcMetaCache.getPrimaryDc(clusterMeta.getDbId(), shardMeta.getDbId()));
 
         // pull old dc meta for MGR node delay
         DcMeta oldMeta = MetaClone.clone(dcMeta);
         dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[0];
         dcMetaCache.changeDcMeta(dcMeta, oldMeta, System.currentTimeMillis());
-        Assert.assertEquals(newPrimaryDc, dcMetaCache.getPrimaryDc(clusterMeta.getId(), shardMeta.getId()));
+        Assert.assertEquals(newPrimaryDc, dcMetaCache.getPrimaryDc(clusterMeta.getDbId(), shardMeta.getDbId()));
     }
 
     @Test

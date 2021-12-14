@@ -29,9 +29,9 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
 
     protected ScheduledExecutorService scheduled;
 
-    public CurrentMasterChooseCommand(String clusterId, String shardId, List<RedisMeta> allRedises, ScheduledExecutorService scheduled,
+    public CurrentMasterChooseCommand(Long clusterDbId, Long shardDbId, List<RedisMeta> allRedises, ScheduledExecutorService scheduled,
                                       XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds) {
-        super(clusterId, shardId);
+        super(clusterDbId, shardDbId);
         this.allRedises = allRedises;
         this.scheduled = scheduled;
         this.keyedObjectPool = keyedObjectPool;
@@ -48,7 +48,7 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
             return peerMaster;
         } else {
             getLogger().info("[choose] unexpected master size {} for {}, {}, masters: {}",
-                    redisMasters.size(), clusterId, shardId, redisMasters);
+                    redisMasters.size(), clusterDbId, shardDbId, redisMasters);
         }
 
         return null;
@@ -91,14 +91,14 @@ public class CurrentMasterChooseCommand extends AbstractMasterChooseCommand {
             InfoResultExtractor extractor = new InfoResultExtractor(infoStr);
             String rawGid = extractor.extract("gid");
             if (null == rawGid) {
-                throw new IllegalStateException(String.format("no info gid found for cluster %s shard %s",  clusterId, shardId));
+                throw new IllegalStateException(String.format("no info gid found for cluster %s shard %s",  clusterDbId, shardDbId));
             }
 
             long gid = Long.parseLong(rawGid);
             if (gid > 0) {
                 return gid;
             } else {
-                throw new IllegalStateException(String.format("unexpected gid %s for cluster %s shard %s", rawGid, clusterId, shardId));
+                throw new IllegalStateException(String.format("unexpected gid %s for cluster %s shard %s", rawGid, clusterDbId, shardDbId));
             }
         } catch (Exception e) {
             getLogger().error("[getRedisGid] {}, {}", ip, port, e);

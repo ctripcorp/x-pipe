@@ -23,6 +23,8 @@ public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
 
     private String clusterId = "cluster1", shardId = "shard1";
 
+    private Long clusterDbId = 1L, shardDbId = 1L;
+
     private List<RedisMeta> redises = new ArrayList<>();
 
     private Server redis1, redis2;
@@ -65,7 +67,7 @@ public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
     @Before
     public void setupDefaultPeerMasterChooseCommandTest() throws Exception {
         mockRedises();
-        chooseCommand = new CurrentMasterChooseCommand(clusterId, shardId, redises, scheduled,
+        chooseCommand = new CurrentMasterChooseCommand(clusterDbId, shardDbId, redises, scheduled,
                 getXpipeNettyClientKeyedObjectPool(), checkRedisTimeoutSeconds);
     }
 

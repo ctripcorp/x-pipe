@@ -4,7 +4,9 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.unidal.tuple.Triple;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author wenchao.meng
@@ -53,25 +55,28 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 	}
 	
 	public void compare(){
+		Map<Long, ClusterMeta> currentClustersMap = current.getClusters().values().stream()
+				.collect(Collectors.toMap(ClusterMeta::getDbId, clusterMeta -> clusterMeta));
+		Map<Long, ClusterMeta> futureClustersMap = future.getClusters().values().stream()
+				.collect(Collectors.toMap(ClusterMeta::getDbId, clusterMeta -> clusterMeta));
+		Triple<Set<Long>, Set<Long>, Set<Long>> result = getDiff(currentClustersMap.keySet(), futureClustersMap.keySet());
+
+		Set<Long> addedClusterDbIds = result.getFirst();
+		Set<Long> intersectionClusterDbIds = result.getMiddle();
+		Set<Long> deletedClusterDbIds = result.getLast();
 		
-		Triple<Set<String>, Set<String>, Set<String>> result = getDiff(current.getClusters().keySet(), future.getClusters().keySet());
-		
-		Set<String> addedClusterIds = result.getFirst(); 
-		Set<String> intersectionClusterIds = result.getMiddle();
-		Set<String> deletedClusterIds = result.getLast();
-		
-		for(String clusterId : addedClusterIds){
-			added.add(future.findCluster(clusterId));
+		for(Long clusterDbId : addedClusterDbIds){
+			added.add(futureClustersMap.get(clusterDbId));
 		}
 		
-		for(String clusterId : deletedClusterIds){
-			removed.add(current.findCluster(clusterId));
+		for(Long clusterDbId : deletedClusterDbIds){
+			removed.add(currentClustersMap.get(clusterDbId));
 		}
 		
-		for(String clusterId : intersectionClusterIds){
-			ClusterMeta currentMeta = current.findCluster(clusterId);
-			ClusterMeta futureMeta = future.findCluster(clusterId);
-			if(!reflectionEquals(currentMeta, futureMeta)){
+		for(Long clusterDbId : intersectionClusterDbIds){
+			ClusterMeta currentMeta = currentClustersMap.get(clusterDbId);
+			ClusterMeta futureMeta = futureClustersMap.get(clusterDbId);
+			if(!reflectionEquals(currentMeta, futureMeta)) {
 				ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(currentMeta, futureMeta);
 				clusterMetaComparator.compare();
 				modified.add(clusterMetaComparator);

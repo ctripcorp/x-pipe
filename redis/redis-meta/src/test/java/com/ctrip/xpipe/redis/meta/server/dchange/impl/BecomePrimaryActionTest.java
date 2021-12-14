@@ -69,7 +69,7 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 		redises.add(redis1);
 		redises.add(redis2);
 
-		when(dcMetaCache.getShardRedises(getClusterId(), getShardId())).thenReturn(redises);
+		when(dcMetaCache.getShardRedises(getClusterDbId(), getShardDbId())).thenReturn(redises);
 		
 		when(newMasterChooser.choose(anyList())).thenReturn(redis1);
 	}
@@ -88,9 +88,9 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 
 	@Test
 	public void testMasterSlaveAllRight() throws Exception {
-		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction("cluster", "shard", dcMetaCache,
+		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(getClusterDbId(), getShardDbId(), dcMetaCache,
 				currentMetaManager, sentinelManager, offsetWaiter, new ExecutionLog(getTestName()), getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled, executors);
-		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
+		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterDbId(), getShardDbId(), newPrimaryDc, new MasterInfo());
 		Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, message.getErrorType());
 	}
 
@@ -99,9 +99,9 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 		slave.stop();
 		slave = null;
 
-		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction("cluster", "shard", dcMetaCache,
+		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(getClusterDbId(), getShardDbId(), dcMetaCache,
 				currentMetaManager, sentinelManager, offsetWaiter, new ExecutionLog(getTestName()), getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled, executors);
-		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
+		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterDbId(), getShardDbId(), newPrimaryDc, new MasterInfo());
 		Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, message.getErrorType());
 	}
 
@@ -110,9 +110,9 @@ public class BecomePrimaryActionTest extends AbstractMetaServerTest{
 		master.stop();
 		master = null;
 
-		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction("cluster", "shard", dcMetaCache,
+		BecomePrimaryAction becomePrimaryAction = new BecomePrimaryAction(getClusterDbId(), getShardDbId(), dcMetaCache,
 				currentMetaManager, sentinelManager, offsetWaiter, new ExecutionLog(getTestName()), getXpipeNettyClientKeyedObjectPool(), newMasterChooser, scheduled, executors);
-		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterId(), getShardId(), newPrimaryDc, new MasterInfo());
+		PrimaryDcChangeMessage message = becomePrimaryAction.changePrimaryDc(getClusterDbId(), getShardDbId(), newPrimaryDc, new MasterInfo());
 		Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL, message.getErrorType());
 	}
 

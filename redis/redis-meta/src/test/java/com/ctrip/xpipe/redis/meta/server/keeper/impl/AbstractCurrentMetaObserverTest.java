@@ -22,8 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -73,11 +72,11 @@ public class AbstractCurrentMetaObserverTest extends AbstractTest {
     @Test
     public void testRegisterJob() throws Exception {
         doThrow(new IllegalArgumentException("No such cluster/shard")).when(currentMetaManager)
-                .addResource(anyString(), anyString(), any(Releasable.class));
+                .addResource(anyLong(), anyLong(), any(Releasable.class));
         AtomicInteger innerCounter = new AtomicInteger();
         ReleasableCounter counter = new ReleasableCounter(innerCounter);
         counter.start();
-        observer.registerJob("cluster", "shard", counter);
+        observer.registerJob(1L, 1L, counter);
         int waitingTasks = 5;
         sleep(waitingTasks * 10);
         Assert.assertTrue(innerCounter.get() < waitingTasks);

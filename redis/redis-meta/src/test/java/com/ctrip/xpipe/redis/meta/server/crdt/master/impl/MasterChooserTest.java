@@ -29,6 +29,8 @@ public class MasterChooserTest extends AbstractMetaServerTest {
 
     private String dcId = "dc1", clusterId = "cluster1", shardId = "shard1";
 
+    private Long clusterDbId = 1L, shardDbId = 1L;
+
     private String upstreamDcId = "dc2";
 
     private String dcs = "dc1, dc2";
@@ -42,7 +44,7 @@ public class MasterChooserTest extends AbstractMetaServerTest {
     private MasterChooseCommand command;
 
     @Mock
-    private KeyedOneThreadTaskExecutor<Pair<String, String> > keyedOneThreadTaskExecutor;
+    private KeyedOneThreadTaskExecutor<Pair<Long, Long> > keyedOneThreadTaskExecutor;
 
     private CurrentMasterChooser currentMasterChooser;
 
@@ -50,46 +52,46 @@ public class MasterChooserTest extends AbstractMetaServerTest {
 
     @Before
     public void setupDefaultPeerMasterChooserTest() throws Exception {
-        currentMasterChooser = new CurrentMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager, factory,
+        currentMasterChooser = new CurrentMasterChooser(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, factory,
                 executors, keyedOneThreadTaskExecutor,  scheduled, checkIntervalSeconds);
-        peerMasterChooser = new PeerMasterChooser(clusterId, shardId, dcMetaCache, currentMetaManager, factory,
+        peerMasterChooser = new PeerMasterChooser(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, factory,
                  executors, keyedOneThreadTaskExecutor,  scheduled, checkIntervalSeconds);
 
         Mockito.when(dcMetaCache.getCurrentDc()).thenReturn(dcId);
-        Mockito.when(dcMetaCache.getClusterMeta(getClusterId())).thenReturn(mockClusterMeta());
+        Mockito.when(dcMetaCache.getClusterMeta(clusterDbId)).thenReturn(mockClusterMeta());
     }
 
     @Test
     public void testPeerMasterChooseWork() {
-        Mockito.when(factory.buildPeerMasterChooserCommand(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())).thenReturn(command);
+        Mockito.when(factory.buildPeerMasterChooserCommand(Mockito.anyString(), Mockito.anyLong(), Mockito.anyLong())).thenReturn(command);
         Mockito.doAnswer(invocation -> {
             Pair<String, String> key = invocation.getArgumentAt(0, Pair.class);
             ParallelCommandChain commandChain = invocation.getArgumentAt(1, ParallelCommandChain.class);
-            Assert.assertEquals(Pair.of(clusterId, shardId), key);
+            Assert.assertEquals(Pair.of(clusterDbId, shardDbId), key);
             Assert.assertNotNull(commandChain);
 
             return null;
         }).when(keyedOneThreadTaskExecutor).execute(Mockito.any(), Mockito.any());
 
         peerMasterChooser.work();
-        Mockito.verify(factory, Mockito.times(1)).buildPeerMasterChooserCommand(upstreamDcId, clusterId, shardId);
+        Mockito.verify(factory, Mockito.times(1)).buildPeerMasterChooserCommand(upstreamDcId, clusterDbId, shardDbId);
         Mockito.verify(keyedOneThreadTaskExecutor, Mockito.times(1)).execute(Mockito.any(), Mockito.any());
     }
 
     @Test
     public void testCurrentMasterChooseWork() {
-        Mockito.when(factory.buildCurrentMasterChooserCommand(Mockito.anyString(), Mockito.anyString())).thenReturn(command);
+        Mockito.when(factory.buildCurrentMasterChooserCommand(Mockito.anyLong(), Mockito.anyLong())).thenReturn(command);
         Mockito.doAnswer(invocation -> {
             Pair<String, String> key = invocation.getArgumentAt(0, Pair.class);
             MasterChooseCommand paramCommand = invocation.getArgumentAt(1, MasterChooseCommand.class);
-            Assert.assertEquals(Pair.of(clusterId, shardId), key);
+            Assert.assertEquals(Pair.of(clusterDbId, shardDbId), key);
             Assert.assertEquals(command, paramCommand);
 
             return null;
         }).when(keyedOneThreadTaskExecutor).execute(Mockito.any(), Mockito.any());
 
         currentMasterChooser.work();
-        Mockito.verify(factory, Mockito.times(1)).buildCurrentMasterChooserCommand(clusterId, shardId);
+        Mockito.verify(factory, Mockito.times(1)).buildCurrentMasterChooserCommand(clusterDbId, shardDbId);
         Mockito.verify(keyedOneThreadTaskExecutor, Mockito.times(1)).execute(Mockito.any(), Mockito.any());
     }
 

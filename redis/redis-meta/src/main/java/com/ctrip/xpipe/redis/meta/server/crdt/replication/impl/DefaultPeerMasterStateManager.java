@@ -32,7 +32,7 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
     MetaServerConfig metaServerConfig;
 
     @Resource(name = PEER_MASTER_ADJUST_EXECUTOR)
-    KeyedOneThreadTaskExecutor<Pair<String, String>> peerMasterAdjustExecutor;
+    KeyedOneThreadTaskExecutor<Pair<Long, Long>> peerMasterAdjustExecutor;
 
     protected ScheduledExecutorService scheduled;
 
@@ -43,16 +43,16 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
     }
 
     @Override
-    protected void addShard(String clusterId, String shardId) {
+    protected void addShard(Long clusterDbId, Long shardDbId) {
         try {
-            PeerMasterStateAdjuster adjuster = new DefaultPeerMasterStateAdjuster(clusterId, shardId, dcMetaCache,
+            PeerMasterStateAdjuster adjuster = new DefaultPeerMasterStateAdjuster(clusterDbId, shardDbId, dcMetaCache,
                     currentMetaManager, metaServerConfig, peerMasterAdjustJobFactory, peerMasterAdjustExecutor, scheduled);
-            logger.info("[addShard]{}, {}, {}", clusterId, shardId, adjuster);
+            logger.info("[addShard]{}, {}, {}", clusterDbId, shardDbId, adjuster);
             adjuster.start();
             //release resources
-            registerJob(clusterId, shardId, adjuster);
+            registerJob(clusterDbId, shardDbId, adjuster);
         } catch (Exception e) {
-            logger.error("[addShard]{}, {}", clusterId, shardId, e);
+            logger.error("[addShard]{}, {}", clusterDbId, shardDbId, e);
         }
     }
 }

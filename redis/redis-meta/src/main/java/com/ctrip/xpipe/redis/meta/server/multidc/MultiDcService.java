@@ -10,8 +10,8 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
  */
 public interface MultiDcService {
 	
-	KeeperMeta getActiveKeeper(String dcName, String clusterId, String shardId);
+	KeeperMeta getActiveKeeper(String dcName, Long clusterDbId, Long shardDbId);
 
-	RedisMeta getPeerMaster(String dcName, String clusterId, String shardId);
+	RedisMeta getPeerMaster(String dcName, Long clusterDbId, Long shardDbId);
 
 }

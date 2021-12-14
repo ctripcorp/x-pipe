@@ -39,8 +39,8 @@ public class DefaultPeerMasterStateManagerTest extends AbstractMetaServerTest {
     public void testDcMetaAdded() {
         ClusterMeta clusterMeta = mockClusterMeta();
         defaultPeerMasterAdjusterManager.update(new NodeAdded<>(clusterMeta), defaultPeerMasterAdjusterManager);
-        Mockito.verify(currentMetaManager, Mockito.times(1)).addResource(Mockito.anyString(),
-                Mockito.anyString(), Mockito.any(DefaultPeerMasterStateAdjuster.class));
+        Mockito.verify(currentMetaManager, Mockito.times(1)).addResource(Mockito.anyLong(),
+                Mockito.anyLong(), Mockito.any(DefaultPeerMasterStateAdjuster.class));
     }
 
     private ClusterMeta mockClusterMeta() {

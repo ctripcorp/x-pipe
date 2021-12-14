@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;

@@ -45,16 +45,16 @@ public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
             Assert.assertEquals(getClusterId(), paramClusterId);
             Assert.assertEquals(getShardId(), paramShardId);
             return null;
-        }).when(currentMetaManager).addResource(Mockito.anyString(), Mockito.anyString(), Mockito.any());
+        }).when(currentMetaManager).addResource(Mockito.anyLong(), Mockito.anyLong(), Mockito.any());
 
         ClusterMeta clusterMeta = mockClusterMeta();
         defaultPeerMasterChooserManager.update(new NodeAdded<>(clusterMeta), defaultPeerMasterChooserManager);
-        Mockito.verify(currentMetaManager, Mockito.times(2)).addResource(Mockito.anyString(), Mockito.anyString(), Mockito.any(MasterChooser.class));
+        Mockito.verify(currentMetaManager, Mockito.times(2)).addResource(Mockito.anyLong(), Mockito.anyLong(), Mockito.any(MasterChooser.class));
     }
 
     private ClusterMeta mockClusterMeta() {
-        ClusterMeta clusterMeta = new ClusterMeta(getClusterId());
-        ShardMeta shardMeta = new ShardMeta(getShardId());
+        ClusterMeta clusterMeta = new ClusterMeta(getClusterId()).setDbId(getClusterDbId());
+        ShardMeta shardMeta = new ShardMeta(getShardId()).setDbId(getShardDbId());
         clusterMeta.setType(ClusterType.BI_DIRECTION.toString());
         clusterMeta.addShard(shardMeta);
 

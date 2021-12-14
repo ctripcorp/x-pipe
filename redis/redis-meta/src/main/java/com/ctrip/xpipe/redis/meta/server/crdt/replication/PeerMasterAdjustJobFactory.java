@@ -4,6 +4,6 @@ import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJob;
 
 public interface PeerMasterAdjustJobFactory {
 
-    PeerMasterAdjustJob buildPeerMasterAdjustJob(String clusterId, String shardId);
+    PeerMasterAdjustJob buildPeerMasterAdjustJob(Long clusterDbId, Long shardDbId);
 
 }

@@ -65,13 +65,13 @@ public class DefaultSentinelManager implements SentinelManager{
 	}
 	
 	@Override
-	public void addSentinel(String clusterId, String shardId, HostPort redisMaster, ExecutionLog executionLog) {
+	public void addSentinel(Long clusterDbId, Long shardDbId, HostPort redisMaster, ExecutionLog executionLog) {
 		
-		String sentinelMonitorName = dcMetaCache.getSentinelMonitorName(clusterId, shardId);
-		String allSentinels = dcMetaCache.getSentinel(clusterId, shardId).getAddress();
+		String sentinelMonitorName = dcMetaCache.getSentinelMonitorName(clusterDbId, shardDbId);
+		String allSentinels = dcMetaCache.getSentinel(clusterDbId, shardDbId).getAddress();
 		
 		executionLog.info(String.format("[addSentinel]%s,%s,%s, monitorName:%s, master:%s:%d",
-				clusterId, shardId, allSentinels, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort()));
+				clusterDbId, shardDbId, allSentinels, sentinelMonitorName, redisMaster.getHost(), redisMaster.getPort()));
 		
 		if(checkEmpty(sentinelMonitorName, allSentinels, executionLog)){
 			return;
@@ -112,12 +112,12 @@ public class DefaultSentinelManager implements SentinelManager{
 	}
 
 	@Override
-	public void removeSentinel(String clusterId, String shardId, ExecutionLog executionLog) {
+	public void removeSentinel(Long clusterDbId, Long shardDbId, ExecutionLog executionLog) {
 		
-		String sentinelMonitorName = dcMetaCache.getSentinelMonitorName(clusterId, shardId);
-		String allSentinels = dcMetaCache.getSentinel(clusterId, shardId).getAddress();
+		String sentinelMonitorName = dcMetaCache.getSentinelMonitorName(clusterDbId, shardDbId);
+		String allSentinels = dcMetaCache.getSentinel(clusterDbId, shardDbId).getAddress();
 
-		executionLog.info(String.format("removeSentinel cluster:%s, shard:%s, masterName:%s, sentinelAddress:%s", clusterId, shardId, sentinelMonitorName, allSentinels));
+		executionLog.info(String.format("removeSentinel cluster:%s, shard:%s, masterName:%s, sentinelAddress:%s", clusterDbId, shardDbId, sentinelMonitorName, allSentinels));
 
 		if(checkEmpty(sentinelMonitorName, allSentinels, executionLog)){
 			return;

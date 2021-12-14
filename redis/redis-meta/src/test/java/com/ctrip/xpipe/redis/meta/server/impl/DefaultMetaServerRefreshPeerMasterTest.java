@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.meta.server.crdt.master.PeerMasterChooseAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,13 +30,14 @@ public class DefaultMetaServerRefreshPeerMasterTest extends AbstractMetaServerTe
 
     @Before
     public void setupDefaultMetaServerRefreshPeerMasterTest() {
-        Mockito.when(dcMetaCache.getClusterMeta(getClusterId())).thenReturn(new ClusterMeta(getClusterId()).setType(ClusterType.BI_DIRECTION.toString()));
+        Mockito.when(dcMetaCache.getClusterMeta(getClusterDbId())).thenReturn(new ClusterMeta(getClusterId()).setType(ClusterType.BI_DIRECTION.toString()));
+        Mockito.when(dcMetaCache.clusterShardId2DbId(getClusterId(), getShardId())).thenReturn(Pair.from(getClusterDbId(), getShardDbId()));
     }
 
     @Test
     public void testUpstreamPeerChange() {
         metaServer.upstreamPeerChange("remote-dc", getClusterId(), getShardId(), null);
-        Mockito.verify(peerMasterChooseAction, Mockito.times(1)).choosePeerMaster("remote-dc", getClusterId(), getShardId());
+        Mockito.verify(peerMasterChooseAction, Mockito.times(1)).choosePeerMaster("remote-dc", getClusterDbId(), getShardDbId());
     }
 
 }

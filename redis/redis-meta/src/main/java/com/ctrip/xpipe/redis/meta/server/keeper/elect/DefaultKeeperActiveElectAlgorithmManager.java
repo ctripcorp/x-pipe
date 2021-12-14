@@ -23,7 +23,7 @@ public class DefaultKeeperActiveElectAlgorithmManager implements KeeperActiveEle
 	private DcMetaCache dcMetaCache;
 
 	@Override
-	public KeeperActiveElectAlgorithm get(String clusterId, String shardId) {
+	public KeeperActiveElectAlgorithm get(Long clusterDbId, Long shardDbId) {
 
 		logger.debug("[get][active dc, use default]");
 		return new DefaultKeeperActiveElectAlgorithm();

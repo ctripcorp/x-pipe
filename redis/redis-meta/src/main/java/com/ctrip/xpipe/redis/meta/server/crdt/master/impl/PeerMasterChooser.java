@@ -16,33 +16,33 @@ public class PeerMasterChooser extends CurrentMasterChooser implements MasterCho
     public static final int DEFAULT_PEER_MASTER_CHECK_INTERVAL_SECONDS = Integer
             .parseInt(System.getProperty("PEER_MASTER_CHECK_INTERVAL_SECONDS", "10"));
 
-    public PeerMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
+    public PeerMasterChooser(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
                              MasterChooseCommandFactory factory, Executor executors,
-                             KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor,
+                             KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterChooseExecutor,
                              ScheduledExecutorService scheduled) {
-        this(clusterId, shardId, dcMetaCache, currentMetaManager, factory, executors, peerMasterChooseExecutor, scheduled, DEFAULT_PEER_MASTER_CHECK_INTERVAL_SECONDS);
+        this(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, factory, executors, peerMasterChooseExecutor, scheduled, DEFAULT_PEER_MASTER_CHECK_INTERVAL_SECONDS);
     }
 
-    public PeerMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
+    public PeerMasterChooser(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
                              CurrentMetaManager currentMetaManager, MasterChooseCommandFactory factory, Executor executors,
-                             KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor,
+                             KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterChooseExecutor,
                              ScheduledExecutorService scheduled, int checkIntervalSeconds) {
-        super(clusterId, shardId, dcMetaCache, currentMetaManager, factory, executors, peerMasterChooseExecutor, scheduled, checkIntervalSeconds);
+        super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, factory, executors, peerMasterChooseExecutor, scheduled, checkIntervalSeconds);
     }
 
     @Override
     protected void work() {
-        ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterId);
+        ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 
         ParallelCommandChain parallelCommandChain = new ParallelCommandChain(executors);
         String currentDc = dcMetaCache.getCurrentDc();
 
         for (String dcId : clusterMeta.getDcs().split("\\s*,\\s*")) {
             if (currentDc.equalsIgnoreCase(dcId)) continue;
-            parallelCommandChain.add(masterChooseCommandFactory.buildPeerMasterChooserCommand(dcId, clusterId, shardId));
+            parallelCommandChain.add(masterChooseCommandFactory.buildPeerMasterChooserCommand(dcId, clusterDbId, shardDbId));
         }
 
-        peerMasterChooseExecutor.execute(Pair.of(clusterId, shardId), parallelCommandChain);
+        peerMasterChooseExecutor.execute(Pair.of(clusterDbId, shardDbId), parallelCommandChain);
     }
 
 }
