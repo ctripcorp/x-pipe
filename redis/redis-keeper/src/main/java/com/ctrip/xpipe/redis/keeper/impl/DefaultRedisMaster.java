@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,7 +48,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	protected static final String KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS = "KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS";
 
-	protected static int CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS = Integer.parseInt(System.getProperty(KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS, "15000"));
+	public static int CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS = Integer.parseInt(System.getProperty(KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS, "15000"));
 
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup nioEventLoopGroup,
 							  ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
