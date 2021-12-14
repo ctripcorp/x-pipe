@@ -36,6 +36,10 @@ public class MasterRole extends AbstractRole{
 		this.slaves = Collections.unmodifiableList(list);
 	}
 
+	public long getOffset() {
+		return offset;
+	}
+
 	public List<Slave> getSlaves() {
 		return this.slaves;
 	}

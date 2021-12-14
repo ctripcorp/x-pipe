@@ -28,8 +28,9 @@ import org.junit.runners.Suite.SuiteClasses;
 		KeeperCmdFileMissTest.class,
 		KeeperRdbNotContinueTest.class,
 		PartialSyncForKeeperTest.class,
+		KeeperSwitchTest.class,
 		KeeperConcurrentChangeUpstreamTest.class,
-		KeeperSwitchTest.class
+		KeeperFastStateChangeTest.class
 })
 public class AllKeeperTest {
 	
