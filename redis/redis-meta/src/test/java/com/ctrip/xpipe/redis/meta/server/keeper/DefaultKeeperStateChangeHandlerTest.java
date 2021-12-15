@@ -4,6 +4,7 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
@@ -21,7 +22,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.*;
 
 
 /**
@@ -39,6 +41,9 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	
 	@Mock
 	private DcMetaCache dcMetaCache;
+
+	@Mock
+	private MetaServerConfig config;
 	
 	private String clusterId, shardId;
 	private Long clusterDbId, shardDbId;
@@ -63,6 +68,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		handler.setDcMetaCache(dcMetaCache);
 		handler.setScheduled(scheduled);
 		handler.setExecutors(executors);
+		handler.setConfig(config);
 		
 		clusterId = getClusterId();
 		shardId = getShardId();
@@ -157,6 +163,52 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
 		sleep(1000);
 		Assert.assertEquals(0, redisCall.get());
+	}
+
+	@Test
+	public void skipFastMasterChange() throws Exception {
+		setStateTimeMilli = 1;
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		when(config.getMinKeeperAdjustIntervalMilli()).thenReturn(1000);
+
+		handler.keeperMasterChanged(clusterDbId, shardDbId, Pair.of("10.0.0.1", 6379));
+		handler.keeperMasterChanged(clusterDbId, shardDbId, Pair.of("10.0.0.1", 7379));
+		verify(currentMetaManager).getKeeperActive(anyLong(), anyLong());
+	}
+
+	@Test
+	public void noSkipFastMasterChange() throws Exception {
+		setStateTimeMilli = 1;
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		when(config.getMinKeeperAdjustIntervalMilli()).thenReturn(0);
+
+		handler.keeperMasterChanged(clusterDbId, shardDbId, Pair.of("10.0.0.1", 6379));
+		handler.keeperMasterChanged(clusterDbId, shardDbId, Pair.of("10.0.0.1", 7379));
+		verify(currentMetaManager, times(2)).getKeeperActive(anyLong(), anyLong());
+	}
+
+	@Test
+	public void skipFastKeeperAdjust() throws Exception {
+		setStateTimeMilli = 1;
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		when(config.getMinKeeperAdjustIntervalMilli()).thenReturn(1000);
+
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(1));
+		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
+		verify(dcMetaCache).isCurrentDcPrimary(anyLong(), anyLong());
+	}
+
+	@Test
+	public void noSkipFastKeeperAdjust() throws Exception {
+		setStateTimeMilli = 1;
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		when(config.getMinKeeperAdjustIntervalMilli()).thenReturn(0);
+
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(1));
+		waitConditionUntilTimeOut(() -> calledCount.get() >= 1);
+		verify(dcMetaCache, times(2)).isCurrentDcPrimary(anyLong(), anyLong());
 	}
 
 	@After
