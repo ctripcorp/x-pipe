@@ -373,11 +373,4 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 		}
 	}
 
-	public static void main(String[] args) {
-		String key = "test_dbatools_xpipe";
-		int hash = key.hashCode();
-		System.out.println(Math.abs(hash)%TOTAL_SLOTS);
-	}
-
-
 }
