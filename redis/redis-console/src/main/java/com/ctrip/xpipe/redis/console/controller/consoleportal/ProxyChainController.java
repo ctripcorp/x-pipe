@@ -73,6 +73,10 @@ public class ProxyChainController extends AbstractConsoleController {
                 logger.warn("[tunnelId] {}, no chains", info.getTunnelId());
                 continue;
             }
+            if(info.getTunnelSocketStatsResult() == null) {
+                logger.warn("[tunnelId] {}, no TunnelSocketStatsResult", info.getTunnelId());
+                continue;
+            }
             TunnelSocketStatsMetricOverview overview = socketStatsAnalyzerManager.analyze(info.getTunnelSocketStatsResult());
             results.add(new TunnelModel(info.getTunnelId(), chain.getBackupDc(), chain.getCluster(), chain.getShard(),
                     chain.getPeerDcId(), info.getTunnelStatsResult(), overview));
