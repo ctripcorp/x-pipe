@@ -83,6 +83,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		nioEventLoopGroup = new NioEventLoopGroup();
 		server = startServer("+OK\r\n");
 
+		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("127.0.0.1", server.getPort()));
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
 				scheduled, replTimeoutMilli, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
@@ -99,6 +100,9 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	public void testStopReceivingDataWhenNotStarted() throws Exception {
 
 		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("localhost", randomPort()));
+		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
+				scheduled, replTimeoutMilli, proxyResourceManager);
+		add(defaultRedisMasterReplication);
 
 		defaultRedisMasterReplication.initialize();
 		try {
@@ -138,6 +142,9 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		Server server = startEmptyServer();
 		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("localhost", server.getPort()));
+		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
+				scheduled, replTimeoutMilli, proxyResourceManager);
+		add(defaultRedisMasterReplication);
 		AtomicInteger connectingCount = new AtomicInteger(0);
 		doAnswer(new Answer() {
 			@Override
@@ -195,6 +202,9 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
 		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(4));
+		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
+				scheduled, replTimeoutMilli, proxyResourceManager);
+		add(defaultRedisMasterReplication);
 
 		// first time empty list, sec time return endpoint
 		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())
@@ -213,7 +223,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 	@Test
 	public void testConnectFailAndStopWaitClose() throws Exception {
-		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("127.0.0.1", randomPort()));
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start(); // connect fail
 		defaultRedisMasterReplication.stop();
@@ -223,7 +232,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 	@Test
 	public void testStopAndDisconnectWaitClose() throws Exception {
-		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("127.0.0.1", server.getPort()));
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start(); // connect success
 		defaultRedisMasterReplication.waitReplConnected().addListener(f -> {
@@ -236,16 +244,13 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 	@Test
 	public void testStopAndConnectedWaitClose() throws Exception {
-		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("127.0.0.1", server.getPort()));
 		defaultRedisMasterReplication = spy(defaultRedisMasterReplication);
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start(); // connect success
 		defaultRedisMasterReplication.stop();
 		defaultRedisMasterReplication.dispose();
 		defaultRedisMasterReplication.waitReplStopCompletely().get(1, TimeUnit.SECONDS);
-		// one from stop and the other from masterConnected
-		verify(defaultRedisMasterReplication, times(2)).disconnectWithMaster();
-
+		verify(defaultRedisMasterReplication, atLeastOnce()).disconnectWithMaster();
 	}
 
 	@After

@@ -85,6 +85,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected RedisMaster redisMaster;
 
+	protected Endpoint masterEndpoint;
+
 	protected long connectedTime;
 
 	protected Channel masterChannel;
@@ -110,6 +112,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.redisMaster = redisMaster;
+		this.masterEndpoint = redisMaster.masterEndPoint();
 		this.nioEventLoopGroup = nioEventLoopGroup;
 		this.replTimeoutMilli = replTimeoutMilli;
 		this.scheduled = scheduled;
@@ -140,17 +143,22 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		startReplication();
 	}
 
+	@Override
+	public Endpoint masterEndpoint() {
+		return masterEndpoint;
+	}
+
 	public void startReplication() {
 
 		if (this.masterChannel != null && this.masterChannel.isOpen()) {
 			logger.warn("[startReplication][channel alive, don't do replication]{}", this.masterChannel);
 			return;
 		}
-		Endpoint endpoint = redisMaster.masterEndPoint();
-		String masterInfo = endpoint.toString();
+
+		String masterInfo = masterEndpoint.toString();
 		if(isMasterConnectThroughProxy()) {
-			masterInfo = String.format("endpoint: %s, proxy info: %s", endpoint.toString(),
-					((ProxyEnabled)endpoint).getProxyProtocol());
+			masterInfo = String.format("endpoint: %s, proxy info: %s", masterEndpoint.toString(),
+					((ProxyEnabled)masterEndpoint).getProxyProtocol());
 		}
 		logger.info("[startReplication]{}", masterInfo);
 		connectWithMaster();
@@ -160,7 +168,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected void connectWithMaster() {
 
 		if (!(getLifecycleState().isStarting() || getLifecycleState().isStarted())) {
-			logger.info("[connectWithMaster][do not connect, is stopped!!]{}", redisMaster.masterEndPoint());
+			logger.info("[connectWithMaster][do not connect, is stopped!!]{}", masterEndpoint);
 			return;
 		}
 
@@ -193,7 +201,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	protected void scheduleReconnect(int timeMilli) {
 
 		if (!(getLifecycleState().isStarting() || getLifecycleState().isStarted())) {
-			logger.info("[scheduleReconnect][do not connect, is stopped!!]{}", redisMaster.masterEndPoint());
+			logger.info("[scheduleReconnect][do not connect, is stopped!!]{}", masterEndpoint);
 			return;
 		}
 		scheduled.schedule(new AbstractExceptionLogTask() {
@@ -216,9 +224,8 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		if(isMasterConnectThroughProxy()) {
 			connFuture = tryConnectThroughProxy(b);
 		} else {
-			Endpoint endpoint = redisMaster.masterEndPoint();
-			logger.info("[tryConnect][begin]{}", endpoint);
-			connFuture = b.connect(endpoint.getHost(), endpoint.getPort());
+			logger.info("[tryConnect][begin]{}", masterEndpoint);
+			connFuture = b.connect(masterEndpoint.getHost(), masterEndpoint.getPort());
 		}
 		connFuture.addListener(future -> {
 			if (!future.isSuccess()) replState.connectFail();
@@ -234,11 +241,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	@VisibleForTesting
 	protected boolean isMasterConnectThroughProxy() {
-		return redisMaster.masterEndPoint() instanceof ProxyEnabled;
+		return masterEndpoint instanceof ProxyEnabled;
 	}
 
 	private ChannelFuture tryConnectThroughProxy(Bootstrap b) {
-		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
+		ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) masterEndpoint;
 		ProxyConnectProtocol protocol = endpoint.getProxyProtocol();
 		if(selector == null) {
 			selector = resourceManager.createProxyEndpointSelector(protocol);
@@ -285,7 +292,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		checkTimeout(channel);
 
 		if(isMasterConnectThroughProxy()) {
-			ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) redisMaster.masterEndPoint();
+			ProxyEnabledEndpoint endpoint = (ProxyEnabledEndpoint) masterEndpoint;
 			channel.writeAndFlush(endpoint.getProxyProtocol().output());
 		}
 
@@ -457,7 +464,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
 	protected void stopReplication() {
 
-		logger.info("[stopReplication]{}", redisMaster.masterEndPoint());
+		logger.info("[stopReplication]{}", masterEndpoint);
 		disconnectWithMaster();
 	}
 
@@ -469,6 +476,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	@Override
 	public CommandFuture<Void> waitReplStopCompletely() {
 		return replState.waitReplStopped();
+	}
+
+	@Override
+	public boolean isReplStopCompletely() {
+		return MasterReplState.MASTER_REPL_STATE.REPL_STOPPED.equals(replState.getState());
 	}
 
 	protected void disconnectWithMaster() {
