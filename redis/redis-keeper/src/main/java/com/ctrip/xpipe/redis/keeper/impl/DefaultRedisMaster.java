@@ -1,9 +1,9 @@
 
 package com.ctrip.xpipe.redis.keeper.impl;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -12,14 +12,13 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wenchao.meng
@@ -32,7 +31,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private ReplicationStoreManager replicationStoreManager;
 
-	private Endpoint endpoint;
+	private volatile Endpoint endpoint;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 	
@@ -40,15 +39,21 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	
 	private MASTER_STATE masterState = MASTER_STATE.REDIS_REPL_NONE;
 
-	private AtomicReference<RedisMasterReplication> redisMasterReplicationRef = new AtomicReference<>();
+	private RedisMasterReplication redisMasterReplication;
 
 	private NioEventLoopGroup nioEventLoopGroup;
 
 	private KeeperResourceManager keeperResourceManager;
 
-	protected static final String KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS = "KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS";
+	private AtomicInteger adjustMasterWaitRound = new AtomicInteger(0);
 
-	public static int CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS = Integer.parseInt(System.getProperty(KEY_CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS, "15000"));
+	private ScheduledFuture<?> scheduledFuture;
+
+	protected static final String KEY_ADJUST_MASTER_REPL_INTERVAL_MILLI = "KEY_ADJUST_MASTER_REPL_INTERVAL_MILLI";
+	protected static final String KEY_ADJUST_MASTER_REPL_MAX_WAIT_TIME = "KEY_ADJUST_MASTER_REPL_MAX_WAIT_TIME";
+
+	public static int ADJUST_MASTER_REPL_INTERVAL_MILLI = Integer.parseInt(System.getProperty(KEY_ADJUST_MASTER_REPL_INTERVAL_MILLI, "100"));
+	public static int ADJUST_MASTER_REPL_MAX_WAIT_TIME = Integer.parseInt(System.getProperty(KEY_ADJUST_MASTER_REPL_MAX_WAIT_TIME, "15000"));
 
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup nioEventLoopGroup,
 							  ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
@@ -60,14 +65,14 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
 		this.keeperResourceManager = resourceManager;
-		this.redisMasterReplicationRef.set(new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup,
-				this.scheduled, resourceManager));
+		this.redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup,
+				this.scheduled, resourceManager);
 	}
 	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
-		redisMasterReplication().initialize();
+		redisMasterReplication.initialize();
 		//init we treat is as redis
 		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterRole(endpoint, SERVER_TYPE.REDIS);
 
@@ -76,25 +81,18 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	protected void doStart() throws Exception {
 		super.doStart();
-		redisMasterReplication().start();
+		redisMasterReplication.start();
 	}
 
 	@Override
 	protected void doStop() throws Exception {
-		RedisMasterReplication repl = redisMasterReplication();
-		CommandFuture<Void> closeCompletelyFuture = repl.waitReplStopCompletely();
-		stopReplication(repl);
-		try {
-			closeCompletelyFuture.get(CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-		} catch (Throwable th) {
-			logger.info("[doStop][wait repl close timeout] {}", repl);
-		}
+		redisMasterReplication.stop();
 		super.doStop();
 	}
 	
 	@Override
 	protected void doDispose() throws Exception {
-		disposeReplication(redisMasterReplication());
+		redisMasterReplication.dispose();
 		super.doDispose();
 	}
 
@@ -111,80 +109,74 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public void reconnect() {
-		redisMasterReplication().reconnectMaster();
+		redisMasterReplication.reconnectMaster();
 	}
 
 	@Override
-	public void changeReplAddress(Endpoint address) {
+	public synchronized void changeReplAddress(Endpoint address) {
 		this.endpoint = address;
-		RedisMasterReplication originRepl = redisMasterReplication();
-		CommandFuture<Void> closeCompletelyFuture = originRepl.waitReplStopCompletely();
-		stopReplication(originRepl);
+		this.adjustMasterWaitRound.set(0);
+		this.startCheckAndAdjustTask();
+	}
 
-		ScheduledFuture<?> timeoutFuture = scheduled.schedule(() -> {
-			if (!closeCompletelyFuture.isDone()) {
-				logger.info("[changeReplAddress][wait close completely timeout] {}", this);
-				disposeReplication(originRepl);
-				initAndStartReplication(originRepl);
-			}
-		}, CLOSE_REPL_COMPLETELY_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-
-		closeCompletelyFuture.addListener(future -> {
-			if (timeoutFuture.isDone()) {
-				logger.info("[changeReplAddress][close completely but timeout] {}", this);
-				return;
-			} else {
-				try {
-					closeCompletelyFuture.cancel(true);
-				} catch (Throwable th) {
-					logger.info("[changeReplAddress][cancel timeout fail] {}", this);
+	private void startCheckAndAdjustTask() {
+		if (null == scheduledFuture || scheduledFuture.isDone()) {
+			logger.info("[startCheckAndAdjustTask][start adjust task] {}", this);
+			this.scheduledFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+				@Override
+				protected void doRun() throws Exception {
+					checkAndAdjustReplication();
 				}
-			}
-
-			logger.info("[changeReplAddress][close completely, start new repl] {}", this);
-			disposeReplication(originRepl);
-			initAndStartReplication(originRepl);
-		});
-	}
-
-	private void stopReplication(RedisMasterReplication repl) {
-		try {
-			LifecycleHelper.stopIfPossible(repl);
-		} catch (Throwable th) {
-			logger.info("[stopReplication][stop repl fail] {}", repl, th);
+			}, 0, ADJUST_MASTER_REPL_INTERVAL_MILLI, TimeUnit.MILLISECONDS);
+		} else {
+			logger.info("[startCheckAndAdjustTask][already start adjust task, skip] {}", this);
 		}
 	}
 
-	private void disposeReplication(RedisMasterReplication repl) {
-		try {
-			LifecycleHelper.disposeIfPossible(repl);
-		} catch (Throwable th) {
-			logger.info("[disposeReplication][dispose repl fail] {}", repl, th);
-		}
-	}
+	protected synchronized void checkAndAdjustReplication() throws Exception {
+		logger.debug("[checkAndAdjustReplication][begin] {}", this);
+		if (!this.endpoint.equals(redisMasterReplication.masterEndpoint())) {
+			logger.info("[checkAndAdjustReplication][wrong master] {}->{}", redisMasterReplication.masterEndpoint(), this.endpoint);
+			tryStopAndDisposeReplication();
 
-	private void initAndStartReplication(RedisMasterReplication originRepl) {
-		try {
-			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
-				logger.info("[initAndStartReplication][stopped, exit]{}, {}", endpoint, this);
+			int executeTime = adjustMasterWaitRound.getAndIncrement();
+			if (redisMasterReplication.getLifecycleState().isDisposed() && redisMasterReplication.isReplStopCompletely()
+					|| (executeTime * ADJUST_MASTER_REPL_INTERVAL_MILLI >= ADJUST_MASTER_REPL_MAX_WAIT_TIME)) {
+				logger.info("[checkAndAdjustReplication][replace repl] exec time:{}", executeTime);
+				redisMasterReplication = new DefaultRedisMasterReplication(this,
+						this.redisKeeperServer, nioEventLoopGroup, this.scheduled, keeperResourceManager);
+			} else {
+				logger.info("[checkAndAdjustReplication][not ready] exec time:{}", executeTime);
 				return;
 			}
+		}
 
-			RedisMasterReplication newRepl = new DefaultRedisMasterReplication(this,
-					this.redisKeeperServer, nioEventLoopGroup, this.scheduled, keeperResourceManager);
-			if (!redisMasterReplicationRef.compareAndSet(originRepl, newRepl)) {
-				logger.info("[initAndStartReplication][repl already change, exit] expt:{} but:{}", originRepl, redisMasterReplication());
-			} else {
-				LifecycleHelper.initializeIfPossible(newRepl);
-				LifecycleHelper.startIfPossible(newRepl);
-			}
-		} catch (Exception e) {
-			logger.error("[initAndStartReplication] {}, origin {}", this, originRepl, e);
+		syncMasterAndReplState();
+		if (this.getLifecycleState().getPhaseName().equals(redisMasterReplication.getLifecycleState().getPhaseName())) {
+			logger.info("[checkAndAdjustReplication][success]");
+			this.scheduledFuture.cancel(false);
+			this.scheduledFuture = null;
+		} else {
+			logger.info("[checkAndAdjustReplication][state desync] master:{}, repl:{}", this.getLifecycleState().getPhaseName(),
+					redisMasterReplication.getLifecycleState().getPhaseName());
 		}
 	}
 
-	private RedisMasterReplication redisMasterReplication() {
-		return redisMasterReplicationRef.get();
+	private void syncMasterAndReplState() throws Exception {
+		logger.debug("[syncMasterAndReplState][begin]");
+		if (this.getLifecycleState().isInitialized()) LifecycleHelper.initializeIfPossible(redisMasterReplication);
+		if (this.getLifecycleState().isStarted()) LifecycleHelper.startIfPossible(redisMasterReplication);
+		if (this.getLifecycleState().isStopped()) LifecycleHelper.stopIfPossible(redisMasterReplication);
+		if (this.getLifecycleState().isDisposed()) LifecycleHelper.disposeIfPossible(redisMasterReplication);
+	}
+
+	private void tryStopAndDisposeReplication() {
+		try {
+			LifecycleHelper.stopIfPossible(redisMasterReplication);
+			LifecycleHelper.disposeIfPossible(redisMasterReplication);
+		} catch (Throwable th) {
+			logger.error("[tryStopAndDisposeReplication][error] {}", redisMasterReplication, th);
+		}
 	}
 
 	@Override
@@ -194,7 +186,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public PARTIAL_STATE partialState() {
-		return redisMasterReplication().partialState();
+		return redisMasterReplication.partialState();
 	}
 
 	
@@ -202,7 +194,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	public RdbDumper createRdbDumper() throws CreateRdbDumperException {
 		
 		if(masterState != MASTER_STATE.REDIS_REPL_CONNECTED){
-			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication());
+			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication);
 			throw new CreateRdbDumperException(this, "master state not connected, dumper not allowed:" + masterState);
 		}
 		return new RedisMasterNewRdbDumper(this, redisKeeperServer, nioEventLoopGroup, scheduled, keeperResourceManager);

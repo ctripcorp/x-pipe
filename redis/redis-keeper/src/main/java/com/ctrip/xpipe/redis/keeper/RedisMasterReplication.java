@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.exception.XpipeException;
@@ -14,6 +15,8 @@ import io.netty.channel.Channel;
  * Aug 24, 2016
  */
 public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
+
+	Endpoint masterEndpoint();
 
 	void handleResponse(Channel channel, ByteBuf msg) throws XpipeException;
 
@@ -30,6 +33,8 @@ public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
 	CommandFuture<Void> waitReplConnected();
 
 	CommandFuture<Void> waitReplStopCompletely();
+
+	boolean isReplStopCompletely();
 
 	void updateReplicationObserver(RedisMasterReplicationObserver observer);
 
