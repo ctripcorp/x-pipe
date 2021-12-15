@@ -1,8 +1,9 @@
-package com.ctrip.xpipe.redis.checker.alert.decorator;
+package com.ctrip.xpipe.redis.console.alert.decorator;
 
-import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
+import com.ctrip.xpipe.redis.checker.alert.decorator.AlertMessageDecorator;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
  * <p>
  * Oct 19, 2017
  */
-public class AlertMessageDecoratorTest extends AbstractCheckerIntegrationTest {
+public class AlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private AlertMessageDecorator decorator;
-
-    @Test
-    public void getTemplateName() throws Exception {
-        Assert.assertEquals("RedisAlertTemplate.vm", decorator.getTemplateName());
-    }
 
     @Test
     public void generateTitle() throws Exception {
