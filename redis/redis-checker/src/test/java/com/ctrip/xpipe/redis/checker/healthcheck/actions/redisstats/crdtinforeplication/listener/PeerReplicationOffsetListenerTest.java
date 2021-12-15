@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforepl
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtInforeplication.listener.PeerReplicationOffsetListener;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CRDTInfoResultExtractor;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +19,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PeerReplicationOffsetListenerTest extends AbstractCheckerTest {
@@ -114,6 +115,38 @@ public class PeerReplicationOffsetListenerTest extends AbstractCheckerTest {
         Assert.assertTrue(listener.worksfor(context));
         listener.onAction(context);
         Mockito.verify(proxy, Mockito.times(2)).writeBinMultiDataPoint(Mockito.any());
+    }
+
+    @Test
+    public void testNotFindSrcPeerDc() throws MetricProxyException {
+        int port1 = 6379;
+        int offset1 = Math.abs(randomInt());
+        int port2 = 7379;
+        int offset2 = 0;
+        String info = String.format(TMP_REPLICATION, port1, offset1, port2, offset2);
+        HostPort host1 = new HostPort("127.0.0.1", port1);
+        HostPort host2 = new HostPort("127.0.0.1", port2);
+        Mockito.when(metaCache.getDc(host1)).thenReturn(DC_RB);
+        Mockito.when(metaCache.getDc(host2)).thenThrow(new IllegalStateException("unfound shard for instance:" + host2));
+        listener.setMetaCache(metaCache);
+        
+        CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
+        AtomicReference<String> host1_dc = new AtomicReference<>();
+        AtomicReference<String> host2_dc = new AtomicReference<>();
+        Mockito.doAnswer(invocation -> {
+            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            HostPort host = HostPort.fromString(point.getTags().get(PeerReplicationOffsetListener.KEY_SRC_PEER));
+            if( host.getPort() == port1) {
+                host1_dc.set(point.getTags().get((Object) PeerReplicationOffsetListener.KEY_SRC_PEER_DC));
+            } else if(host.getPort() == port2) {
+                host2_dc.set(point.getTags().get((Object) PeerReplicationOffsetListener.KEY_SRC_PEER_DC));
+            }
+            return null;
+        }).when(proxy).writeBinMultiDataPoint(Mockito.any());
+        listener.onAction(context);
+        Mockito.verify(proxy, Mockito.times(2)).writeBinMultiDataPoint(Mockito.any());
+        Assert.assertEquals(host1_dc.get(), DC_RB);
+        Assert.assertEquals(host2_dc.get(), PeerReplicationOffsetListener.UNKNOWN_DC);
     }
     
 }
