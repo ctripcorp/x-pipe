@@ -102,7 +102,7 @@ public class UnhealthyClusterChecker extends AbstractSiteLeaderIntervalCheck {
             data.addTag("activeDc", activeDc);
             data.addTag("inActiveDc", activeDc.equalsIgnoreCase(dc) ? "1" : "0");
         } else {
-            data.addTag("activeDc", "none");
+            data.addTag("activeDc", "NONE");
             data.addTag("inActiveDc", "0");
         }
 
