@@ -188,7 +188,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 	protected Psync createPsync() {
 
 		boolean allowKeeperPsync = redisKeeperServer.getTryConnectMasterCnt() <= 1;
-		Psync psync = new DefaultPsync(clientPool, masterEndpoint, redisMaster.getReplicationStoreManager(), allowKeeperPsync, scheduled);
+		Psync psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), allowKeeperPsync, scheduled);
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer);
 
@@ -214,7 +214,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_TRANSFER);
 		
 		partialState = PARTIAL_STATE.FULL;
-		redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) masterEndpoint);
+		redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
 	}
 
 	@Override
@@ -231,7 +231,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 		logger.info("[doOnContinue]{}", this);
 		redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
 		try {
-			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) masterEndpoint);
+			redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
 		} catch (IOException e) {
 			logger.error("[doOnContinue]" + this, e);
 		}
