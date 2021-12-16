@@ -38,18 +38,18 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private NioEventLoopGroup masterEventLoopGroup;
 
-	private NioEventLoopGroup rdbEventLoopGroup;
+	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
 	private KeeperResourceManager keeperResourceManager;
 
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup masterEventLoopGroup,
-							  NioEventLoopGroup rdbEventLoopGroup, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
+							  NioEventLoopGroup rdbOnlyEventLoopGroup, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
 							  KeeperResourceManager resourceManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.replicationStoreManager = replicationStoreManager;
 		this.masterEventLoopGroup = masterEventLoopGroup;
-		this.rdbEventLoopGroup = rdbEventLoopGroup;
+		this.rdbOnlyEventLoopGroup = rdbOnlyEventLoopGroup;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
 		this.keeperResourceManager = resourceManager;
@@ -118,7 +118,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication);
 			throw new CreateRdbDumperException(this, "master state not connected, dumper not allowed:" + masterState);
 		}
-		return new RedisMasterNewRdbDumper(this, redisKeeperServer, rdbEventLoopGroup, scheduled, keeperResourceManager);
+		return new RedisMasterNewRdbDumper(this, redisKeeperServer, rdbOnlyEventLoopGroup, scheduled, keeperResourceManager);
 	}
 	
 	public MASTER_STATE getMasterState() {

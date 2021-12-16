@@ -92,7 +92,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
     private EventLoopGroup bossGroup ;
     private EventLoopGroup workerGroup;
     private NioEventLoopGroup masterEventLoopGroup;
-	private NioEventLoopGroup rdbEventLoopGroup;
+	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
 	private final Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
 	
@@ -162,7 +162,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "boss-" + threadPoolName));
 		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, ClusterShardAwareThreadFactory.create(clusterId, shardId, "work-"+ threadPoolName));
 		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "master-" + threadPoolName));
-		rdbEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "rdb-" + threadPoolName));
+		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "rdbOnly-" + threadPoolName));
 
 
 		this.resetReplAfterLongTimeDown();
@@ -280,7 +280,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
 		this.leaderElector.dispose();
 		masterEventLoopGroup.shutdownGracefully();
-		rdbEventLoopGroup.shutdownGracefully();
+		rdbOnlyEventLoopGroup.shutdownGracefully();
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
 		replicationStoreManager.dispose();
@@ -326,7 +326,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup,
-					rdbEventLoopGroup, replicationStoreManager, scheduled, resourceManager);
+					rdbOnlyEventLoopGroup, replicationStoreManager, scheduled, resourceManager);
 
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);
