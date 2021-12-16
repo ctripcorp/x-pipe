@@ -33,27 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class KeeperFastStateChangeTest extends AbstractKeeperIntegratedSingleDc {
 
-    private int originTimeout;
-
-    private int originInterval;
-
-    private int adjustTimeout;
-
-    @Before
-    public void preKeeperFastStateChangeTest() {
-        originTimeout = DefaultRedisMaster.ADJUST_MASTER_REPL_MAX_WAIT_TIME;
-        originInterval = DefaultRedisMaster.ADJUST_MASTER_REPL_INTERVAL_MILLI;
-        DefaultRedisMaster.ADJUST_MASTER_REPL_MAX_WAIT_TIME = 1000;
-        DefaultRedisMaster.ADJUST_MASTER_REPL_INTERVAL_MILLI = 100;
-        this.adjustTimeout = DefaultRedisMaster.ADJUST_MASTER_REPL_MAX_WAIT_TIME;
-    }
-
-    @After
-    public void afterKeeperFastStateChangeTest() {
-        DefaultRedisMaster.ADJUST_MASTER_REPL_MAX_WAIT_TIME = originTimeout;
-        DefaultRedisMaster.ADJUST_MASTER_REPL_INTERVAL_MILLI = originInterval;
-    }
-
     @Override
     protected KeeperConfig getKeeperConfig() {
         TestKeeperConfig keeperConfig = new TestKeeperConfig();
@@ -96,8 +75,6 @@ public class KeeperFastStateChangeTest extends AbstractKeeperIntegratedSingleDc 
             keeperActive = tmp;
         }
 
-        // wait repl close timeout
-        sleep(adjustTimeout);
         sendMessageToMasterAndTestSlaveRedis(1024);
 
         RoleCommand masterRoleCommand = new RoleCommand(masterClientPool, scheduled);
@@ -117,48 +94,6 @@ public class KeeperFastStateChangeTest extends AbstractKeeperIntegratedSingleDc 
 
         Integer fsync = infoFsync(masterClientPool);
         Assert.assertEquals(originFsync, fsync);
-    }
-
-    @Test
-    public void changeStateThroughFunctionCall() throws Exception {
-        RedisMeta master = getRedisMaster();
-        RedisMeta slave = new RedisMeta().setIp("127.0.0.1").setPort(6380);
-        new SlaveOfCommand(NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(slave.getIp(), slave.getPort())),
-                master.getIp(), master.getPort(), scheduled).execute().sync();
-
-        sendMessageToMasterAndTestSlaveRedis(10);
-        SimpleObjectPool<NettyClient> masterClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(master.getIp(), master.getPort()));
-        SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint("127.0.0.1", 8000));
-        SimpleObjectPool<NettyClient> activeKeeperClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(activeKeeper.getIp(), activeKeeper.getPort()));
-
-
-        RedisKeeperServer activeKeeperServer = getRedisKeeperServer(activeKeeper);
-        AtomicBoolean keeperChangeAddress = new AtomicBoolean(true);
-        executors.execute(() -> {
-            while (keeperChangeAddress.get()) {
-                activeKeeperServer.getRedisMaster().changeReplAddress(new DefaultEndPoint(slave.getIp(), slave.getPort()));
-                activeKeeperServer.getRedisMaster().changeReplAddress(new DefaultEndPoint(master.getIp(), master.getPort()));
-            }
-        });
-
-        // wait repl close timeout
-        sleep(adjustTimeout * 3);
-        keeperChangeAddress.set(false);
-        sleep(adjustTimeout);
-
-        sendMessageToMasterAndTestSlaveRedis(1024);
-
-        RoleCommand masterRoleCommand = new RoleCommand(masterClientPool, scheduled);
-        RoleCommand slaveRoleCommand = new RoleCommand(slaveClientPool, scheduled);
-        MasterRole masterRole = (MasterRole) masterRoleCommand.execute().get();
-        SlaveRole slaveRole = (SlaveRole) slaveRoleCommand.execute().get();
-        Assert.assertEquals(masterRole.getOffset(), slaveRole.getMasterOffset());
-        Assert.assertEquals(2, masterRole.getSlaveHostPorts().size());
-
-        RedisKeeperServer backupKeeperServer = getRedisKeeperServer(backupKeeper);
-        Assert.assertEquals(masterRole.getOffset(), activeKeeperServer.getKeeperRepl().getEndOffset());
-        Assert.assertEquals(masterRole.getOffset(), backupKeeperServer.getKeeperRepl().getEndOffset());
-        Assert.assertEquals(new DefaultEndPoint(master.getIp(), master.getPort()), activeKeeperServer.getRedisMaster().masterEndPoint());
     }
 
     private int infoFsync(SimpleObjectPool<NettyClient> clientPool) throws Exception {
