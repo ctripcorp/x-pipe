@@ -38,7 +38,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
@@ -73,17 +72,13 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 	private NioEventLoopGroup nioEventLoopGroup;
 
-	private Server server;
-
 	@Before
 	public void beforeDefaultRedisMasterReplicationTest() throws Exception {
 
 		MockitoAnnotations.initMocks(this);
 
 		nioEventLoopGroup = new NioEventLoopGroup();
-		server = startServer("+OK\r\n");
 
-		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("127.0.0.1", server.getPort()));
 		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
 				scheduled, replTimeoutMilli, proxyResourceManager);
 		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(new RedisKeeperServerStateActive(redisKeeperServer));
@@ -100,9 +95,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	public void testStopReceivingDataWhenNotStarted() throws Exception {
 
 		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("localhost", randomPort()));
-		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli, proxyResourceManager);
-		add(defaultRedisMasterReplication);
 
 		defaultRedisMasterReplication.initialize();
 		try {
@@ -142,9 +134,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 
 		Server server = startEmptyServer();
 		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint("localhost", server.getPort()));
-		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli, proxyResourceManager);
-		add(defaultRedisMasterReplication);
 		AtomicInteger connectingCount = new AtomicInteger(0);
 		doAnswer(new Answer() {
 			@Override
@@ -153,7 +142,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 				return null;
 			}
 		}).when(redisMaster).setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);
-		
+
 		defaultRedisMasterReplication.setMasterConnectRetryDelaySeconds(0);
 
 		defaultRedisMasterReplication.initialize();
@@ -202,9 +191,6 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		when(redisMaster.masterEndPoint()).thenReturn(endpoint);
 		ProxyEndpointManager proxyEndpointManager = mock(ProxyEndpointManager.class);
 		KeeperResourceManager proxyResourceManager = new DefaultKeeperResourceManager(proxyEndpointManager, new NaiveNextHopAlgorithm(), new DefaultLeakyBucket(4));
-		defaultRedisMasterReplication = new DefaultRedisMasterReplication(redisMaster, redisKeeperServer, nioEventLoopGroup,
-				scheduled, replTimeoutMilli, proxyResourceManager);
-		add(defaultRedisMasterReplication);
 
 		// first time empty list, sec time return endpoint
 		when(proxyEndpointManager.getAvailableProxyEndpoints()).thenReturn(Lists.newArrayList())
@@ -221,41 +207,8 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 						.count() == 2);
 	}
 
-	@Test
-	public void testConnectFailAndStopWaitClose() throws Exception {
-		defaultRedisMasterReplication.initialize();
-		defaultRedisMasterReplication.start(); // connect fail
-		defaultRedisMasterReplication.stop();
-		defaultRedisMasterReplication.dispose();
-		defaultRedisMasterReplication.waitReplStopCompletely().get(1, TimeUnit.SECONDS);
-	}
-
-	@Test
-	public void testStopAndDisconnectWaitClose() throws Exception {
-		defaultRedisMasterReplication.initialize();
-		defaultRedisMasterReplication.start(); // connect success
-		defaultRedisMasterReplication.waitReplConnected().addListener(f -> {
-			// stop after connected
-			defaultRedisMasterReplication.stop();
-			defaultRedisMasterReplication.dispose();
-		});
-		defaultRedisMasterReplication.waitReplStopCompletely().get(1, TimeUnit.SECONDS);
-	}
-
-	@Test
-	public void testStopAndConnectedWaitClose() throws Exception {
-		defaultRedisMasterReplication = spy(defaultRedisMasterReplication);
-		defaultRedisMasterReplication.initialize();
-		defaultRedisMasterReplication.start(); // connect success
-		defaultRedisMasterReplication.stop();
-		defaultRedisMasterReplication.dispose();
-		defaultRedisMasterReplication.waitReplStopCompletely().get(1, TimeUnit.SECONDS);
-		verify(defaultRedisMasterReplication, atLeastOnce()).disconnectWithMaster();
-	}
-
 	@After
 	public void afterDefaultRedisMasterReplicationTest() throws Exception {
 		nioEventLoopGroup.shutdownGracefully();
-		server.stop();
 	}
 }
