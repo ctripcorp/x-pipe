@@ -49,12 +49,12 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
         RecordedRequest request = this.webServer.takeRequest();
 
         Assert.assertEquals(HttpMethod.DELETE.toString(), request.getMethod());
-        Assert.assertEquals(String.format("/keepers/clusters/%s/shards/%s", meta.getClusterId(), meta.getShardId()), request.getPath());
+        Assert.assertEquals(String.format("/keepers/clusters/%s/shards/%s", meta.getClusterDbId(), meta.getShardDbId()), request.getPath());
         Assert.assertEquals(meta, Codec.DEFAULT.decode(request.getBody().readByteArray(), KeeperTransMeta.class));
     }
 
     private KeeperTransMeta mockKeeperMeta() {
-        return new KeeperTransMeta("cluster1", "shard1", 1L, 1L, new KeeperMeta());
+        return new KeeperTransMeta(1L, 1L, new KeeperMeta());
     }
 
 }

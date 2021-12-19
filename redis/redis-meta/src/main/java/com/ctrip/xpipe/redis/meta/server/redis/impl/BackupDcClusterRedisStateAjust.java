@@ -63,7 +63,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 						currentMetaManager, executors, scheduled, pool);
 				clusterShardExecutors.execute(new Pair<>(clusterDbId, shardMeta.getDbId()), adjustJob);
 			} catch (Exception e) {
-				logger.info("[doRun] {}, {} adjust fail {}", clusterDbId, shardMeta.getId(), e.getMessage());
+				logger.info("[doRun] {}, {} adjust fail {}", clusterDbId, shardMeta.getDbId(), e.getMessage());
 			}
 		}
 	}
