@@ -49,7 +49,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		if(args instanceof NodeAdded){
 			ClusterMeta clusterMeta = (ClusterMeta)((NodeAdded)args).getNode();
 			if (supportCluster(clusterMeta)) {
-				logger.info("[update][add][{}]{}", getClass().getSimpleName(), clusterMeta.getId());
+				logger.info("[update][add][{}]{}", getClass().getSimpleName(), clusterMeta.getDbId());
 				handleClusterAdd(clusterMeta);
 			}
 			return;
@@ -58,7 +58,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		if(args instanceof NodeDeleted){
 			ClusterMeta clusterMeta = (ClusterMeta)((NodeDeleted)args).getNode();
 			if (supportCluster(clusterMeta)) {
-				logger.info("[update][delete][{}]{}", getClass().getSimpleName(), clusterMeta.getId());
+				logger.info("[update][delete][{}]{}", getClass().getSimpleName(), clusterMeta.getDbId());
 				handleClusterDeleted(clusterMeta);
 			}
 			return;

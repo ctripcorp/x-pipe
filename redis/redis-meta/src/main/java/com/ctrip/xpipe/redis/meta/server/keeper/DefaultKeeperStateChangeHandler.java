@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
-import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -21,8 +20,6 @@ import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
-import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +28,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -61,11 +57,6 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Autowired
 	private CurrentMetaManager currentMetaManager;
 
-	@Autowired
-	private MetaServerConfig config;
-
-	private Map<Pair<Long, Long>, Long> lastKeeperAdjustTimeMap = Maps.newConcurrentMap();
-	
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
@@ -73,30 +64,10 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>(executors);
 	}
 
-	private boolean shouldSkipAdjust(Long clusterDbId, Long shardDbId) {
-		Pair<Long, Long> clusterShardKey = Pair.of(clusterDbId, shardDbId);
-		int minAdjustInterval = config.getMinKeeperAdjustIntervalMilli();
-		Long lastAdjustTime = lastKeeperAdjustTimeMap.get(clusterShardKey);
-
-		if (minAdjustInterval > 0 && null != lastAdjustTime && (System.currentTimeMillis() - lastAdjustTime) < minAdjustInterval) {
-			logger.info("[skip adjust][last:{},minInterval:{}] cluster_{},shard_{}", lastAdjustTime, minAdjustInterval, clusterDbId, shardDbId);
-			return true;
-		} else return false;
-	}
-
-	private void updateAdjustTime(Long clusterDbId, Long shardDbId) {
-		lastKeeperAdjustTimeMap.put(Pair.of(clusterDbId, shardDbId), System.currentTimeMillis());
-	}
-	
 	@Override
 	public void keeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
-		if (shouldSkipAdjust(clusterDbId, shardDbId)) {
-			logger.info("[keeperMasterChanged][skip]{},{},{}", clusterDbId, shardDbId, newMaster);
-			return;
-		}
 
 		logger.info("[keeperMasterChanged]{},{},{}", clusterDbId, shardDbId, newMaster);
-		updateAdjustTime(clusterDbId, shardDbId);
 		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
 
 		if (activeKeeper == null) {
@@ -125,13 +96,8 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	@Override
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
-		if (shouldSkipAdjust(clusterDbId, shardDbId)) {
-			logger.info("[keeperActiveElected][skip]{},{},{}", clusterDbId, shardDbId, activeKeeper);
-			return;
-		}
 
 		logger.info("[keeperActiveElected]{},{},{}", clusterDbId, shardDbId, activeKeeper);
-		updateAdjustTime(clusterDbId, shardDbId);
 
 		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
 		if (keepers == null || keepers.isEmpty()) {
@@ -180,10 +146,5 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	public void setExecutors(ExecutorService executors) {
 		this.executors = executors;
-	}
-
-	@VisibleForTesting
-	protected void setConfig(MetaServerConfig config) {
-		this.config = config;
 	}
 }

@@ -373,7 +373,7 @@ public class CurrentMeta implements Releasable {
 			try {
 				currentShardMeta.release();
 			} catch (Exception e) {
-				logger.error("[removeShard]" + shardMeta.getId(), e);
+				logger.error("[removeShard]" + shardMeta.getDbId(), e);
 			}
 		}
 

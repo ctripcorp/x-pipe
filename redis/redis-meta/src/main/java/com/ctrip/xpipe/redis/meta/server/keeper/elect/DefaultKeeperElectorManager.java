@@ -211,7 +211,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		try {
 			observeLeader(clusterMeta);
 		} catch (Exception e) {
-			logger.error("[handleClusterAdd]" + clusterMeta.getId(), e);
+			logger.error("[handleClusterAdd]" + clusterMeta.getDbId(), e);
 		}
 	}
 
