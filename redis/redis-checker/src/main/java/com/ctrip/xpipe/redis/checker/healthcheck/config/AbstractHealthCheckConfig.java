@@ -47,6 +47,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int getHealthyLeastNotifyIntervalMilli() {
+        return checkerConfig.getHealthyLeastNotifyIntervalMilli();
+    }
+
+    @Override
     public int getRedisConfCheckIntervalMilli() {
         return checkerConfig.getRedisConfCheckIntervalMilli();
     }

@@ -49,6 +49,7 @@ public class CRDTDelayPingActionCollectorTest extends AbstractCheckerTest {
     private int downAfterMilli = 400;
     private int healthyDelayMilli = 100;
     private int checkIntervalMilli = 100;
+    private int leastNotifyIntervalMilli = 60 * 1000;
 
     @Before
     public void setupCurrentDcDelayPingActionCollectorTest() {
@@ -58,6 +59,7 @@ public class CRDTDelayPingActionCollectorTest extends AbstractCheckerTest {
         Mockito.when(healthCheckConfig.delayDownAfterMilli()).thenReturn(downAfterMilli);
         Mockito.when(healthCheckConfig.getHealthyDelayMilli()).thenReturn(healthyDelayMilli);
         Mockito.when(healthCheckConfig.checkIntervalMilli()).thenReturn(checkIntervalMilli);
+        Mockito.when(healthCheckConfig.getHealthyLeastNotifyIntervalMilli()).thenReturn(leastNotifyIntervalMilli);
         delayActionListener = collector.createDelayActionListener();
         pingActionListener = collector.createPingActionListener();
         collector.setScheduled(scheduled);

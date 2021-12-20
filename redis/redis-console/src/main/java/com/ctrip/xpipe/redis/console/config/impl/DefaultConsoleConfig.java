@@ -178,6 +178,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getHealthyLeastNotifyIntervalMilli() {
+        return getIntProperty(KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI, 3 * 60 * 1000);
+    }
+
+    @Override
     public int getHealthyDelayMilliThroughProxy() {
         return getIntProperty(KEY_HEALTHY_DELAY_THROUGH_PROXY, 30 * 1000);
     }

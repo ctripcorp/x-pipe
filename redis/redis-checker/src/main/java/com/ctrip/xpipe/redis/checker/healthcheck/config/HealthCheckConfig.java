@@ -21,6 +21,8 @@ public interface HealthCheckConfig {
 
     int getHealthyDelayMilli();
 
+    int getHealthyLeastNotifyIntervalMilli();
+
     int getRedisConfCheckIntervalMilli();
 
     int getSentinelCheckIntervalMilli();
