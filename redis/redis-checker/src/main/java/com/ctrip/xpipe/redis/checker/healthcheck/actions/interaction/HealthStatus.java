@@ -249,12 +249,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
                 && lastMarkupNotify.compareAndSet(last, now)) {
             doMarkUpAndNotify(pre, cur);
         } else {
-            logger.info("[markUpIfNecessary] not success");
+            logger.debug("[markUpForLeastInterval] not success");
         }
     }
 
     @VisibleForTesting void doMarkUpAndNotify(HEALTH_STATE pre, HEALTH_STATE cur) {
-        logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
+        logger.info("[doMarkUpAndNotify]{} {}->{}", this, pre, cur);
         notifyObservers(new InstanceUp(instance));
         lastMarkupNotify.set(System.currentTimeMillis());
     }
