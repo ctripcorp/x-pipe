@@ -47,7 +47,7 @@
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
-        <log4j2.version>2.15.0</log4j2.version>
+        <log4j2.version>2.16.0</log4j2.version>
         <disruptor.version>3.3.6</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
