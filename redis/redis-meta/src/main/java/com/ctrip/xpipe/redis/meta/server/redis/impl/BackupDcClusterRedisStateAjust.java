@@ -53,7 +53,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 
 		ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterDbId);
 		if(clusterMeta == null){
-			logger.warn("[doRun][cluster null]{}", clusterDbId);
+			logger.warn("[doRun][cluster null]cluster_{}", clusterDbId);
 			return;
 		}
 		
@@ -63,7 +63,7 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 						currentMetaManager, executors, scheduled, pool);
 				clusterShardExecutors.execute(new Pair<>(clusterDbId, shardMeta.getDbId()), adjustJob);
 			} catch (Exception e) {
-				logger.info("[doRun] {}, {} adjust fail {}", clusterDbId, shardMeta.getDbId(), e.getMessage());
+				logger.info("[doRun] cluster_{}, shard_{} adjust fail {}", clusterDbId, shardMeta.getDbId(), e.getMessage());
 			}
 		}
 	}

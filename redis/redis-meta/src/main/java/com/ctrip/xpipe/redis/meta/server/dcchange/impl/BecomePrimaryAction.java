@@ -78,7 +78,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 			sentinelManager.addSentinel(clusterDbId, shardDbId, HostPort.fromPair(newMaster), executionLog);
 		}catch(Exception e){
 			executionLog.error("[addSentinel][fail]" + e.getMessage());
-			logger.error("[addSentinel]" + clusterDbId + "," + shardDbId, e);
+			logger.error("[addSentinel] cluster_" + clusterDbId + ",shard_" + shardDbId, e);
 		}
 	}
 
@@ -110,7 +110,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 			executionLog.info("[make slaves slaveof]success");
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			String failMsg = StringUtil.isEmpty(e.getMessage()) ? e.getClass().getName() : e.getMessage();
-			EventMonitor.DEFAULT.logAlertEvent(String.format("[mig][slaves][fail][%d][%d] %s", cluster, shard, slavesJob.toString()));
+			EventMonitor.DEFAULT.logAlertEvent(String.format("[mig][slaves][fail][cluster_%d][shard_%d] %s", cluster, shard, slavesJob.toString()));
 			logger.error("[makeRedisesOk][fail][ignore]" + slaves + "->" + newMaster, e);
 			executionLog.error("[make slaves slaveof][fail][ignore]" + failMsg);
 		}

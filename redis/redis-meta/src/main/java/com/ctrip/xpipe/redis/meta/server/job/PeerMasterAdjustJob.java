@@ -108,7 +108,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
         sequenceCommandChain.future().addListener(commandFuture -> {
             if (!commandFuture.isSuccess()) {
-                getLogger().info("[{}][{}] fail", clusterDbId, shardDbId, commandFuture.cause());
+                getLogger().info("[cluster_{}][shard_{}] fail", clusterDbId, shardDbId, commandFuture.cause());
                 future().setFailure(commandFuture.cause());
             } else if (peerMasterChanged.isEmpty() && peerMasterAdded.isEmpty() && (!doDelete || peerMasterDeleted.isEmpty())) {
                 getLogger().debug("[doExecute] no need adjust, finish");

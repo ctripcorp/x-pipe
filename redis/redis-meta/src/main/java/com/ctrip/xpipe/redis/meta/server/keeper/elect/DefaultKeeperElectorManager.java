@@ -57,7 +57,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	}
 
 	protected void observerShardLeader(final Long clusterDbId, final Long shardDbId) {
-		logger.info("[observerShardLeader]{},{}", clusterDbId, shardDbId);
+		logger.info("[observerShardLeader]cluster_{},shard_{}", clusterDbId, shardDbId);
 
 		final CuratorFramework client = zkClient.get();
 		if(currentMetaManager.watchIfNotWatched(clusterDbId, shardDbId)){
@@ -85,7 +85,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 							try {
 								lock.lock();
-								logger.info("[childEvent]{}, {}, {}, {}", clusterDbId, shardDbId, event.getType(), ZkUtils.toString(event.getData()));
+								logger.info("[childEvent]cluster_{}, shard_{}, {}, {}", clusterDbId, shardDbId, event.getType(), ZkUtils.toString(event.getData()));
 								updateShardLeader(aggregateChildData(pathChildrenCaches), clusterDbId, shardDbId);
 							} finally {
 								lock.unlock();
@@ -96,7 +96,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 					try {
 						pathChildrenCache.start();
 					} catch (Exception e) {
-						logger.info("[observerShardLeader][{}-{}] start cache fail {}", clusterDbId, shardDbId, pathChildrenCache, e);
+						logger.info("[observerShardLeader][cluster{}][shard_{}] start cache fail {}", clusterDbId, shardDbId, pathChildrenCache, e);
 					}
 				});
 
@@ -105,32 +105,25 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 					public void release() throws Exception {
 						pathChildrenCaches.forEach(pathChildrenCache -> {
 							try{
-								logger.info("[release][release children cache]{}, {}", clusterDbId, shardDbId);
+								logger.info("[release][release children cache]cluster_{}, shard_{}", clusterDbId, shardDbId);
 								pathChildrenCache.close();
 							}catch (Exception e){
-								logger.error(String.format("[release][release children cache]%s, %s", clusterDbId, shardDbId), e);
+								logger.error(String.format("[release][release children cache]cluster_%s, shard_%s", clusterDbId, shardDbId), e);
 							}
 						});
 					}
 				});
 			} catch (Exception e) {
-				logger.error("[observerShardLeader]" + clusterDbId + " " + shardDbId, e);
+				logger.error("[observerShardLeader]cluster_" + clusterDbId + " shard_" + shardDbId, e);
 			}
 		}else{
-			logger.warn("[observerShardLeader][already watched]{}, {}", clusterDbId, shardDbId);
+			logger.warn("[observerShardLeader][already watched]cluster_{}, shard_{}", clusterDbId, shardDbId);
 		}
-	}
-
-	private PathChildrenCache buildPathChildrenCacheByName(String clusterId, String shardId, CuratorFramework client) {
-		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterId, shardId);
-		logger.info("[observerShardLeader][add PathChildrenCache]{}, {}, {}", clusterId, shardId, leaderLatchPath);
-		return new PathChildrenCache(client, leaderLatchPath, true,
-				XpipeThreadFactory.create(String.format("PathChildrenCache:%s-%s", clusterId, shardId)));
 	}
 
 	private PathChildrenCache buildPathChildrenCacheByDbId(Long clusterDbId, Long shardDbId, CuratorFramework client) {
 		final String leaderLatchPath = MetaZkConfig.getKeeperLeaderLatchPath(clusterDbId, shardDbId);
-		logger.info("[observerShardLeader][add PathChildrenCache]{}, {}, {}", clusterDbId, shardDbId, leaderLatchPath);
+		logger.info("[observerShardLeader][add PathChildrenCache]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, leaderLatchPath);
 		return new PathChildrenCache(client, leaderLatchPath, true,
 				XpipeThreadFactory.create(String.format("PathChildrenCache:cluster_%d-shard_%d", clusterDbId, shardDbId)));
 	}
@@ -167,7 +160,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	}
 
 	protected void updateShardLeader(List<List<ChildData>> childrenDataList, Long clusterDbId, Long shardDbId){
-		logger.info("[updateShardLeader]{}, {}, {}", clusterDbId, shardDbId, childrenDataList);
+		logger.info("[updateShardLeader]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, childrenDataList);
 		List<KeeperMeta> survivalKeepers = new ArrayList<>();
 		int expectedKeepers = 0;
 
@@ -180,7 +173,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 					logger.info("[updateShardLeader] getkeeper {}", keeper);
 					survivalKeepers.add(keeper);
 				} catch (Throwable th) {
-					logger.info("[updateShardLeader][{},{}] decode child data fail {}", clusterDbId, shardDbId, childData, th);
+					logger.info("[updateShardLeader][cluster_{},shard_{}] decode child data fail {}", clusterDbId, shardDbId, childData, th);
 				}
 			});
 		}
@@ -201,7 +194,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 			try {
 				observerShardLeader(clusterDbId, shardMeta.getDbId());
 			} catch (Exception e) {
-				logger.error("[handleClusterModified]" + clusterDbId + "," + shardMeta.getDbId(), e);
+				logger.error("[handleClusterModified]cluster_" + clusterDbId + ",shard_" + shardMeta.getDbId(), e);
 			}
 		}
 	}
@@ -211,7 +204,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		try {
 			observeLeader(clusterMeta);
 		} catch (Exception e) {
-			logger.error("[handleClusterAdd]" + clusterMeta.getDbId(), e);
+			logger.error("[handleClusterAdd]cluster_" + clusterMeta.getDbId(), e);
 		}
 	}
 

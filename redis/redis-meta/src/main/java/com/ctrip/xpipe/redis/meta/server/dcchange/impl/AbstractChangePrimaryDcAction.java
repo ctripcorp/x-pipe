@@ -76,7 +76,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 			return doChangePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
 		}catch(Exception e){
 			executionLog.error(e.getMessage());
-			logger.error("[changePrimaryDc]" + clusterDbId + "," + shardDbId + "," + newPrimaryDc, e);
+			logger.error("[changePrimaryDc]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + newPrimaryDc, e);
 			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 	}
@@ -111,7 +111,7 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 
 	protected void doChangeMetaCache(Long clusterDbId, Long shardDbId, String newPrimaryDc) {
 		
-		executionLog.info(String.format("[doChangeMetaCache]%s %s -> %s", clusterDbId, shardDbId, newPrimaryDc));
+		executionLog.info(String.format("[doChangeMetaCache]cluster_%s shard_%s -> %s", clusterDbId, shardDbId, newPrimaryDc));
 		dcMetaCache.primaryDcChanged(clusterDbId, shardDbId, newPrimaryDc);
 	}
 

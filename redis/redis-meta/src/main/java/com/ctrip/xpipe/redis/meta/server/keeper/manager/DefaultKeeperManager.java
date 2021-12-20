@@ -129,7 +129,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		try {
 			keeperStateController.removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta));
 		} catch (Exception e) {
-			logger.error(String.format("[removeKeeper]%s:%s,%s", clusterDbId, shardDbId, keeperMeta), e);
+			logger.error(String.format("[removeKeeper]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, keeperMeta), e);
 		}
 	}
 
@@ -137,7 +137,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		try {
 			keeperStateController.addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta));
 		} catch (Exception e) {
-			logger.error(String.format("[addKeeper]%s:%s,%s", clusterDbId, shardDbId, keeperMeta), e);
+			logger.error(String.format("[addKeeper]cluster_%s:shard_%s,%s", clusterDbId, shardDbId, keeperMeta), e);
 		}
 	}
 
@@ -191,7 +191,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 				try {
 					keeperStateController.addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, deadKeeper));
 				} catch (ResourceAccessException e) {
-					logger.error(String.format("cluster:%s,shard:%s, keeper:%s, error:%s", clusterDbId, shardDbId,
+					logger.error(String.format("cluster_%d,shard_%d, keeper:%s, error:%s", clusterDbId, shardDbId,
 							deadKeeper, e.getMessage()));
 				} catch (Throwable th) {
 					logger.error("[doCheck]", th);
@@ -336,7 +336,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			if (keeperMetas.isEmpty()) return;
 			
 			SequenceCommandChain sequenceCommandChain =
-					new SequenceCommandChain(String.format("%s-%s-%s", this.getClass().getSimpleName(), clusterDbId, shardDbId));
+					new SequenceCommandChain(String.format("%s-cluster_%d-shard_%d", this.getClass().getSimpleName(), clusterDbId, shardDbId));
 			for (KeeperMeta keeperMeta : keeperMetas) {
 				InfoCommand infoCommand = new InfoCommand(
 						clientPool.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort())),
@@ -370,7 +370,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
 				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
-					logger.info("[{}][KeeperInfoCorrect]cluster: {}, shard: {}, result: {}",
+					logger.info("[{}][KeeperInfoCorrect]cluster_{}, shard_{}, result: {}",
 							getClass(), clusterDbId, shardDbId, commandFuture.isSuccess());
 				}
 			});
@@ -407,7 +407,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		@Override
 		protected void onFailure(Throwable throwable) {
 			if (ExceptionUtils.getRootCause(throwable) instanceof CommandTimeoutException) {
-				logger.debug("[onFailure][{}-{}] ignore failure for command timeout", clusterDbId, shardDbId);
+				logger.debug("[onFailure][cluster_{}][shard_{}] ignore failure for command timeout", clusterDbId, shardDbId);
 				future().setSuccess();
 			} else {
 				future().setFailure(throwable);
