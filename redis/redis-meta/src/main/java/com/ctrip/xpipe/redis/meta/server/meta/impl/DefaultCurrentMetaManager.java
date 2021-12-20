@@ -142,8 +142,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 		for (Long clusterDbId: currentMeta.allClusters()) {
 			if (!clusterDbIdsInMeta.contains(clusterDbId)) {
-				logger.warn("[checkCurrentMetaMissOrRedundant][unexpected current cluster] {}", clusterDbId);
-				EventMonitor.DEFAULT.logAlertEvent("[unexpected current cluster] " + clusterDbId);
+				logger.warn("[checkCurrentMetaMissOrRedundant][unexpected current cluster] cluster_{}", clusterDbId);
+				EventMonitor.DEFAULT.logAlertEvent("[unexpected current cluster] cluster_" + clusterDbId);
 			}
 		}
 	}
@@ -241,12 +241,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	private synchronized void addCluster(Long clusterDbId) {
 		if (currentMeta.hasCluster(clusterDbId)) {
-			logger.info("[addCluster][already exist]{}", clusterDbId);
+			logger.info("[addCluster][already exist]cluster_{}", clusterDbId);
 			return;
 		}
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 		if (null == clusterMeta) {
-			logger.info("[addCluster][unfound]{}", clusterDbId);
+			logger.info("[addCluster][unfound]cluster_{}", clusterDbId);
 			return;
 		}
 
@@ -276,7 +276,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private void removeClusterInterested(Long clusterDbId) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 		if (null == clusterMeta) {
-			logger.info("[removeClusterInterested][unfound, remove anyway]{}", clusterDbId);
+			logger.info("[removeClusterInterested][unfound, remove anyway]cluster_{}", clusterDbId);
 			removeCluster(new ClusterMeta().setDbId(clusterDbId));
 		} else {
 			removeCluster(new ClusterMeta().setType(clusterMeta.getType()).setDbId(clusterDbId));
@@ -505,10 +505,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		Pair<String, Integer> keeperMaster = new Pair<String, Integer>(ip, port);
 		if(currentMeta.setKeeperMaster(clusterDbId, shardDbId, keeperMaster)){
-			logger.info("[setKeeperMaster]{},{},{}:{}", clusterDbId, shardDbId, ip, port);
+			logger.info("[setKeeperMaster]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 			notifyKeeperMasterChanged(clusterDbId, shardDbId, keeperMaster);
 		}else{
-			logger.info("[setKeeperMaster][keeper master not changed!]{},{},{}:{}", clusterDbId, shardDbId, ip, port);
+			logger.info("[setKeeperMaster][keeper master not changed!]cluster_{},shard_{},{}:{}", clusterDbId, shardDbId, ip, port);
 		}
 		
 	}
@@ -516,7 +516,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@Override
 	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String addr) {
 		
-		logger.info("[setKeeperMaster]{},{},{}", clusterDbId, shardDbId, addr);
+		logger.info("[setKeeperMaster]cluster_{},shard_{},{}", clusterDbId, shardDbId, addr);
 		Pair<String, Integer> inetAddr = IpUtils.parseSingleAsPair(addr);
 		setKeeperMaster(clusterDbId, shardDbId, inetAddr.getKey(), inetAddr.getValue());
 	}
@@ -584,7 +584,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			try {
 				stateHandler.currentMasterChanged(clusterDbId, shardDbId);
 			} catch (Exception e) {
-				logger.error("[notifyCurrentMasterChanged] {}, {}", clusterDbId, shardDbId, e);
+				logger.error("[notifyCurrentMasterChanged] cluster_{}, shard_{}", clusterDbId, shardDbId, e);
 			}
 		}
 	}
@@ -594,7 +594,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			try {
 				stateHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);
 			} catch (Exception e) {
-				logger.error("[notifyPeerMasterChange] {}, {}, {}", dcId, clusterDbId, shardDbId, e);
+				logger.error("[notifyPeerMasterChange] {}, cluster_{}, shard_{}", dcId, clusterDbId, shardDbId, e);
 			}
 		}
 	}
@@ -605,7 +605,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			try {
 				stateHandler.keeperActiveElected(clusterDbId, shardDbId, activeKeeper);
 			} catch (Exception e) {
-				logger.error("[notifyKeeperActiveElected]" + clusterDbId + "," + shardDbId + "," + activeKeeper, e);
+				logger.error("[notifyKeeperActiveElected]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + activeKeeper, e);
 			}
 		}
 	}
@@ -615,7 +615,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			try {
 				stateHandler.keeperMasterChanged(clusterDbId, shardDbId, keeperMaster);
 			} catch (Exception e) {
-				logger.error("[notifyKeeperMasterChanged]" + clusterDbId + "," + shardDbId + "," + keeperMaster, e);
+				logger.error("[notifyKeeperMasterChanged]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + keeperMaster, e);
 			}
 		}
 	}

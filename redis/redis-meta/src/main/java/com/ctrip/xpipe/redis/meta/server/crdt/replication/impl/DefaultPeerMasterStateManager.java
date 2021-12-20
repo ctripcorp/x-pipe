@@ -47,12 +47,12 @@ public class DefaultPeerMasterStateManager extends AbstractCurrentPeerMasterMeta
         try {
             PeerMasterStateAdjuster adjuster = new DefaultPeerMasterStateAdjuster(clusterDbId, shardDbId, dcMetaCache,
                     currentMetaManager, metaServerConfig, peerMasterAdjustJobFactory, peerMasterAdjustExecutor, scheduled);
-            logger.info("[addShard]{}, {}, {}", clusterDbId, shardDbId, adjuster);
+            logger.info("[addShard]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, adjuster);
             adjuster.start();
             //release resources
             registerJob(clusterDbId, shardDbId, adjuster);
         } catch (Exception e) {
-            logger.error("[addShard]{}, {}", clusterDbId, shardDbId, e);
+            logger.error("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId, e);
         }
     }
 }
