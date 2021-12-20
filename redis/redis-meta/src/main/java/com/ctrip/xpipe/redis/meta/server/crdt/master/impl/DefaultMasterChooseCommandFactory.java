@@ -53,21 +53,21 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
     }
 
     @Override
-    public MasterChooseCommand buildPeerMasterChooserCommand(String dcId, String clusterId, String shardId) {
-        MasterChooseCommand masterChooseCommand = new PeerMasterChooseCommand(dcId, clusterId, shardId, multiDcService);
-        return wrapPeerMasterChooseCommand(dcId, clusterId, shardId, masterChooseCommand);
+    public MasterChooseCommand buildPeerMasterChooserCommand(String dcId, Long clusterDbId, Long shardDbId) {
+        MasterChooseCommand masterChooseCommand = new PeerMasterChooseCommand(dcId, clusterDbId, shardDbId, multiDcService);
+        return wrapPeerMasterChooseCommand(dcId, clusterDbId, shardDbId, masterChooseCommand);
     }
 
-    protected MasterChooseCommand wrapPeerMasterChooseCommand(String dcId, String clusterId, String shardId, MasterChooseCommand command) {
+    protected MasterChooseCommand wrapPeerMasterChooseCommand(String dcId, Long clusterDbId, Long shardDbId, MasterChooseCommand command) {
         command.future().addListener(commandFuture -> {
-            logger.debug("[peerMasterChooseComplete]{}, {}, {}", dcId, clusterId, shardId);
+            logger.debug("[peerMasterChooseComplete]{}, {}, {}", dcId, clusterDbId, shardDbId);
             if (commandFuture.isSuccess()) {
                 RedisMeta master = commandFuture.get();
-                RedisMeta currentMaster = currentMetaManager.getPeerMaster(dcId, clusterId, shardId);
+                RedisMeta currentMaster = currentMetaManager.getPeerMaster(dcId, clusterDbId, shardDbId);
 
                 if (checkMasterChange(master, currentMaster)) {
-                    logger.info("[operationComplete][setPeerMaster]{}, {}, {}, {}", dcId, clusterId, shardId, master);
-                    currentMetaManager.setPeerMaster(dcId, clusterId, shardId, master.getGid(), master.getIp(), master.getPort());
+                    logger.info("[operationComplete][setPeerMaster]{}, {}, {}, {}", dcId, clusterDbId, shardDbId, master);
+                    currentMetaManager.setPeerMaster(dcId, clusterDbId, shardDbId, master.getGid(), master.getIp(), master.getPort());
                 }
             }
         });
@@ -76,23 +76,23 @@ public class DefaultMasterChooseCommandFactory implements MasterChooseCommandFac
     }
 
     @Override
-    public MasterChooseCommand buildCurrentMasterChooserCommand(String clusterId, String shardId) {
-        List<RedisMeta> redisMetas =  dcMetaCache.getShardRedises(clusterId, shardId);
-        MasterChooseCommand masterChooseCommand = new CurrentMasterChooseCommand(clusterId, shardId,
+    public MasterChooseCommand buildCurrentMasterChooserCommand(Long clusterDbId, Long shardDbId) {
+        List<RedisMeta> redisMetas =  dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+        MasterChooseCommand masterChooseCommand = new CurrentMasterChooseCommand(clusterDbId, shardDbId,
                 redisMetas, scheduled, keyedObjectPool, PEER_MASTER_CHECK_REDIS_TIMEOUT_SECONDS);
-        return wrapCurrentMasterChooseCommand(clusterId, shardId, masterChooseCommand);
+        return wrapCurrentMasterChooseCommand(clusterDbId, shardDbId, masterChooseCommand);
     }
 
-    protected MasterChooseCommand wrapCurrentMasterChooseCommand(String clusterId, String shardId, MasterChooseCommand command) {
+    protected MasterChooseCommand wrapCurrentMasterChooseCommand(Long clusterDbId, Long shardDbId, MasterChooseCommand command) {
         command.future().addListener(commandFuture -> {
-            logger.debug("[currentMasterChooseComplete]{}, {}", clusterId, shardId);
+            logger.debug("[currentMasterChooseComplete]{}, {}", clusterDbId, shardDbId);
             if (commandFuture.isSuccess()) {
                 RedisMeta master = commandFuture.get();
-                RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterId, shardId);
+                RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterDbId, shardDbId);
 
                 if (checkMasterChange(master, currentMaster)) {
-                    logger.info("[operationComplete][setCurrentMaster]{}, {}, {}", clusterId, shardId, master);
-                    currentMetaManager.setCurrentCRDTMaster(clusterId, shardId, master.getGid(), master.getIp(), master.getPort());
+                    logger.info("[operationComplete][setCurrentMaster]{}, {}, {}", clusterDbId, shardDbId, master);
+                    currentMetaManager.setCurrentCRDTMaster(clusterDbId, shardDbId, master.getGid(), master.getIp(), master.getPort());
                 }
             }
         });

@@ -165,4 +165,9 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public long getNewMasterCacheTimeoutMilli() {
 		return 10L;
 	}
+
+	@Override
+	public int getMinKeeperAdjustIntervalMilli() {
+		return 0;
+	}
 }

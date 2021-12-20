@@ -101,38 +101,4 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 		return current.getId();
 	}
 
-	public static class ShardUpstreamChanged implements ConfigChanged<ShardChange>{
-		
-		private String current, future;
-		private String clusterId, shardId;
-		public ShardUpstreamChanged(String clusterId, String shardId, String current, String future){
-			this.current = current;
-			this.future = future;
-			this.clusterId = clusterId;
-			this.shardId = shardId;
-		}
-		public String getClusterId() {
-			return clusterId;
-		}
-		public String getShardId() {
-			return shardId;
-		}
-		public String getCurrent() {
-			return current;
-		}
-		
-		public String getFuture() {
-			return future;
-		}
-
-		@Override
-		public ShardChange getChangedType() {
-			return ShardChange.UPSTREAM_CHANGE;
-		}
-		
-		@Override
-		public String toString() {
-			return Codec.DEFAULT.encode(this);
-		}
-	}
 }

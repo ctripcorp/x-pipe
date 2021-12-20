@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -20,6 +21,8 @@ import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -49,13 +53,18 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	private ExecutorService executors;
 
-	private KeyedOneThreadTaskExecutor<Pair<String, String>> keyedOneThreadTaskExecutor;
+	private KeyedOneThreadTaskExecutor<Pair<Long, Long>> keyedOneThreadTaskExecutor;
 
 	@Autowired
 	private DcMetaCache dcMetaCache;
 
 	@Autowired
 	private CurrentMetaManager currentMetaManager;
+
+	@Autowired
+	private MetaServerConfig config;
+
+	private Map<Pair<Long, Long>, Long> lastKeeperAdjustTimeMap = Maps.newConcurrentMap();
 	
 	@Override
 	protected void doInitialize() throws Exception {
@@ -63,15 +72,35 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		executors = DefaultExecutorFactory.createAllowCoreTimeout("KeeperStateChangeHandler", OsUtils.defaultMaxCoreThreadCount()).createExecutorService();
 		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>(executors);
 	}
+
+	private boolean shouldSkipAdjust(Long clusterDbId, Long shardDbId) {
+		Pair<Long, Long> clusterShardKey = Pair.of(clusterDbId, shardDbId);
+		int minAdjustInterval = config.getMinKeeperAdjustIntervalMilli();
+		Long lastAdjustTime = lastKeeperAdjustTimeMap.get(clusterShardKey);
+
+		if (minAdjustInterval > 0 && null != lastAdjustTime && (System.currentTimeMillis() - lastAdjustTime) < minAdjustInterval) {
+			logger.info("[skip adjust][last:{},minInterval:{}] cluster_{},shard_{}", lastAdjustTime, minAdjustInterval, clusterDbId, shardDbId);
+			return true;
+		} else return false;
+	}
+
+	private void updateAdjustTime(Long clusterDbId, Long shardDbId) {
+		lastKeeperAdjustTimeMap.put(Pair.of(clusterDbId, shardDbId), System.currentTimeMillis());
+	}
 	
 	@Override
-	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+	public void keeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
+		if (shouldSkipAdjust(clusterDbId, shardDbId)) {
+			logger.info("[keeperMasterChanged][skip]{},{},{}", clusterDbId, shardDbId, newMaster);
+			return;
+		}
 
-		logger.info("[keeperMasterChanged]{},{},{}", clusterId, shardId, newMaster);
-		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterId, shardId);
+		logger.info("[keeperMasterChanged]{},{},{}", clusterDbId, shardDbId, newMaster);
+		updateAdjustTime(clusterDbId, shardDbId);
+		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
 
 		if (activeKeeper == null) {
-			logger.info("[keeperMasterChanged][no active keeper, do nothing]{},{},{}", clusterId, shardId, newMaster);
+			logger.info("[keeperMasterChanged][no active keeper, do nothing]{},{},{}", clusterDbId, shardDbId, newMaster);
 			return;
 		}
 		if (!activeKeeper.isActive()) {
@@ -84,40 +113,45 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		keepers.add(activeKeeper);
 		
 		keyedOneThreadTaskExecutor.execute(
-				new Pair<String, String>(clusterId, shardId),
-				createKeeperStateChangeJob(clusterId, keepers, newMaster));
+				new Pair<>(clusterDbId, shardDbId),
+				createKeeperStateChangeJob(clusterDbId, keepers, newMaster));
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(String clusterId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
+	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterId);
+		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 
 	@Override
-	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
+	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
+		if (shouldSkipAdjust(clusterDbId, shardDbId)) {
+			logger.info("[keeperActiveElected][skip]{},{},{}", clusterDbId, shardDbId, activeKeeper);
+			return;
+		}
 
-		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
+		logger.info("[keeperActiveElected]{},{},{}", clusterDbId, shardDbId, activeKeeper);
+		updateAdjustTime(clusterDbId, shardDbId);
 
-		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
-		if (keepers == null || keepers.size() == 0) {
+		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
+		if (keepers == null || keepers.isEmpty()) {
 			logger.info("[keeperActiveElected][none keeper survive, do nothing]");
 			return;
 		}
-		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 
-		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterId, keepers, activeKeeperMaster);
+		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterDbId, keepers, activeKeeperMaster);
 
-		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
-			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
-			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{},{}", clusterId, shardId,
+		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{},{}", clusterDbId, shardDbId,
 					slaves);
 			keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
 					new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors),
-					() -> !dcMetaCache.isCurrentDcPrimary(clusterId, shardId), true));
+					() -> !dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId), true));
 		}
 		
-		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), keeperStateChangeJob);
+		keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), keeperStateChangeJob);
 	}
 
 	@Override
@@ -146,5 +180,10 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	public void setExecutors(ExecutorService executors) {
 		this.executors = executors;
+	}
+
+	@VisibleForTesting
+	protected void setConfig(MetaServerConfig config) {
+		this.config = config;
 	}
 }

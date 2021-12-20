@@ -17,6 +17,7 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	
 	private String xpipeConfig = "meta-test.xml";
 	private String dc = "jq", clusterId = "cluster1", shardId = "shard1";
+	private Long clusterDbId = 1L, shardDbId = 1L;
 	
 	protected MetaServerConfig  config = new DefaultMetaServerConfig();
 	
@@ -55,6 +56,14 @@ public class AbstractMetaServerTest extends AbstractRedisTest{
 	
 	public String getShardId() {
 		return shardId;
+	}
+
+	public Long getClusterDbId() {
+		return clusterDbId;
+	}
+
+	public Long getShardDbId() {
+		return shardDbId;
 	}
 	
 }

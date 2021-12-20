@@ -13,17 +13,17 @@ public interface MetaServerStateChangeHandler {
 	/**
 	 * 1. make sure keeper is at proper state
 	 * 2. notify console
-	 * @param clusterId
-	 * @param shardId
+	 * @param clusterDbId
+	 * @param shardDbId
 	 * @param activeKeeper if activeKeeper == null, means that no keeper is active 
 	 * @throws Exception
 	 */
-	default void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {}
+	default void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {}
 
-	default void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {}
+	default void keeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {}
 
-	default void currentMasterChanged(String clusterId, String shardId) {}
+	default void currentMasterChanged(Long clusterDbId, Long shardDbId) {}
 
-	default void peerMasterChanged(String dcId, String clusterId, String shardId) {}
+	default void peerMasterChanged(String dcId, Long clusterDbId, Long shardDbId) {}
 
 }

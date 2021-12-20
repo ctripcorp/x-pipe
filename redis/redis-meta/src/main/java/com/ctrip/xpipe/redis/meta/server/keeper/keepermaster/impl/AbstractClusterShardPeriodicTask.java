@@ -27,19 +27,19 @@ public abstract class AbstractClusterShardPeriodicTask extends AbstractStartStop
 
     private ScheduledFuture<?> future;
 
-    protected String clusterId, shardId;
+    protected Long clusterDbId, shardDbId;
 
     public static final int DEFAULT_WORK_INTERVAL_SECONDS = Integer
             .parseInt(System.getProperty("DEFAULT_WORK_INTERVAL_SECONDS", "10"));
 
-    public AbstractClusterShardPeriodicTask(String clusterId, String shardId, DcMetaCache dcMetaCache,
+    public AbstractClusterShardPeriodicTask(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
                                             CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
 
         this.dcMetaCache = dcMetaCache;
         this.currentMetaManager = currentMetaManager;
         this.scheduled = scheduled;
-        this.clusterId = clusterId;
-        this.shardId = shardId;
+        this.clusterDbId = clusterDbId;
+        this.shardDbId = shardDbId;
     }
 
     @Override
@@ -75,7 +75,7 @@ public abstract class AbstractClusterShardPeriodicTask extends AbstractStartStop
 
     @Override
     public String toString() {
-        return String.format("%s,%s,%s", getClass().getSimpleName(), clusterId, shardId);
+        return String.format("%s,%d,%d", getClass().getSimpleName(), clusterDbId, shardDbId);
     }
 
     protected int getWorkIntervalSeconds() {

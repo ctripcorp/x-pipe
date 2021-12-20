@@ -31,6 +31,8 @@ public class ClusterShardCachedNewMasterChooserTest extends AbstractMetaServerTe
 
     private String cluster = "cluster";
     private String shard = "shard";
+    private Long clusterDbId = 1L;
+    private Long shardDbId = 1L;
 
     @Before
     public void setupClusterShardCachedNewMasterChooserTest() {
@@ -40,7 +42,7 @@ public class ClusterShardCachedNewMasterChooserTest extends AbstractMetaServerTe
         }).when(innerChooser).choose(Mockito.anyList());
 
         ClusterShardCachedNewMasterChooser.clear();
-        chooser = ClusterShardCachedNewMasterChooser.wrapChooser(cluster, shard, innerChooser, this::getTimeoutMilli, scheduled);
+        chooser = ClusterShardCachedNewMasterChooser.wrapChooser(clusterDbId, shardDbId, innerChooser, this::getTimeoutMilli, scheduled);
     }
 
     @Test

@@ -65,8 +65,8 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
             surviveKeepers.set(inv.getArgumentAt(2, List.class));
             activeKeeper.set(inv.getArgumentAt(3, KeeperMeta.class));
             return null;
-        }).when(currentMetaManager).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-        when(currentMetaManager.watchIfNotWatched(anyString(), anyString())).thenReturn(true);
+        }).when(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
+        when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 
         clusterId = clusterMeta.getId();
         shardId = shardMeta.getId();
@@ -76,49 +76,14 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
 
     @Test
     public void testLeaderSelect() throws Exception {
-        keeperElectorManager.observerShardLeader(clusterId, shardId, clusterDbId, shardDbId);
+        keeperElectorManager.observerShardLeader(clusterDbId, shardDbId);
 
-        LeaderElector active = addKeeperZkNode(clusterId, shardId, getZkClient(), keeper1);
-        LeaderElector backup = addKeeperZkNode(clusterId, shardId, getZkClient(), keeper2);
+        LeaderElector active = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), keeper1);
+        LeaderElector backup = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), keeper2);
         waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager, times(2)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
+            verify(currentMetaManager, times(2)).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         }));
 
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper1).setActive(true), MetaClone.clone(keeper2).setActive(false)), surviveKeepers.get());
-        Assert.assertEquals("1", activeKeeper.get().getId());
-    }
-
-    @Test
-    public void testPathSwitch() throws Exception {
-        keeperElectorManager.observerShardLeader(clusterId, shardId, clusterDbId, shardDbId);
-
-        LeaderElector active = addKeeperZkNode(clusterId, shardId, getZkClient(), keeper1);
-        LeaderElector backup = addKeeperZkNode(clusterId, shardId, getZkClient(), keeper2);
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager, times(2)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-        }));
-
-        // active switch to path for ids
-        active.stop();
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager, times(3)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-        }));
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper2).setActive(true)), surviveKeepers.get());
-        Assert.assertEquals("2", activeKeeper.get().getId());
-
-        active = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), keeper1);
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager, times(4)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-        }));
-        Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper2).setActive(true), MetaClone.clone(keeper1).setActive(false)), surviveKeepers.get());
-        Assert.assertEquals("2", activeKeeper.get().getId());
-
-        // backup switch to path for ids
-        backup.stop();
-        backup = addKeeperZkNode(clusterDbId, shardDbId, getZkClient(), keeper2);
-        waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager, times(6)).setSurviveKeepers(anyString(), anyString(), anyList(), any(KeeperMeta.class));
-        }));
         Assert.assertEquals(Arrays.asList(MetaClone.clone(keeper1).setActive(true), MetaClone.clone(keeper2).setActive(false)), surviveKeepers.get());
         Assert.assertEquals("1", activeKeeper.get().getId());
     }

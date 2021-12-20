@@ -32,7 +32,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 @Component
 public class DefaultSlotManager extends AbstractLifecycle implements SlotManager, TopElement{
-	
 
 	@Autowired
 	private ZkClient zkClient;
@@ -373,12 +372,5 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 			lock.readLock().unlock();
 		}
 	}
-
-	public static void main(String[] args) {
-		String key = "test_dbatools_xpipe";
-		int hash = key.hashCode();
-		System.out.println(Math.abs(hash)%TOTAL_SLOTS);
-	}
-
 
 }

@@ -8,6 +8,6 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
  */
 public interface KeeperActiveElectAlgorithmManager {
 
-	KeeperActiveElectAlgorithm get(String clusterId, String shardId);
+	KeeperActiveElectAlgorithm get(Long clusterDbId, Long shardDbId);
 	
 }

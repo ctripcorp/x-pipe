@@ -6,10 +6,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -222,6 +219,46 @@ public class MetaUpdate extends AbstractConsoleController {
     @RequestMapping(value = "/cluster", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public RetMessage updateCluster(@RequestBody ClusterCreateInfo clusterInfo) {
         return updateSingleCluster(clusterInfo);
+    }
+
+    @RequestMapping(value = "/cluster/exchangename", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public RetMessage clusterExchangeName(@RequestBody ClusterExchangeNameInfo exchangeNameInfo) {
+        ClusterTbl formerClusterTbl = null;
+        ClusterTbl latterClusterTbl = null;
+
+        try {
+           exchangeNameInfo.check();
+
+            formerClusterTbl = clusterService.find(exchangeNameInfo.getFormerClusterName());
+            if (formerClusterTbl == null) {
+                return RetMessage.createFailMessage("former cluster not exist");
+            }
+
+            if (formerClusterTbl.getId() != exchangeNameInfo.getFormerClusterId()) {
+                return RetMessage.createFailMessage("former cluster id & name not match");
+            }
+
+            latterClusterTbl = clusterService.find(exchangeNameInfo.getLatterClusterName());
+            if (latterClusterTbl == null) {
+                return RetMessage.createFailMessage("latter cluster not exist");
+            }
+
+            if (latterClusterTbl.getId() != exchangeNameInfo.getLatterClusterId()) {
+                return RetMessage.createFailMessage("latter cluster id & name not match");
+            }
+
+            clusterService.exchangeName(exchangeNameInfo.getFormerClusterId(),
+                    exchangeNameInfo.getFormerClusterName(),
+                    exchangeNameInfo.getLatterClusterId(),
+                    exchangeNameInfo.getLatterClusterName());
+        } catch (CheckFailException cfe) {
+            return RetMessage.createFailMessage(cfe.getMessage());
+        } catch (Exception e) {
+            logger.error("{}", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+
+        return RetMessage.createSuccessMessage();
     }
 
     @RequestMapping(value = "/clusters", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)

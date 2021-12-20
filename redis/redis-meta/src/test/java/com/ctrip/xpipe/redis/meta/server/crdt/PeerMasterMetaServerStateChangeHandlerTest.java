@@ -23,18 +23,19 @@ public class PeerMasterMetaServerStateChangeHandlerTest extends AbstractMetaServ
     @Mock
     private PeerMasterAdjustAction peerMasterAdjustAction;
 
-    private String dcId = "dc1", clusterId = "cluster1", shardId = "shard1";
+    private String dcId = "dc1";
+    private Long clusterDbId = 1L, shardDbId = 1L;
 
     @Test
     public void testUpstreamPeerMasterChange() {
-        peerMasterMetaServerStateChangeHandler.currentMasterChanged(clusterId, shardId);
-        Mockito.verify(peerMasterAdjustAction, Mockito.times(1)).adjustPeerMaster(clusterId, shardId);
+        peerMasterMetaServerStateChangeHandler.currentMasterChanged(clusterDbId, shardDbId);
+        Mockito.verify(peerMasterAdjustAction, Mockito.times(1)).adjustPeerMaster(clusterDbId, shardDbId);
     }
 
     @Test
     public void testPeerMasterChanged() {
-        peerMasterMetaServerStateChangeHandler.peerMasterChanged(dcId, clusterId, shardId);
-        Mockito.verify(peerMasterAdjustAction, Mockito.times(1)).adjustPeerMaster(clusterId, shardId);
+        peerMasterMetaServerStateChangeHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);
+        Mockito.verify(peerMasterAdjustAction, Mockito.times(1)).adjustPeerMaster(clusterDbId, shardDbId);
     }
 
 }
