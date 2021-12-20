@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.impl;
 
 import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.cluster.*;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.rest.ForwardType;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -36,6 +37,9 @@ public class DispatchMoving {
 	@Autowired
 	private ClusterServers<MetaServer>  clusterServers;
 
+	@Autowired
+	private DcMetaCache dcMetaCache;
+
 	@Pointcut("@annotation(com.ctrip.xpipe.redis.core.cluster.ClusterMovingMethod)")
 	public void pointcutMovingMethod() {
 	}
@@ -50,8 +54,9 @@ public class DispatchMoving {
 			logger.info("[tryMovingDispatch][isMoving][self process]{}, {}", targetMethodName, clusterId);
 			return joinpoint.proceed();
 		}
-		
-		MetaServer exportServer = exportServer(clusterId);
+
+		Long clusterDbId = dcMetaCache.clusterId2DbId(clusterId);
+		MetaServer exportServer = exportServer(clusterDbId);
 		if(exportServer == currentClusterServer){
 			throw new IllegalStateException("export server should not be current " + exportServer);
 		}
