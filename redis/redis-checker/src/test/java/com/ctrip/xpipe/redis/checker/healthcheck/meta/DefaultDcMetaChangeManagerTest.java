@@ -61,9 +61,25 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory);
     }
 
-    @Test
-    public void compare() {
+    private void prepareData(String dc) {
+        manager.compare(getDcMeta(dc));
+    }
 
+    private DcMeta cloneDcMeta(String dc) {
+        DcMeta dcMeta = MetaClone.clone(getDcMeta(dc));
+        for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
+            clusterMeta.setParent(dcMeta);
+            for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+                shardMeta.setParent(clusterMeta);
+                for (RedisMeta redisMeta: shardMeta.getRedises()) {
+                    redisMeta.setParent(shardMeta);
+                }
+                for (KeeperMeta keeperMeta: shardMeta.getKeepers()) {
+                    keeperMeta.setParent(shardMeta);
+                }
+            }
+        }
+        return dcMeta;
     }
 
     @Test
@@ -105,33 +121,13 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testMasterChange() throws Exception {
-        instance = mock(RedisHealthCheckInstance.class);
-        RedisInstanceInfo info = mock(RedisInstanceInfo.class);
-        when(instance.getCheckInfo()).thenReturn(info);
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster1").getShards().values().iterator().next().getRedises().get(0).setMaster("");
+        manager.compare(future);
 
-        // become master
-        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster1");
-        XpipeMeta newXpipeMeta = loadXpipeMeta(getXpipeMetaConfigFile());
-        ClusterMeta newCluster = newXpipeMeta.getDcs().get("oy").findCluster("cluster1");
-        newCluster.getShards().values().iterator().next().getRedises().get(0).setMaster("");
-        ClusterMetaComparator comparator = new ClusterMetaComparator(cluster, newCluster);
-        comparator.compare();
-        manager.visitModified(comparator);
-
-        verify(info, times(1)).isMaster(anyBoolean());
-        verify(info, times(1)).isMaster(true);
-
-        // lose master
-        cluster = newCluster;
-        newXpipeMeta = loadXpipeMeta(getXpipeMetaConfigFile());
-        newCluster = newXpipeMeta.getDcs().get("oy").findCluster("cluster1");
-        newCluster.getShards().values().iterator().next().getRedises().get(0).setMaster("127.0.0.1:6100");
-        comparator = new ClusterMetaComparator(cluster, newCluster);
-        comparator.compare();
-        manager.visitModified(comparator);
-
-        verify(info, times(2)).isMaster(anyBoolean());
-        verify(info, times(1)).isMaster(false);
+        Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
     }
 
     @Test
@@ -155,10 +151,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testActiveDcOY2JQ() {
-        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster2");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
-        newCluster.setActiveDc("jq");
-        manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster2").setActiveDc("jq");
+        manager.compare(future);
 
         Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
         Mockito.verify(instanceManager, never()).remove(any(HostPort.class));
@@ -167,10 +163,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testActiveDcJQ2OY() {
-        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster1");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
-        newCluster.setActiveDc("oy");
-        manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster1").setActiveDc("oy");
+        manager.compare(future);
 
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
@@ -200,22 +196,22 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testDcsAddCurrentDc() {
-        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster4");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
-        newCluster.setDcs("jq,oy");
-        manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster4").setDcs("jq,oy");
+        manager.compare(future);
 
-        Mockito.verify(instanceManager, times(1)).getOrCreate(any(RedisMeta.class));
-        Mockito.verify(instanceManager, never()).remove(any(HostPort.class));
+        Mockito.verify(instanceManager).getOrCreate(any(RedisMeta.class));
+        Mockito.verify(instanceManager).remove(any(HostPort.class)); // delete anyway
         Assert.assertEquals(Sets.newHashSet(new HostPort("10.0.0.2", 6479)), addedRedises);
     }
 
     @Test
     public void testDcsDeleteCurrentDc() {
-        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster3");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
-        newCluster.setDcs("oy");
-        manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster3").setDcs("oy");
+        manager.compare(future);
 
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(1)).remove(any(HostPort.class));
@@ -224,17 +220,13 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testClusterOrgChange() {
-        ClusterMeta cluster = getDcMeta("oy").findCluster("cluster3");
-        ClusterMeta newCluster = MetaClone.clone(cluster);
-        cluster.setOrgId(1);
-        newCluster.setOrgId(2);
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster3").setOrgId(2);
+        manager.compare(future);
 
-        ClusterHealthCheckInstance instance = mockClusterHealthCheckInstance(cluster.getId(), cluster.getActiveDc(), ClusterType.lookup(cluster.getType()), 1);
-        Mockito.when(instanceManager.findClusterHealthCheckInstance(Mockito.anyString())).thenReturn(instance);
-
-        Assert.assertEquals(1, instance.getCheckInfo().getOrgId());
-        manager.visitModified(new ClusterMetaComparator(cluster, newCluster));
-        Assert.assertEquals(2, instance.getCheckInfo().getOrgId());
+        Mockito.verify(instanceManager).remove(any(HostPort.class));
+        Mockito.verify(instanceManager).getOrCreate(any(RedisMeta.class));
     }
 
     @Test
@@ -248,7 +240,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         DcMeta dcMeta = MetaClone.clone(getDcMeta("oy"));
 
         ClusterMeta clusterMeta = dcMeta.getClusters().remove("cluster1");
-        clusterMeta.setId("cluster5").getShards().values().forEach(shardMeta -> {
+        clusterMeta.setId("cluster5").setDbId(Math.abs(randomLong())).getShards().values().forEach(shardMeta -> {
             shardMeta.setParent(clusterMeta);
             for (RedisMeta redis : shardMeta.getRedises()) {
                 redis.setParent(shardMeta);

@@ -83,7 +83,7 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
 
         ExecutionLog executionLog = new ExecutionLog("refreshDcMetaWithDcChangeTest");
         BecomePrimaryAction becomePrimaryAction =
-                new CustomBecomePrimaryAction(clusterMeta.getId(), shardMeta.getId(), dcMetaCache, executionLog);
+                new CustomBecomePrimaryAction(clusterMeta.getDbId(), shardMeta.getDbId(), dcMetaCache, executionLog);
 
         CountDownLatch latch = new CountDownLatch(2);
         CyclicBarrier barrier = new CyclicBarrier(2);
@@ -108,12 +108,12 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
             }
 
             sleep(200); // wait for dcMetaCache run
-            becomePrimaryAction.changePrimaryDc(clusterMeta.getId(), shardMeta.getId(), newPrimaryDc, masterInfo);
+            becomePrimaryAction.changePrimaryDc(clusterMeta.getDbId(), shardMeta.getDbId(), newPrimaryDc, masterInfo);
             latch.countDown();
         }).start();
 
         latch.await(3000, TimeUnit.MILLISECONDS);
-        Assert.assertEquals(newPrimaryDc.toLowerCase(), dcMetaCache.getPrimaryDc(clusterMeta.getId(), shardMeta.getId()));
+        Assert.assertEquals(newPrimaryDc.toLowerCase(), dcMetaCache.getPrimaryDc(clusterMeta.getDbId(), shardMeta.getDbId()));
     }
 
     @Test
@@ -123,21 +123,21 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         ShardMeta shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
         dcMetaCache.getDcMeta().update(clusterMeta.setActiveDc("another"));
 
-        BackupDcClusterShardAdjustJob job = new BackupDcClusterShardAdjustJob(clusterMeta.getId(), shardMeta.getId(), dcMetaCache,
+        BackupDcClusterShardAdjustJob job = new BackupDcClusterShardAdjustJob(clusterMeta.getDbId(), shardMeta.getDbId(), dcMetaCache,
                 mockCurrentMetaManager, null, null, null);
         job.execute().get();
-        Mockito.verify(mockCurrentMetaManager, Mockito.times(1)).getKeeperActive(Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(mockCurrentMetaManager, Mockito.times(1)).getKeeperActive(Mockito.anyLong(), Mockito.anyLong());
 
-        job = new BackupDcClusterShardAdjustJob(clusterMeta.getId(), shardMeta.getId(), dcMetaCache,
+        job = new BackupDcClusterShardAdjustJob(clusterMeta.getDbId(), shardMeta.getDbId(), dcMetaCache,
                 mockCurrentMetaManager, null, null, null);
         dcMetaCache.getDcMeta().update(clusterMeta.setActiveDc(dcMetaCache.getCurrentDc()));
         job.execute().get();
-        Mockito.verify(mockCurrentMetaManager, Mockito.times(1)).getKeeperActive(Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(mockCurrentMetaManager, Mockito.times(1)).getKeeperActive(Mockito.anyLong(), Mockito.anyLong());
     }
 
     private static class CustomBecomePrimaryAction extends BecomePrimaryAction {
-        public CustomBecomePrimaryAction(String cluster, String shard, DcMetaCache dcMetaCache,  ExecutionLog executionLog) {
-            super(cluster, shard, dcMetaCache, null, null, new OffsetWaiter() {
+        public CustomBecomePrimaryAction(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,  ExecutionLog executionLog) {
+            super(clusterDbId, shardDbId, dcMetaCache, null, null, new OffsetWaiter() {
                         @Override
                         public boolean tryWaitfor(HostPort hostPort, MasterInfo masterInfo, ExecutionLog executionLog) {
                             return false;
@@ -147,7 +147,7 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         }
 
         @Override
-        protected Pair<String, Integer> chooseNewMaster(String clusterId, String shardId) {
+        protected Pair<String, Integer> chooseNewMaster(Long clusterDbId, Long shardDbId) {
             return new Pair<>("127.0.0.1", 6379);
         }
 
@@ -161,11 +161,11 @@ public class DefaultDcMetaCacheRefreshTest extends AbstractMetaServerTest {
         }
 
         @Override
-        protected void makeKeepersOk(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+        protected void makeKeepersOk(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
         }
 
         @Override
-        protected void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+        protected void changeSentinel(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
         }
     }
 

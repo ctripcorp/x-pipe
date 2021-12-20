@@ -38,33 +38,33 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 	private NewMasterChooser newMasterChooser;
 	private OffsetWaiter offsetWaiter;
 
-	public BecomePrimaryAction(String cluster, String shard, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
+	public BecomePrimaryAction(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
 							   SentinelManager sentinelManager, OffsetWaiter offsetWaiter, ExecutionLog executionLog,
 							   XpipeNettyClientKeyedObjectPool keyedObjectPool, NewMasterChooser newMasterChooser,
 							   ScheduledExecutorService scheduled, Executor executors) {
-		super(cluster, shard, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
+		super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
 		this.newMasterChooser = newMasterChooser;
 		this.offsetWaiter = offsetWaiter;
 	}
 
-	protected PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+	protected PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
 		
-		doChangeMetaCache(clusterId, shardId, newPrimaryDc);
+		doChangeMetaCache(clusterDbId, shardDbId, newPrimaryDc);
 		
 		executionLog.info(String.format("[chooseNewMaster][begin]"));
-		Pair<String, Integer> newMaster = chooseNewMaster(clusterId, shardId);
+		Pair<String, Integer> newMaster = chooseNewMaster(clusterDbId, shardDbId);
 		executionLog.info(String.format("[chooseNewMaster]%s:%d", newMaster.getKey(), newMaster.getValue()));
 
 		//wait for slave to achieve master offset
 		offsetWaiter.tryWaitfor(new HostPort(newMaster.getKey(), newMaster.getValue()), masterInfo, executionLog);
 
-		List<RedisMeta> slaves = getAllSlaves(newMaster, dcMetaCache.getShardRedises(clusterId, shardId));
+		List<RedisMeta> slaves = getAllSlaves(newMaster, dcMetaCache.getShardRedises(clusterDbId, shardDbId));
 		
 		makeRedisesOk(newMaster, slaves);
 		
-		makeKeepersOk(clusterId, shardId, newMaster);
+		makeKeepersOk(clusterDbId, shardDbId, newMaster);
 		
-		changeSentinel(clusterId, shardId, newMaster);
+		changeSentinel(clusterDbId, shardDbId, newMaster);
 		
 		return new PrimaryDcChangeMessage(executionLog.getLog(), newMaster.getKey(), newMaster.getValue());
 	}
@@ -72,13 +72,13 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 
 	@Override
-	protected void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+	protected void changeSentinel(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
 		
 		try{
-			sentinelManager.addSentinel(clusterId, shardId, HostPort.fromPair(newMaster), executionLog);
+			sentinelManager.addSentinel(clusterDbId, shardDbId, HostPort.fromPair(newMaster), executionLog);
 		}catch(Exception e){
 			executionLog.error("[addSentinel][fail]" + e.getMessage());
-			logger.error("[addSentinel]" + clusterId + "," + shardId, e);
+			logger.error("[addSentinel]" + clusterDbId + "," + shardDbId, e);
 		}
 	}
 
@@ -110,16 +110,16 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 			executionLog.info("[make slaves slaveof]success");
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			String failMsg = StringUtil.isEmpty(e.getMessage()) ? e.getClass().getName() : e.getMessage();
-			EventMonitor.DEFAULT.logAlertEvent(String.format("[mig][slaves][fail][%s][%s] %s", cluster, shard, slavesJob.toString()));
+			EventMonitor.DEFAULT.logAlertEvent(String.format("[mig][slaves][fail][%d][%d] %s", cluster, shard, slavesJob.toString()));
 			logger.error("[makeRedisesOk][fail][ignore]" + slaves + "->" + newMaster, e);
 			executionLog.error("[make slaves slaveof][fail][ignore]" + failMsg);
 		}
 	}
 
 	@Override
-	protected Pair<String, Integer> chooseNewMaster(String clusterId, String shardId) {
+	protected Pair<String, Integer> chooseNewMaster(Long clusterDbId, Long shardDbId) {
 
-		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterId, shardId);
+		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
 		String desc = MetaUtils.toString(redises);
 		executionLog.info("[chooseNewMaster][from]" + desc);
 		RedisMeta newMaster = newMasterChooser.choose(redises);

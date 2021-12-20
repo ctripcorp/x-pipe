@@ -41,7 +41,7 @@ public class AbstractClusterShardPeriodicTaskTest extends AbstractMetaServerTest
     }
 
     private AbstractClusterShardPeriodicTask mockTask(CountDownLatch countDownLatch) {
-        return spy(new AbstractClusterShardPeriodicTask("cluster", "shard", dcMetaCache, currentMetaManager, scheduled) {
+        return spy(new AbstractClusterShardPeriodicTask(1L, 1L, dcMetaCache, currentMetaManager, scheduled) {
             @Override
             protected void work() {
                 logger.info("[work]");

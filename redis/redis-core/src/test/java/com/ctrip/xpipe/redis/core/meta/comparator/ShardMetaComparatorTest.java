@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,15 +23,6 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 	public void beforeShardMetaComparatorTest(){
 		current = getShard();
 		future = MetaClone.clone(current);
-		
-	}
-	
-	
-	@Test
-	public void testShardUpstreamChanged(){
-		
-		ShardUpstreamChanged shardUpstreamChanged = new ShardUpstreamChanged("clusterId", "shardId", "curent", "future");
-		logger.info("[ShardUpstreamChanged]{}", shardUpstreamChanged);
 		
 	}
 	

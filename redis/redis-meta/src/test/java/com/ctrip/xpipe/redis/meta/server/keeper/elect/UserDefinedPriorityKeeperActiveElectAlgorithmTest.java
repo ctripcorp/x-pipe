@@ -24,20 +24,20 @@ public class UserDefinedPriorityKeeperActiveElectAlgorithmTest extends AbstractM
 		
 		UserDefinedPriorityKeeperActiveElectAlgorithm algorithm = new UserDefinedPriorityKeeperActiveElectAlgorithm(priority);
 		
-		Assert.assertEquals(priority.get(0), algorithm.select(getClusterId(), getShardId(), priority));
+		Assert.assertEquals(priority.get(0), algorithm.select(getClusterDbId(), getShardDbId(), priority));
 		
 		List<KeeperMeta> onlyOne = new LinkedList<>();
 		onlyOne.add(priority.get(1));
-		Assert.assertEquals(priority.get(1), algorithm.select(getClusterId(), getShardId(), onlyOne));
+		Assert.assertEquals(priority.get(1), algorithm.select(getClusterDbId(), getShardDbId(), onlyOne));
 
 		List<KeeperMeta> none = new LinkedList<>();
 		none.add(differentKeeper(priority));
-		Assert.assertEquals(none.get(0), algorithm.select(getClusterId(), getShardId(), none));
+		Assert.assertEquals(none.get(0), algorithm.select(getClusterDbId(), getShardDbId(), none));
 
 		
 		List<KeeperMeta> reverse = new LinkedList<>(priority);
 		Collections.reverse(reverse);
-		Assert.assertEquals(priority.get(0), algorithm.select(getClusterId(), getShardId(), reverse));
+		Assert.assertEquals(priority.get(0), algorithm.select(getClusterDbId(), getShardDbId(), reverse));
 	}
 
 }
