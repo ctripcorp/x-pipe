@@ -95,11 +95,11 @@ public class RedisSession {
     }
 
     public synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
+        subscribeIfAbsent(channel, callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut + 2000, channel));
     }
 
     public synchronized void crdtsubscribeIfAbsent(String channel, SubscribeCallback callback) {
-        subscribeIfAbsent(channel, callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel));
+        subscribeIfAbsent(channel, callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut + 2000, channel));
     }
 
     private synchronized void subscribeIfAbsent(String channel, SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier) {
