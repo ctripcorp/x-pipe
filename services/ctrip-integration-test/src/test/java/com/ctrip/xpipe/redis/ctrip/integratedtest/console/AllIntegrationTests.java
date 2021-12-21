@@ -15,5 +15,5 @@ import org.junit.runners.Suite;
         TransactionManagerTest.class,
         BeaconSyncMigrationTest.class
 })
-public class AllTests {
+public class AllIntegrationTests {
 }
