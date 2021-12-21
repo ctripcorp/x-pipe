@@ -141,7 +141,8 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         AtomicReference<String> state = new AtomicReference<>();
         AtomicInteger taskDone = new AtomicInteger();
         int taskNum = 100;
-        CyclicBarrier barrier = new CyclicBarrier(taskNum + 1);
+        CyclicBarrier barrier = new CyclicBarrier(taskNum);
+        CountDownLatch countDownLatch = new CountDownLatch(taskNum);
         for (int i = 0; i < taskNum; i++) {
             int finalI = i;
             executors.execute(new Runnable() {
@@ -159,6 +160,7 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
                         taskDone.incrementAndGet();});
                     try {
                         oneThreadTaskExecutor.executeCommand(command);
+                        countDownLatch.countDown();
                     } catch (IllegalStateException e) {
                         taskDone.incrementAndGet();
                     }
@@ -169,15 +171,13 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
             @Override
             public void run() {
                 try {
-                    barrier.await();
+                    countDownLatch.await();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                } catch (BrokenBarrierException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-                sleep(30);
-                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 1));
-                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 1));
+                oneThreadTaskExecutor.clearAndExecuteCommand(new StateCommand("expected", state, 100));
             }
         });
         waitConditionUntilTimeOut(()->oneThreadTaskExecutor.tasks.isEmpty(), 10000);
