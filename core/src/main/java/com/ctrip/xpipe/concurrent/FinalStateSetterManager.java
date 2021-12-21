@@ -23,6 +23,10 @@ public class FinalStateSetterManager<K, S> {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     private Map<K, S> map = new ConcurrentHashMap<K, S>();
+    private Map<K, AtomicLong> lastCheckAndSetMap = new ConcurrentHashMap<K, AtomicLong>();
+
+    @VisibleForTesting long LAZY_TIME_MILLI = 5 * 1000;
+
     private KeyedOneThreadTaskExecutor<K> keyedOneThreadTaskExecutor;
 
     private Function<K, S> getter;
@@ -34,10 +38,7 @@ public class FinalStateSetterManager<K, S> {
         keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<K>(executors);
     }
 
-    private AtomicLong lastCheckAndSet = new AtomicLong(0L);
-    @VisibleForTesting long LAZY_TIME_MILLI = 5 * 1000;
-
-    public boolean shouldCheckAndSet(S previous, S s) {
+    public boolean shouldCheckAndSet(S previous, S s, AtomicLong lastCheckAndSet) {
         if (!ObjectUtils.equals(previous, s)) {
             lastCheckAndSet.set(System.currentTimeMillis());
             return true;
@@ -51,7 +52,9 @@ public class FinalStateSetterManager<K, S> {
 
         S previous = map.put(k, s);
 
-        if(shouldCheckAndSet(previous, s)){
+        AtomicLong lastCheckAndSet = lastCheckAndSetMap.computeIfAbsent(k, key->new AtomicLong(0L));
+
+        if(shouldCheckAndSet(previous, s, lastCheckAndSet)){
 
             logger.debug("[set]{},{}->{}", k, previous, s);
             keyedOneThreadTaskExecutor.execute(k, new CheckAndSetTask(k, s));

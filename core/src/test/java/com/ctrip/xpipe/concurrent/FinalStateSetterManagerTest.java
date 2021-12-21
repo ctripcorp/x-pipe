@@ -53,6 +53,32 @@ public class FinalStateSetterManagerTest extends AbstractTest{
     }
 
     @Test
+    public void testLazyTimeOnDifferentKeys() throws TimeoutException {
+        String testKey = randomString(10);
+        String anotherTestKey = randomString(10);
+        String testValue = randomString(10);
+
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
+                (String key) -> randomString(10),
+                (key, value) -> count.incrementAndGet());
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(anotherTestKey, testValue);
+        finalStateSetterManager.set(anotherTestKey, testValue);
+
+        waitConditionUntilTimeOut(() -> count.get() == 2);
+        sleep(10);
+        //not grow any more
+        assertEquals(2, count.get());
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(anotherTestKey, testValue);
+        waitConditionUntilTimeOut(() -> count.get() == 4);
+    }
+
+    @Test
     public void testLazyTimeConcurrently() throws TimeoutException, InterruptedException {
         String testKey = randomString(10);
         String testValue = randomString(10);
