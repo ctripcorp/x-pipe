@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author chen.zhu
@@ -23,6 +24,11 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     private boolean crossRegion;
 
+    public DefaultRedisInstanceInfo() {
+        super();
+    }
+
+
     public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc, ClusterType clusterType) {
         super(clusterId, activeDc, clusterType);
         this.dcId = dcId;
@@ -33,6 +39,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         this.clusterType = clusterType;
     }
 
+    @JsonIgnore
     @Override
     public ClusterShardHostPort getClusterShardHostport() {
         return new ClusterShardHostPort(clusterId, shardId, hostPort);
@@ -62,6 +69,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         isMaster = master;
     }
 
+    @JsonIgnore
     @Override
     public boolean isInActiveDc() {
         if (null == activeDc) return false;
@@ -75,11 +83,34 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     @Override
     public String toString() {
-        return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, crossRegion ? "proxied" : "normal");
+        return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, isMaster ? "Master" : "Slave",
+                "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal");
     }
 
     public DefaultRedisInstanceInfo setCrossRegion(boolean crossRegion) {
         this.crossRegion = crossRegion;
         return this;
     }
+
+    public void setDcId(String dcId) {
+        this.dcId = dcId;
+    }
+
+    public void setMaster(boolean master) {
+        isMaster = master;
+    }
+
+    public void setHostPort(HostPort hostPort) {
+        this.hostPort = hostPort;
+    }
+
+    public void setShardId(String shardId) {
+        this.shardId = shardId;
+    }
+
+    @Override
+    public void setActiveDc(String activeDc) {
+        super.setActiveDc(activeDc);
+    }
+
 }

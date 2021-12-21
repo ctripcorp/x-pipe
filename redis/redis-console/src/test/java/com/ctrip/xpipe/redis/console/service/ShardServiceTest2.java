@@ -2,15 +2,17 @@ package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardEventListener;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +53,9 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
     private List<ShardEventListener> shardEventListeners;
     @Mock
     private ClusterMonitorModifiedNotifier monitorNotifier;
+
+    @Mock
+    private ConsoleConfig consoleConfig;
     private String clusterName = "clusterName";
 
     String shardName1 = "shard1";
@@ -80,14 +85,15 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
         when(shardTbl2.getId()).thenReturn(shardId2);
         when(sentinelService.findByShard(anyLong()))
                 .thenReturn(null);
-        when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME))
+        when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
+        when(consoleConfig.shouldNotifyClusterTypes()).thenReturn(Sets.newHashSet(ClusterType.ONE_WAY.name(),ClusterType.BI_DIRECTION.name()));
     }
 
     @Test
     public void deleteShards() throws DalException {
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.name());
-        when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME))
+        when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         shardService.deleteShards(clusterTbl, shardNames);
         verify(shardDao).deleteShardsBatch(shardTbls);

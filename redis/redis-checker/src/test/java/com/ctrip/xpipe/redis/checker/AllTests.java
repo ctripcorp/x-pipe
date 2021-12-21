@@ -5,29 +5,35 @@ package com.ctrip.xpipe.redis.checker;
  * date 2021/3/14
  */
 
+import com.ctrip.xpipe.redis.checker.alert.AlertManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
+import com.ctrip.xpipe.redis.checker.cluster.monitor.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayActionControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MultiMasterDelayListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.DefaultRedisMasterActionListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterCheckActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.RedisMasterControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.backstreaming.BackStreamingAlertListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictCheckActionFactoryTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.conflic.ConflictMetricListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.BackStreamingAlertListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.PeerBacklogOffsetListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.listener.PeerReplicationOffsetListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.CrdtInfoStatsActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.listener.ConflictMetricListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinfostats.listener.CrdtSyncListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.expiresize.ExpireSizeMetricListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.tombstonesize.TombstoneSizeCheckActionTest;
@@ -68,21 +74,23 @@ import org.junit.runners.Suite;
         DiskLessReplCheckActionTest.class,
         RedisMasterCheckActionTest.class,
         RedisMasterCheckActionFactoryTest.class,
+        RedisWrongSlaveMonitorTest.class,
+        MasterOverOneMonitorTest.class,
         VersionCheckActionFactoryTest.class,
 
         DefaultAlertEntityHolderTest.class,
         DefaultDcMetaChangeManagerTest.class,
         DelayActionTest.class,
-        MultiMasterDelayListenerTest.class,
-        MultiMasterDelayActionControllerTest.class,
+        CRDTDelayActionControllerTest.class,
         CurrentDcSentinelHelloAggregationCollectorTest.class,
         CurrentDcSentinelHelloCollectorTest.class,
         CurrentDcSentinelCheckControllerTest.class,
         RedisMasterControllerTest.class,
         DefaultHealthCheckerMockTest.class,
         ConflictMetricListenerTest.class,
-        ConflictCheckActionTest.class,
-        ConflictCheckActionFactoryTest.class,
+        CrdtSyncListenerTest.class,
+        CrdtInfoStatsActionTest.class,
+        CrdtInfoStatsActionFactoryTest.class,
         ExpireSizeMetricListenerTest.class,
         ExpireSizeCheckActionTest.class,
         TombstoneSizeCheckActionTest.class,
@@ -92,19 +100,24 @@ import org.junit.runners.Suite;
         BeaconMetaCheckActionTest.class,
         BeaconActiveDcControllerTest.class,
 
-        BackStreamingActionTest.class,
-        BackStreamingAlertListenerTest.class,
-        BackStreamingActionFactoryTest.class,
-
         SentinelHelloTest.class,
         HealthStatusTest.class,
         OuterClientServiceProcessorTest.class,
+
+        PingActionContextTest.class,
+        PingActionTest.class,
+
+        CrdtInfoReplicationActionFactoryTest.class,
+        CrdtInfoReplicationActionTest.class,
+        BackStreamingAlertListenerTest.class,
+        PeerBacklogOffsetListenerTest.class,
+        PeerReplicationOffsetListenerTest.class,
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
-        RouteHealthEventProcessorTest.class,
+        DefaultRouteHealthEventProcessorTest.class,
         SentinelHelloActionDowngradeTest.class,
         SentinelLeakyBucketTest.class,
-        CurrentDcDelayPingActionCollectorTest.class,
+        CRDTDelayPingActionCollectorTest.class,
         ActionContextRetMessageTest.class,
         CheckerHealthControllerTest.class,
 
@@ -115,7 +128,9 @@ import org.junit.runners.Suite;
         DefaultRemoteCheckerManagerTest.class,
 
         HealthCheckResultSerializeTest.class,
-        DefaultCheckerConsoleServiceTest.class
+        DefaultCheckerConsoleServiceTest.class,
+        DefaultSentinelMonitorsCheckTest.class,
+        AlertManagerTest.class
 })
 public class AllTests {
 }

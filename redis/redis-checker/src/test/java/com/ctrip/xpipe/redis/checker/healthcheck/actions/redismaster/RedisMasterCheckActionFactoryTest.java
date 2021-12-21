@@ -1,8 +1,12 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,7 +29,13 @@ public class RedisMasterCheckActionFactoryTest extends AbstractCheckerIntegratio
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
-
+    
+//    @Autowired
+//    private DefaultHealthCheckEndpointFactory healthCheckEndpointFactory;
+//    
+//    @Autowired
+//    private MetaCache metaCache;
+    
     @Before
     public void beforeRedisMasterCheckActionFactoryTest() {
         MockitoAnnotations.initMocks(this);
@@ -33,12 +43,15 @@ public class RedisMasterCheckActionFactoryTest extends AbstractCheckerIntegratio
 
     @Test
     public void testCreate() throws Exception {
-        RedisHealthCheckInstance instance = instanceManager.getOrCreate(newRandomFakeRedisMeta());
+        RedisMeta redisMeta = newRandomFakeRedisMeta();
+//        healthCheckEndpointFactory.setMetaCache(metaCache);
+        RedisHealthCheckInstance instance = instanceManager.getOrCreate(redisMeta);
         RedisMasterCheckAction action = (RedisMasterCheckAction) factory.create(instance);
         logger.info("[isMaster] {}", instance.getCheckInfo().isMaster());
         logger.info("[activeDc] {}", instance.getCheckInfo().getActiveDc());
         checkActionController(action, ClusterType.ONE_WAY);
         action.doTask();
+        instanceManager.remove(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
     }
 
     @Test

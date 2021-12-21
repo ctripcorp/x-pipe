@@ -10,6 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
  */
 public interface ChangePrimaryDcAction {
 	
-	PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo);
+	PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo);
 
 }

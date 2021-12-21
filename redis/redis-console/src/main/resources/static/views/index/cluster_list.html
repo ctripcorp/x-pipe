@@ -26,6 +26,7 @@
                     <a class="btn btn-danger btn-xs" ng-click="migrateSelectedClusters()">迁移</a>
                 </div>
                 <div class="col-md-4 text-right" ng-if="showMigrating">
+                    <a class="btn btn-danger btn-xs" ng-click="preResetSelectedClusterStatus()">重置状态</a>
                     <a class="btn btn-danger btn-xs" ng-click="preContinueSelectedCluster()">批量继续</a>
                     <a class="btn btn-danger btn-xs" ng-click="preForceSelectedCluster()">批量强制继续</a>
                 </div>
@@ -37,6 +38,7 @@
                 <td>
                     <input type="checkbox" ng-checked="cluster.isChecked" ng-model="cluster.isChecked">
                 </td>
+                <td ng-if="true" data-title="'ID'" filter="{ id : 'text' }" ng-bind="cluster.id" ></td>
                 <td data-title="'cluster'" filter="{ clusterName : 'text' }">
                     <a href="/#/cluster_dc_shards/{{cluster.clusterName}}/">{{ cluster.clusterName }}</a>
                 </td>
@@ -54,7 +56,7 @@
                 <td ng-if="true" data-title="'主数据中心'" filter="{activedcId: 'select'}" filter-data="dcsFilterData" ng-bind="getClusterActiveDc(cluster)"></td>
                 <td data-title="'集群类型'" filter="{clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(cluster.clusterType)"></td>
                 <td ng-if="true" data-title="'描述'" ng-bind="cluster.clusterDescription | limitTo:50" ></td>
-                <td ng-if="true" data-title="'组织'" ng-bind="cluster.clusterOrgName" ></td>
+                <td ng-if="true" data-title="'组织'" filter="{clusterOrgName: 'select'}" filter-data="organizationNames" ng-bind="cluster.clusterOrgName" ></td>
                 <td ng-if="true" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails| limitTo:50" ></td>
                 <td data-title="'操作'">
                 	<a ng-if="showAll" href="/#/cluster_dc?clusterName={{cluster.clusterName}}" class="btn btn-info btn-xs">数据中心</a>&nbsp;

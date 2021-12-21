@@ -126,4 +126,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         return createDividedMeta(xpipeMeta, requestClusters);
     }
 
+    @Override
+    public void pauseUpdate() {
+        
+    }
+
+    @Override
+    public void continueUpdate() {
+
+    }
+
 }

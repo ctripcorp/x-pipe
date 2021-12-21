@@ -10,8 +10,8 @@ public interface CurrentShardMeta extends Releasable {
 
     void addResource(Releasable releasable);
 
-    String getClusterId();
+    Long getClusterDbId();
 
-    String getShardId();
+    Long getShardDbId();
 
 }

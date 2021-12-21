@@ -3,7 +3,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckI
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
@@ -54,7 +56,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     protected CheckerDbConfig config;
 
     @Mock
-    protected Persistence persistence;
+    protected PersistenceCache persistence;
 
     private int sentinelCollectInterval = 600;
 
@@ -70,6 +72,9 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     @Mock
     private HealthCheckConfig healthCheckConfig;
+
+    @Mock
+    private CheckerConfig checkerConfig;
 
     @Mock
     private DefaultSentinelHelloCollector sentinelHelloCollector;
@@ -95,7 +100,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         ((DefaultClusterHealthCheckInstance)instance).setHealthCheckConfig(healthCheckConfig);
         when(healthCheckConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence,metaCache,instanceManager);
-        downgradeController = new SentinelCheckDowngradeCollectorController(metaCache, sentinelHelloCollector, clusterName, shardName);
+        downgradeController = new SentinelCheckDowngradeCollectorController(metaCache, sentinelHelloCollector, clusterName, shardName, checkerConfig);
         downgradeController = Mockito.spy(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
         checkActionController.addCheckCollectorController(clusterName, shardName, downgradeController);
@@ -124,6 +129,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     @Test
     public void allUpTest() {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
         allActionDoTask();
 
         assertServerCalled(false, false, true, true);
@@ -136,19 +143,30 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         // not close connect after collect sentinel hello
         Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+    }
+
+    @Test
+    public void breakOneSlaveTest() {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
 
         // break one slave in backup dc
         backupDcSlave1.errorResp = true;
         resetCalled();
         allActionDoTask();
         // do not resubscribe if successfully subscribed
-        assertServerCalled(false, false, false, false);
-        verify(sentinelHelloCollector, times(2)).onAction(Mockito.any());
-        verify(downgradeController, times(4)).onAction(Mockito.any());
+        assertServerCalled(false, false, true, true);
+        verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
+        verify(downgradeController, times(2)).onAction(Mockito.any());
+
+        Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
     }
 
     @Test
     public void backupErrRespTest() {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
         setServerErrResp(false, false, true, true);
         allActionDoTask();
 
@@ -200,6 +218,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     @Test
     public void backupCommandTimeoutTest() {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
         setServerHang(false, false, true, true);
         allActionDoTask();
 
@@ -233,7 +253,99 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     }
 
     @Test
+    public void lessThanAllDowngradeTest() throws Exception {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanAll");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
+
+        backupDcSlave1.sentinelNum = 4;
+        backupDcSlave2.sentinelNum = 4;
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, false, true, true);
+        verify(downgradeController, times(2)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, never()).onAction(Mockito.any());
+
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+
+        allActionDoTask();
+        assertServerCalled(false, true, true, true);
+        verify(downgradeController, times(3)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void lessThanAllNotDowngradeTest() throws Exception {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanAll");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
+
+        backupDcSlave1.sentinelNum = 5;
+        backupDcSlave2.sentinelNum = 5;
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, false, true, true);
+        verify(downgradeController, times(2)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
+
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+
+        allActionDoTask();
+        assertServerCalled(false, false, true, true);
+        verify(downgradeController, times(4)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void lessThenHalfDowngradeTest() throws Exception{
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
+
+        backupDcSlave1.sentinelNum = 2;
+        backupDcSlave2.sentinelNum = 2;
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, false, true, true);
+        verify(downgradeController, times(2)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, never()).onAction(Mockito.any());
+
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+
+        allActionDoTask();
+        assertServerCalled(false, true, true, true);
+        verify(downgradeController, times(3)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void lessThenHalfNotDowngradeTest() throws Exception{
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
+
+        backupDcSlave1.sentinelNum = 3;
+        backupDcSlave2.sentinelNum = 3;
+        resetCalled();
+        allActionDoTask();
+
+        assertServerCalled(false, false, true, true);
+        verify(downgradeController, times(2)).onAction(Mockito.any());
+        verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
+
+        Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
+        Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
+
+        allActionDoTask();
+        assertServerCalled(false, false, true, true);
+        verify(downgradeController, times(4)).onAction(Mockito.any());
+    }
+
+    @Test
     public void backupLoseConnectTest() throws Exception {
+        when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
         backupDcSlave1.redisServer.stop();
         backupDcSlave2.redisServer.stop();
         backupDcSlave1.redisServer = null;
@@ -343,9 +455,9 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         Assert.assertEquals(backDcSlave2Called, backupDcSlave2.called);
     }
 
-    private String buildSentinelHello() {
+    private String buildSentinelHello(int sentinelNum) {
         StringBuilder sb = new StringBuilder(SentinelHelloCheckActionTest.SUBSCRIBE_HEADER);
-        for(int i = 0; i < 5; i++) {
+        for(int i = 0; i < sentinelNum; i++) {
             sb.append(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5000 + i,activeDcMaster.redisServer.getPort()));
         }
         return sb.toString();
@@ -362,6 +474,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         public volatile boolean serverHang = false;
 
         public volatile boolean called = false;
+
+        public volatile int sentinelNum = 5;
 
         public SentinelCheckStatus(String currentDc, String activeDc, boolean isMaster) throws Exception {
             initServer();
@@ -397,13 +511,14 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
                                 } else if (serverHang) {
                                     sleep(sentinelSubTimeout);
                                 } else {
-                                    response = buildSentinelHello();
+                                    response = buildSentinelHello(sentinelNum);
                                 }
 
                                 if (null != response) ous.write(response.getBytes());
 
                                 while (!(errorResp || serverHang)) {
                                     ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001, activeDcMaster.redisServer.getPort()).getBytes());
+//                                    ous.write(buildSentinelHello().getBytes());
                                     sleep(10);
                                 }
                             } catch (Exception e) {

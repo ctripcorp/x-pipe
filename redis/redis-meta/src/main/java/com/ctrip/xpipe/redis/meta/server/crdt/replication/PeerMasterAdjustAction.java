@@ -2,6 +2,6 @@ package com.ctrip.xpipe.redis.meta.server.crdt.replication;
 
 public interface PeerMasterAdjustAction {
 
-    void adjustPeerMaster(String clusterId, String shardId);
+    void adjustPeerMaster(Long clusterDbId, Long shardDbId);
 
 }

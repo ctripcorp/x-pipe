@@ -7,13 +7,11 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.*;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.observer.NodeDeleted;
 import com.ctrip.xpipe.observer.NodeModified;
-import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.meta.server.exception.BadRedisVersionException;
 import com.ctrip.xpipe.retry.RetryDelay;
@@ -24,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
 
 public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
@@ -43,9 +42,9 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private static final String MINIMUM_SUPPORTED_VERSION = "1.0.4";
 
-    private String clusterId;
+    private Long clusterDbId;
 
-    private String shardId;
+    private Long shardDbId;
 
     //gid + endpoint
     private List<Pair<Long,Endpoint>> upstreamPeerMasters;
@@ -72,19 +71,19 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
     private boolean doDelete = true;
 
-    public PeerMasterAdjustJob(String clusterId, String shardId, List<Pair<Long,Endpoint>> upstreamPeerMasters,
+    public PeerMasterAdjustJob(Long clusterDbId, Long shardDbId, List<Pair<Long,Endpoint>> upstreamPeerMasters,
                                Pair<String, Integer> currentMaster, boolean doDelete,
                                SimpleObjectPool<NettyClient> clientPool
             , ScheduledExecutorService scheduled, Executor executors) {
-        this(clusterId, shardId, upstreamPeerMasters, currentMaster, doDelete, clientPool, 1000, 5, scheduled, executors);
+        this(clusterDbId, shardDbId, upstreamPeerMasters, currentMaster, doDelete, clientPool, 1000, 5, scheduled, executors);
     }
 
-    public PeerMasterAdjustJob(String clusterId, String shardId, List<Pair<Long,Endpoint>> upstreamPeerMasters,
+    public PeerMasterAdjustJob(Long clusterDbId, Long shardDbId, List<Pair<Long,Endpoint>> upstreamPeerMasters,
                                Pair<String, Integer> currentMaster, boolean doDelete,
                                SimpleObjectPool<NettyClient> clientPool
             , int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors) {
-        this.clusterId = clusterId;
-        this.shardId = shardId;
+        this.clusterDbId = clusterDbId;
+        this.shardDbId = shardDbId;
         this.upstreamPeerMasters = new LinkedList<>(upstreamPeerMasters);
         this.currentMaster = currentMaster;
         this.clientPool = clientPool;
@@ -109,7 +108,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
 
         sequenceCommandChain.future().addListener(commandFuture -> {
             if (!commandFuture.isSuccess()) {
-                getLogger().info("[{}][{}] fail", clusterId, shardId, commandFuture.cause());
+                getLogger().info("[cluster_{}][shard_{}] fail", clusterDbId, shardDbId, commandFuture.cause());
                 future().setFailure(commandFuture.cause());
             } else if (peerMasterChanged.isEmpty() && peerMasterAdded.isEmpty() && (!doDelete || peerMasterDeleted.isEmpty())) {
                 getLogger().debug("[doExecute] no need adjust, finish");
@@ -151,7 +150,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
     }
 
     private void logOperation(String type, Pair<String, Integer> currentMaster, long gid, Event event) {
-        String logContent = String.format(TEMP_PEER_CHANGE, clusterId, shardId, currentMaster.getKey(), currentMaster.getValue(), type, event, gid);
+        String logContent = String.format(TEMP_PEER_CHANGE, clusterDbId, shardDbId, currentMaster.getKey(), currentMaster.getValue(), type, event, gid);
         getLogger().info(logContent);
         CatEventMonitor.DEFAULT.logEvent(PEER_CHANGE_TYPE, logContent);
     }
@@ -259,7 +258,7 @@ public class PeerMasterAdjustJob extends AbstractCommand<Void> {
         protected void handleResult(String rawInfo) {
             try {
                 CRDTInfoResultExtractor extractor = new CRDTInfoResultExtractor(rawInfo);
-                currentPeerMasters = extractor.extractPeerMasters();
+                currentPeerMasters = extractor.extractPeerMasters().stream().map(peerInfo -> new Pair<Long, Endpoint>(peerInfo.getGid(), peerInfo.getEndpoint())).collect(Collectors.toList());
                 future().setSuccess();
             } catch (Exception e) {
                 getLogger().info("[handleResult] parse current peermaster fail", e);

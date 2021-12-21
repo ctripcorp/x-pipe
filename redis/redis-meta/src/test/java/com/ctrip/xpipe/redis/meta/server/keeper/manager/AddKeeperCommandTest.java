@@ -53,7 +53,7 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setPort(keeperPort);
 		keeperMeta.setIp("127.0.0.1");
 		
-		keeperTransMeta  = new KeeperTransMeta("clusterId", "shardId", keeperMeta);
+		keeperTransMeta  = new KeeperTransMeta(1L, 1L, keeperMeta);
 		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval);
 	}
 

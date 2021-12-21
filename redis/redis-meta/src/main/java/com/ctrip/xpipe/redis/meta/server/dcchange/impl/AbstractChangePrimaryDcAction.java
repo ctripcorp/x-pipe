@@ -31,6 +31,10 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	public static final int DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS = Integer.parseInt(System.getProperty("DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS", "2"));
 	
 	protected int waitTimeoutSeconds = DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS;
+
+	protected Long cluster;
+
+	protected Long shard;
 	
 	protected ExecutionLog executionLog;
 	
@@ -46,13 +50,16 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 
 	protected Executor executors;
 
-	public AbstractChangePrimaryDcAction(DcMetaCache dcMetaCache,
+	public AbstractChangePrimaryDcAction(Long clusterDbId, Long shardDbId,
+										 DcMetaCache dcMetaCache,
 										 CurrentMetaManager currentMetaManager,
 										 SentinelManager sentinelManager,
 										 ExecutionLog executionLog,
 										 XpipeNettyClientKeyedObjectPool keyedObjectPool,
 										 ScheduledExecutorService scheduled,
 										 Executor executors) {
+		this.cluster = clusterDbId;
+		this.shard = shardDbId;
 		this.dcMetaCache = dcMetaCache;
 		this.currentMetaManager = currentMetaManager;
 		this.sentinelManager = sentinelManager;
@@ -63,29 +70,29 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 	}
 
 	@Override
-	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+	public PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
 		
 		try{
-			return doChangePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
+			return doChangePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
 		}catch(Exception e){
 			executionLog.error(e.getMessage());
-			logger.error("[changePrimaryDc]" + clusterId + "," + shardId + "," + newPrimaryDc, e);
+			logger.error("[changePrimaryDc]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + newPrimaryDc, e);
 			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 	}
 
-	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo);
+	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo);
 
-	protected abstract void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster);
+	protected abstract void changeSentinel(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster);
 
-	protected void makeKeepersOk(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+	protected void makeKeepersOk(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
 
-		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
+		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
 		executionLog.info("[makeKeepersOk]" + keepers);
 		
 		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers,
 				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()),
-				currentMetaManager.randomRoute(clusterId),
+				currentMetaManager.randomRoute(clusterDbId),
 				keyedObjectPool, 1000, 1, scheduled, executors);
 		try {
 			job.execute().get(waitTimeoutSeconds/2, TimeUnit.SECONDS);
@@ -100,12 +107,12 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 
 	protected abstract List<RedisMeta> getAllSlaves(Pair<String, Integer> newMaster, List<RedisMeta> shardRedises);
 
-	protected abstract Pair<String, Integer> chooseNewMaster(String clusterId, String shardId);
+	protected abstract Pair<String, Integer> chooseNewMaster(Long clusterDbId, Long shardDbId);
 
-	protected void doChangeMetaCache(String clusterId, String shardId, String newPrimaryDc) {
+	protected void doChangeMetaCache(Long clusterDbId, Long shardDbId, String newPrimaryDc) {
 		
-		executionLog.info(String.format("[doChangeMetaCache]%s %s -> %s", clusterId, shardId, newPrimaryDc));
-		dcMetaCache.primaryDcChanged(clusterId, shardId, newPrimaryDc);
+		executionLog.info(String.format("[doChangeMetaCache]cluster_%s shard_%s -> %s", clusterDbId, shardDbId, newPrimaryDc));
+		dcMetaCache.primaryDcChanged(clusterDbId, shardDbId, newPrimaryDc);
 	}
 
 }

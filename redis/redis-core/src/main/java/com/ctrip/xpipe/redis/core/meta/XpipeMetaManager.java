@@ -57,8 +57,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation, ReadWriteSafe {
 	default Set<String> getDcs() { return read(this::doGetDcs); }
 	Set<String> doGetDcs();
 
-	default Set<String> getDcClusters(String dc) { return read(() -> doGetDcClusters(dc)); }
-	Set<String> doGetDcClusters(String dc);
+	default Set<ClusterMeta> getDcClusters(String dc) { return read(() -> doGetDcClusters(dc)); }
+	Set<ClusterMeta> doGetDcClusters(String dc);
 
 	default ClusterMeta getClusterMeta(String dc, String clusterId) { return read(()->doGetClusterMeta(dc, clusterId)); }
 	ClusterMeta doGetClusterMeta(String dc, String clusterId);
@@ -140,8 +140,8 @@ public interface XpipeMetaManager extends MetaUpdateOperation, ReadWriteSafe {
 		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
 	}
 
-	default RouteMeta consoleRandomRoute(String currentDc, Integer orgId, String dstDc) {
-		return randomRoute(currentDc, Route.TAG_CONSOLE, orgId, dstDc);
+	default List<RouteMeta> consoleRoutes(String currentDc) {
+		return routes(currentDc, Route.TAG_CONSOLE);
 	}
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;

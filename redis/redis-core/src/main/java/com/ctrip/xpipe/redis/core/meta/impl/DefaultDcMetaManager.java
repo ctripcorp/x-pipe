@@ -6,10 +6,13 @@ import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,10 +27,13 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 	
 	protected String currentDc;
-	
+
+	protected Map<Long, ClusterSummary> clusterDbIdMap;
+
 	private DefaultDcMetaManager(String currentDc, XpipeMetaManager xpipeMetaManager){
 		this.metaManager = xpipeMetaManager;
 		this.currentDc = currentDc;
+		this.buildClusterDbIdMap();
 	}
 
 	
@@ -65,7 +71,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public ShardMeta getShardMeta(String clusterId, String shardId) {
-		return metaManager.getShardMeta(shardId, clusterId, shardId);
+		return metaManager.getShardMeta(currentDc, clusterId, shardId);
 	}
 
 	@Override
@@ -115,7 +121,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public Set<String> getClusters() {
+	public Set<ClusterMeta> getClusters() {
 		return metaManager.getDcClusters(currentDc);
 	}
 
@@ -152,6 +158,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public void update(ClusterMeta clusterMeta){
 		metaManager.update(currentDc, clusterMeta);
+		buildClusterDbIdMap();
 	}
 
 
@@ -245,5 +252,202 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		metaManager.primaryDcChanged(currentDc, clusterId, shardId, newPrimaryDc);
 	}
 
+	private static class ClusterSummary {
+		String name;
+		Map<Long, String> shards;
 
+		public ClusterSummary(String name) {
+			this.name = name;
+			this.shards = new HashMap<>();
+		}
+	}
+
+	private void buildClusterDbIdMap() {
+		Map<Long, ClusterSummary> localClusterDbIdMap = new HashMap<>();
+		DcMeta dcMeta = this.metaManager.getDcMeta(currentDc);
+		for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
+			ClusterSummary clusterSummary = new ClusterSummary(clusterMeta.getId());
+			for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+				clusterSummary.shards.put(shardMeta.getDbId(), shardMeta.getId());
+			}
+
+			localClusterDbIdMap.put(clusterMeta.getDbId(), clusterSummary);
+		}
+
+		this.clusterDbIdMap = localClusterDbIdMap;
+	}
+
+	@Override
+	public String clusterDbId2Name(Long clusterDbId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary) {
+			throw new IllegalArgumentException("unknown clusterDbId " + clusterDbId);
+		}
+		return clusterSummary.name;
+	}
+
+	@Override
+	public Pair<String, String> clusterShardDbId2Name(Long clusterDbId, Long shardDbId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary || !clusterSummary.shards.containsKey(shardDbId)) {
+			throw new IllegalArgumentException(String.format("unknown clusterDbId shardDbId %d %d", clusterDbId, shardDbId));
+		}
+		return Pair.of(clusterSummary.name, clusterSummary.shards.get(shardDbId));
+	}
+
+	@Override
+	public Long clusterId2DbId(String clusterId) {
+		ClusterMeta clusterMeta = getClusterMeta(clusterId);
+		if (null == clusterMeta) {
+			throw new IllegalArgumentException("unknown clusterId " + clusterId);
+		}
+		return getClusterMeta(clusterId).getDbId();
+	}
+
+	@Override
+	public Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId) {
+		ClusterMeta clusterMeta = getClusterMeta(clusterId);
+		if (null == clusterMeta || !clusterMeta.getShards().containsKey(shardId)) {
+			throw new IllegalArgumentException(String.format("unknown clusterId shardId %s %s", clusterId, shardId));
+		}
+		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
+	}
+
+	@Override
+	public RouteMeta randomRoute(Long clusterDbId) {
+		return randomRoute(clusterDbId2Name(clusterDbId));
+	}
+
+	@Override
+	public boolean hasCluster(Long clusterDbId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		return null!= clusterSummary && hasCluster(clusterSummary.name);
+	}
+
+	@Override
+	public boolean hasShard(Long clusterDbId, Long shardDbId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		return null != clusterSummary && clusterSummary.shards.containsKey(shardDbId)
+				&& hasShard(clusterSummary.name, clusterSummary.shards.get(shardDbId));
+	}
+
+	@Override
+	public ClusterMeta getClusterMeta(Long clusterDbId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary) return null;
+		return getClusterMeta(clusterSummary.name);
+	}
+
+	@Override
+	public ClusterType getClusterType(Long clusterDbId) {
+		return getClusterType(clusterDbId2Name(clusterDbId));
+	}
+
+	@Override
+	public String getActiveDc(Long clusterDbId, Long shardDbId) {
+		return getActiveDc(clusterDbId2Name(clusterDbId), null);
+	}
+
+	@Override
+	public SentinelMeta getSentinel(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getSentinel(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getSentinelMonitorName(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getSentinelMonitorName(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public ShardMeta getShardMeta(Long clusterDbId, Long shardDbId) {
+		ClusterSummary clusterSummary = clusterDbIdMap.get(clusterDbId);
+		if (null == clusterSummary || !clusterSummary.shards.containsKey(shardDbId)) return null;
+		return getShardMeta(clusterSummary.name, clusterSummary.shards.get(shardDbId));
+	}
+
+	@Override
+	public List<KeeperMeta> getKeepers(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getKeepers(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getRedises(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getKeeperActive(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public List<KeeperMeta> getKeeperBackup(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getKeeperBackup(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public RedisMeta getRedisMaster(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getRedisMaster(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public List<KeeperMeta> getAllSurviveKeepers(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getAllSurviveKeepers(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public ClusterMeta removeCluster(Long clusterDbId) {
+		return removeCluster(clusterDbId2Name(clusterDbId));
+	}
+
+	@Override
+	public boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return updateKeeperActive(clusterShard.getKey(), clusterShard.getValue(), activeKeeper);
+	}
+
+	@Override
+	public boolean noneKeeperActive(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return noneKeeperActive(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public boolean updateRedisMaster(Long clusterDbId, Long shardDbId, RedisMeta redisMaster) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return updateRedisMaster(clusterShard.getKey(), clusterShard.getValue(), redisMaster);
+	}
+
+	@Override
+	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		setSurviveKeepers(clusterShard.getKey(), clusterShard.getValue(), surviveKeepers);
+	}
+
+	@Override
+	public Set<String> getBackupDcs(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getBackupDcs(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getRelatedDcs(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		primaryDcChanged(clusterShard.getKey(), clusterShard.getValue(), newPrimaryDc);
+	}
 }

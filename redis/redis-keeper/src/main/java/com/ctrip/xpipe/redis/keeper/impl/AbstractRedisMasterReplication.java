@@ -295,7 +295,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 						sendReplicationCommand();
 					}else{
 						logger.error("[operationComplete][listeningPortCommand] close channel{} and wait for reconnect",
-                                ChannelUtil.getDesc(channel), commandFuture.cause());
+								ChannelUtil.getDesc(channel), commandFuture.cause());
 						channel.close();
 					}
 				}
@@ -323,15 +323,15 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 		logger.info("[checkTimeout]{} ms, {}", replTimeoutMilli, ChannelUtil.getDesc(channel));
 		final ScheduledFuture<?> repliTimeoutCheckFuture = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
 
-					@Override
-					protected void doRun() throws Exception {
+			@Override
+			protected void doRun() throws Exception {
 
-						long current = System.currentTimeMillis();
-						if ((current - repl_transfer_lastio) >= replTimeoutMilli) {
-							logger.info("[doRun][no interaction with master for a long time, close connection]{}, {}", channel, AbstractRedisMasterReplication.this);
-							channel.close();
-						}
-					}
+				long current = System.currentTimeMillis();
+				if ((current - repl_transfer_lastio) >= replTimeoutMilli) {
+					logger.info("[doRun][no interaction with master for a long time, close connection]{}, {}", channel, AbstractRedisMasterReplication.this);
+					channel.close();
+				}
+			}
 		}, replTimeoutMilli, replTimeoutMilli, TimeUnit.MILLISECONDS);
 
 		channel.closeFuture().addListener(new ChannelFutureListener() {
@@ -533,7 +533,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 	public RdbDumper getRdbDumper() {
 		return rdbDumper.get();
 	}
-	
+
 	@Override
 	public RedisMaster redisMaster() {
 		return redisMaster;

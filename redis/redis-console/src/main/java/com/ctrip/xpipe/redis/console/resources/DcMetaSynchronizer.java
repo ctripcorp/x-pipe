@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcSyncMetaComparator;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 @Component
 public class DcMetaSynchronizer implements MetaSynchronizer {
@@ -31,6 +34,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
     private ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync"));
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
+    private Pattern filterClusterPattern;
 
     @Autowired
     private MetaCache metaCache;
@@ -56,6 +60,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     @Autowired(required = false)
     private ConsoleLeaderElector consoleLeaderElector;
 
+    @Autowired
+    private SentinelBalanceService sentinelBalanceService;
+
     private Map<Long, OrganizationTbl> organizations = new HashMap<>();
 
     @PostConstruct
@@ -72,15 +79,22 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
 
     public void sync() {
         try {
+            buildFilterPattern();
             refreshOrganizationsCache();
             DcMeta current = extractLocalDcMetaWithInterestedTypes(metaCache.getXpipeMeta(), consoleConfig.getOuterClusterTypes());
             DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
             DcSyncMetaComparator dcMetaComparator = new DcSyncMetaComparator(current, future);
             dcMetaComparator.compare();
-            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService).sync();
+            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService, sentinelBalanceService, consoleConfig).sync();
         } catch (Exception e) {
             logger.error("[DcMetaSynchronizer][sync]", e);
         }
+    }
+
+    void buildFilterPattern() {
+        String filterPattern = consoleConfig.filterOuterClusters();
+        if (!Strings.isNullOrEmpty(filterPattern))
+            filterClusterPattern = Pattern.compile(filterPattern);
     }
 
     void refreshOrganizationsCache() {
@@ -108,7 +122,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         DcMeta dcMeta = new DcMeta(outerDcMeta.getDcName());
         Map<String, OuterClientService.ClusterMeta> outerClusterMetas = outerDcMeta.getClusters();
         outerClusterMetas.values().forEach(outerClusterMeta -> {
-            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType()))) {
+            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType())) && !shouldFilter(outerClusterMeta.getName())) {
                 ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
                 if (clusterMeta != null)
                     dcMeta.addCluster(clusterMeta);
@@ -125,7 +139,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         DcMeta dcMetaWithInterestedClusters = new DcMeta(dcMeta.getId());
         List<ClusterMeta> interestedClusters = new ArrayList<>();
         dcMeta.getClusters().values().forEach(clusterMeta -> {
-            if (interestedTypes.contains(clusterMeta.getType())) {
+            if (interestedTypes.contains(clusterMeta.getType()) && !shouldFilter(clusterMeta.getId())) {
                 interestedClusters.add(newClusterMeta(clusterMeta));
             }
         });
@@ -222,6 +236,10 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                 return ClusterType.BI_DIRECTION.name();
         }
         return null;
+    }
+
+    boolean shouldFilter(String clusterName) {
+        return filterClusterPattern != null && filterClusterPattern.matcher(clusterName).find();
     }
 
 }

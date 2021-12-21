@@ -84,9 +84,10 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
 
         waitRedisKeeperServerConnected(redisKeeperServer1);
-        sleep(100);
-        verify(leakyBucket, times(1)).tryAcquire();
-        verify(leakyBucket, times(1)).release();
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(leakyBucket, times(1)).tryAcquire();
+            verify(leakyBucket, times(1)).release();
+        }));
     }
 
 
@@ -98,9 +99,9 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
         waitRedisKeeperServerConnected(redisKeeperServer2);
         waitRedisKeeperServerConnected(redisKeeperServer1);
-        sleep(500);//wait for commands
-        verify(leakyBucket, times(0)).tryAcquire();
-
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(leakyBucket, times(0)).tryAcquire();
+        }));
         logger.info(remarkableMessage("stop keeper2 {}"), redisKeeperServer2.getListeningPort());
         redisKeeperServer2.stop();
         sleep((int) (redisKeeperServer1.getKeeperConfig().getReplDownSafeIntervalMilli() * 3 / 2));
@@ -108,10 +109,10 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         logger.info(remarkableMessage("start keeper2 {}"), redisKeeperServer2.getListeningPort());
         redisKeeperServer2.start();
         waitRedisKeeperServerConnected(redisKeeperServer1);
-        sleep(200);
-        verify(leakyBucket, times(1)).tryAcquire();
-        verify(leakyBucket, times(1)).release();
-
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(leakyBucket, times(1)).tryAcquire();
+            verify(leakyBucket, times(1)).release();
+        }));
     }
 
     @Test
@@ -129,10 +130,11 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         sendInmemoryPsync("127.0.0.1", redisKeeperServer.getListeningPort());
         waitConditionUntilTimeOut(() -> { return ((DefaultReplicationStore) redisKeeperServer.getReplicationStore()).getRdbUpdateCount() > rdbDumpCount1;  });
         logger.info(remarkableMessage("begin wait for rdb dump finished"));
-        sleep(500);
 
-        verify(leakyBucket, times(1)).tryAcquire();
-        verify(leakyBucket, times(1)).release();
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(leakyBucket, times(1)).tryAcquire();
+            verify(leakyBucket, times(1)).release();
+        }));
     }
 
 
@@ -190,9 +192,10 @@ public class RateLimitTest extends AbstractFakeRedisTest {
 
         waitRedisKeeperServerConnected(redisKeeperServer1);
         sleep(200);
-
-        verify(leakyBucket, times(2)).tryAcquire();
-        verify(leakyBucket, times(2)).release();
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(leakyBucket, times(2)).tryAcquire();
+            verify(leakyBucket, times(2)).release();
+        }));
     }
 
     @Test
@@ -209,9 +212,10 @@ public class RateLimitTest extends AbstractFakeRedisTest {
         sleep((int) (redisKeeperServer1.getKeeperConfig().getReplDownSafeIntervalMilli() * 3 / 2));
         logger.info(remarkableMessage("connect to fake server again, to mock partial sync fail"));
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", fakeRedisServer.getPort()));
-        sleep(300);
-        verify(leakyBucket, times(1)).tryAcquire();
-        verify(leakyBucket, times(1)).release();
+        waitConditionUntilTimeOut(()->assertSuccess(()->{
+            verify(leakyBucket, times(1)).tryAcquire();
+            verify(leakyBucket, times(1)).release();
+        }));
     }
 
     @After

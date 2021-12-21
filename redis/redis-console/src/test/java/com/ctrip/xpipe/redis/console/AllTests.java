@@ -19,15 +19,15 @@ import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
-import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceTest;
+import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
+import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
 import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
+import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
-import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
@@ -36,7 +36,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariable
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster.UnhealthyClusterCheckerTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
@@ -46,6 +45,10 @@ import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
@@ -120,6 +123,7 @@ import org.junit.runners.Suite.SuiteClasses;
         CheckClusterTest.class,
 
         KeeperUpdateControllerTest.class,
+        AzServiceImplTest.class,
         MetaUpdateTest.class,
         MetaUpdateTest2.class,
         MetaUpdateTest3.class,
@@ -163,7 +167,6 @@ import org.junit.runners.Suite.SuiteClasses;
         ShardDaoTest.class,
         VariablesCheckerTest.class,
         DBVariablesCheckTest.class,
-        DefaultSentinelMonitorsCheckTest.class,
         DcMetaBuilderTest.class,
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
@@ -191,7 +194,8 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
 
-        DefaultPersistenceTest.class,
+        DefaultPersistenceCacheTest.class,
+        CheckerPersistenceCacheTest.class,
         DefaultCheckerManagerTest.class,
         DefaultSentinelBalanceServiceTest.class
 })

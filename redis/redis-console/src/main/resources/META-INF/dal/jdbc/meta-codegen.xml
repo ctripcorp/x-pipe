@@ -20,6 +20,8 @@
     <index name="cluster_name" unique="true" members="cluster_name ASC" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <index name="is_xpipe_interested" members="is_xpipe_interested ASC" />
+    <index name="Deleted" members="deleted ASC" />
+    <index name="Deleted_ClusterType" members="deleted ASC, cluster_type ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -63,6 +65,9 @@
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <index name="DcClusterId" members="dc_cluster_id ASC" />
     <index name="ShardId" members="shard_id ASC" />
+    <index name="ShardId_Deleted" members="shard_id ASC, deleted ASC" />
+    <index name="Deleted" members="deleted ASC" />
+    <index name="DcClusterId_Deleted" members="dc_cluster_id ASC, deleted ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -106,6 +111,9 @@
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <index name="DcId" members="dc_id ASC" />
     <index name="ClusterId" members="cluster_id ASC" />
+    <index name="DcIdPrimary" members="dc_id ASC, dc_cluster_id ASC, deleted ASC" />
+    <index name="ClusterId_Deleted" members="cluster_id ASC, deleted ASC" />
+    <index name="DcId_Deleted" members="dc_id ASC, deleted ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -182,6 +190,7 @@
   <entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
     <member name="keepercontainer-dc" field="keepercontainer_dc" value-type="long" length="20" nullable="false" />
+    <member name="az-id" field="az_id" value-type="long" length="20" nullable="false" />
     <member name="keepercontainer-ip" field="keepercontainer_ip" value-type="String" length="40" nullable="false" />
     <member name="keepercontainer-port" field="keepercontainer_port" value-type="int" length="10" nullable="false" />
     <member name="keepercontainer-active" field="keepercontainer_active" value-type="boolean" nullable="false" />
@@ -287,6 +296,7 @@
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <index name="DcClusterShardId" members="dc_cluster_shard_id ASC" />
     <index name="keeper_active" members="keeper_active ASC" />
+    <index name="DcClusterShardId_Deleted" members="dc_cluster_shard_id ASC, deleted ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -368,7 +378,8 @@
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="DataChangeLastTime" members="DataChange_LastTime ASC" />
-    <index name="cluster_id" members="cluster_id ASC" />
+    <index name="ClusterId" members="cluster_id ASC" />
+    <index name="Deleted" members="deleted ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -407,6 +418,48 @@
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="zone_name" unique="true" members="zone_name ASC" />
+    <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <readsets>
+      <readset name="FULL" all="true" />
+    </readsets>
+    <updatesets>
+      <updateset name="FULL" all="true" />
+    </updatesets>
+    <query-defs>
+      <query name="find-by-PK" type="SELECT">
+        <param name="key-id" />
+        <statement><![CDATA[SELECT <FIELDS/>
+        FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="insert" type="INSERT">
+        <statement><![CDATA[INSERT INTO <TABLE/>(<FIELDS/>)
+        VALUES(<VALUES/>)]]></statement>
+      </query>
+      <query name="update-by-PK" type="UPDATE">
+        <param name="key-id" />
+        <statement><![CDATA[UPDATE <TABLE/>
+        SET <FIELDS/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+      <query name="delete-by-PK" type="DELETE">
+        <param name="key-id" />
+        <statement><![CDATA[DELETE FROM <TABLE/>
+        WHERE <FIELD name='id'/> = ${key-id}]]></statement>
+      </query>
+    </query-defs>
+  </entity>
+  <entity name="az-tbl" table="az_tbl" alias="at">
+    <member name="id" field="id" value-type="long" length="20" nullable="false" key="true" auto-increment="true" />
+    <member name="dc-id" field="dc_id" value-type="long" length="20" nullable="false" />
+    <member name="active" field="active" value-type="boolean" nullable="false" />
+    <member name="az-name" field="az_name" value-type="String" length="128" nullable="false" />
+    <member name="description" field="description" value-type="String" length="1024" nullable="false" />
+    <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
+    <var name="key-id" value-type="long" key-member="id" />
+    <primary-key name="PRIMARY" members="id" />
+    <index name="idx_az_name" unique="true" members="az_name ASC" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
     <readsets>
       <readset name="FULL" all="true" />
@@ -541,6 +594,8 @@
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="ClusterId_MigrationEventId" members="cluster_id ASC, migration_event_id ASC" />
+    <index name="MigrationEventId" members="migration_event_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>
@@ -622,6 +677,7 @@
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
     <index name="DataChange_LastTime" members="DataChange_LastTime ASC" />
+    <index name="MigrationClusterId" members="migration_cluster_id ASC" />
     <readsets>
       <readset name="FULL" all="true" />
     </readsets>

@@ -25,9 +25,7 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.store.FullSyncListener;
-import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
@@ -71,12 +69,14 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private static final int DEFAULT_SCHEDULED_CORE_POOL_SIZE = 1;
 	private static final int DEFAULT_BOSS_EVENT_LOOP_SIZE = 1;
-	private static final int DEFAULT_MASTER_EVENT_LOOP_SIZE = 2;
+	// master thread size must be one
+	// otherwise we hardly finish all old replication work before new replication start on master address changing
+	private static final int DEFAULT_MASTER_EVENT_LOOP_SIZE = 1;
+	private static final int DEFAULT_RDB_EVENT_LOOP_SIZE = 1;
+
 	public static String KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = "DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT";
 	public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));
 	private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
-
-
 
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
@@ -92,13 +92,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
     private EventLoopGroup bossGroup ;
     private EventLoopGroup workerGroup;
     private NioEventLoopGroup masterEventLoopGroup;
+	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
 	private final Map<Channel, RedisClient>  redisClients = new ConcurrentHashMap<Channel, RedisClient>();
 	
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
 	
-	private final String clusterId, shardId;
+	private final ClusterId clusterId;
+	private final ShardId shardId;
 	
 	private volatile RedisKeeperServerState redisKeeperServerState;
 	private KeeperConfig keeperConfig; 
@@ -123,8 +125,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public DefaultRedisKeeperServer(KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager){
-		this.clusterId = currentKeeperMeta.parent().parent().getId();
-		this.shardId = currentKeeperMeta.parent().getId();
+
+		this.clusterId = ClusterId.from(currentKeeperMeta.parent().parent().getDbId());
+		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.keeperConfig = keeperConfig;
 		this.keepersMonitorManager = keepersMonitorManager;
@@ -149,7 +152,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		replicationStoreManager.initialize();
 		
-		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId, shardId));
+		String threadPoolName = String.format("keeper:%s", StringUtil.makeSimpleName(clusterId.toString(), shardId.toString()));
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
 		clientExecutors = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, "RedisClient-" + threadPoolName));
@@ -157,6 +160,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "boss-" + threadPoolName));
 		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, ClusterShardAwareThreadFactory.create(clusterId, shardId, "work-"+ threadPoolName));
 		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "master-" + threadPoolName));
+		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, ClusterShardAwareThreadFactory.create(clusterId, shardId, "rdbOnly-" + threadPoolName));
+
 
 		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();
@@ -273,6 +278,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
 		this.leaderElector.dispose();
 		masterEventLoopGroup.shutdownGracefully();
+		rdbOnlyEventLoopGroup.shutdownGracefully();
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
 		replicationStoreManager.dispose();
@@ -318,7 +324,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private void initAndStartMaster(Endpoint target) {
 		try {
 			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup,
-					replicationStoreManager, scheduled, resourceManager);
+					rdbOnlyEventLoopGroup, replicationStoreManager, scheduled, resourceManager);
 
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
 				logger.info("[initAndStartMaster][stopped, exit]{}, {}", target, this);
@@ -526,12 +532,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public String getClusterId() {
+	public ClusterId getClusterId() {
 		return this.clusterId;
 	}
 
 	@Override
-	public String getShardId() {
+	public ShardId getShardId() {
 		return this.shardId;
 	}
 
@@ -789,4 +795,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public int getTryConnectMasterCnt() {
 		return tryConnectMasterCnt.get();
 	}
+
+	@VisibleForTesting
+	public ReplicationStoreManager getReplicationStoreManager() {
+		return replicationStoreManager;
+	}
+
+	@VisibleForTesting
+	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
+		this.replicationStoreManager = replicationStoreManager;
+	}
+
 }

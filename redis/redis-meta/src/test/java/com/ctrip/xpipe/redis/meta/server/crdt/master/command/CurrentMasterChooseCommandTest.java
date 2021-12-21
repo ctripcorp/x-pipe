@@ -17,11 +17,13 @@ import java.util.function.Function;
 @RunWith(MockitoJUnitRunner.class)
 public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
 
-    private int checkRedisTimeoutSeconds = 1;
+    private int checkRedisTimeoutSeconds = 2;
 
     private CurrentMasterChooseCommand chooseCommand;
 
     private String clusterId = "cluster1", shardId = "shard1";
+
+    private Long clusterDbId = 1L, shardDbId = 1L;
 
     private List<RedisMeta> redises = new ArrayList<>();
 
@@ -65,7 +67,7 @@ public class CurrentMasterChooseCommandTest extends AbstractMetaServerTest {
     @Before
     public void setupDefaultPeerMasterChooseCommandTest() throws Exception {
         mockRedises();
-        chooseCommand = new CurrentMasterChooseCommand(clusterId, shardId, redises, scheduled,
+        chooseCommand = new CurrentMasterChooseCommand(clusterDbId, shardDbId, redises, scheduled,
                 getXpipeNettyClientKeyedObjectPool(), checkRedisTimeoutSeconds);
     }
 

@@ -30,47 +30,47 @@ public class BecomeBackupAction extends AbstractChangePrimaryDcAction{
 
 	private MultiDcService multiDcService;
 	
-	public BecomeBackupAction(DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, ExecutionLog executionLog,
+	public BecomeBackupAction(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, SentinelManager sentinelManager, ExecutionLog executionLog,
 							  XpipeNettyClientKeyedObjectPool keyedObjectPool,
 							  MultiDcService multiDcService, ScheduledExecutorService scheduled, Executor executors) {
-		super(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
+		super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, scheduled, executors);
 		this.multiDcService = multiDcService;
 	}
 	
 	@Override
-	protected PrimaryDcChangeMessage doChangePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+	protected PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
 		
-		doChangeMetaCache(clusterId, shardId, newPrimaryDc);
+		doChangeMetaCache(clusterDbId, shardDbId, newPrimaryDc);
 
-		changeSentinel(clusterId, shardId, null);
+		changeSentinel(clusterDbId, shardDbId, null);
 
-		Pair<String, Integer> newMaster = chooseNewMaster(clusterId, shardId);
+		Pair<String, Integer> newMaster = chooseNewMaster(clusterDbId, shardDbId);
 		if(newMaster == null){
 			executionLog.error("[doChangePrimaryDc][new master null]");
 			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 		executionLog.info(String.format("[chooseNewMaster]%s:%d", newMaster.getKey(), newMaster.getValue()));
 		
-		makeKeepersOk(clusterId, shardId, newMaster);
+		makeKeepersOk(clusterDbId, shardDbId, newMaster);
 
-		List<RedisMeta> slaves = getAllSlaves(newMaster, dcMetaCache.getShardRedises(clusterId, shardId));
+		List<RedisMeta> slaves = getAllSlaves(newMaster, dcMetaCache.getShardRedises(clusterDbId, shardDbId));
 
-		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterId, shardId);
+		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
 		makeRedisesOk(new Pair<>(activeKeeper.getIp(), activeKeeper.getPort()), slaves);
 		
 		return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.SUCCESS, executionLog.getLog());
 	}
 
 	@Override
-	protected Pair<String, Integer> chooseNewMaster(String clusterId, String shardId) {
+	protected Pair<String, Integer> chooseNewMaster(Long clusterDbId, Long shardDbId) {
 		
-		BackupDcKeeperMasterChooserAlgorithm algorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
+		BackupDcKeeperMasterChooserAlgorithm algorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
 		return algorithm.choose();
 	}
 
 
 	@Override
-	protected void changeSentinel(String clusterId, String shardId, Pair<String, Integer> newMaster) {
+	protected void changeSentinel(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
 		executionLog.info("[changeSentinel][nothing need to be done]");
 	}
 

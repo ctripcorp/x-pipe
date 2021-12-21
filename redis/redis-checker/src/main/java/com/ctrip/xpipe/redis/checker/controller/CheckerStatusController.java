@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.CrossMasterDelayManager;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
+import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -41,7 +42,7 @@ public class CheckerStatusController {
     private CheckerConfig config;
 
     @Autowired
-    private ClusterServer clusterServer;
+    private GroupCheckerLeaderElector clusterServer;
 
     @Autowired
     private RedisDelayManager redisDelayManager;

@@ -393,7 +393,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (null != clusterEvent) clusterEvent.onEvent();
 
 		/** Notify meta server **/
-		notifier.notifyClusterDelete(clusterName, relatedDcs);
+		if (consoleConfig.shouldNotifyClusterTypes().contains(queryProto.getClusterType()))
+			notifier.notifyClusterDelete(clusterName, relatedDcs);
 	}
 
 	@Override
@@ -427,7 +428,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 
 		/** Notify meta server **/
-		notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
+		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+			notifier.notifyClusterDelete(clusterName, Arrays.asList(new DcTbl[]{dc}));
 
 	}
 
@@ -437,6 +439,53 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			@Override
 			public Integer doQuery() throws DalException {
 				return dao.updateByPK(cluster, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
+
+	@Override
+	@DalTransaction
+	public void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName) {
+		ClusterTbl former = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+			@Override
+			public ClusterTbl doQuery() throws DalException {
+				return dao.findClusterByClusterName(formerClusterName, ClusterTblEntity.READSET_FULL);
+			}
+		});
+		ClusterTbl latter = queryHandler.handleQuery(new DalQuery<ClusterTbl>() {
+			@Override
+			public ClusterTbl doQuery() throws DalException {
+				return dao.findClusterByClusterName(latterClusterName, ClusterTblEntity.READSET_FULL);
+			}
+		});
+
+		if (former == null)  throw new BadRequestException("former cluster not found");
+		if (latter == null)  throw new BadRequestException("latter cluster not found");
+		if (former.getId() != formerClusterId) throw new BadRequestException("former cluster name Id not match");
+		if (latter.getId() != latterClusterId) throw new BadRequestException("latter cluster name Id not match");
+
+		String tmpClusterName = UUID.randomUUID().toString();
+		former.setClusterName(tmpClusterName);
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(former, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+
+		latter.setClusterName(formerClusterName);
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(latter, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+
+		former.setClusterName(latterClusterName);
+		queryHandler.handleQuery(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateByPK(former, ClusterTblEntity.UPDATESET_FULL);
 			}
 		});
 	}

@@ -74,6 +74,7 @@ public class DelayServiceTest {
 
                     return unhealthyInfoModel;
                 });
+        delayService.setFoundationService(FoundationService.DEFAULT);
     }
 
     @Test

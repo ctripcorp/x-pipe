@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.checker.config;
 
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -40,6 +42,8 @@ public interface CheckerConfig {
 
     String KEY_SENTINEL_CHECK_OUTER_CLUSTERS = "console.sentinel.check.outer.clusters";
 
+    String KEY_SENTINEL_CHECK_DOWNGRADE_STRATEGY = "checker.sentinel.check.downgrade.strategy";
+
     String KEY_SENTINEL_RATE_LIMIT_SIZE = "console.sentinel.rate.limit.size";
 
     String KEY_SENTINEL_RATE_LIMIT_OPEN = "console.sentinel.rate.limit.open";
@@ -69,6 +73,12 @@ public interface CheckerConfig {
     String KEY_CHECKER_ADDRESS_ALL = "checker.address.all";
 
     String KEY_CONFIG_CACHE_TIMEOUT_MILLI = "checker.config.cache.timeout.milli";
+
+    String KEY_PROXY_CHECK_DOWN_RETRY_TIMES = "proxy.check.down.retry.times";
+
+    String KEY_PROXY_CHECK_UP_RETRY_TIMES = "proxy.check.up.retry.times";
+
+    String KEY_PROXY_CHECK_INTERVAL = "proxy.check.interval";
 
     int getRedisReplicationHealthCheckInterval();
 
@@ -122,5 +132,14 @@ public interface CheckerConfig {
 
     long getConfigCacheTimeoutMilli();
 
+    int getProxyCheckUpRetryTimes();
+
+    int getProxyCheckDownRetryTimes();
+
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
+
+    void register(List<String> keys, ConfigChangeListener configListener);
+
+
+    String sentinelCheckDowngradeStrategy();
 }

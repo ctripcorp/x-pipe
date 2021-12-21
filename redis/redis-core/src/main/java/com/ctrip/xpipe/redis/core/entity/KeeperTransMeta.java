@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.entity;
 
-
-import com.ctrip.xpipe.utils.ObjectUtils;
+import java.util.Objects;
 
 /**
  * used for trans info between meta server and keeper container
@@ -9,39 +8,21 @@ import com.ctrip.xpipe.utils.ObjectUtils;
  *
  * Aug 2, 2016
  */
-public class KeeperTransMeta implements ClusterAware{
-	
-	private String clusterId;
+public class KeeperTransMeta {
 
-	private String shardId;
+	private Long clusterDbId;
+
+	private Long shardDbId;
 	
 	private KeeperMeta keeperMeta;
 
 	//for json conversion
 	public KeeperTransMeta() {}
-	
-	public KeeperTransMeta(String clusterId, String shardId, KeeperMeta keeperMeta){
-		this.clusterId = clusterId;
-		this.shardId = shardId;
+
+	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
+		this.clusterDbId = clusterDbId;
+		this.shardDbId = shardDbId;
 		this.keeperMeta = keeperMeta;
-	}
-	
-
-	@Override
-	public String getClusterId() {
-		return clusterId;
-	}
-
-	public void setClusterId(String clusterId) {
-		this.clusterId = clusterId;
-	}
-
-	public String getShardId() {
-		return shardId;
-	}
-
-	public void setShardId(String shardId) {
-		this.shardId = shardId;
 	}
 
 	public KeeperMeta getKeeperMeta() {
@@ -52,38 +33,39 @@ public class KeeperTransMeta implements ClusterAware{
 		this.keeperMeta = keeperMeta;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
+	public Long getClusterDbId() {
+		return clusterDbId;
+	}
 
-		if(!(obj instanceof KeeperTransMeta)){
-			return false;
-		}
-		
-		KeeperTransMeta other =  (KeeperTransMeta) obj;
-		if(!ObjectUtils.equals(this.clusterId, other.clusterId)){
-			return false;
-		}
-		if(!ObjectUtils.equals(this.shardId, other.shardId)){
-			return false;
-		}
-		if(!ObjectUtils.equals(this.keeperMeta, other.keeperMeta)){
-			return false;
-		}
-		return true;
+	public void setClusterDbId(Long clusterDbId) {
+		this.clusterDbId = clusterDbId;
+	}
+
+	public Long getShardDbId() {
+		return shardDbId;
+	}
+
+	public void setShardDbId(Long shardDbId) {
+		this.shardDbId = shardDbId;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		KeeperTransMeta that = (KeeperTransMeta) o;
+		return Objects.equals(clusterDbId, that.clusterDbId) &&
+				Objects.equals(shardDbId, that.shardDbId) &&
+				Objects.equals(keeperMeta, that.keeperMeta);
 	}
 
 	@Override
 	public int hashCode() {
-		
-		int hash = 0;
-		hash = hash * 31 + (clusterId == null ? 0 : clusterId.hashCode());
-		hash = hash * 31 + (shardId == null ? 0 : shardId.hashCode());
-		hash = hash * 31 + (keeperMeta == null ? 0 : keeperMeta.hashCode());
-		return hash;
+		return Objects.hash(clusterDbId, shardDbId, keeperMeta);
 	}
 	
 	@Override
 	public String toString() {
-		return String.format("[%s,%s-%s:%d]", clusterId, shardId, keeperMeta.getIp(), keeperMeta.getPort());
+		return String.format("[%d,%d-%s:%d]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());
 	}
 }

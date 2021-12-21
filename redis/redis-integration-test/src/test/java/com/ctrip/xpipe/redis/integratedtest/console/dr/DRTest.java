@@ -41,6 +41,7 @@ public class DRTest extends AbstractXPipeDrTest {
 
         stopServer(jqMetaServer);
 
+
         if (jqMetaServer.isProcessAlive()) Assert.fail("jq metaserver is still alive after kill");
 
         // do migration

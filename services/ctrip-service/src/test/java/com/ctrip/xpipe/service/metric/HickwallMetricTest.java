@@ -1,68 +1,118 @@
 package com.ctrip.xpipe.service.metric;
 
-import com.ctrip.xpipe.service.AbstractServiceTest;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
-import com.ctrip.xpipe.metric.MetricProxyException;
+import com.ctrip.xpipe.service.AbstractServiceTest;
+import com.ctrip.xpipe.tuple.Pair;
+import org.influxdb.dto.Point;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 /**
- * @author wenchao.meng
- *         <p>
- *         Aug 17, 2017
+ * @author lishanglin
+ * date 2021/10/27
  */
-public class HickwallMetricTest extends AbstractServiceTest{
+@RunWith(MockitoJUnitRunner.Silent.class)
+public class HickwallMetricTest extends AbstractServiceTest {
 
-    private HickwallMetric hickwallMetricProxy;
+    private HickwallMetric hickwallMetric;
+
+    @Mock
+    private InfluxDbClient client;
+
+    @Mock
+    private HickwallConfig config;
+
+    private int sendInterval = 10;
+
+    private int sendBatch = 2;
+
+    private String dc = "jq", cluster = "cluster1", shard = "shard1";
+
+    private AtomicReference<List<Point>> dataRef = new AtomicReference();
 
     @Before
-    public void beforeHickwallMetricProxyTest(){
-        hickwallMetricProxy = new HickwallMetric();
+    public void setupHickwallMetricTest() throws Exception {
+        HickwallMetric.HICKWALL_SEND_INTERVAL = sendInterval;
+
+        when(config.getHickwallBatchSize()).thenReturn(sendBatch);
+        when(config.getHickwallAddress()).thenReturn("http://10.0.0.1:80");
+        when(config.getHickwallDatabase()).thenReturn("test-db");
+        when(config.getHickwallQueueSize()).thenReturn(100);
+        when(config.getHickwallWriteMonitor()).thenReturn(false);
+        doAnswer(invocationOnMock -> {
+            dataRef.set(invocationOnMock.getArgument(0, List.class));
+            return null;
+        }).when(client).send(any());
+        doAnswer(invocationOnMock -> {
+            dataRef.set(invocationOnMock.getArgument(0, List.class));
+            return null;
+        }).when(client).sendWithMonitor(any());
+
+        hickwallMetric = new HickwallMetric();
+        hickwallMetric.setInfluxDbClient(client);
+        hickwallMetric.setConfig(config);
     }
 
     @Test
-    public void testHickWall() throws MetricProxyException, IOException {
+    public void testMetricDelay() throws Exception {
+        hickwallMetric.writeBinMultiDataPoint(mockDelayMetricData(100));
+        hickwallMetric.writeBinMultiDataPoint(mockDelayMetricData(200));
+        waitConditionUntilTimeOut(() -> null != dataRef.get());
+        Mockito.verify(client).send(any());
+        Mockito.verify(client, never()).sendWithMonitor(any());
 
-        int port = 11111;
+        List<Point> sendData = dataRef.get();
+        Assert.assertEquals(2, sendData.size());
+        Point point1 = sendData.get(0);
+        Point point2 = sendData.get(1);
 
-        logger.info("[testHickWall]{}", port);
-
-        scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
-
-            @Override
-            protected void doRun() throws Exception {
-
-                HostPort hostPort = new HostPort("127.0.0.1", port);
-                MetricData metricData = new MetricData("retrans", "dc", "cluster", "shard");
-                metricData.setValue(1000);
-                metricData.setHostPort(hostPort);
-                metricData.setTimestampMilli(System.currentTimeMillis());
-
-                hickwallMetricProxy.writeBinMultiDataPoint(metricData);
-            }
-        }, 0, 2, TimeUnit.SECONDS);
-
-
-        waitForAnyKeyToExit();
+        Assert.assertEquals(new Pair<>("fx.xpipe.delay", 100D), parsePoint(point1));
+        Assert.assertEquals(new Pair<>("fx.xpipe.delay", 200D), parsePoint(point2));
     }
 
     @Test
-    public void testGetFormattedRedisAddr() {
-        HostPort hostPort = new HostPort("10.2.2.2", 6379);
-        String result = hickwallMetricProxy.getFormattedRedisAddr(hostPort);
-        Assert.assertEquals("10_2_2_2_6379", result);
+    public void testSendWithMonitor() throws Exception {
+        when(config.getHickwallWriteMonitor()).thenReturn(true);
+        hickwallMetric.writeBinMultiDataPoint(mockDelayMetricData(100));
+        hickwallMetric.writeBinMultiDataPoint(mockDelayMetricData(200));
+        waitConditionUntilTimeOut(() -> null != dataRef.get());
+        Mockito.verify(client, never()).send(any());
+        Mockito.verify(client).sendWithMonitor(any());
     }
 
-    @Test
-    public void testGetFormattedSrcAddr() {
-        String ip = "192.168.0.1";
-        Assert.assertEquals("192_168_0_1", hickwallMetricProxy.getFormattedSrcAddr(ip));
+    private Pair<String, Double> parsePoint(Point point) throws Exception {
+        Field measurementField = Point.class.getDeclaredField("measurement");
+        Field fieldsField = Point.class.getDeclaredField("fields");
+
+        measurementField.setAccessible(true);
+        fieldsField.setAccessible(true);
+
+        String measurement = (String)measurementField.get(point);
+        Map<String, Object> fields = (Map<String, Object>) fieldsField.get(point);
+
+        return new Pair<>(measurement, (Double) fields.get("value"));
+    }
+
+    private MetricData mockDelayMetricData(double delay) {
+        MetricData metricData = new MetricData("delay", dc, cluster, shard);
+        metricData.setHostPort(new HostPort("127.0.0.1", 6379));
+        metricData.setValue(delay);
+        metricData.setTimestampMilli(System.currentTimeMillis());
+        return metricData;
     }
 
 }

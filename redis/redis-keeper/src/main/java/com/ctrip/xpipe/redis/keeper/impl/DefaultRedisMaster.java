@@ -14,6 +14,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * @author wenchao.meng
  *
@@ -32,24 +33,27 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	private ScheduledExecutorService scheduled;
 	
 	private MASTER_STATE masterState = MASTER_STATE.REDIS_REPL_NONE;
-	
+
 	private RedisMasterReplication redisMasterReplication;
 
-	private NioEventLoopGroup nioEventLoopGroup;
+	private NioEventLoopGroup masterEventLoopGroup;
+
+	private NioEventLoopGroup rdbOnlyEventLoopGroup;
 
 	private KeeperResourceManager keeperResourceManager;
 
-	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup nioEventLoopGroup,
-							  ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
+	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup masterEventLoopGroup,
+							  NioEventLoopGroup rdbOnlyEventLoopGroup, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
 							  KeeperResourceManager resourceManager) {
 
 		this.redisKeeperServer = redisKeeperServer;
 		this.replicationStoreManager = replicationStoreManager;
-		this.nioEventLoopGroup = nioEventLoopGroup;
+		this.masterEventLoopGroup = masterEventLoopGroup;
+		this.rdbOnlyEventLoopGroup = rdbOnlyEventLoopGroup;
 		this.endpoint = endpoint;
 		this.scheduled = scheduled;
 		this.keeperResourceManager = resourceManager;
-		redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, nioEventLoopGroup,
+		this.redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, masterEventLoopGroup,
 				this.scheduled, resourceManager);
 	}
 	
@@ -76,7 +80,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	
 	@Override
 	protected void doDispose() throws Exception {
-		
 		redisMasterReplication.dispose();
 		super.doDispose();
 	}
@@ -94,7 +97,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	@Override
 	public void reconnect() {
-	    redisMasterReplication.reconnectMaster();
+		redisMasterReplication.reconnectMaster();
 	}
 
 	@Override
@@ -115,7 +118,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 			logger.info("[createRdbDumper][master state not connected, dumper not allowed]{}", redisMasterReplication);
 			throw new CreateRdbDumperException(this, "master state not connected, dumper not allowed:" + masterState);
 		}
-		return new RedisMasterNewRdbDumper(this, redisKeeperServer, nioEventLoopGroup, scheduled, keeperResourceManager);
+		return new RedisMasterNewRdbDumper(this, redisKeeperServer, rdbOnlyEventLoopGroup, scheduled, keeperResourceManager);
 	}
 	
 	public MASTER_STATE getMasterState() {

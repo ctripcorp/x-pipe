@@ -43,7 +43,7 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 	
 	private ConcurrentHashMap<KeeperKey, KeeperHeartBeatManager> keepers = new ConcurrentHashMap<>();
 	
-	private Map<String, ClusterMeta> clusterMetas = new ConcurrentHashMap<>();
+	private Map<Long, ClusterMeta> clusterMetas = new ConcurrentHashMap<>();
 	
 	@Override
 	public void ping(KeeperInstanceMeta keeperInstanceMeta) {
@@ -81,12 +81,12 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 	@Override
 	public void add(ClusterMeta clusterMeta) {
 		
-		clusterMetas.put(clusterMeta.getId(), clusterMeta);
+		clusterMetas.put(clusterMeta.getDbId(), clusterMeta);
 		
 		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
 			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
 				
-				final KeeperKey keeperKey = createKeeperKey(clusterMeta.getId(), shardMeta.getId(), keeperMeta);
+				final KeeperKey keeperKey = createKeeperKey(clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);
 				@SuppressWarnings("unused")
 				KeeperHeartBeatManager keeperHeartBeatManager = MapUtils.getOrCreate(keepers, keeperKey, new ObjectFactory<KeeperHeartBeatManager>() {
 					@Override
@@ -101,13 +101,13 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 	}
 
 	@Override
-	public void remove(String clusterId) {
+	public void remove(Long clusterDbId) {
 		
-		logger.info("[remote]{}", clusterId);
+		logger.info("[remote]cluster_{}", clusterDbId);
 		
-		clusterMetas.remove(clusterId);
+		clusterMetas.remove(clusterDbId);
 		for(KeeperKey keeperKey : keepers.keySet()){
-			if(keeperKey.getClusterId().equals(clusterId)){
+			if(keeperKey.getClusterDbId().equals(clusterDbId)){
 				
 				logger.info("[remove]{}", keeperKey);
 				KeeperHeartBeatManager keeperHeartBeatManager = keepers.remove(keeperKey);
@@ -121,36 +121,36 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 		
 		logger.info("[removeBySlot]{}", slotId);
 		
-		for(String clusterId : allClusters()){
-			int clusterSlotId = slotManager.getSlotIdByKey(clusterId);
+		for(Long clusterDbId : allClusters()){
+			int clusterSlotId = slotManager.getSlotIdByKey(clusterDbId);
 			if(clusterSlotId == slotId){
-				remove(clusterId);
+				remove(clusterDbId);
 			}
 		}
 	}
 
 	@Override
-	public Set<String> allClusters() {
+	public Set<Long> allClusters() {
 		
-		Set<String> clusters = new HashSet<>();
+		Set<Long> clusters = new HashSet<>();
 		for(KeeperKey keeperKey : keepers.keySet()){
-			clusters.add(keeperKey.getClusterId());
+			clusters.add(keeperKey.getClusterDbId());
 		}
 		return clusters;
 	}
 
 	private KeeperKey createKeeperKey(KeeperInstanceMeta keeperInstanceMeta) {
 		
-		return createKeeperKey(keeperInstanceMeta.getClusterId(), 
-				keeperInstanceMeta.getShardId(), 
+		return createKeeperKey(keeperInstanceMeta.getClusterDbId(),
+				keeperInstanceMeta.getShardDbId(),
 				keeperInstanceMeta.getKeeperMeta());
 	}
 
-	private KeeperKey createKeeperKey(String clusterId, String shardId, KeeperMeta keeperMeta) {
+	private KeeperKey createKeeperKey(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		
 		return new KeeperKey(
-				clusterId, 
-				shardId, 
+				clusterDbId,
+				shardDbId,
 				keeperMeta.getIp(), 
 				keeperMeta.getPort());
 	}

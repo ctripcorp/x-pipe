@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.cluster;
 
 import com.ctrip.xpipe.api.cluster.CrossDcClusterServer;
 import com.ctrip.xpipe.api.cluster.CrossDcLeaderAware;
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -34,7 +33,7 @@ import java.util.Map;
  */
 @Component
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, LeaderAware, Observer, ApplicationContextAware{
+public class ConsoleCrossDcServer extends AbstractStartStoppable implements CrossDcClusterServer, ConsoleLeaderAware, Observer, ApplicationContextAware{
 
     @Autowired
     private ConsoleLeaderElector consoleLeaderElector;

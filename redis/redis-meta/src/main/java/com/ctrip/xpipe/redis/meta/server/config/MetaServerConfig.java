@@ -44,4 +44,6 @@ public interface MetaServerConfig extends CoreConfig {
 	boolean shouldCorrectPeerMasterPeriodically();
 
 	long getNewMasterCacheTimeoutMilli();
+
+	boolean useDbIdForSlot();
 }

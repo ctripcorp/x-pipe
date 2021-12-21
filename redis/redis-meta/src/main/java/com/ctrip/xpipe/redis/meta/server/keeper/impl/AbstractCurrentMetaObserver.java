@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
 import com.ctrip.xpipe.redis.meta.server.keeper.ClusterTypeAware;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -48,7 +49,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		if(args instanceof NodeAdded){
 			ClusterMeta clusterMeta = (ClusterMeta)((NodeAdded)args).getNode();
 			if (supportCluster(clusterMeta)) {
-				logger.info("[update][add][{}]{}", getClass().getSimpleName(), clusterMeta.getId());
+				logger.info("[update][add][{}]cluster_{}", getClass().getSimpleName(), clusterMeta.getDbId());
 				handleClusterAdd(clusterMeta);
 			}
 			return;
@@ -57,7 +58,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		if(args instanceof NodeDeleted){
 			ClusterMeta clusterMeta = (ClusterMeta)((NodeDeleted)args).getNode();
 			if (supportCluster(clusterMeta)) {
-				logger.info("[update][delete][{}]{}", getClass().getSimpleName(), clusterMeta.getId());
+				logger.info("[update][delete][{}]cluster_{}", getClass().getSimpleName(), clusterMeta.getDbId());
 				handleClusterDeleted(clusterMeta);
 			}
 			return;
@@ -75,15 +76,15 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		throw new IllegalArgumentException("unknown argument:" + args);
 	}
 
-	protected boolean registerJob(String clusterId, String shardId, Releasable releasable) {
+	protected boolean registerJob(Long clusterDbId, Long shardDbId, Releasable releasable) {
 		try {
-			currentMetaManager.addResource(clusterId, shardId, releasable);
+			currentMetaManager.addResource(clusterDbId, shardDbId, releasable);
 		} catch (Exception e) {
 			try {
-				logger.info("[registerJob][{}][{}] cancel job registration", clusterId, shardId, e);
+				logger.info("[registerJob][cluster_{}][shard_{}] cancel job registration", clusterDbId, shardDbId, e);
 				releasable.release();
 			} catch (Throwable t) {
-				logger.warn("[registerJob][{}][{}]", clusterId, shardId, t);
+				logger.warn("[registerJob][cluster_{}][shard_{}]", clusterDbId, shardDbId, t);
 			}
 			return false;
 		}
@@ -91,7 +92,8 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 	}
 
 	protected boolean supportCluster(ClusterMeta clusterMeta) {
-		return getSupportClusterTypes().contains(ClusterType.lookup(clusterMeta.getType()));
+		return !StringUtil.isEmpty(clusterMeta.getType())
+				&& getSupportClusterTypes().contains(ClusterType.lookup(clusterMeta.getType()));
 	}
 
 	protected abstract void handleClusterModified(ClusterMetaComparator comparator);

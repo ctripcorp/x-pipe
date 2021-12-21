@@ -57,7 +57,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         XpipeMetaManager xpipeMetaManager = mock(XpipeMetaManager.class);
         when(xpipeMetaManager.findMetaDesc(hostPort)).thenReturn(null);
         metaCache.setMeta(new Pair<>(mock(XpipeMeta.class), xpipeMetaManager));
-        metaCache.getRouteIfPossible(hostPort);
+        metaCache.getRoutes();
     }
 
     @Test

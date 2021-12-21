@@ -7,10 +7,7 @@ import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
@@ -44,6 +41,10 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
     private DcMetaCache dcMetaCache;
 
+    private String clusterId = "cluster", shardId = "shard";
+
+    private Long clusterDbId = 1L, shardDbId = 1L;
+
     private KeyedOneThreadMutexableTaskExecutor keyedOneThreadMutexableTaskExecutor;
 
     @Before
@@ -75,8 +76,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("state")).thenReturn("ACTIVE");
         when(extractor.extract("master_host")).thenReturn("localhost");
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperMaster.getValue()));
-        when(currentMetaManager.getKeeperMaster("cluster", "shard")).thenReturn(keeperMaster);
-        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, "cluster", "shard"));
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(keeperMaster);
+        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, clusterDbId, shardDbId));
         Assert.assertTrue(checker.isValid());
     }
 
@@ -87,8 +88,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("state")).thenReturn("BACKUP");
         when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
-        when(currentMetaManager.getKeeperActive("cluster", "shard")).thenReturn(keeperActive);
-        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, "cluster", "shard"));
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(keeperActive);
+        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId));
         Assert.assertTrue(checker.isValid());
     }
 
@@ -99,8 +100,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("state")).thenReturn("BACKUP");
         when(extractor.extract("master_host")).thenReturn("localhost");
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperMaster.getValue()));
-        when(currentMetaManager.getKeeperMaster("cluster", "shard")).thenReturn(keeperMaster);
-        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, "cluster", "shard"));
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(keeperMaster);
+        ActiveKeeperInfoChecker checker = spy(manager.new ActiveKeeperInfoChecker(extractor, clusterDbId, shardDbId));
         Assert.assertFalse(checker.isValid());
         when(extractor.extract("master_host")).thenReturn("localhost");
         when(extractor.extract("master_port")).thenReturn(String.valueOf(randomInt()));
@@ -114,8 +115,8 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         when(extractor.extract("state")).thenReturn("ACTIVE");
         when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
         when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
-        when(currentMetaManager.getKeeperActive("cluster", "shard")).thenReturn(keeperActive);
-        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, "cluster", "shard"));
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(keeperActive);
+        DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId));
         Assert.assertFalse(checker.isValid());
     }
 
@@ -159,16 +160,16 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             }
         });
 
-        when(currentMetaManager.getKeeperActive(clusterId, shardId))
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
-        when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>("localhost", masterPort));
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
                 new KeeperMeta().setActive(false).setIp("localhost").setPort(backupKeeper.getPort())
         ));
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), new ShardMeta().setId(shardId).setDbId(shardDbId));
         sleep(1500);
         Assert.assertEquals(2, infoCount.get());
         Assert.assertEquals(0, keeperCommandCounter.get());
@@ -180,7 +181,6 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
     @Test
     public void integrateTestDoCorrect() throws Exception {
-        String clusterId = "clsuter", shardId = "shard";
         AtomicInteger infoCount = new AtomicInteger(0);
         AtomicInteger keeperCommandCounter = new AtomicInteger(0);
         int masterPort = randomInt();
@@ -215,21 +215,20 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             }
         });
 
-        when(currentMetaManager.getKeeperActive(clusterId, shardId))
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
-        when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>("localhost", masterPort));
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
                 new KeeperMeta().setActive(false).setIp("localhost").setPort(backupKeeper.getPort())
         ));
-        when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new RedisMeta().setIp("localhost").setPort(masterPort),
                 new RedisMeta().setIp("localhost").setPort(randomPort())
         ));
-        when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
-//        sleep(1000);
+        when(dcMetaCache.isCurrentDcPrimary(anyLong())).thenReturn(true);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), new ShardMeta().setId(shardId).setDbId(shardDbId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(1, infoCount.get());
@@ -241,7 +240,6 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
     @Test
     public void integrateTestDoCorrect2() throws Exception {
-        String clusterId = "clsuter", shardId = "shard";
         AtomicInteger infoCount = new AtomicInteger(0);
         AtomicInteger keeperCommandCounter = new AtomicInteger(0);
         int masterPort = randomInt();
@@ -276,21 +274,21 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             }
         });
 
-        when(currentMetaManager.getKeeperActive(clusterId, shardId))
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
-        when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>("localhost", masterPort));
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
                 new KeeperMeta().setActive(false).setIp("localhost").setPort(backupKeeper.getPort())
         ));
-        when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new RedisMeta().setIp("localhost").setPort(masterPort),
                 new RedisMeta().setIp("localhost").setPort(randomPort())
         ));
-        when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
+        when(dcMetaCache.isCurrentDcPrimary(anyLong())).thenReturn(true);
 
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), new ShardMeta().setId(shardId).setDbId(shardDbId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(1, infoCount.get());
@@ -302,7 +300,6 @@ public class DefaultKeeperManagerTest extends AbstractTest {
 
     @Test
     public void testWhenMigratingPrimaryDc() throws Exception {
-        String clusterId = "clsuter", shardId = "shard";
         AtomicInteger infoCount = new AtomicInteger(0);
         AtomicInteger keeperCommandCounter = new AtomicInteger(0);
         int masterPort = randomInt(), backupSiteActiveKeeperPort = randomInt();
@@ -337,17 +334,17 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             }
         });
 
-        when(currentMetaManager.getKeeperActive(clusterId, shardId))
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
-        when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>("localhost", backupSiteActiveKeeperPort));
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", backupSiteActiveKeeperPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
                 new KeeperMeta().setActive(false).setIp("localhost").setPort(backupKeeper.getPort())
         ));
-        when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
+        when(dcMetaCache.isCurrentDcPrimary(anyLong())).thenReturn(true);
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), new ShardMeta().setId(shardId).setDbId(shardDbId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(2, infoCount.get());
@@ -394,17 +391,17 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             }
         });
 
-        when(currentMetaManager.getKeeperActive(clusterId, shardId))
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
-        when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>("localhost", redisPort));
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", redisPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
                 new KeeperMeta().setActive(false).setIp("localhost").setPort(backupKeeper.getPort())
         ));
-        when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
+        when(dcMetaCache.isCurrentDcPrimary(anyLong())).thenReturn(true);
 //        sleep(1000);
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), new ShardMeta().setId(shardId).setDbId(shardDbId));
         waitConditionUntilTimeOut(()->infoCount.get() > 0, 2000);
         sleep(200);
         Assert.assertEquals(2, infoCount.get());
@@ -453,26 +450,26 @@ public class DefaultKeeperManagerTest extends AbstractTest {
             }
         });
 
-        when(currentMetaManager.getKeeperActive(clusterId, shardId))
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId))
                 .thenReturn(new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort));
-        when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>("localhost", masterPort));
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new KeeperMeta().setActive(true).setIp("localhost").setPort(activeKeeperPort),
                 new KeeperMeta().setActive(false).setIp("localhost").setPort(backupKeeper.getPort())
         ));
-        when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(Lists.newArrayList(
+        when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(Lists.newArrayList(
                 new RedisMeta().setIp("localhost").setPort(masterPort),
                 new RedisMeta().setIp("localhost").setPort(randomPort())
         ));
-        when(dcMetaCache.isCurrentDcPrimary(anyString())).thenReturn(true);
+        when(dcMetaCache.isCurrentDcPrimary(anyLong())).thenReturn(true);
 
         DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
         executors.execute(new Runnable() {
             @Override
             public void run() {
                 for(int i = 0; i < 100; i++) {
-                    keyedOneThreadMutexableTaskExecutor.clearAndExecute(Pair.from(clusterId, shardId),
+                    keyedOneThreadMutexableTaskExecutor.clearAndExecute(Pair.from(clusterDbId, shardDbId),
                             new CountingCommand(new AtomicInteger(), 10));
                     sleep(1);
                 }
@@ -517,19 +514,26 @@ public class DefaultKeeperManagerTest extends AbstractTest {
         manager.setScheduled(scheduled);
         KeeperMeta timeoutKeeperMeta = new KeeperMeta().setIp("localhost").setPort(timeoutKeeper.getPort()).setActive(false);
         KeeperMeta normalKeeperMeta = new KeeperMeta().setIp("localhost").setPort(normalKeeper.getPort()).setActive(false);
-        when(currentMetaManager.getSurviveKeepers(clusterId, shardId))
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId))
                 .thenReturn(Arrays.asList(timeoutKeeperMeta, normalKeeperMeta));
-        InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
 
-        DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
-        doNothing().when(checker).doCorrect(anyString(), anyString(), anyList());
-        checker.doCheckShard(clusterId, new ShardMeta().setId(shardId));
+        int originTimeout = InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
 
-        latch.await(1000, TimeUnit.MILLISECONDS);
-        sleep(100);
-        verify(checker, never()).doCorrect(anyString(), anyString(), anyList());
+        try {
+            InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 1;
 
-        timeoutKeeper.stop();
-        normalKeeper.stop();
+            DefaultKeeperManager.KeeperStateAlignChecker checker = spy(manager.new KeeperStateAlignChecker());
+            doNothing().when(checker).doCorrect(anyLong(), anyLong(), anyList());
+            checker.doCheckShard(new ClusterMeta(clusterId).setDbId(1L), new ShardMeta().setId(shardId));
+
+            latch.await(1000, TimeUnit.MILLISECONDS);
+            sleep(100);
+            verify(checker, never()).doCorrect(anyLong(), anyLong(), anyList());
+
+            timeoutKeeper.stop();
+            normalKeeper.stop();
+        } finally {
+            InfoCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
+        }
     }
 }

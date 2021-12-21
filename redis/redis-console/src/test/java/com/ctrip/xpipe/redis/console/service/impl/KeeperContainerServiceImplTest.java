@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.KeeperContainerInfoModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
@@ -47,6 +48,12 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
             logger.info("{}", keepercontainerTbl);
         });
 
+    }
+
+    @Test
+    public void testFindBestKeeperContainer(){
+        List<KeepercontainerTbl> kcs = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster6");
+        Assert.assertEquals(2, kcs.size());
     }
 
     @Test
@@ -163,6 +170,52 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
+    public void testDelKeeperContainerSuccess() {
+        String ip = "127.0.1.2";
+        int port = 7034;
+        KeepercontainerTbl kc = keeperContainerService.findByIpPort(ip, port);
+        Assert.assertNotNull(kc);
+
+        keeperContainerService.deleteKeeperContainer(ip, port);
+
+        kc = keeperContainerService.findByIpPort(ip, port);
+        Assert.assertNull(kc);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testDelKeeperContainerStillHasKeepers() {
+        String ip = "127.0.0.1";
+        int port = 7080;
+
+        KeepercontainerTbl kc = keeperContainerService.findByIpPort(ip, port);
+        Assert.assertNotNull(kc);
+        try {
+            keeperContainerService.deleteKeeperContainer(ip, port);
+        } catch(BadRequestException e) {
+            Assert.assertEquals("This keepercontainer " +ip + ":" + port + " is not empty, unable to delete!", e.getMessage());
+            kc = keeperContainerService.findByIpPort(ip, port);
+            Assert.assertNotNull(kc);
+            throw e;
+        }
+
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testDelKeeperContainerWithNone() {
+        String ip = "127.0.0.1";
+        int port = 9080;
+
+        KeepercontainerTbl kc = keeperContainerService.findByIpPort(ip, port);
+        Assert.assertNull(kc);
+        try {
+            keeperContainerService.deleteKeeperContainer(ip, port);
+        } catch(BadRequestException e) {
+            Assert.assertEquals("Cannot find keepercontainer", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test
     public void testGetDcAllKeeperContainers() {
         List<KeeperContainerCreateInfo> keepers = keeperContainerService.getDcAllKeeperContainers(dcNames[0]);
         keepers.forEach(kc -> logger.info("[keeper] {}", kc));
@@ -214,9 +267,9 @@ public class KeeperContainerServiceImplTest extends AbstractServiceImplTest{
             Assert.assertFalse(StringUtil.isEmpty(info.getDcName()));
         }
 
-        Assert.assertEquals(2, infos.get(0).getClusterCount());
-        Assert.assertEquals(2, infos.get(0).getShardCount());
-        Assert.assertEquals(2, infos.get(0).getKeeperCount());
+        Assert.assertEquals(2, infos.get(1).getClusterCount());
+        Assert.assertEquals(2, infos.get(1).getShardCount());
+        Assert.assertEquals(2, infos.get(1).getKeeperCount());
     }
 
     @Test

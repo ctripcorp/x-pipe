@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
-import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
@@ -16,9 +14,6 @@ import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
-import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilder;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

@@ -29,6 +29,10 @@
             <artifactId>spring-boot-starter-velocity</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
@@ -64,6 +68,21 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.ctrip.framework.xpipe.redis</groupId>
+            <artifactId>redis-proxy-client</artifactId>
+            <version>${parent.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.arthas</groupId>
+                    <artifactId>arthas-repackage-asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.arthas</groupId>
+                    <artifactId>arthas-repackage-logger</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

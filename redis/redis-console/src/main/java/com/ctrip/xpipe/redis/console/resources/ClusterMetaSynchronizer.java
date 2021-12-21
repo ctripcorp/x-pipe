@@ -2,10 +2,12 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -32,8 +34,10 @@ public class ClusterMetaSynchronizer {
     private RedisService redisService;
     private DcService dcService;
     private OrganizationService organizationService;
+    private SentinelBalanceService sentinelBalanceService;
+    private ConsoleConfig consoleConfig;
 
-    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService, OrganizationService organizationService) {
+    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService, OrganizationService organizationService, SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -42,6 +46,8 @@ public class ClusterMetaSynchronizer {
         this.shardService = shardService;
         this.redisService = redisService;
         this.organizationService = organizationService;
+        this.sentinelBalanceService = sentinelBalanceService;
+        this.consoleConfig = consoleConfig;
     }
 
     public void sync() {
@@ -75,47 +81,75 @@ public class ClusterMetaSynchronizer {
 
     void add() {
         try {
-            long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
+
             if (!added.isEmpty()) {
-                added.forEach(clusterMeta -> {
+                added.forEach(toAdd -> {
                     try {
-                        if (clusterService.find(clusterMeta.getId()) != null) {
-                            logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", clusterMeta, DcMetaSynchronizer.currentDcId);
-                            clusterService.bindDc(clusterMeta.getId(), DcMetaSynchronizer.currentDcId);
-                            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
+                        ClusterTbl exist = clusterService.find(toAdd.getId());
+
+                        if (exist == null) {
+                            createCluster(toAdd);
+                        } else if (shouldAddDc(toAdd, exist)) {
+                            bindDc(toAdd);
                         } else {
-                            ClusterTbl clusterTbl = new ClusterTbl().setClusterName(clusterMeta.getId()).setClusterType(clusterMeta.getType()).setClusterAdminEmails(clusterMeta.getAdminEmails())
-                                    .setClusterDescription(clusterMeta.getId());
-                            if (clusterMeta.getOrgId() != null) {
-                                clusterTbl.setClusterOrgId(clusterMeta.getOrgId());
-                                try {
-                                    OrganizationTbl orgTbl = organizationService.getOrganization(clusterMeta.getOrgId());
-                                    if (orgTbl != null)
-                                        clusterTbl.setClusterOrgName(orgTbl.getOrgName());
-                                } catch (Exception e) {
-                                    logger.warn("[ClusterMetaSynchronizer][bindDc]orgId not found:{},{}", clusterMeta.getId(), clusterMeta.getOrgId());
-                                }
-                            }
-                            if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
-                                clusterTbl.setActivedcId(currentDcId);
-                            }
-                            ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
-                            if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
-                                clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
-                            }
-                            logger.info("[ClusterMetaSynchronizer][createCluster]{}", clusterMeta);
-                            clusterService.createCluster(clusterModel);
-                            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", DcMetaSynchronizer.currentDcId, clusterMeta.getId()));
+                            logger.warn("[ClusterMetaSynchronizer][notBind]toAdd:{}, type:{}, exist:{}, type:{}", toAdd.getId(), toAdd.getType(), exist.getClusterName(), exist.getClusterType());
+                            return;
                         }
-                        new ShardMetaSynchronizer(Sets.newHashSet(clusterMeta.getShards().values()), null, null, redisService, shardService).sync();
+
+                        new ShardMetaSynchronizer(Sets.newHashSet(toAdd.getShards().values()), null, null, redisService, shardService, sentinelBalanceService, consoleConfig).sync();
                     } catch (Exception e) {
-                        logger.error("[ClusterMetaSynchronizer][add]{}", clusterMeta, e);
+                        logger.error("[ClusterMetaSynchronizer][add]{}", toAdd, e);
                     }
                 });
             }
         } catch (Exception e) {
             logger.error("[ClusterMetaSynchronizer][add]", e);
         }
+    }
+
+    void bindDc(ClusterMeta toAdd){
+        logger.info("[ClusterMetaSynchronizer][bindDc]{}, {}", toAdd, DcMetaSynchronizer.currentDcId);
+        clusterService.bindDc(toAdd.getId(), DcMetaSynchronizer.currentDcId);
+        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[bindDc]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
+    }
+
+    void createCluster(ClusterMeta toAdd){
+        long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
+        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(toAdd.getId()).setClusterType(toAdd.getType()).setClusterAdminEmails(toAdd.getAdminEmails())
+                .setClusterDescription(toAdd.getId());
+        if (toAdd.getOrgId() != null) {
+            clusterTbl.setClusterOrgId(toAdd.getOrgId());
+            try {
+                OrganizationTbl orgTbl = organizationService.getOrganization(toAdd.getOrgId());
+                if (orgTbl != null)
+                    clusterTbl.setClusterOrgName(orgTbl.getOrgName());
+            } catch (Exception e) {
+                logger.warn("[ClusterMetaSynchronizer][bindDc]orgId not found:{},{}", toAdd.getId(), toAdd.getOrgId());
+            }
+        }
+        ClusterType clusterType = ClusterType.lookup(toAdd.getType());
+        ClusterModel clusterModel = new ClusterModel().setClusterTbl(clusterTbl);
+        if (clusterType.supportSingleActiveDC()) {
+            clusterTbl.setActivedcId(currentDcId);
+        }else{
+            clusterModel.setDcs(Lists.newArrayList(new DcTbl().setId(currentDcId).setDcName(DcMetaSynchronizer.currentDcId)));
+        }
+
+        logger.info("[ClusterMetaSynchronizer][createCluster]{}", toAdd);
+        clusterService.createCluster(clusterModel);
+        CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[createCluster]%s-%s", DcMetaSynchronizer.currentDcId, toAdd.getId()));
+    }
+
+    boolean shouldAddDc(ClusterMeta toAdd, ClusterTbl exist) {
+        return !existDiffTypeCluster(toAdd, exist) && crossDcSupported(exist);
+    }
+
+    boolean existDiffTypeCluster(ClusterMeta toAdd, ClusterTbl exist) {
+        return exist != null && !toAdd.getType().equalsIgnoreCase(exist.getClusterType());
+    }
+
+    boolean crossDcSupported(ClusterTbl exist) {
+        return exist != null && !ClusterType.lookup(exist.getClusterType()).equals(ClusterType.SINGLE_DC);
     }
 
     void update() {
@@ -143,7 +177,7 @@ public class ClusterMetaSynchronizer {
                         clusterService.update(currentClusterTbl);
                         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateCluster]%s-%s", DcMetaSynchronizer.currentDcId, future.getId()));
                     }
-                    new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService).sync();
+                    new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService, sentinelBalanceService, consoleConfig).sync();
                 } catch (Exception e) {
                     logger.error("[ClusterMetaSynchronizer][update]{} -> {}", ((ClusterMetaComparator) metaComparator).getCurrent(), ((ClusterMetaComparator) metaComparator).getFuture(), e);
                 }

@@ -49,29 +49,29 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	private ExecutorService executors;
 
-	private KeyedOneThreadTaskExecutor<Pair<String, String>> keyedOneThreadTaskExecutor;
+	private KeyedOneThreadTaskExecutor<Pair<Long, Long>> keyedOneThreadTaskExecutor;
 
 	@Autowired
 	private DcMetaCache dcMetaCache;
 
 	@Autowired
 	private CurrentMetaManager currentMetaManager;
-	
+
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 		executors = DefaultExecutorFactory.createAllowCoreTimeout("KeeperStateChangeHandler", OsUtils.defaultMaxCoreThreadCount()).createExecutorService();
 		keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<>(executors);
 	}
-	
-	@Override
-	public void keeperMasterChanged(String clusterId, String shardId, Pair<String, Integer> newMaster) {
 
-		logger.info("[keeperMasterChanged]{},{},{}", clusterId, shardId, newMaster);
-		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterId, shardId);
+	@Override
+	public void keeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
+
+		logger.info("[keeperMasterChanged]cluster_{},shard_{},{}", clusterDbId, shardDbId, newMaster);
+		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
 
 		if (activeKeeper == null) {
-			logger.info("[keeperMasterChanged][no active keeper, do nothing]{},{},{}", clusterId, shardId, newMaster);
+			logger.info("[keeperMasterChanged][no active keeper, do nothing]cluster_{},shard_{},{}", clusterDbId, shardDbId, newMaster);
 			return;
 		}
 		if (!activeKeeper.isActive()) {
@@ -84,40 +84,40 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		keepers.add(activeKeeper);
 		
 		keyedOneThreadTaskExecutor.execute(
-				new Pair<String, String>(clusterId, shardId),
-				createKeeperStateChangeJob(clusterId, keepers, newMaster));
+				new Pair<>(clusterDbId, shardDbId),
+				createKeeperStateChangeJob(clusterDbId, keepers, newMaster));
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(String clusterId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
+	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, List<KeeperMeta> keepers, Pair<String, Integer> master) {
 
-		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterId);
+		RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
 	}
 
 	@Override
-	public void keeperActiveElected(String clusterId, String shardId, KeeperMeta activeKeeper) {
+	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
-		logger.info("[keeperActiveElected]{},{},{}", clusterId, shardId, activeKeeper);
+		logger.info("[keeperActiveElected]cluster_{},shard_{},{}", clusterDbId, shardDbId, activeKeeper);
 
-		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterId, shardId);
-		if (keepers == null || keepers.size() == 0) {
+		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
+		if (keepers == null || keepers.isEmpty()) {
 			logger.info("[keeperActiveElected][none keeper survive, do nothing]");
 			return;
 		}
-		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 
-		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterId, keepers, activeKeeperMaster);
+		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterDbId, keepers, activeKeeperMaster);
 
-		if (!dcMetaCache.isCurrentDcPrimary(clusterId, shardId)) {
-			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterId, shardId);
-			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{},{}", clusterId, shardId,
+		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId,
 					slaves);
 			keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
 					new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors),
-					() -> !dcMetaCache.isCurrentDcPrimary(clusterId, shardId), true));
+					() -> !dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId), true));
 		}
 		
-		keyedOneThreadTaskExecutor.execute(new Pair<String, String>(clusterId, shardId), keeperStateChangeJob);
+		keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), keeperStateChangeJob);
 	}
 
 	@Override

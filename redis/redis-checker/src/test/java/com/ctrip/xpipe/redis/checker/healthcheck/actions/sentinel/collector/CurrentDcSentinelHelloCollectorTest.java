@@ -25,7 +25,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @InjectMocks

@@ -3,12 +3,10 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.exception.ErrorMessage;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
-import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
@@ -59,9 +57,9 @@ public class KeeperContainerService {
                     if (runningPorts.contains(keeperMeta.getPort())) {
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_EXIST,
-                                String.format("Add keeper for cluster %s shard %s failed since port %d is already used",
-                                        keeperTransMeta.getClusterId(), keeperTransMeta.getShardId(), keeperMeta
-                                                .getPort())), null);
+                                        String.format("Add keeper for cluster %d shard %d failed since port %d is already used",
+                                        keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), keeperMeta.getPort())),
+                                null);
                     }
                     try {
                         RedisKeeperServer redisKeeperServer = doAdd(keeperTransMeta, keeperMeta);
@@ -70,8 +68,8 @@ public class KeeperContainerService {
                     } catch (Throwable ex) {
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
-                                        String.format("Add keeper for cluster %s shard %s failed",
-                                                keeperTransMeta.getClusterId(), keeperTransMeta.getShardId())), ex);
+                                        String.format("Add keeper for cluster %d shard %d failed",
+                                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), ex);
                     }
                 }
             }
@@ -79,8 +77,8 @@ public class KeeperContainerService {
 
         throw new RedisKeeperRuntimeException(
                 new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_EXIST,
-                        String.format("Keeper already exists for cluster %s shard %s",
-                                keeperTransMeta.getClusterId(), keeperTransMeta.getShardId())), null);
+                        String.format("Keeper already exists for cluster %d shard %d",
+                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), null);
     }
 
     public RedisKeeperServer addOrStart(KeeperTransMeta keeperTransMeta) {
@@ -90,7 +88,7 @@ public class KeeperContainerService {
             return add(keeperTransMeta);
         }
 
-        start(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
+        start(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
 
         return keeperServer;
     }
@@ -99,7 +97,7 @@ public class KeeperContainerService {
         return Lists.newArrayList(redisKeeperServers.values());
     }
 
-    public void start(String clusterId, String shardId) {
+    public void start(ClusterId clusterId, ShardId shardId) {
         String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
@@ -128,7 +126,7 @@ public class KeeperContainerService {
         }
     }
 
-    public void stop(String clusterId, String shardId) {
+    public void stop(ClusterId clusterId, ShardId shardId) {
         String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
@@ -157,7 +155,7 @@ public class KeeperContainerService {
         }
     }
 
-    public void remove(String clusterId, String shardId) {
+    public void remove(ClusterId clusterId, ShardId shardId) {
         String keeperServerKey = assembleKeeperServerKey(clusterId, shardId);
 
         RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
@@ -203,8 +201,10 @@ public class KeeperContainerService {
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
-        ClusterMeta clusterMeta = new ClusterMeta(keeperTransMeta.getClusterId());
-        ShardMeta shardMeta = new ShardMeta(keeperTransMeta.getShardId());
+        ClusterMeta clusterMeta = new ClusterMeta().setDbId(keeperTransMeta.getClusterDbId());
+        clusterMeta.setDbId(keeperTransMeta.getClusterDbId());
+        ShardMeta shardMeta = new ShardMeta().setDbId(keeperTransMeta.getShardDbId());
+        shardMeta.setDbId(keeperTransMeta.getShardDbId());
         shardMeta.setParent(clusterMeta);
         keeperMeta.setParent(shardMeta);
     }
@@ -234,10 +234,10 @@ public class KeeperContainerService {
     }
 
     private String assembleKeeperServerKey(KeeperTransMeta keeperTransMeta) {
-        return assembleKeeperServerKey(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
+        return assembleKeeperServerKey(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
     }
 
-    private String assembleKeeperServerKey(String clusterId, String shardId) {
+    private String assembleKeeperServerKey(ClusterId clusterId, ShardId shardId) {
         return String.format("%s-%s", clusterId, shardId);
     }
 }

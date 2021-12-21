@@ -31,22 +31,22 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 	@Before
 	public void befoePrimaryDcKeeperMasterChooserTest() throws Exception{
 		
-		primaryAlgorithm =  new PrimaryDcKeeperMasterChooserAlgorithm(clusterId, shardId, 
+		primaryAlgorithm =  new PrimaryDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId,
 				dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), 1, scheduled);
 		redises = new LinkedList<>();
 		int port1 = randomPort();
 		redises.add(new RedisMeta().setIp("localhost").setPort(port1));
 		redises.add(new RedisMeta().setIp("localhost").setPort(randomPort(Sets.newHashSet(port1))));
-		when(dcMetaCache.getShardRedises(clusterId, shardId)).thenReturn(redises);
+		when(dcMetaCache.getShardRedises(clusterDbId, shardDbId)).thenReturn(redises);
 	}
 	
 	@Test
 	public void testNoneMaster(){
 
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(null);
+		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(null);
 		Assert.assertEquals(new Pair<>(redises.get(0).getIp(), redises.get(0).getPort()) ,primaryAlgorithm.choose());
 
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<>(redises.get(1).getIp(), redises.get(1).getPort()));
+		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>(redises.get(1).getIp(), redises.get(1).getPort()));
 		Assert.assertEquals(new Pair<>(redises.get(1).getIp(), redises.get(1).getPort()) ,primaryAlgorithm.choose());
 
 	}
@@ -59,11 +59,11 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 		startServer(chosen.getPort(), ByteBufUtils.readToString(role.format()));
 		
 
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(null);
+		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(null);
 		Assert.assertEquals(new Pair<String, Integer>(chosen.getIp(), chosen.getPort()), primaryAlgorithm.choose());
 		for(RedisMeta redisMeta : redises){
 			
-			when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(new Pair<String, Integer>(redisMeta.getIp(), redisMeta.getPort()));
+			when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<String, Integer>(redisMeta.getIp(), redisMeta.getPort()));
 			Assert.assertEquals(new Pair<String, Integer>(chosen.getIp(), chosen.getPort()), primaryAlgorithm.choose());
 		}
 	}
@@ -94,13 +94,13 @@ public class PrimaryDcKeeperMasterChooserAlgorithmTest extends AbstractDcKeeperM
 			startServer(redisMeta.getPort(), ByteBufUtils.readToString(role.format()));
 		}
 		
-		when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(null);
+		when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(null);
 		Assert.assertEquals(new Pair<String, Integer>(redises.get(0).getIp(), redises.get(0).getPort()), primaryAlgorithm.choose());
 		
 		for(RedisMeta redisMeta : redises){
 			
 			Pair<String, Integer> currentMaster = new Pair<String, Integer>(redisMeta.getIp(), redisMeta.getPort());
-			when(currentMetaManager.getKeeperMaster(clusterId, shardId)).thenReturn(currentMaster);
+			when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(currentMaster);
 			Assert.assertEquals(currentMaster, primaryAlgorithm.choose());
 		}
 	}

@@ -56,6 +56,7 @@ public class CheckerProxyManagerTest extends AbstractCheckerTest {
         this.manager = new CheckerProxyManager(clusterServer, checkerConfig, checkerConsoleService);
         this.manager.setRestOperations(restTemplate);
 
+        Mockito.when(checkerConfig.getConsoleAddress()).thenReturn("http://10.0.0.1:8080");
         Mockito.when(clusterServer.amILeader()).thenReturn(true);
         Mockito.when(checkerConsoleService.getProxyTunnelInfos(anyString()))
                 .thenReturn(Collections.singletonList(mockTunnelInfo()));

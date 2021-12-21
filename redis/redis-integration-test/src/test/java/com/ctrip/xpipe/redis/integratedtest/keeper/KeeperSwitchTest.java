@@ -45,7 +45,7 @@ public class KeeperSwitchTest extends AbstractKeeperIntegratedSingleDc {
 
         CountDownLatch latch = new CountDownLatch(1);
         executors.execute(() -> {
-            sendMessageToMaster(master, 1000);
+            sendMessageToMaster(master, 512); // may fsync if messages size over repl-backlog-size
             latch.countDown();
         });
 

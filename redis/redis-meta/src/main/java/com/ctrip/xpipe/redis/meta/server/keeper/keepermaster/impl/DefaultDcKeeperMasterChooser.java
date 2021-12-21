@@ -22,14 +22,14 @@ public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser {
 	
 	private KeeperMasterChooserAlgorithm keeperMasterChooserAlgorithm;
 
-	public DefaultDcKeeperMasterChooser(String clusterId, String shardId, MultiDcService multiDcService,
+	public DefaultDcKeeperMasterChooser(Long clusterDbId, Long shardDbId, MultiDcService multiDcService,
 										DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool) {
-		this(clusterId, shardId, multiDcService, dcMetaCache, currentMetaManager, scheduled, keyedObjectPool, DEFAULT_KEEPER_MASTER_CHECK_INTERVAL_SECONDS);
+		this(clusterDbId, shardDbId, multiDcService, dcMetaCache, currentMetaManager, scheduled, keyedObjectPool, DEFAULT_KEEPER_MASTER_CHECK_INTERVAL_SECONDS);
 	}
 
-	public DefaultDcKeeperMasterChooser(String clusterId, String shardId, MultiDcService multiDcService,
+	public DefaultDcKeeperMasterChooser(Long clusterDbId, Long shardDbId, MultiDcService multiDcService,
 										DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkIntervalSeconds) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled, checkIntervalSeconds);
+		super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled, checkIntervalSeconds);
 		this.multiDcService = multiDcService;
 		this.keyedObjectPool = keyedObjectPool;
 	}
@@ -37,17 +37,17 @@ public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser {
 	@Override
 	protected Pair<String, Integer> chooseKeeperMaster() {
 		
-		if(dcMetaCache.isCurrentDcPrimary(clusterId, shardId)){
+		if(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)){
 			
 			if(keeperMasterChooserAlgorithm == null || keeperMasterChooserAlgorithm instanceof BackupDcKeeperMasterChooserAlgorithm){
 				
-				logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]{}, {}", clusterId, shardId);
-				keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
+				logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+				keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
 			}
 		}else{
 			if(keeperMasterChooserAlgorithm == null || keeperMasterChooserAlgorithm instanceof PrimaryDcKeeperMasterChooserAlgorithm){
-				logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]{}, {}", clusterId, shardId);
-				keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterId, shardId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
+				logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+				keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
 			}
 		}
 		return keeperMasterChooserAlgorithm.choose();

@@ -17,13 +17,13 @@ public abstract class AbstractCurrentShardMeta implements CurrentShardMeta {
     @JsonIgnore
     private List<Releasable> resources = new LinkedList<>();
 
-    protected String clusterId, shardId;
+    protected Long clusterDbId, shardDbId;
 
     public AbstractCurrentShardMeta() {}
 
-    public AbstractCurrentShardMeta(String clusterId, String shardId) {
-        this.clusterId = clusterId;
-        this.shardId = shardId;
+    public AbstractCurrentShardMeta(Long clusterDbId, Long shardDbId) {
+        this.clusterDbId = clusterDbId;
+        this.shardDbId = shardDbId;
     }
 
     public void addResource(Releasable releasable) {
@@ -34,7 +34,7 @@ public abstract class AbstractCurrentShardMeta implements CurrentShardMeta {
 
     @Override
     public void release() throws Exception {
-        logger.info("[release]{},{}", clusterId, shardId);
+        logger.info("[release]cluster_{},shard_{}", clusterDbId, shardDbId);
         for (Releasable resource : resources) {
             try {
                 resource.release();
@@ -44,12 +44,12 @@ public abstract class AbstractCurrentShardMeta implements CurrentShardMeta {
         }
     }
 
-    public String getClusterId() {
-        return clusterId;
+    public Long getClusterDbId() {
+        return clusterDbId;
     }
 
-    public String getShardId() {
-        return shardId;
+    public Long getShardDbId() {
+        return shardDbId;
     }
 
     public boolean watchIfNotWatched() {
