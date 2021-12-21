@@ -3,10 +3,12 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -81,17 +83,19 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		startServer(keepers.get(0).getPort(), new Function<String, String>() {
 			@Override
 			public String apply(String s) {
-				logger.info("callCount:{}, msg:{}", calledCount.get(), s);
-				calledCount.incrementAndGet();
+				int current = calledCount.incrementAndGet();
+				logger.info("keeper0, callCount:{}, msg:{}", current, s);
 				sleep(setStateTimeMilli);
 				return "+OK\r\n";
 			}
 		});
 
-		startServer(keepers.get(1).getPort(), new Callable<String>() {
+		startServer(keepers.get(1).getPort(), new Function<String, String>() {
 
 			@Override
-			public String call() throws Exception {
+			public String apply(String s) {
+				int current = calledCount.incrementAndGet();
+				logger.info("keeper1, callCount:{}, msg:{}", current, s);
 				return "+OK\r\n";
 			}
 		});
@@ -115,8 +119,9 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 
 		Long clusterDbId1 = clusterDbId + 1;
 		Long shardDbId1 = shardDbId + 1;
-		
-		when(currentMetaManager.getSurviveKeepers(clusterDbId1, shardDbId1)).thenReturn(keepers);
+
+		List<KeeperMeta> newKeepers = Lists.newArrayList(MetaClone.clone(keepers.get(1)).setActive(true));
+		when(currentMetaManager.getSurviveKeepers(clusterDbId1, shardDbId1)).thenReturn(newKeepers);
 		when(currentMetaManager.getKeeperMaster(clusterDbId1, shardDbId1)).thenReturn(keeperMaster);
 		when(dcMetaCache.isCurrentDcPrimary(clusterDbId1, shardDbId1)).thenReturn(true);
 

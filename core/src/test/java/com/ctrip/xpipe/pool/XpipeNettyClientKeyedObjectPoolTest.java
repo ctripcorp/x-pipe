@@ -107,8 +107,7 @@ public class XpipeNettyClientKeyedObjectPoolTest extends AbstractTest {
 			
 			Endpoint key = new DefaultEndPoint("localhost", echoServer.getPort());
 			NettyClient client = pool.borrowObject(key);
-			waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
-			Assert.assertEquals(1, echoServer.getTotalConnected());
+			waitConditionUntilTimeOut(()-> echoServer.getTotalConnected() == 1, 1000);
 			pool.returnObject(key, client);
 		}
 	}
