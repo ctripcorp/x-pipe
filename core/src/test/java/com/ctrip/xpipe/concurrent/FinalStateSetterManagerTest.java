@@ -100,11 +100,12 @@ public class FinalStateSetterManagerTest extends AbstractTest{
 
         waitConditionUntilTimeOut(() -> count.get() == 1);
 
+        //make sure 8 concurrent jobs could finish within 50ms
+        finalStateSetterManager.LAZY_TIME_MILLI = 50;
         //make sure lazy time expire
-        finalStateSetterManager.LAZY_TIME_MILLI = 5;
-        sleep(10);
+        sleep(100);
 
-        int concurrency = 100;
+        int concurrency = 8;
         ExecutorService executors = Executors.newFixedThreadPool(concurrency);
         CountDownLatch start = new CountDownLatch(concurrency);
         CountDownLatch end = new CountDownLatch(concurrency);
