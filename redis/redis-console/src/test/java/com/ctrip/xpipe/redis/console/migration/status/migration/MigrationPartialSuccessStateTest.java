@@ -48,6 +48,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
         when(migrationCluster.getMigrationExecutor()).thenReturn(new ThreadPoolExecutor(1, 1,
                 0L, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.CallerRunsPolicy()));
+        partialSuccessState = new MigrationPartialSuccessState(migrationCluster);
 
         int failCnt = 4;
         shardResult(failCnt);
