@@ -30,7 +30,7 @@ public class BackupDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterCh
 		String dcName = dcMetaCache.getPrimaryDc(clusterDbId, shardDbId);
 		
 		KeeperMeta keeperMeta = multiDcService.getActiveKeeper(dcName, clusterDbId, shardDbId);
-		logger.debug("[doChooseKeeperMaster]{}, {}, {}, {}", dcName, clusterDbId, shardDbId, keeperMeta);
+		logger.debug("[doChooseKeeperMaster]{}, cluster_{}, shard_{}, {}", dcName, clusterDbId, shardDbId, keeperMeta);
 		if(keeperMeta == null){
 			return null;
 		}

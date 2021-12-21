@@ -85,7 +85,7 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 		};
 		Assert.assertFalse(addCommand.isBeginExecute());
 		
-		defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterId(), getShardId(), new KeeperMeta()));
+		defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()));
 		sleep(50);
 		Assert.assertTrue(addCommand.isBeginExecute());
 		
@@ -95,7 +95,7 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 	public void testDelete() throws TimeoutException {
 	
 		Assert.assertFalse(deleteCommand.isBeginExecute());
-		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterId(), getShardId(), new KeeperMeta()));
+		defaultKeeperStateController.removeKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()));
 		waitConditionUntilTimeOut(() -> deleteCommand.isBeginExecute(), 1000);
 	}
 
@@ -110,7 +110,7 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 		};
 		int tasks = 100;
 		for(int i = 0; i < tasks; i++) {
-			defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterId(), getShardId(), new KeeperMeta()));
+			defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()));
 		}
 		sleep(250);
 		Assert.assertTrue(counter.get() < tasks && counter.get() > 0);
@@ -127,7 +127,7 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 		};
 		int tasks = 100;
 		for(int i = 0; i < tasks; i++) {
-			defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterId(), randomString(), new KeeperMeta()));
+			defaultKeeperStateController.addKeeper(new KeeperTransMeta(getClusterDbId(), Math.abs(randomLong()), new KeeperMeta()));
 		}
 		sleep(250);
 		Assert.assertEquals(counter.get(), tasks);

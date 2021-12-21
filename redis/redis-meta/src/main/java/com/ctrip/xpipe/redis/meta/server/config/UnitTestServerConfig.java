@@ -167,7 +167,7 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	}
 
 	@Override
-	public int getMinKeeperAdjustIntervalMilli() {
-		return 0;
+	public boolean useDbIdForSlot() {
+		return false;
 	}
 }
