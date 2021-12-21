@@ -103,7 +103,7 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 	@Override
 	public void remove(Long clusterDbId) {
 		
-		logger.info("[remote]{}", clusterDbId);
+		logger.info("[remote]cluster_{}", clusterDbId);
 		
 		clusterMetas.remove(clusterDbId);
 		for(KeeperKey keeperKey : keepers.keySet()){
