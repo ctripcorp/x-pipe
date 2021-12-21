@@ -234,7 +234,7 @@ public class CurrentMeta implements Releasable {
 			try {
 				currentClusterMeta.release();
 			} catch (Exception e) {
-				logger.error("[release]" + currentClusterMeta.getClusterDbId(), e);
+				logger.error("[release] cluster_" + currentClusterMeta.getClusterDbId(), e);
 			}
 		}
 	}
@@ -245,7 +245,7 @@ public class CurrentMeta implements Releasable {
 
 					@Override
 					public CurrentClusterMeta create() {
-						logger.info("[addCluster][create]{}:{}", clusterMeta.getId(), clusterMeta.getDbId());
+						logger.info("[addCluster][create]cluster_{}:shard_{}", clusterMeta.getId(), clusterMeta.getDbId());
 						return new CurrentClusterMeta(clusterMeta.getId(), clusterMeta.getDbId(), clusterMeta.getType());
 					}
 				});
@@ -260,7 +260,7 @@ public class CurrentMeta implements Releasable {
 		try {
 			currentClusterMeta.release();
 		} catch (Exception e) {
-			logger.error("[remove]" + clusterDbId, e);
+			logger.error("[remove]cluster_" + clusterDbId, e);
 		}
 		return currentClusterMeta;
 	}
@@ -322,7 +322,7 @@ public class CurrentMeta implements Releasable {
 		@Override
 		public void release() throws Exception {
 
-			logger.info("[release]{}", clusterDbId);
+			logger.info("[release]cluster_{}", clusterDbId);
 			for (CurrentShardMeta currentShardMeta : clusterMetas.values()) {
 				currentShardMeta.release();
 			}
@@ -333,7 +333,7 @@ public class CurrentMeta implements Releasable {
 			MapUtils.getOrCreate(clusterMetas, shardMeta.getDbId(), new ObjectFactory<CurrentShardMeta>() {
 				@Override
 				public CurrentShardMeta create() {
-					logger.info("[addShard][create]{} , {}, {}", clusterDbId, shardMeta.getDbId(), clusterType);
+					logger.info("[addShard][create]cluster_{}, shard_{}, {}", clusterDbId, shardMeta.getDbId(), clusterType);
 
 					switch (ClusterType.lookup(clusterType)) {
 						case BI_DIRECTION:
@@ -373,7 +373,7 @@ public class CurrentMeta implements Releasable {
 			try {
 				currentShardMeta.release();
 			} catch (Exception e) {
-				logger.error("[removeShard]" + shardMeta.getId(), e);
+				logger.error("[removeShard]shard_" + shardMeta.getDbId(), e);
 			}
 		}
 

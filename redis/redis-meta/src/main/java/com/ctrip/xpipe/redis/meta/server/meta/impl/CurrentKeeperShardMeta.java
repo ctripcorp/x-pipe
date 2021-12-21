@@ -61,10 +61,10 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
                         "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
             }
             this.surviveKeepers = (List<KeeperMeta>) MetaClone.clone((Serializable) surviveKeepers);
-            logger.info("[setSurviveKeepers]{},{},{}, {}", clusterDbId, shardDbId, surviveKeepers, activeKeeper);
+            logger.info("[setSurviveKeepers]cluster_{},shard_{},{}, {}", clusterDbId, shardDbId, surviveKeepers, activeKeeper);
             doSetActive(activeKeeper);
         } else {
-            logger.info("[setSurviveKeepers][survive keeper none, clear]{},{},{}, {}", clusterDbId, shardDbId,
+            logger.info("[setSurviveKeepers][survive keeper none, clear]cluster{},shard_{},{}, {}", clusterDbId, shardDbId,
                     surviveKeepers, activeKeeper);
             this.surviveKeepers.clear();
         }
@@ -73,7 +73,7 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
     private boolean doSetActive(KeeperMeta activeKeeper) {
 
         boolean changed = false;
-        logger.info("[doSetActive]{},{},{}", clusterDbId, shardDbId, activeKeeper);
+        logger.info("[doSetActive]cluster_{},shard_{},{}", clusterDbId, shardDbId, activeKeeper);
         for (KeeperMeta survive : this.surviveKeepers) {
 
             if (MetaUtils.same(survive, activeKeeper)) {
@@ -109,7 +109,7 @@ public class CurrentKeeperShardMeta extends AbstractCurrentShardMeta {
 
     public synchronized boolean setKeeperMaster(Pair<String, Integer> keeperMaster) {
 
-        logger.info("[setKeeperMaster]{},{},{}", clusterDbId, shardDbId, keeperMaster);
+        logger.info("[setKeeperMaster]cluster_{},shard_{},{}", clusterDbId, shardDbId, keeperMaster);
         if (ObjectUtils.equals(this.keeperMaster, keeperMaster)) {
             return false;
         }

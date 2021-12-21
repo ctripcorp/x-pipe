@@ -16,7 +16,7 @@ public class KeeperInstanceMeta extends KeeperTransMeta{
 	}
 
 	public KeeperInstanceMeta(ClusterId clusterId, ShardId shardId, KeeperMeta keeperMeta) {
-		super(null, null, clusterId.id(), shardId.id(), keeperMeta);
+		super(clusterId.id(), shardId.id(), keeperMeta);
 	}
 
 }

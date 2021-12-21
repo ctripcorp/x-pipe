@@ -15,11 +15,11 @@ public interface DynamicStateManager extends Observer{
 	
 	void add(ClusterMeta clusterMeta);
 
-	void remove(String clusterId);
+	void remove(Long clusterDbId);
 	
 	void removeBySlot(int slotId);
 	
-	Set<String> allClusters();
+	Set<Long> allClusters();
 	
 	void ping(KeeperInstanceMeta keeperInstanceMeta);
 	
