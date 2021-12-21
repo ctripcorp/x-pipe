@@ -61,7 +61,9 @@ public class FinalStateSetterManagerTest extends AbstractTest{
         finalStateSetterManager = new FinalStateSetterManager<>(executors,
                 (String key) -> randomString(10),
                 (key, value) -> count.incrementAndGet());
-        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+
+        //make sure only 2 of 4 requests pass, despite time to start thread
+        finalStateSetterManager.LAZY_TIME_MILLI = 60 * 1000;
 
         finalStateSetterManager.set(testKey, testValue);
         finalStateSetterManager.set(testKey, testValue);
@@ -69,6 +71,9 @@ public class FinalStateSetterManagerTest extends AbstractTest{
         finalStateSetterManager.set(anotherTestKey, testValue);
 
         waitConditionUntilTimeOut(() -> count.get() == 2);
+
+        //make sure lazy time expire
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
         sleep(10);
         //not grow any more
         assertEquals(2, count.get());
@@ -86,13 +91,17 @@ public class FinalStateSetterManagerTest extends AbstractTest{
         finalStateSetterManager = new FinalStateSetterManager<>(executors,
                 (String key) -> randomString(10),
                 (key, value) -> count.incrementAndGet());
-        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+
+        //make sure only 1 of 2 requests pass, despite time to start thread
+        finalStateSetterManager.LAZY_TIME_MILLI = 60 * 1000;
 
         finalStateSetterManager.set(testKey, testValue);
         finalStateSetterManager.set(testKey, testValue);
 
         waitConditionUntilTimeOut(() -> count.get() == 1);
 
+        //make sure lazy time expire
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
         sleep(10);
 
         int concurrency = 100;
