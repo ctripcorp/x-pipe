@@ -21,10 +21,15 @@ public class CtripFoundationService implements FoundationService{
 
 	@Override
 	public String getDataCenter() {
+		String dataCenter = null;
 		Map<String, String> groupDcMap = config.getGroupDcMap();
 		String groupId = System.getProperty(GROUP_ID_KEY, Foundation.group().getId());
-		if (null != groupDcMap && groupDcMap.containsKey(groupId)) return groupDcMap.get(groupId);
-		else return System.getProperty(DATA_CENTER_KEY, Foundation.server().getDataCenter());
+		if (null != groupDcMap && groupDcMap.containsKey(groupId))  dataCenter = groupDcMap.get(groupId);
+		else  dataCenter = System.getProperty(DATA_CENTER_KEY, Foundation.server().getDataCenter());
+		if(dataCenter == null){
+			dataCenter = "NODC_DEFINED";
+		}
+		return dataCenter;
 	}
 
 	@Override
