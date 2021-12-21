@@ -57,9 +57,9 @@ public class KeeperContainerService {
                     if (runningPorts.contains(keeperMeta.getPort())) {
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_EXIST,
-                                String.format("Add keeper for cluster %s shard %s failed since port %d is already used",
-                                        keeperTransMeta.getClusterId(), keeperTransMeta.getShardId(), keeperMeta
-                                                .getPort())), null);
+                                        String.format("Add keeper for cluster %d shard %d failed since port %d is already used",
+                                        keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), keeperMeta.getPort())),
+                                null);
                     }
                     try {
                         RedisKeeperServer redisKeeperServer = doAdd(keeperTransMeta, keeperMeta);
@@ -68,8 +68,8 @@ public class KeeperContainerService {
                     } catch (Throwable ex) {
                         throw new RedisKeeperRuntimeException(
                                 new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
-                                        String.format("Add keeper for cluster %s shard %s failed",
-                                                keeperTransMeta.getClusterId(), keeperTransMeta.getShardId())), ex);
+                                        String.format("Add keeper for cluster %d shard %d failed",
+                                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), ex);
                     }
                 }
             }
@@ -77,8 +77,8 @@ public class KeeperContainerService {
 
         throw new RedisKeeperRuntimeException(
                 new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_EXIST,
-                        String.format("Keeper already exists for cluster %s shard %s",
-                                keeperTransMeta.getClusterId(), keeperTransMeta.getShardId())), null);
+                        String.format("Keeper already exists for cluster %d shard %d",
+                                keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), null);
     }
 
     public RedisKeeperServer addOrStart(KeeperTransMeta keeperTransMeta) {
@@ -201,9 +201,9 @@ public class KeeperContainerService {
     }
 
     private void enrichKeeperMetaFromKeeperTransMeta(KeeperMeta keeperMeta, KeeperTransMeta keeperTransMeta) {
-        ClusterMeta clusterMeta = new ClusterMeta(keeperTransMeta.getClusterId());
+        ClusterMeta clusterMeta = new ClusterMeta().setDbId(keeperTransMeta.getClusterDbId());
         clusterMeta.setDbId(keeperTransMeta.getClusterDbId());
-        ShardMeta shardMeta = new ShardMeta(keeperTransMeta.getShardId());
+        ShardMeta shardMeta = new ShardMeta().setDbId(keeperTransMeta.getShardDbId());
         shardMeta.setDbId(keeperTransMeta.getShardDbId());
         shardMeta.setParent(clusterMeta);
         keeperMeta.setParent(shardMeta);
