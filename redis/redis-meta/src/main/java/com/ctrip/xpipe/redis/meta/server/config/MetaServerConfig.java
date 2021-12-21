@@ -45,5 +45,5 @@ public interface MetaServerConfig extends CoreConfig {
 
 	long getNewMasterCacheTimeoutMilli();
 
-	int getMinKeeperAdjustIntervalMilli();
+	boolean useDbIdForSlot();
 }

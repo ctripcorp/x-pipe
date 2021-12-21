@@ -132,9 +132,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.keeperConfig = keeperConfig;
 		this.keepersMonitorManager = keepersMonitorManager;
 		this.keeperMonitor = keepersMonitorManager.getOrCreate(this);
-		this.replicationStoreManager = new DefaultReplicationStoreManager
-				.IdAndDbIdCompatible(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor)
-				.setDeprecatedClusterAndShardName(currentKeeperMeta.parent().parent().getId(), currentKeeperMeta.parent().getId());
+		this.replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, clusterId, shardId, currentKeeperMeta.getId(), baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		this.leaderElectorManager = leaderElectorManager;
 		this.resourceManager = resourceManager;
