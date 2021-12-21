@@ -34,7 +34,7 @@ public abstract class AbstractCurrentShardMeta implements CurrentShardMeta {
 
     @Override
     public void release() throws Exception {
-        logger.info("[release]{},{}", clusterDbId, shardDbId);
+        logger.info("[release]cluster_{},shard_{}", clusterDbId, shardDbId);
         for (Releasable resource : resources) {
             try {
                 resource.release();
