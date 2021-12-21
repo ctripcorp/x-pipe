@@ -51,8 +51,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	private static final String KEY_CORRECT_PEER_MASTER_PERIODICALLY = "meta.cluster.peermaster.correct.periodically";
 
-	private static final String KEY_MIN_KEEPER_ADJUST_TIME_INTERVAL_MILLI = "meta.min.keeper.adjust.interval.milli";
-	
+	private static final String KEY_USE_DBID_FOR_SLOT = "meta.slot.use.dbid";
+
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 	
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
@@ -189,10 +189,10 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	}
 
 	@Override
-	public int getMinKeeperAdjustIntervalMilli() {
-		return getIntProperty(KEY_MIN_KEEPER_ADJUST_TIME_INTERVAL_MILLI, 0);
+	public boolean useDbIdForSlot() {
+		return getBooleanProperty(KEY_USE_DBID_FOR_SLOT, false);
 	}
-	
+
 	public void setDefaultServerPort(int defaultServerPort) {
 		this.defaultServerPort = defaultServerPort;
 	}

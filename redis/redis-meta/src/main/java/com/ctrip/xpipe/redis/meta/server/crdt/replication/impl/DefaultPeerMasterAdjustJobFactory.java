@@ -63,13 +63,13 @@ public class DefaultPeerMasterAdjustJobFactory implements PeerMasterAdjustJobFac
     public PeerMasterAdjustJob buildPeerMasterAdjustJob(Long clusterDbId, Long shardDbId) {
         Set<String> upstreamPeerDcs = currentMetaManager.getUpstreamPeerDcs(clusterDbId, shardDbId);
         if (upstreamPeerDcs.isEmpty()) {
-            logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown any upstream dcs, skip adjust", clusterDbId, shardDbId);
+            logger.info("[buildPeerMasterAdjustJob][cluster_{}][shard_{}] unknown any upstream dcs, skip adjust", clusterDbId, shardDbId);
             return null;
         }
 
         RedisMeta currentMaster = currentMetaManager.getCurrentCRDTMaster(clusterDbId, shardDbId);
         if (null == currentMaster) {
-            logger.info("[buildPeerMasterAdjustJob][{}][{}] unknown current master, skip adjust", clusterDbId, shardDbId);
+            logger.info("[buildPeerMasterAdjustJob][cluster_{}][shard_{}] unknown current master, skip adjust", clusterDbId, shardDbId);
             return null;
         }
         List<Pair<Long, Endpoint>> allPeerMasters = currentMetaManager.getAllPeerMasters(clusterDbId, shardDbId).entrySet().stream().map(entry -> {

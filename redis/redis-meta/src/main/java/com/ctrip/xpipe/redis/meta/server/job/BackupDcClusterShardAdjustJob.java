@@ -55,17 +55,17 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
 
     @Override
     protected void doExecute() throws Exception {
-        getLogger().debug("[doExecute]{}, {}", clusterDbId, shardDbId);
+        getLogger().debug("[doExecute]cluster_{}, shard_{}", clusterDbId, shardDbId);
 
         if (dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-            getLogger().info("[doExecute][adjust skip] {}, {} become primary dc", clusterDbId, shardDbId);
+            getLogger().info("[doExecute][adjust skip] cluster_{}, shard_{} become primary dc", clusterDbId, shardDbId);
             future().setSuccess();
             return;
         }
 
         KeeperMeta keeperActive = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
         if(keeperActive == null){
-            getLogger().info("[doExecute][keeper active null]{}, {}", clusterDbId, shardDbId);
+            getLogger().info("[doExecute][keeper active null]cluster_{}, shard_{}", clusterDbId, shardDbId);
             future().setSuccess();
             return;
         }
@@ -77,7 +77,7 @@ public class BackupDcClusterShardAdjustJob extends AbstractCommand<Void> impleme
             return;
         }
 
-        getLogger().info("[doExecute][change state]{}, {}, {}", clusterDbId, keeperActive, redisNeedChange);
+        getLogger().info("[doExecute][change state]cluster_{}, {}, {}", clusterDbId, keeperActive, redisNeedChange);
 
         slaveOfJobFuture = new DefaultSlaveOfJob(redisNeedChange, keeperActive.getIp(), keeperActive.getPort(), pool, scheduled, executors).execute();
         slaveOfJobFuture.addListener(new CommandFutureListener<Void>() {

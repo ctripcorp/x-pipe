@@ -97,7 +97,7 @@ public class DefaultRedisStateManager extends AbstractLifecycle implements Redis
 			try {
 				type = dcMetaCache.getClusterType(clusterDbId);
 			} catch (Exception e) {
-				logger.info("[buildAdjustTaskForCluster] get type for cluster {} fail", clusterDbId, e);
+				logger.info("[buildAdjustTaskForCluster] get type for cluster_{} fail", clusterDbId, e);
 				return null;
 			}
 

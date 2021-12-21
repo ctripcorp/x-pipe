@@ -45,7 +45,7 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
-			logger.info("[keeperActiveElected][current dc backup, do nothing]{}, {}, {}", clusterDbId, shardDbId, activeKeeper);
+			logger.info("[keeperActiveElected][current dc backup, do nothing]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, activeKeeper);
 			return;
 		}
 		
@@ -120,7 +120,7 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 		@Override
 		protected void doRun() throws Exception {
 
-			logger.info("[doRun]{}, {}, {}, {}, {}", metaServerMultiDcService, clusterId, shardId, activeKeeper);
+			logger.info("[doRun]{}, {}, {}, {}", metaServerMultiDcService, clusterId, shardId, activeKeeper);
 			metaServerMultiDcService.upstreamChange(clusterId, shardId, activeKeeper.getIp(), activeKeeper.getPort());
 
 		}
