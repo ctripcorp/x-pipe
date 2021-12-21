@@ -4,8 +4,13 @@ import com.ctrip.xpipe.AbstractTest;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author wenchao.meng
@@ -22,6 +27,71 @@ public class FinalStateSetterManagerTest extends AbstractTest{
     public void beforeFinalStateSetterManagerTest(){
 
     }
+
+    @Test
+    public void testLazyTime() throws TimeoutException {
+        String testKey = randomString(10);
+        String testValue = randomString(10);
+
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
+                (String key) -> randomString(10),
+                (key, value) -> count.incrementAndGet());
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(testKey, testValue);
+
+        waitConditionUntilTimeOut(() -> count.get() == 1);
+
+        sleep(10);
+        finalStateSetterManager.set(testKey, testValue);
+        waitConditionUntilTimeOut(() -> count.get() == 2);
+
+        sleep(10);
+        finalStateSetterManager.set(testKey, testValue);
+        waitConditionUntilTimeOut(() -> count.get() == 3);
+    }
+
+    @Test
+    public void testLazyTimeConcurrently() throws TimeoutException, InterruptedException {
+        String testKey = randomString(10);
+        String testValue = randomString(10);
+
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
+                (String key) -> randomString(10),
+                (key, value) -> count.incrementAndGet());
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(testKey, testValue);
+
+        waitConditionUntilTimeOut(() -> count.get() == 1);
+
+        sleep(10);
+
+        int concurrency = 100;
+        ExecutorService executors = Executors.newFixedThreadPool(concurrency);
+        CountDownLatch start = new CountDownLatch(concurrency);
+        CountDownLatch end = new CountDownLatch(concurrency);
+        for (int i = 0; i < concurrency; i++) {
+            executors.submit(() -> {
+                start.countDown();
+                try {
+                    start.await();
+                } catch (InterruptedException ignore) {
+                }
+                finalStateSetterManager.set(testKey, testValue);
+                end.countDown();
+            });
+        }
+        end.await();
+        waitConditionUntilTimeOut(() -> count.get() == 2);
+
+        sleep(10);
+        //not grow any more
+        assertEquals(2, count.get());
+    }
+
 
     @Test
     public void testSet() throws TimeoutException {
