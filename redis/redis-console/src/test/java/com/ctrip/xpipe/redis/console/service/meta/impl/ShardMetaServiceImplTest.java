@@ -58,14 +58,14 @@ public class ShardMetaServiceImplTest extends AbstractTest {
         Mockito.doAnswer(invocationOnMock -> {
             String clusterName = invocationOnMock.getArgument(0, String.class);
             sleep(random.nextInt(100));
-            return mockClusterTbl(clusterName);
+            return mockClusterTbl(clusterName).setId(1L);
         }).when(clusterService).find(Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
             String clusterName = invocationOnMock.getArgument(0, String.class);
             String shardName = invocationOnMock.getArgument(1, String.class);
             sleep(random.nextInt(100));
-            return mockShardTbl(clusterName, shardName);
+            return mockShardTbl(clusterName, shardName).setId(1L);
         }).when(shardService).find(Mockito.anyString(), Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
@@ -95,11 +95,13 @@ public class ShardMetaServiceImplTest extends AbstractTest {
         Assert.assertEquals(shardName, shardMeta.getId());
         Assert.assertEquals(Long.valueOf(shardName.hashCode()), shardMeta.getSentinelId());
         Assert.assertEquals(SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName), shardMeta.getSentinelMonitorName());
+        Assert.assertEquals(1L, shardMeta.getDbId().longValue());
 
-        shardMeta = shardMetaService.getShardMeta(mockDcInfo(dcName), mockClusterTbl(clusterName), mockShardTbl(clusterName, shardName));
+        shardMeta = shardMetaService.getShardMeta(mockDcInfo(dcName), mockClusterTbl(clusterName).setId(1L), mockShardTbl(clusterName, shardName).setId(1L));
         Assert.assertEquals(shardName, shardMeta.getId());
         Assert.assertEquals(Long.valueOf(shardName.hashCode()), shardMeta.getSentinelId());
         Assert.assertEquals(SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName), shardMeta.getSentinelMonitorName());
+        Assert.assertEquals(1L, shardMeta.getDbId().longValue());
     }
 
     private DcTbl mockDcInfo(String dcName) {

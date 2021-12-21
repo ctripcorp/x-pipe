@@ -37,8 +37,7 @@ public class DefaultRedisSessionManagerTest extends AbstractConsoleTest{
         redisSessionManager = new DefaultRedisSessionManager();
         endpointFactory = new DefaultHealthCheckEndpointFactory();
         MetaCache metaCache = Mockito.mock(MetaCache.class);
-        Mockito.when(metaCache.getRouteIfPossible(Mockito.any())).thenReturn(null);
-
+        Mockito.when(metaCache.getRoutes()).thenReturn(null);
         endpointFactory.setMetaCache(metaCache);
         redisSessionManager.setScheduled(scheduled);
         redisSessionManager.setEndpointFactory(endpointFactory);

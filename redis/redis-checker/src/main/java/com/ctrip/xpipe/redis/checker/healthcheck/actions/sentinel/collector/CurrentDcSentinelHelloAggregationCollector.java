@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.LocalDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -12,7 +14,9 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregationCollector<CurrentDcSentinelHelloCollector> implements BiDirectionSupport, SingleDcSupport, LocalDcSupport {
     protected static Logger logger = LoggerFactory.getLogger(CurrentDcSentinelHelloAggregationCollector.class);
@@ -29,31 +33,37 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
 
     @Override
     public void onAction(SentinelActionContext context) {
+        TransactionMonitor transaction = TransactionMonitor.DEFAULT;
         RedisInstanceInfo info = context.instance().getCheckInfo();
-        if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId)) return;
+        transaction.logTransactionSwallowException("sentinel.check.notify", info.getClusterId(), new Task() {
+            @Override
+            public void go() throws Exception {
+                RedisInstanceInfo info = context.instance().getCheckInfo();
+                if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId))
+                    return;
 
-        if (collectHello(context) >= getRedisCntInCurrentDc() - 1) {
-            if (checkFinishedInstance.size() == checkFailInstance.size()) {
-                logger.info("[{}-{}][onAction] sentinel hello all fail, skip sentinel adjust", clusterId, shardId);
-                resetCheckResult();
-                return;
+                if (collectHello(context) >= getRedisCntInCurrentDc() - 1) {
+                    if (checkFinishedInstance.size() == checkFailInstance.size()) {
+                        logger.info("[{}-{}][onAction] sentinel hello all fail, skip sentinel adjust", clusterId, shardId);
+                        resetCheckResult();
+                        return;
+                    }
+                    logger.debug("[{}-{}][onAction] sentinel hello collect finish: {}", clusterId, shardId, checkResult.toString());
+                    handleAllBackupDcHellos(context.instance());
+                }
             }
-            logger.debug("[{}-{}][onAction] sentinel hello collect finish", clusterId, shardId);
-            handleAllBackupDcHellos(context.instance());
-        }
+
+            @Override
+            public Map<String, Object> getData() {
+                Map<String, Object> transactionData = new HashMap<>();
+                transactionData.put("checkRedisInstances", info);
+                return transactionData;
+            }
+        });
     }
 
     private int getRedisCntInCurrentDc() {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta
-                || !xpipeMeta.getDcs().containsKey(dcId)
-                || !xpipeMeta.getDcs().get(dcId).getClusters().containsKey(clusterId)
-                || !xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().containsKey(shardId)) {
-            return 0;
-        }
-
-        List<RedisMeta> currentDcRediss = xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().get(shardId).getRedises();
-        return null == currentDcRediss ? 0 : currentDcRediss.size();
+        return metaCache.getRedisOfDcClusterShard(dcId, clusterId, shardId).size();
     }
 
 }

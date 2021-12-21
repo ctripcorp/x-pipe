@@ -19,7 +19,7 @@ public class DefaultPeerMasterChooseActionTest extends AbstractMetaServerTest {
     private MasterChooseCommandFactory masterChooseCommandFactory;
 
     @Mock
-    private KeyedOneThreadTaskExecutor<Pair<String, String>> peerMasterChooseExecutors;
+    private KeyedOneThreadTaskExecutor<Pair<Long, Long>> peerMasterChooseExecutors;
 
     @Mock
     private MasterChooseCommand command;
@@ -29,13 +29,13 @@ public class DefaultPeerMasterChooseActionTest extends AbstractMetaServerTest {
     @Before
     public void setupDefaultPeerMasterChooseActionTest() {
         peerMasterChooseAction = new DefaultPeerMasterChooseAction(masterChooseCommandFactory, peerMasterChooseExecutors);
-        Mockito.when(masterChooseCommandFactory.buildPeerMasterChooserCommand(getDc(), getClusterId(), getShardId())).thenReturn(command);
+        Mockito.when(masterChooseCommandFactory.buildPeerMasterChooserCommand(getDc(), getClusterDbId(), getShardDbId())).thenReturn(command);
     }
 
     @Test
     public void testChoosePeerMaster() {
-        peerMasterChooseAction.choosePeerMaster(getDc(), getClusterId(), getShardId());
-        Mockito.verify(peerMasterChooseExecutors, Mockito.times(1)).execute(Pair.of(getClusterId(), getShardId()), command);
+        peerMasterChooseAction.choosePeerMaster(getDc(), getClusterDbId(), getShardDbId());
+        Mockito.verify(peerMasterChooseExecutors, Mockito.times(1)).execute(Pair.of(getClusterDbId(), getShardDbId()), command);
     }
 
 }

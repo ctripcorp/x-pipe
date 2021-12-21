@@ -1,9 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.entity.Shard;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -24,7 +28,7 @@ import static org.mockito.Mockito.*;
  * @author Jason Song(song_s@ctrip.com)
  */
 @RunWith(MockitoJUnitRunner.class)
-public class KeeperContainerServiceTest {
+public class KeeperContainerServiceTest extends AbstractTest {
 
     private KeeperConfig keeperConfig = new DefaultKeeperConfig();
 
@@ -38,8 +42,8 @@ public class KeeperContainerServiceTest {
     private KeepersMonitorManager keepersMonitorManager;
     
     private KeeperContainerService keeperContainerService;
-    private String someCluster;
-    private String someShard;
+    private ClusterId someClusterId;
+    private ShardId someShardId;
     private int somePort;
     private KeeperTransMeta someKeeperTransMeta;
     private KeeperMeta someKeeperMeta;
@@ -54,15 +58,15 @@ public class KeeperContainerServiceTest {
         ReflectionTestUtils.setField(keeperContainerService, "keeperConfig", keeperConfig);
         ReflectionTestUtils.setField(keeperContainerService, "keepersMonitorManager", keepersMonitorManager);
 
-        someCluster = "someCluster";
-        someShard = "someShard";
+        someClusterId = ClusterId.from(randomLong());
+        someShardId = ShardId.from(randomLong());
         somePort = 6789;
 
         someKeeperMeta = new KeeperMeta();
         someKeeperMeta.setPort(somePort);
         someKeeperTransMeta = new KeeperTransMeta();
-        someKeeperTransMeta.setClusterId(someCluster);
-        someKeeperTransMeta.setShardId(someShard);
+        someKeeperTransMeta.setClusterDbId(someClusterId.id());
+        someKeeperTransMeta.setShardDbId(someShardId.id());
         someKeeperTransMeta.setKeeperMeta(someKeeperMeta);
 
         when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
@@ -75,8 +79,8 @@ public class KeeperContainerServiceTest {
         RedisKeeperServer redisKeeperServer = keeperContainerService.add(someKeeperTransMeta);
 
         verify(componentRegistry, times(1)).add(redisKeeperServer);
-        assertEquals(someCluster, redisKeeperServer.getClusterId());
-        assertEquals(someShard, redisKeeperServer.getShardId());
+        assertEquals(someClusterId, redisKeeperServer.getClusterId());
+        assertEquals(someShardId, redisKeeperServer.getShardId());
         assertEquals(somePort, redisKeeperServer.getListeningPort());
     }
 
@@ -88,14 +92,11 @@ public class KeeperContainerServiceTest {
 
     @Test(expected = RedisKeeperRuntimeException.class)
     public void testAddKeeperWithSamePortMultipleTimes() throws Exception {
-        String anotherShard = "anotherShard";
-
         KeeperMeta anotherKeeperMeta = new KeeperMeta();
         anotherKeeperMeta.setPort(somePort);
         KeeperTransMeta anotherKeeperTransMeta = new KeeperTransMeta();
         anotherKeeperTransMeta.setKeeperMeta(anotherKeeperMeta);
-        anotherKeeperTransMeta.setClusterId(someCluster);
-        anotherKeeperTransMeta.setShardId(anotherShard);
+        anotherKeeperTransMeta.setClusterDbId(someClusterId.id());
 
         keeperContainerService.add(someKeeperTransMeta);
         keeperContainerService.add(anotherKeeperTransMeta);

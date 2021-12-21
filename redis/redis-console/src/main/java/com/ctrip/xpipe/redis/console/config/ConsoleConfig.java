@@ -92,8 +92,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getPingDownAfterMilliThroughProxy();
 
-	void register(ConsoleConfigListener listener);
-
 	Map<String, String> getSocketStatsAnalyzingKeys();
 
 	Pair<String, String> getClusterShardForMigrationSysCheck();
@@ -106,6 +104,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	Set<String> getOuterClusterTypes();
 
+	String filterOuterClusters();
+
 	Map<String, String> getConsoleDomains();
 
 	boolean isSentinelRateLimitOpen();
@@ -115,6 +115,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	Set<String> getVariablesCheckDataSources();
 
 	Set<String> getOwnClusterType();
+
+	Set<String> shouldNotifyClusterTypes();
 
 	String getCrossDcLeaderLeaseName();
 
@@ -133,4 +135,5 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getCheckerAckTimeoutMilli();
 
 	long getMigrationTimeoutMilli();
+	
 }

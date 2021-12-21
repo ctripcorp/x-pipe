@@ -12,5 +12,5 @@ import java.util.List;
  */
 public interface KeeperActiveElectAlgorithm {
 
-	KeeperMeta select(String clusterId, String shardId, List<KeeperMeta> toBeSelected);
+	KeeperMeta select(Long clusterDbId, Long shardDbId, List<KeeperMeta> toBeSelected);
 }

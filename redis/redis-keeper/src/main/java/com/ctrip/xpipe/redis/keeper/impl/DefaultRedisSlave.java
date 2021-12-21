@@ -8,6 +8,8 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
@@ -102,8 +104,8 @@ public class DefaultRedisSlave implements RedisSlave {
 		
 		String getRemoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
 		String threadPrefix = "RedisClientPsync-" + getRemoteIpLocalPort;
-		String clusterId = redisClient.getRedisKeeperServer().getClusterId();
-		String shardId = redisClient.getRedisKeeperServer().getShardId();
+		ClusterId clusterId = redisClient.getRedisKeeperServer().getClusterId();
+		ShardId shardId = redisClient.getRedisKeeperServer().getShardId();
 		psyncExecutor = Executors.newSingleThreadExecutor(ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
 		scheduled = Executors.newScheduledThreadPool(1, ClusterShardAwareThreadFactory.create(clusterId, shardId, threadPrefix));
 	}

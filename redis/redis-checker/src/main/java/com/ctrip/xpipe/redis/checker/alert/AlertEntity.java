@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.alert;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Date;
 
@@ -26,6 +27,10 @@ public class AlertEntity {
     private HostPort hostPort;
 
     private ALERT_TYPE alertType;
+    
+    public AlertEntity() {
+        
+    }
 
     public AlertEntity(HostPort hostPort, String dc, String clusterId, String shardId,
                        String message, ALERT_TYPE alertType) {
@@ -75,6 +80,9 @@ public class AlertEntity {
                 + ", date: " + DateTimeUtils.timeAsString(date);
     }
 
+    
+    
+    @JsonIgnore
     public String getKey() {
         StringBuffer sb = new StringBuffer(alertType + "");
         if (dc != null && !dc.isEmpty()) {

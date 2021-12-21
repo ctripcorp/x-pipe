@@ -25,7 +25,7 @@ public class CheckerCrossMasterDelayManagerTest extends AbstractCheckerTest {
 
     @Before
     public void setupCheckerCrossMasterDelayManager() throws Exception {
-        manager = new CheckerCrossMasterDelayManager();
+        manager = new CheckerCrossMasterDelayManager(FoundationService.DEFAULT.getDataCenter());
         instance = newRandomRedisHealthCheckInstance(6379);
     }
 

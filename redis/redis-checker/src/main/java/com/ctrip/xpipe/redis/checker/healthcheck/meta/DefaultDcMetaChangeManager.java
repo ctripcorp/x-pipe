@@ -4,17 +4,16 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,104 +35,82 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private HealthCheckInstanceManager instanceManager;
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
+    
+    private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
     private final String dcId;
-
-    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager) {
+    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory) {
         this.dcId = dcId;
         this.instanceManager = instanceManager;
+        this.healthCheckEndpointFactory = healthCheckEndpointFactory;
     }
 
     @Override
     public void compare(DcMeta future) {
         // init
         if(current == null) {
+            healthCheckEndpointFactory.updateRoutes();
             current = future;
             return;
         }
 
         // normal logic
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
+        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future);
+        //change routes
+        if(!dcRouteMetaComparator.getAdded().isEmpty()
+                || !dcRouteMetaComparator.getMofified().isEmpty()
+                || !dcRouteMetaComparator.getRemoved().isEmpty()) {
+            healthCheckEndpointFactory.updateRoutes();
+        }
         comparator.accept(this);
-        current = future;
+        comparator.getMofified().stream().map(metaComparator -> ((ClusterMetaComparator) metaComparator).getCurrent())
+                .forEach(this::removeCluster);
+        comparator.getMofified().stream().map(metaComparator -> ((ClusterMetaComparator) metaComparator).getFuture())
+                .forEach(this::addCluster);
+
+        this.current = future;
     }
 
+    private void removeCluster(ClusterMeta removed) {
+        if (dcId.equalsIgnoreCase(currentDcId)) {
+            logger.info("[removeCluster][{}][{}] remove dc current dc, remove cluster health check", dcId, removed.getId());
+            instanceManager.remove(removed.getId());
+        }
 
-    @Override
-    public void visitAdded(ClusterMeta added) {
+        logger.info("[removeCluster][{}][{}] remove health check", dcId, removed.getId());
+        ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
+        clusterMetaVisitor.accept(removed);
+    }
+
+    private void addCluster(ClusterMeta added) {
         if (!isInterestedInCluster(added)) {
+            logger.info("[addCluster][cluster not interested] {}", added.getId());
             return;
         }
 
-        logger.info("[visitAdded][{}][{}] add cluster health check", dcId, added.getId());
+        logger.info("[addCluster][{}][{}] add health check", dcId, added.getId());
         instanceManager.getOrCreate(added);
         ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(addConsumer)));
         clusterMetaVisitor.accept(added);
     }
+    
+
+    @Override
+    public void visitAdded(ClusterMeta added) {
+        logger.debug("[visitAdded][{}][{}]", dcId, added.getId());
+        addCluster(added);
+    }
 
     @Override
     public void visitModified(MetaComparator comparator) {
-        ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
-        updateDcInterested(clusterMetaComparator);
-        updateClusterMeta(clusterMetaComparator.getFuture());
-        clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged));
     }
 
-    private void updateDcInterested(ClusterMetaComparator comparator) {
-        boolean currentInterested = isInterestedInCluster(comparator.getCurrent());
-        boolean futureInterested = isInterestedInCluster(comparator.getFuture());
-        if (currentInterested == futureInterested) {
-            logger.debug("[updateDcInterested] interested not change: {}", futureInterested);
-            return;
-        }
-
-        if (futureInterested) {
-            logger.info("[updateDcInterested] become interested {}", comparator.getFuture());
-            instanceManager.getOrCreate(comparator.getFuture());
-            for (ShardMeta shardMeta : comparator.getFuture().getShards().values()) {
-                for (RedisMeta redisMeta : shardMeta.getRedises()) {
-                    instanceManager.getOrCreate(redisMeta);
-                }
-            }
-        } else {
-            logger.info("[updateDcInterested] loss interested {}", comparator.getFuture());
-            instanceManager.remove(comparator.getCurrent().getId());
-            for (ShardMeta shardMeta : comparator.getCurrent().getShards().values()) {
-                for (RedisMeta redisMeta : shardMeta.getRedises()) {
-                    instanceManager.remove(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
-                }
-            }
-        }
-    }
-
-    private void updateClusterMeta(ClusterMeta future) {
-        ClusterHealthCheckInstance checkInstance = instanceManager.findClusterHealthCheckInstance(future.getId());
-
-        if (null != checkInstance) {
-            checkInstance.getCheckInfo().setOrgId(future.getOrgId()).setActiveDc(future.getActiveDc());
-            for (ShardMeta shardMeta : future.getShards().values()) {
-                for (RedisMeta redisMeta : shardMeta.getRedises()) {
-                    RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
-                    if (redisInstance != null) {
-                        redisInstance.getCheckInfo().setActiveDc(future.getActiveDc());
-                    }
-                }
-            }
-        }
-    }
 
     @Override
     public void visitRemoved(ClusterMeta removed) {
-        if (!isInterestedInCluster(removed)) return;
-
         logger.debug("[visitRemoved][{}][{}]", dcId, removed.getId());
-        if (dcId.equalsIgnoreCase(currentDcId)) {
-            logger.info("[visitRemoved][{}][{}] remove dc current dc, remove cluster health check", dcId, removed.getId());
-            instanceManager.remove(removed.getId());
-        }
-
-        ClusterMetaVisitor clusterMetaVisitor = new ClusterMetaVisitor(new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer)));
-        clusterMetaVisitor.accept(removed);
+        removeCluster(removed);
     }
 
     private boolean isInterestedInCluster(ClusterMeta cluster) {
@@ -166,17 +143,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             }
             logger.info("[Redis-Add] {}", redisMeta);
             instanceManager.getOrCreate(redisMeta);
-        }
-    };
-
-    private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
-        @Override
-        public void accept(RedisMeta redisMeta) {
-            if (!isInterestedInCluster(redisMeta.parent().parent())) {
-                return;
-            }
-            logger.info("[Redis-Change] {}, master: {}", redisMeta, redisMeta.isMaster());
-            instanceManager.getOrCreate(redisMeta).getCheckInfo().isMaster(redisMeta.isMaster());
         }
     };
 

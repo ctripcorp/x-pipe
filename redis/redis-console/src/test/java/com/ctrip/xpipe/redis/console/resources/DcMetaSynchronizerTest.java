@@ -8,18 +8,20 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,7 @@ import java.util.List;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DcMetaSynchronizerTest {
 
     @InjectMocks
@@ -57,6 +59,9 @@ public class DcMetaSynchronizerTest {
 
     @Mock
     private OuterClientService outerClientService;
+
+    @Mock
+    private SentinelBalanceService sentinelBalanceService;
 
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
@@ -194,6 +199,70 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
+    public void singleDcToOneWayTest() throws Exception {
+        when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
+                new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
+                new OrganizationTbl().setId(9L).setOrgId(45).setOrgName("酒店")
+        ));
+
+        when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
+
+        OuterClientService.DcMeta credisDcMeta = credisDcMeta().setDcName(DcMetaSynchronizer.currentDcId);
+        DcMeta xpipeDcMeta=xpipeDcMeta().setId(DcMetaSynchronizer.currentDcId);
+        xpipeDcMeta.removeCluster(singleDcCacheCluster);
+
+        when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta);
+        when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta().addDc(xpipeDcMeta));
+        when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
+        when(clusterService.find(singleDcCacheCluster)).thenReturn(new ClusterTbl().setId(17730).setClusterName(singleDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.ONE_WAY.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(8));
+        when(clusterService.find(localDcCacheCluster)).thenReturn(new ClusterTbl().setId(17728).setClusterName(localDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.LOCAL_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(9));
+        dcMetaSynchronizer.sync();
+
+        verify(clusterService,times(1)).find(singleDcCacheCluster);
+        verify(clusterService, never()).bindDc(any(), any());
+        verify(clusterService, never()).createCluster(any());
+        verify(clusterService, never()).unbindDc(any(), any());
+        verify(clusterService, never()).deleteCluster(any());
+        verify(clusterService, never()).update(any());
+
+        verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), any());
+
+        verify(redisService, never()).insertRedises(any(), any(), any(), any());
+    }
+
+    @Test
+    public void crossDcNotSupportedTest() throws Exception {
+        when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
+                new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
+                new OrganizationTbl().setId(9L).setOrgId(45).setOrgName("酒店")
+        ));
+
+        when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
+
+        OuterClientService.DcMeta credisDcMeta = credisDcMeta().setDcName(DcMetaSynchronizer.currentDcId);
+        DcMeta xpipeDcMeta=xpipeDcMeta().setId(DcMetaSynchronizer.currentDcId);
+        xpipeDcMeta.removeCluster(singleDcCacheCluster);
+
+        when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta);
+        when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta().addDc(xpipeDcMeta));
+        when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
+        when(clusterService.find(singleDcCacheCluster)).thenReturn(new ClusterTbl().setId(17730).setClusterName(singleDcCacheCluster).setActivedcId(2).setClusterType(ClusterType.SINGLE_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(8));
+        when(clusterService.find(localDcCacheCluster)).thenReturn(new ClusterTbl().setId(17728).setClusterName(localDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.LOCAL_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(9));
+        dcMetaSynchronizer.sync();
+
+        verify(clusterService,times(1)).find(singleDcCacheCluster);
+        verify(clusterService, never()).bindDc(any(), any());
+        verify(clusterService, never()).createCluster(any());
+        verify(clusterService, never()).unbindDc(any(), any());
+        verify(clusterService, never()).deleteCluster(any());
+        verify(clusterService, never()).update(any());
+
+        verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), any());
+
+        verify(redisService, never()).insertRedises(any(), any(), any(), any());
+    }
+
+    @Test
     public void syncClusterClusterTypeChangedTest() throws Exception {
         when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
                 new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
@@ -241,6 +310,7 @@ public class DcMetaSynchronizerTest {
                 setRedises(Lists.newArrayList(new OuterClientService.RedisMeta().setHost("127.0.0.1").setPort(6379).setMaster(true))));
 
         when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(false);
         when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta);
         when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta().addDc(xpipeDcMeta().setId(DcMetaSynchronizer.currentDcId)));
         when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
@@ -254,12 +324,20 @@ public class DcMetaSynchronizerTest {
         verify(clusterService, never()).deleteCluster(any());
         verify(clusterService, never()).update(any());
 
+        verify(consoleConfig, times(1)).supportSentinelHealthCheck(any(), any());
+        verify(sentinelBalanceService, never()).selectMultiDcSentinels();
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
         verify(redisService, never()).updateBatchMaster(any());
+
+
+        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
+        dcMetaSynchronizer.sync();
+        verify(consoleConfig, times(2)).supportSentinelHealthCheck(any(), any());
+        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels();
     }
 
     @Test
@@ -400,6 +478,21 @@ public class DcMetaSynchronizerTest {
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, never()).insertRedises(any(), any(), any(), any());
         verify(redisService, times(1)).updateBatchMaster(any());
+    }
+
+    @Test
+    public void shouldFilterTest() {
+        when(consoleConfig.filterOuterClusters()).thenReturn(null);
+        dcMetaSynchronizer.buildFilterPattern();
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
+
+        when(consoleConfig.filterOuterClusters()).thenReturn("_[v|temp]+[0-9]{8,}?");
+        dcMetaSynchronizer.buildFilterPattern();
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
     }
 
     OuterClientService.DcMeta credisDcMeta() {

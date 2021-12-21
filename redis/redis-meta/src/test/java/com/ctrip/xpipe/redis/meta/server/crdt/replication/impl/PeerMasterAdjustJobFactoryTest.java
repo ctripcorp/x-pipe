@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
 
     @Mock
@@ -36,6 +36,8 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
     private DefaultPeerMasterAdjustJobFactory factory;
 
     private String clusterId = "cluster1", shardId = "shardId";
+
+    private Long clusterDbId = 1L, shardDbId = 1L;
 
     private String currentDc = "jq";
 
@@ -53,15 +55,16 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
     @Before
     public void setupPeerMasterAdjustJobFactoryTest() throws Exception {
         factory = new DefaultPeerMasterAdjustJobFactory(dcMetaCache, currentMetaManager, getXpipeNettyClientKeyedObjectPool(), executors);
-
-        Mockito.doAnswer(invocation -> upstreamDcs).when(currentMetaManager).getUpstreamPeerDcs(Mockito.anyString(), Mockito.anyString());
-        Mockito.doAnswer(invocation -> currentMaster).when(currentMetaManager).getCurrentCRDTMaster(clusterId, shardId);
-        Mockito.doAnswer(invocation -> allPeerMasters).when(currentMetaManager).getAllPeerMasters(clusterId, shardId);
+        Mockito.when(dcMetaCache.getCurrentDc()).thenReturn(currentDc);
+        Mockito.doAnswer(invocation -> relatedDcs).when(dcMetaCache).getRelatedDcs(Mockito.anyLong(), Mockito.anyLong());
+        Mockito.doAnswer(invocation -> upstreamDcs).when(currentMetaManager).getUpstreamPeerDcs(Mockito.anyLong(), Mockito.anyLong());
+        Mockito.doAnswer(invocation -> currentMaster).when(currentMetaManager).getCurrentCRDTMaster(clusterDbId, shardDbId);
+        Mockito.doAnswer(invocation -> allPeerMasters).when(currentMetaManager).getAllPeerMasters(clusterDbId, shardDbId);
     }
 
     @Test
     public void testForNotKnownDcs() {
-        PeerMasterAdjustJob job = factory.buildPeerMasterAdjustJob(clusterId, shardId);
+        PeerMasterAdjustJob job = factory.buildPeerMasterAdjustJob(clusterDbId, shardDbId);
         Assert.assertNull(job);
     }
 
@@ -69,7 +72,7 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
     public void testForNoMaster() {
         upstreamDcs.add("oy");
         currentMaster = null;
-        PeerMasterAdjustJob job = factory.buildPeerMasterAdjustJob(clusterId, shardId);
+        PeerMasterAdjustJob job = factory.buildPeerMasterAdjustJob(clusterDbId, shardDbId);
         Assert.assertNull(job);
     }
 
@@ -77,10 +80,10 @@ public class PeerMasterAdjustJobFactoryTest extends AbstractMetaServerTest {
     public void testForBuild() throws Exception {
         upstreamDcs.add("oy");
         upstreamDcs.add("rb");
-        PeerMasterAdjustJob job = factory.buildPeerMasterAdjustJob(clusterId, shardId);
+        PeerMasterAdjustJob job = factory.buildPeerMasterAdjustJob(clusterDbId, shardDbId);
         Assert.assertNotNull(job);
-        Assert.assertEquals(clusterId, getInstanceField(job, "clusterId"));
-        Assert.assertEquals(shardId, getInstanceField(job, "shardId"));
+        Assert.assertEquals(clusterDbId, getInstanceField(job, "clusterDbId"));
+        Assert.assertEquals(shardDbId, getInstanceField(job, "shardDbId"));
         Assert.assertEquals(Pair.of(currentMaster.getIp(), currentMaster.getPort()), getInstanceField(job, "currentMaster"));
         Assert.assertEquals(false, getInstanceField(job, "doDelete"));
         Assert.assertEquals(allPeerMasters.entrySet().stream().map(entry -> {

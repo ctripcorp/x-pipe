@@ -26,6 +26,9 @@ public class AbstractDcKeeperMasterChooserTest extends AbstractMetaServerTest{
 	
 	protected String shardId = "shard1";
 
+	protected Long clusterDbId = 1L;
+
+	protected Long shardDbId = 1L;
 	
 	@Mock
 	protected DcMetaCache dcMetaCache;

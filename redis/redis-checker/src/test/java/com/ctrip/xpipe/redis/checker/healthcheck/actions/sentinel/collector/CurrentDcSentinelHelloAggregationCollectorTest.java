@@ -20,7 +20,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class CurrentDcSentinelHelloAggregationCollectorTest extends AbstractCheckerTest {
 
     @Mock

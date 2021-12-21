@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.checker.alert;
 
-import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -32,7 +32,7 @@ public class AlertManagerTest {
     private AlertDbConfig alertDbConfig;
 
     @Mock
-    private Persistence persistence;
+    private PersistenceCache persistenceCache;
 
     @InjectMocks
     AlertManager alertManager = new AlertManager();
@@ -41,13 +41,12 @@ public class AlertManagerTest {
     public void beforeAlertManagerTest() {
         MockitoAnnotations.initMocks(this);
         when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
-        when(persistence.getClusterCreateTime(anyString())).thenReturn(DateTimeUtils.getHoursBeforeDate(new Date(), 1));
         when(alertConfig.getAlertWhileList()).thenReturn(Collections.emptySet());
         when(alertDbConfig.clusterAlertWhiteList()).thenReturn(Sets.newHashSet("cluster1"));
     }
 
     @Test
-    public void testGenerateAlertMessage() throws Exception {
+    public void testGenerateAlertMessage() {
         String cluster = null, shard = "", message = "test message";
         ALERT_TYPE type = ALERT_TYPE.ALERT_SYSTEM_OFF;
         String result = alertManager.generateAlertMessage(cluster, "jq", shard, type, message);
@@ -56,15 +55,13 @@ public class AlertManagerTest {
     }
 
     @Test
-    public void testShouldAlert() {
-        Map<String, Date> map = Maps.newHashMapWithExpectedSize(1);
-        map.put("cluster", new Date());
-        alertManager.setClusterCreateTime(map);
+    public void testNoAlertJustAfterCreate() {
         alertManager.refreshWhiteList();
+        when(persistenceCache.getClusterCreateTime("just-created")).thenReturn(new Date(System.currentTimeMillis() - 60000));
+        when(persistenceCache.getClusterCreateTime("created-long-ago")).thenReturn(DateTimeUtils.getHoursBeforeDate(new Date(), 1));
 
-        Assert.assertFalse(alertManager.shouldAlert("cluster"));
-
-        Assert.assertTrue(alertManager.shouldAlert("test"));
+        Assert.assertFalse(alertManager.shouldAlert("just-created"));
+        Assert.assertTrue(alertManager.shouldAlert("created-long-ago"));
     }
 
     @Test
@@ -75,7 +72,6 @@ public class AlertManagerTest {
     @Test
     public void testAlertWhiteList() {
         when(alertConfig.getNoAlarmMinutesForClusterUpdate()).thenReturn(15);
-        alertManager.setClusterCreateTime(Collections.emptyMap());
         alertManager.refreshWhiteList();
 
         Assert.assertFalse(alertManager.shouldAlert("cluster1"));

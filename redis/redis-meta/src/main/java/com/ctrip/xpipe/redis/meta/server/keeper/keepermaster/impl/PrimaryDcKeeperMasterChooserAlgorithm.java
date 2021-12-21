@@ -30,9 +30,9 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 	
 	private int checkRedisTimeoutSeconds;
 
-	public PrimaryDcKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
+	public PrimaryDcKeeperMasterChooserAlgorithm(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
 			CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool keyedObjectPool, int checkRedisTimeoutSeconds, ScheduledExecutorService scheduled) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+		super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled);
 		this.keyedObjectPool = keyedObjectPool;
 		this.checkRedisTimeoutSeconds = checkRedisTimeoutSeconds;
 	}
@@ -40,10 +40,10 @@ public class PrimaryDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterC
 	@Override
 	protected Pair<String, Integer> doChoose() {
 
-		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 		
 		
-		List<RedisMeta>  allRedises = dcMetaCache.getShardRedises(clusterId, shardId);
+		List<RedisMeta>  allRedises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
 		
 		List<RedisMeta>  redisMasters = getMasters(allRedises);
 		

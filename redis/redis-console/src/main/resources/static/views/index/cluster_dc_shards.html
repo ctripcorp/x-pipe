@@ -26,14 +26,13 @@
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
                         <div class="row">
-                            <div class="col-md-6">{{shard.shardTbl.shardName}}</div>
+                            <div class="col-md-6">{{shard.shardTbl.id}} : {{shard.shardTbl.shardName}}</div>
                             <div class="col-md-6 text-right">
                                 <a class="btn btn-primary btn-sm" ng-if="routeAvail === true" href="/#/chain/{{clusterName}}/{{currentDcName}}">Proxy-Chain</a>
                             	<a class="btn btn-primary btn-sm" href="/#/cluster_dc_shard_update?clusterName={{clusterName}}&shardName={{shard.shardTbl.shardName}}&currentDcName={{currentDcName}}">编辑</a>
                             </div>
                         </div>
                     </header>
-
                     <table class="table table-bordered table-hover">
                         <thead>
                         <tr>
@@ -50,7 +49,19 @@
                             	状态
                             </th>
                             <th>
-                            	Hickwall
+                                延迟
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="发送给其他master的流量">
+                                出流量
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="接收到其他master的流量">
+                                入流量
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="双向同步全量同步次数">
+                                全量
+                            </th>
+                            <th ng-if="clusterType == 'bi_direction'" title="双向同步增量同步次数">
+                                增量
                             </th>
                         </tr>
                         </thead>
@@ -72,7 +83,19 @@
                                 </button>
                                 </span>
                             </td>
-                            <td><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span  class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span class="hickwall" aria-hidden="true" ng-click="gotoInComingTrafficFromPeerHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncFullHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
+                                <span class="hickwall" aria-hidden="true" ng-click="gotoPeerSyncPartialHickwall(redis.redisIp, redis.redisPort)"></span>
+                            </td>
                         </tr>
                         <tr ng-repeat="keeper in shard.keepers">
                             <td title="{{keeper.runId}}">
@@ -96,6 +119,10 @@
                             <span ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></span>
                             </td>
                             <td><span class="hickwall" aria-hidden="true" ng-click="gotoCrossMasterHickwall(shard.shardTbl.shardName, redis.redisDc)"></span></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                         </tr>
                         </tbody>
                     </table>

@@ -141,7 +141,7 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 				return null;
 			}
 		}).when(redisMaster).setMasterState(MASTER_STATE.REDIS_REPL_CONNECTING);
-		
+
 		defaultRedisMasterReplication.setMasterConnectRetryDelaySeconds(0);
 
 		defaultRedisMasterReplication.initialize();
@@ -200,8 +200,10 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		defaultRedisMasterReplication = spy(defaultRedisMasterReplication);
 		defaultRedisMasterReplication.initialize();
 		defaultRedisMasterReplication.start();
-		Thread.sleep(10);
-		verify(defaultRedisMasterReplication, times(2)).connectWithMaster();
+		waitConditionUntilTimeOut(() ->
+				mockingDetails(defaultRedisMasterReplication).getInvocations().stream()
+						.filter(invocation -> invocation.getMethod().getName().equals("connectWithMaster"))
+						.count() == 2);
 	}
 
 	@After

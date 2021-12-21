@@ -69,19 +69,19 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
     }
 
     @Bean(name = CLUSTER_SHARD_ADJUST_EXECUTOR)
-    public KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> getClusterShardAdjustExecutor(
+    public KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long>> getClusterShardAdjustExecutor(
             @Qualifier(REPLICATION_ADJUST_EXECUTOR) ExecutorService executors, @Qualifier(REPLICATION_ADJUST_SCHEDULED) ScheduledExecutorService scheduled) {
         return new KeyedOneThreadMutexableTaskExecutor<>(executors, scheduled);
     }
 
     @Bean(name = PEER_MASTER_CHOOSE_EXECUTOR)
-    public KeyedOneThreadTaskExecutor<Pair<String, String> > getPeerMasterChooseExecutor(
+    public KeyedOneThreadTaskExecutor<Pair<Long, Long> > getPeerMasterChooseExecutor(
             @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors) {
         return new KeyedOneThreadTaskExecutor<>(executors);
     }
 
     @Bean(name = PEER_MASTER_ADJUST_EXECUTOR)
-    public KeyedOneThreadTaskExecutor<Pair<String, String> > getPeerMasterAdjustExecutor(
+    public KeyedOneThreadTaskExecutor<Pair<Long, Long> > getPeerMasterAdjustExecutor(
             @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors) {
         return new KeyedOneThreadTaskExecutor<>(executors);
     }

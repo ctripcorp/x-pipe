@@ -5,28 +5,35 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyBucket;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
 import org.junit.*;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -34,9 +41,13 @@ import static org.mockito.Mockito.*;
  * <p>
  * Oct 09, 2018
  */
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
+    @InjectMocks
+    @Spy
     private DefaultSentinelHelloCollector sentinelCollector;
+
     private QuorumConfig quorumConfig = new QuorumConfig(5, 3);
     private String monitorName = "shard1";
     private Set<HostPort> masterSentinels;
@@ -44,16 +55,29 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     private Server server;
 
-    private CheckerDbConfig checkerDbConfig = Mockito.mock(CheckerDbConfig.class);
+    @Mock
+    private CheckerDbConfig checkerDbConfig;
 
-    private SentinelManager sentinelManager = mock(SentinelManager.class);
+    @Mock
+    private SentinelManager sentinelManager;
 
-    CheckerConfig checkerConfig = mock(CheckerConfig.class);
+    @Mock
+    private CheckerConfig checkerConfig;
 
+    @Mock
+    private MetaCache metaCache;
+
+    @Mock
+    private AlertManager alertManager;
+
+    @Mock
+    private SentinelLeakyBucket leakyBucket;
+
+    private int originTimeout;
 
     @Before
     public void beforeDefaultSentinelCollectorTest() throws Exception {
-        sentinelCollector = new DefaultSentinelHelloCollector();
+        originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
         AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 500;
         HealthCheckEndpointFactory endpointFactory = mock(HealthCheckEndpointFactory.class);
         when(endpointFactory.getOrCreateEndpoint(any(HostPort.class))).thenAnswer(new Answer<Endpoint>() {
@@ -68,7 +92,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 .setExecutors(executors).setScheduled(scheduled).setEndpointFactory(endpointFactory)
                 .setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()));
         sentinelCollector.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
-        sentinelCollector.setCheckerDbConfig(checkerDbConfig);
+        sentinelCollector.setResetExecutor(executors);
         masterSentinels = Sets.newHashSet(
                 new HostPort("127.0.0.1", 5000),
                 new HostPort("127.0.0.1", 5001),
@@ -81,6 +105,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @After
     public void afterDefaultSentinelHelloCollectorTest() throws Exception {
+        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
         if (server != null) {
             server.stop();
         }
@@ -119,12 +144,10 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
         Server metaMasterServer = startServer(metaMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
-                + "$9\r\nlocalhost\r\n"
-                + ":" + metaMaster.getPort() + "\r\n");
+                + ":0\r\n*0\r\n");
         Server helloMasterServer = startServer(helloMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
-                + "$9\r\nlocalhost\r\n"
-                + ":" + helloMaster.getPort() + "\r\n");
+                + ":0\r\n*0\r\n");
         trueMasters = sentinelCollector.checkTrueMasters(metaMaster, hellos);
         Assert.assertEquals(2, trueMasters.size());
         metaMasterServer.stop();
@@ -150,7 +173,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testAdd(){
+    public void testAdd() {
 
         Set<SentinelHello> hellos = Sets.newHashSet(
                 new SentinelHello(new HostPort("127.0.0.1", 5000), master, monitorName)
@@ -167,10 +190,8 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testDelete(){
-        MetaCache metaCache = mock(MetaCache.class);
+    public void testDelete() {
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
-        sentinelCollector.setMetaCache(metaCache);
 
         Set<SentinelHello> hellos = Sets.newHashSet(
 
@@ -201,20 +222,21 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testIsKeeperOrDead() {
-        AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
-        boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
-        logger.info("{}", result);
-        Assert.assertTrue(result);
+        int originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+        try {
+            AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
+            boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
+            logger.info("{}", result);
+            Assert.assertTrue(result);
+        } finally {
+            AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = originTimeout;
+        }
     }
 
     @Test
     @Ignore
     public void testCorrectWhenDR() throws Exception {
-        MetaCache metaCache = mock(MetaCache.class);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(false);
-        sentinelCollector.setMetaCache(metaCache);
-        sentinelCollector.setCheckerConfig(mock(CheckerConfig.class));
-        sentinelCollector = spy(sentinelCollector);
         doCallRealMethod().when(sentinelCollector).onAction(any(SentinelActionContext.class));
         doReturn(null).when(sentinelCollector).checkStaleHellos(anyString(), any(), any());
         doNothing().when(sentinelCollector).checkReset(anyString(), any(), any(), any());
@@ -222,7 +244,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 //        doNothing().when(sentinelCollector).doAction(any(), any(), any());
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         Set<SentinelHello> hellos = Sets.newHashSet();
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             hellos.add(SentinelHello.fromString(String.format("127.0.0.1,%d,d156c06308a5e5c6edba1f8786b32e22cfceafcc,8410,shard,127.0.0.1,16379,0", 500 + i)));
         }
         sentinelCollector.onAction(new SentinelActionContext(instance, hellos));
@@ -270,7 +292,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 new HostPort("127.0.0.1", 5003),
                 new HostPort("127.0.0.1", 5004)
         );
-        sentinelCollector = spy(sentinelCollector);
         server = startServer(master.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
                 + ":43\r\n"
@@ -287,12 +308,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Test
     public void testMasterNotInPrimaryDc() {
         String shardId = "shardId";
-        MetaCache metaCache = mock(MetaCache.class);
         when(metaCache.inBackupDc(any(HostPort.class))).thenReturn(true);
-        sentinelCollector.setMetaCache(metaCache);
 
         monitorName = shardId;
-        sentinelCollector = spy(sentinelCollector);
         Set<SentinelHello> hellos = Sets.newHashSet(
                 new SentinelHello(new HostPort("127.0.0.1", 5000), new HostPort("127.0.0.3", 6379), monitorName),
                 new SentinelHello(new HostPort("127.0.0.1", 5001), new HostPort("127.0.0.3", 6379), monitorName),
@@ -306,13 +324,10 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testRateLimitWorks() {
-        sentinelCollector.setCheckerConfig(checkerConfig);
-        sentinelCollector.setSentinelManager(sentinelManager);
         sentinelCollector.setScheduled(scheduled);
         doNothing().when(sentinelManager).removeSentinelMonitor(any(), anyString());
         when(checkerConfig.getSentinelRateLimitSize()).thenReturn(0);
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(true);
-        sentinelCollector = spy(sentinelCollector);
         sentinelCollector.postConstruct();
         sentinelCollector.doAction("monitor", new HostPort("127.0.0.1", 6379), Sets.newHashSet(new SentinelHello()), Sets.newHashSet(), new QuorumConfig(5, 3));
         verify(sentinelManager, never()).removeSentinelMonitor(any(), anyString());
@@ -320,13 +335,10 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testRateNotLimit() {
-        sentinelCollector.setCheckerConfig(checkerConfig);
-        sentinelCollector.setSentinelManager(sentinelManager);
         sentinelCollector.setScheduled(scheduled);
         doNothing().when(sentinelManager).removeSentinelMonitor(any(), anyString());
         when(checkerConfig.getSentinelRateLimitSize()).thenReturn(0);
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
-        sentinelCollector = spy(sentinelCollector);
         sentinelCollector.postConstruct();
         sentinelCollector.doAction("monitor", new HostPort("127.0.0.1", 6379),
                 Sets.newHashSet(new SentinelHello(new HostPort("127.0.0.1", 5050), new HostPort("127.0.0.1", 6379), "monitorName")), Sets.newHashSet(), new QuorumConfig(5, 3));
@@ -337,8 +349,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     public void testSkipCollectForSentinelWhiteList() throws Exception {
         when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(false);
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
-        sentinelCollector.setCheckerConfig(checkerConfig);
-        sentinelCollector.setCheckerDbConfig(checkerDbConfig);
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         sentinelCollector.onAction(new SentinelActionContext(instance, Collections.emptySet()));
@@ -359,6 +369,153 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         Set<SentinelHello> wrongHellos = sentinelCollector.checkWrongMasterHellos(hellos, trueMaster);
         Assert.assertEquals(3, hellos.size());
         Assert.assertEquals(2, wrongHellos.size());
+    }
+
+    @Test
+    public void noSentinelsTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        doReturn(Sets.newHashSet(master)).when(sentinelCollector).checkTrueMasters(any(), any());
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        SentinelActionContext context = new SentinelActionContext(instance, new HashSet<>());
+        sentinelCollector.collect(context);
+
+        verify(sentinelManager, times(5)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(5)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+    }
+
+    @Test
+    public void sentinelLessThanAllTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        when(sentinelManager.getMasterOfMonitor(any(Sentinel.class), anyString())).thenReturn(new HostPort(LOCAL_HOST, randomPort()));
+        doReturn(Sets.newHashSet(master)).when(sentinelCollector).checkTrueMasters(any(), any());
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.collect(context);
+
+        verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003), monitorName, master, quorumConfig.getQuorum());
+        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
+    }
+
+    @Test
+    public void wrongSentinelTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        doReturn(Sets.newHashSet(master)).when(sentinelCollector).checkTrueMasters(any(), any());
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5005), master, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.collect(context);
+
+        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5005).toString(), LOCAL_HOST, 5005), monitorName);
+        verify(sentinelManager, never()).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+    }
+
+    @Test
+    public void wrongMonitorNameTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        doReturn(Sets.newHashSet(master)).when(sentinelCollector).checkTrueMasters(any(), any());
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), master, "monitorName2")
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.collect(context);
+
+        verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), "monitorName2");
+        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004),  monitorName);
+        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
+    }
+
+    @Test
+    public void wrongMasterTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        doReturn(Sets.newHashSet(master)).when(sentinelCollector).checkTrueMasters(any(), any());
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+
+        HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), wrongMaster, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.collect(context);
+
+        verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName);
+        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
     }
 
 }

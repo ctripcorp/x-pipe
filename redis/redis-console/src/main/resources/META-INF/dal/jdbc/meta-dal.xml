@@ -526,10 +526,6 @@
 				<member name="setinel-monitor-name"/>
 			</readset>
 			<readset name="NAME_AND_MONITOR_NAME">
-				<member name="shard-name"/>
-				<member name="setinel-monitor-name"/>
-			</readset>
-			<readset name="ID_NAME_AND_MONITOR_NAME">
 				<member name="id"/>
 				<member name="shard-name"/>
 				<member name="setinel-monitor-name"/>
@@ -1173,10 +1169,10 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/> left join (select * from dc_cluster_shard_tbl where deleted=0) dcst
-					on <FIELD name='setinel-id'/> = dcst.setinel_id, <TABLE name='dc-info'/>
+					FROM <TABLE/> LEFT JOIN <TABLE name='dc-cluster-shard-info'/>
+					ON <FIELD name='setinel-id'/> = dcst.setinel_id AND dcst.deleted=0
+					INNER JOIN <TABLE name='dc-info'/> on <FIELD name='dc-id'/> = dt.id
 					WHERE <FIELD name='deleted'/> = 0
-					AND dt.id = <FIELD name='dc-id'/>
 					GROUP BY <FIELD name='setinel-id'/>
 					]]>
 				</statement>
@@ -1226,6 +1222,7 @@
 				<member name='keepercontainer-ip'/>
 				<member name='keepercontainer-port'/>
 				<member name="keepercontainer-active"/>
+				<member name="az-id"/>
 				<member name="keepercontainer-dc"/>
 				<member name="count"/>
 				<member name="keepercontainer-org-id" />
@@ -1304,6 +1301,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-by-az-id" type="SELECT" multiple="true">
+				<param name="az-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='az-id'/> = ${az-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name="find-by-ip-port" type="SELECT" multiple="false">
 				<param name="keepercontainer-ip"/>
 				<param name="keepercontainer-port"/>
@@ -1325,6 +1333,17 @@
 						<TABLE name='dc-info' />
 					where <FIELD name='deleted' /> = 0
 					and <FIELD name='keepercontainer-dc' /> = dt.id
+					]]>
+				</statement>
+			</query>
+			<query name='delete-keeper-container' type='UPDATE' batch='false'>
+				<param name='keepercontainer-id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='keepercontainer-id'/> = ${keepercontainer-id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>
@@ -2040,6 +2059,66 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+	<entity name="az-tbl" table="az_tbl" alias="at">
+		<query-defs>
+			<query name="find-active-available-zone-by-dc" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id'/> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
+					]]>
+				</statement>
+			</query>
+			<query name="find-available-zone-by-dc" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='dc-id'/> = ${dc-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+
+			<query name="find-available-zone-by-az" type="SELECT" multiple="false">
+				<param name="az-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='az-name'/> = ${az-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-available-zone" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='delete-available-zone' type='UPDATE' batch='false'>
+				<param name='id'/>
+				<param name="az-name"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1 , <FIELD name='az-name'/> = ${az-name}
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
 			</query>

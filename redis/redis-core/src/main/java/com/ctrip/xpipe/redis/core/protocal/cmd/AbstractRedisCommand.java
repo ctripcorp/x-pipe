@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.AbstractNettyRequestResponseCommand;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
@@ -255,10 +253,6 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	@Override
 	public void logRequest(boolean logRequest) {
 		this.logRequest = logRequest;
-	}
-
-	protected boolean isProxyEnabled(Endpoint endpoint) {
-		return endpoint instanceof ProxyEnabled;
 	}
 
 	protected AbstractRedisCommand setInOutPayloadFactory(InOutPayloadFactory inOutPayloadFactory) {

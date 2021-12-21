@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorParser;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -31,8 +32,8 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     @Override
     public void addKeeper(KeeperTransMeta keeperTransMeta) {
         try {
-            restTemplate.postForObject("http://{ip}:{port}/keepers", keeperTransMeta, Void.class, keeperContainerMeta
-                    .getIp(), keeperContainerMeta.getPort());
+            restTemplate.postForObject("http://{ip}:{port}/keepers", keeperTransMeta, Void.class,
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort());
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }
@@ -41,9 +42,10 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     @Override
     public void removeKeeper(KeeperTransMeta keeperTransMeta) {
         try {
-            restTemplate.delete("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}", keeperContainerMeta
-                    .getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterId(), keeperTransMeta
-                    .getShardId());
+            restTemplate.exchange("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}",
+                    HttpMethod.DELETE, new HttpEntity<Object>(keeperTransMeta), Void.class,
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterDbId(),
+                    keeperTransMeta.getShardDbId());
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }
@@ -52,9 +54,9 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     @Override
     public void startKeeper(KeeperTransMeta keeperTransMeta) {
         try {
-            restTemplate.put("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}/start", null,
-                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterId(),
-                    keeperTransMeta.getShardId());
+            restTemplate.put("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}/start", keeperTransMeta,
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterDbId(),
+                    keeperTransMeta.getShardDbId());
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }
@@ -63,9 +65,9 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     @Override
     public void stopKeeper(KeeperTransMeta keeperTransMeta) {
         try {
-            restTemplate.put("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}/stop", null,
-                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterId(),
-                    keeperTransMeta.getShardId());
+            restTemplate.put("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}/stop", keeperTransMeta,
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperTransMeta.getClusterDbId(),
+                    keeperTransMeta.getShardDbId());
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }
@@ -88,7 +90,7 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
         try {
             restTemplate.postForObject("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}",
                     keeperTransMeta, Void.class, keeperContainerMeta.getIp(), keeperContainerMeta.getPort(),
-                    keeperTransMeta.getClusterId(), keeperTransMeta.getShardId());
+                    keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId());
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
         }

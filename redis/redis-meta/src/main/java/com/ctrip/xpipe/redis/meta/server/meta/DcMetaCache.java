@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
 import java.util.Set;
@@ -14,44 +15,52 @@ import java.util.Set;
  */
 public interface DcMetaCache extends Observable {
 
-	Set<String> getClusters();
+	String clusterDbId2Name(Long clusterDbId);
+
+	Pair<String, String> clusterShardDbId2Name(Long clusterDbId, Long shardDbId);
+
+	Long clusterId2DbId(String clusterId);
+
+	Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId);
+
+	Set<ClusterMeta> getClusters();
 
 	String getCurrentDc();
 
-	ClusterMeta getClusterMeta(String clusterId);
+	ClusterMeta getClusterMeta(Long clusterDbId);
 
-	ClusterType getClusterType(String clusterId);
+	ClusterType getClusterType(Long clusterDbId);
 
-	RouteMeta randomRoute(String clusterId);
+	RouteMeta randomRoute(Long clusterDbId);
 
 	List<RouteMeta> getAllRoutes();
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
-	boolean isCurrentDcPrimary(String clusterId, String shardId);
+	boolean isCurrentDcPrimary(Long clusterDbId, Long shardDbId);
 
-	boolean isCurrentDcPrimary(String clusterId);
+	boolean isCurrentDcPrimary(Long clusterDbId);
 
-	Set<String> getBakupDcs(String clusterId, String shardId);
+	Set<String> getBakupDcs(Long clusterDbId, Long shardDbId);
 
-	Set<String> getRelatedDcs(String clusterId, String shardId);
+	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 
-	String getPrimaryDc(String clusterId, String shardId);
+	String getPrimaryDc(Long clusterDbId, Long shardDbId);
 
-	List<KeeperMeta> getShardKeepers(String clusterId, String shardId);
+	List<KeeperMeta> getShardKeepers(Long clusterDbId, Long shardDbId);
 
-	List<RedisMeta> getShardRedises(String clusterId, String shardId);
+	List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId);
 
-	SentinelMeta getSentinel(String clusterId, String shardId);
+	SentinelMeta getSentinel(Long clusterDbId, Long shardDbId);
 
-	String getSentinelMonitorName(String clusterId, String shardId);
-	
+	String getSentinelMonitorName(Long clusterDbId, Long shardDbId);
 	
 	void clusterAdded(ClusterMeta clusterMeta);
 
 	void clusterModified(ClusterMeta clusterMeta);
 
-	void clusterDeleted(String clusterId);
+	void clusterDeleted(Long clusterDbId);
 	
-	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
+	void primaryDcChanged(Long clusterDbId, Long shardDbId, String newPrimaryDc);
+
 }

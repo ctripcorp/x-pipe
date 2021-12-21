@@ -232,6 +232,18 @@ public abstract class AbstractRedisTest extends AbstractTest {
         logger.info("[sendRandomMessage][ end ]{}", redisMeta.desc());
     }
 
+    protected void sendRandomMessage(String ip, int port, int count, int messageLength) {
+        Jedis jedis = new Jedis(ip, port);
+        logger.info("[sendRandomMessage][begin]{}, {}", ip, port);
+        for (int i = 0; i < count; i++) {
+
+            long currentIndex = totalSendMessageCount.incrementAndGet();
+            jedis.set(String.valueOf(currentIndex), randomString(messageLength));
+            jedis.incr("incr");
+        }
+        logger.info("[sendRandomMessage][end]{}, {}", ip, port);
+    }
+
     protected void sendMessage(RedisMeta redisMeta, int count, String message) {
 
         Jedis jedis = createJedis(redisMeta);
@@ -342,7 +354,6 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     protected List<KeeperMeta> getDcKeepers(String dc, String clusterId, String shardId) {
         return getXpipeMeta().getDcs().get(dc).getClusters().get(clusterId).getShards().get(shardId).getKeepers();
-
     }
 
     protected List<RedisMeta> getDcRedises(String dc, String clusterId, String shardId) {
@@ -485,8 +496,11 @@ public abstract class AbstractRedisTest extends AbstractTest {
         DcMeta dcMeta = getDcMeta(dc);
         ClusterMeta clusterMeta = (ClusterMeta) MetaClone.clone((ClusterMeta) dcMeta.getClusters().values().toArray()[0]);
         clusterMeta.setId(randomString(10));
+        clusterMeta.setDbId(randomLong());
 
+        Long randomShardDbId = randomLong();
         for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+            shardMeta.setDbId(randomShardDbId++);
             for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
                 keeperMeta.setPort(keeperMeta.getPort() + 10000);
             }

@@ -11,6 +11,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
@@ -103,7 +104,9 @@ public class SentinelLeakyBucketTest extends AbstractTest {
                     try {
                         barrier.await();
                     } catch (Exception ignore) {
+                        logger.info("[testRelease] await fail", ignore);
                     }
+                    sleep(randomInt(0, 1000)); // sleep random time to desync acquire
                     if(leakyBucket.tryAcquire()) {
                         counter.incrementAndGet();
                         leakyBucket.release();
@@ -112,12 +115,12 @@ public class SentinelLeakyBucketTest extends AbstractTest {
                 }
             });
         }
-        latch.await(1500, TimeUnit.MILLISECONDS);
+        Assert.assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
         Assert.assertTrue(leakyBucket.getTotalSize() < counter.get());
     }
 
     @Test
-    public void testDelayRelease() {
+    public void testDelayRelease() throws TimeoutException {
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(true);
         when(checkerConfig.getSentinelRateLimitSize()).thenReturn(3);
         leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
@@ -127,7 +130,7 @@ public class SentinelLeakyBucketTest extends AbstractTest {
         leakyBucket.delayRelease(30, TimeUnit.MILLISECONDS);
         Assert.assertFalse(leakyBucket.tryAcquire());
         sleep(30);
-        Assert.assertTrue(leakyBucket.tryAcquire());
+        waitConditionUntilTimeOut(() -> assertSuccess(() -> Assert.assertTrue(leakyBucket.tryAcquire())));
     }
 
     @Test

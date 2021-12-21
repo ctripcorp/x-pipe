@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -42,7 +43,13 @@ public class ServerStartCmd extends AbstractForkProcessCmd {
         URL[] urls = urlsFromClassLoader(Thread.currentThread().getContextClassLoader());
         String classPath = ".:";
         for (URL url: urls) {
-            classPath += url.getPath() + ":";
+            if(Pattern.matches(".*/redis-proxy-client/target/classes/", url.toString())) {
+                classPath += url + "../redis-proxy-client-1.2.6.jar:";
+                
+            } else {
+                classPath += url.getPath() + ":";
+            }
+            
         }
         classPath = classPath.substring(0, classPath.length() - 1);
 

@@ -23,6 +23,8 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     private boolean active;
 
+    private String azName;
+
     public boolean isActive() {
         return active;
     }
@@ -78,6 +80,15 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
         return this;
     }
 
+    public String getAzName() {
+        return azName;
+    }
+
+    public KeeperContainerCreateInfo setAzName(String azName) {
+        this.azName = azName;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "KeeperContainerCreateInfo{" +
@@ -87,6 +98,7 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
                 ", keepercontainerOrgId=" + keepercontainerOrgId +
                 ", orgName='" + orgName + '\'' +
                 ", active=" + active +
+                ", azName='" + azName + '\'' +
                 '}';
     }
 

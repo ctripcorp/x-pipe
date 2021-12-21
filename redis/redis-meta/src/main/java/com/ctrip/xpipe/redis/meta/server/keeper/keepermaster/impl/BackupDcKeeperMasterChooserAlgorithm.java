@@ -17,9 +17,9 @@ public class BackupDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterCh
 
 	private MultiDcService multiDcService;
 
-	public BackupDcKeeperMasterChooserAlgorithm(String clusterId, String shardId, DcMetaCache dcMetaCache,
+	public BackupDcKeeperMasterChooserAlgorithm(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
 			CurrentMetaManager currentMetaManager, MultiDcService multiDcService, ScheduledExecutorService scheduled) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+		super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled);
 		this.multiDcService = multiDcService;
 	}
 	
@@ -27,10 +27,10 @@ public class BackupDcKeeperMasterChooserAlgorithm extends AbstractKeeperMasterCh
 	@Override
 	protected Pair<String, Integer> doChoose() {
 		
-		String dcName = dcMetaCache.getPrimaryDc(clusterId, shardId);
+		String dcName = dcMetaCache.getPrimaryDc(clusterDbId, shardDbId);
 		
-		KeeperMeta keeperMeta = multiDcService.getActiveKeeper(dcName, clusterId, shardId);
-		logger.debug("[doChooseKeeperMaster]{}, {}, {}, {}", dcName, clusterId, shardId, keeperMeta);
+		KeeperMeta keeperMeta = multiDcService.getActiveKeeper(dcName, clusterDbId, shardDbId);
+		logger.debug("[doChooseKeeperMaster]{}, cluster_{}, shard_{}, {}", dcName, clusterDbId, shardDbId, keeperMeta);
 		if(keeperMeta == null){
 			return null;
 		}

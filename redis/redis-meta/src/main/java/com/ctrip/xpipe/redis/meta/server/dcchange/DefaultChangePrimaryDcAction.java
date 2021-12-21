@@ -43,7 +43,7 @@ import static com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig.*
  * Dec 13, 2016
  */
 @Component
-public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
+public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 	
 	private static Logger logger = LoggerFactory.getLogger(DefaultChangePrimaryDcAction.class);
 
@@ -59,7 +59,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	private ExecutorService executors;
 
 	@Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
-	private KeyedOneThreadMutexableTaskExecutor<Pair<String, String> >  clusterShardExecutors;
+	private KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long> >  clusterShardExecutors;
 
 	@Autowired
 	private DcMetaCache  dcMetaCache;
@@ -83,47 +83,46 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	private MetaServerConfig metaServerConfig;
 
 	@Override
-	public PrimaryDcChangeMessage changePrimaryDc(String clusterId, String shardId, String newPrimaryDc, MasterInfo masterInfo) {
+	public PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
 
 		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
-		if(!currentMetaManager.hasCluster(clusterId)){
-			logger.info("[changePrimaryDc][not interested in this cluster]{}, {}", clusterId, shardId);
-			executionLog.info("not interested in this cluster:" + clusterId);
+		if(!currentMetaManager.hasCluster(clusterDbId)){
+			logger.info("[changePrimaryDc][not interested in this cluster]cluster_{}, shard_{}", clusterDbId, shardDbId);
+			executionLog.info("not interested in this cluster:" + clusterDbId);
 			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 		
 		ChangePrimaryDcAction changePrimaryDcAction = null;
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
-			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomePrimaryAction(dcMetaCache, currentMetaManager, sentinelManager,
-					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterId, shardId),
-					scheduled, MoreExecutors.directExecutor());
-			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
+			logger.info("[doChangePrimaryDc][become primary]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc);
+			changePrimaryDcAction = new BecomePrimaryAction(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager,
+					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterDbId, shardDbId), scheduled, MoreExecutors.directExecutor());
+			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId,
 					newPrimaryDc, masterInfo);
 			int timeout = DEFAULT_SO_TIMEOUT / 2;
 			try {
-				clusterShardExecutors.clearAndExecute(new Pair<>(clusterId, shardId), changePrimaryDcJob);
+				clusterShardExecutors.clearAndExecute(new Pair<>(clusterDbId, shardDbId), changePrimaryDcJob);
 				waitForCommandStart(changePrimaryDcJob);
 				return changePrimaryDcJob.future().get(timeout, TimeUnit.MILLISECONDS);
 			} catch (TimeoutException|InterruptedException e) {
-				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
+				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
 				// In case task queue is blocked, we do downgrade(or a double-insurance)
 				try {
-					return createChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId, newPrimaryDc, masterInfo)
+					return createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo)
 							.execute().get();
 				} catch (Exception innerException) {
-					logger.error("[changePrimaryDc][try direct-run failed]{}, {}, {}", clusterId, shardId, newPrimaryDc, e);
+					logger.error("[changePrimaryDc][try direct-run failed]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
 					return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 				}
 			}catch (Exception e) {
-				logger.error("[changePrimaryDc][execute by adjust executors fail]" + clusterId + "," + shardId + "," + newPrimaryDc, e);
+				logger.error("[changePrimaryDc][execute by adjust executors fail]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + newPrimaryDc, e);
 				return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 			}
 		} else {
-			logger.info("[doChangePrimaryDc][become backup]{}, {}, {}", clusterId, shardId, newPrimaryDc);
-			changePrimaryDcAction = new BecomeBackupAction(dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
-			return changePrimaryDcAction.changePrimaryDc(clusterId, shardId, newPrimaryDc, masterInfo);
+			logger.info("[doChangePrimaryDc][become backup]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc);
+			changePrimaryDcAction = new BecomeBackupAction(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
+			return changePrimaryDcAction.changePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
 		}
 	}
 
@@ -142,18 +141,18 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	}
 
 	@VisibleForTesting
-	protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, String clusterId,
-														  String shardId, String newPrimaryDc, MasterInfo masterInfo) {
-		return new ChangePrimaryDcJob(changePrimaryDcAction, clusterId, shardId,
+	protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, Long clusterDbId,
+														  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+		return new ChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId,
 				newPrimaryDc, masterInfo);
 	}
 
-	private NewMasterChooser wrapCachedNewMasterChooser(String cluster, String shard, NewMasterChooser chooser) {
-		return ClusterShardCachedNewMasterChooser.wrapChooser(cluster, shard, chooser, metaServerConfig::getNewMasterCacheTimeoutMilli, scheduled);
+	private NewMasterChooser wrapCachedNewMasterChooser(Long clusterDbId, Long shardDbId, NewMasterChooser chooser) {
+		return ClusterShardCachedNewMasterChooser.wrapChooser(clusterDbId, shardDbId, chooser, metaServerConfig::getNewMasterCacheTimeoutMilli, scheduled);
 	}
 
-	private NewMasterChooser createNewMasterChooser(String cluster, String shard) {
-		return wrapCachedNewMasterChooser(cluster, shard, new FirstNewMasterChooser(keyedObjectPool, scheduled, MoreExecutors.directExecutor()));
+	private NewMasterChooser createNewMasterChooser(Long clusterDbId, Long shardDbId) {
+		return wrapCachedNewMasterChooser(clusterDbId, shardDbId, new FirstNewMasterChooser(keyedObjectPool, scheduled, MoreExecutors.directExecutor()));
 	}
 
 	@VisibleForTesting
@@ -175,7 +174,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction{
 	}
 
 	@VisibleForTesting
-	protected DefaultChangePrimaryDcAction setClusterShardExecutors(KeyedOneThreadMutexableTaskExecutor<Pair<String, String>> clusterShardExecutors) {
+	protected DefaultChangePrimaryDcAction setClusterShardExecutors(KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long>> clusterShardExecutors) {
 		this.clusterShardExecutors = clusterShardExecutors;
 		return this;
 	}

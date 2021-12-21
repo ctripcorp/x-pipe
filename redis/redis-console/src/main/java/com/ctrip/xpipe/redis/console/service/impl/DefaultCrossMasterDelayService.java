@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
@@ -32,9 +33,14 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
 
     @Autowired
     private ConsoleConfig consoleConfig;
+    
+    public DefaultCrossMasterDelayService(String currentDcId) {
+        super(currentDcId);
+    }
 
-    public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromCurrentDc(String clusterId, String shardId) {
-        Map<String, Pair<HostPort, Long>> peerMasterDelays = crossMasterDelays.get(new DcClusterShard(CURRENT_DC, clusterId, shardId));
+
+    public Map<String, Pair<HostPort, Long>> getPeerMasterDelay(String dc, String clusterId, String shardId) {
+        Map<String, Pair<HostPort, Long>> peerMasterDelays = crossMasterDelays.get(new DcClusterShard(dc, clusterId, shardId));
         if (null == peerMasterDelays) return null;
 
         Map<String, Pair<HostPort, Long>> result = new HashMap<>(peerMasterDelays.size());
@@ -49,9 +55,14 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
         return result;
     }
 
+    @Override
+    public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromCurrentDc(String clusterId, String shardId) {
+        return getPeerMasterDelay(currentDcId, clusterId, shardId);
+    }
+
     public Map<String, Pair<HostPort, Long>> getPeerMasterDelayFromSourceDc(String sourceDcId, String clusterId, String shardId) {
-        if (CURRENT_DC.equalsIgnoreCase(sourceDcId)) {
-            return getPeerMasterDelayFromCurrentDc(clusterId, shardId);
+        if (currentDcId.equals(sourceDcId)) {
+            return getPeerMasterDelay(sourceDcId, clusterId, shardId);
         } else {
             try {
                 return consoleServiceManager.getCrossMasterDelay(sourceDcId, clusterId, shardId);
@@ -128,6 +139,11 @@ public class DefaultCrossMasterDelayService extends CheckerCrossMasterDelayManag
     @Override
     public void updateCrossMasterDelays(Map<DcClusterShard, Map<String, Pair<HostPort, Long>>> delays) {
         this.crossMasterDelays.putAll(delays);
+    }
+    
+    @VisibleForTesting
+    protected void setConsoleConfig(ConsoleConfig config) {
+        this.consoleConfig = config;
     }
 
 }

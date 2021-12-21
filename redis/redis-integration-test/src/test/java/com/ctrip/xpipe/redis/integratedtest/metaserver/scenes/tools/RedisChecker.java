@@ -26,14 +26,14 @@ public class RedisChecker {
             CRDTInfoCommand crdtInfoCommand = new CRDTInfoCommand(pool.getKeyPool(master), InfoCommand.INFO_TYPE.REPLICATION ,scheduled);
             try {
                 CRDTInfoResultExtractor re = new CRDTInfoResultExtractor(crdtInfoCommand.execute().get());
-                List<Pair<Long, Endpoint>> peers =  re.extractPeerMasters();
-                for(Pair<Long, Endpoint> peer: peers) {
-                    if(peer.getKey().equals(checker.getKey()) && peer.getValue().equals(checker.getValue())) {
+                List<CRDTInfoResultExtractor.PeerInfo> peers =  re.extractPeerMasters();
+                for(CRDTInfoResultExtractor.PeerInfo peer: peers) {
+                    if(peer.getGid() == checker.getKey() && peer.getEndpoint().equals(checker.getValue())) {
                         return true;
                     }
 
-                    logger.info("gid: {} , endpoint {}", peer.getKey(), peer.getValue().getProxyProtocol() != null?
-                            peer.getValue().getProxyProtocol().getRouteInfo(): peer.getValue().toString());
+                    logger.info("gid: {} , endpoint {}", peer.getGid(), peer.getEndpoint().getProxyProtocol() != null?
+                            peer.getEndpoint().getProxyProtocol().getRouteInfo(): peer.getEndpoint().toString());
                 }
                 return false;
             } catch (Exception e) {

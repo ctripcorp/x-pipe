@@ -53,6 +53,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 		clusterTbl.setActivedcId(getClusterMetaCurrentPrimaryDc(dcMetaQueryVO.getCurrentDc(), clusterTbl));
 		
 		clusterMeta.setId(clusterTbl.getClusterName());
+		clusterMeta.setDbId(clusterTbl.getId());
 		loadDcs(dcMetaQueryVO, clusterTbl, clusterMeta);
 		clusterMeta.setParent(dcMeta);
 
@@ -128,9 +129,10 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 			DcClusterTbl dcClusterInfo = future_dcClusterInfo.get();
 			List<DcTbl> clusterRelatedDc = future_clusterRelatedDc.get();
 			if (null == dcInfo || null == clusterInfo || null == dcClusterInfo)
-				return clusterMeta;
+				throw new DataNotFoundException(String.format("unfound dc cluster %s %s", dcName, clusterName));
 
 			clusterMeta.setId(clusterInfo.getClusterName());
+			clusterMeta.setDbId(clusterInfo.getId());
 			clusterMeta.setType(clusterInfo.getClusterType());
 			clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 			

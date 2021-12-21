@@ -7,7 +7,6 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator.ShardUpstreamChanged;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperMasterElector;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.MasterChooser;
@@ -50,19 +49,12 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		scheduled = Executors.newScheduledThreadPool(OsUtils.getCpuCount(), XpipeThreadFactory.create("DefaultKeeperMasterChooserManager"));
 	}
 
-	
-	protected void shardUpstreamChanged(ShardUpstreamChanged args) {
-
-		logger.info("[shardUpstreamChanged]{}", args);
-		currentMetaManager.setKeeperMaster(args.getClusterId(), args.getShardId(), args.getFuture());
-	}
-
 	@Override
 	protected void handleClusterModified(ClusterMetaComparator comparator) {
 		
-		String clusterId = comparator.getCurrent().getId();
+		Long clusterDbId = comparator.getCurrent().getDbId();
 		for(ShardMeta shardMeta : comparator.getAdded()){
-			addShard(clusterId, shardMeta);
+			addShard(clusterDbId, shardMeta);
 		}
 
 	}
@@ -76,7 +68,7 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 	protected void handleClusterAdd(ClusterMeta clusterMeta) {
 		
 		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-			addShard(clusterMeta.getId(), shardMeta);
+			addShard(clusterMeta.getDbId(), shardMeta);
 		}
 		
 	}
@@ -86,21 +78,21 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		return Collections.singleton(ClusterType.ONE_WAY);
 	}
 
-	private void addShard(String clusterId, ShardMeta shardMeta) {
+	private void addShard(Long clusterDbId, ShardMeta shardMeta) {
 		
-		String shardId = shardMeta.getId();
+		Long shardDbId = shardMeta.getDbId();
 		
-		MasterChooser keeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterId, shardId, multiDcService,
+		MasterChooser keeperMasterChooser = new DefaultDcKeeperMasterChooser(clusterDbId, shardDbId, multiDcService,
 				dcMetaCache, currentMetaManager, scheduled, clientPool);
 		
 		
 		try {
-			logger.info("[addShard]{}, {}, {}", clusterId, shardId, keeperMasterChooser);
+			logger.info("[addShard]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMasterChooser);
 			keeperMasterChooser.start();
 			//release resources
-			registerJob(clusterId, shardId, keeperMasterChooser);
+			registerJob(clusterDbId, shardDbId, keeperMasterChooser);
 		} catch (Exception e) {
-			logger.error("[addShard]{}, {}", clusterId, shardId);
+			logger.error("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId);
 		}
 	}
 

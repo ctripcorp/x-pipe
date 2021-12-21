@@ -34,6 +34,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 	private DeleteKeeperCommand deleteKeeperCommand;
 	
 	private String clusterId = "cluster1", shardId = "shard1";
+	private Long clusterDbId = 1L, shardDbId = 1L;
 	
 	private KeeperMeta keeperMeta;
 	
@@ -48,7 +49,7 @@ public class DeleteKeeperCommandTest extends AbstractMetaServerTest{
 		keeperMeta.setPort(randomPort());
 		
 		deleteKeeperCommand = new DeleteKeeperCommand(keeperContainerService, 
-				new KeeperTransMeta(clusterId, shardId, keeperMeta), scheduled, timeoutMilli, checkIntervalMili);
+				new KeeperTransMeta(clusterDbId, shardDbId, keeperMeta), scheduled, timeoutMilli, checkIntervalMili);
 		
 	}
 

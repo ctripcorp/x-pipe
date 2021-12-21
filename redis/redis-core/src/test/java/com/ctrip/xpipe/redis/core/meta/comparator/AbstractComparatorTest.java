@@ -58,6 +58,7 @@ public class AbstractComparatorTest extends AbstractRedisTest{
 		
 		ShardMeta shardMeta = new ShardMeta();
 		shardMeta.setId(randomString());
+		shardMeta.setDbId(Math.abs(randomLong()));
 		return shardMeta;
 	}
 }

@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -60,6 +60,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
+
+	@Autowired
+	private ConsoleConfig consoleConfig;
 
 	@Override
 	public ShardTbl find(final long shardId) {
@@ -169,7 +172,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			if(shardEvent != null) {
 				shardEvent.onEvent();
 			}
-    	}
+		}
 
 		clusterModifyNotify(clusterName, cluster);
 	}
@@ -181,7 +184,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 				@Override
 				public List<ShardTbl> doQuery() throws DalException {
-					return dao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_ID_NAME_AND_MONITOR_NAME);
+					return dao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME);
 				}
 			});
 
@@ -285,16 +288,12 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private ShardTbl generateMonitorNameAndReturnShard(ShardTbl dupShardTbl, Set<String> monitorNames,
 													   String clusterName, ShardTbl shard,
 													   Map<Long, SetinelTbl> sentinels) {
-		String monitorName = null;
+		String monitorName;
 		if(dupShardTbl == null) {
-			monitorName = monitorNames.contains(shard.getShardName())
-					? clusterName + "-" + shard.getShardName()
-					: shard.getShardName();
+			monitorName = shard.getShardName();
 			if(monitorNames.contains(monitorName)) {
-				logger.error("[findOrCreateShardIfNotExist] monitor name duplicated with {} and {}",
-						shard.getShardName(), monitorName);
-				throw new IllegalStateException(String.format("Both %s and %s is assigned as sentinel monitor name",
-						shard.getShardName(), monitorName));
+				logger.error("[findOrCreateShardIfNotExist] monitor name {} already exist", monitorName);
+				throw new IllegalStateException(String.format("monitor name %s already exist", shard.getShardName()));
 			}
 			shard.setSetinelMonitorName(monitorName);
 			try {
@@ -340,7 +339,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		if(null == relatedDcs) return;
 
 		List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
-		notifier.notifyClusterUpdate(clusterName, dcs);
+		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+			notifier.notifyClusterUpdate(clusterName, dcs);
 		if (null != cluster && ClusterType.lookup(cluster.getClusterType()).supportMigration()) {
 			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}

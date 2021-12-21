@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
 
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
@@ -60,17 +61,12 @@ public class DefaultTunnelSocketStatsAnalyzerManager extends AbstractStartStoppa
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
         }
-        config.register(new ConsoleConfigListener() {
+        config.register(Lists.newArrayList(KEY_SOCKET_STATS_ANALYZERS), new ConfigChangeListener() {
             @Override
             public void onChange(String key, String oldValue, String newValue) {
                 configuredAnalyzers = config.getSocketStatsAnalyzingKeys();
                 addConfiguredAnalyzers();
                 removeUsed();
-            }
-
-            @Override
-            public List<String> supportsKeys() {
-                return Lists.newArrayList(KEY_SOCKET_STATS_ANALYZERS);
             }
         });
         chainAnalyzer.addListener(new ProxyChainAnalyzer.Listener() {

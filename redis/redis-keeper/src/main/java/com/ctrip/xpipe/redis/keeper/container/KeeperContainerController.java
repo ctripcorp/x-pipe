@@ -2,20 +2,17 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.spring.AbstractController;
-import com.ctrip.xpipe.utils.IpUtils;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -57,24 +54,24 @@ public class KeeperContainerController extends AbstractController {
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
-    public void remove(@PathVariable String clusterName, @PathVariable String shardName) {
+    public void remove(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
 
-        logger.info("[remove]{},{}", clusterName, shardName);
-        keeperContainerService.remove(clusterName, shardName);
+        logger.info("[remove]{},{},{}", clusterName, shardName, keeperTransMeta);
+        keeperContainerService.remove(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/start", method = RequestMethod.PUT)
-    public void start(@PathVariable String clusterName, @PathVariable String shardName) {
+    public void start(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
 
-        logger.info("[start]{},{}", clusterName, shardName);
-        keeperContainerService.start(clusterName, shardName);
+        logger.info("[start]{},{},{}", clusterName, shardName, keeperTransMeta);
+        keeperContainerService.start(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/stop", method = RequestMethod.PUT)
-    public void stop(@PathVariable String clusterName, @PathVariable String shardName) {
+    public void stop(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
 
-        logger.info("[stop]{},{}", clusterName, shardName);
-        keeperContainerService.stop(clusterName, shardName);
+        logger.info("[stop]{},{},{}", clusterName, shardName, keeperTransMeta);
+        keeperContainerService.stop(ClusterId.from(keeperTransMeta.getClusterDbId()), ShardId.from(keeperTransMeta.getShardDbId()));
     }
 
     @RequestMapping(value = "/leakybucket", method = RequestMethod.GET)

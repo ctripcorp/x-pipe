@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.service.meta.KeepercontainerMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -160,16 +159,12 @@ public abstract class AbstractMetaCache implements MetaCache {
         return lastUpdateTime;
     }
 
+
     @Override
-    public RouteMeta getRouteIfPossible(HostPort hostPort) {
+    public List<RouteMeta> getRoutes() {
         XpipeMetaManager xpipeMetaManager = meta.getValue();
-        XpipeMetaManager.MetaDesc metaDesc = xpipeMetaManager.findMetaDesc(hostPort);
-        if (metaDesc == null) {
-            logger.warn("[getRouteIfPossible]HostPort corresponding meta not found: {}", hostPort);
-            return null;
-        }
         return xpipeMetaManager
-                .consoleRandomRoute(CURRENT_IDC, XpipeMetaManager.ORG_ID_FOR_SHARED_ROUTES, metaDesc.getDcId());
+                .consoleRoutes(CURRENT_IDC);
     }
 
     @Override
@@ -262,6 +257,14 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+        if (null == shardMeta) return Collections.emptyList();
+        return shardMeta.getRedises();
+    }
+
+    @Override
     public String getDc(HostPort hostPort) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
@@ -350,13 +353,13 @@ public abstract class AbstractMetaCache implements MetaCache {
         return false;
     }
     @VisibleForTesting
-    protected AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
+    public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;
         return this;
     }
 
     @VisibleForTesting
-    protected AbstractMetaCache setMonitor2ClusterShard(Map<String, Pair<String, String>> monitorMap) {
+    public AbstractMetaCache setMonitor2ClusterShard(Map<String, Pair<String, String>> monitorMap) {
         this.monitor2ClusterShard = monitorMap;
         return this;
     }

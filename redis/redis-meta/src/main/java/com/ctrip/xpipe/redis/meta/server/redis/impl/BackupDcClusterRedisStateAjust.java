@@ -20,7 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAjustTask{
 	
-	private String clusterId;
+	private Long clusterDbId;
 	
 	private CurrentMetaManager currentMetaManager;
 
@@ -32,13 +32,13 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 
 	private Executor executors;
 
-	private KeyedOneThreadMutexableTaskExecutor<Pair<String, String> > clusterShardExecutors;
+	private KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long> > clusterShardExecutors;
 	
-	public BackupDcClusterRedisStateAjust(String clusterId, DcMetaCache dcMetaCache,
+	public BackupDcClusterRedisStateAjust(Long clusterDbId, DcMetaCache dcMetaCache,
 										  CurrentMetaManager currentMetaManager, XpipeNettyClientKeyedObjectPool pool,
 										  ScheduledExecutorService scheduled, Executor executors,
-										  KeyedOneThreadMutexableTaskExecutor<Pair<String, String> > clusterShardExecutors) {
-		this.clusterId = clusterId;
+										  KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long> > clusterShardExecutors) {
+		this.clusterDbId = clusterDbId;
 		this.currentMetaManager = currentMetaManager;
 		this.pool = pool;
 		this.scheduled = scheduled;
@@ -51,19 +51,19 @@ public class BackupDcClusterRedisStateAjust extends AbstractClusterRedisStateAju
 	@Override
 	protected void doRun() throws Exception {
 
-		ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterId);
+		ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterDbId);
 		if(clusterMeta == null){
-			logger.warn("[doRun][cluster null]{}", clusterId);
+			logger.warn("[doRun][cluster null]cluster_{}", clusterDbId);
 			return;
 		}
 		
 		for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
 			try {
-				Command<Void> adjustJob = new BackupDcClusterShardAdjustJob(clusterId, shardMeta.getId(), dcMetaCache,
+				Command<Void> adjustJob = new BackupDcClusterShardAdjustJob(clusterDbId, shardMeta.getDbId(), dcMetaCache,
 						currentMetaManager, executors, scheduled, pool);
-				clusterShardExecutors.execute(new Pair<>(clusterId, shardMeta.getId()), adjustJob);
+				clusterShardExecutors.execute(new Pair<>(clusterDbId, shardMeta.getDbId()), adjustJob);
 			} catch (Exception e) {
-				logger.info("[doRun] {}, {} adjust fail {}", clusterId, shardMeta.getId(), e.getMessage());
+				logger.info("[doRun] cluster_{}, shard_{} adjust fail {}", clusterDbId, shardMeta.getDbId(), e.getMessage());
 			}
 		}
 	}

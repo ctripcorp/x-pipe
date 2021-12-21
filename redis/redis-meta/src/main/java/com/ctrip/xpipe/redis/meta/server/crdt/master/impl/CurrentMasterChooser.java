@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class CurrentMasterChooser extends AbstractClusterShardPeriodicTask implements MasterChooser {
 
-    protected KeyedOneThreadTaskExecutor<Pair<String, String>> peerMasterChooseExecutor;
+    protected KeyedOneThreadTaskExecutor<Pair<Long, Long>> peerMasterChooseExecutor;
 
     protected Executor executors;
 
@@ -25,18 +25,18 @@ public class CurrentMasterChooser extends AbstractClusterShardPeriodicTask imple
     public static final int DEFAULT_CURRENT_MASTER_CHECK_INTERVAL_SECONDS = Integer
             .parseInt(System.getProperty("CURRENT_MASTER_CHECK_INTERVAL_SECONDS", "5"));
 
-    public CurrentMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
+    public CurrentMasterChooser(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache, CurrentMetaManager currentMetaManager,
                                 MasterChooseCommandFactory factory, Executor executors,
-                                KeyedOneThreadTaskExecutor<Pair<String, String>> peerMasterChooseExecutor,
+                                KeyedOneThreadTaskExecutor<Pair<Long, Long>> peerMasterChooseExecutor,
                                 ScheduledExecutorService scheduled) {
-        this(clusterId, shardId, dcMetaCache, currentMetaManager, factory, executors, peerMasterChooseExecutor, scheduled, DEFAULT_CURRENT_MASTER_CHECK_INTERVAL_SECONDS);
+        this(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, factory, executors, peerMasterChooseExecutor, scheduled, DEFAULT_CURRENT_MASTER_CHECK_INTERVAL_SECONDS);
     }
 
-    public CurrentMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
+    public CurrentMasterChooser(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
                                 CurrentMetaManager currentMetaManager, MasterChooseCommandFactory factory, Executor executors,
-                                KeyedOneThreadTaskExecutor<Pair<String, String> > peerMasterChooseExecutor,
+                                KeyedOneThreadTaskExecutor<Pair<Long, Long> > peerMasterChooseExecutor,
                                 ScheduledExecutorService scheduled, int checkIntervalSeconds) {
-        super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+        super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled);
         this.masterChooseCommandFactory = factory;
         this.peerMasterChooseExecutor = peerMasterChooseExecutor;
         this.executors = executors;
@@ -45,8 +45,8 @@ public class CurrentMasterChooser extends AbstractClusterShardPeriodicTask imple
 
     @Override
     protected void work() {
-        MasterChooseCommand chooseCommand = masterChooseCommandFactory.buildCurrentMasterChooserCommand(clusterId, shardId);
-        peerMasterChooseExecutor.execute(Pair.of(clusterId, shardId), chooseCommand);
+        MasterChooseCommand chooseCommand = masterChooseCommandFactory.buildCurrentMasterChooserCommand(clusterDbId, shardDbId);
+        peerMasterChooseExecutor.execute(Pair.of(clusterDbId, shardDbId), chooseCommand);
     }
 
     @Override

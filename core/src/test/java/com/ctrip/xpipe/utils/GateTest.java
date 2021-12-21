@@ -27,7 +27,7 @@ public class GateTest extends AbstractTest {
 
 
     @Test
-    public void testMultiOpenClose() {
+    public void testMultiOpenClose() throws TimeoutException {
 
         int round = 10;
         for (int i = 0; i < round; i++) {
@@ -42,11 +42,9 @@ public class GateTest extends AbstractTest {
                 }
             });
 
-            sleep(10);
-            Assert.assertFalse(passed.get());
+            waitConditionUntilTimeOut(()->!passed.get());
             gate.open();
-            sleep(10);
-            Assert.assertTrue(passed.get());
+            waitConditionUntilTimeOut(passed::get);
         }
     }
 
@@ -54,7 +52,7 @@ public class GateTest extends AbstractTest {
     public void testOpenClose() throws InterruptedException, TimeoutException {
 
         int passengers = 10;
-        int closeTimeMilli = 50;
+        int closeTimeMilli = 100;
         final AtomicInteger passThroughPassengers = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(passengers);
 

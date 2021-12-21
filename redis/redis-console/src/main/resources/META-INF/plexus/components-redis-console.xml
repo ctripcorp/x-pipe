@@ -93,6 +93,15 @@
 		</component>
 		<component>
 			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>az-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>az_tbl</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
 			<role-hint>config-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
@@ -247,6 +256,15 @@
 		<component>
 			<role>com.ctrip.xpipe.redis.console.model.ZoneTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.ZoneTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.AzTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.AzTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>

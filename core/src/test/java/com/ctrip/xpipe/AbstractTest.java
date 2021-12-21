@@ -182,7 +182,15 @@ public class AbstractTest {
         }
     }
 
-
+    protected boolean assertSuccess(Runnable assertion) {
+        try {
+            assertion.run();
+            return true;
+        } catch (Throwable t) {
+            logger.info("assert fail, retry");
+            return false;
+        }
+    }
 
     protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
 
@@ -478,6 +486,12 @@ public class AbstractTest {
 
         Random random = new Random();
         return random.nextInt();
+    }
+
+    protected long randomLong() {
+
+        Random random = new Random();
+        return random.nextLong();
     }
 
     protected int randomInt(int start, int end) {

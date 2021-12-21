@@ -19,29 +19,29 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 
 	protected int checkIntervalSeconds;
 
-	public AbstractKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
+	public AbstractKeeperMasterChooser(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
 									   CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled) {
-		this(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled,
+		this(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled,
 				DEFAULT_KEEPER_MASTER_CHECK_INTERVAL_SECONDS);
 	}
 
-	public AbstractKeeperMasterChooser(String clusterId, String shardId, DcMetaCache dcMetaCache,
+	public AbstractKeeperMasterChooser(Long clusterDbId, Long shardDbId, DcMetaCache dcMetaCache,
 									   CurrentMetaManager currentMetaManager, ScheduledExecutorService scheduled, int checkIntervalSeconds) {
-		super(clusterId, shardId, dcMetaCache, currentMetaManager, scheduled);
+		super(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, scheduled);
 		this.checkIntervalSeconds = checkIntervalSeconds;
 	}
 
 	@Override
 	protected void work() {
 		Pair<String, Integer> keeperMaster = chooseKeeperMaster();
-		logger.debug("[doRun]{}, {}, {}", clusterId, shardId, keeperMaster);
-		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterId, shardId);
+		logger.debug("[doRun]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMaster);
+		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 		if (keeperMaster == null || keeperMaster.equals(currentMaster)) {
 			logger.debug("[doRun][new master null or equals old master]{}", keeperMaster);
 			return;
 		}
-		logger.debug("[doRun][set]{}, {}, {}", clusterId, shardId, keeperMaster);
-		currentMetaManager.setKeeperMaster(clusterId, shardId, keeperMaster.getKey(), keeperMaster.getValue());
+		logger.debug("[doRun][set]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMaster);
+		currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, keeperMaster.getKey(), keeperMaster.getValue());
 	}
 
 	@Override

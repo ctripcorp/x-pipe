@@ -40,6 +40,12 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
     private LeaderLatch leaderLatch;
 
     private volatile boolean isLeader = false;
+    
+    private Class leaderAwareClass = LeaderAware.class;
+    
+    public <T extends LeaderAware> void setLeaderAwareClass(Class<T> leaderAwareClass) {
+        this.leaderAwareClass = leaderAwareClass;
+    }
 
     @Override
     protected void doStart() throws Exception {
@@ -52,7 +58,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
 
                 logger.info("[isLeader]({})", getServerId());
                 isLeader = true;
-                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
+                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
                 for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
                     try{
                         logger.info("[isLeader][notify]{}", entry.getKey());
@@ -68,7 +74,7 @@ public abstract class AbstractLeaderElector extends AbstractLifecycle implements
 
                 logger.info("[notLeader]{}", getServerId());
                 isLeader = false;
-                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(LeaderAware.class);
+                Map<String, LeaderAware> leaderawares = applicationContext.getBeansOfType(leaderAwareClass);
                 for (Map.Entry<String, LeaderAware> entry : leaderawares.entrySet()) {
                     try{
                         logger.info("[notLeader][notify]{}", entry.getKey());

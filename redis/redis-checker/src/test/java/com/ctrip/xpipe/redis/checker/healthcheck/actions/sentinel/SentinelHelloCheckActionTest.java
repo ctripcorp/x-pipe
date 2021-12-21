@@ -4,7 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.Persistence;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
@@ -84,7 +84,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     protected CheckerDbConfig config;
 
     @Mock
-    private Persistence persistence;
+    private PersistenceCache persistenceCache;
 
     @Mock
     private HealthCheckInstanceManager instanceManager;
@@ -135,8 +135,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         when(config.shouldSentinelCheck(anyString())).thenReturn(true);
 
         prepareMetaCache();
-        when(persistence.isClusterOnMigration(anyString())).thenReturn(false);
-        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence, metaCache, instanceManager);
+        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(false);
+        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistenceCache, metaCache, instanceManager);
         action.addController(healthCheckActionController);
     }
 
@@ -321,7 +321,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
                 } else {
                     failedResults.incrementAndGet();
                     Assert.assertEquals(servers.get(BACKUP_DC_SHARD2_SLAVE1).getPort(), context.instance().getEndpoint().getPort());
-                    Assert.assertTrue(context.isFail());
+                    Assert.assertFalse(context.isSuccess());
                 }
             }
 

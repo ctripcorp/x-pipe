@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="info" shutdownHook="disable" monitorInterval="5">
+
+	<Properties>
+		<Property name="baseDir">/opt/logs/100004375</Property>
+		<Property name="appName">metaserver</Property>
+	</Properties>
+	
+    <appenders>
+        <console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+        </console>
+
+        <RollingFile name="rollingFileInfo" fileName="${baseDir}/${appName}.log"
+                     filePattern="${baseDir}/${appName}-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="1 GB"/>
+            </Policies>
+			<DefaultRolloverStrategy max="20">
+				<Delete basePath="${baseDir}" maxDepth="2">
+					<IfFileName glob="${appName}*.log.gz" />
+					<IfLastModified age="30d" />
+				</Delete>
+			</DefaultRolloverStrategy>
+        </RollingFile>
+
+        <RollingFile name="zkLogFile" fileName="${baseDir}/${appName}-zk.log"
+                     filePattern="${baseDir}/${appName}-zk-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}][%p][%t][%c{1}]%m%xpEx%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10">
+                <Delete basePath="${baseDir}" maxDepth="2">
+                    <IfFileName glob="${appName}-zk*.log.gz" />
+                    <IfLastModified age="30d" />
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <CatAppender4Log4j2 name="catAppender4Log4j2"/>
+
+    </appenders>
+
+    <loggers>
+        <!--过滤掉spring和hibernate的一些无用的debug信息-->
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate" level="INFO"/>
+        <logger name="io.netty" level="INFO"/>
+
+        <logger name="org.apache.zookeeper" level="INFO" additivity="false">
+            <appender-ref ref="zkLogFile"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+        <logger name="org.apache.curator" level="INFO" additivity="false">
+            <appender-ref ref="zkLogFile"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </logger>
+        <root level="INFO">
+            <appender-ref ref="rollingFileInfo"/>
+            <appender-ref ref="catAppender4Log4j2"/>
+        </root>
+    </loggers>
+
+</configuration>

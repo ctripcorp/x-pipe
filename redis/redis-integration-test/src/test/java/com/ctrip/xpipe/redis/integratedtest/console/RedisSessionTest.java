@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
@@ -135,7 +136,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
     public void testRole() throws InterruptedException {
         redisSession.role(new RedisSession.RollCallback() {
             @Override
-            public void role(String role) {
+            public void role(String role, Role detail) {
                 logger.info("[role] success: {}", role);
             }
 

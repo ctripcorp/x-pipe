@@ -20,9 +20,9 @@ public abstract class AbstractCurrentPeerMasterMetaObserver extends AbstractCurr
 
     @Override
     protected void handleClusterModified(ClusterMetaComparator comparator) {
-        String clusterId = comparator.getCurrent().getId();
+        Long clusterDbId = comparator.getCurrent().getDbId();
         for (ShardMeta shardMeta : comparator.getAdded()){
-            addShard(clusterId, shardMeta.getId());
+            addShard(clusterDbId, shardMeta.getDbId());
         }
     }
 
@@ -33,12 +33,12 @@ public abstract class AbstractCurrentPeerMasterMetaObserver extends AbstractCurr
 
     @Override
     protected void handleClusterAdd(ClusterMeta clusterMeta) {
-        String clusterId = clusterMeta.getId();
+        Long clusterDbId = clusterMeta.getDbId();
         for(ShardMeta shardMeta : clusterMeta.getShards().values()){
-            addShard(clusterId, shardMeta.getId());
+            addShard(clusterDbId, shardMeta.getDbId());
         }
     }
 
-    protected abstract void addShard(String clusterId, String shardId);
+    protected abstract void addShard(Long clusterDbId, Long shardDbId);
 
 }

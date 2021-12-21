@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
 import com.ctrip.xpipe.api.codec.GenericTypeReference;
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfigListener;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -53,7 +53,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_OWN_CLUSTER_TYPES = "console.cluster.types";
 
-    private static final String KEY_OUTER_CLUSTER_TYPES = "outer.cluster.types";
+    private static final String KEY_NOTIFY_CLUSTER_TYPES = "console.notify.cluster.types";
+
+    private static final String KEY_OUTER_CLUSTER_TYPES = "console.outer.cluster.types";
+
+    private static final String KEY_FILTER_OUTER_CLUSTERS = "console.filter.outer.clusters";
 
     private static final String KEY_CROSS_DC_LEADER_LEASE_NAME = "console.cross.dc.leader.lease.name";
 
@@ -71,7 +75,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
-    private Map<String, List<ConsoleConfigListener>> listeners = Maps.newConcurrentMap();
+    private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
     @Override
     public int getAlertSystemRecoverMinute() {
@@ -161,7 +165,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public HickwallMetricInfo getHickwallMetricInfo() {
-        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "{\"domain\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/UR32kfjWz/fx-xpipe?fullscreen&orgId=1&from=now-1h&to=now\", \"delayPanelId\": 2, \"crossDcDelayPanelId\": 14, \"proxyPingPanelId\": 4, \"proxyTrafficPanelId\": 6, \"proxyCollectionPanelId\": 8}");
+        String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "{\"domain\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/UR32kfjWz/fx-xpipe?fullscreen&orgId=1&from=now-1h&to=now\", \"delayPanelId\": 2, \"crossDcDelayPanelId\": 14, \"proxyPingPanelId\": 4, \"proxyTrafficPanelId\": 6, \"proxyCollectionPanelId\": 8, \"outComingTrafficToPeerPanelId\": \"16\", \"inComingTrafficFromPeerPanelId\": \"18\",\"peerSyncFullPanelId\": \"20\",\"peerSyncPartialPanelId\": \"22\"}");
         if(StringUtil.isEmpty(hickwallInfo) || !localInfo.equals(hickwallInfo)) {
             hickwallInfo = localInfo;
             info = JsonCodec.INSTANCE.decode(hickwallInfo, HickwallMetricInfo.class);
@@ -296,16 +300,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         if(!listeners.containsKey(key)) {
             return;
         }
-        for(ConsoleConfigListener listener : listeners.get(key)) {
+        for(ConfigChangeListener listener : listeners.get(key)) {
             listener.onChange(key, oldValue, newValue);
         }
     }
 
     @Override
-    public void register(ConsoleConfigListener consoleConfigListener) {
-        for(String key : consoleConfigListener.supportsKeys()) {
+    public void register(List<String> keys, ConfigChangeListener configListener) {
+        for(String key : keys) {
             listeners.putIfAbsent(key, new LinkedList<>());
-            listeners.get(key).add(consoleConfigListener);
+            listeners.get(key).add(configListener);
         }
     }
 
@@ -368,10 +372,22 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public Set<String> shouldNotifyClusterTypes() {
+        String clusterTypes = getProperty(KEY_NOTIFY_CLUSTER_TYPES, ClusterType.ONE_WAY.toString()+","+ClusterType.BI_DIRECTION.toString());
+
+        return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
     public Set<String> getOuterClusterTypes() {
         String clusterTypes = getProperty(KEY_OUTER_CLUSTER_TYPES, "");
 
         return getSplitStringSet(clusterTypes);
+    }
+
+    @Override
+    public String filterOuterClusters() {
+        return getProperty(KEY_FILTER_OUTER_CLUSTERS, "");
     }
 
     boolean shouldSentinelCheckOuterClientClusters() {
@@ -386,6 +402,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
         return clusterType.supportHealthCheck() || shouldSentinelCheckOuterClientClusters() || sentinelCheckOuterClientClusters().contains(clusterName.toLowerCase());
+    }
+
+    @Override
+    public String sentinelCheckDowngradeStrategy() {
+        return getProperty(KEY_SENTINEL_CHECK_DOWNGRADE_STRATEGY, "lessThanHalf");
     }
 
     @Override
@@ -465,8 +486,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getProxyCheckUpRetryTimes() {
+        return getIntProperty(KEY_PROXY_CHECK_UP_RETRY_TIMES, 10);
+    }
+
+    @Override
+    public int getProxyCheckDownRetryTimes() {
+        return getIntProperty(KEY_PROXY_CHECK_DOWN_RETRY_TIMES, 1);
+    }
+    
+    @Override
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
-
+    
 }
