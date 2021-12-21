@@ -2,12 +2,14 @@ package com.ctrip.xpipe.concurrent;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -32,12 +34,24 @@ public class FinalStateSetterManager<K, S> {
         keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<K>(executors);
     }
 
+    private AtomicLong lastCheckAndSet = new AtomicLong(0L);
+    @VisibleForTesting long LAZY_TIME_MILLI = 5 * 1000;
+
+    public boolean shouldCheckAndSet(S previous, S s) {
+        if (!ObjectUtils.equals(previous, s)) {
+            lastCheckAndSet.set(System.currentTimeMillis());
+            return true;
+        }
+        long last = lastCheckAndSet.get();
+        long now = System.currentTimeMillis();
+        return ((now - last > LAZY_TIME_MILLI) && lastCheckAndSet.compareAndSet(last, now));
+    }
 
     public void set(K k, S s){
 
         S previous = map.put(k, s);
 
-        if(!ObjectUtils.equals(previous, s)){
+        if(shouldCheckAndSet(previous, s)){
 
             logger.debug("[set]{},{}->{}", k, previous, s);
             keyedOneThreadTaskExecutor.execute(k, new CheckAndSetTask(k, s));
