@@ -52,7 +52,7 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
     @Override
     protected void addShard(Long clusterDbId, Long shardDbId) {
         try {
-            logger.info("[addShard]{}, {}", clusterDbId, shardDbId);
+            logger.info("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId);
 
             CurrentMasterChooser currentMasterChooser = new CurrentMasterChooser(clusterDbId, shardDbId, dcMetaCache, currentMetaManager,
                     chooseCommandFactory, executors, peerMasterChooseExecutor, scheduled);
@@ -66,7 +66,7 @@ public class DefaultMasterChooserManager extends AbstractCurrentPeerMasterMetaOb
             registerJob(clusterDbId, shardDbId, peerMasterChooser);
 
         } catch (Exception e) {
-            logger.error("[addShard]{}, {}", clusterDbId, shardDbId, e);
+            logger.error("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId, e);
         }
     }
 

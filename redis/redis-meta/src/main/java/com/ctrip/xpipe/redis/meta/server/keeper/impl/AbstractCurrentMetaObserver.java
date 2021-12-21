@@ -49,7 +49,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		if(args instanceof NodeAdded){
 			ClusterMeta clusterMeta = (ClusterMeta)((NodeAdded)args).getNode();
 			if (supportCluster(clusterMeta)) {
-				logger.info("[update][add][{}]{}", getClass().getSimpleName(), clusterMeta.getDbId());
+				logger.info("[update][add][{}]cluster_{}", getClass().getSimpleName(), clusterMeta.getDbId());
 				handleClusterAdd(clusterMeta);
 			}
 			return;
@@ -58,7 +58,7 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 		if(args instanceof NodeDeleted){
 			ClusterMeta clusterMeta = (ClusterMeta)((NodeDeleted)args).getNode();
 			if (supportCluster(clusterMeta)) {
-				logger.info("[update][delete][{}]{}", getClass().getSimpleName(), clusterMeta.getDbId());
+				logger.info("[update][delete][{}]cluster_{}", getClass().getSimpleName(), clusterMeta.getDbId());
 				handleClusterDeleted(clusterMeta);
 			}
 			return;
@@ -81,10 +81,10 @@ public abstract class AbstractCurrentMetaObserver extends AbstractLifecycleObser
 			currentMetaManager.addResource(clusterDbId, shardDbId, releasable);
 		} catch (Exception e) {
 			try {
-				logger.info("[registerJob][{}][{}] cancel job registration", clusterDbId, shardDbId, e);
+				logger.info("[registerJob][cluster_{}][shard_{}] cancel job registration", clusterDbId, shardDbId, e);
 				releasable.release();
 			} catch (Throwable t) {
-				logger.warn("[registerJob][{}][{}]", clusterDbId, shardDbId, t);
+				logger.warn("[registerJob][cluster_{}][shard_{}]", clusterDbId, shardDbId, t);
 			}
 			return false;
 		}

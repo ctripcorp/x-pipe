@@ -34,13 +34,13 @@ public abstract class AbstractKeeperMasterChooser extends AbstractClusterShardPe
 	@Override
 	protected void work() {
 		Pair<String, Integer> keeperMaster = chooseKeeperMaster();
-		logger.debug("[doRun]{}, {}, {}", clusterDbId, shardDbId, keeperMaster);
+		logger.debug("[doRun]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMaster);
 		Pair<String, Integer> currentMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 		if (keeperMaster == null || keeperMaster.equals(currentMaster)) {
 			logger.debug("[doRun][new master null or equals old master]{}", keeperMaster);
 			return;
 		}
-		logger.debug("[doRun][set]{}, {}, {}", clusterDbId, shardDbId, keeperMaster);
+		logger.debug("[doRun][set]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMaster);
 		currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, keeperMaster.getKey(), keeperMaster.getValue());
 	}
 

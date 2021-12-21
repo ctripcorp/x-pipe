@@ -87,12 +87,12 @@ public class DefaultKeeperMasterChooserManager extends AbstractCurrentMetaObserv
 		
 		
 		try {
-			logger.info("[addShard]{}, {}, {}", clusterDbId, shardDbId, keeperMasterChooser);
+			logger.info("[addShard]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, keeperMasterChooser);
 			keeperMasterChooser.start();
 			//release resources
 			registerJob(clusterDbId, shardDbId, keeperMasterChooser);
 		} catch (Exception e) {
-			logger.error("[addShard]{}, {}", clusterDbId, shardDbId);
+			logger.error("[addShard]cluster_{}, shard_{}", clusterDbId, shardDbId);
 		}
 	}
 

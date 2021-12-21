@@ -67,11 +67,11 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Override
 	public void keeperMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
 
-		logger.info("[keeperMasterChanged]{},{},{}", clusterDbId, shardDbId, newMaster);
+		logger.info("[keeperMasterChanged]cluster_{},shard_{},{}", clusterDbId, shardDbId, newMaster);
 		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
 
 		if (activeKeeper == null) {
-			logger.info("[keeperMasterChanged][no active keeper, do nothing]{},{},{}", clusterDbId, shardDbId, newMaster);
+			logger.info("[keeperMasterChanged][no active keeper, do nothing]cluster_{},shard_{},{}", clusterDbId, shardDbId, newMaster);
 			return;
 		}
 		if (!activeKeeper.isActive()) {
@@ -97,7 +97,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@Override
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
-		logger.info("[keeperActiveElected]{},{},{}", clusterDbId, shardDbId, activeKeeper);
+		logger.info("[keeperActiveElected]cluster_{},shard_{},{}", clusterDbId, shardDbId, activeKeeper);
 
 		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
 		if (keepers == null || keepers.isEmpty()) {
@@ -110,7 +110,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
-			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]{},{},{}", clusterDbId, shardDbId,
+			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId,
 					slaves);
 			keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
 					new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors),

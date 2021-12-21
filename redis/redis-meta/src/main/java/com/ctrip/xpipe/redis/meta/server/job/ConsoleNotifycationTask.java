@@ -73,7 +73,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 	
 	@Override
 	public void keeperActiveElected(final Long clusterDbId, final Long shardDbId, final KeeperMeta activeKeeper) {
-		logger.info("[keeperActiveElected][called]{},{},{}",clusterDbId,shardDbId,activeKeeper);
+		logger.info("[keeperActiveElected][called]cluster_{},shard_{},{}",clusterDbId,shardDbId,activeKeeper);
 		Command<Void> command = new AbstractCommand<Void>() {
 
 			@Override
@@ -84,7 +84,7 @@ public class ConsoleNotifycationTask extends AbstractLifecycle implements MetaSe
 			@Override
 			protected void doExecute() throws Exception {
 				Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
-				logger.info("[keeperActiveElected][execute]{}:{},{}:{},{}",clusterDbId, clusterShard.getKey(),
+				logger.info("[keeperActiveElected][execute]cluster_{}:{},shard_{}:{},{}",clusterDbId, clusterShard.getKey(),
 						shardDbId, clusterShard.getValue(), activeKeeper);
 				consoleService.keeperActiveChanged(dc, clusterShard.getKey(), clusterShard.getValue(), activeKeeper);
 				future().setSuccess();

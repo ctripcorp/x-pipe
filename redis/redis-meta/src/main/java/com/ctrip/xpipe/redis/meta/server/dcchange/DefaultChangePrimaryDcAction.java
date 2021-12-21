@@ -87,14 +87,14 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
 		if(!currentMetaManager.hasCluster(clusterDbId)){
-			logger.info("[changePrimaryDc][not interested in this cluster]{}, {}", clusterDbId, shardDbId);
+			logger.info("[changePrimaryDc][not interested in this cluster]cluster_{}, shard_{}", clusterDbId, shardDbId);
 			executionLog.info("not interested in this cluster:" + clusterDbId);
 			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
 		
 		ChangePrimaryDcAction changePrimaryDcAction = null;
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
-			logger.info("[doChangePrimaryDc][become primary]{}, {}, {}", clusterDbId, shardDbId, newPrimaryDc);
+			logger.info("[doChangePrimaryDc][become primary]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager,
 					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterDbId, shardDbId), scheduled, executors);
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId,
@@ -105,21 +105,21 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 				waitForCommandStart(changePrimaryDcJob);
 				return changePrimaryDcJob.future().get(timeout, TimeUnit.MILLISECONDS);
 			} catch (TimeoutException|InterruptedException e) {
-				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]{}, {}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
+				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
 				// In case task queue is blocked, we do downgrade(or a double-insurance)
 				try {
 					return createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo)
 							.execute().get();
 				} catch (Exception innerException) {
-					logger.error("[changePrimaryDc][try direct-run failed]{}, {}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
+					logger.error("[changePrimaryDc][try direct-run failed]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
 					return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 				}
 			}catch (Exception e) {
-				logger.error("[changePrimaryDc][execute by adjust executors fail]" + clusterDbId + "," + shardDbId + "," + newPrimaryDc, e);
+				logger.error("[changePrimaryDc][execute by adjust executors fail]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + newPrimaryDc, e);
 				return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 			}
 		} else {
-			logger.info("[doChangePrimaryDc][become backup]{}, {}, {}", clusterDbId, shardDbId, newPrimaryDc);
+			logger.info("[doChangePrimaryDc][become backup]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc);
 			changePrimaryDcAction = new BecomeBackupAction(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager, executionLog, keyedObjectPool, multiDcService, scheduled, executors);
 			return changePrimaryDcAction.changePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
 		}
