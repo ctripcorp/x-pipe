@@ -35,16 +35,19 @@
         <commons-pool.version>2.3</commons-pool.version>
         <commons-lang3.version>3.4</commons-lang3.version>
         <commons-httpclient.version>4.5.2</commons-httpclient.version>
-        <spring-boot.version>1.4.3.RELEASE</spring-boot.version>
-        <spring-boot-maven-plugin.version>1.4.3.RELEASE</spring-boot-maven-plugin.version>
+        <spring-boot.version>1.5.0.RELEASE</spring-boot.version>
+        <spring-boot-maven-plugin.version>1.5.0.RELEASE</spring-boot-maven-plugin.version>
+        <spring.version>4.3.6.RELEASE</spring.version>
         <spring-platfrom-bom.version>2.0.5.RELEASE</spring-platfrom-bom.version>
+        <spring-boot-starter-velocity.version>1.4.3.RELEASE</spring-boot-starter-velocity.version>
+        <velocity.version>1.7</velocity.version>
         <ctrip-framework-foundation.version>1.8.11</ctrip-framework-foundation.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>3.3.18</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
-        <log4j2.version>2.6.2</log4j2.version>
+        <log4j2.version>2.16.0</log4j2.version>
         <disruptor.version>3.3.6</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -52,7 +55,7 @@
         <okhttp3.version>3.12.0</okhttp3.version>
         <influxdb.version>2.7</influxdb.version>
 
-        <clogging.version>4.1.8</clogging.version>
+        <clogging.version>4.6.3</clogging.version>
         <credis.version>4.0.10</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
@@ -382,11 +385,6 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-log4j2</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
@@ -394,6 +392,11 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-velocity</artifactId>
                 <version>${spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.velocity</groupId>
+                <artifactId>velocity</artifactId>
+                <version>${velocity.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -434,6 +437,11 @@
                 <artifactId>spring-boot-starter-test</artifactId>
                 <version>${spring-boot.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-velocity</artifactId>
+                <version>${spring-boot-starter-velocity.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>

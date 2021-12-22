@@ -33,6 +33,7 @@ public class RedisSession {
     private static Logger logger = LoggerFactory.getLogger(RedisSession.class);
 
     public static final String KEY_SUBSCRIBE_TIMEOUT_SECONDS = "SUBSCRIBE_TIMEOUT_SECONDS";
+    public static final String KEY_REDISSESSION_COMMAND_TIMEOUT= "KEY_REDISSESSION_COMMAND_TIMEOUT";
 
     private int waitResultSeconds = 2;
 
@@ -46,7 +47,7 @@ public class RedisSession {
 
     private SimpleObjectPool<NettyClient> clientPool;
 
-    private int commandTimeOut = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+    private int commandTimeOut = Integer.parseInt(System.getProperty(KEY_REDISSESSION_COMMAND_TIMEOUT, String.valueOf(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI)));
 
     public RedisSession(Endpoint endpoint, ScheduledExecutorService scheduled,
                         XpipeNettyClientKeyedObjectPool keyedObjectPool) {
@@ -54,9 +55,9 @@ public class RedisSession {
         this.scheduled = scheduled;
         this.clientPool = keyedObjectPool.getKeyPool(endpoint);
         if(ProxyRegistry.getProxy(endpoint.getHost(), endpoint.getPort()) != null) {
-            logger.info("session command timeout {}:{} {}", endpoint.getHost(), endpoint.getPort(), AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI);
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }
+        logger.info("session command timeout {}:{} {}", endpoint.getHost(), endpoint.getPort(), commandTimeOut);
     }
 
     public void check() {

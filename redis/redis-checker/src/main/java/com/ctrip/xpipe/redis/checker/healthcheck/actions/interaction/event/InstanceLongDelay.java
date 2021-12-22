@@ -3,9 +3,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
-public class InstanceHalfSick extends AbstractInstanceEvent {
+public class InstanceLongDelay extends AbstractInstanceEvent {
 
-    public InstanceHalfSick(RedisHealthCheckInstance instance) {
+    public InstanceLongDelay(RedisHealthCheckInstance instance) {
         super(instance);
     }
 
@@ -19,10 +19,10 @@ public class InstanceHalfSick extends AbstractInstanceEvent {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof InstanceHalfSick)) {
+        if (!(obj instanceof InstanceLongDelay)) {
             return false;
         }
-        InstanceHalfSick other = (InstanceHalfSick) obj;
+        InstanceLongDelay other = (InstanceLongDelay) obj;
         return other.instance.getCheckInfo().getHostPort().equals(this.instance.getCheckInfo().getHostPort());
     }
 }

@@ -50,7 +50,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private static final String KEY_NEW_MASTER_CACHE_TIMEOUT_MILLI = "meta.cache.newmaster.timeout.milli";
 
 	private static final String KEY_CORRECT_PEER_MASTER_PERIODICALLY = "meta.cluster.peermaster.correct.periodically";
-	
+
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 	
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
@@ -185,7 +185,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public long getNewMasterCacheTimeoutMilli() {
 		return getLongProperty(KEY_NEW_MASTER_CACHE_TIMEOUT_MILLI, 5000L);
 	}
-	
+
 	public void setDefaultServerPort(int defaultServerPort) {
 		this.defaultServerPort = defaultServerPort;
 	}

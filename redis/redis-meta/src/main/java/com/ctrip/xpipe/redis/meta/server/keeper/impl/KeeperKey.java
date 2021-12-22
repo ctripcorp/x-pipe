@@ -11,24 +11,24 @@ import com.ctrip.xpipe.utils.ObjectUtils;
  */
 public class KeeperKey {
 	
-	private String clusterId;
-	private String shardId;
+	private Long clusterDbId;
+	private Long shardDbId;
 	private String ip;
 	private int    port;
 	
-	public KeeperKey(String clusterId, String shardId, String ip, int port){
-		this.clusterId = clusterId;
-		this.shardId = shardId;
+	public KeeperKey(Long clusterDbId, Long shardDbId, String ip, int port){
+		this.clusterDbId = clusterDbId;
+		this.shardDbId = shardDbId;
 		this.ip = ip;
 		this.port = port;
 	}
 
-	public String getClusterId() {
-		return clusterId;
+	public Long getClusterDbId() {
+		return clusterDbId;
 	}
 
-	public String getShardId() {
-		return shardId;
+	public Long getShardDbId() {
+		return shardDbId;
 	}
 
 	public String getIp() {
@@ -41,7 +41,7 @@ public class KeeperKey {
 
 	@Override
 	public int hashCode() {
-		return ObjectUtils.hashCode(clusterId, shardId, ip, port);
+		return ObjectUtils.hashCode(clusterDbId, shardDbId, ip, port);
 	}
 	
 	@Override
@@ -51,11 +51,11 @@ public class KeeperKey {
 			return false;
 		}
 		KeeperKey other = (KeeperKey) obj;
-		if(!ObjectUtils.equals(clusterId, other.clusterId)){
+		if(!ObjectUtils.equals(clusterDbId, other.clusterDbId)){
 			return false;
 		}
 
-		if(!ObjectUtils.equals(shardId, other.shardId)){
+		if(!ObjectUtils.equals(shardDbId, other.shardDbId)){
 			return false;
 		}
 

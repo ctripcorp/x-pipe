@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -38,6 +39,9 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 	
 	@Autowired
 	private MetaServerConfig config;
+
+	@Autowired
+	private DcMetaCache dcMetaCache;
 	
 	private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	
@@ -372,12 +376,5 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 			lock.readLock().unlock();
 		}
 	}
-
-	public static void main(String[] args) {
-		String key = "test_dbatools_xpipe";
-		int hash = key.hashCode();
-		System.out.println(Math.abs(hash)%TOTAL_SLOTS);
-	}
-
 
 }

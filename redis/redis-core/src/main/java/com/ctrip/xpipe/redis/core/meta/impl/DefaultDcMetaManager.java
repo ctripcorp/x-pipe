@@ -299,7 +299,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public Long clusterId2DbId(String clusterId) {
 		ClusterMeta clusterMeta = getClusterMeta(clusterId);
 		if (null == clusterMeta) {
-			throw new IllegalArgumentException("unknown clusterId %s" + clusterId);
+			throw new IllegalArgumentException("unknown clusterId " + clusterId);
 		}
 		return getClusterMeta(clusterId).getDbId();
 	}

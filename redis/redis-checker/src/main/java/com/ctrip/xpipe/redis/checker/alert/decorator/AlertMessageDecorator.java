@@ -14,7 +14,7 @@ public class AlertMessageDecorator extends Decorator {
 
     public static final String ID = "alert.message.email.decorator";
 
-    private static final String TEMPLATE_NAME = "RedisAlertTemplate.vm";
+    private static final String TEMPLATE_NAME = "templates/RedisAlertTemplate.vm";
 
     @Override
     protected String getTemplateName() {

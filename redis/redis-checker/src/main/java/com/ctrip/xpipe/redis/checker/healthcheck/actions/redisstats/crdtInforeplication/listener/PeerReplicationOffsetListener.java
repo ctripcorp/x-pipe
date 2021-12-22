@@ -28,6 +28,7 @@ public class PeerReplicationOffsetListener extends AbstractMetricListener<CrdtIn
     
     public static final String KEY_SRC_PEER = "srcpeer";
     public static final String KEY_SRC_PEER_DC = "srcpeerdc";
+    public static final String UNKNOWN_DC = "unknown";
     
     @Override
     public void onAction(CrdtInfoReplicationContext context) {
@@ -46,6 +47,7 @@ public class PeerReplicationOffsetListener extends AbstractMetricListener<CrdtIn
                         data.addTag(KEY_SRC_PEER_DC, dc);
                     }catch (Exception ignore){
                         logger.debug("{} not find peer {} dc", info.getHostPort(), peer);
+                        data.addTag(KEY_SRC_PEER_DC, UNKNOWN_DC);
                     }
                     tryWriteMetric(data);
                 });
