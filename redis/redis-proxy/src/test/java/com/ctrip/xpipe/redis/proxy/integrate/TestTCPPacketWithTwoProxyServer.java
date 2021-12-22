@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.proxy.integrate;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.proxy.DefaultProxyServer;
 import com.ctrip.xpipe.redis.proxy.TestProxyConfig;
 import io.netty.buffer.ByteBuf;
@@ -45,7 +46,7 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
     }
 
     @Test
-    public void testStability() throws TimeoutException, InterruptedException {
+    public void testStability() throws TimeoutException, InterruptedException, ExecutionException {
         int port = randomPort();
         String protocol = generateProxyProtocol(port);
         String message = randomString(10 * 10000);
@@ -119,9 +120,9 @@ public class TestTCPPacketWithTwoProxyServer extends AbstractProxyIntegrationTes
 
         for(int i = 0; i < N; i++) {
             int finalI = i;
-            new Thread(new Runnable() {
+            new Thread(new AbstractExceptionLogTask() {
                 @Override
-                public void run() {
+                protected void doRun() throws Exception {
                     int index = 3;
                     String sendout = total[finalI].substring(0, index);
                     write(clientFuture[finalI], sendout);

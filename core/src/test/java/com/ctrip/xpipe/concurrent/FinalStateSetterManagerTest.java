@@ -4,8 +4,13 @@ import com.ctrip.xpipe.AbstractTest;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author wenchao.meng
@@ -22,6 +27,107 @@ public class FinalStateSetterManagerTest extends AbstractTest{
     public void beforeFinalStateSetterManagerTest(){
 
     }
+
+    @Test
+    public void testLazyTime() throws TimeoutException {
+        String testKey = randomString(10);
+        String testValue = randomString(10);
+
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
+                (String key) -> randomString(10),
+                (key, value) -> count.incrementAndGet());
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(testKey, testValue);
+
+        waitConditionUntilTimeOut(() -> count.get() == 1);
+
+        sleep(10);
+        finalStateSetterManager.set(testKey, testValue);
+        waitConditionUntilTimeOut(() -> count.get() == 2);
+
+        sleep(10);
+        finalStateSetterManager.set(testKey, testValue);
+        waitConditionUntilTimeOut(() -> count.get() == 3);
+    }
+
+    @Test
+    public void testLazyTimeOnDifferentKeys() throws TimeoutException {
+        String testKey = randomString(10);
+        String anotherTestKey = randomString(10);
+        String testValue = randomString(10);
+
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
+                (String key) -> randomString(10),
+                (key, value) -> count.incrementAndGet());
+
+        //make sure only 2 of 4 requests pass, despite time to start thread
+        finalStateSetterManager.LAZY_TIME_MILLI = 60 * 1000;
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(anotherTestKey, testValue);
+        finalStateSetterManager.set(anotherTestKey, testValue);
+
+        waitConditionUntilTimeOut(() -> count.get() == 2);
+
+        //make sure lazy time expire
+        finalStateSetterManager.LAZY_TIME_MILLI = 5;
+        sleep(10);
+        //not grow any more
+        assertEquals(2, count.get());
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(anotherTestKey, testValue);
+        waitConditionUntilTimeOut(() -> count.get() == 4);
+    }
+
+    @Test
+    public void testLazyTimeConcurrently() throws TimeoutException, InterruptedException {
+        String testKey = randomString(10);
+        String testValue = randomString(10);
+
+        finalStateSetterManager = new FinalStateSetterManager<>(executors,
+                (String key) -> randomString(10),
+                (key, value) -> count.incrementAndGet());
+
+        //make sure only 1 of 2 requests pass, despite time to start thread
+        finalStateSetterManager.LAZY_TIME_MILLI = 60 * 1000;
+
+        finalStateSetterManager.set(testKey, testValue);
+        finalStateSetterManager.set(testKey, testValue);
+
+        waitConditionUntilTimeOut(() -> count.get() == 1);
+
+        //make sure 8 concurrent jobs could finish within 50ms
+        finalStateSetterManager.LAZY_TIME_MILLI = 50;
+        //make sure lazy time expire
+        sleep(100);
+
+        int concurrency = 8;
+        ExecutorService executors = Executors.newFixedThreadPool(concurrency);
+        CountDownLatch start = new CountDownLatch(concurrency);
+        CountDownLatch end = new CountDownLatch(concurrency);
+        for (int i = 0; i < concurrency; i++) {
+            executors.submit(() -> {
+                start.countDown();
+                try {
+                    start.await();
+                } catch (InterruptedException ignore) {
+                }
+                finalStateSetterManager.set(testKey, testValue);
+                end.countDown();
+            });
+        }
+        end.await();
+        waitConditionUntilTimeOut(() -> count.get() == 2);
+
+        sleep(10);
+        //not grow any more
+        assertEquals(2, count.get());
+    }
+
 
     @Test
     public void testSet() throws TimeoutException {

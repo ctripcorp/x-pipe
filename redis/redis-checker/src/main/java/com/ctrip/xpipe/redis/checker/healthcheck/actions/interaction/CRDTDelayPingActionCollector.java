@@ -131,7 +131,7 @@ public class CRDTDelayPingActionCollector extends AbstractDelayPingActionCollect
         @Override
         public void update(Object args, Observable observable) {
             logger.info("[peerStateChange]{}", args);
-            if ((args instanceof InstanceSick || args instanceof InstanceHalfSick) && health.compareAndSet(true, false)) {
+            if ((args instanceof InstanceSick || args instanceof InstanceLongDelay) && health.compareAndSet(true, false)) {
                 logger.info("[onCurrentMasterUnhealthy] cluster {}, shard {} become unhealthy for target dc {}", clusterId, shardId, targetDc);
                 alertManager.alert(clusterId, shardId, null, ALERT_TYPE.CRDT_CROSS_DC_REPLICATION_DOWN, String.format("replication unhealthy from %s to %s", currentDcId, targetDc));
             } else if (args instanceof InstanceUp && health.compareAndSet(false, true)) {

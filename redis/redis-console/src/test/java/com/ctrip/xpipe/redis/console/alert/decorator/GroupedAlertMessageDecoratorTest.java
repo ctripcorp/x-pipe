@@ -1,9 +1,10 @@
-package com.ctrip.xpipe.redis.checker.alert.decorator;
+package com.ctrip.xpipe.redis.console.alert.decorator;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
+import com.ctrip.xpipe.redis.checker.alert.decorator.GroupedAlertMessageDecorator;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
@@ -20,7 +21,7 @@ import java.util.Set;
  * <p>
  * Oct 20, 2017
  */
-public class GroupedAlertMessageDecoratorTest extends AbstractCheckerIntegrationTest {
+public class GroupedAlertMessageDecoratorTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     @Qualifier(GroupedAlertMessageDecorator.ID)

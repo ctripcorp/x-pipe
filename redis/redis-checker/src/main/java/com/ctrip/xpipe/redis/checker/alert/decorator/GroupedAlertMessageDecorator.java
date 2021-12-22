@@ -18,7 +18,7 @@ public class GroupedAlertMessageDecorator extends Decorator {
 
     public static final String ID = "grouped.alert.message.email.decorator";
 
-    private static final String TEMPLATE_NAME = "ScheduledAlertTemplate.vm";
+    private static final String TEMPLATE_NAME = "templates/ScheduledAlertTemplate.vm";
 
     @Override
     protected String getTemplateName() {

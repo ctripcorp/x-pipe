@@ -8,11 +8,7 @@ import java.util.Objects;
  *
  * Aug 2, 2016
  */
-public class KeeperTransMeta implements ClusterAware{
-	
-	private String clusterId;
-
-	private String shardId;
+public class KeeperTransMeta {
 
 	private Long clusterDbId;
 
@@ -23,37 +19,10 @@ public class KeeperTransMeta implements ClusterAware{
 	//for json conversion
 	public KeeperTransMeta() {}
 
-	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta){
-		this(null, null, clusterDbId, shardDbId, keeperMeta);
-	}
-
-	public KeeperTransMeta(String clusterId, String shardId, KeeperMeta keeperMeta){
-		this(clusterId, shardId, null, null, keeperMeta);
-	}
-
-	public KeeperTransMeta(String clusterId, String shardId, Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
-		this.clusterId = clusterId;
-		this.shardId = shardId;
+	public KeeperTransMeta(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		this.clusterDbId = clusterDbId;
 		this.shardDbId = shardDbId;
 		this.keeperMeta = keeperMeta;
-	}
-
-	@Override
-	public String getClusterId() {
-		return clusterId;
-	}
-
-	public void setClusterId(String clusterId) {
-		this.clusterId = clusterId;
-	}
-
-	public String getShardId() {
-		return shardId;
-	}
-
-	public void setShardId(String shardId) {
-		this.shardId = shardId;
 	}
 
 	public KeeperMeta getKeeperMeta() {
@@ -85,20 +54,18 @@ public class KeeperTransMeta implements ClusterAware{
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		KeeperTransMeta that = (KeeperTransMeta) o;
-		return Objects.equals(clusterId, that.clusterId) &&
-				Objects.equals(shardId, that.shardId) &&
-				Objects.equals(clusterDbId, that.clusterDbId) &&
+		return Objects.equals(clusterDbId, that.clusterDbId) &&
 				Objects.equals(shardDbId, that.shardDbId) &&
 				Objects.equals(keeperMeta, that.keeperMeta);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(clusterId, shardId, clusterDbId, shardDbId, keeperMeta);
+		return Objects.hash(clusterDbId, shardDbId, keeperMeta);
 	}
 	
 	@Override
 	public String toString() {
-		return String.format("[%s,%s(%d-%d)-%s:%d]", clusterId, shardId, clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());
+		return String.format("[%d,%d-%s:%d]", clusterDbId, shardDbId, keeperMeta.getIp(), keeperMeta.getPort());
 	}
 }

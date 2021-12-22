@@ -51,7 +51,7 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 	@Resource(name = CLIENT_POOL)
 	private XpipeNettyClientKeyedObjectPool clientKeyedObjectPool;
 	
-	private KeyedOneThreadTaskExecutor<Pair<String, String>> shardExecutor;
+	private KeyedOneThreadTaskExecutor<Pair<Long, Long>> shardExecutor;
 	
 	@Override
 	protected void doInitialize() throws Exception {
@@ -66,7 +66,7 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 		logger.info("[addKeeper]{}", keeperTransMeta);
 		
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
-		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId()), 
+		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId()),
 				createAddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, addKeeperSuccessTimeoutMilli));
 	}
 
@@ -80,7 +80,7 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 		
 		logger.info("[removeKeeper]{}", keeperTransMeta);
 		KeeperContainerService keeperContainerService = getKeeperContainerService(keeperTransMeta);
-		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterId(), keeperTransMeta.getShardId()),
+		shardExecutor.execute(new Pair<>(keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId()),
 				createDeleteKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, removeKeeperSuccessTimeoutMilli));
 	}
 

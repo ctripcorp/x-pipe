@@ -41,6 +41,10 @@ public class AbstractProxyTest {
         socket = new Socket();
     }
 
+    protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier) throws TimeoutException {
+        waitConditionUntilTimeOut(booleanSupplier, 5000, 2);
+    }
+
     protected void waitConditionUntilTimeOut(BooleanSupplier booleanSupplier, int waitTimeMilli, int intervalMilli) throws TimeoutException {
 
         long maxTime = System.currentTimeMillis() + waitTimeMilli;
