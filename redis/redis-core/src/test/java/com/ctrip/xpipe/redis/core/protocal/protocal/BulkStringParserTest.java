@@ -23,7 +23,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	
 	private ByteBuf result;
 	
-	private String content = randomString();
+	private String content = randomString(64);
 
 	@Before
 	public void beforeBulkStringParserTest(){
@@ -35,8 +35,8 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		
 		String eof = randomString(BulkStringEofMarkJudger.MARK_LENGTH);
 		String buff = "$EOF:" + eof + "\r\n" + content + eof;
-		
-		for(int i=1; i <= eof.length();i++){
+		int lengths[] = new int[]{1,5,10,eof.length()};
+		for(int i : lengths){
 
 			bs = new RdbBulkStringParser(new TestPayload());
 			String []contents = StringUtil.splitByLen(buff, i);
@@ -123,7 +123,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		} catch (Exception exception) {
 			exceptionMessage = exception.getMessage();
 		}
-		Assert.assertEquals(exceptionMessage, String.format("command eof not '\r': %s", "a".getBytes()[0]));
+		Assert.assertTrue(exceptionMessage.indexOf("eof")>0);
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 		} catch (Exception exception) {
 			exceptionMessage = exception.getMessage();
 		}
-		Assert.assertEquals(exceptionMessage, String.format("command eof not '\n': %s", "b".getBytes()[0]));
+		Assert.assertTrue(exceptionMessage.indexOf("eof")>0);
 	}
 
 	

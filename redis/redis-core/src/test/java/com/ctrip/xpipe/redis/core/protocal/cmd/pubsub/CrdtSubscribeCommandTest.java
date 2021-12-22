@@ -44,17 +44,6 @@ public class CrdtSubscribeCommandTest extends AbstractTest {
 
     @Before
     public void setupCrdtSubscribeCommandTest() throws Exception {
-        redis = startServer(randomPort(), new Function<String, String>() {
-            @Override
-            public String apply(String cmd) {
-                if (cmd.toLowerCase().startsWith("crdt.subscribe")) {
-                    String channel = cmd.split(" ")[1];
-                    return String.format(TEMP_SUB_HEADER, channel.length(), channel);
-                } else {
-                    return "+OK\r\n";
-                }
-            }
-        });
 
         redis = startServer(randomPort(), new IoActionFactory() {
             @Override
@@ -72,13 +61,16 @@ public class CrdtSubscribeCommandTest extends AbstractTest {
                                 channel = sp[1];
 
                                 ous.write(String.format(TEMP_SUB_HEADER, channel.length(), channel).getBytes());
-                                sleep(100);
+                                ous.flush();
+                                sleep(10);
                                 while (true) {
                                     ous.write(String.format(TEMP_SUB_MESSAGE, channel.length(), channel, testMessage.length(), testMessage).getBytes());
-                                    sleep(100);
+                                    ous.flush();
+                                    sleep(10);
                                 }
                             } else {
                                 ous.write("+OK\r\n".getBytes());
+                                ous.flush();
                             }
 
                         } catch (Exception e) {
@@ -105,7 +97,7 @@ public class CrdtSubscribeCommandTest extends AbstractTest {
     @Test
     public void testCrdtSub() throws Exception {
         SimpleObjectPool<NettyClient> clientPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", redis.getPort()));
-        Subscribe crdtSubCmd = new CRDTSubscribeCommand(clientPool, scheduled, "test-channel");
+        Subscribe crdtSubCmd = new CRDTSubscribeCommand(clientPool, scheduled, 2000, "test-channel");
         AtomicBoolean messageGot = new AtomicBoolean(false);
         AtomicBoolean unsubscribe = new AtomicBoolean(false);
         crdtSubCmd.addChannelListener(new SubscribeListener() {
@@ -118,6 +110,7 @@ public class CrdtSubscribeCommandTest extends AbstractTest {
         });
         crdtSubCmd.execute(executors).addListener(new CommandFutureListener<Object>() {
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                logger.info("[operationComplete]{}", commandFuture.isSuccess());
                 if (!commandFuture.isSuccess()) {
                     Assert.fail();
                 } else {
@@ -126,7 +119,7 @@ public class CrdtSubscribeCommandTest extends AbstractTest {
             }
         });
 
-        sleep(1000);
+        waitConditionUntilTimeOut(()->messageGot.get());
         Assert.assertTrue(messageGot.get());
         crdtSubCmd.unSubscribe();
         Assert.assertTrue(unsubscribe.get());

@@ -23,6 +23,11 @@ public class ByteBufReleaseWrapper extends AbstractLifecycle{
     }
 
     @Override
+    protected void doInitialize() throws Exception {
+        super.doInitialize();
+    }
+
+    @Override
     protected void doDispose() throws Exception {
 
         int refCnt = byteBuf.refCnt();
