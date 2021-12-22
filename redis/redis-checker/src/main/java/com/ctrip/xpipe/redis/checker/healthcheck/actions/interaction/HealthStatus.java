@@ -235,11 +235,13 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     @VisibleForTesting void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
         logStateChange(pre, cur);
-        if((cur.shouldNotifyMarkup() && pre.isToUpNotify())) {
-            logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
-            doMarkUpAndNotify(pre, cur);
-        } else {
-            markUpForLeastInterval(pre, cur);
+        if (cur.shouldNotifyMarkup()) {
+            if (pre.isToUpNotify()) {
+                logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
+                doMarkUpAndNotify(pre, cur);
+            } else {
+                markUpForLeastInterval(pre, cur);
+            }
         }
     }
 
