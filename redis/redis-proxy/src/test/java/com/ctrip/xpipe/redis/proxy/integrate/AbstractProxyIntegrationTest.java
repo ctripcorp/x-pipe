@@ -32,6 +32,9 @@ import io.netty.handler.logging.LoggingHandler;
 import org.junit.BeforeClass;
 
 import java.nio.charset.Charset;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.proxy.monitor.session.DefaultSessionMonitor.SESSION_MONITOR_SHOULD_START;
@@ -121,7 +124,15 @@ public class AbstractProxyIntegrationTest extends AbstractTest {
         return sb.toString();
     }
 
-    protected void write(ChannelFuture future, String sendout) {
+    protected void write(ChannelFuture future, String sendout)
+            throws InterruptedException, ExecutionException, TimeoutException {
+        if (!future.channel().isActive() && future.channel().isOpen()) {
+            logger.info("[write] wait channel active before writeAndFlush, otherwise flush will be failed");
+            future.get(3, TimeUnit.SECONDS);
+        } else if (!future.channel().isOpen()) {
+            logger.info("[write] channel already closed, write will be failed");
+        }
+
         logger.info("[write] {}", sendout);
         future.channel().writeAndFlush(UnpooledByteBufAllocator.DEFAULT.buffer().writeBytes(sendout.getBytes()))
                 .addListener(writeFuture -> {
