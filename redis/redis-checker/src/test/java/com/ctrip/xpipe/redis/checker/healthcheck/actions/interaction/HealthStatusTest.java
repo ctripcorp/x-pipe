@@ -509,6 +509,34 @@ public class HealthStatusTest extends AbstractRedisTest {
     }
 
     @Test
+    public void bugfixShouldNotNotifyUpWhenPingUpOnUnhealthy() {
+        when(config.pingDownAfterMilli()).thenReturn(40);
+        when(config.delayDownAfterMilli()).thenReturn(10);
+        when(config.getHealthyDelayMilli()).thenReturn(10);
+        when(config.getHealthyLeastNotifyIntervalMilli()).thenReturn(50);
+        markup();
+
+        AtomicInteger notifyCount = new AtomicInteger(0);
+        healthStatus.addObserver(new Observer() {
+            @Override
+            public void update(Object args, Observable observable) {
+                notifyCount.incrementAndGet();
+                System.out.println(args);
+            }
+        });
+        healthStatus.pong();
+        sleep(11);
+        healthStatus.healthStatusUpdate();
+        assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
+        assertEquals(1, notifyCount.get());
+
+        sleep(51);
+        healthStatus.pong();
+        assertEquals(HEALTH_STATE.SICK, healthStatus.getState());
+        assertEquals(1, notifyCount.get());
+    }
+
+    @Test
     public void testLeastHealthyNotify() {
         healthStatus.leastNotifyIntervalMilli = ()->30 * 1000;
         HealthStatus spy = spy(healthStatus);
