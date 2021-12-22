@@ -507,7 +507,7 @@ public class HealthStatusTest extends AbstractRedisTest {
     }
 
     @Test
-    public void bugfixShouldNotNotifyUpWhenPingUpOnUnhealthy() {
+    public void bugfixShouldNotNotifyUpWhenPingUpOnSick() {
         when(config.pingDownAfterMilli()).thenReturn(40);
         when(config.delayDownAfterMilli()).thenReturn(10);
         when(config.getHealthyDelayMilli()).thenReturn(10);
