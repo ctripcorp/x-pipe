@@ -91,7 +91,7 @@ public class AbstractRdbDumperTest extends AbstractFakeRedisTest {
         latch.await();
         long start = System.currentTimeMillis();
         dumper.setRdbDumpState(RdbDumpState.NORMAL);
-        assertTrue(System.currentTimeMillis() - start < 10);
+        assertTrue(System.currentTimeMillis() - start < 100);
     }
 
     private ExecutorService executor = Executors.newFixedThreadPool(2);
