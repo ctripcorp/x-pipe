@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.Defa
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -62,7 +63,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     private int sentinelCheckInterval = 800;
 
-    private int sentinelSubTimeout = 200;
+    private int sentinelSubTimeout = 500;
 
     @InjectMocks
     private SentinelCheckDowngradeManager checkActionController;
@@ -131,6 +132,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     public void allUpTest() {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
+        //make command do not easily timeout on github
         allActionDoTask();
 
         assertServerCalled(false, false, true, true);
