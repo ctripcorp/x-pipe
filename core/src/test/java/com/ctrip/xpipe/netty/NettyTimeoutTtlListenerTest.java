@@ -75,7 +75,7 @@ public class NettyTimeoutTtlListenerTest extends AbstractTest {
         sendNTime(true, 2);
         Assert.assertTrue(nettyClient.channel().isOpen());
         timeoutSend();
-        waitConditionUntilTimeOut(() -> !nettyClient.channel().isOpen(), timeoutMill * 2);
+        waitConditionUntilTimeOut(() -> !nettyClient.channel().isOpen());
     }
 
     private void sendNTime(boolean timeout, int n) {
