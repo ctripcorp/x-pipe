@@ -51,7 +51,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     @Test
     public void testTryAcquire() throws InterruptedException {
         AtomicInteger counter = new AtomicInteger();
-        int task = 3 * 100;
+        int task = 100;
         CountDownLatch latch = new CountDownLatch(task);
         for (int i = 0; i < task; i++) {
             executors.execute(new Runnable() {
@@ -70,7 +70,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
 
     @Test
     public void testRelease() throws InterruptedException {
-        int task = 3 * 100;
+        int task =  100;
         CountDownLatch latch = new CountDownLatch(task);
         for (int i = 0; i < task; i++) {
             executors.execute(new Runnable() {
@@ -101,7 +101,7 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     @Test
     public void testResize() throws InterruptedException {
         AtomicInteger counter = new AtomicInteger();
-        int task = 3 * 100, newSize = 10;
+        int task = 100, newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);
         CyclicBarrier barrier = new CyclicBarrier(task + 1);
         executors.execute(new Runnable() {
@@ -180,10 +180,9 @@ public class CompositeLeakyBucketTest extends AbstractTest {
         //first close
         when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
         leakyBucket.setScheduled(scheduled);
-        leakyBucket.checkKeeperConfigChange();
-        sleep(110);
+        leakyBucket.doCheckKeeperConfigChange();
         AtomicInteger counter = new AtomicInteger();
-        int task = 3 * 100, newSize = 10;
+        int task = 100, newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);
         CyclicBarrier barrier = new CyclicBarrier(task + 1);
         CyclicBarrier finalBarrier2 = barrier;
@@ -261,12 +260,11 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     @Test
     public void testOpenAndCloseAndOpen() throws InterruptedException {
         //first open
-        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
+        doReturn(true).when(keeperConfig).isKeeperRateLimitOpen();
         leakyBucket.setScheduled(scheduled);
-        leakyBucket.checkKeeperConfigChange();
-        sleep(200);
+        leakyBucket.doCheckKeeperConfigChange();
         AtomicInteger counter = new AtomicInteger();
-        int task = 3 * 100, newSize = 10;
+        int task = 100, newSize = 10;
         CountDownLatch latch = new CountDownLatch(task);
         CyclicBarrier barrier = new CyclicBarrier(task + 1);
 
@@ -301,8 +299,8 @@ public class CompositeLeakyBucketTest extends AbstractTest {
 
         // second, close
         counter.set(0);
-        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(false);
-        sleep(200);
+        doReturn(false).when(keeperConfig).isKeeperRateLimitOpen();
+        leakyBucket.doCheckKeeperConfigChange();
         CountDownLatch latch2 = new CountDownLatch(task);
         CyclicBarrier barrier2 = new CyclicBarrier(task + 1);
         executors.execute(new Runnable() {
@@ -336,8 +334,8 @@ public class CompositeLeakyBucketTest extends AbstractTest {
 
         //third, open again
         counter.set(0);
-        when(keeperConfig.isKeeperRateLimitOpen()).thenReturn(true);
-        sleep(200);
+        doReturn(true).when(keeperConfig).isKeeperRateLimitOpen();
+        leakyBucket.doCheckKeeperConfigChange();
         CountDownLatch latch3 = new CountDownLatch(task);
         CyclicBarrier barrier3 = new CyclicBarrier(task + 1);
         executors.execute(new Runnable() {
@@ -374,18 +372,17 @@ public class CompositeLeakyBucketTest extends AbstractTest {
     public void testReleaseAfterCloseLimit() {
         doReturn(true).when(keeperConfig).isKeeperRateLimitOpen();
         leakyBucket.setScheduled(scheduled);
-        leakyBucket.checkKeeperConfigChange();
-        sleep(200);
+        leakyBucket.doCheckKeeperConfigChange();
 
         int cnt = 0;
         while(leakyBucket.tryAcquire()) cnt++;
 
         doReturn(false).when(keeperConfig).isKeeperRateLimitOpen();
-        sleep(200);
+        leakyBucket.doCheckKeeperConfigChange();
 
         IntStream.range(0, cnt).forEach(i -> leakyBucket.release());
         doReturn(true).when(keeperConfig).isKeeperRateLimitOpen();
-        sleep(200);
+        leakyBucket.doCheckKeeperConfigChange();
 
         Assert.assertTrue(leakyBucket.tryAcquire());
     }

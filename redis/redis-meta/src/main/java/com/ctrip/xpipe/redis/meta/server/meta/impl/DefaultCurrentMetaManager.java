@@ -131,10 +131,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		Set<ClusterMeta> clusters = dcMetaCache.getClusters();
 		Set<Long> clusterDbIdsInMeta = clusters.stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
 		for (ClusterMeta clusterMeta: clusters) {
-			if (currentClusterServer.hasKey(clusterMeta.getId()) && !currentMeta.hasCluster(clusterMeta.getDbId())) {
+			if (currentClusterServer.hasKey(clusterMeta.getDbId()) && !currentMeta.hasCluster(clusterMeta.getDbId())) {
 				logger.warn("[checkCurrentMeta][miss cluster]{}:{}", clusterMeta.getId(), clusterMeta.getDbId());
 				addCluster(clusterMeta.getDbId());
-			} else if (!currentClusterServer.hasKey(clusterMeta.getId()) && currentMeta.hasCluster(clusterMeta.getDbId())) {
+			} else if (!currentClusterServer.hasKey(clusterMeta.getDbId()) && currentMeta.hasCluster(clusterMeta.getDbId())) {
 				logger.warn("[checkCurrentMeta][redundant cluster]{}:{}", clusterMeta.getId(), clusterMeta.getDbId());
 				removeClusterInterested(clusterMeta.getDbId());
 			}
@@ -293,10 +293,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		
 		currentSlots.remove(slotId);
 		logger.info("[deleteSlot]{}", slotId);
-		for(CurrentMeta.CurrentClusterMeta currentClusterMeta : new HashSet<>(currentMeta.allClusterMetas())){
-			int currentSlotId = slotManager.getSlotIdByKey(currentClusterMeta.getClusterId());
+		for(Long clusterDbId: currentMeta.allClusters()){
+			int currentSlotId = slotManager.getSlotIdByKey(clusterDbId);
 			if(currentSlotId == slotId){
-				removeClusterInterested(currentClusterMeta.getClusterDbId());
+				removeClusterInterested(clusterDbId);
 			}
 		}
 	}
@@ -308,9 +308,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		logger.info("[addSlot]{}", slotId);
 		currentSlots.add(slotId);
 		for(ClusterMeta clusterMeta : dcMetaCache.getClusters()){
-			String clusterId = clusterMeta.getId();
 			Long clusterDbId = clusterMeta.getDbId();
-			int currentSlotId = slotManager.getSlotIdByKey(clusterId);
+			int currentSlotId = slotManager.getSlotIdByKey(clusterDbId);
 			if(currentSlotId == slotId){
 				addCluster(clusterDbId);
 			}
@@ -354,7 +353,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	protected void dcMetaChange(DcMetaComparator comparator) {
 		
 		for(ClusterMeta clusterMeta : comparator.getAdded()){
-			if(currentClusterServer.hasKey(clusterMeta.getId())){
+			if(currentClusterServer.hasKey(clusterMeta.getDbId())){
 				addCluster(clusterMeta.getDbId());
 			}else{
 				logger.info("[dcMetaChange][add][not interested]{}", clusterMeta.getId());
@@ -362,7 +361,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 		
 		for(ClusterMeta clusterMeta : comparator.getRemoved()){
-			if(currentClusterServer.hasKey(clusterMeta.getId())){
+			if(currentClusterServer.hasKey(clusterMeta.getDbId())){
 				destroyCluster(clusterMeta);
 			}else{
 				logger.info("[dcMetaChange][destroy][not interested]{}", clusterMeta.getId());
@@ -373,26 +372,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		for(@SuppressWarnings("rawtypes") MetaComparator changedComparator : comparator.getMofified()){
 			ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) changedComparator;
 			Long clusterDbId = clusterMetaComparator.getCurrent().getDbId();
-			String currentClusterId = clusterMetaComparator.getCurrent().getId();
-			String futureClusterId = clusterMetaComparator.getFuture().getId();
-			if (!futureClusterId.equals(currentClusterId)) {
-				if (currentClusterServer.hasKey(currentClusterId) && !currentClusterServer.hasKey(futureClusterId)) {
-					logger.info("[dcMetaChange][clusterId change][loss interested] {}->{}", currentClusterId, futureClusterId);
-					removeClusterInterested(clusterDbId);
-				} else if (!currentClusterServer.hasKey(currentClusterId) && currentClusterServer.hasKey(futureClusterId)) {
-					logger.info("[dcMetaChange][clusterId change][become interested] {}->{}", currentClusterId, futureClusterId);
-					addCluster(clusterDbId);
-				} else if (currentClusterServer.hasKey(currentClusterId) && currentClusterServer.hasKey(futureClusterId)) {
-					logger.info("[dcMetaChange][clusterId change][all interested] {}->{}", currentClusterId, futureClusterId);
-					currentMeta.updateClusterName(clusterDbId, futureClusterId);
-				} else {
-					logger.debug("[dcMetaChange][clusterId change][all not interested] {}->{}", currentClusterId, futureClusterId);
-				}
-			}
-			if(currentClusterServer.hasKey(futureClusterId)){
+			if(currentClusterServer.hasKey(clusterDbId)){
 				handleClusterChanged(clusterMetaComparator);
 			}else{
-				logger.info("[dcMetaChange][change][not interested]{}", currentClusterId);
+				logger.info("[dcMetaChange][change][not interested]{}", clusterDbId);
 			}
 		}
 	}

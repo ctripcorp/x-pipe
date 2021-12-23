@@ -11,6 +11,8 @@ public interface HealthCheckConfig {
 
     int delayDownAfterMilli();
 
+    int instanceLongDelayMilli();
+
     int pingDownAfterMilli();
 
     int checkIntervalMilli();
@@ -18,6 +20,8 @@ public interface HealthCheckConfig {
     int clusterCheckIntervalMilli();
 
     int getHealthyDelayMilli();
+
+    int getHealthyLeastNotifyIntervalMilli();
 
     int getRedisConfCheckIntervalMilli();
 

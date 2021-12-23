@@ -36,8 +36,12 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     private RedisHealthCheckInstance instance;
     private final IntSupplier delayDownAfterMilli;
+    private final IntSupplier instanceLongDelayMilli;
     private final IntSupplier pingDownAfterMilli;
     private final IntSupplier healthyDelayMilli;
+    @VisibleForTesting IntSupplier leastNotifyIntervalMilli;
+
+    private AtomicLong lastMarkupNotify = new AtomicLong(0L);
 
     private final ScheduledExecutorService scheduled;
     private ScheduledFuture<?> future;
@@ -48,8 +52,10 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         this.instance = instance;
         this.scheduled = scheduled;
         this.pingDownAfterMilli = ()->instance.getHealthCheckConfig().pingDownAfterMilli();
+        this.instanceLongDelayMilli = ()->instance.getHealthCheckConfig().instanceLongDelayMilli();
         this.delayDownAfterMilli = ()->instance.getHealthCheckConfig().delayDownAfterMilli();
         this.healthyDelayMilli = ()->instance.getHealthCheckConfig().getHealthyDelayMilli();
+        this.leastNotifyIntervalMilli = ()->instance.getHealthCheckConfig().getHealthyLeastNotifyIntervalMilli();
         checkParam();
     }
 
@@ -157,10 +163,11 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         long delayDownTime = currentTime - lastHealthDelayTime.get();
         final int delayDownAfter = delayDownAfterMilli.getAsInt();
+        final int instanceLongDelay = instanceLongDelayMilli.getAsInt();
 
         if ( delayDownTime > delayDownAfter) {
             setDelayDown();
-        }else if(delayDownTime >= delayDownAfter/2){
+        }else if(delayDownTime >= instanceLongDelay){
             setDelayHalfDown();
         }
     }
@@ -184,7 +191,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
             logStateChange(preState, state.get());
-            notifyObservers(new InstanceHalfSick(instance));
+            notifyObservers(new InstanceLongDelay(instance));
         }
     }
 
@@ -226,12 +233,33 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    private void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
+    @VisibleForTesting void markUpIfNecessary(HEALTH_STATE pre, HEALTH_STATE cur) {
         logStateChange(pre, cur);
-        if(cur.shouldNotifyMarkup() && pre.isToUpNotify()) {
-            logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
-            notifyObservers(new InstanceUp(instance));
+        if (cur.shouldNotifyMarkup()) {
+            if (pre.isToUpNotify()) {
+                logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
+                doMarkUpAndNotify(pre, cur);
+            } else {
+                markUpForLeastInterval(pre, cur);
+            }
         }
+    }
+
+    @VisibleForTesting void markUpForLeastInterval(HEALTH_STATE pre, HEALTH_STATE cur) {
+        long last = lastMarkupNotify.get();
+        long now = System.currentTimeMillis();
+        if ((now - last > leastNotifyIntervalMilli.getAsInt())
+                && lastMarkupNotify.compareAndSet(last, now)) {
+            doMarkUpAndNotify(pre, cur);
+        } else {
+            logger.debug("[markUpForLeastInterval] not success {} {}->{}", this, pre, cur);
+        }
+    }
+
+    @VisibleForTesting void doMarkUpAndNotify(HEALTH_STATE pre, HEALTH_STATE cur) {
+        logger.debug("[doMarkUpAndNotify]{} {}->{}", this, pre, cur);
+        notifyObservers(new InstanceUp(instance));
+        lastMarkupNotify.set(System.currentTimeMillis());
     }
 
     private void logStateChange(HEALTH_STATE pre, HEALTH_STATE cur) {

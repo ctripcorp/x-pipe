@@ -2,12 +2,14 @@ package com.ctrip.xpipe.concurrent;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -21,6 +23,10 @@ public class FinalStateSetterManager<K, S> {
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     private Map<K, S> map = new ConcurrentHashMap<K, S>();
+    private Map<K, AtomicLong> lastCheckAndSetMap = new ConcurrentHashMap<K, AtomicLong>();
+
+    @VisibleForTesting long LAZY_TIME_MILLI = 5 * 1000;
+
     private KeyedOneThreadTaskExecutor<K> keyedOneThreadTaskExecutor;
 
     private Function<K, S> getter;
@@ -32,12 +38,23 @@ public class FinalStateSetterManager<K, S> {
         keyedOneThreadTaskExecutor = new KeyedOneThreadTaskExecutor<K>(executors);
     }
 
+    public boolean shouldCheckAndSet(S previous, S s, AtomicLong lastCheckAndSet) {
+        if (!ObjectUtils.equals(previous, s)) {
+            lastCheckAndSet.set(System.currentTimeMillis());
+            return true;
+        }
+        long last = lastCheckAndSet.get();
+        long now = System.currentTimeMillis();
+        return ((now - last > LAZY_TIME_MILLI) && lastCheckAndSet.compareAndSet(last, now));
+    }
 
     public void set(K k, S s){
 
         S previous = map.put(k, s);
 
-        if(!ObjectUtils.equals(previous, s)){
+        AtomicLong lastCheckAndSet = lastCheckAndSetMap.computeIfAbsent(k, key->new AtomicLong(0L));
+
+        if(shouldCheckAndSet(previous, s, lastCheckAndSet)){
 
             logger.debug("[set]{},{}->{}", k, previous, s);
             keyedOneThreadTaskExecutor.execute(k, new CheckAndSetTask(k, s));

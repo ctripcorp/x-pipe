@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SLOT_STATE;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.impl.MultiMetaServer;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.MovingTargetException;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererException;
@@ -41,6 +42,9 @@ public class AbstractDispatcherMetaServerController extends AbstractController{
 	
 	@Autowired
 	public ClusterServers<MetaServer> servers;
+
+	@Autowired
+	public DcMetaCache dcMetaCache;
 	
 	@ModelAttribute
 	public void populateModel(@PathVariable final String clusterId, 
@@ -49,9 +53,11 @@ public class AbstractDispatcherMetaServerController extends AbstractController{
 		if(forwardInfo != null){
 			logger.info("[populateModel]{},{}", clusterId, forwardInfo);
 		}
-		MetaServer metaServer = getMetaServer(clusterId, forwardInfo, request.getRequestURI());
+
+		Long clusterDbId = dcMetaCache.clusterId2DbId(clusterId);
+		MetaServer metaServer = getMetaServer(clusterId, clusterDbId, forwardInfo, request.getRequestURI());
 		if(metaServer == null){
-			throw new UnfoundAliveSererException(clusterId, slotManager.getServerIdByKey(clusterId), currentMetaServer.getServerId());
+			throw new UnfoundAliveSererException(clusterId, slotManager.getServerIdByKey(clusterDbId), currentMetaServer.getServerId());
 		}
 		model.addAttribute(MODEL_META_SERVER, metaServer);
 		if(forwardInfo != null){
@@ -59,9 +65,9 @@ public class AbstractDispatcherMetaServerController extends AbstractController{
 		}
 	}
 	
-	private MetaServer getMetaServer(String clusterId, ForwardInfo forwardInfo, String uri) {
-		
-		int slotId = slotManager.getSlotIdByKey(clusterId);
+	private MetaServer getMetaServer(String clusterId, Long clusterDbId, ForwardInfo forwardInfo, String uri) {
+
+		int slotId = slotManager.getSlotIdByKey(clusterDbId);
 		SlotInfo slotInfo = slotManager.getSlotInfo(slotId);
 		
 		if(forwardInfo != null && forwardInfo.getType() == ForwardType.MOVING){
@@ -79,9 +85,9 @@ public class AbstractDispatcherMetaServerController extends AbstractController{
 		}
 		
 		META_SERVER_SERVICE service = META_SERVER_SERVICE.fromPath(uri);
-		Integer serverId = slotManager.getServerIdByKey(clusterId);
+		Integer serverId = slotManager.getServerIdByKey(clusterDbId);
 		if(serverId == null){
-			throw new IllegalStateException("clusterId:" + clusterId + ", unfound server");
+			throw new IllegalStateException("clusterDbId:" + clusterDbId + ", unfound server");
 		}
 		
 		if(service.getForwardType() == ForwardType.MULTICASTING){

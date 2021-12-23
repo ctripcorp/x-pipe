@@ -169,8 +169,7 @@ public class ProxyUtilTest extends AbstractProxyTest {
         proxyUtil.setCheckInterval(500);
         current = counter.get();
         long finalCurrent1 = current;
-        waitConditionUntilTimeOut(() -> counter.get() == (finalCurrent1), 400, 100);
-        waitConditionUntilTimeOut(() -> counter.get() == (finalCurrent1 + 1), 210, 100);
+        waitConditionUntilTimeOut(() -> counter.get() == (finalCurrent1 + 1));
         proxyUtil.setChecker(null);
         proxyUtil.stopCheck();
 

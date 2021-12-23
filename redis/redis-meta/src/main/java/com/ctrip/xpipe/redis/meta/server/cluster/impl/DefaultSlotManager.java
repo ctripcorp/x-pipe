@@ -333,16 +333,8 @@ public class DefaultSlotManager extends AbstractLifecycle implements SlotManager
 
 	@Override
 	public int getSlotIdByKey(Object key) {
-		int hash;
-		if (key instanceof String && config.useDbIdForSlot()) {
-			logger.debug("[getSlotIdByKey][useDbId] {}", key);
-			Long clusterDbId = dcMetaCache.clusterId2DbId((String) key);
-			hash = clusterDbId.hashCode();
-		} else {
-			logger.debug("[getSlotIdByKey] {}", key);
-			hash = key.hashCode();
-		}
 
+		int hash = key.hashCode();
 		if(hash == Integer.MIN_VALUE){
 			return 0;
 		}

@@ -29,6 +29,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public static final String KEY_CONSOLE_NOTIFY_RETRY_INTERVAL = "console.notify.retry.interval";
     public static final String KEY_METASERVERS = "metaservers";
     public static final String KEY_USER_ACCESS_WHITE_LIST = "user.access.white.list";
+    public static final String KEY_HICKWALL_CLUSTER_METRIC_FORMAT = "console.hickwall.cluster.metric.format";
     public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
     public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
     public static final String KEY_ALL_CONSOLES = "console.all.addresses";
@@ -164,6 +165,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private HickwallMetricInfo info;
 
     @Override
+    public String getHickwallClusterMetricFormat() {
+        return getProperty(KEY_HICKWALL_CLUSTER_METRIC_FORMAT, "http://127.0.0.1/grafanav2/d/8uhYAmc7k/redisshuang-xiang-tong-bu-ji-qun-de-mo-ban?var-cluster=%s");
+    }
+
+    @Override
     public HickwallMetricInfo getHickwallMetricInfo() {
         String localInfo = getProperty(KEY_HICKWALL_METRIC_INFO, "{\"domain\": \"http://hickwall.qa.nt.ctripcorp.com/grafanav2/d/UR32kfjWz/fx-xpipe?fullscreen&orgId=1&from=now-1h&to=now\", \"delayPanelId\": 2, \"crossDcDelayPanelId\": 14, \"proxyPingPanelId\": 4, \"proxyTrafficPanelId\": 6, \"proxyCollectionPanelId\": 8, \"outComingTrafficToPeerPanelId\": \"16\", \"inComingTrafficFromPeerPanelId\": \"18\",\"peerSyncFullPanelId\": \"20\",\"peerSyncPartialPanelId\": \"22\"}");
         if(StringUtil.isEmpty(hickwallInfo) || !localInfo.equals(hickwallInfo)) {
@@ -179,8 +185,18 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public int getHealthyLeastNotifyIntervalMilli() {
+        return getIntProperty(KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI, 3 * 60 * 1000);
+    }
+
+    @Override
     public int getHealthyDelayMilliThroughProxy() {
         return getIntProperty(KEY_HEALTHY_DELAY_THROUGH_PROXY, 30 * 1000);
+    }
+
+    @Override
+    public int getInstanceLongDelayMilli() {
+        return getIntProperty(KEY_INSTANCE_LONG_DELAY_MILLI, 3 * 60 * 1000);
     }
 
     @Override

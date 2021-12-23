@@ -6,7 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceHalfSick;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessorException;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -77,7 +77,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
     public void testOnEventWithSickWithNoProxyChain() throws HealthEventProcessorException {
         doNothing().when(processor).tryRecover(any(), any());
         when(proxyManager.getProxyTunnelInfo(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, never()).tryRecover(any(), any());
     }
 
@@ -88,7 +88,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, times(1)).tryRecover(any(), any());
     }
 
@@ -106,7 +106,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(instance.getHealthCheckConfig()).thenReturn(config);
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(-1L);
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, times(1)).tryRecover(any(), any());
     }
 
@@ -125,7 +125,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
 
         when(processor.getDelaySeconds(anyLong())).thenReturn(2L);
 
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         waitConditionUntilTimeOut(()->assertSuccess(()->verify(processor, times(1)).undoDedupe(any())), 5000, 500);
     }
 
@@ -157,8 +157,8 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
-        processor.onEvent(new InstanceHalfSick(instance));
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, times(1)).tryRecover(any(), any());
     }
 
@@ -169,9 +169,9 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(redisSession.syncInfo(InfoCommand.INFO_TYPE.REPLICATION)).thenReturn(infoResultExtractor);
         when(infoResultExtractor.extractAsInteger("master_sync_in_progress")).thenReturn(0);
 
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         sleep(200);
-        processor.onEvent(new InstanceHalfSick(instance));
+        processor.onEvent(new InstanceLongDelay(instance));
         verify(processor, times(2)).tryRecover(any(), any());
     }
 
@@ -186,8 +186,8 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(instance2.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard",
                 new HostPort("127.0.0.4", 6380), "SHAJQ", ClusterType.ONE_WAY));
         when(instance2.getRedisSession()).thenReturn(redisSession);
-        processor.onEvent(new InstanceHalfSick(instance));
-        processor.onEvent(new InstanceHalfSick(instance2));
+        processor.onEvent(new InstanceLongDelay(instance));
+        processor.onEvent(new InstanceLongDelay(instance2));
         verify(processor, times(1)).tryRecover(any(), any());
     }
 }
