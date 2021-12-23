@@ -165,14 +165,6 @@ public class MetaUpdate extends AbstractConsoleController {
             }
 
             clusterService.deleteCluster(clusterName);
-            for(DcTbl dcTbl : dcTbls) {
-                try {
-                    metaServerConsoleServiceManagerWrapper.get(dcTbl.getDcName()).clusterDeleted(clusterName);
-                } catch (Exception e) {
-                    logger.warn("[deleteCluster]", e);
-                    return RetMessage.createFailMessage("[" + dcTbl.getDcName() + "]MetaServer fails" + e.getMessage());
-                }
-            }
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[deleteCluster]", e);
