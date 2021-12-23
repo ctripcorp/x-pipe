@@ -225,103 +225,8 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 	}
 
 	@Test
-	public void testClusterNameChangeAndBecomeInterested_addCluster() {
-		DcMeta future = MetaClone.clone(getDcMeta(getDc()));
-		Set<Long> allClusters = future.getClusters().values().stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
-
-		ClusterMeta clusterMeta = future.getClusters().values().iterator().next();
-		Long clusterDbId = clusterMeta.getDbId();
-		String clusterName1 = clusterMeta.getId(), clusterName2 = clusterMeta.getId() + "1";
-
-		when(currentClusterServer.hasKey(anyString())).thenReturn(true);
-		when(currentClusterServer.hasKey(clusterName1)).thenReturn(false);
-		when(currentClusterServer.hasKey(clusterName2)).thenReturn(true);
-		prepareData();
-		allClusters.remove(clusterDbId);
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-
-		clusterMeta.setId(clusterName2);
-		DcMetaComparator comparator = new DcMetaComparator(getDcMeta(getDc()), future);
-		comparator.compare();
-		currentMetaServerMetaManager.update(comparator, null);
-		allClusters.add(clusterDbId);
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-	}
-
-	@Test
-	public void testClusterNameChangeAndLossInterested_removeCluster() {
-		DcMeta future = MetaClone.clone(getDcMeta(getDc()));
-		Set<Long> allClusters = future.getClusters().values().stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
-
-		ClusterMeta clusterMeta = future.getClusters().values().iterator().next();
-		Long clusterDbId = clusterMeta.getDbId();
-		String clusterName1 = clusterMeta.getId(), clusterName2 = clusterMeta.getId() + "1";
-
-		when(currentClusterServer.hasKey(anyString())).thenReturn(true);
-		when(currentClusterServer.hasKey(clusterName2)).thenReturn(false);
-		prepareData();
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-
-		clusterMeta.setId(clusterName2);
-		DcMetaComparator comparator = new DcMetaComparator(getDcMeta(getDc()), future);
-		comparator.compare();
-		currentMetaServerMetaManager.update(comparator, null);
-		allClusters.remove(clusterDbId);
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-	}
-
-	@Test
-	public void testClusterNameChangeAndAllInterested_handleClusterChange() {
-		doAnswer(inv -> {
-			logger.info("[notifyObserver] {}", inv.getArguments());
-			return null;
-		}).when(observer).update(any(), any());
-		DcMeta future = MetaClone.clone(getDcMeta(getDc()));
-		Set<Long> allClusters = future.getClusters().values().stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
-
-		ClusterMeta clusterMeta = future.getClusters().values().iterator().next();
-		Long clusterDbId = clusterMeta.getDbId();
-		String clusterName1 = clusterMeta.getId(), clusterName2 = clusterMeta.getId() + "1";
-
-		when(currentClusterServer.hasKey(anyString())).thenReturn(true);
-		prepareData();
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-
-		clusterMeta.setId(clusterName2);
-		DcMetaComparator comparator = new DcMetaComparator(getDcMeta(getDc()), future);
-		comparator.compare();
-		currentMetaServerMetaManager.update(comparator, null);
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-		verify(observer).update(Matchers.isA(ClusterMetaComparator.class), Matchers.eq(currentMetaServerMetaManager));
-	}
-
-	@Test
-	public void testClusterNameChangeAndAllNotInterested_doNothing() {
-		DcMeta future = MetaClone.clone(getDcMeta(getDc()));
-		Set<Long> allClusters = future.getClusters().values().stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
-
-		ClusterMeta clusterMeta = future.getClusters().values().iterator().next();
-		Long clusterDbId = clusterMeta.getDbId();
-		String clusterName1 = clusterMeta.getId(), clusterName2 = clusterMeta.getId() + "1";
-
-		when(currentClusterServer.hasKey(anyString())).thenReturn(true);
-		when(currentClusterServer.hasKey(clusterName1)).thenReturn(false);
-		when(currentClusterServer.hasKey(clusterName2)).thenReturn(false);
-		prepareData();
-		allClusters.remove(clusterDbId);
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-
-		clusterMeta.setId(clusterName2);
-		DcMetaComparator comparator = new DcMetaComparator(getDcMeta(getDc()), future);
-		comparator.compare();
-		currentMetaServerMetaManager.update(comparator, null);
-		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
-		verify(observer, never()).update(Matchers.isA(ClusterMetaComparator.class), Matchers.eq(currentMetaServerMetaManager));
-	}
-
-	@Test
 	public void testCurrentMetaMiss_addCluster() {
-		when(currentClusterServer.hasKey(anyString())).thenReturn(true);
+		when(currentClusterServer.hasKey(anyLong())).thenReturn(true);
 		Set<Long> allClusters = getDcMeta(getDc()).getClusters().values().stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
 		prepareData();
 		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
@@ -339,7 +244,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 	@Test
 	public void testCurrentMetaRedundant_removeCluster() {
-		when(currentClusterServer.hasKey(anyString())).thenReturn(true);
+		when(currentClusterServer.hasKey(anyLong())).thenReturn(true);
 		Set<Long> allClusters = getDcMeta(getDc()).getClusters().values().stream().map(ClusterMeta::getDbId).collect(Collectors.toSet());
 		prepareData();
 		Assert.assertEquals(allClusters, currentMetaServerMetaManager.allClusters());
@@ -347,7 +252,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		Set<ClusterMeta> clusters = new HashSet<>(getDcMeta(getDc()).getClusters().values());
 		ClusterMeta removedCluster = clusters.iterator().next();
 		when(dcMetaCache.getClusters()).thenReturn(clusters);
-		when(currentClusterServer.hasKey(removedCluster.getId())).thenReturn(false);
+		when(currentClusterServer.hasKey(removedCluster.getDbId())).thenReturn(false);
 
 		currentMetaServerMetaManager.checkCurrentMetaMissOrRedundant();
 		allClusters.remove(removedCluster.getDbId());
@@ -365,7 +270,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		String clusterName = "cluster1";
 		Long clusterDbId = 1L;
 		Long shardDbId = 1L;
-		Mockito.when(currentClusterServer.hasKey(clusterName)).thenReturn(true);
+		Mockito.when(currentClusterServer.hasKey(clusterDbId)).thenReturn(true);
 		
 		DcMeta currentDcMeta = new DcMeta().setId("jq");
 		ClusterMeta currentClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy").setDbId(clusterDbId);
@@ -421,7 +326,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		String clusterName = "cluster1";
 		Long clusterDbId = 2L;
 		Long shardDbId = 2L;
-		Mockito.when(currentClusterServer.hasKey(clusterName)).thenReturn(true);
+		Mockito.when(currentClusterServer.hasKey(clusterDbId)).thenReturn(true);
 
 		DcMeta currentDcMeta = new DcMeta().setId("jq");
 		ClusterMeta currentClusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setId(clusterName).setDcs("jq,oy").setDbId(clusterDbId);
@@ -494,7 +399,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		String clusterName = "cluster1";
 		Long clusterDbId = 1L;
 		Long shardDbId = 1L;
-		Mockito.when(currentClusterServer.hasKey(clusterName)).thenReturn(true);
+		Mockito.when(currentClusterServer.hasKey(clusterDbId)).thenReturn(true);
 
 		DcMeta currentDcMeta = new DcMeta().setId("jq");
 		ClusterMeta currentClusterMeta = new ClusterMeta().setType(ClusterType.ONE_WAY.name()).setId(clusterName).setActiveDc("oy").setDbId(clusterDbId);

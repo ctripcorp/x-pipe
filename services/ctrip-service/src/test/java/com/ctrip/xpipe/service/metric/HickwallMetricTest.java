@@ -62,9 +62,8 @@ public class HickwallMetricTest extends AbstractServiceTest {
             return null;
         }).when(client).sendWithMonitor(any());
 
-        hickwallMetric = new HickwallMetric();
+        hickwallMetric = new HickwallMetric(config);
         hickwallMetric.setInfluxDbClient(client);
-        hickwallMetric.setConfig(config);
     }
 
     @Test

@@ -45,7 +45,7 @@ public class CommandBulkStringParser extends AbstractBulkStringParser {
                 if (data1 == '\r') {
                     commandState = COMMAND_STATE.READING_LF;
                 } else {
-                    throw new RedisRuntimeException(String.format("command eof not '\r': %s", data1));
+                    throw new RedisRuntimeException(String.format("command eof not '\\r', but: %d, %c", data1, data1));
                 }
             case READING_LF:
                 if (byteBuf.readableBytes() == 0) {
@@ -55,7 +55,7 @@ public class CommandBulkStringParser extends AbstractBulkStringParser {
                 if (data1 == '\n') {
                     commandState = COMMAND_STATE.END;
                 } else {
-                    throw new RedisRuntimeException(String.format("command eof not '\n': %s", data1));
+                    throw new RedisRuntimeException(String.format("command eof not '\\r', but: %d, %c", data1, data1));
                 }
             case END:
                 return new CommandBulkStringParser(payload);

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
 public class ClusterController extends AbstractConsoleController {
 
+    @Autowired
+    private ConsoleConfig config;
     @Autowired
     private DcService dcService;
     @Autowired
@@ -190,6 +193,11 @@ public class ClusterController extends AbstractConsoleController {
     public List<ClusterTbl> findClusterByKeeperContainer(@PathVariable Long containerId) {
         if (null == containerId || containerId <= 0) return Collections.emptyList();
         return clusterService.findAllClusterByKeeperContainer(containerId);
+    }
+
+    @RequestMapping(value = "/cluster/hickwall/{clusterName}", method = RequestMethod.GET)
+    public String getClusterHickwallUrl(@PathVariable String clusterName) {
+        return String.format(config.getHickwallClusterMetricFormat(), clusterName);
     }
 
 }

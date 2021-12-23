@@ -55,7 +55,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     }
 
     @Test
-    public void testStability() throws TimeoutException, InterruptedException {
+    public void testStability() throws TimeoutException, InterruptedException, ExecutionException {
         int port = randomPort();
         String protocol = generateProxyProtocol(port);
         String message = randomString(10000);
@@ -101,7 +101,7 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
     }
 
     @Test
-    public void testStabilityWithCompressAndSSL() throws TimeoutException, InterruptedException {
+    public void testStabilityWithCompressAndSSL() throws TimeoutException, InterruptedException, ExecutionException {
         ((TestProxyConfig)server1.getConfig()).setCompress(true);
         ((TestProxyConfig)server1.getResourceManager().getProxyConfig()).setCompress(true);
         testStability();
@@ -202,9 +202,9 @@ public class TestTLSWithTwoProxy extends AbstractProxyIntegrationTest {
 
         for(int i = 0; i < N; i++) {
             int finalI = i;
-            new Thread(new Runnable() {
+            new Thread(new AbstractExceptionLogTask() {
                 @Override
-                public void run() {
+                protected void doRun() throws Exception {
                     int index = 2;
                     String sendout = total[finalI].substring(0, index);
                     write(clientFuture[finalI], sendout);

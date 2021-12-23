@@ -97,7 +97,11 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     }
 
     public RouteMeta selectRoute(List<RouteMeta> routes, HostPort hostPort) {
-        return routes.get(Math.abs(hostPort.hashCode()) % routes.size());
+        int hash = hostPort.hashCode();
+        if(hash == Integer.MIN_VALUE){
+            return routes.get(0);
+        }
+        return routes.get(Math.abs(hash) % routes.size());
     }
 
     private void registerProxy(HostPort hostPort) {
@@ -113,7 +117,7 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         }
         List<RouteMeta> list = routes.get(dst);
         
-        if(list != null && list.size() != 0) {
+        if(list != null && !list.isEmpty()) {
             RouteMeta route = selectRoute(list, hostPort);
             logger.info("register proxy: {}:{} {}", hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));
             ProxyRegistry.registerProxy(hostPort.getHost(), hostPort.getPort(), getProxyProtocol(route));

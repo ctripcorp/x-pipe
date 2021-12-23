@@ -21,6 +21,31 @@ import java.util.concurrent.TimeUnit;
 public class SimpleTest extends AbstractTest{
 
 	@Test
+	public void testCountDollar(){
+		String str = "*26\r\n" +
+				"$4\r\nname\r\n" + "$%d\r\n%s\r\n" +
+				"$2\r\nip\r\n" + "$%d\r\n%s\r\n" +
+				"$4\r\nport\r\n" + "$%d\r\n%s\r\n" +
+				"$5\r\nrunid\r\n" + "$40\r\nc6831f23150c7bcb28a86534ae1f55a4a3b9068e\r\n" + "$5\r\nflags\r\n$" + "8\r\nsentinel\r\n" +
+				"$16\r\npending-commands\r\n" + "$1\r\n0\r\n" + "$14\r\nlast-ping-sent\r\n" + "$1\r\n0\r\n" +
+				"$18\r\nlast-ok-ping-reply\r\n" + "$3\r\n542\r\n" + "$15\r\nlast-ping-reply\r\n" + "$3\r\n542\r\n" +
+				"$23\r\ndown-after-milliseconds\r\n" + "$5\r\n30000\r\n" + "$18\r\nlast-hello-message\r\n" + "$3\r\n203\r\n" +
+				"$12\r\nvoted-leader\r\n" + "$1\r\n?\r\n" + "$18\r\nvoted-leader-epoch\r\n" + "$1\r\n0\r\n";
+
+		int index = 0;
+		int count = 0;
+		while(true) {
+			int currentIndex = str.indexOf("$", index);
+			if(currentIndex < 0){
+				break;
+			}
+			count++;
+			index = currentIndex+1;
+		}
+		logger.info("{}", count);
+	}
+
+	@Test
 	public void testInterruptSleep(){
 
 	    executors.execute(new Runnable() {

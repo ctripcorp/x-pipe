@@ -22,6 +22,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public int instanceLongDelayMilli() {
+        return checkerConfig.getInstanceLongDelayMilli();
+    }
+
+    @Override
     public int pingDownAfterMilli() {
         return checkerConfig.getPingDownAfterMilli();
     }
@@ -39,6 +44,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     @Override
     public int getHealthyDelayMilli() {
         return checkerConfig.getHealthyDelayMilli();
+    }
+
+    @Override
+    public int getHealthyLeastNotifyIntervalMilli() {
+        return checkerConfig.getHealthyLeastNotifyIntervalMilli();
     }
 
     @Override

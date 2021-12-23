@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.cluster.impl.DefaultSlotManager;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServers;
 import com.ctrip.xpipe.redis.meta.server.impl.RemoteMetaServer;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.junit.After;
@@ -69,6 +71,12 @@ public class DeferredResponseTest implements InstantiationAwareBeanPostProcessor
     }
 
     /* internal */
+    private DcMetaCache mockDcMetaCache() {
+        DcMetaCache dcMetaCache = Mockito.mock(DcMetaCache.class);
+        Mockito.when(dcMetaCache.clusterId2DbId("testcluster")).thenReturn(1L);
+        return dcMetaCache;
+    }
+
     private SlotManager mockSlotManager() {
         SlotManager slotManager = Mockito.mock(SlotManager.class);
         Mockito.when(slotManager.getServerIdByKey(Mockito.any())).thenReturn(0);
@@ -120,6 +128,10 @@ public class DeferredResponseTest implements InstantiationAwareBeanPostProcessor
     public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
         // only mock Bean on DeferredResponseTest
         if (!onTest) return null;
+
+        if (beanClass.equals(DefaultDcMetaCache.class)) {
+            return mockDcMetaCache();
+        }
 
         if (beanClass.equals(DefaultSlotManager.class)) {
             return mockSlotManager();

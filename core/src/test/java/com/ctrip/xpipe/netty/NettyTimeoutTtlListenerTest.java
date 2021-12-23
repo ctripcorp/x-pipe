@@ -38,7 +38,7 @@ public class NettyTimeoutTtlListenerTest extends AbstractTest {
 
     private boolean pending = false;
 
-    private static int timeoutMill = 100;
+    private int timeoutMill = 500;
 
     @Before
     public void beforeNettyTimeoutTtlListenerTest() throws Exception {
@@ -71,10 +71,11 @@ public class NettyTimeoutTtlListenerTest extends AbstractTest {
 
     @Test
     public void testAlwaysTimeout() throws Exception {
+        timeoutMill = 1;
         sendNTime(true, 2);
         Assert.assertTrue(nettyClient.channel().isOpen());
         timeoutSend();
-        waitConditionUntilTimeOut(() -> !nettyClient.channel().isOpen(), timeoutMill * 2);
+        waitConditionUntilTimeOut(() -> !nettyClient.channel().isOpen());
     }
 
     private void sendNTime(boolean timeout, int n) {

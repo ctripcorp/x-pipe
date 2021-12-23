@@ -165,9 +165,4 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public long getNewMasterCacheTimeoutMilli() {
 		return 10L;
 	}
-
-	@Override
-	public boolean useDbIdForSlot() {
-		return false;
-	}
 }

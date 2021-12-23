@@ -20,6 +20,8 @@ public interface CheckerConfig {
 
     String KEY_HEALTHY_DELAY = "console.healthy.delay";
 
+    String KEY_HEALTHY_LEAST_NOTIFY_INTERVAL_MILLI = "console.healthy.least.notify.interval.milli";
+
     String KEY_REDIS_CONF_CHECK_INTERVAL = "redis.conf.check.interval";
 
     String KEY_DOWN_AFTER_CHECK_NUMS = "console.down.after.checknums";
@@ -29,6 +31,8 @@ public interface CheckerConfig {
     String KEY_XREDIS_REQUEST_MINI_VERSION = "xredis.minimum.request.version";
 
     String KEY_HEALTHY_DELAY_THROUGH_PROXY = "console.healthy.delay.through.proxy";
+
+    String KEY_INSTANCE_LONG_DELAY_MILLI = "console.instance.long.delay.milli";
 
     String KEY_DOWN_AFTER_CHECK_NUMS_THROUGH_PROXY = "console.down.after.checknums.through.proxy";
 
@@ -94,7 +98,11 @@ public interface CheckerConfig {
 
     int getHealthyDelayMilli();
 
+    int getHealthyLeastNotifyIntervalMilli();
+
     int getHealthyDelayMilliThroughProxy();
+
+    int getInstanceLongDelayMilli();
 
     String getReplDisklessMinRedisVersion();
 

@@ -34,6 +34,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getClusterHealthCheckInterval();
 
+	String getHickwallClusterMetricFormat();
+
 	HickwallMetricInfo getHickwallMetricInfo();
 
 	int getHealthyDelayMilli();
