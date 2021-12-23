@@ -25,7 +25,7 @@ import java.util.concurrent.*;
  */
 public class HickwallMetric implements MetricProxy {
 
-    private HickwallConfig config = new HickwallConfig();
+    private HickwallConfig config;
 
     private BlockingQueue<Point> datas;
 
@@ -45,8 +45,13 @@ public class HickwallMetric implements MetricProxy {
 
     private static final Logger logger = LoggerFactory.getLogger(HickwallMetric.class);
 
-    public HickwallMetric() {
+    public HickwallMetric(HickwallConfig config) {
+        this.config = config;
         start();
+    }
+
+    public HickwallMetric() {
+        this(new HickwallConfig());
     }
 
     private void start() {
@@ -188,11 +193,6 @@ public class HickwallMetric implements MetricProxy {
             }
         }
         this.client = client;
-    }
-
-    @VisibleForTesting
-    protected void setConfig(HickwallConfig config) {
-        this.config = config;
     }
 
     @Override

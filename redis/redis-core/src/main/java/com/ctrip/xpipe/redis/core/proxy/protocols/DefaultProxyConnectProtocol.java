@@ -12,8 +12,6 @@ import com.ctrip.xpipe.redis.core.proxy.parser.content.ProxyContentParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ForwardForOptionParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.path.ProxyForwardForParser;
 import com.ctrip.xpipe.redis.core.proxy.parser.route.ProxyRouteParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -25,8 +23,6 @@ import java.util.Objects;
  * May 09, 2018
  */
 public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConnectProtocolParser> implements ProxyConnectProtocol {
-
-    private static final Logger logger = LoggerFactory.getLogger(DefaultProxyConnectProtocol.class);
 
     private static final String UNKNOWN_SOURCE = "UnknownSource";
 
@@ -146,6 +142,11 @@ public class DefaultProxyConnectProtocol extends AbstractProxyProtocol<ProxyConn
         if (o == null || getClass() != o.getClass()) return false;
         DefaultProxyConnectProtocol that = (DefaultProxyConnectProtocol) o;
         return Objects.equals(content, that.content);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(content);
     }
     
 }

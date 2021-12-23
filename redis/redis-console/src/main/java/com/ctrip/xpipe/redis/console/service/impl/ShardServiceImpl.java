@@ -336,12 +336,14 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	private void clusterModifyNotify(String clusterName, ClusterTbl cluster) {
 		List<DcTbl> relatedDcs = dcService.findClusterRelatedDc(clusterName);
-		if(null == relatedDcs) return;
+		if(null == relatedDcs || null == cluster) return;
 
 		List<String> dcs = relatedDcs.stream().map(DcTbl::getDcName).collect(Collectors.toList());
-		if (consoleConfig.shouldNotifyClusterTypes().contains(cluster.getClusterType()))
+		ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+
+		if (consoleConfig.shouldNotifyClusterTypes().contains(clusterType.toString()))
 			notifier.notifyClusterUpdate(clusterName, dcs);
-		if (null != cluster && ClusterType.lookup(cluster.getClusterType()).supportMigration()) {
+		if (clusterType.supportMigration()) {
 			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
 		}
 	}
