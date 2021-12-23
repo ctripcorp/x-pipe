@@ -15,8 +15,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -521,7 +519,6 @@ public class HealthStatusTest extends AbstractRedisTest {
             @Override
             public void update(Object args, Observable observable) {
                 notifyCount.incrementAndGet();
-                System.out.println(args);
             }
         });
         healthStatus.pong();
