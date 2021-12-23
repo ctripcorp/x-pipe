@@ -37,6 +37,8 @@ public class ProxyAgentTool {
     private static URL findProxyClientJar(String dir) throws MalformedURLException {
         File file = new File(dir);
         File[] tempList = file.listFiles();
+        if (null == tempList) return null;
+
         for (int i = 0; i < tempList.length; i++) {
             if (tempList[i].isFile()) {
                 if(Pattern.matches(".*/redis-proxy-client-(\\d+).(\\d+).(\\d)+.jar", tempList[i].toString())) {
