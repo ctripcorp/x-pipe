@@ -33,7 +33,7 @@ public class RateLimitTest extends AbstractFakeRedisTest {
     private RedisKeeperServer redisKeeperServer1;
     private RedisKeeperServer redisKeeperServer2;
 
-    private int replDownSafeIntervalMilli = 1200;
+    private int replDownSafeIntervalMilli = 2000;
     private int BEFORE_APPROXIMATE__RESTART_TIME_MILLI;
 
 
