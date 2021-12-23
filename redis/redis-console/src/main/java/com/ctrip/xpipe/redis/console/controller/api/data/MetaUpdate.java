@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -73,6 +75,8 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
+
+    private static final String TYPE = "MetaUpdate";
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET)
     public Map<String, Integer> getStats() {
@@ -247,14 +251,30 @@ public class MetaUpdate extends AbstractConsoleController {
                 return RetMessage.createFailMessage("latter cluster id & name not match");
             }
 
-            clusterService.exchangeName(exchangeNameInfo.getFormerClusterId(),
-                    exchangeNameInfo.getFormerClusterName(),
-                    exchangeNameInfo.getLatterClusterId(),
-                    exchangeNameInfo.getLatterClusterName());
+            TransactionMonitor.DEFAULT.logTransaction(TYPE, "exchangename", new Task<Object>() {
+                @Override
+                public void go() {
+                    clusterService.exchangeName(exchangeNameInfo.getFormerClusterId(),
+                            exchangeNameInfo.getFormerClusterName(),
+                            exchangeNameInfo.getLatterClusterId(),
+                            exchangeNameInfo.getLatterClusterName());
+                }
+
+                @Override
+                public Map<String, Object> getData() {
+                    return new HashMap<String, Object>() {{
+                        put("formerClusterDbId", exchangeNameInfo.getFormerClusterId());
+                        put("formerClusterId", exchangeNameInfo.getFormerClusterName());
+                        put("latterClusterDbId", exchangeNameInfo.getLatterClusterId());
+                        put("latterClusterId", exchangeNameInfo.getLatterClusterName());
+                    }};
+                }
+            });
         } catch (CheckFailException cfe) {
+            logger.error("[clusterExchangeName][checkFail] {}", exchangeNameInfo, cfe);
             return RetMessage.createFailMessage(cfe.getMessage());
         } catch (Exception e) {
-            logger.error("{}", e);
+            logger.error("[clusterExchangeName][fail] {}", exchangeNameInfo, e);
             return RetMessage.createFailMessage(e.getMessage());
         }
 
