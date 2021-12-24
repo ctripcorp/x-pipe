@@ -195,7 +195,7 @@ public class ClusterController extends AbstractConsoleController {
         return clusterService.findAllClusterByKeeperContainer(containerId);
     }
 
-    @RequestMapping(value = "/cluster/hickwall/{clusterName}", method = RequestMethod.GET)
+    @RequestMapping(value = "/cluster/hickwall/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public RetMessage getClusterHickwallUrl(@PathVariable String clusterName) {
         return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
     }
