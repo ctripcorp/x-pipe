@@ -196,8 +196,8 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/cluster/hickwall/{clusterName}", method = RequestMethod.GET)
-    public String getClusterHickwallUrl(@PathVariable String clusterName) {
-        return String.format(config.getHickwallClusterMetricFormat(), clusterName);
+    public RetMessage getClusterHickwallUrl(@PathVariable String clusterName) {
+        return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
     }
 
 }

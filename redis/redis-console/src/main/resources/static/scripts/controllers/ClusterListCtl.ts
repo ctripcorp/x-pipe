@@ -3,11 +3,11 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
-    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
-                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType) {
-
+                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
+    const SUCCESS_STATE = 0;
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
     $scope.dcsFilterData = [];
@@ -41,6 +41,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.dcName = $stateParams.dcName;
     $scope.type = $stateParams.type;
     $scope.clusterTypes = ClusterType.selectData()
+    $scope.gotoClusterHickwall = gotoClusterHickwall;
 
     $scope.displayedClusters = [];
     $scope.filteredClusters = [];
@@ -122,6 +123,21 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         }
 
         return $scope.dcs[cluster.activedcId] || "Unbind";
+    }
+    
+    function isBiDirectionCluster(type) {
+        var clusterType = ClusterType.lookup(type)
+        return "bi_direction" == clusterType.value
+    }
+    
+    function gotoClusterHickwall(type, clusterName) {
+        if(isBiDirectionCluster(type)) {
+            ClusterService.getClusterHickwallAddr(clusterName).then(function(result) {
+                if(result != null && result.state === SUCCESS_STATE) {
+                    $window.open(result.message, '_blank');
+                }
+            });
+        }
     }
 
     function getTypeName(type) {
