@@ -24,14 +24,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * @author lishanglin
  * date 2021/10/21
  */
-public class ContinueMigrationTest extends AbstractConsoleIntegrationTest {
+public class ConsoleContinueMigrationTest extends AbstractConsoleIntegrationTest {
 
     private int qps = 30;
+
+    private AtomicInteger continueTimes = new AtomicInteger(0);
 
     private ScheduledExecutorService scheduled;
 
@@ -55,13 +59,7 @@ public class ContinueMigrationTest extends AbstractConsoleIntegrationTest {
                 loopResources, ConnectionProvider.builder("TestConnProvider").maxConnections(1000)
                 .pendingAcquireTimeout(Duration.ofMillis(1000)).maxIdleTime(Duration.ofMillis(10000)).build());
 
-//        IntStream.rangeClosed(0, 20000).forEach(i -> {
-//            String cluster = "cluster" + i;
-//            waitMigrationClusters.add(cluster);
-//        });
-
-        List<ClusterTbl> clusterTbls = clusterService.findActiveClustersByDcName(sourceDc);
-        clusterTbls.forEach(clusterTbl -> waitMigrationClusters.add(clusterTbl.getClusterName()));
+        initClustersFromDb();
     }
 
     @Test
@@ -70,9 +68,39 @@ public class ContinueMigrationTest extends AbstractConsoleIntegrationTest {
         waitConditionUntilTimeOut(waitMigrationClusters::isEmpty, 2400000, 10000);
     }
 
+    @Test
+    public void testContinueMigrationToAndBack() throws Exception {
+        this.continueTimes.set(10);
+        scheduled.scheduleWithFixedDelay(this::migrateMultiClusters, 0, 1, TimeUnit.SECONDS);
+        waitConditionUntilTimeOut(() -> 0 == continueTimes.get(), 2400000, 10000);
+    }
+
+    private void switchTargetDc() {
+        String tmpTarget = this.targetDc;
+        this.targetDc = this.sourceDc;
+        this.sourceDc = tmpTarget;
+    }
+
+    private void initClustersFromDb() {
+        List<ClusterTbl> clusterTbls = clusterService.findActiveClustersByDcName(sourceDc);
+        clusterTbls.forEach(clusterTbl -> waitMigrationClusters.add(clusterTbl.getClusterName()));
+    }
+
+    private void initClusters() {
+        IntStream.rangeClosed(0, 20000).forEach(i -> {
+            String cluster = "cluster" + i;
+            waitMigrationClusters.add(cluster);
+        });
+    }
+
     private void migrateMultiClusters() {
         for (int i = 0; i < qps; i++) {
             if (!migrateNextCluster()) break;
+        }
+        if (waitMigrationClusters.isEmpty() && continueTimes.get() > 0) {
+            continueTimes.decrementAndGet();
+            switchTargetDc();
+            initClustersFromDb();
         }
     }
 
