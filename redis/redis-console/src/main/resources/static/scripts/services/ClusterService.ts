@@ -112,6 +112,10 @@ function ClusterService($resource, $q) {
             method: 'GET',
             url: '/console/shards/unhealthy',
             isArray: true
+        },
+        get_cluster_hickwall: {
+            method: 'GET',
+            url: '/console/cluster/hickwall/:clusterName'
         }
     });
     function getInvolvedOrgs() {
@@ -394,6 +398,17 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
+    function getClusterHickwallAddr(clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_hickwall ({clusterName},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+    
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -418,5 +433,6 @@ function ClusterService($resource, $q) {
         findClustersByDcName : findClustersByDcName,
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
+        getClusterHickwallAddr: getClusterHickwallAddr,
     }
 }
