@@ -81,8 +81,10 @@ public class FastMetaServerConsoleServiceTest extends AbstractTest {
         try {
             RedisMeta result = fastMetaServerConsoleService.getCurrentMaster("cluster1", "shard1");
         } catch (Exception e) {
+            long duration = System.currentTimeMillis() - start;
             Assert.assertTrue(ExceptionUtils.getRootCause(e) instanceof SocketTimeoutException);
-            Assert.assertTrue(AbstractService.FAST_SO_TIMEOUT + readDelta > System.currentTimeMillis() - start);
+            Assert.assertTrue(duration > AbstractService.FAST_SO_TIMEOUT);
+            Assert.assertTrue(AbstractService.DEFAULT_SO_TIMEOUT > duration);
             return;
         }
         Assert.fail();
