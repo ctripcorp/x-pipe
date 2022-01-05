@@ -127,8 +127,8 @@ else
     IDC=`getIdc`
     if [ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ];then
         #MB
-        USED_MEM=6144
-        XMN=2304
+        USED_MEM=8192
+        XMN=6144
         META_SPACE=256
         MAX_META_SPACE=256
     else
