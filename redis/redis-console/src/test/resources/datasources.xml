@@ -20,8 +20,7 @@
          -->
          <user>sa</user>
          <password></password>
-         <connectionProperties>
-         </connectionProperties>
+         <connectionProperties></connectionProperties>
       </properties>
    </data-source>
 </data-sources>

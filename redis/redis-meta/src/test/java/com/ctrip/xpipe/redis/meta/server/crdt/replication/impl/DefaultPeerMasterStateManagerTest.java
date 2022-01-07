@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultPeerMasterStateManagerTest extends AbstractMetaServerTest {
@@ -27,12 +27,11 @@ public class DefaultPeerMasterStateManagerTest extends AbstractMetaServerTest {
     @Mock
     protected CurrentMetaManager currentMetaManager;
 
-    private String dcId = "dc1", clusterId = "cluster1", shardId = "shard1";
+    private String clusterId = "cluster1", shardId = "shard1";
 
     @Before
     public void setupPeerMasterStateManagerTest() throws Exception {
         defaultPeerMasterAdjusterManager.initialize();
-        Mockito.when(dcMetaCache.getCurrentDc()).thenReturn(dcId);
     }
 
     @Test
@@ -46,6 +45,8 @@ public class DefaultPeerMasterStateManagerTest extends AbstractMetaServerTest {
     private ClusterMeta mockClusterMeta() {
         ClusterMeta clusterMeta = new ClusterMeta(clusterId);
         ShardMeta shardMeta = new ShardMeta(shardId);
+        clusterMeta.setDbId(1L);
+        shardMeta.setDbId(1L);
         clusterMeta.setType(ClusterType.BI_DIRECTION.toString());
         clusterMeta.addShard(shardMeta);
 

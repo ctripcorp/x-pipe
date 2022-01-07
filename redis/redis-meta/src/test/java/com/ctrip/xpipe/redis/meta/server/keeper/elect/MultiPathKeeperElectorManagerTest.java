@@ -11,14 +11,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Matchers.*;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
@@ -62,8 +60,8 @@ public class MultiPathKeeperElectorManagerTest extends AbstractKeeperElectorMana
         shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];
 
         doAnswer(inv -> {
-            surviveKeepers.set(inv.getArgumentAt(2, List.class));
-            activeKeeper.set(inv.getArgumentAt(3, KeeperMeta.class));
+            surviveKeepers.set(inv.getArgument(2, List.class));
+            activeKeeper.set(inv.getArgument(3, KeeperMeta.class));
             return null;
         }).when(currentMetaManager).setSurviveKeepers(anyLong(), anyLong(), anyList(), any(KeeperMeta.class));
         when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);

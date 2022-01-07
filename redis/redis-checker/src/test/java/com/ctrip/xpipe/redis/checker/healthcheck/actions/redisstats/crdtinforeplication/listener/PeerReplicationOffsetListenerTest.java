@@ -18,11 +18,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class PeerReplicationOffsetListenerTest extends AbstractCheckerTest {
     private RedisHealthCheckInstance instance;
 
@@ -92,7 +92,7 @@ public class PeerReplicationOffsetListenerTest extends AbstractCheckerTest {
         CRDTInfoResultExtractor executors = new CRDTInfoResultExtractor(info);
         CrdtInfoReplicationContext context = new CrdtInfoReplicationContext(instance, info);
         Mockito.doAnswer(invocation -> {
-            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            MetricData point = invocation.getArgument(0, MetricData.class);
             Assert.assertEquals(PeerReplicationOffsetListener.METRIC_TYPE, point.getMetricType());
             Assert.assertEquals(instance.getCheckInfo().getClusterId(), point.getClusterName());
             Assert.assertEquals(instance.getCheckInfo().getShardId(), point.getShardName());
@@ -134,7 +134,7 @@ public class PeerReplicationOffsetListenerTest extends AbstractCheckerTest {
         AtomicReference<String> host1_dc = new AtomicReference<>();
         AtomicReference<String> host2_dc = new AtomicReference<>();
         Mockito.doAnswer(invocation -> {
-            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            MetricData point = invocation.getArgument(0, MetricData.class);
             HostPort host = HostPort.fromString(point.getTags().get(PeerReplicationOffsetListener.KEY_SRC_PEER));
             if( host.getPort() == port1) {
                 host1_dc.set(point.getTags().get((Object) PeerReplicationOffsetListener.KEY_SRC_PEER_DC));

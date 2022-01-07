@@ -23,8 +23,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getConsoleNotifyRetryTimes();
 	
 	int getConsoleNotifyRetryInterval();
-	
-	String getMetaservers();
+
+	Map<String,String> getMetaservers();
 	
 	int getConsoleNotifyThreads();
 

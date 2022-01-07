@@ -46,7 +46,7 @@ public class PeerBacklogOffsetListenerTest extends AbstractCheckerTest {
         boolean oldIsMasterStats = instance.getCheckInfo().isMaster();
         instance.getCheckInfo().isMaster(isMaster);
         Mockito.doAnswer(invocation -> {
-            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            MetricData point = invocation.getArgument(0, MetricData.class);
             Assert.assertEquals(PeerBacklogOffsetListener.METRIC_TYPE, point.getMetricType());
             Assert.assertEquals(offset, point.getValue(), DOUBLE_DELTA);
             return null;

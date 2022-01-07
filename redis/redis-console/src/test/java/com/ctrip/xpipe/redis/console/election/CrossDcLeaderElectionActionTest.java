@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.dal.jdbc.DalNotFoundException;
 
@@ -321,8 +321,8 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
                     throw new DalUpdateException("db write is not available for dc " + dcName);
                 }
 
-                handleWrite(inv.getArgumentAt(0, ConfigModel.class),
-                        inv.getArgumentAt(1, Date.class), inv.getArgumentAt(2, Date.class));
+                handleWrite(inv.getArgument(0, ConfigModel.class),
+                        inv.getArgument(1, Date.class), inv.getArgument(2, Date.class));
                 return null;
             }).when(configDao).updateConfigIdempotent(Mockito.any(), Mockito.any(), Mockito.any());
 
@@ -332,7 +332,7 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
                 }
                 if (null != localConfigTbl) return localConfigTbl;
 
-                return handleRead(inv.getArgumentAt(0, String.class), inv.getArgumentAt(1, String.class));
+                return handleRead(inv.getArgument(0, String.class), inv.getArgument(1, String.class));
             }).when(configDao).getByKeyAndSubId(KEY_LEASE_CONFIG, SUB_KEY_CROSS_DC_LEADER);
 
             Mockito.doAnswer(inv -> {
@@ -340,8 +340,8 @@ public class CrossDcLeaderElectionActionTest extends AbstractTest {
                     throw new DalInsertException("db write is not available for dc " + dcName);
                 }
 
-                handleInsert(inv.getArgumentAt(0, ConfigModel.class),
-                        inv.getArgumentAt(1, Date.class), inv.getArgumentAt(2, String.class));
+                handleInsert(inv.getArgument(0, ConfigModel.class),
+                        inv.getArgument(1, Date.class), inv.getArgument(2, String.class));
                 return null;
             }).when(configDao).insertConfig(Mockito.any(), Mockito.any(), Mockito.anyString());
 
