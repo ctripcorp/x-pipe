@@ -40,6 +40,7 @@ public class H2Init implements SpringApplicationRunListener {
         logger.info("{}", Joiner.on(",").join(args));
     }
 
+    @Override
     public void started(ConfigurableApplicationContext context) {
         //have to be sysout
         System.out.println("[started][execute sql]");
@@ -108,11 +109,6 @@ public class H2Init implements SpringApplicationRunListener {
     }
 
     @Override
-    public void starting() {
-
-    }
-
-    @Override
     public void environmentPrepared(ConfigurableEnvironment environment) {
 
     }
@@ -125,11 +121,6 @@ public class H2Init implements SpringApplicationRunListener {
     @Override
     public void contextLoaded(ConfigurableApplicationContext context) {
 
-    }
-
-    @Override
-    public void finished(ConfigurableApplicationContext context, Throwable exception) {
-        started(context);
     }
 
 }

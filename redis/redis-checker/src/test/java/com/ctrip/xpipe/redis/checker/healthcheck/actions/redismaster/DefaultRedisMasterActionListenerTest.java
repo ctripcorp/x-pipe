@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,12 +69,12 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
         Mockito.doAnswer((invocation) -> mockXpipeMeta()).when(metaCache).getXpipeMeta();
 //        Mockito.doAnswer((invocation) -> redisTbls).when(redisService).findRedisesByDcClusterShard(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
 //        Mockito.doAnswer(invocation -> {
-//            updatedRedisTbls = invocation.getArgumentAt(0, List.class);
+//            updatedRedisTbls = invocation.getArgument(0, List.class);
 //            return null;
 //        }).when(redisService).updateBatchMaster(Mockito.anyList());
         Mockito.doAnswer(invocation -> {
-            RedisHealthCheckInstance instance = invocation.getArgumentAt(0, RedisHealthCheckInstance.class);
-            this.updateRole = invocation.getArgumentAt(1, Server.SERVER_ROLE.class);
+            RedisHealthCheckInstance instance = invocation.getArgument(0, RedisHealthCheckInstance.class);
+            this.updateRole = invocation.getArgument(1, Server.SERVER_ROLE.class);
             this.updateRedis = instance.getCheckInfo().getHostPort();
             return null;
         }).when(persistenceCache).updateRedisRole(Mockito.any(), Mockito.any());

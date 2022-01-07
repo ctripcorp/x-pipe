@@ -18,13 +18,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.Collections;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +31,7 @@ import static org.mockito.Mockito.when;
  * @author lishanglin
  * date 2021/11/19
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class RedisWrongSlaveMonitorTest extends AbstractCheckerTest {
 
     @InjectMocks
@@ -74,8 +73,8 @@ public class RedisWrongSlaveMonitorTest extends AbstractCheckerTest {
         wrongSlaveMonitor.onAction(mockRoleContext(masterRole));
         Mockito.verify(alertManager)
                 .alert(anyString(), anyString(), anyString(),
-                        Matchers.eq(new HostPort("127.0.0.1", slavePort)),
-                        Matchers.eq(ALERT_TYPE.REPL_WRONG_SLAVE), anyString());
+                        eq(new HostPort("127.0.0.1", slavePort)),
+                        eq(ALERT_TYPE.REPL_WRONG_SLAVE), anyString());
     }
 
     @Test

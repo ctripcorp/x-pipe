@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.mockito.Mockito.*;
 

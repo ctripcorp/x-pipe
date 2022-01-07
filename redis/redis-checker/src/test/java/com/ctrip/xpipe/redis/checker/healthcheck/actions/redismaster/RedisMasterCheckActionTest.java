@@ -43,7 +43,7 @@ public class RedisMasterCheckActionTest extends AbstractCheckerTest {
         MockitoAnnotations.initMocks(this);
         Mockito.when(listener.worksfor(Mockito.any())).thenReturn(true);
         Mockito.doAnswer(invocation -> {
-            context = invocation.getArgumentAt(0, RedisMasterActionContext.class);
+            context = invocation.getArgument(0, RedisMasterActionContext.class);
             return null;
         }).when(listener).onAction(Mockito.any());
 

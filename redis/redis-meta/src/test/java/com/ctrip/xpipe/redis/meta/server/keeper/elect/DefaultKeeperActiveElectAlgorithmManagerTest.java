@@ -7,7 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.mockito.Mockito.when;
 
@@ -22,16 +22,11 @@ public class DefaultKeeperActiveElectAlgorithmManagerTest extends AbstractMetaSe
 	private DefaultKeeperActiveElectAlgorithmManager kaem;
 	@Mock
 	private DcMetaCache dcMetaCache;
-	
-	private String clusterId, shardId;
 
 	private Long clusterDbId, shardDbId;
 	
 	@Before
 	public void beforeDefaultKeeperActiveElectAlgorithmManagerTest(){
-		
-		clusterId = getClusterId();
-		shardId = getShardId();
 		clusterDbId = getClusterDbId();
 		shardDbId = getShardDbId();
 		kaem = new DefaultKeeperActiveElectAlgorithmManager();
@@ -40,19 +35,12 @@ public class DefaultKeeperActiveElectAlgorithmManagerTest extends AbstractMetaSe
 	
 	@Test
 	public void testActive(){
-		
-		when(dcMetaCache.isCurrentDcPrimary(getClusterDbId(), getShardDbId())).thenReturn(true);
-		
-
 		Assert.assertTrue(kaem.get(clusterDbId, shardDbId) instanceof DefaultKeeperActiveElectAlgorithm);
 	}
 	
 	@Test
 	public void testBackup(){
-		
-		when(dcMetaCache.isCurrentDcPrimary(getClusterDbId(), getShardDbId())).thenReturn(false);
 		Assert.assertTrue(kaem.get(clusterDbId, shardDbId) instanceof DefaultKeeperActiveElectAlgorithm);
-		
 	}
 
 

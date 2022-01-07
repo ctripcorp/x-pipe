@@ -93,8 +93,8 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
     }
 
     @Bean
-    public FilterRegistrationBean domainValidateFilter() {
-        FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+    public FilterRegistrationBean<DomainValidateFilter> domainValidateFilter() {
+        FilterRegistrationBean<DomainValidateFilter> registrationBean = new FilterRegistrationBean<>();
         Supplier<String> expectedDomainName = () -> {
             // toLowerCase() to match metaServerConfig retrieve info
             String dcName = FoundationService.DEFAULT.getDataCenter().toLowerCase();

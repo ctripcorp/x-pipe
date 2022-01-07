@@ -386,8 +386,8 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         redisService.notifier = notifier;
 
         Mockito.doAnswer(invocation -> {
-            String clusterName = invocation.getArgumentAt(0, String.class);
-            List<String> dcs = invocation.getArgumentAt(1, List.class);
+            String clusterName = invocation.getArgument(0, String.class);
+            List<String> dcs = invocation.getArgument(1, List.class);
             Assert.assertEquals("bi-test", clusterName);
             Assert.assertEquals(2, dcs.size());
             Assert.assertTrue(dcs.contains("jq") && dcs.contains("oy"));
@@ -403,8 +403,8 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         redisService.notifier = notifier;
 
         Mockito.doAnswer(invocation -> {
-            String paramClusterName = invocation.getArgumentAt(0, String.class);
-            List<String> dcs = invocation.getArgumentAt(1, List.class);
+            String paramClusterName = invocation.getArgument(0, String.class);
+            List<String> dcs = invocation.getArgument(1, List.class);
             Assert.assertEquals(clusterName, paramClusterName);
             Assert.assertEquals(1, dcs.size());
             Assert.assertTrue(dcs.contains("jq"));

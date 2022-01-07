@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.dao;
 
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.console.migration.command.ReactorMigrationCommandBuilderImpl;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
@@ -53,8 +53,14 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
 
+	@Resource( name = MigrationResources.MIGRATION_IO_CALLBACK_EXECUTOR )
+	private Executor ioCallbackExecutors;
+
 	@Resource( name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR )
 	private ScheduledExecutorService scheduled;
+
+	@Autowired
+	private ReactorMigrationCommandBuilderImpl reactorMigrationCommandBuilder;
 
 
 	private MigrationEventTblDao migrationEventTblDao;
@@ -192,11 +198,13 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 					event.addMigrationCluster(new DefaultMigrationCluster(executors, scheduled, event, detail.getRedundantClusters(),
 							dcService, clusterService, shardService, redisService, migrationService));
 				}
-				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId()); 
-				migrationCluster.addNewMigrationShard(new DefaultMigrationShard(migrationCluster, shard,
+				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId());
+				DefaultMigrationShard migrationShard = new DefaultMigrationShard(migrationCluster, shard,
 						migrationCluster.getClusterShards().get(shard.getShardId()),
 						migrationCluster.getClusterDcs(),
-						migrationService));
+						migrationService, reactorMigrationCommandBuilder);
+				migrationShard.setExecutors(ioCallbackExecutors);
+				migrationCluster.addNewMigrationShard(migrationShard);
 			}
 			
 			return event;
