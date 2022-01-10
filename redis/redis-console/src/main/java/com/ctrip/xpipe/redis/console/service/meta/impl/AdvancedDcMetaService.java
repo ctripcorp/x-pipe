@@ -60,10 +60,16 @@ public class AdvancedDcMetaService implements DcMetaService {
     private KeeperContainerService keeperContainerService;
 
     @Autowired
+    private AzService azService;
+
+    @Autowired
     private SentinelMetaService sentinelMetaService;
 
     @Autowired
     private KeepercontainerMetaService keepercontainerMetaService;
+
+    @Autowired
+    private AzMetaService azMetaService;
 
     @Autowired
     private RedisMetaService redisMetaService;
@@ -114,6 +120,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
+        chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, factory);
@@ -156,6 +163,39 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doReset() {
             dcMeta.getSentinels().clear();
+        }
+
+        @Override
+        public String getName() {
+            return this.getClass().getSimpleName();
+        }
+    }
+
+    class GetAllAavailableZoneCommand extends AbstractCommand<Void> {
+        private DcMeta dcMeta;
+
+        public GetAllAavailableZoneCommand(DcMeta dcMeta) {
+            this.dcMeta = dcMeta;
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
+            try {
+                List<AzTbl> azTbls = azService.getDcActiveAvailableZoneTbls(dcMeta.getId());
+                if(azTbls != null || !azTbls.isEmpty()) {
+                    azTbls.forEach(aztbl -> {
+                        dcMeta.addAz(azMetaService.encodeAzMeta(aztbl, dcMeta));
+                    });
+                }
+                future().setSuccess();
+            } catch (Exception e) {
+                future().setFailure(e);
+            }
+        }
+
+        @Override
+        protected void doReset() {
+            dcMeta.getAzs().clear();
         }
 
         @Override
