@@ -50,7 +50,7 @@ public class ConflictMetricListenerTest extends AbstractCheckerTest {
         listener.setMetricProxy(proxy);
 
         Mockito.doAnswer(invocation -> {
-            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            MetricData point = invocation.getArgument(0, MetricData.class);
             Assert.assertEquals(instance.getCheckInfo().getClusterId(), point.getClusterName());
             Assert.assertEquals(instance.getCheckInfo().getShardId(), point.getShardName());
             Assert.assertEquals(instance.getCheckInfo().getClusterType().toString(), point.getClusterType());

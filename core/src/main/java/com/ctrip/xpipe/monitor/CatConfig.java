@@ -39,12 +39,8 @@ public class CatConfig {
 		return bean;
 	}
 
-	@Bean
+	@Bean(name="cat-listener")
 	public ServletListenerRegistrationBean<CatListener> catListener() {
-		
-		ServletListenerRegistrationBean<CatListener> bean = new ServletListenerRegistrationBean<CatListener>(
-				new CatListener());
-		bean.setName("cat-listener");
-		return bean;
+		return new ServletListenerRegistrationBean<>(new CatListener());
 	}
 }

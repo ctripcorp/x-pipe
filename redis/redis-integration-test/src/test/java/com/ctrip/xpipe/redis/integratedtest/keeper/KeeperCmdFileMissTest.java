@@ -67,7 +67,7 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
             doAnswer(storeParams -> {
                 replicationStore.gc();
                 logger.info("[cmdFileMissingOnSendingCmdAfterFsync] after gc");
-                replicationStore.addCommandsListener(storeParams.getArgumentAt(0, Long.class), storeParams.getArgumentAt(1, CommandsListener.class));
+                replicationStore.addCommandsListener(storeParams.getArgument(0, Long.class), storeParams.getArgument(1, CommandsListener.class));
                 return null;
             }).when(spyReplicationStore).addCommandsListener(anyLong(), any());
 

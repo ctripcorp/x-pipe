@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparatorTest;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManagerTest;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICETest;
+import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceTest;
 import com.ctrip.xpipe.redis.core.metaserver.impl.FastMetaServerConsoleServiceTest;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.CrdtPublishCommandTest;
@@ -82,7 +83,8 @@ import org.junit.runners.Suite.SuiteClasses;
         CrdtPublishCommandTest.class,
         CrdtSubscribeCommandTest.class,
         TestAbstractSubscribeTest.class,
-        FastMetaServerConsoleServiceTest.class
+        FastMetaServerConsoleServiceTest.class,
+        DefaultReactorMetaServerConsoleServiceTest.class
 })
 public class AllTests {
 
