@@ -87,10 +87,10 @@ public class KeeperAvailableZoneCheckTest {
             dcMeta.addAz(new AzMeta(azIds.get(0)));
             dcMeta.addAz(new AzMeta(azIds.get(1)));
 
-            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(0), Integer.valueOf(azIds.get(0))));
-            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(1), Integer.valueOf(azIds.get(0))));
-            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(2), Integer.valueOf(azIds.get(1))));
-            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(3), Integer.valueOf(azIds.get(1))));
+            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(0), Long.valueOf(azIds.get(0))));
+            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(1), Long.valueOf(azIds.get(0))));
+            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(2), Long.valueOf(azIds.get(1))));
+            dcMeta.addKeeperContainer(mockKeepercontainerMeta(keepercontainerIps.get(3), Long.valueOf(azIds.get(1))));
         }
 
         for (String cluster: mockClusters) {
@@ -100,7 +100,7 @@ public class KeeperAvailableZoneCheckTest {
         return dcMeta;
     }
 
-    private KeeperContainerMeta mockKeepercontainerMeta(String ip, Integer azId) {
+    private KeeperContainerMeta mockKeepercontainerMeta(String ip, Long azId) {
         KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
         keeperContainerMeta.setAzId(azId);
         keeperContainerMeta.setIp(ip);

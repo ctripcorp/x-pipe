@@ -4,11 +4,17 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
-import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.AzMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 
 import java.util.*;
 
@@ -38,9 +44,11 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
 
     private List<DcClusterShard> findKeeperInSameAvailableZones(DcMeta dcMeta, List<KeeperContainerMeta> keeperContainers) {
         List<DcClusterShard> clusterShards = new ArrayList<>();
-        Map<String, Integer> keeperConatainerAvailableMap = new HashMap<>();
+        Map<String, Long> keeperConatainerAvailableMap = new HashMap<>();
 
         keeperContainers.forEach(keeperContainerMeta ->{
+            logger.debug("[findKeeperInSameAvailableZones]:keeperContainer {}:{} is from available zone {}",
+                    keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperContainerMeta.getAzId());
             keeperConatainerAvailableMap.put(keeperContainerMeta.getIp(), keeperContainerMeta.getAzId());
         });
 
@@ -55,11 +63,13 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
         return clusterShards;
     }
 
-    private boolean isDcClusterShardInDifferentAvailableZones(ShardMeta shardMeta, Map<String, Integer> keeperConatainerAvailableMap) {
+    private boolean isDcClusterShardInDifferentAvailableZones(ShardMeta shardMeta, Map<String, Long> keeperConatainerAvailableMap) {
         List<KeeperMeta> keepers = shardMeta.getKeepers();
-        Set<Integer> resultSet = new HashSet<>();
+        Set<Long> resultSet = new HashSet<>();
 
         for (KeeperMeta keeper : keepers) {
+            logger.debug("[isDcClusterShardInDifferentAvailableZones]:keeper {}:{} from shard {} is in available zone {}",
+                     keeper.getIp(), keeper.getPort(), shardMeta.getId(), keeperConatainerAvailableMap.get(keeper.getIp()));
             if (!resultSet.add(keeperConatainerAvailableMap.get(keeper.getIp()))) {
                 return false;
             }
