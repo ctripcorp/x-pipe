@@ -63,7 +63,7 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
         Map<String, Long> keeperConatainerAvailableMap = new HashMap<>();
 
         keeperContainers.forEach(keeperContainerMeta ->{
-            logger.debug("[docheck][{}]:keeperContainer {}:{} is from available zone {}",
+            logger.debug("[findKeeperInSameAvailableZones][{}]:keeperContainer {}:{} is from available zone {}",
                     dcMeta.getId(), keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperContainerMeta.getAzId());
             keeperConatainerAvailableMap.put(keeperContainerMeta.getIp(), keeperContainerMeta.getAzId());
         });
@@ -88,7 +88,7 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
 
         Set<Long> resultSet = new HashSet<>();
         for (KeeperMeta keeper : keepers) {
-            logger.debug("[docheck][{}][{}][{}]:keeper {}:{} is in available zone {}",
+            logger.debug("[isDcClusterShardInDifferentAvailableZones][{}][{}][{}]:keeper {}:{} is in available zone {}",
                     dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), keeper.getIp(), keeper.getPort(), keeperConatainerAvailableMap.get(keeper.getIp()));
             if (!resultSet.add(keeperConatainerAvailableMap.get(keeper.getIp()))) {
                 return false;
