@@ -491,7 +491,7 @@ public enum ALERT_TYPE {
             return new DetailDesc("master over one", "more than one master found");
         }
     },
-    KEEPER_IN_DIFFERENT_AVAILABLE_ZONE("keepers in the same available zone found",  EMAIL_DBA|EMAIL_XPIPE_ADMIN) {
+    KEEPER_IN_SAME_AVAILABLE_ZONE("keepers in the same available zone found",  EMAIL_DBA|EMAIL_XPIPE_ADMIN) {
         @Override
         public boolean urgent() {
             return false;
