@@ -35,9 +35,6 @@ public class KeeperAvailableZoneCheckTest {
     @Captor
     ArgumentCaptor<String> dcCaptor;
 
-
-    private ClusterType mockClusterType = ClusterType.ONE_WAY;
-
     private List<String> mockDcs = Arrays.asList("jq", "oy", "fra");
 
     private List<String> mockClusters = Arrays.asList("cluster1", "cluster2");
@@ -57,15 +54,15 @@ public class KeeperAvailableZoneCheckTest {
     @Test
     public void testKeeperAvailableZoneCheck() {
         keeperAvailableZoneCheck.doCheck();
-        Mockito.verify(alertManager, Mockito.times(2))
+        Mockito.verify(alertManager, Mockito.times(1))
                 .alert(dcCaptor.capture(), clusterCaptor.capture(), shardCaptor.capture(), Mockito.any(), Mockito.any(), Mockito.anyString());
 
         List<String> expectdcs = dcCaptor.getAllValues();
-        Assert.assertEquals(Arrays.asList(mockDcs.get(2), mockDcs.get(2)), expectdcs);
+        Assert.assertEquals(Arrays.asList(mockDcs.get(2)), expectdcs);
         List<String> expectClusters = clusterCaptor.getAllValues();
-        Assert.assertEquals(mockClusters, expectClusters);
+        Assert.assertEquals(Arrays.asList(mockClusters.get(0)), expectClusters);
         List<String> expectShards = shardCaptor.getAllValues();
-        Assert.assertEquals(Arrays.asList(mockShards.get(0), mockShards.get(0)), expectShards);
+        Assert.assertEquals(Arrays.asList(mockShards.get(0)), expectShards);
 
     }
 
@@ -110,7 +107,11 @@ public class KeeperAvailableZoneCheckTest {
     private ClusterMeta mockClusterMeta(String cluster) {
         ClusterMeta clusterMeta = new ClusterMeta();
         clusterMeta.setId(cluster);
-        clusterMeta.setType(mockClusterType.toString());
+        if(cluster.equals(mockClusters.get(0)))
+            clusterMeta.setType(ClusterType.ONE_WAY.toString());
+        else
+            clusterMeta.setType(ClusterType.BI_DIRECTION.toString());
+
 
         for (String shard: mockShards) {
             clusterMeta.addShard(mockShardMeta(shard));
