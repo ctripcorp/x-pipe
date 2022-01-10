@@ -153,8 +153,8 @@ public class AdvancedDcMetaService implements DcMetaService {
                 sentinels.forEach(sentinel -> dcMeta
                         .addSentinel(sentinelMetaService.encodeSetinelMeta(sentinel, dcMeta)));
                 future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
+            } catch (Throwable th) {
+                future().setFailure(th);
             }
         }
 
@@ -186,8 +186,8 @@ public class AdvancedDcMetaService implements DcMetaService {
                     });
                 }
                 future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
+            } catch (Throwable th) {
+                future().setFailure(th);
             }
         }
 
@@ -229,8 +229,8 @@ public class AdvancedDcMetaService implements DcMetaService {
                 keepercontainers.forEach(keeperContainer -> dcMeta.addKeeperContainer(
                         keepercontainerMetaService.encodeKeepercontainerMeta(keeperContainer, dcMeta)));
                 future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
+            } catch (Throwable th) {
+                future().setFailure(th);
             }
         }
 
