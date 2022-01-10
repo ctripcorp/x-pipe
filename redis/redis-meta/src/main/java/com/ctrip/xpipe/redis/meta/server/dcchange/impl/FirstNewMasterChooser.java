@@ -4,7 +4,7 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -17,7 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class FirstNewMasterChooser extends AbstractNewMasterChooser {
 
 
-    public FirstNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled, ExecutorService executors) {
+    public FirstNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled, Executor executors) {
         super(keyedObjectPool, scheduled, executors);
     }
 

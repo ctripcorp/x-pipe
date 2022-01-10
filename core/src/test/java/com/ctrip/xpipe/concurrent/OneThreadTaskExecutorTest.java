@@ -13,13 +13,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.internal.verification.AtLeast;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import static org.mockito.Mockito.*;
 
@@ -42,10 +39,15 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
     }
 
     @Test
-    public void testStart() {
-        when(command.future()).thenReturn(new DefaultCommandFuture<>());
+    public void testStart() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return new DefaultCommandFuture<>();
+        }).when(command).execute();
         oneThreadTaskExecutor.executeCommand(command);
-        sleep(50);
+
+        Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         verify(command).execute();
     }
 
@@ -96,17 +98,21 @@ public class OneThreadTaskExecutorTest extends AbstractTest {
     }
 
     @Test
-    public void testStartMtimes() {
-
+    public void testStartMtimes() throws Exception {
         int times = 50;
+        CountDownLatch latch = new CountDownLatch(times);
         CommandFuture<Void> future = new DefaultCommandFuture<>();
-        when(command.execute()).thenReturn(future);
+        doAnswer(invocation -> {
+            latch.countDown();
+            return future;
+        }).when(command).execute();
         future.setSuccess();
         for (int i = 0; i < times; i++) {
             oneThreadTaskExecutor.executeCommand(command);
-            sleep(30);
-            verify(command, times(i + 1)).execute();
         }
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        verify(command, times(times)).execute();
     }
 
     @Test

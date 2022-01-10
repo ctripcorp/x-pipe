@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
@@ -53,7 +53,7 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
                 new HostPort("127.0.0.2", 6579));
 
         Mockito.doAnswer(invocation -> {
-            RedisMeta redis = invocation.getArgumentAt(0, RedisMeta.class);
+            RedisMeta redis = invocation.getArgument(0, RedisMeta.class);
             HostPort redisHostPort = new HostPort(redis.getIp(), redis.getPort());
             Assert.assertTrue(expectedRedises.contains(redisHostPort));
             loadedRedises.add(redisHostPort);

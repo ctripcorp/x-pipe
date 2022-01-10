@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.ctrip.integratedtest.console.migration.mock;
 
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.migration.command.MigrationCommandBuilder;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
@@ -19,14 +20,21 @@ public class MockMigrationEventDao extends MigrationEventDao {
 
     private MigrationEventDao delegate;
 
+    private MigrationCommandBuilder injectMigrationCommandBuilder;
+
     public MockMigrationEventDao(MigrationEventDao migrationEventDao) {
+        this(migrationEventDao, null);
+    }
+
+    public MockMigrationEventDao(MigrationEventDao migrationEventDao, MigrationCommandBuilder migrationCommandBuilder) {
         this.delegate = migrationEventDao;
+        this.injectMigrationCommandBuilder = migrationCommandBuilder;
     }
 
     private MigrationState mockMigrationState(MigrationStatus status, MigrationCluster cluster) {
         switch (status) {
             case Initiated:
-                return new MockMigrationInitiatedState(cluster);
+                return new MockMigrationInitiatedState(cluster, injectMigrationCommandBuilder);
             case Checking:
                 return new MockMigrationCheckingState(cluster);
             case Migrating:

@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
@@ -50,7 +50,7 @@ public class PsyncKeeperServerStateObserverTest extends AbstractRedisKeeperTest 
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
         when(replicationStore.isFresh()).thenReturn(true);
         doAnswer(invocation -> {
-            Runnable task = invocation.getArgumentAt(0, Runnable.class);
+            Runnable task = invocation.getArgument(0, Runnable.class);
             singleThreadExecutors.execute(task);
             return null;
         }).when(redisKeeperServer).processCommandSequentially(Mockito.any());

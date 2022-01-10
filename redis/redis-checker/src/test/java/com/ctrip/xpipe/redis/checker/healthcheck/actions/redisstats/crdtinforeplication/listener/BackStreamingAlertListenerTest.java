@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BackStreamingAlertListenerTest extends AbstractCheckerTest {
@@ -31,7 +31,7 @@ public class BackStreamingAlertListenerTest extends AbstractCheckerTest {
         listener = new BackStreamingAlertListener(alertManager);
         instance = newRandomRedisHealthCheckInstance(FoundationService.DEFAULT.getDataCenter(), ClusterType.BI_DIRECTION, randomPort());
         Mockito.doAnswer(invocation -> {
-            ALERT_TYPE alert_type = invocation.getArgumentAt(1, ALERT_TYPE.class);
+            ALERT_TYPE alert_type = invocation.getArgument(1, ALERT_TYPE.class);
             Assert.assertEquals(ALERT_TYPE.CRDT_BACKSTREAMING, alert_type);
             return null;
         }).when(alertManager).alert(Mockito.any(), Mockito.any(), Mockito.anyString());

@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -52,7 +52,7 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 		doNothing().when(redisClient).sendMessage(argThat(new ArgumentMatcher<ByteBuf>() {
 
 			@Override
-			public boolean matches(Object argument) {
+			public boolean matches(ByteBuf argument) {
 				sendCommands.add(ByteBufUtils.readToString((ByteBuf) argument));
 				return true;
 			}
@@ -61,7 +61,7 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 		doNothing().when(redisClient).sendMessage(argThat(new ArgumentMatcher<byte[]>() {
 
 			@Override
-			public boolean matches(Object argument) {
+			public boolean matches(byte[] argument) {
 				sendCommands.add(new String((byte[]) argument));
 				return true;
 			}
@@ -72,7 +72,7 @@ public class CommandHandlerManagerTest extends AbstractRedisKeeperTest {
 		doNothing().when(redisKeeperServer).processCommandSequentially(argThat(new ArgumentMatcher<Runnable>() {
 
 			@Override
-			public boolean matches(Object argument) {
+			public boolean matches(Runnable argument) {
 				
 				singleExecutors.execute(new Runnable() {
 

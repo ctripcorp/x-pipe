@@ -86,7 +86,7 @@ public class KeeperConcurrentChangeUpstreamTest extends AbstractKeeperIntegrated
             ReplicationStore store = storeManager.createIfNotExist();
             ReplicationStore spyStore = spy(store);
             doAnswer(innerInv -> {
-                String replId = innerInv.getArgumentAt(0, String.class);
+                String replId = innerInv.getArgument(0, String.class);
                 if (hasHangReplChange.compareAndSet(false, true)) {
                     logger.info("[testUpstreamChangeOnReplIdChange_noFsync] spy shiftReplicationId method");
                     store.shiftReplicationId(replId);

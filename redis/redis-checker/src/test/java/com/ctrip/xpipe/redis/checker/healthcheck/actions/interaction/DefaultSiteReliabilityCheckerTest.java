@@ -92,7 +92,7 @@
 //        when(defaultDelayPingActionCollector.getState(any(HostPort.class))).thenAnswer(new Answer<HEALTH_STATE>() {
 //            @Override
 //            public HEALTH_STATE answer(InvocationOnMock invocation) throws Throwable {
-//                HostPort hostPort = invocation.getArgumentAt(0, HostPort.class);
+//                HostPort hostPort = invocation.getArgument(0, HostPort.class);
 //                if(dcHostPort.contains(hostPort)) {
 //                    return HEALTH_STATE.DOWN;
 //                }

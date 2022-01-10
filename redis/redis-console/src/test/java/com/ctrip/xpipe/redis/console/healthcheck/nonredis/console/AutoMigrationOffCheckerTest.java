@@ -10,12 +10,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.KEY_ALLOW_AUTO_MIGRATION;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
@@ -51,11 +51,9 @@ public class AutoMigrationOffCheckerTest extends AbstractConsoleTest {
 
     @Test
     public void testAlert() {
-        Mockito.when(configService.getConfig(KEY_ALLOW_AUTO_MIGRATION)).thenReturn(new ConfigModel());
-
         checker.alert();
         Mockito.verify(alertManager, times(1))
-                .alert(anyString(), anyString(), any(), Matchers.eq(ALERT_TYPE.AUTO_MIGRATION_NOT_ALLOW), anyString());
+                .alert(anyString(), anyString(), any(), eq(ALERT_TYPE.AUTO_MIGRATION_NOT_ALLOW), anyString());
     }
 
 }

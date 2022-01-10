@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
@@ -219,23 +219,6 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testNewPrimaryDcFail";
                     }
                 });
-        when(mockedCommandBuilder.buildOtherDcCommand("test-cluster", "test-shard", "dc-b", "dc-a"))
-        	.thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
-            @Override
-            protected void doExecute() throws Exception {
-                future().setSuccess(new MetaServerConsoleService.PrimaryDcChangeMessage(
-                        MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Test-success"));
-            }
-
-            @Override
-            protected void doReset() {
-            }
-
-            @Override
-            public String getName() {
-                return "testNewPrimaryDcSuccess";
-            }
-        });
 
         Assert.assertEquals(ShardMigrationResultStatus.FAIL, migrationShard.getShardMigrationResult().getStatus());
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
@@ -260,7 +243,6 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         when(mockedMigrationCluster.clusterName()).thenReturn(clusterName);
         when(mockedMigrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setClusterId(1)
                 .setDestinationDcId(2L));
-        when(mockedMigrationCluster.getRedisService()).thenReturn(mockedRedisService);
         final AtomicInteger cnt = new AtomicInteger(0);
         doAnswer(new Answer<Void>() {
 			@Override
