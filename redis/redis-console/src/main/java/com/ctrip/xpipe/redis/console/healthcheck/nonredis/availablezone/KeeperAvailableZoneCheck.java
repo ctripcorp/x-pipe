@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.dianping.cat.Cat;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,6 +30,8 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
 
     private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.KEEPER_IN_DIFFERENT_AVAILABLE_ZONE);
 
+    private static final String KEEPER_AVAILABLE_ZONE_CHECK_TYPE = "keeper.availablezone.check";
+
     @Override
     protected void doCheck() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
@@ -35,8 +39,18 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
             List<AzMeta> azmetas = dcMeta.getAzs();
             if (azmetas == null || azmetas.isEmpty())
                 continue;
+
             List<KeeperContainerMeta> keeperContainers = dcMeta.getKeeperContainers();
             List<DcClusterShard> clusterShards = findKeeperInSameAvailableZones(dcMeta, keeperContainers);
+            clusterShards.forEach(clusterShard -> {
+                logger.debug("[findKeeperInSameAvailableZones] keeper from dc {} cluster {} shard {} are in the same available zone",
+                        clusterShard.getDcId(), clusterShard.getClusterId(), clusterShard.getShardId());
+
+                EventMonitor.DEFAULT.logEvent(KEEPER_AVAILABLE_ZONE_CHECK_TYPE,
+                        String.format("%s-%s-%s", clusterShard.getDcId(), clusterShard.getClusterId(), clusterShard.getShardId()))
+
+            });
+
             alertForKeeperInSameAvailableZone(dcMeta.getId(), clusterShards);
         }
     }
