@@ -27,7 +27,7 @@
     <attribute name="id" value-type="int" />
     <attribute name="ip" value-type="String" />
     <attribute name="port" value-type="int" />
-    <attribute name="az_id" value-type="int" />
+    <attribute name="az_id" value-type="long" />
   </entity>
   <entity name="sentinel">
     <attribute name="id" value-type="int" />

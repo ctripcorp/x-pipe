@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.*;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilder;
+import com.ctrip.xpipe.redis.core.entity.AzMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
@@ -58,6 +59,9 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Autowired
     private KeeperContainerService keeperContainerService;
+
+    @Autowired
+    private AzService azService;
 
     @Autowired
     private SentinelMetaService sentinelMetaService;
@@ -114,6 +118,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllSentinelCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllKeeperContainerCommand(dcMeta)));
         chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
+        chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
                 clusterMetaService, dcClusterShardService, dcService, factory);
@@ -148,14 +153,59 @@ public class AdvancedDcMetaService implements DcMetaService {
                 sentinels.forEach(sentinel -> dcMeta
                         .addSentinel(sentinelMetaService.encodeSetinelMeta(sentinel, dcMeta)));
                 future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
+            } catch (Throwable th) {
+                future().setFailure(th);
             }
         }
 
         @Override
         protected void doReset() {
             dcMeta.getSentinels().clear();
+        }
+
+        @Override
+        public String getName() {
+            return this.getClass().getSimpleName();
+        }
+    }
+
+    class GetAllAavailableZoneCommand extends AbstractCommand<Void> {
+        private DcMeta dcMeta;
+
+        public GetAllAavailableZoneCommand(DcMeta dcMeta) {
+            this.dcMeta = dcMeta;
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
+            try {
+                List<AzTbl> azTbls = azService.getDcActiveAvailableZoneTbls(dcMeta.getId());
+                if(azTbls != null || !azTbls.isEmpty()) {
+                    azTbls.forEach(aztbl -> {
+                        dcMeta.addAz(encodeAzMeta(aztbl, dcMeta));
+                    });
+                }
+                future().setSuccess();
+            } catch (Throwable th) {
+                future().setFailure(th);
+            }
+        }
+
+        private  AzMeta encodeAzMeta(AzTbl azTbl, DcMeta dcMeta) {
+            AzMeta azMeta = new AzMeta();
+
+            if(null != azTbl) {
+                azMeta.setId(azTbl.getAzName());
+                azMeta.setActive(azTbl.isActive());
+                azMeta.setParent(dcMeta);
+            }
+
+            return azMeta;
+        }
+
+        @Override
+        protected void doReset() {
+            dcMeta.getAzs().clear();
         }
 
         @Override
@@ -179,8 +229,8 @@ public class AdvancedDcMetaService implements DcMetaService {
                 keepercontainers.forEach(keeperContainer -> dcMeta.addKeeperContainer(
                         keepercontainerMetaService.encodeKeepercontainerMeta(keeperContainer, dcMeta)));
                 future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
+            } catch (Throwable th) {
+                future().setFailure(th);
             }
         }
 
@@ -211,8 +261,8 @@ public class AdvancedDcMetaService implements DcMetaService {
                 List<RouteMeta> routeMetas = combineRouteInfo(routes, proxies, dcMeta);
                 routeMetas.forEach((routeMeta)->dcMeta.addRoute(routeMeta));
                 future().setSuccess();
-            } catch (Exception e) {
-                future().setFailure(e);
+            } catch (Throwable th) {
+                future().setFailure(th);
             }
         }
 
