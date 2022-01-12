@@ -6,12 +6,12 @@ import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
-import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.collect.Lists;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.*;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +19,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -46,9 +47,12 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     private RedisDao redisDao;
 
     private String dcName;
+
     private String shardName;
 
     private ClusterMetaModifiedNotifier tmpNotifier;
+
+    private List<String> keeperContainers = Arrays.asList("127.1.1.1", "127.1.1.2");
 
     @Before
     public void beforeRedisServiceImplTest() {
@@ -271,6 +275,24 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         // Due to the function logic, we change the id only
         targetKeepers.get(0).setId(11111L);
         redisService.validateKeepers(targetKeepers);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testValidateKeepersInTheSameAvaialableZone() throws ResourceNotFoundException, IOException, ComponentLookupException, SQLException {
+
+        executeSqlScript(FileUtils.readFileAsString("src/test/resources/keeper-in-same-avaialable-zone.sql"));
+        List<RedisTbl> originKeepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        List<RedisTbl> targetKeepers = new ArrayList<>(originKeepers);
+
+        targetKeepers.get(0).setRedisIp(keeperContainers.get(0)).setKeepercontainerId(30);
+        targetKeepers.get(1).setRedisIp(keeperContainers.get(1)).setKeepercontainerId(31);
+        try {
+            redisService.validateKeepers(targetKeepers);
+        } catch (BadRequestException e) {
+            Assert.assertEquals("Keepers should be in different available zones", e.getMessage());
+            throw e;
+        }
+
     }
 
     @Test
