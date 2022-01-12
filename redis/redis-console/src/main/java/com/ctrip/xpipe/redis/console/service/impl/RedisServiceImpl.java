@@ -406,7 +406,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             throw new BadRequestException("Keepers should be assigned to different keepercontainer" + keepers);
         }
 
+
         List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XPipeConsoleConstant.ROLE_KEEPER);
+        Set<Long> keepercontainerAvialableZones = new HashSet<>();
         for (int cnt = 0; cnt != 2; ++cnt) {
             final RedisTbl keeper = keepers.get(cnt);
             KeepercontainerTbl keepercontainer = keeperContainerService.find(keeper.getKeepercontainerId());
@@ -415,6 +417,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
             if (!keeper.getRedisIp().equals(keepercontainer.getKeepercontainerIp())) {
                 throw new BadRequestException("Keeper's ip should be equal to keepercontainer's ip");
+            }
+            if(keepercontainer.getAzId() != 0 && !keepercontainerAvialableZones.add(keepercontainer.getAzId())) {
+                throw new BadRequestException("Keepers should be in different available zones");
             }
 
             // port check
