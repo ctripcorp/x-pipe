@@ -1234,8 +1234,13 @@
 				<member name='keepercontainer-port'/>
 			</readset>
 
+			<readset name="AZ_INFO">
+				<member name="az-id"/>
+			</readset>
+
 			<readset name="BASE_INFO">
 				<readset-ref name="CONTAINER_ADDRESS" />
+				<readset-ref name="AZ_INFO"/>
 				<readset-ref name="NAME" relation-name="org-info" />
 				<readset-ref name="NAME" relation-name="dc-info" />
 			</readset>
