@@ -277,7 +277,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         redisService.validateKeepers(targetKeepers);
     }
 
-    @Test(expected = BadRequestException.class)
+    @Test
     public void testValidateKeepersInTheSameAvaialableZone() throws ResourceNotFoundException, IOException, ComponentLookupException, SQLException {
 
         executeSqlScript(FileUtils.readFileAsString("src/test/resources/keeper-in-same-avaialable-zone.sql"));
@@ -286,13 +286,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
         targetKeepers.get(0).setRedisIp(keeperContainers.get(0)).setKeepercontainerId(30);
         targetKeepers.get(1).setRedisIp(keeperContainers.get(1)).setKeepercontainerId(31);
-        try {
-            redisService.validateKeepers(targetKeepers);
-        } catch (BadRequestException e) {
-            Assert.assertEquals("Keepers should be in different available zones", e.getMessage());
-            throw e;
-        }
-
+        redisService.validateKeepers(targetKeepers);
     }
 
     @Test

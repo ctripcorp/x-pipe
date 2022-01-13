@@ -419,7 +419,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 throw new BadRequestException("Keeper's ip should be equal to keepercontainer's ip");
             }
             if(keepercontainer.getAzId() != 0 && !keepercontainerAvialableZones.add(keepercontainer.getAzId())) {
-                throw new BadRequestException("Keepers should be in different available zones");
+                logger.error("Keepers {}:{} and {}:{} are in the same available zone {}", keepers.get(0).getRedisIp(), keepers.get(0).getRedisPort(),
+                        keepers.get(1).getRedisIp(), keepers.get(1).getRedisPort(), keepercontainer.getAzId());
             }
 
             // port check
