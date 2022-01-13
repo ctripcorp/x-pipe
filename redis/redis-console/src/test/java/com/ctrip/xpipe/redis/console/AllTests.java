@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 
+import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
@@ -200,7 +201,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultCheckerManagerTest.class,
         DefaultSentinelBalanceServiceTest.class,
 
-        KeeperAvailableZoneCheckTest.class
+        KeeperAvailableZoneCheckTest.class,
+        EmailSentCounterTest.class
 })
 public class AllTests {
 

@@ -32,11 +32,13 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalCheck {
 
     private final List<ALERT_TYPE> alertType = Lists.newArrayList(ALERT_TYPE.KEEPER_IN_SAME_AVAILABLE_ZONE);
 
-    private static final String KEEPER_AVAILABLE_ZONE_CHECK_TYPE = "keeper.availablezone.check";
+    private static final String KEEPER_AVAILABLE_ZONE_CHECK_TYPE = "keeper.available.zone.check";
 
     @Override
     protected void doCheck() {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        EventMonitor.DEFAULT.logEvent(KEEPER_AVAILABLE_ZONE_CHECK_TYPE, "Do keeper available zone check");
+
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
             List<AzMeta> azmetas = dcMeta.getAzs();
             if (azmetas == null || azmetas.isEmpty())
