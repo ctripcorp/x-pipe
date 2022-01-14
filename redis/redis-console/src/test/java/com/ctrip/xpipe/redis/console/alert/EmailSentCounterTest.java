@@ -9,6 +9,7 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -57,6 +58,7 @@ public class EmailSentCounterTest {
         Assert.assertEquals(0, (int)successAndFails.getValue());
     }
 
+    @Ignore
     @Test
     public void manualTestScheduled() throws InterruptedException {
         int count = 0;
