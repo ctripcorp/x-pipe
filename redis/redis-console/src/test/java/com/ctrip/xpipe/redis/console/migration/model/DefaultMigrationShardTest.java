@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
+import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,6 +22,8 @@ import org.mockito.stubbing.Answer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import static org.mockito.Mockito.*;
 
@@ -124,7 +127,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                     @Override
                     protected void doExecute() throws Exception {
                         future().setSuccess(new MetaServerConsoleService.PreviousPrimaryDcMessage(
-                                new HostPort("127.0.0.1", 0), null, "Test-Success"));
+                                new HostPort("127.0.0.1", 0), new MasterInfo(), "Test-Success"));
                     }
 
                     @Override
@@ -136,23 +139,26 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testPrevPrimaryDcSuccess";
                     }
                 });
-        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), anyObject()))
-                .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
-                    @Override
-                    protected void doExecute() throws Exception {
-                        future().setSuccess(new MetaServerConsoleService.PrimaryDcChangeMessage(
-                                MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Test-success"));
-                    }
+        doAnswer(inv -> {
+            Supplier<MetaServerConsoleService.PreviousPrimaryDcMessage> supplier = inv.getArgument(3);
+            return new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
+                @Override
+                protected void doExecute() throws Exception {
+                    Assert.assertNotNull(supplier.get());
+                    future().setSuccess(new MetaServerConsoleService.PrimaryDcChangeMessage(
+                            MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.SUCCESS, "Test-success"));
+                }
 
-                    @Override
-                    protected void doReset() {
-                    }
+                @Override
+                protected void doReset() {
+                }
 
-                    @Override
-                    public String getName() {
-                        return "testNewPrimaryDcSuccess";
-                    }
-                });
+                @Override
+                public String getName() {
+                    return "testNewPrimaryDcSuccess";
+                }
+            };
+        }).when(mockedCommandBuilder).buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), any(Supplier.class));
         when(mockedCommandBuilder.buildOtherDcCommand("test-cluster", "test-shard", "dc-b", "dc-a"))
         .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
             @Override
@@ -178,7 +184,6 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
         Assert.assertFalse(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 
         migrationShard.doMigrate();
-//        verify(mockedMigrationService, times(5)).updateMigrationShardLogById(anyLong(), anyString());
         Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));
         Assert.assertEquals(ShardMigrationResultStatus.SUCCESS, migrationShard.getShardMigrationResult().getStatus());
     }
@@ -202,7 +207,7 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
                         return "testPrevPrimaryDcSuccess";
                     }
                 });
-        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), anyObject()))
+        when(mockedCommandBuilder.buildNewPrimaryDcCommand(eq("test-cluster"), eq("test-shard"), eq("dc-b"), any(Supplier.class)))
                 .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcChangeMessage>() {
                     @Override
                     protected void doExecute() throws Exception {

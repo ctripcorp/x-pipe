@@ -63,6 +63,16 @@ public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuild
     }
 
     @Override
+    public Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildNewPrimaryDcCommand(String cluster, String shard,
+                                                                                             String newPrimaryDc,
+                                                                                             Supplier<MetaServerConsoleService.PreviousPrimaryDcMessage> previousPrimaryDcMessageSupplier) {
+        return new ReactorMigrationCmdWrap<>("ReactorNewPrimaryDcCommand", () ->
+                getMetaServerConsoleService(newPrimaryDc).doChangePrimaryDc(cluster, shard, newPrimaryDc,
+                        new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessageSupplier.get()))
+        );
+    }
+
+    @Override
     public Command<MetaServerConsoleService.PrimaryDcChangeMessage> buildOtherDcCommand(String cluster, String shard, String primaryDc, String executeDc) {
         return new ReactorMigrationCmdWrap<>("ReactorOtherDcCommand", () ->
                 getMetaServerConsoleService(executeDc).doChangePrimaryDc(cluster, shard, primaryDc, null)

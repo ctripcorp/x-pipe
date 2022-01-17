@@ -237,7 +237,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 	private Command<MetaServerConsoleService.PrimaryDcChangeMessage> newPrimaryDcMigrate(String cluster, String shard, String newPrimaryDc) {
 		Command<MetaServerConsoleService.PrimaryDcChangeMessage> cmd =
-				commandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc, shardMigrationResult.getPreviousPrimaryDcMessage());
+				commandBuilder.buildNewPrimaryDcCommand(cluster, shard, newPrimaryDc, shardMigrationResult::getPreviousPrimaryDcMessage);
 
 		cmd.future().addListener(new CommandFutureListener<PrimaryDcChangeMessage>() {
 			@Override
