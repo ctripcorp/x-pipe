@@ -38,7 +38,7 @@
             <DefaultRolloverStrategy max="15">
                 <Delete basePath="${baseDir}" maxDepth="2">
                     <IfFileName glob="health-check*.log.gz"/>
-                    <IfLastModified age="7d"/>
+                    <IfLastModified age="30d"/>
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingFile>
