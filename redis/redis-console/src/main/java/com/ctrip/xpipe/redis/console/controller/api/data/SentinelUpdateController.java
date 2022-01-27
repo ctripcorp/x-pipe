@@ -2,13 +2,10 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.SentinelModel;
-import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -99,6 +96,16 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/sentinelsV2", method = RequestMethod.POST)
+    public RetMessage addSentinelV2(@RequestBody SentinelGroupInfo sentinelGroupInfo) {
+        try {
+            sentinelService.addSentinelGroup(sentinelGroupInfo);
+            return RetMessage.createSuccessMessage("Successfully create Sentinel");
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
     @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.DELETE)
     public RetMessage deleteSentinel(@PathVariable Long sentinelId) {
         try {
@@ -140,6 +147,18 @@ public class SentinelUpdateController {
         logger.info("[updateSentinelAddr][begin]");
         try {
             SentinelModel updated = sentinelService.updateSentinelTblAddr(model);
+            return RetMessage.createSuccessMessage(jsonTool.encode(updated));
+        } catch (Exception e) {
+            logger.error("[updateSentinelAddr]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/sentinel/addressV2", method = RequestMethod.PUT)
+    public RetMessage updateSentinelAddrV2(@RequestBody SentinelGroupInfo sentinelGroupInfo) {
+        logger.info("[updateSentinelAddr][begin]");
+        try {
+            SentinelGroupInfo updated = sentinelService.updateSentinelGroup(sentinelGroupInfo);
             return RetMessage.createSuccessMessage(jsonTool.encode(updated));
         } catch (Exception e) {
             logger.error("[updateSentinelAddr]", e);

@@ -150,4 +150,6 @@ public interface CheckerConfig {
 
 
     String sentinelCheckDowngradeStrategy();
+
+    String crossDcSentinelMonitorNameSuffix();
 }

@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupInfo;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
@@ -161,6 +163,21 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         }
 
         return balanceTasks.get(dcId.toUpperCase());
+    }
+
+    @Override
+    public SentinelGroupInfo selectSentinelByDcAndType(String dcId, ClusterType clusterType) {
+        return null;
+    }
+
+    @Override
+    public Map<Long, SentinelGroupInfo> selectMultiDcSentinelsByType(ClusterType clusterType) {
+        return null;
+    }
+
+    @Override
+    public void bindShardAndSentinelsByType(ClusterType clusterType) {
+// 把credis中当前哨兵组都同步到xpipe服务，根据从哨兵上获取当前的监控组信息 ，将哨兵组与分片绑定
     }
 
     private Map<String, DcSentinels> refreshCache() {
