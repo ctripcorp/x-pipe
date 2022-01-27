@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -108,12 +110,17 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private void generateHealthCheckInstances() {
         XpipeMeta meta = metaCache.getXpipeMeta();
+        Set<String> crossDcClusters = new HashSet<>();
         for(DcMeta dcMeta : meta.getDcs().values()) {
             if(checkerConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
+                if (clusterType.isCrossDc()) {
+                    crossDcClusters.add(clusterType.name());
+                    continue;
+                }
                 // console monitors only cluster with active idc in current idc
                 if (clusterType.supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
@@ -130,7 +137,14 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 instanceManager.getOrCreate(cluster);
             }
         }
+        generateHealthCheckInstancesForCrossDcClusters(crossDcClusters);
     }
+
+//    todo: generate health check instances only if majority masters in current dc
+    private void generateHealthCheckInstancesForCrossDcClusters(Set<String> crossDc){
+
+    }
+
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
         return cluster.getActiveDc().equalsIgnoreCase(currentDcId);

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -13,7 +12,6 @@ import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
-import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -25,7 +23,10 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
@@ -66,32 +67,6 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 				return dao.findByDcName(dcName, SetinelTblEntity.READSET_FULL);
 			}
     	});
-	}
-
-	@Override
-	public Map<Long, List<SetinelTbl>> allSentinelsByDc() {
-
-		Map<Long, List<SetinelTbl>> result = new HashMap<>();
-
-		List<SetinelTbl> setinelTbls = queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
-			@Override
-			public List<SetinelTbl> doQuery() throws DalException {
-				return dao.findAll(SetinelTblEntity.READSET_FULL);
-			}
-		});
-
-		setinelTbls.forEach( setinelTbl -> {
-
-			List<SetinelTbl> setinels = MapUtils.getOrCreate(result, setinelTbl.getDcId(), new ObjectFactory<List<SetinelTbl>>() {
-				@Override
-				public List<SetinelTbl> create() {
-					return new LinkedList<>();
-				}
-			});
-			setinels.add(setinelTbl);
-		});
-
-		return result;
 	}
 
 	protected SetinelTbl random(List<SetinelTbl> setinels) {
@@ -266,6 +241,47 @@ public class SentinelServiceImpl extends AbstractConsoleService<SetinelTblDao> i
 				return dao.updateByPK(setinelTbl, SetinelTblEntity.UPDATESET_FULL);
 			}
 		});
+	}
+
+
+	@Override
+	public List<SentinelGroupInfo> findAllByDcAndType(String dcName, ClusterType clusterType) {
+		return null;
+	}
+
+	@Override
+	public SentinelGroupInfo findById(long sentinelGroupId) {
+		return null;
+	}
+
+	@Override
+	public Map<Long, SentinelGroupInfo> findSentinelGroupsByShard(long shardId) {
+		return null;
+	}
+
+	@Override
+	public SentinelGroupInfo addSentinelGroup(SentinelGroupInfo sentinelGroupInfo) {
+		return null;
+	}
+
+	@Override
+	public List<SentinelGroupInfo> getSentinelGroupsWithUsageByType(ClusterType clusterType) {
+		return null;
+	}
+
+	@Override
+	public List<SentinelGroupInfo> getAllSentinelGroupsWithUsage() {
+		return null;
+	}
+
+	@Override
+	public Map<String, SentinelUsageModel> getSentinelGroupsUsageByType(ClusterType clusterType) {
+		return null;
+	}
+
+	@Override
+	public SentinelGroupInfo updateSentinelGroup(SentinelGroupInfo sentinelGroupInfo) {
+		return null;
 	}
 
 	private static class RemoveShardSentinelMonitorEvent extends AbstractShardEvent {

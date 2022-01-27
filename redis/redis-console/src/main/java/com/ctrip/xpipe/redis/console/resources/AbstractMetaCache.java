@@ -264,6 +264,12 @@ public abstract class AbstractMetaCache implements MetaCache {
         return shardMeta.getRedises();
     }
 
+//    todo: get all dc slaves of the shard
+    @Override
+    public List<RedisMeta> getSlavesOfShard(String cluster, String shard) {
+        return null;
+    }
+
     @Override
     public String getDc(HostPort hostPort) {
 
