@@ -26,7 +26,7 @@ public class SequenceCommandTest {
 
             final long startId = Thread.currentThread().getId();
 
-            ThreadSwitchCommand command = new ThreadSwitchCommand(100);
+            AbstractThreadSwitchCommand<String> command = new TestSleepCommand(100);
 
             SequenceCommand<String> sc = new SequenceCommand<>(command, executor);
 

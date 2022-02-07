@@ -35,26 +35,26 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
             if (f.isSuccess()) {
                 singleThread.execute(() -> {
                     try {
-                        super.future.get().setSuccess(f.get());
+                        future().setSuccess(f.get());
                     } catch (Exception unlikely) {
                         getLogger().warn("UNLIKELY - setSuccess", unlikely);
                     }
                 });
             } else {
+                getLogger().warn("yet UNLIKELY - stubborn command will retry util success.");
                 singleThread.execute(() -> {
-                    super.future.get().setFailure(f.cause());
+                    future().setFailure(f.cause());
                 });
             }
         });
     }
 
-    private void retryOrNext(CommandFuture<?> future) {
+    private void nextAfter(CommandFuture<?> future) {
         future.addListener((f)->{
             if (f.isSuccess()) {
                 executeSelf();
             } else {
-                f.command().reset();
-                retryOrNext(f.command().execute());
+                future().setFailure(f.cause());
             }
         });
     }
@@ -66,7 +66,7 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
             return;
         }
 
-        retryOrNext(past.future());
+        nextAfter(past.future());
     }
 
     @Override
