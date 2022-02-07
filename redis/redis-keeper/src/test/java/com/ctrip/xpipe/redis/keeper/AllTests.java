@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper;
 
+import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.*;
@@ -68,7 +69,9 @@ import org.junit.runners.Suite.SuiteClasses;
         PsyncFailReasonTest.class,
         DefaultMasterStatsTest.class,
         PsyncForKeeperTest.class,
-        PsyncKeeperServerStateObserverTest.class
+        PsyncKeeperServerStateObserverTest.class,
+
+        AllApplierTests.class,
 })
 public class AllTests {
 
