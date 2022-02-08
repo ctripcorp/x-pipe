@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.redis.keeper.applier.client.ApplierRedisClient;
-import com.ctrip.xpipe.redis.keeper.applier.client.DoNothingRedisClient;
 import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
 
 import java.util.HashMap;
 import java.util.Map;
