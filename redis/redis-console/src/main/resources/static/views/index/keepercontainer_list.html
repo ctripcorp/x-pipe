@@ -14,6 +14,7 @@
                 <td data-title="'address'" filter="{ 'addr.host': 'text'}">{{info.addr.host}}:{{info.addr.port}}</td>
                 <td data-title="'dc'" filter="{ dcName: 'text'}" sortable="'dcName'">{{info.dcName}}</td>
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
+                <td data-title="'az'" filter="{ azName: 'text'}" sortable="'azName'">{{info.azName}}</td>
                 <td data-title="'keeper'" sortable="'keeperCount'">{{info.keeperCount}}</td>
                 <td data-title="'cluster'" sortable="'clusterCount'">
                     <a ui-sref="cluster_list({ keepercontainer: info.id })">{{info.clusterCount}}</a>

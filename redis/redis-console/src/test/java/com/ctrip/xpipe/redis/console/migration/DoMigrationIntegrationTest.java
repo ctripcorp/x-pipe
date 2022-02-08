@@ -13,13 +13,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 import java.util.concurrent.*;
 
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 public class DoMigrationIntegrationTest extends AbstractMigrationIntegrationTest {

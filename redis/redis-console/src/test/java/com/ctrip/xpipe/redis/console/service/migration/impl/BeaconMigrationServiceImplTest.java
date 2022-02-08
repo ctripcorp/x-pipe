@@ -49,8 +49,8 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         metaCache = Mockito.mock(MetaCache.class);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.doAnswer(invocation -> {
-            String activeDc = invocation.getArgumentAt(0, String.class);
-            String backupDc = invocation.getArgumentAt(1, String.class);
+            String activeDc = invocation.getArgument(0, String.class);
+            String backupDc = invocation.getArgument(1, String.class);
             XpipeMeta xpipeMeta = getXpipeMeta();
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());

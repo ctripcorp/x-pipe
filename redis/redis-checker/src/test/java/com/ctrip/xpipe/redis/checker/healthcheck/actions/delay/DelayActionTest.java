@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -161,8 +161,8 @@ public class DelayActionTest extends AbstractRedisTest {
         futureMap = new HashMap<>();
 
         Mockito.doAnswer(invocationOnMock -> {
-            String channel = invocationOnMock.getArgumentAt(0, String.class);
-            RedisSession.SubscribeCallback callback = invocationOnMock.getArgumentAt(1, RedisSession.SubscribeCallback.class);
+            String channel = invocationOnMock.getArgument(0, String.class);
+            RedisSession.SubscribeCallback callback = invocationOnMock.getArgument(1, RedisSession.SubscribeCallback.class);
 
             if (futureMap.containsKey(channel)) futureMap.get(channel).cancel(false);
             futureMap.put(channel, scheduled.scheduleWithFixedDelay(() -> {
@@ -176,8 +176,8 @@ public class DelayActionTest extends AbstractRedisTest {
         }).when(session).subscribeIfAbsent(Mockito.anyString(), Mockito.any());
 
         Mockito.doAnswer(invocationOnMock -> {
-            String channel = invocationOnMock.getArgumentAt(0, String.class);
-            String message = invocationOnMock.getArgumentAt(1, String.class);
+            String channel = invocationOnMock.getArgument(0, String.class);
+            String message = invocationOnMock.getArgument(1, String.class);
             if (!messageQueueMap.containsKey(channel)) messageQueueMap.put(channel, new ConcurrentLinkedQueue<>());
             scheduled.schedule(() -> {
                 messageQueueMap.get(channel).offer(message);
@@ -200,7 +200,7 @@ public class DelayActionTest extends AbstractRedisTest {
         delayHealth = new AtomicBoolean(false);
 
         Mockito.doAnswer(invocationOnMock -> {
-            DelayActionContext context = invocationOnMock.getArgumentAt(0, DelayActionContext.class);
+            DelayActionContext context = invocationOnMock.getArgument(0, DelayActionContext.class);
             if (null == context.instance()) {
                 instanceNull.set(true);
                 Assert.fail();

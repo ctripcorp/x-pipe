@@ -86,7 +86,7 @@ public class DeferredResponseTest implements InstantiationAwareBeanPostProcessor
     private ClusterServers<MetaServer> mockClusterServers() {
         ClusterServers<MetaServer> clusterServers = Mockito.mock(ClusterServers.class);
         MetaServer metaServer = mockMetaServer();
-        Mockito.when(clusterServers.getClusterServer(Mockito.anyByte())).thenReturn(metaServer);
+        Mockito.when(clusterServers.getClusterServer(Mockito.anyInt())).thenReturn(metaServer);
         return clusterServers;
     }
 

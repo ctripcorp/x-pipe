@@ -15,6 +15,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
+
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,7 +42,7 @@ public class MigrationSystemAvailableCheckTest extends AbstractConsoleDbTest {
     public void beforeMigrationSystemAvailableCheckTest() {
         MockitoAnnotations.initMocks(this);
         when(consoleConfig.getClusterShardForMigrationSysCheck()).thenReturn(Pair.from("cluster1", "shard1"));
-        when(consoleConfig.getMetaservers()).thenReturn("{\"localmeta\": \"127.0.0.1:8080\"}");
+        when(consoleConfig.getMetaservers()).thenReturn(Collections.singletonMap("localmeta", "127.0.0.1:8080"));
     }
 
     @Test

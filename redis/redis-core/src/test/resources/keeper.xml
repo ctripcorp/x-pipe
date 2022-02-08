@@ -6,8 +6,8 @@
 		<zkServer address="127.0.0.1:2181"/>
 		
 		<keeperContainers>
-			<keeperContainer id="1" ip="1.1.1.1" port="8080" az_id="1"/>
-			<keeperContainer id="2" ip="1.1.1.1" port="8081" az_id="2"/>
+			<keeperContainer id="1" ip="1.1.1.1" port="8080" az_id="1234567890123456789"/>
+			<keeperContainer id="2" ip="1.1.1.1" port="8081" az_id="1234567890123456789"/>
 		</keeperContainers>
 		<sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171"/>
 		<sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>

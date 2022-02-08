@@ -1,13 +1,19 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationState;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verify;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng
@@ -19,9 +25,14 @@ public class MigrationInitiatedStateTest extends AbstractMigrationStateTest {
 
     private MigrationInitiatedState initiatedState;
 
+    @Override
+    public void beforeAbstractMigrationStateTest() {
+        when(migrationCluster.getScheduled()).thenReturn(scheduled);
+        when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
+    }
+
     @Before
     public void beforeMigrationInitiatedStateTest() {
-
         initiatedState = new MigrationInitiatedState(migrationCluster);
     }
 

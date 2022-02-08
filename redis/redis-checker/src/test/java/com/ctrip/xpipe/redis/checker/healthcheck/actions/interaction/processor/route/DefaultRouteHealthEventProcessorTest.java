@@ -56,7 +56,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
     private ProxyTunnelInfo proxyTunnelInfo;
 
     @Before
-    public void beforeRouteHealthEventProcessorTest() {
+    public void beforeRouteHealthEventProcessorTest() throws Exception {
         MockitoAnnotations.initMocks(this);
         processor.metaCache = metaCache;
         processor.proxyManager = proxyManager;
@@ -69,6 +69,7 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         when(instance.getCheckInfo()).thenReturn(new DefaultRedisInstanceInfo("FRA-AWS", "cluster", "shard", new HostPort("127.0.0.3", 6379), "SHAJQ", ClusterType.ONE_WAY));
         when(instance.getRedisSession()).thenReturn(redisSession);
         when(redisSessionManager.findOrCreateSession(any(HostPort.class))).thenReturn(redisSession);
+        when(metaCache.findMaster("cluster", "shard")).thenReturn(new HostPort("127.0.0.3", 6379));
 
     }
 

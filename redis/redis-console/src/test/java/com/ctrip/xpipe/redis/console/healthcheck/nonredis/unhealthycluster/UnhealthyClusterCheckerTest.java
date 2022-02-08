@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,7 +69,7 @@ public class UnhealthyClusterCheckerTest extends AbstractConsoleTest {
         AtomicInteger unhealthyClusters = new AtomicInteger(0);
         AtomicInteger unhealthyInstances = new AtomicInteger(0);
         Mockito.doAnswer(invocation -> {
-            MetricData data = invocation.getArgumentAt(0, MetricData.class);
+            MetricData data = invocation.getArgument(0, MetricData.class);
             if (data.getMetricType().equals(UNHEALTHY_CLUSTER_METRIC_TYPE)) {
                 unhealthyClusters.addAndGet((int)data.getValue());
             } else if (data.getMetricType().equals(UNHEALTHY_INSTANCE_METRIC_TYPE)) {
@@ -93,7 +93,7 @@ public class UnhealthyClusterCheckerTest extends AbstractConsoleTest {
 
         Mockito.when(delayService.getDcActiveClusterUnhealthyInstance(Mockito.anyString())).thenReturn(mockUnhealthyInfoModel());
         Mockito.doAnswer(invocation -> {
-            MetricData data = invocation.getArgumentAt(0, MetricData.class);
+            MetricData data = invocation.getArgument(0, MetricData.class);
             if (data.getMetricType().equals(UNHEALTHY_CLUSTER_METRIC_TYPE)) {
                 unhealthyClusters.addAndGet((int)data.getValue());
             } else if (data.getMetricType().equals(UNHEALTHY_INSTANCE_METRIC_TYPE)) {
