@@ -1,13 +1,17 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationResult;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,6 +44,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
         verify(migrationCluster).updateStat(isA(MigrationPublishState.class));
         verify(migrationCluster).process();
+        Assert.assertNotNull(migrationCluster.getOuterClientService());
     }
 
     @Test
@@ -57,7 +62,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
         for (MigrationShard migrationShard : migrationCluster.getMigrationShards()) {
             ShardMigrationResult result = migrationShard.getShardMigrationResult();
             doAnswer(invocation -> {
-                ShardMigrationStep step = invocation.getArgumentAt(0, ShardMigrationStep.class);
+                ShardMigrationStep step = invocation.getArgument(0, ShardMigrationStep.class);
                 when(result.stepTerminated(step)).thenReturn(false);
                 when(result.stepTerminated(step)).thenReturn(false);
                 return null;

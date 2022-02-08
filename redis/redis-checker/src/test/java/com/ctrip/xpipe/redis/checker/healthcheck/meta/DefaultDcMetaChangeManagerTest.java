@@ -47,13 +47,13 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     public void beforeDefaultDcMetaChangeManagerTest() {
         MockitoAnnotations.initMocks(this);
         Mockito.doAnswer(invocation -> {
-            RedisMeta redis = invocation.getArgumentAt(0, RedisMeta.class);
+            RedisMeta redis = invocation.getArgument(0, RedisMeta.class);
             HostPort redisHostPort = new HostPort(redis.getIp(), redis.getPort());
             addedRedises.add(redisHostPort);
             return instance;
         }).when(instanceManager).getOrCreate(any(RedisMeta.class));
         Mockito.doAnswer(invocation -> {
-            HostPort redis = invocation.getArgumentAt(0, HostPort.class);
+            HostPort redis = invocation.getArgument(0, HostPort.class);
             deletedRedised.add(redis);
             return null;
         }).when(instanceManager).remove(any(HostPort.class));

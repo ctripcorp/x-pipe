@@ -8,7 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -46,8 +46,6 @@ public class ConsoleServiceManagerTest extends AbstractConsoleTest{
     public void testMulti(){
 
         when(consoleConfig.getAllConsoles()).thenReturn("127.0.0.1:8080, 127.0.0.1:8081");
-        when(consoleConfig.getQuorum()).thenReturn(1);
-
         ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig);
 
         List<HEALTH_STATE> health_states = manager.allHealthStatus("127.0.0.1", 6379);

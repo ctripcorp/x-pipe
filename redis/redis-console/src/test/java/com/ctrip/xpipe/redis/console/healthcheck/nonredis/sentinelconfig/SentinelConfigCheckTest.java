@@ -14,7 +14,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
@@ -69,13 +69,13 @@ public class SentinelConfigCheckTest {
         when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
         when(consoleDbConfig.sentinelCheckWhiteList(Mockito.anyBoolean())).thenReturn(Collections.emptySet());
         when(metaCache.getActiveDc(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
-            String cluster = invocationOnMock.getArgumentAt(0, String.class);
+            String cluster = invocationOnMock.getArgument(0, String.class);
             return activeDcMap.get(cluster);
         });
 
         when(metaCache.isCrossRegion(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
-            String activeDc = invocationOnMock.getArgumentAt(0, String.class);
-            String backupDc = invocationOnMock.getArgumentAt(1, String.class);
+            String activeDc = invocationOnMock.getArgument(0, String.class);
+            String backupDc = invocationOnMock.getArgument(1, String.class);
             for (Set<String> dcSet: regions) {
                 if (dcSet.contains(activeDc)) return !dcSet.contains(backupDc);
             }
@@ -87,9 +87,9 @@ public class SentinelConfigCheckTest {
     @Test
     public void testDoCheckWithOneWayCluster() {
         Mockito.doAnswer(invocationOnMock -> {
-           String dc = invocationOnMock.getArgumentAt(0, String.class);
-           String cluster = invocationOnMock.getArgumentAt(1, String.class);
-           String shard = invocationOnMock.getArgumentAt(2, String.class);
+           String dc = invocationOnMock.getArgument(0, String.class);
+           String cluster = invocationOnMock.getArgument(1, String.class);
+           String shard = invocationOnMock.getArgument(2, String.class);
 
            Assert.assertTrue(expectedUnsafeClusters.get(dc).contains(cluster));
            Assert.assertTrue(mockShards.contains(shard));

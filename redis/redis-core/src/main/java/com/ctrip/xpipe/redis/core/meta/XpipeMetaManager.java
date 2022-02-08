@@ -14,7 +14,7 @@ import java.util.Set;
  *
  * Jul 7, 2016
  */
-public interface XpipeMetaManager extends MetaUpdateOperation, ReadWriteSafe {
+public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdateOperation, ReadWriteSafe {
 
 	class MetaDesc extends ShardMeta {
 

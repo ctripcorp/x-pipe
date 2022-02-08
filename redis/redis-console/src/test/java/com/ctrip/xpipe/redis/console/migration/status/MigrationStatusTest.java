@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 /**
  * @author wenchao.meng
