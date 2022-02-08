@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 
-import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 public class AbstractMigrationIntegrationTest extends AbstractTest {

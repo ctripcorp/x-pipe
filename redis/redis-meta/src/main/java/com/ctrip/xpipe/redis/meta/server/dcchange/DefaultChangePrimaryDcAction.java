@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +97,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 		if(newPrimaryDc.equalsIgnoreCase(dcMetaCache.getCurrentDc())){
 			logger.info("[doChangePrimaryDc][become primary]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc);
 			changePrimaryDcAction = new BecomePrimaryAction(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager,
-					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterDbId, shardDbId), scheduled, executors);
+					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterDbId, shardDbId), scheduled, MoreExecutors.directExecutor());
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId,
 					newPrimaryDc, masterInfo);
 			int timeout = DEFAULT_SO_TIMEOUT / 2;
@@ -126,8 +127,8 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 	}
 
 	private void waitForCommandStart(ChangePrimaryDcJob changePrimaryDcJob) throws TimeoutException, InterruptedException {
-		int timeout = Math.max(DEFAULT_SO_TIMEOUT - DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI * 5
-				- metaServerConfig.getWaitforOffsetMilli() - CHECK_NEW_MASTER_TIMEOUT_SECONDS * 2 * 1000
+		int timeout = Math.max(DEFAULT_SO_TIMEOUT - DEFAULT_MIGRATION_SENTINEL_COMMAND_TIMEOUT_MILLI
+				- metaServerConfig.getWaitforOffsetMilli() - CHECK_NEW_MASTER_TIMEOUT_SECONDS * 1000
 				- DEFAULT_CHANGE_PRIMARY_WAIT_TIMEOUT_SECONDS * 1000, defaultTimeout);
 		long endTime = System.currentTimeMillis() + timeout;
 		while(System.currentTimeMillis() < endTime) {
@@ -151,7 +152,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 	}
 
 	private NewMasterChooser createNewMasterChooser(Long clusterDbId, Long shardDbId) {
-		return wrapCachedNewMasterChooser(clusterDbId, shardDbId, new FirstNewMasterChooser(keyedObjectPool, scheduled, executors));
+		return wrapCachedNewMasterChooser(clusterDbId, shardDbId, new FirstNewMasterChooser(keyedObjectPool, scheduled, MoreExecutors.directExecutor()));
 	}
 
 	@VisibleForTesting

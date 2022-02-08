@@ -127,8 +127,8 @@ else
     IDC=`getIdc`
     if [ $IDC = "PTJQ" ] || [ $IDC = "PTOY" ];then
         #MB
-        USED_MEM=6144
-        XMN=2304
+        USED_MEM=8192
+        XMN=6144
         META_SPACE=256
         MAX_META_SPACE=256
     else
@@ -200,7 +200,7 @@ declare -i max_counter=16 # 16*5=80s
 declare -i total_time=0
 
 printf "Waiting for server startup" >> $STARTUP_LOG
-until [[ (( counter -ge max_counter )) || "$(curl -X GET --silent --connect-timeout 1 --head $SERVER_URL | grep "Coyote")" != "" ]];
+until [[ (( counter -ge max_counter )) || "$(curl -X GET --silent --connect-timeout 1 --head $SERVER_URL/health | grep "HTTP/1.1 200")" != "" ]];
 do
     printf "." >> $STARTUP_LOG
     counter+=1

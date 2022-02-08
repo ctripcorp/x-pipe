@@ -10,14 +10,13 @@ import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import org.apache.curator.framework.recipes.cache.ChildData;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
@@ -52,6 +51,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	public void beforeDefaultKeeperElectorManagerTest() throws Exception{
 		
 		when(KeeperActiveElectAlgorithmManager.get(anyLong(), anyLong())).thenReturn(keeperActiveElectAlgorithm);
+		when(keeperActiveElectAlgorithm.select(anyLong(), anyLong(), anyList())).thenReturn(new KeeperMeta());
 
 		keeperElectorManager = getBean(DefaultKeeperElectorManager.class);
 		keeperElectorManager.initialize();
@@ -77,11 +77,11 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 
 		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
 
-		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()), argThat(new BaseMatcher<List<KeeperMeta>>() {
+		verify(keeperActiveElectAlgorithm).select(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()), argThat(new ArgumentMatcher<List<KeeperMeta>>() {
 
 			@Override
-			public boolean matches(Object item) {
-				List<KeeperMeta> keepers = (List<KeeperMeta>) item;
+			public boolean matches(List<KeeperMeta> item) {
+				List<KeeperMeta> keepers = item;
 				if(keepers.size() != count){
 					return false;
 				}
@@ -96,9 +96,7 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 				}
 				return true;
 			}
-			@Override
-			public void describeTo(Description description) {
-			}
+
 		}));
 	}
 
@@ -130,9 +128,8 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Test
 	public void testAddWatch() throws Exception{
 
-		when(currentMetaManager.hasShard(anyLong(), anyLong())).thenReturn(true);
 		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
-		
+
 		keeperElectorManager.update(new NodeAdded<>(clusterMeta), null);
 		//change notify
 		addKeeperZkNode(clusterMeta.getDbId(), shardMeta.getDbId(), getZkClient());
@@ -146,7 +143,6 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Test
 	public void testRemoveWatch() throws Exception{
 
-		when(currentMetaManager.hasShard(anyLong(), anyLong())).thenReturn(true);
 		when(currentMetaManager.watchIfNotWatched(anyLong(), anyLong())).thenReturn(true);
 		
 		final AtomicReference<Releasable>  release = new AtomicReference<Releasable>(null);

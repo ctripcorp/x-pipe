@@ -125,7 +125,7 @@ export JAVA_OPTS="-server $JAVA_OPTS -XX:+UnlockExperimentalVMOptions -XX:+UseZG
 echo $JAVA_OPTS
 
 PATH_TO_JAR=$SERVICE_NAME".jar"
-SERVER_URL="http://localhost:$SERVER_PORT/health"
+SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
 
 #set the jdk to 1.8 version
@@ -181,7 +181,7 @@ declare -i max_counter=16 # 16*5=80s
 declare -i total_time=0
 
 printf "Waiting for server startup" >> $STARTUP_LOG
-until [[ (( counter -ge max_counter )) || "$(curl -X GET --silent --connect-timeout 1 --head $SERVER_URL | grep "Coyote")" != "" ]];
+until [[ (( counter -ge max_counter )) || "$(curl -X GET --silent --connect-timeout 1 --head $SERVER_URL/health | grep "HTTP/1.1 200")" != "" ]];
 do
     printf "." >> $STARTUP_LOG
     counter+=1

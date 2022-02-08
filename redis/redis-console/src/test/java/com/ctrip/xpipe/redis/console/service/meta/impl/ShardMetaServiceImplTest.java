@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.Random;
@@ -50,35 +50,35 @@ public class ShardMetaServiceImplTest extends AbstractTest {
     @Before
     public void beforeShardMetaServiceImplTest() {
         Mockito.doAnswer(invocationOnMock -> {
-            String dcName = invocationOnMock.getArgumentAt(0, String.class);
+            String dcName = invocationOnMock.getArgument(0, String.class);
             sleep(random.nextInt(100));
             return mockDcInfo(dcName);
         }).when(dcService).find(Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
-            String clusterName = invocationOnMock.getArgumentAt(0, String.class);
+            String clusterName = invocationOnMock.getArgument(0, String.class);
             sleep(random.nextInt(100));
             return mockClusterTbl(clusterName).setId(1L);
         }).when(clusterService).find(Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
-            String clusterName = invocationOnMock.getArgumentAt(0, String.class);
-            String shardName = invocationOnMock.getArgumentAt(1, String.class);
+            String clusterName = invocationOnMock.getArgument(0, String.class);
+            String shardName = invocationOnMock.getArgument(1, String.class);
             sleep(random.nextInt(100));
             return mockShardTbl(clusterName, shardName).setId(1L);
         }).when(shardService).find(Mockito.anyString(), Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
-            String dcName = invocationOnMock.getArgumentAt(0, String.class);
-            String clusterName = invocationOnMock.getArgumentAt(1, String.class);
+            String dcName = invocationOnMock.getArgument(0, String.class);
+            String clusterName = invocationOnMock.getArgument(1, String.class);
             sleep(random.nextInt(100));
             return mockDcClusterTbl(dcName, clusterName);
         }).when(dcClusterService).find(Mockito.anyString(), Mockito.anyString());
 
         Mockito.doAnswer(invocationOnMock -> {
-            String dcName = invocationOnMock.getArgumentAt(0, String.class);
-            String clusterName = invocationOnMock.getArgumentAt(1, String.class);
-            String shardName = invocationOnMock.getArgumentAt(2, String.class);
+            String dcName = invocationOnMock.getArgument(0, String.class);
+            String clusterName = invocationOnMock.getArgument(1, String.class);
+            String shardName = invocationOnMock.getArgument(2, String.class);
             sleep(random.nextInt(100));
             return mockDcClusterShardTbl(dcName, clusterName, shardName);
         }).when(dcClusterShardService).find(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());

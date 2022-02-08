@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.client.RestOperations;
 
 import java.util.ArrayList;
@@ -56,6 +56,7 @@ public class CheckerProxyManagerTest extends AbstractCheckerTest {
         this.manager = new CheckerProxyManager(clusterServer, checkerConfig, checkerConsoleService);
         this.manager.setRestOperations(restTemplate);
 
+        Mockito.when(checkerConfig.getConsoleAddress()).thenReturn("http://10.0.0.1:8080");
         Mockito.when(clusterServer.amILeader()).thenReturn(true);
         Mockito.when(checkerConsoleService.getProxyTunnelInfos(anyString()))
                 .thenReturn(Collections.singletonList(mockTunnelInfo()));

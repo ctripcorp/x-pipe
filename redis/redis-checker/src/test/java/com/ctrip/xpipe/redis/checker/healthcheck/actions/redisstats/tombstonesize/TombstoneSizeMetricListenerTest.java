@@ -38,7 +38,7 @@ public class TombstoneSizeMetricListenerTest extends AbstractCheckerTest {
     @Test
     public void testOnAction() throws Exception {
         Mockito.doAnswer(invocation -> {
-            MetricData point = invocation.getArgumentAt(0, MetricData.class);
+            MetricData point = invocation.getArgument(0, MetricData.class);
             Assert.assertEquals(TombstoneSizeMetricListener.METRIC_TYPE, point.getMetricType());
             Assert.assertEquals(tombstoneSize, point.getValue(), DOUBLE_DELTA);
 

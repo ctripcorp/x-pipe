@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.LinkedList;
@@ -75,8 +75,6 @@ public class MigrationStatTest extends AbstractConsoleTest {
 
     @Test
     public void testCheckingToMigrating() throws Exception {
-    	when(mockedMigrationShard.getCurrentShard()).thenReturn((new ShardTbl()).setShardName("test-shard"));
-    	
         Assert.assertEquals(MigrationStatus.Initiated, migrationCluster.getStatus());
 
         migrationCluster.updateStat(new MigrationMigratingState(migrationCluster));
@@ -100,15 +98,6 @@ public class MigrationStatTest extends AbstractConsoleTest {
         dcs.add((new DcTbl()).setId(1).setDcName("ADC"));
         dcs.add((new DcTbl()).setId(2).setDcName("BDC"));
         when(mockedDcService.findClusterRelatedDc("test-cluster")).thenReturn(dcs);
-        when(mockedClusterService.find(anyString())).thenReturn(clusterTbl);
-        when(mockedClusterService.find(anyInt())).thenReturn(clusterTbl);
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                clusterTbl.setStatus(((ClusterStatus) invocation.getArguments()[1]).toString());
-                return null;
-            }
-        }).when(mockedClusterService).updateStatusById(anyInt(), any(), anyLong());
     }
 
 }

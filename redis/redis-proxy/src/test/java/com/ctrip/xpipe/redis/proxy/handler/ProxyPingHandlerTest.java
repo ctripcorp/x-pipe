@@ -51,7 +51,7 @@ public class ProxyPingHandlerTest extends AbstractProxyIntegrationTest {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                actual.set(new SimpleStringParser().read(invocation.getArgumentAt(0, ByteBuf.class)).getPayload());
+                actual.set(new SimpleStringParser().read(invocation.getArgument(0, ByteBuf.class)).getPayload());
                 return null;
             }
         }).when(channel).writeAndFlush(any(ByteBuf.class));
@@ -69,7 +69,7 @@ public class ProxyPingHandlerTest extends AbstractProxyIntegrationTest {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                actual.set(new SimpleStringParser().read(invocation.getArgumentAt(0, ByteBuf.class)).getPayload());
+                actual.set(new SimpleStringParser().read(invocation.getArgument(0, ByteBuf.class)).getPayload());
                 return null;
             }
         }).when(channel).writeAndFlush(any(ByteBuf.class));

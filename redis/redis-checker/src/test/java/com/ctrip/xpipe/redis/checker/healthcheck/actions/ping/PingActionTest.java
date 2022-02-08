@@ -45,7 +45,7 @@ public class PingActionTest extends AbstractRedisTest {
         when(session.ping(any(PingCallback.class))).thenAnswer(new Answer<PingCallback>() {
             @Override
             public PingCallback answer(InvocationOnMock invocation) throws Throwable {
-                PingCallback callback = invocation.getArgumentAt(0, PingCallback.class);
+                PingCallback callback = invocation.getArgument(0, PingCallback.class);
                 callback.pong("PONG");
                 return null;
             }

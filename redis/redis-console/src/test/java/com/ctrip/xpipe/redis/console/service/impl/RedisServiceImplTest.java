@@ -6,12 +6,12 @@ import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
-import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
-import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
-import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
+import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.collect.Lists;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.*;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +19,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -46,9 +47,12 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     private RedisDao redisDao;
 
     private String dcName;
+
     private String shardName;
 
     private ClusterMetaModifiedNotifier tmpNotifier;
+
+    private List<String> keeperContainers = Arrays.asList("127.1.1.1", "127.1.1.2");
 
     @Before
     public void beforeRedisServiceImplTest() {
@@ -274,6 +278,18 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
     }
 
     @Test
+    public void testValidateKeepersInTheSameAvaialableZone() throws ResourceNotFoundException, IOException, ComponentLookupException, SQLException {
+
+        executeSqlScript(FileUtils.readFileAsString("src/test/resources/keeper-in-same-avaialable-zone.sql"));
+        List<RedisTbl> originKeepers = redisService.findKeepersByDcClusterShard(dcName, clusterName, shardName);
+        List<RedisTbl> targetKeepers = new ArrayList<>(originKeepers);
+
+        targetKeepers.get(0).setRedisIp(keeperContainers.get(0)).setKeepercontainerId(30);
+        targetKeepers.get(1).setRedisIp(keeperContainers.get(1)).setKeepercontainerId(31);
+        redisService.validateKeepers(targetKeepers);
+    }
+
+    @Test
     public void testAddDuplicateRedis() throws ResourceNotFoundException, DalException {
         List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
         logger.info("[Redis-Tbls]{}", redisTbls);
@@ -386,8 +402,8 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         redisService.notifier = notifier;
 
         Mockito.doAnswer(invocation -> {
-            String clusterName = invocation.getArgumentAt(0, String.class);
-            List<String> dcs = invocation.getArgumentAt(1, List.class);
+            String clusterName = invocation.getArgument(0, String.class);
+            List<String> dcs = invocation.getArgument(1, List.class);
             Assert.assertEquals("bi-test", clusterName);
             Assert.assertEquals(2, dcs.size());
             Assert.assertTrue(dcs.contains("jq") && dcs.contains("oy"));
@@ -403,8 +419,8 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         redisService.notifier = notifier;
 
         Mockito.doAnswer(invocation -> {
-            String paramClusterName = invocation.getArgumentAt(0, String.class);
-            List<String> dcs = invocation.getArgumentAt(1, List.class);
+            String paramClusterName = invocation.getArgument(0, String.class);
+            List<String> dcs = invocation.getArgument(1, List.class);
             Assert.assertEquals(clusterName, paramClusterName);
             Assert.assertEquals(1, dcs.size());
             Assert.assertTrue(dcs.contains("jq"));
