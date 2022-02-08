@@ -6,6 +6,7 @@ import com.ctrip.xpipe.concurrent.*;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
+import com.ctrip.xpipe.gtid.GtidSetTest;
 import com.ctrip.xpipe.lifecycle.*;
 import com.ctrip.xpipe.netty.NettyPoolUtilTest;
 import com.ctrip.xpipe.netty.NettyTimeoutTtlListenerTest;
@@ -34,71 +35,72 @@ import org.junit.runners.Suite.SuiteClasses;
 
 /**
  * @author wenchao.meng
- *
+ * <p>
  * May 17, 2016 2:09:41 PM
  */
 @RunWith(Suite.class)
 @SuiteClasses({
-	SsoConfigTest.class,
-	XpipeNettyClientPoolTest.class,
-	XpipeNettyClientKeyedObjectPoolTest.class,
-	DefaultCommandFutureTest.class,
-	DefaultEndPointTest.class,
-	ClusterShardHostPortTest.class,
-	ByteArrayOutputStreamPayloadTest.class,
-	ByteArrayWritableByteChannelTest.class,
-	TestAbstractLifecycle.class,
-	DefaultLifecycleControllerTest.class,
-	DefaultLifecycleStateTest.class,
-	CreatedComponentRedistryTest.class,
-	SpringComponentRegistryTest.class,
-	DefaultRegistryTest.class,
-	LifecycleObservableAbstractTest.class,
-	OffsetNotifierTest.class,
-	TcpPortCheckCommandTest.class,
-	RequestResponseCommandTest.class,
-	CommandRetryWrapperTest.class,
-	DefaultRetryCommandFactoryTest.class,
-	SequenceCommandChainTest.class,
-	ParallelCommandChainTest.class,
-	RestTemplateFactoryTest.class,
-	ControllableFileAbstractTest.class,
-	FileUtilsTest.class,
-	GateTest.class,
-	MathUtilTest.class,
-	CloseStateTest.class,
-	FinalStateSetterManagerTest.class,
-	OneThreadTaskExecutorTest.class,
-	TestZkClientTest.class,
-	StringUtilTest.class,
-	VersionUtilsTest.class,
-	ReferenceFileChannelTest.class,
-	ChannelUtilTest.class,
-	KeyedOneThreadTaskExecutorTest.class,
-	DefaultControllableFileTest.class,
-	SizeControllableFileTest.class,
-	UrlUtilsTest.class,
-	DefaultExecutorFactoryTest.class,
-	PairTest.class,
-	DomainValidateFilterTest.class,
-	CausalCommandTest.class,
-	CausalChainTest.class,
-	MutexableOneThreadTaskExecutorTest.class,
-	KeyedOneThreadMutexableTaskExecutorTest.class,
-	DirectByteBufInStringOutPayloadTest.class,
-	NettyTimeoutTtlListenerTest.class,
-	DefaultZkConfigTest.class,
-	DefaultNettyClientTest.class,
-	NettyClientFactoryTest.class,
-	NettyPoolUtilTest.class,
-	DynamicDelayPeriodTaskTest.class,
-	MdcUtilTest.class
+        SsoConfigTest.class,
+        XpipeNettyClientPoolTest.class,
+        XpipeNettyClientKeyedObjectPoolTest.class,
+        DefaultCommandFutureTest.class,
+        DefaultEndPointTest.class,
+        ClusterShardHostPortTest.class,
+        ByteArrayOutputStreamPayloadTest.class,
+        ByteArrayWritableByteChannelTest.class,
+        TestAbstractLifecycle.class,
+        DefaultLifecycleControllerTest.class,
+        DefaultLifecycleStateTest.class,
+        CreatedComponentRedistryTest.class,
+        SpringComponentRegistryTest.class,
+        DefaultRegistryTest.class,
+        LifecycleObservableAbstractTest.class,
+        OffsetNotifierTest.class,
+        TcpPortCheckCommandTest.class,
+        RequestResponseCommandTest.class,
+        CommandRetryWrapperTest.class,
+        DefaultRetryCommandFactoryTest.class,
+        SequenceCommandChainTest.class,
+        ParallelCommandChainTest.class,
+        RestTemplateFactoryTest.class,
+        ControllableFileAbstractTest.class,
+        FileUtilsTest.class,
+        GateTest.class,
+        MathUtilTest.class,
+        CloseStateTest.class,
+        FinalStateSetterManagerTest.class,
+        OneThreadTaskExecutorTest.class,
+        TestZkClientTest.class,
+        StringUtilTest.class,
+        VersionUtilsTest.class,
+        ReferenceFileChannelTest.class,
+        ChannelUtilTest.class,
+        KeyedOneThreadTaskExecutorTest.class,
+        DefaultControllableFileTest.class,
+        SizeControllableFileTest.class,
+        UrlUtilsTest.class,
+        DefaultExecutorFactoryTest.class,
+        PairTest.class,
+        DomainValidateFilterTest.class,
+        CausalCommandTest.class,
+        CausalChainTest.class,
+        MutexableOneThreadTaskExecutorTest.class,
+        KeyedOneThreadMutexableTaskExecutorTest.class,
+        DirectByteBufInStringOutPayloadTest.class,
+        NettyTimeoutTtlListenerTest.class,
+        DefaultZkConfigTest.class,
+        DefaultNettyClientTest.class,
+        NettyClientFactoryTest.class,
+        NettyPoolUtilTest.class,
+        DynamicDelayPeriodTaskTest.class,
+        MdcUtilTest.class,
+        GtidSetTest.class,
 })
 public class AllTests {
 
-	@BeforeClass
-	public static void beforeAllTests() {
-		System.setProperty("io.netty.allocator.useCacheForAllThreads", "false");
-	}
+    @BeforeClass
+    public static void beforeAllTests() {
+        System.setProperty("io.netty.allocator.useCacheForAllThreads", "false");
+    }
 
 }
