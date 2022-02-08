@@ -1,10 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
+import com.ctrip.xpipe.utils.StringUtil;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
@@ -41,18 +45,21 @@ public class ServerStartCmd extends AbstractForkProcessCmd {
                 File.separator + "java";
 
         URL[] urls = urlsFromClassLoader(Thread.currentThread().getContextClassLoader());
-        String classPath = ".:";
+        StringBuilder sb = new StringBuilder();
         for (URL url: urls) {
             if(Pattern.matches(".*/redis-proxy-client/target/classes/", url.toString())) {
-                classPath += url + "../redis-proxy-client-1.2.6.jar:";
-                
+                sb.append(url);
+                sb.append("../redis-proxy-client-1.2.6.jar:");
+
             } else {
-                classPath += url.getPath() + ":";
+                sb.append(url.getPath());
+                sb.append(":");
             }
             
         }
-        classPath = classPath.substring(0, classPath.length() - 1);
+        sb.append(".");
 
+        String classPath = sb.toString();
         String cmd = javaExecutable + " -classpath \"" + classPath + "\" ";
         StringBuilder argBuilder = new StringBuilder();
         args.forEach((key, value) -> {

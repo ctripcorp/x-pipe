@@ -12,6 +12,15 @@ public interface ReadWriteSafe {
 
     ReadWriteLock getReadWriteLock();
 
+    default void read(Runnable runnable) {
+        getReadWriteLock().readLock().lock();
+        try {
+            runnable.run();
+        } finally {
+            getReadWriteLock().readLock().unlock();
+        }
+    }
+
     default <T> T read(Supplier<T> supplier) {
         getReadWriteLock().readLock().lock();
         try {

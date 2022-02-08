@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
  * @author lishanglin
  * date 2021/10/27
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class HickwallMetricTest extends AbstractServiceTest {
 
     private HickwallMetric hickwallMetric;
@@ -54,11 +54,11 @@ public class HickwallMetricTest extends AbstractServiceTest {
         when(config.getHickwallQueueSize()).thenReturn(100);
         when(config.getHickwallWriteMonitor()).thenReturn(false);
         doAnswer(invocationOnMock -> {
-            dataRef.set(invocationOnMock.getArgumentAt(0, List.class));
+            dataRef.set(invocationOnMock.getArgument(0, List.class));
             return null;
         }).when(client).send(any());
         doAnswer(invocationOnMock -> {
-            dataRef.set(invocationOnMock.getArgumentAt(0, List.class));
+            dataRef.set(invocationOnMock.getArgument(0, List.class));
             return null;
         }).when(client).sendWithMonitor(any());
 

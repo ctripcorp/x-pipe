@@ -15,7 +15,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
@@ -39,8 +41,8 @@ public class PeerMasterChooserManagerTest extends AbstractMetaServerTest {
     @Test
     public void testDcMetaAdded() {
         Mockito.doAnswer(invocation -> {
-            String paramClusterId = invocation.getArgumentAt(0, String.class);
-            String paramShardId = invocation.getArgumentAt(1, String.class);
+            String paramClusterId = invocation.getArgument(0, String.class);
+            String paramShardId = invocation.getArgument(1, String.class);
 
             Assert.assertEquals(getClusterId(), paramClusterId);
             Assert.assertEquals(getShardId(), paramShardId);

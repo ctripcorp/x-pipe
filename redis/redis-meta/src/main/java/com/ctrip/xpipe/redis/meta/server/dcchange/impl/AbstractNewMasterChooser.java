@@ -36,9 +36,9 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
 
     protected ScheduledExecutorService scheduled;
 
-    protected ExecutorService executors;
+    protected Executor executors;
 
-    public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled, ExecutorService executors) {
+    public AbstractNewMasterChooser(XpipeNettyClientKeyedObjectPool keyedObjectPool, ScheduledExecutorService scheduled, Executor executors) {
         this.keyedObjectPool = keyedObjectPool;
         this.scheduled = scheduled;
         this.executors = executors;
@@ -76,7 +76,7 @@ public abstract class AbstractNewMasterChooser implements NewMasterChooser {
         List<RedisMeta> masters = new LinkedList<>();
         List<RedisMeta> tmpAliveServers = new LinkedList<>();
 
-        ParallelCommandChain commandChain = new ParallelCommandChain(MoreExecutors.directExecutor());
+        ParallelCommandChain commandChain = new ParallelCommandChain(executors);
         for (RedisMeta redisMeta : allRedises) {
             SimpleObjectPool<NettyClient> clientPool = keyedObjectPool.getKeyPool(new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
             RoleCommand cmd = new RoleCommand(clientPool, CHECK_NEW_MASTER_TIMEOUT_SECONDS*1000, true, scheduled);

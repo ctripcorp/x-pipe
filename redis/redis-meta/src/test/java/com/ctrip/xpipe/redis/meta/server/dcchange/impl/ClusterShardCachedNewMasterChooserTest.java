@@ -10,7 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +37,7 @@ public class ClusterShardCachedNewMasterChooserTest extends AbstractMetaServerTe
     @Before
     public void setupClusterShardCachedNewMasterChooserTest() {
         Mockito.doAnswer(invocation -> {
-            List<RedisMeta> redises = invocation.getArgumentAt(0, List.class);
+            List<RedisMeta> redises = invocation.getArgument(0, List.class);
             return redises.get(0);
         }).when(innerChooser).choose(Mockito.anyList());
 

@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
  * @author lishanglin
  * date 2021/4/7
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultCheckerDbConfigTest extends AbstractCheckerTest {
 
     @Mock

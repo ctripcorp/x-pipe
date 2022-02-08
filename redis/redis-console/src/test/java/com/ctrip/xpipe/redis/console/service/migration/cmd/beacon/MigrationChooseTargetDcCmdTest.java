@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 
@@ -69,11 +69,8 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
         migrationRequest.setAvailableDcs(Sets.newHashSet(dc1.getDcName(), dc2.getDcName()));
 
         when(dcCache.find(dc1.getDcName())).thenReturn(dc1);
-        when(dcCache.find(dc2.getDcName())).thenReturn(dc2);
         when(dcCache.find(dc2.getId())).thenReturn(dc2);
-        when(dcClusterService.find(1, 1)).thenReturn(new DcClusterTbl());
         when(dcClusterService.find(2, 1)).thenReturn(new DcClusterTbl());
-        when(dcClusterService.find(3, 1)).thenReturn(new DcClusterTbl());
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console;
 
 
+import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorServiceManagerTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTe
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
@@ -197,7 +199,10 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultPersistenceCacheTest.class,
         CheckerPersistenceCacheTest.class,
         DefaultCheckerManagerTest.class,
-        DefaultSentinelBalanceServiceTest.class
+        DefaultSentinelBalanceServiceTest.class,
+
+        KeeperAvailableZoneCheckTest.class,
+        EmailSentCounterTest.class
 })
 public class AllTests {
 

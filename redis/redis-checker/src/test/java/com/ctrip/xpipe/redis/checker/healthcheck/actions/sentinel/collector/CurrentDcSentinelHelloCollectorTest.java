@@ -21,11 +21,11 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @InjectMocks
@@ -101,7 +101,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
 
         Mockito.doAnswer(invocation -> {
-            Sentinel sentinel = invocation.getArgumentAt(0, Sentinel.class);
+            Sentinel sentinel = invocation.getArgument(0, Sentinel.class);
             Pair<String, String> clusterShard = clusterShardBySentinel.get(new HostPort(sentinel.getIp(), sentinel.getPort()));
             Mockito.when(metaCache.findClusterShard(Mockito.any())).thenReturn(clusterShard);
             return Collections.singletonList(new HostPort("127.0.0.1", 7379));

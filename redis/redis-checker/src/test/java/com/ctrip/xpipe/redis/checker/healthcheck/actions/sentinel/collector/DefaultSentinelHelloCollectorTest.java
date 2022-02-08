@@ -27,14 +27,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 /**
@@ -42,7 +41,7 @@ import static org.mockito.Mockito.*;
  * <p>
  * Oct 09, 2018
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @InjectMocks
@@ -84,7 +83,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(endpointFactory.getOrCreateEndpoint(any(HostPort.class))).thenAnswer(new Answer<Endpoint>() {
             @Override
             public Endpoint answer(InvocationOnMock invocation) throws Throwable {
-                HostPort hostPort = invocation.getArgumentAt(0, HostPort.class);
+                HostPort hostPort = invocation.getArgument(0, HostPort.class);
                 return new DefaultEndPoint(hostPort.getHost(), hostPort.getPort());
             }
         });

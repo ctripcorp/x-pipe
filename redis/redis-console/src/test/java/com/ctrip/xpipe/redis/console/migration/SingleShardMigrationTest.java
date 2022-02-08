@@ -267,7 +267,7 @@ public class SingleShardMigrationTest extends AbstractMigrationTest {
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.CHECK));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
 		String message = migrationShard.getShardMigrationResult().getSteps().get(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC).getValue();
-		Assert.assertTrue(message.indexOf("Ignore:java.lang.Throwable: mocked prev fail") > 0);
+		Assert.assertTrue(message.indexOf("Ignore:mocked prev fail") > 0);
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE_OTHER_DC));
 		Assert.assertTrue(migrationShard.getShardMigrationResult().stepSuccess(ShardMigrationStep.MIGRATE));

@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -36,19 +37,15 @@ public class MultiMetaServerTest extends AbstractMetaServerTest{
 		metaServer.clusterDeleted(getClusterId(), forwardInfo);
 		
 		for(MetaServer mockServer :  servers){
-			verify(mockServer).clusterDeleted(eq(getClusterId()),  argThat(new BaseMatcher<ForwardInfo>() {
+			verify(mockServer).clusterDeleted(eq(getClusterId()),  argThat(new ArgumentMatcher<ForwardInfo>() {
 
 				@Override
-				public boolean matches(Object item) {
+				public boolean matches(ForwardInfo item) {
 					//should be cloned
 					if(item == forwardInfo){
 						return false;
 					}
 					return true;
-				}
-				@Override
-				public void describeTo(Description description) {
-					
 				}
 			}));
 		}

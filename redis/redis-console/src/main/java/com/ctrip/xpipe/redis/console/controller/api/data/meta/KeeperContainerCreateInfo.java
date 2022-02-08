@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.utils.IpUtils;
-import jline.internal.Nullable;
+import org.springframework.lang.Nullable;
 
 /**
  * @author chen.zhu
