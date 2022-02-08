@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
+import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
