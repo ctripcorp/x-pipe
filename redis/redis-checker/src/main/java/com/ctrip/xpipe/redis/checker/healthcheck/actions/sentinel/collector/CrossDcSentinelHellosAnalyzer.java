@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
@@ -37,12 +36,16 @@ public class CrossDcSentinelHellosAnalyzer extends DefaultSentinelHelloCollector
             return Collections.emptySet();
         }
 
-        DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcId);
-        ShardMeta shardMeta = dcMeta.getClusters().get(clusterId).getShards().get(shardId);
-        SentinelMeta sentinelMeta = dcMeta.getSentinels().get(shardMeta.getSentinelId());
-        if (null == sentinelMeta) return Collections.emptySet();
+        DcMeta instanceDcMeta = metaCache.getXpipeMeta().getDcs().get(dcId);
+        ShardMeta shardMetaInCurrentDc = instanceDcMeta.getClusters().get(clusterId).getShards().get(shardId);
+        long sentinelGroupId = shardMetaInCurrentDc.getSentinelId();
 
-        return new HashSet<>(IpUtils.parseAsHostPorts(sentinelMeta.getAddress()));
+        Set<HostPort> crossDcSentinels = new HashSet<>();
+        metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
+            crossDcSentinels.addAll(IpUtils.parseAsHostPorts(dcMeta.getSentinels().get(sentinelGroupId).getAddress()));
+        });
+
+        return crossDcSentinels;
     }
 
     @Override
@@ -57,11 +60,6 @@ public class CrossDcSentinelHellosAnalyzer extends DefaultSentinelHelloCollector
         return false;
     }
 
-//    todo: check wrong slave but not keepers
-    @Override
-    void doCheckReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
-
-    }
 
     private boolean checkDcClusterShardExist(String dcId, String clusterId, String shardId) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();

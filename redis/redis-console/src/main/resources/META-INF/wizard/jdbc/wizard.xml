@@ -5,7 +5,7 @@
          <driver>com.mysql.jdbc.Driver</driver>
          <url>jdbc:mysql://localhost:3306/fxxpipedb</url>
          <user>root</user>
-         <password>123456</password>
+         <password></password>
          <properties>useUnicode=true&amp;characterEncoding=UTF-8&amp;autoReconnect=true</properties>
       </datasource>
       <group name="meta" package="com.ctrip.xpipe.redis.console.model">
@@ -28,6 +28,8 @@
          <table name="proxy_tbl"/>
          <table name="route_tbl"/>
          <table name="az_tbl"/>
+         <table name="sentinel_tbl"/>
+         <table name="sentinel_group_tbl"/>
       </group>
    </jdbc>
 </wizard>

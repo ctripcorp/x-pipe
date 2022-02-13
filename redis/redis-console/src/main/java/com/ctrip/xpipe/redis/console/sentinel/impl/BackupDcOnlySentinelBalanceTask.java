@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
+import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.sentinel.exception.NoSentinelsToUseException;
@@ -26,7 +27,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
 
     protected int targetUsage;
 
-    protected List<SetinelTbl> busySentinels;
+    protected List<SentinelGroupModel> busySentinels;
 
     public BackupDcOnlySentinelBalanceTask(String dcId, SentinelBalanceService sentinelBalanceService, DcClusterShardService dcClusterShardService) {
         this.dcId = dcId;
@@ -39,8 +40,8 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
         this.busySentinels = new LinkedList<>();
 
         long totalUsages = 0;
-        List<SetinelTbl> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId);
-        for (SetinelTbl sentinel: sentinels) {
+        List<SentinelGroupModel> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId, SentinelType.DR_CLUSTER);
+        for (SentinelGroupModel sentinel: sentinels) {
             totalUsages += sentinel.getShardCount();
         }
 
@@ -50,7 +51,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
             this.targetUsage = (int)Math.ceil(totalUsages*1.0D/sentinels.size());
         }
 
-        for (SetinelTbl sentinel: sentinels) {
+        for (SentinelGroupModel sentinel: sentinels) {
             if (sentinel.getShardCount() > targetUsage) {
                 busySentinels.add(sentinel);
             }
@@ -62,7 +63,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
         if (null == busySentinels || busySentinels.isEmpty()) return 0;
 
         int total = 0;
-        for (SetinelTbl sentinel: busySentinels) {
+        for (SentinelGroupModel sentinel: busySentinels) {
             int waitBalanceShards = (int)(sentinel.getShardCount() - targetUsage);
             total += Math.max(0, waitBalanceShards);
         }
@@ -82,45 +83,45 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
     }
 
     protected void rebalanceBackupDcSentinels() {
-        for (SetinelTbl setinelTbl: busySentinels) {
+        for (SentinelGroupModel sentinelGroup: busySentinels) {
             if (future().isCancelled()) {
                 getLogger().info("[rebalanceBackupDcSentinels]{} unfinish but cancle", getName());
                 return;
             }
-            rebalanceBackupDcSentinel(setinelTbl);
+            rebalanceBackupDcSentinel(sentinelGroup);
         }
     }
 
-    protected void doBalanceSentinel(SetinelTbl setinelTbl, List<DcClusterShardTbl> dcClusterShards) {
+    protected void doBalanceSentinel(SentinelGroupModel sentinelGroupModel, List<DcClusterShardTbl> dcClusterShards) {
         dcClusterShards.forEach(dcClusterShard -> {
-            SetinelTbl suitableSentinel = sentinelBalanceService.selectSentinelWithoutCache(dcId);
+            SentinelGroupModel suitableSentinel = sentinelBalanceService.selectSentinelWithoutCache(dcId, SentinelType.DR_CLUSTER);
             if (null == suitableSentinel) {
                 getLogger().info("[doBalanceSentinel]{} none sentinel selected", getName());
                 throw new NoSentinelsToUseException(getName() + "none sentinel selected");
-            } else if (suitableSentinel.getSetinelId() == setinelTbl.getSetinelId()) {
+            } else if (suitableSentinel.getSentinelGroupId() == sentinelGroupModel.getSentinelGroupId()) {
                 getLogger().info("[doBalanceSentinel] no other sentinel to use");
                 throw new NoSentinelsToUseException(getName() + "no other sentinel to use");
             }
 
-            dcClusterShard.setSetinelId(suitableSentinel.getSetinelId());
+            dcClusterShard.setSetinelId(suitableSentinel.getSentinelGroupId());
             try {
                 dcClusterShardService.updateDcClusterShard(dcClusterShard);
-                setinelTbl.setShardCount(setinelTbl.getShardCount() - 1);
+                sentinelGroupModel.setShardCount(sentinelGroupModel.getShardCount() - 1);
             } catch (DalException e) {
                 getLogger().info("[doBalanceSentinel][fail, skip] {}", dcClusterShard, e);
             }
         });
     }
 
-    private void rebalanceBackupDcSentinel(SetinelTbl sentinelTbl) {
-        int needBalanceShards = (int)(sentinelTbl.getShardCount() - targetUsage);
+    private void rebalanceBackupDcSentinel(SentinelGroupModel sentinelGroup) {
+        int needBalanceShards = (int)(sentinelGroup.getShardCount() - targetUsage);
         if (needBalanceShards <= 0) {
-            getLogger().info("[rebalanceSentinel][no need, skip] {}", sentinelTbl.getSetinelId());
+            getLogger().info("[rebalanceSentinel][no need, skip] {}", sentinelGroup.getSentinelGroupId());
             return;
         }
 
-        List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findBackupDcShardsBySentinel(sentinelTbl.getSetinelId());
-        doBalanceSentinel(sentinelTbl, dcClusterShardTbls.subList(0, Math.min(needBalanceShards, dcClusterShardTbls.size())));
+        List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findBackupDcShardsBySentinel(sentinelGroup.getSentinelGroupId());
+        doBalanceSentinel(sentinelGroup, dcClusterShardTbls.subList(0, Math.min(needBalanceShards, dcClusterShardTbls.size())));
     }
 
     @Override

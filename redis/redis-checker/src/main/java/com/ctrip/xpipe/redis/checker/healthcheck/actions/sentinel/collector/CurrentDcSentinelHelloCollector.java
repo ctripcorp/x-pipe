@@ -25,12 +25,6 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
         return SentinelUtil.getSentinelMonitorName(info.getClusterId(), info.getShardId(), info.getDcId());
     }
 
-    //    todo: check wrong slave but not keepers
-    @Override
-    void doCheckReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
-
-    }
-
     @Override
     protected Set<HostPort> getSentinels(RedisInstanceInfo info) {
         String dcId = info.getDcId();

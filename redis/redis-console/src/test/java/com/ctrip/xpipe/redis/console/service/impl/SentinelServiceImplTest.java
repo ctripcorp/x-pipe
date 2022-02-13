@@ -20,7 +20,10 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.FAIL_STATE;
 import static org.mockito.Matchers.anyLong;
@@ -68,28 +71,28 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
         sentinelService.setDcClusterShardService(dcClusterShardService);
     }
 
-    @Test
-    public void testAllSentinelsByDc() {
-
-        int dcCount = 5;
-        int sentinelsEachDc = 5;
-
-        for (int i = 0; i < dcCount; i++) {
-            for (int j = 0; j < sentinelsEachDc; j++) {
-                sentinelService.insert(new SetinelTbl().setDcId(i).setSetinelAddress("desc").setSetinelDescription(getTestName()));
-            }
-        }
-
-
-        Map<Long, List<SetinelTbl>> allSentinelsByDc = sentinelService.allSentinelsByDc();
-
-        Assert.assertEquals(dcCount, allSentinelsByDc.size());
-
-        allSentinelsByDc.forEach((dcId, sentinels) -> {
-            Assert.assertTrue(sentinels.size() >= sentinelsEachDc);
-        });
-
-    }
+//    @Test
+//    public void testAllSentinelsByDc() {
+//
+//        int dcCount = 5;
+//        int sentinelsEachDc = 5;
+//
+//        for (int i = 0; i < dcCount; i++) {
+//            for (int j = 0; j < sentinelsEachDc; j++) {
+//                sentinelService.insert(new SetinelTbl().setDcId(i).setSetinelAddress("desc").setSetinelDescription(getTestName()));
+//            }
+//        }
+//
+//
+//        Map<Long, List<SetinelTbl>> allSentinelsByDc = sentinelService.allSentinelsByDc();
+//
+//        Assert.assertEquals(dcCount, allSentinelsByDc.size());
+//
+//        allSentinelsByDc.forEach((dcId, sentinels) -> {
+//            Assert.assertTrue(sentinels.size() >= sentinelsEachDc);
+//        });
+//
+//    }
 
     @Test
     public void testRandom() {
@@ -109,11 +112,11 @@ public class SentinelServiceImplTest extends AbstractServiceImplTest {
 
     }
 
-    @Test
-    public void testGetSentinelUsage() {
-        logger.info("{}", sentinelService.allSentinelsByDc());
-        logger.info("{}", sentinelService.getAllSentinelsUsage());
-    }
+//    @Test
+//    public void testGetSentinelUsage() {
+//        logger.info("{}", sentinelService.allSentinelsByDc());
+//        logger.info("{}", sentinelService.getAllSentinelsUsage());
+//    }
 
     @Test
     public void testUpdateSentinel() {

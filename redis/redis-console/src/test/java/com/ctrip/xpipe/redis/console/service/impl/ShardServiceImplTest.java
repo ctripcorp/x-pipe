@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.App;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
@@ -13,7 +13,6 @@ import com.google.common.collect.Maps;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,7 @@ public class ShardServiceImplTest extends AbstractServiceImplTest{
         String sentinelAddress1 = "10.8.187.27:44400,10.8.187.28:44400,10.8.107.230:44400,10.8.107.169:44400,10.8.107.77:44400";
         String sentinelAddress2 = "10.28.68.81:33355,10.28.68.82:33355,10.28.68.83:33355,10.8.107.198:33355,10.8.107.199:33355";
         ShardTbl shardTbl = shardService.find(clusterName, shardNames[0]);
-        Map<Long, SetinelTbl> setinelTblMap = Maps.newHashMapWithExpectedSize(2);
+        Map<Long, SentinelGroupModel> setinelTblMap = Maps.newHashMapWithExpectedSize(2);
         setinelTblMap.put(1L, new SetinelTbl().setSetinelAddress(sentinelAddress1));
         setinelTblMap.put(2L, new SetinelTbl().setSetinelAddress(sentinelAddress2));
 

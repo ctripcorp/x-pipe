@@ -3,10 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.SentinelModel;
-import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.SentinelService;
@@ -21,10 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
@@ -86,7 +82,7 @@ public class SentinelUpdateControllerTest {
 
     @Test
     public void testSentinelUpdate() {
-        RetMessage message = controller.updateSentinelAddr(new SentinelModel());
+        RetMessage message = controller.updateSentinelAddrV2(new SentinelGroupModel());
         logger.info("{}", message.getState());
     }
 }
