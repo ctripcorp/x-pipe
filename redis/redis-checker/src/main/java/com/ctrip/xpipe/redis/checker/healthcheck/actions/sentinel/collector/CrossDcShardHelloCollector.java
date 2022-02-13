@@ -37,7 +37,7 @@ public class CrossDcShardHelloCollector extends AbstractAggregationCollector<Cro
 
                 if (collectHello(context) >= getSlavesCntInCurrentShard()) {
                     if (checkFinishedInstance.size() == checkFailInstance.size()) {
-                        logger.info("[{}-{}][onAction] sentinel hello all fail, skip sentinel adjust", clusterId, shardId);
+                        logger.info("[{}-{}][onAction] sentinel hello all fail, skip", clusterId, shardId);
                         resetCheckResult();
                         return;
                     }

@@ -46,7 +46,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 		}
 	}
 
-	public ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) throws DalException{
+	public ShardTbl createShard(String clusterName, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels) throws DalException{
 		// shard basic
 		shard.setSetinelMonitorName(shard.getShardName().trim());
 		validateShard(clusterName, shard);
@@ -160,7 +160,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	}
 
 	@DalTransaction
-	public ShardTbl insertShard(String clusterName, ShardTbl shard, Map<Long, SetinelTbl> sentinels) throws DalException{
+	public ShardTbl insertShard(String clusterName, ShardTbl shard, Map<Long, SentinelGroupModel> sentinels) throws DalException{
 
 		final ClusterTbl cluster = clusterTblDao.findClusterByClusterName(clusterName, ClusterTblEntity.READSET_FULL);
 		shard.setClusterId(cluster.getId());
@@ -188,7 +188,7 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 				dcClusterShardProto.setDcClusterId(dcCluster.getDcClusterId())
 						.setShardId(shard.getId());
 				if(sentinels != null && null != sentinels.get(dcCluster.getDcId())) {
-					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSetinelId());
+					dcClusterShardProto.setSetinelId(sentinels.get(dcCluster.getDcId()).getSentinelGroupId());
 				}
 				dcClusterShards.add(dcClusterShardProto);
 			}

@@ -1,23 +1,31 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
-import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -32,10 +40,28 @@ public class SentinelUpdateController {
     private SentinelService sentinelService;
 
     @Autowired
+    private SentinelGroupService sentinelGroupService;
+
+    @Autowired
     public SentinelBalanceService sentinelBalanceService;
 
     @Autowired
+    public DcClusterShardService dcClusterShardService;
+
+    @Autowired
     private DcService dcService;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private ShardService shardService;
+
+    @Autowired
+    private SentinelManager sentinelManager;
+
+    @Autowired
+    private ConsoleConfig consoleConfig;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,7 +75,7 @@ public class SentinelUpdateController {
         if (backupDcOnly) {
             sentinelBalanceService.rebalanceBackupDcSentinel(dcTbl.getDcName());
         } else {
-            sentinelBalanceService.rebalanceDcSentinel(dcTbl.getDcName());
+            sentinelBalanceService.rebalanceDcSentinel(dcTbl.getDcName(), SentinelType.DR_CLUSTER);
         }
         return RetMessage.createSuccessMessage();
     }
@@ -59,7 +85,7 @@ public class SentinelUpdateController {
         DcTbl dcTbl = dcService.findByDcName(dcName);
         if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
 
-        sentinelBalanceService.cancelCurrentBalance(dcTbl.getDcName());
+        sentinelBalanceService.cancelCurrentBalance(dcTbl.getDcName(), SentinelType.DR_CLUSTER);
         return RetMessage.createSuccessMessage();
     }
 
@@ -68,7 +94,7 @@ public class SentinelUpdateController {
         DcTbl dcTbl = dcService.findByDcName(dcName);
         if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
 
-        SentinelBalanceTask balanceTask = sentinelBalanceService.getBalanceTask(dcTbl.getDcName());
+        SentinelBalanceTask balanceTask = sentinelBalanceService.getBalanceTask(dcTbl.getDcName(), SentinelType.DR_CLUSTER);
         if (null == balanceTask) {
             return RetMessage.createSuccessMessage("no task");
         } else {
@@ -85,97 +111,386 @@ public class SentinelUpdateController {
         }
     }
 
+//    @RequestMapping(value = "/sentinels", method = RequestMethod.POST)
+//    public RetMessage addSentinel(@RequestBody SentinelModel sentinelModel) {
+//        try {
+//            SetinelTbl sentinel = convert2SentinelTbl(sentinelModel);
+//            sentinelGroupService.addSentinelGroup(sentinel);
+//            return RetMessage.createSuccessMessage("Successfully create Sentinel");
+//        } catch (Exception e) {
+//            return RetMessage.createFailMessage(e.getMessage());
+//        }
+//    }
+
     @RequestMapping(value = "/sentinels", method = RequestMethod.POST)
-    public RetMessage addSentinel(@RequestBody SentinelModel sentinelModel) {
+    public RetMessage addSentinelV2(@RequestBody SentinelGroupModel sentinelGroupModel) {
         try {
-            SetinelTbl sentinel = convert2SentinelTbl(sentinelModel);
-            sentinelService.insert(sentinel);
+            sentinelGroupService.addSentinelGroup(sentinelGroupModel);
             return RetMessage.createSuccessMessage("Successfully create Sentinel");
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
-    @RequestMapping(value = "/sentinelsV2", method = RequestMethod.POST)
-    public RetMessage addSentinelV2(@RequestBody SentinelGroupInfo sentinelGroupInfo) {
-        try {
-            sentinelService.addSentinelGroup(sentinelGroupInfo);
-            return RetMessage.createSuccessMessage("Successfully create Sentinel");
-        } catch (Exception e) {
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
+//    @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.DELETE)
+//    public RetMessage deleteSentinel(@PathVariable Long sentinelId) {
+//        try {
+//            SetinelTbl setinelTbl = sentinelService.find(sentinelId);
+//            if (setinelTbl == null) {
+//                return RetMessage.createSuccessMessage("Sentinel already deleted");
+//            }
+//            sentinelService.delete(sentinelId);
+//            return RetMessage.createSuccessMessage("Successfully deleted Sentinel");
+//        } catch (Exception e) {
+//            return RetMessage.createFailMessage(e.getMessage());
+//        }
+//    }
 
     @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.DELETE)
-    public RetMessage deleteSentinel(@PathVariable Long sentinelId) {
+    public RetMessage deleteSentinelV2(@PathVariable Long sentinelId) {
         try {
-            SetinelTbl setinelTbl = sentinelService.find(sentinelId);
+            SentinelGroupModel setinelTbl = sentinelGroupService.findById(sentinelId);
             if (setinelTbl == null) {
                 return RetMessage.createSuccessMessage("Sentinel already deleted");
             }
-            sentinelService.delete(sentinelId);
+            sentinelGroupService.delete(sentinelId);
             return RetMessage.createSuccessMessage("Successfully deleted Sentinel");
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
+//    @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.PATCH)
+//    public RetMessage rehealSentinel(@PathVariable Long sentinelId) {
+//        try {
+//            sentinelService.reheal(sentinelId);
+//            return RetMessage.createSuccessMessage("Successfully reheal Sentinel");
+//        } catch (Exception e) {
+//            return RetMessage.createFailMessage(e.getMessage());
+//        }
+//    }
+
     @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.PATCH)
     public RetMessage rehealSentinel(@PathVariable Long sentinelId) {
         try {
-            sentinelService.reheal(sentinelId);
+            sentinelGroupService.reheal(sentinelId);
             return RetMessage.createSuccessMessage("Successfully reheal Sentinel");
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
+//    @RequestMapping(value = "/sentinels/usage", method = RequestMethod.GET)
+//    public RetMessage sentinelUsage() {
+//        logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
+//        try {
+//            Map<String, SentinelUsageModel> sentienlUsage = sentinelService.getAllSentinelsUsage();
+//            return GenericRetMessage.createGenericRetMessage(sentienlUsage);
+//        } catch (Exception e) {
+//            logger.error("[sentinelUsage] {}", e);
+//            return RetMessage.createFailMessage(e.getMessage());
+//        }
+//    }
+
     @RequestMapping(value = "/sentinels/usage", method = RequestMethod.GET)
     public RetMessage sentinelUsage() {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
         try {
-            Map<String, SentinelUsageModel> sentienlUsage = sentinelService.getAllSentinelsUsage();
+            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage();
             return GenericRetMessage.createGenericRetMessage(sentienlUsage);
         } catch (Exception e) {
-            logger.error("[sentinelUsage] {}", e);
+            logger.error("[sentinelUsage]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
+
+//    @RequestMapping(value = "/sentinel/address", method = RequestMethod.PUT)
+//    public RetMessage updateSentinelAddr(@RequestBody SentinelModel model) {
+//        logger.info("[updateSentinelAddr][begin]");
+//        try {
+//            SentinelModel updated = sentinelService.updateSentinelTblAddr(model);
+//            return RetMessage.createSuccessMessage(jsonTool.encode(updated));
+//        } catch (Exception e) {
+//            logger.error("[updateSentinelAddr]", e);
+//            return RetMessage.createFailMessage(e.getMessage());
+//        }
+//    }
 
     @RequestMapping(value = "/sentinel/address", method = RequestMethod.PUT)
-    public RetMessage updateSentinelAddr(@RequestBody SentinelModel model) {
+    public RetMessage updateSentinelAddrV2(@RequestBody SentinelGroupModel sentinelGroupModel) {
         logger.info("[updateSentinelAddr][begin]");
         try {
-            SentinelModel updated = sentinelService.updateSentinelTblAddr(model);
-            return RetMessage.createSuccessMessage(jsonTool.encode(updated));
+            sentinelGroupService.updateSentinelGroup(sentinelGroupModel);
+            return RetMessage.createSuccessMessage(jsonTool.encode(sentinelGroupModel));
         } catch (Exception e) {
             logger.error("[updateSentinelAddr]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
-    @RequestMapping(value = "/sentinel/addressV2", method = RequestMethod.PUT)
-    public RetMessage updateSentinelAddrV2(@RequestBody SentinelGroupInfo sentinelGroupInfo) {
-        logger.info("[updateSentinelAddr][begin]");
-        try {
-            SentinelGroupInfo updated = sentinelService.updateSentinelGroup(sentinelGroupInfo);
-            return RetMessage.createSuccessMessage(jsonTool.encode(updated));
-        } catch (Exception e) {
-            logger.error("[updateSentinelAddr]", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
+//    @RequestMapping(value = "/sentinel/monitor/{clusterName}", method = RequestMethod.DELETE)
+//    public RetMessage removeSentinelMonitor(@PathVariable String clusterName) {
+//        logger.info("[removeSentinelMonitor][begin]");
+//        try {
+//            return sentinelService.removeSentinelMonitor(clusterName);
+//        } catch (Exception e) {
+//            logger.error("[removeSentinelMonitor]", e);
+//            return RetMessage.createFailMessage(e.getMessage());
+//        } finally {
+//            logger.info("[removeSentinelMonitor][end]");
+//        }
+//    }
 
     @RequestMapping(value = "/sentinel/monitor/{clusterName}", method = RequestMethod.DELETE)
     public RetMessage removeSentinelMonitor(@PathVariable String clusterName) {
         logger.info("[removeSentinelMonitor][begin]");
         try {
-            return sentinelService.removeSentinelMonitor(clusterName);
+            return sentinelGroupService.removeSentinelMonitor(clusterName);
         } catch (Exception e) {
             logger.error("[removeSentinelMonitor]", e);
             return RetMessage.createFailMessage(e.getMessage());
         } finally {
             logger.info("[removeSentinelMonitor][end]");
+        }
+    }
+
+    //1、给出dc哨兵组信息，以及每组哨兵组当前的监控组数量
+    @RequestMapping(value = "/dc/sentinels", method = RequestMethod.GET)
+    public RetMessage dcSentinelUsage(@RequestParam String dc) {
+        logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage", dc);
+        try {
+            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage().get(dc.toUpperCase());
+            return GenericRetMessage.createGenericRetMessage(sentinelUsage);
+        } catch (Exception e) {
+            logger.error("[dcSentinelUsage]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    //2、给出单个哨兵组的监控分片详情
+    @RequestMapping(value = "/sentinel/shards", method = RequestMethod.GET)
+    public RetMessage sentinelShards(@RequestParam String sentinelIp, @RequestParam int sentinelPort) {
+        logger.info("[sentinelShards] begin to retrieve {}:{} monitor names", sentinelIp, sentinelPort);
+        try {
+            SentinelTbl sentinelTbl = sentinelService.findByIpPort(sentinelIp, sentinelPort);
+            if (sentinelTbl == null)
+                return RetMessage.createFailMessage(String.format("%s:%d not found", sentinelIp, sentinelPort));
+            List<DcClusterShardTbl> sentinelShards = dcClusterShardService.findWithShardRedisBySentinel(sentinelTbl.getSentinelGroupId());
+            List<SentinelShardModel> sentinelShardModels = new ArrayList<>();
+            sentinelShards.forEach(sentinelShard -> {
+                sentinelShardModels.add(new SentinelShardModel(sentinelShard.getShardInfo().getShardName(),
+                        new HostPort(sentinelShard.getRedisInfo().getRedisIp(), sentinelShard.getRedisInfo().getRedisPort())));
+            });
+            return GenericRetMessage.createGenericRetMessage(sentinelShardModels);
+        } catch (Exception e) {
+            logger.error("[sentinelShards]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    //3、给出单个机房分片上的监控哨兵组
+    @RequestMapping(value = "/shard/sentinels", method = RequestMethod.GET)
+    public RetMessage shardSentinels(@RequestParam String dc, @RequestParam String cluster, @RequestParam String shard) {
+        logger.info("[shardSentinels] begin to retrieve {}:{} sentinels", dc, shard);
+        try {
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dc, cluster, shard);
+            if (dcClusterShardTbl == null)
+                return RetMessage.createFailMessage(String.format("%s:%s:%s not found", dc, cluster, shard));
+
+            SentinelGroupModel sentinelGroupModel= sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
+            if (sentinelGroupModel == null)
+                return RetMessage.createFailMessage(String.format("sentinel group id: %d not found", dcClusterShardTbl.getSetinelId()));
+
+            List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcClusterShardTbl.getDcClusterShardId());
+            HostPort master = null;
+            for (RedisTbl redisTbl : redisTbls) {
+                if (redisTbl.isMaster()) {
+                    master = new HostPort(redisTbl.getRedisIp(), redisTbl.getRedisPort());
+                    break;
+                }
+            }
+
+            return GenericRetMessage.createGenericRetMessage(new SentinelShardModel(shard,master).setSentinels(sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new HostPort(sentinelInstanceModel.getSentinelIp(),sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList())));
+        } catch (Exception e) {
+            logger.error("[shardSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/redis/sentinels", method = RequestMethod.GET)
+    public RetMessage redisSentinels(@RequestParam String ip, @RequestParam int port) {
+        logger.info("[redisSentinels] begin to retrieve {}:{} sentinels", ip, port);
+        try {
+            RedisTbl redisTbl = redisService.findByIpPort(ip, port);
+            if (redisTbl == null)
+                return RetMessage.createFailMessage(String.format("%s:%d not found", ip, port));
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findByPk(redisTbl.getDcClusterShardId());
+            if (dcClusterShardTbl == null)
+                return RetMessage.createFailMessage(String.format("dcClusterShard %d not found", redisTbl.getDcClusterShardId()));
+
+            ShardTbl shardTbl=shardService.find(dcClusterShardTbl.getShardId());
+            SentinelGroupModel sentinelGroupModel= sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
+            if (sentinelGroupModel == null)
+                return RetMessage.createFailMessage(String.format("sentinel group id: %d not found", dcClusterShardTbl.getSetinelId()));
+
+            List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcClusterShardTbl.getDcClusterShardId());
+            HostPort master = null;
+            for (RedisTbl redis : redisTbls) {
+                if (redis.isMaster()) {
+                    master = new HostPort(redis.getRedisIp(), redis.getRedisPort());
+                    break;
+                }
+            }
+            return GenericRetMessage.createGenericRetMessage(new SentinelShardModel(shardTbl.getShardName(),master).setSentinels(sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new HostPort(sentinelInstanceModel.getSentinelIp(),sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList())));
+        } catch (Exception e) {
+            logger.error("[redisSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    //4、支持永久删除分片上的哨兵信息（需要后续自动加入）：将分片的sentinel_id设置为0
+    @RequestMapping(value = "/redis/sentinels", method = RequestMethod.DELETE)
+    public RetMessage removeRedisSentinel(@RequestParam String ip, @RequestParam int port) {
+        logger.info("[removeRedisSentinel] begin to remove {}:{} sentinels", ip, port);
+        try {
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllByRedis(ip, port);
+            if (dcClusterShardTbl == null)
+                return RetMessage.createFailMessage(String.format("dcClusterShard not found by redis %s:%d", ip,port));
+
+            String cluster = dcClusterShardTbl.getClusterInfo().getClusterName();
+            String shard = dcClusterShardTbl.getShardInfo().getShardName();
+            String dc = dcClusterShardTbl.getDcInfo().getDcName();
+            SentinelGroupModel sentinelGroupModel = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
+            if (sentinelGroupModel.getSentinelType().equalsIgnoreCase(SentinelType.CROSS_DC_CLUSTER.name())) {
+                dc = consoleConfig.crossDcSentinelMonitorNameSuffix();
+            }
+            String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, dc);
+            List<Sentinel> sentinels = sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+            sentinels.forEach(sentinel -> {
+                sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+            });
+
+            dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(0));
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[removeRedisSentinel]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/shard/sentinels", method = RequestMethod.DELETE)
+    public RetMessage removeDcShardSentinels(@RequestParam String dc, @RequestParam String cluster, @RequestParam String shard) {
+        logger.info("[removeDcShardSentinels] begin to remove {}:{} sentinels", dc, shard);
+        try {
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllMeta(dc, cluster, shard);
+            if (dcClusterShardTbl == null)
+                return RetMessage.createFailMessage(String.format("%s:%s:%s not found", dc, cluster, shard));
+            String clusterName = dcClusterShardTbl.getClusterInfo().getClusterName();
+            String shardName = dcClusterShardTbl.getShardInfo().getShardName();
+            String dcName = dcClusterShardTbl.getDcInfo().getDcName();
+            SentinelGroupModel sentinelGroupModel = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
+            if (sentinelGroupModel.getSentinelType().equalsIgnoreCase(SentinelType.CROSS_DC_CLUSTER.name())) {
+                dcName = consoleConfig.crossDcSentinelMonitorNameSuffix();
+            }
+            String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
+            List<Sentinel> sentinels = sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+            sentinels.forEach(sentinel -> {
+                sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+            });
+
+            dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(0));
+            return RetMessage.createSuccessMessage();
+        } catch (Exception e) {
+            logger.error("[removeDcShardSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    //6、支持修改分片上的哨兵信息：
+    @RequestMapping(value = "/shard/sentinels", method = RequestMethod.POST)
+    public RetMessage updateDcShardSentinels(@RequestParam String dc, @RequestParam String cluster, @RequestParam String shard) {
+        logger.info("[updateDcShardSentinels] begin to remove {}:{} sentinels", dc, shard);
+        try {
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllMeta(dc, cluster, shard);
+            if (dcClusterShardTbl == null)
+                return RetMessage.createFailMessage(String.format("%s:%s:%s not found", dc, cluster, shard));
+            String clusterType = dcClusterShardTbl.getClusterInfo().getClusterType();
+            SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dc,SentinelType.lookupByClusterType(ClusterType.lookup(clusterType)));
+            if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
+                return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
+
+            String clusterName = dcClusterShardTbl.getClusterInfo().getClusterName();
+            String shardName = dcClusterShardTbl.getShardInfo().getShardName();
+            String dcName = dcClusterShardTbl.getDcInfo().getDcName();
+            String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
+
+            SentinelGroupModel current=sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
+            List<Sentinel> currentSentinels = current.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+            currentSentinels.forEach(sentinel -> {
+                sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+            });
+
+            List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcClusterShardTbl.getDcClusterShardId());
+            HostPort master = null;
+            for (RedisTbl redis : redisTbls) {
+                if (redis.isMaster()) {
+                    master = new HostPort(redis.getRedisIp(), redis.getRedisPort());
+                    break;
+                }
+            }
+            List<Sentinel> selectedSentinels = selected.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+            for (Sentinel sentinel : selectedSentinels) {
+                sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum());
+            }
+            dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(selected.getSentinelGroupId()));
+            return RetMessage.createSuccessMessage(String.format("sentinel changed to %s", selected.getSentinelsAddressString()));
+        } catch (Exception e) {
+            logger.error("[updateDcShardSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/redis/sentinels", method = RequestMethod.POST)
+    public RetMessage updateRedisSentinels(@RequestParam String ip, @RequestParam int port) {
+        logger.info("[updateRedisSentinels] begin to update {}:{} sentinels", ip, port);
+        try {
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllByRedis(ip,port);
+            if (dcClusterShardTbl == null)
+                return RetMessage.createFailMessage(String.format("dc cluster shard not found by redis %s:%d", ip,port));
+            String clusterType = dcClusterShardTbl.getClusterInfo().getClusterType();
+            SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcClusterShardTbl.getDcInfo().getDcName(),SentinelType.lookupByClusterType(ClusterType.lookup(clusterType)));
+            if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
+                return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
+
+            String clusterName = dcClusterShardTbl.getClusterInfo().getClusterName();
+            String shardName = dcClusterShardTbl.getShardInfo().getShardName();
+            String dcName = dcClusterShardTbl.getDcInfo().getDcName();
+            String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
+
+            SentinelGroupModel current=sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
+            List<Sentinel> currentSentinels = current.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+            currentSentinels.forEach(sentinel -> {
+                sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+            });
+
+            List<RedisTbl> redisTbls = redisService.findAllByDcClusterShard(dcClusterShardTbl.getDcClusterShardId());
+            HostPort master = null;
+            for (RedisTbl redis : redisTbls) {
+                if (redis.isMaster()) {
+                    master = new HostPort(redis.getRedisIp(), redis.getRedisPort());
+                    break;
+                }
+            }
+            List<Sentinel> selectedSentinels = selected.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+            for (Sentinel sentinel : selectedSentinels) {
+                sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum());
+            }
+
+            dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(selected.getSentinelGroupId()));
+            return RetMessage.createSuccessMessage(String.format("sentinel changed to %s", selected.getSentinelsAddressString()));
+        } catch (Exception e) {
+            logger.error("[updateRedisSentinels]", e);
+            return RetMessage.createFailMessage(e.getMessage());
         }
     }
 

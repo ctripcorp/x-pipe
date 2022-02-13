@@ -1,48 +1,29 @@
 package com.ctrip.xpipe.redis.console.service;
 
-import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.model.SentinelGroupInfo;
-import com.ctrip.xpipe.redis.console.model.SentinelModel;
-import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelTbl;
 
 import java.util.List;
-import java.util.Map;
 
 public interface SentinelService {
+	List<SentinelTbl> findAll();
 
-	List<SetinelTbl> findAllByDcName(String dcName);
+	List<SentinelTbl> findAllWithDcName();
 
-	List<SentinelGroupInfo> findAllByDcAndType(String dcName, ClusterType clusterType);
+	List<SentinelTbl> findAllByDcName(String dcName);
 
-	SetinelTbl find(long id);
+	List<SentinelTbl> findBySentinelGroupId(long sentinelGroupId);
 
-	SentinelGroupInfo findById(long sentinelGroupId);
+	List<SentinelTbl> findBySentinelGroupIdDeleted(long sentinelGroupId);
 
-	Map<Long, SetinelTbl> findByShard(long shardId);
+	SentinelTbl findByIpPort(String ip,int port);
 
-	Map<Long, SentinelGroupInfo> findSentinelGroupsByShard(long shardId);
+//	SentinelGroupModel findById(long sentinelGroupId);
 
-	SetinelTbl insert(SetinelTbl setinelTbl);
+	SentinelTbl insert(SentinelTbl sentinelTbl);
 
-	SentinelGroupInfo addSentinelGroup(SentinelGroupInfo sentinelGroupInfo);
+	void updateByPk(SentinelTbl sentinelTbl);
 
-	List<SetinelTbl> getAllSentinelsWithUsage();
-
-	List<SentinelGroupInfo> getSentinelGroupsWithUsageByType(ClusterType clusterType);
-
-	List<SentinelGroupInfo> getAllSentinelGroupsWithUsage();
-
-	Map<String, SentinelUsageModel> getAllSentinelsUsage();
-
-	Map<String, SentinelUsageModel> getSentinelGroupsUsageByType(ClusterType clusterType);
-
-	SentinelModel updateSentinelTblAddr(SentinelModel sentinel);
-
-	SentinelGroupInfo updateSentinelGroup(SentinelGroupInfo sentinelGroupInfo);
-
-	RetMessage removeSentinelMonitor(String clusterName);
+//	SentinelModel updateSentinelTblAddr(SentinelModel sentinel);
 
 	void delete(long id);
 

@@ -122,7 +122,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         DcMeta dcMeta = new DcMeta(outerDcMeta.getDcName());
         Map<String, OuterClientService.ClusterMeta> outerClusterMetas = outerDcMeta.getClusters();
         outerClusterMetas.values().forEach(outerClusterMeta -> {
-            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType())) && !shouldFilter(outerClusterMeta.getName())) {
+            if (interestedTypes.contains(outerClusterMeta.getClusterType().innerType().name()) && !shouldFilter(outerClusterMeta.getName())) {
                 ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
                 if (clusterMeta != null)
                     dcMeta.addCluster(clusterMeta);
@@ -153,7 +153,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     ClusterMeta outerClusterToInner(OuterClientService.ClusterMeta outer) {
         try {
             ClusterMeta clusterMeta = new ClusterMeta(outer.getName());
-            clusterMeta.setType(innerClusterType(outer.getClusterType()));
+            clusterMeta.setType(outer.getClusterType().innerType().name());
             if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
                 clusterMeta.setActiveDc(currentDcId);
             } else {
@@ -222,20 +222,6 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         redisMeta.setPort(origin.getPort());
         redisMeta.setMaster(origin.getMaster());
         return redisMeta;
-    }
-
-    String innerClusterType(OuterClientService.ClusterType clusterType) {
-        switch (clusterType) {
-            case SINGEL_DC:
-                return ClusterType.SINGLE_DC.name();
-            case LOCAL_DC:
-                return ClusterType.LOCAL_DC.name();
-            case XPIPE_ONE_WAY:
-                return ClusterType.ONE_WAY.name();
-            case XPIPE_BI_DIRECT:
-                return ClusterType.BI_DIRECTION.name();
-        }
-        return null;
     }
 
     boolean shouldFilter(String clusterName) {

@@ -36,6 +36,14 @@ function ClusterType() {
                 useKeeper: false,
                 healthCheck: false,
                 supportMigration: false,
+            },
+            'cross_dc':{
+                name: 'TRocks',
+                value: 'cross_dc',
+                multiActiveDcs: false,
+                useKeeper: false,
+                healthCheck: false,
+                supportMigration: false,
             }
         },
         lookup(typeName) {

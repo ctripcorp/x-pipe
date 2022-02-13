@@ -1,25 +1,28 @@
 package com.ctrip.xpipe.redis.console.model;
 
-public class SentinelInfo {
+public class SentinelInstanceModel {
 
     private long sentinelId;
 
     private long sentinelGroupId;
 
-    private long dc_id;
+    private long dcId;
 
     private String sentinelIp;
 
     private int sentinelPort;
 
-    public SentinelInfo(){}
+    private String dcName;
 
-    public SentinelInfo(long sentinelId, long sentinelGroupId, long dc_id, String sentinelIp, int sentinelPort) {
-        this.sentinelId = sentinelId;
-        this.sentinelGroupId = sentinelGroupId;
-        this.dc_id = dc_id;
-        this.sentinelIp = sentinelIp;
-        this.sentinelPort = sentinelPort;
+    public SentinelInstanceModel(){}
+
+    public SentinelInstanceModel(SentinelTbl sentinelTbl) {
+        this.sentinelId = sentinelTbl.getSentinelId();
+        this.sentinelGroupId = sentinelTbl.getSentinelGroupId();
+        this.dcId = sentinelTbl.getDcId();
+        this.sentinelIp = sentinelTbl.getSentinelIp();
+        this.sentinelPort = sentinelTbl.getSentinelPort();
+        this.dcName=sentinelTbl.getDcName();
     }
 
     public long getSentinelId() {
@@ -38,12 +41,12 @@ public class SentinelInfo {
         this.sentinelGroupId = sentinelGroupId;
     }
 
-    public long getDc_id() {
-        return dc_id;
+    public long getDcId() {
+        return dcId;
     }
 
-    public void setDc_id(long dc_id) {
-        this.dc_id = dc_id;
+    public void setDcId(long dcId) {
+        this.dcId = dcId;
     }
 
     public String getSentinelIp() {
@@ -60,5 +63,13 @@ public class SentinelInfo {
 
     public void setSentinelPort(int sentinelPort) {
         this.sentinelPort = sentinelPort;
+    }
+
+    public String getDcName() {
+        return dcName;
+    }
+
+    public void setDcName(String dcName) {
+        this.dcName = dcName;
     }
 }
