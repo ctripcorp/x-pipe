@@ -130,7 +130,9 @@ import org.junit.runners.Suite;
         HealthCheckResultSerializeTest.class,
         DefaultCheckerConsoleServiceTest.class,
         DefaultSentinelMonitorsCheckTest.class,
-        AlertManagerTest.class
+        AlertManagerTest.class,
+
+        TestConnectProxyWithProxyClient.class
 })
 public class AllTests {
 }
