@@ -207,6 +207,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         Set<HostPort> sentinels = getSentinels(info);
         QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
 
+        logger.debug("[{}-{}+{}] {} collected hellos4: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
+
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
         transaction.logTransactionSwallowException("sentinel.hello.collect", clusterId, new Task() {
 
@@ -215,6 +217,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             Set<SentinelHello> toAdd = new HashSet<>();
             @Override
             public void go() throws Exception {
+                logger.debug("[{}-{}+{}] {} collected hellos5: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
+
                 HostPort trueMaster = null;
                 try{
                     trueMaster = getMaster(info);
