@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
+
 @Component
 public class CrossDcSentinelHellosAnalyzer extends DefaultSentinelHelloCollector {
 
@@ -29,23 +31,30 @@ public class CrossDcSentinelHellosAnalyzer extends DefaultSentinelHelloCollector
 
     @Override
     protected Set<HostPort> getSentinels(RedisInstanceInfo info) {
+
         String dcId = info.getDcId();
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
-        if (!checkDcClusterShardExist(dcId, clusterId, shardId)) {
-            return Collections.emptySet();
+        try {
+
+            if (!checkDcClusterShardExist(dcId, clusterId, shardId)) {
+                return Collections.emptySet();
+            }
+
+            DcMeta instanceDcMeta = metaCache.getXpipeMeta().getDcs().get(dcId);
+            ShardMeta shardMetaInCurrentDc = instanceDcMeta.getClusters().get(clusterId).getShards().get(shardId);
+            long sentinelGroupId = shardMetaInCurrentDc.getSentinelId();
+
+            Set<HostPort> crossDcSentinels = new HashSet<>();
+            metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
+                crossDcSentinels.addAll(IpUtils.parseAsHostPorts(dcMeta.getSentinels().get(sentinelGroupId).getAddress()));
+            });
+
+            return crossDcSentinels;
+        } catch (Exception e) {
+            logger.debug("[{}-{}+{}] {} collected hellos8", LOG_TITLE, clusterId,shardId ,dcId, e);
         }
-
-        DcMeta instanceDcMeta = metaCache.getXpipeMeta().getDcs().get(dcId);
-        ShardMeta shardMetaInCurrentDc = instanceDcMeta.getClusters().get(clusterId).getShards().get(shardId);
-        long sentinelGroupId = shardMetaInCurrentDc.getSentinelId();
-
-        Set<HostPort> crossDcSentinels = new HashSet<>();
-        metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
-            crossDcSentinels.addAll(IpUtils.parseAsHostPorts(dcMeta.getSentinels().get(sentinelGroupId).getAddress()));
-        });
-
-        return crossDcSentinels;
+        return Collections.emptySet();
     }
 
     @Override
