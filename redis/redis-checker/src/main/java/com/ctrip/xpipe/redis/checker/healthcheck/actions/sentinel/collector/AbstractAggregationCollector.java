@@ -7,11 +7,15 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public abstract class AbstractAggregationCollector<T extends SentinelHelloCollector> implements SentinelHelloCollector {
+
+    private Logger logger= LoggerFactory.getLogger(getClass());
 
     private T realCollector;
 
@@ -46,6 +50,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     }
 
     protected synchronized void handleAllBackupDcHellos(RedisHealthCheckInstance instance) {
+        logger.debug("[{}][handleAllBackupDcHellos]{}",this.realCollector.getClass().getSimpleName(),instance.toString());
         Set<SentinelHello> hellos = new HashSet<>(checkResult);
         resetCheckResult();
         this.realCollector.onAction(new SentinelActionContext(instance, hellos));
