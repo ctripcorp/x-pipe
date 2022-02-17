@@ -520,6 +520,6 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     @Override
     public String crossDcSentinelMonitorNameSuffix() {
-        return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "TROCKS");
+        return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
     }
 }

@@ -1291,10 +1291,7 @@
 		</query-defs>
 	</entity>
 
-	<entity name="sentinel-group-tbl" table="SETINEL_GROUP_TBL" alias="sgt">
-<!--		<var name="dc-name" value-type="String"/>-->
-
-<!--		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>-->
+	<entity name="sentinel-group-tbl" table="SENTINEL_GROUP_TBL" alias="sgt">
 		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
@@ -1310,42 +1307,9 @@
 			<readset name="SENTINEL-USAGE">
 				<readset-ref name="FULL"/>
 				<readset-ref name="SHARD-COUNT"/>
-<!--				<readset-ref name="FULL" relation-name="dc-info"/>-->
 			</readset>
 		</readsets>
-
-<!--		<updatesets>-->
-<!--			<updateset name="ADDRESS">-->
-<!--				<member name="setinel-id"/>-->
-<!--				<member name="setinel-address"/>-->
-<!--			</updateset>-->
-<!--		</updatesets>-->
-
 		<query-defs>
-<!--			<query name="find-by-dc-id" type="SELECT" multiple="true">-->
-<!--				<param name="dc-id"/>-->
-<!--				<statement>-->
-<!--					<![CDATA[-->
-<!--					SELECT <FIELDS/>-->
-<!--					FROM <TABLE/>-->
-<!--					WHERE <FIELD name='dc-id'/> = ${dc-id}-->
-<!--					AND <FIELD name='deleted'/> = 0-->
-<!--					]]>-->
-<!--				</statement>-->
-<!--			</query>-->
-<!--			<query name="find-by-dc-name" type="SELECT" multiple="true">-->
-<!--				<param name="dc-name"/>-->
-<!--				<statement>-->
-<!--					<![CDATA[-->
-<!--					SELECT <FIELDS/>-->
-<!--					FROM <TABLE/>, <TABLE name="dc-info"/>-->
-<!--					WHERE <FIELD name='dc-id'/> = dt.id-->
-<!--					AND dt.dc_name = ${dc-name}-->
-<!--					AND dt.deleted = 0-->
-<!--					AND <FIELD name='deleted'/> = 0-->
-<!--					]]>-->
-<!--				</statement>-->
-<!--			</query>-->
 			<query name='find-all' type='SELECT' multiple='true'>
 				<statement>
 					<![CDATA[
@@ -1376,59 +1340,28 @@
 					]]>
 				</statement>
 			</query>
-
-<!--			<query name="update-sentinel-addr" type="UPDATE" batch="false">-->
-<!--				<statement>-->
-<!--					<![CDATA[-->
-<!--						UPDATE <TABLE/>-->
-<!--						SET <FIELD name='setinel-address'/> = ${setinel-address}-->
-<!--						WHERE <FIELD name='setinel-id'/> = ${setinel-id}-->
-<!--						]]>-->
-<!--				</statement>-->
-<!--			</query>-->
-
-			<query name="delete-sentinel" type="UPDATE" batch="false">
+			<query name="delete-sentinel-group" type="UPDATE" batch="false">
 				<statement>
 					<![CDATA[
 						UPDATE <TABLE/>
 						SET <FIELD name='deleted'/> = 1
-						WHERE <FIELD name='setinel-id'/> = ${setinel-id}
+						WHERE <FIELD name='sentinel-group-id'/> = ${sentinel-group-id}
 						]]>
 				</statement>
 			</query>
 		</query-defs>
 	</entity>
 
-	<entity name="sentinel-tbl" table="SENTINEL_TBL" alias="st">
+	<entity name="sentinel-tbl" table="SENTINEL_TBL" alias="st3">
 		<var name="dc-name" value-type="String"/>
 
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
-<!--		<relation name="dc-cluster-shard-info" entity-name="dc-cluster-shard-tbl" entity-alias="dcst"/>-->
-
-<!--		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>-->
-<!--		<member name="shard-count" value-type="long" select-expr="COUNT(dcst.dc_cluster_shard_id) `shard-count`" all="false"/>-->
-
 		<readsets>
-<!--			<readset name="COUNT">-->
-<!--				<member name="count"/>-->
-<!--			</readset>-->
-<!--			<readset name="SHARD-COUNT">-->
-<!--				<member name="shard-count"/>-->
-<!--			</readset>-->
 			<readset name="SENTINEL-DC-NAME">
 				<readset-ref name="FULL"/>
-<!--				<readset-ref name="SHARD-COUNT"/>-->
 				<readset-ref name="FULL" relation-name="dc-info"/>
 			</readset>
 		</readsets>
-
-<!--		<updatesets>-->
-<!--			<updateset name="ADDRESS">-->
-<!--				<member name="setinel-id"/>-->
-<!--				<member name="setinel-address"/>-->
-<!--			</updateset>-->
-<!--		</updatesets>-->
-
 		<query-defs>
 			<query name="find-by-sentinel-group-id" type="SELECT" multiple="true">
 				<param name="sentinel-group-id"/>
@@ -1518,15 +1451,15 @@
 <!--				</statement>-->
 <!--			</query>-->
 
-<!--			<query name="delete-sentinel" type="UPDATE" batch="false">-->
-<!--				<statement>-->
-<!--					<![CDATA[-->
-<!--						UPDATE <TABLE/>-->
-<!--						SET <FIELD name='deleted'/> = 1-->
-<!--						WHERE <FIELD name='setinel-id'/> = ${setinel-id}-->
-<!--						]]>-->
-<!--				</statement>-->
-<!--			</query>-->
+			<query name="delete-sentinel" type="UPDATE" batch="false">
+				<statement>
+					<![CDATA[
+						UPDATE <TABLE/>
+						SET <FIELD name='deleted'/> = 1
+						WHERE <FIELD name='sentinel-id'/> = ${sentinel-id}
+						]]>
+				</statement>
+			</query>
 		</query-defs>
 	</entity>
 

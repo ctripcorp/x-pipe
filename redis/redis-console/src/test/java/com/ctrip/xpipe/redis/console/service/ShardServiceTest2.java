@@ -83,8 +83,8 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
         when(clusterTbl.getClusterName()).thenReturn(clusterName);
         when(shardTbl1.getId()).thenReturn(shardId1);
         when(shardTbl2.getId()).thenReturn(shardId2);
-        when(sentinelService.findByShard(anyLong()))
-                .thenReturn(null);
+//        when(sentinelService.findByShard(anyLong()))
+//                .thenReturn(null);
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         when(consoleConfig.shouldNotifyClusterTypes()).thenReturn(Sets.newHashSet(ClusterType.ONE_WAY.name(),ClusterType.BI_DIRECTION.name()));

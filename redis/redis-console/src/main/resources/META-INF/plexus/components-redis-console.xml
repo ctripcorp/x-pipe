@@ -177,7 +177,7 @@
 			<role-hint>sentinel-group-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
-				<physical-table-name>sentinel_group_tbl</physical-table-name>
+				<physical-table-name>SENTINEL_GROUP_TBL</physical-table-name>
 				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>
@@ -186,7 +186,7 @@
 			<role-hint>sentinel-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
-				<physical-table-name>sentinel_tbl</physical-table-name>
+				<physical-table-name>SENTINEL_TBL</physical-table-name>
 				<data-source-name>fxxpipe</data-source-name>
 			</configuration>
 		</component>

@@ -136,24 +136,28 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
 
-    private void generateHealthCheckInstancesForCrossDcClusters(Map<String, Map<String, ClusterMeta>> crossDcClusters) {
+    void generateHealthCheckInstancesForCrossDcClusters(Map<String, Map<String, ClusterMeta>> crossDcClusters) {
         crossDcClusters.forEach((k, v) -> {
-            Map<String, Integer> dcMasterNumMap = new HashMap<>();
-            v.forEach((dc, clusterMeta) -> {
-                dcMasterNumMap.put(dc, dcMastersCount(clusterMeta));
-            });
-            List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
-            entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
-                public int compare(Map.Entry<String, Integer> o1,
-                                   Map.Entry<String, Integer> o2) {
-                    return o2.getValue().compareTo(o1.getValue());
-                }
-            });
-            String maxMasterCountDc = entryList.get(0).getKey();
+            String maxMasterCountDc = getMaxMasterCountDc(v);
             if (maxMasterCountDc.equalsIgnoreCase(currentDcId)) {
                 generateHealthCheckInstances(v.get(maxMasterCountDc));
             }
         });
+    }
+
+    String getMaxMasterCountDc(Map<String, ClusterMeta> dcClusters) {
+        Map<String, Integer> dcMasterNumMap = new HashMap<>();
+        dcClusters.forEach((dc, clusterMeta) -> {
+            dcMasterNumMap.put(dc, dcMastersCount(clusterMeta));
+        });
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
+        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());
+            }
+        });
+        return entryList.get(0).getKey();
     }
 
     void generateHealthCheckInstances(ClusterMeta clusterMeta){

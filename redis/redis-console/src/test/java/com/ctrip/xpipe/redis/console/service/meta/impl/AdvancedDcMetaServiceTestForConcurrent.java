@@ -341,7 +341,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     public void beforeOptimizedDcMetaServiceTestForConcurrent() throws Exception {
         // put xpipe meta into database
         Set<String> clusters = new HashSet<>();
-        Map<String, Map<Long, SetinelTbl>> shardMap = Maps.newHashMap();
+        Map<String, Map<Long, SentinelGroupModel>> shardMap = Maps.newHashMap();
         long dcId;
         for(DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
             dcId = dcMeta.getId().equalsIgnoreCase("NTGXH") ? 1L : 2L;
@@ -359,13 +359,13 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
                 }
                 for(ShardMeta shardMeta : clusterMeta.getShards().values()) {
                     String shardName = shardMeta.getId();
-                    Map<Long, SetinelTbl> sentinelMap = shardMap.get(shardName);
+                    Map<Long, SentinelGroupModel> sentinelMap = shardMap.get(shardName);
                     if(sentinelMap == null) {
                         sentinelMap = Maps.newHashMap();
-                        sentinelMap.put(dcId, new SetinelTbl().setSetinelId(shardMeta.getSentinelId()));
+                        sentinelMap.put(dcId, new SentinelGroupModel().setSentinelGroupId(shardMeta.getSentinelId()));
                         shardMap.put(shardName, sentinelMap);
                     } else {
-                        sentinelMap.put(dcId, new SetinelTbl().setSetinelId(shardMeta.getSentinelId()));
+                        sentinelMap.put(dcId, new SentinelGroupModel().setSentinelGroupId(shardMeta.getSentinelId()));
                         ShardTbl shardTbl = new ShardTbl().setShardName(shardName)
                                 .setSetinelMonitorName(shardMeta.getSentinelMonitorName());
 

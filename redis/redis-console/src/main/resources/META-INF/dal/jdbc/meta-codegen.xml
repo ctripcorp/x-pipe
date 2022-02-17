@@ -840,6 +840,7 @@
     <member name="cluster-type" field="cluster_type" value-type="String" length="40" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <member name="datachange-lasttime" field="datachange_lasttime" value-type="Date" nullable="false" />
+    <member name="sentinel-description" field="sentinel_description" value-type="String" length="100" nullable="false" />
     <var name="key-sentinel-group-id" value-type="long" key-member="sentinel-group-id" />
     <primary-key name="PRIMARY" members="sentinel_group_id" />
     <index name="ix_DataChange_LastTime" members="datachange_lasttime ASC" />
@@ -873,7 +874,7 @@
       </query>
     </query-defs>
   </entity>
-  <entity name="sentinel-tbl" table="sentinel_tbl" alias="st">
+  <entity name="sentinel-tbl" table="sentinel_tbl" alias="st3">
     <member name="sentinel-id" field="sentinel_id" value-type="long" length="19" nullable="false" key="true" auto-increment="true" />
     <member name="dc-id" field="dc_id" value-type="long" length="19" nullable="false" />
     <member name="sentinel-group-id" field="sentinel_group_id" value-type="long" length="19" nullable="false" />

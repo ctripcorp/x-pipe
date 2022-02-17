@@ -17,13 +17,9 @@ public interface SentinelService {
 
 	SentinelTbl findByIpPort(String ip,int port);
 
-//	SentinelGroupModel findById(long sentinelGroupId);
-
 	SentinelTbl insert(SentinelTbl sentinelTbl);
 
 	void updateByPk(SentinelTbl sentinelTbl);
-
-//	SentinelModel updateSentinelTblAddr(SentinelModel sentinel);
 
 	void delete(long id);
 

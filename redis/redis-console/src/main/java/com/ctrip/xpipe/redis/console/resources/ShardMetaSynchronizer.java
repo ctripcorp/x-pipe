@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
@@ -69,10 +68,9 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                     try {
                         logger.info("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta);
                         ClusterMeta clusterMeta = shardMeta.parent();
-                        //todo:find sentinel by cluster type
                         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
                         if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterMeta.getId())) {
-                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels(SentinelType.lookupByClusterType(clusterType)));
+                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels(clusterType));
                         } else {
                             shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
                         }
