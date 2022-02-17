@@ -64,7 +64,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.THREAD_POOL_TIM
 @Component("defaultSentinelHelloCollector")
 public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
+    protected static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
 
     private static final String SENTINEL_TYPE = "sentinel";
 
@@ -203,11 +203,17 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         Set<SentinelHello> hellos = Sets.newHashSet(originalHellos);
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
-        String sentinelMonitorName = getSentinelMonitorName(info);
-        Set<HostPort> sentinels = getSentinels(info);
-        QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
-
         logger.debug("[{}-{}+{}] {} collected hellos4: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
+
+        String sentinelMonitorName = getSentinelMonitorName(info);
+        logger.debug("[{}-{}+{}] {} collected hellos5: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(),sentinelMonitorName);
+
+        Set<HostPort> sentinels = getSentinels(info);
+        logger.debug("[{}-{}+{}] {} collected hellos6: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), sentinels);
+
+        QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
+        logger.debug("[{}-{}+{}] {} collected hellos7: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
+
 
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
         transaction.logTransactionSwallowException("sentinel.hello.collect", clusterId, new Task() {
