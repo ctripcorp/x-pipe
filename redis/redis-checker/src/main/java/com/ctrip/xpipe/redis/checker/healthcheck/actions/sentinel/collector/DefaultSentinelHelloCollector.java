@@ -150,6 +150,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Override
     public void onAction(SentinelActionContext context) {
         try {
+            RedisInstanceInfo info = context.instance().getCheckInfo();
+            logger.debug("[{}-{}+{}][onAction]", LOG_TITLE, info.getClusterId(), info.getShardId());
             CommandFuture<Void> future = new SentinelHelloCollectorCommand(context).execute(collectExecutor);
             ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
                 @Override
