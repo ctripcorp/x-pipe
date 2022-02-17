@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelInstanceModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBindTask;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -108,7 +109,10 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
         Map<String, ShardMeta> dcShards = new HashMap<>();
         if (dcInMonitorName.equalsIgnoreCase(config.crossDcSentinelMonitorNameSuffix())) {
             xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
-                dcShards.put(dc, dcMeta.findCluster(clusterName).findShard(shardName));
+                ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+                if (clusterMeta != null) {
+                    dcShards.put(dc, clusterMeta.findShard(shardName));
+                }
             });
         } else {
             dcShards.put(dcInMonitorName, xpipeMeta.getDcs().get(dcInMonitorName).findCluster(clusterName).findShard(shardName));

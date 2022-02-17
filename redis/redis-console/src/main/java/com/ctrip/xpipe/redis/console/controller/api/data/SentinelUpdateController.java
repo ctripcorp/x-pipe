@@ -131,6 +131,17 @@ public class SentinelUpdateController {
         }
     }
 
+    @RequestMapping(value = "/bind/sentinels/{}", method = RequestMethod.POST)
+    public RetMessage bindSentinels(@PathVariable String clusterType) {
+        try {
+            sentinelBalanceService.bindShardAndSentinelsByType(ClusterType.lookup(clusterType));
+            return RetMessage.createSuccessMessage("Successfully bind Sentinel");
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+
 //    @RequestMapping(value = "/sentinels/{sentinelId}", method = RequestMethod.DELETE)
 //    public RetMessage deleteSentinel(@PathVariable Long sentinelId) {
 //        try {
