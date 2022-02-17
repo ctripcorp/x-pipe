@@ -185,15 +185,19 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
 
+        logger.debug("[{}-{}+{}] {} collected hellos1: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
+
         if ((System.currentTimeMillis() - context.getRecvTimeMilli()) > context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli()) {
             logger.warn("[{}-{}+{}] {} expired, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
         }
+        logger.debug("[{}-{}+{}] {} collected hellos2: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
 
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
         }
+        logger.debug("[{}-{}+{}] {} collected hellos3: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
 
         Set<SentinelHello> originalHellos = context.getResult();
         Set<SentinelHello> hellos = Sets.newHashSet(originalHellos);
@@ -575,7 +579,11 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         @Override
         protected void doExecute() throws Throwable {
+            logger.debug("[{}-{}+{}] {} SentinelHelloCollectorCommand1: {}", LOG_TITLE, context.instance().getCheckInfo().getClusterId(), context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId(), context.getResult());
+
             if (!future().isDone()) {
+                logger.debug("[{}-{}+{}] {} SentinelHelloCollectorCommand2: {}", LOG_TITLE, context.instance().getCheckInfo().getClusterId(), context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId(), context.getResult());
+
                 collect(context);
                 if (!future().isDone()) {
                     future().setSuccess();
