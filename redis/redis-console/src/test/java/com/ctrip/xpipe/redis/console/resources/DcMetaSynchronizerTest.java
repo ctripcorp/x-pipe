@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -328,7 +327,7 @@ public class DcMetaSynchronizerTest {
         verify(clusterService, never()).update(any());
 
         verify(consoleConfig, times(1)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, never()).selectMultiDcSentinels(SentinelType.DR_CLUSTER);
+        verify(sentinelBalanceService, never()).selectMultiDcSentinels(ClusterType.ONE_WAY);
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
         verify(shardService, never()).deleteShard(any(), any());
 
@@ -340,7 +339,7 @@ public class DcMetaSynchronizerTest {
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         dcMetaSynchronizer.sync();
         verify(consoleConfig, times(2)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels(SentinelType.DR_CLUSTER);
+        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels(ClusterType.ONE_WAY);
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.sentinel;
 
-import com.ctrip.xpipe.cluster.SentinelType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 
 import java.util.List;
@@ -12,21 +12,21 @@ import java.util.Map;
  */
 public interface SentinelBalanceService {
 
-    List<SentinelGroupModel> getCachedDcSentinel(String dcId, SentinelType sentinelType);
+    List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType);
 
-    SentinelGroupModel selectSentinel(String dcId, SentinelType sentinelType);
+    SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType);
 
-    SentinelGroupModel selectSentinelWithoutCache(String dcId, SentinelType sentinelType);
+    SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType);
 
-    Map<Long, SentinelGroupModel> selectMultiDcSentinels(SentinelType sentinelType);
+    Map<Long, SentinelGroupModel> selectMultiDcSentinels(ClusterType clusterType);
 
-    void rebalanceDcSentinel(String dc, SentinelType sentinelType);
+    void rebalanceDcSentinel(String dc, ClusterType clusterType);
 
     void rebalanceBackupDcSentinel(String dc);
 
-    void cancelCurrentBalance(String dc, SentinelType sentinelType);
+    void cancelCurrentBalance(String dc, ClusterType clusterType);
 
-    SentinelBalanceTask getBalanceTask(String dc, SentinelType sentinelType);
+    SentinelBalanceTask getBalanceTask(String dc, ClusterType clusterType);
 
-    void bindShardAndSentinelsByType(SentinelType clusterType);
+    void bindShardAndSentinelsByType(ClusterType clusterType);
 }

@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
-import com.ctrip.xpipe.cluster.SentinelType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
@@ -40,7 +40,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
         this.busySentinels = new LinkedList<>();
 
         long totalUsages = 0;
-        List<SentinelGroupModel> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId, SentinelType.DR_CLUSTER);
+        List<SentinelGroupModel> sentinels = sentinelBalanceService.getCachedDcSentinel(dcId, ClusterType.ONE_WAY);
         for (SentinelGroupModel sentinel: sentinels) {
             totalUsages += sentinel.getShardCount();
         }
@@ -94,7 +94,7 @@ public class BackupDcOnlySentinelBalanceTask extends AbstractCommand<Void> imple
 
     protected void doBalanceSentinel(SentinelGroupModel sentinelGroupModel, List<DcClusterShardTbl> dcClusterShards) {
         dcClusterShards.forEach(dcClusterShard -> {
-            SentinelGroupModel suitableSentinel = sentinelBalanceService.selectSentinelWithoutCache(dcId, SentinelType.DR_CLUSTER);
+            SentinelGroupModel suitableSentinel = sentinelBalanceService.selectSentinelWithoutCache(dcId, ClusterType.ONE_WAY);
             if (null == suitableSentinel) {
                 getLogger().info("[doBalanceSentinel]{} none sentinel selected", getName());
                 throw new NoSentinelsToUseException(getName() + "none sentinel selected");

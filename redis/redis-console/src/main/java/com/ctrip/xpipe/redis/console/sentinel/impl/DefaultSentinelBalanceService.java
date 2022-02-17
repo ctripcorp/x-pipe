@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
-import com.ctrip.xpipe.cluster.SentinelType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBindTask;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.SentinelGroupService;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
@@ -47,6 +48,8 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
 
     private ExecutorService executors;
 
+    private MetaCache metaCache;
+
     private TimeBoundCache<Map<String, SentinelsCache>> cachedSentinels;
 
     private Map<String, SentinelBalanceTasks> balanceTasks = Maps.newConcurrentMap();
@@ -57,7 +60,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
 
     @Autowired
     public DefaultSentinelBalanceService(SentinelGroupService sentinelService, DcClusterShardService dcClusterShardService,
-                                         ConsoleConfig config, @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, SentinelManager sentinelManager) {
+                                         ConsoleConfig config, @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, SentinelManager sentinelManager, MetaCache metaCache) {
         this.sentinelService = sentinelService;
         this.dcClusterShardService = dcClusterShardService;
         this.config = config;
@@ -65,16 +68,17 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         this.executors = executors;
         this.cachedSentinels = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::refreshCache);
         this.sentinelManager = sentinelManager;
+        this.metaCache = metaCache;
     }
 
     @Override
-    public List<SentinelGroupModel> getCachedDcSentinel(String dcId, SentinelType sentinelType) {
+    public List<SentinelGroupModel> getCachedDcSentinel(String dcId, ClusterType clusterType) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
-        if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(sentinelType.name())) {
+        if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(clusterType.name().toUpperCase())) {
             return Collections.emptyList();
         }
 
-        SentinelsCache typeSentinelCache = sentinels.get(sentinelType.name());
+        SentinelsCache typeSentinelCache = sentinels.get(clusterType.name().toUpperCase());
         DcSentinels dcSentinels = typeSentinelCache.getByDc(dcId.toUpperCase());
         if (dcSentinels == null)
             return Collections.emptyList();
@@ -83,13 +87,13 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public SentinelGroupModel selectSentinel(String dcId, SentinelType sentinelType) {
+    public SentinelGroupModel selectSentinel(String dcId, ClusterType clusterType) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
-        if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(sentinelType.name())) {
+        if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(clusterType.name().toUpperCase())) {
             return null;
         }
 
-        DcSentinels dcSentinels = sentinels.get(sentinelType.name()).getByDc(dcId);
+        DcSentinels dcSentinels = sentinels.get(clusterType.name().toUpperCase()).getByDc(dcId.toUpperCase());
         if (dcSentinels == null)
             return null;
 
@@ -97,13 +101,13 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public SentinelGroupModel selectSentinelWithoutCache(String dcId, SentinelType sentinelType) {
+    public SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(true);
         if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(dcId.toUpperCase())) {
             return null;
         }
 
-        DcSentinels dcSentinels = sentinels.get(sentinelType.name()).getByDc(dcId);
+        DcSentinels dcSentinels = sentinels.get(clusterType.name().toUpperCase()).getByDc(dcId);
         if (dcSentinels == null)
             return null;
 
@@ -111,11 +115,11 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public Map<Long, SentinelGroupModel> selectMultiDcSentinels(SentinelType sentinelType) {
+    public Map<Long, SentinelGroupModel> selectMultiDcSentinels(ClusterType clusterType) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
         Map<Long, SentinelGroupModel> sentinelMap = new HashMap<>();
 
-        SentinelsCache typeSentinelsCache = sentinels.get(sentinelType.name());
+        SentinelsCache typeSentinelsCache = sentinels.get(clusterType.name().toUpperCase());
         if (typeSentinelsCache == null) {
             return sentinelMap;
         }
@@ -143,36 +147,36 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public synchronized void rebalanceDcSentinel(String dc, SentinelType sentinelType) {
-        checkCurrentTask(dc, sentinelType);
+    public synchronized void rebalanceDcSentinel(String dc, ClusterType clusterType) {
+        checkCurrentTask(dc, clusterType);
 
         SentinelBalanceTask task = new AllSentinelsBalanceTask(dc, this, dcClusterShardService, balanceScheduled,
                 config.getRebalanceSentinelMaxNumOnce(), config.getRebalanceSentinelInterval());
-        balanceTasks.putIfAbsent(sentinelType.name(), new SentinelBalanceTasks());
-        balanceTasks.get(sentinelType.name()).addTasks(dc.toUpperCase(), task);
+        balanceTasks.putIfAbsent(clusterType.name().toUpperCase(), new SentinelBalanceTasks());
+        balanceTasks.get(clusterType.name().toUpperCase()).addTasks(dc.toUpperCase(), task);
         task.execute(executors);
     }
 
     @Override
     public synchronized void rebalanceBackupDcSentinel(String dc) {
-        checkCurrentTask(dc, SentinelType.DR_CLUSTER);
+        checkCurrentTask(dc, ClusterType.ONE_WAY);
 
         SentinelBalanceTask task = new BackupDcOnlySentinelBalanceTask(dc, this, dcClusterShardService);
 
-        balanceTasks.putIfAbsent(SentinelType.DR_CLUSTER.name(), new SentinelBalanceTasks());
-        balanceTasks.get(SentinelType.DR_CLUSTER.name()).addTasks(dc.toUpperCase(), task);
+        balanceTasks.putIfAbsent(ClusterType.ONE_WAY.name().toUpperCase(), new SentinelBalanceTasks());
+        balanceTasks.get(ClusterType.ONE_WAY.name().toUpperCase()).addTasks(dc.toUpperCase(), task);
 
         task.execute(executors);
     }
 
     @Override
-    public synchronized void cancelCurrentBalance(String dc, SentinelType sentinelType) {
+    public synchronized void cancelCurrentBalance(String dc, ClusterType clusterType) {
         if (StringUtil.isEmpty(dc)) throw new IllegalArgumentException("unexpected dc " + dc);
-        if (sentinelType == null) throw new IllegalArgumentException("sentinel type cannot be null");
+        if (clusterType == null) throw new IllegalArgumentException("sentinel type cannot be null");
 
-        if(cachedSentinels.getData(false).get(sentinelType.name())==null) throw new IllegalArgumentException("unexpected sentinel type " + sentinelType.name());
+        if(cachedSentinels.getData(false).get(clusterType.name().toUpperCase())==null) throw new IllegalArgumentException("unexpected cluster type " + clusterType.name());
 
-        SentinelBalanceTasks tasks = balanceTasks.get(sentinelType.name());
+        SentinelBalanceTasks tasks = balanceTasks.get(clusterType.name().toUpperCase());
         if (tasks == null)
             return;
         SentinelBalanceTask task = tasks.getTaskByDc(dc.toUpperCase());
@@ -182,12 +186,12 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         }
     }
 
-    private void checkCurrentTask(String dc, SentinelType sentinelType) {
+    private void checkCurrentTask(String dc, ClusterType clusterType) {
         if (StringUtil.isEmpty(dc)) throw new IllegalArgumentException("unexpected dc " + dc);
 
-        if(cachedSentinels.getData(false).get(sentinelType.name())==null) throw new IllegalArgumentException("unexpected sentinel type " + sentinelType.name());
+        if(cachedSentinels.getData(false).get(clusterType.name().toUpperCase())==null) throw new IllegalArgumentException("unexpected cluster type " + clusterType.name());
 
-        SentinelBalanceTasks typeTasks = balanceTasks.get(sentinelType.name());
+        SentinelBalanceTasks typeTasks = balanceTasks.get(clusterType.name().toUpperCase());
         if (typeTasks == null)
             return;
 
@@ -199,10 +203,10 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         }
     }
 
-    private void checkCurrentBindTask(SentinelType sentinelType) {
-        if(cachedSentinels.getData(false).get(sentinelType.name())==null) throw new IllegalArgumentException("unexpected sentinel type " + sentinelType.name());
+    private void checkCurrentBindTask(ClusterType clusterType) {
+        if(cachedSentinels.getData(false).get(clusterType.name().toUpperCase())==null) throw new IllegalArgumentException("unexpected cluster type " + clusterType.name());
 
-        SentinelBindTask bindTask = bindTasks.get(sentinelType.name());
+        SentinelBindTask bindTask = bindTasks.get(clusterType.name().toUpperCase());
         if (bindTask != null) {
             if (!bindTask.future().isDone()) {
                 throw new IllegalStateException("current task running");
@@ -211,9 +215,9 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     @Override
-    public SentinelBalanceTask getBalanceTask(String dcId, SentinelType sentinelType) {
+    public SentinelBalanceTask getBalanceTask(String dcId, ClusterType clusterType) {
 
-        SentinelBalanceTasks typeTasks = balanceTasks.get(sentinelType.name());
+        SentinelBalanceTasks typeTasks = balanceTasks.get(clusterType.name().toUpperCase());
         if (StringUtil.isEmpty(dcId) || typeTasks == null) {
             return null;
         }
@@ -223,16 +227,16 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
 
 
     @Override
-    public void bindShardAndSentinelsByType(SentinelType sentinelType) {
-        checkCurrentBindTask(sentinelType);
+    public void bindShardAndSentinelsByType(ClusterType clusterType) {
+        checkCurrentBindTask(clusterType);
 
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
-        SentinelsCache sentinelsCache = sentinels.get(sentinelType.name());
+        SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
 
         SentinelBindTask task = new DefaultSentinelBindTask(sentinelManager, dcClusterShardService,
-                sentinelsCache.getAllSentinelGroups(), config);
+                sentinelsCache.getAllSentinelGroups(), config, metaCache);
 
-        bindTasks.put(sentinelType.name(), task);
+        bindTasks.put(clusterType.name().toUpperCase(), task);
         task.execute(executors);
     }
 
@@ -241,7 +245,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         List<SentinelGroupModel> sentinelGroups = sentinelService.getAllSentinelGroupsWithUsage();
 
         Map<String, List<SentinelGroupModel>> sentinelsCollectedByType = sentinelGroups.stream().collect(
-                Collectors.toMap(SentinelGroupModel::getSentinelType,
+                Collectors.toMap(SentinelGroupModel::getClusterType,
                         Lists::newArrayList, (v1, v2) -> {
                             v1.addAll(v2);
                             return v1;
@@ -254,8 +258,8 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
                     continue;
                 Map<String, Long> dcInfos = sentinelGroup.dcInfos();
                 for (String dcName : dcInfos.keySet()) {
-                    newCacheData.putIfAbsent(dcName, new DcSentinels(dcInfos.get(dcName)));
-                    newCacheData.get(dcName).addSentinel(sentinelGroup);
+                    newCacheData.putIfAbsent(dcName.toUpperCase(), new DcSentinels(dcInfos.get(dcName)));
+                    newCacheData.get(dcName.toUpperCase()).addSentinel(sentinelGroup);
                 }
             }
             result.put(k, new SentinelsCache(newCacheData));

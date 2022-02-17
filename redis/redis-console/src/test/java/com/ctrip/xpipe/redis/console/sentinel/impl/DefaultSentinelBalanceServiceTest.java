@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
-import com.ctrip.xpipe.cluster.SentinelType;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
@@ -32,15 +32,15 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
 
     @Test
     public void testSelectSentinel() {
-        SentinelGroupModel jqSetinelTbl = sentinelBalanceService.selectSentinel("jq", SentinelType.DR_CLUSTER);
-        SentinelGroupModel oySetinelTbl = sentinelBalanceService.selectSentinel("oy", SentinelType.DR_CLUSTER);
+        SentinelGroupModel jqSetinelTbl = sentinelBalanceService.selectSentinel("jq", ClusterType.ONE_WAY);
+        SentinelGroupModel oySetinelTbl = sentinelBalanceService.selectSentinel("oy", ClusterType.ONE_WAY);
         Assert.assertEquals(101L, jqSetinelTbl.getSentinelGroupId());
         Assert.assertEquals(102L, oySetinelTbl.getSentinelGroupId());
     }
 
     @Test
     public void testSelectMultiSentinels() {
-        Map<Long, SentinelGroupModel> dcSentinels = sentinelBalanceService.selectMultiDcSentinels(SentinelType.DR_CLUSTER);
+        Map<Long, SentinelGroupModel> dcSentinels = sentinelBalanceService.selectMultiDcSentinels(ClusterType.ONE_WAY);
         Assert.assertEquals(3, dcSentinels.size());
         Assert.assertEquals(101L, dcSentinels.get(1L).getSentinelGroupId());
         Assert.assertEquals(102L, dcSentinels.get(2L).getSentinelGroupId());
@@ -50,7 +50,7 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
     @Test
     public void testReBalanceBackupDcSentinels() throws Exception {
         sentinelBalanceService.rebalanceBackupDcSentinel("oy");
-        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy",SentinelType.DR_CLUSTER);
+        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy",ClusterType.ONE_WAY);
         waitConditionUntilTimeOut(() -> task.future().isDone());
         Assert.assertEquals(0, task.getShardsWaitBalances());
         Assert.assertEquals(2, task.getTargetUsages());
@@ -64,8 +64,8 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
 
     @Test
     public void testReBalanceSentinels() throws Exception {
-        sentinelBalanceService.rebalanceDcSentinel("jq",SentinelType.DR_CLUSTER);
-        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq" ,SentinelType.DR_CLUSTER);
+        sentinelBalanceService.rebalanceDcSentinel("jq",ClusterType.ONE_WAY);
+        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq" ,ClusterType.ONE_WAY);
         waitConditionUntilTimeOut(() -> task.future().isDone(), 10000000);
         Assert.assertEquals(0, task.getShardsWaitBalances());
         Assert.assertEquals(3, task.getTargetUsages());

@@ -148,7 +148,6 @@ public interface CheckerConfig {
 
     void register(List<String> keys, ConfigChangeListener configListener);
 
-
     String sentinelCheckDowngradeStrategy();
 
     String crossDcSentinelMonitorNameSuffix();

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -77,7 +76,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         List<SentinelGroupTbl> typeGroups = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
             @Override
             public List<SentinelGroupTbl> doQuery() throws DalException {
-                return dao.findByType(SentinelType.lookupByClusterType(clusterType).name(), SentinelGroupTblEntity.READSET_FULL);
+                return dao.findByType(clusterType.name(), SentinelGroupTblEntity.READSET_FULL);
             }
         });
         return sentinelGroupInfoList(dcName,typeGroups);
@@ -163,16 +162,31 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     @Override
     public void addSentinelGroup(SentinelGroupModel sentinelGroupModel) {
 
-        queryHandler.handleQuery(new DalQuery<Integer>() {
-            @Override
-            public Integer doQuery() throws DalException {
-                return dao.insert(new SentinelGroupTbl().setClusterType(sentinelGroupModel.getSentinelType()));
-            }
-        });
+        SentinelGroupTbl sentinelGroupTbl;
+        if (sentinelGroupModel.getSentinelGroupId() > 0) {
+            sentinelGroupTbl = queryHandler.handleQuery(new DalQuery<SentinelGroupTbl>() {
+                @Override
+                public SentinelGroupTbl doQuery() throws DalException {
+                    return dao.findByPK(sentinelGroupModel.getSentinelGroupId(), SentinelGroupTblEntity.READSET_FULL);
+                }
+            });
+            if (sentinelGroupTbl == null)
+                throw new IllegalArgumentException(String.format("sentinel group with id:%s not exist", sentinelGroupModel.getSentinelGroupId()));
+        } else {
+            SentinelGroupTbl insertTbl = new SentinelGroupTbl().setClusterType(sentinelGroupModel.getClusterType()).setSentinelDescription(sentinelGroupModel.getDesc());
+            queryHandler.handleQuery(new DalQuery<Integer>() {
+                @Override
+                public Integer doQuery() throws DalException {
+                    return dao.insert(insertTbl);
+                }
+            });
+            sentinelGroupTbl = insertTbl;
+        }
 
+        long sentinelGroupId = sentinelGroupTbl.getSentinelGroupId();
         sentinelGroupModel.getSentinels().forEach(sentinelInstanceModel -> {
             sentinelService.insert(new SentinelTbl().
-                    setSentinelGroupId(sentinelInstanceModel.getSentinelGroupId()).
+                    setSentinelGroupId(sentinelGroupId).
                     setDcId(sentinelInstanceModel.getDcId()).
                     setSentinelIp(sentinelInstanceModel.getSentinelIp()).
                     setSentinelPort(sentinelInstanceModel.getSentinelPort()));
@@ -185,7 +199,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         List<SentinelGroupTbl> sentinelGroupTbls = queryHandler.handleQuery(new DalQuery<List<SentinelGroupTbl>>() {
             @Override
             public List<SentinelGroupTbl> doQuery() throws DalException {
-                return dao.findByType(SentinelType.lookupByClusterType(clusterType).name(),SentinelGroupTblEntity.READSET_FULL);
+                return dao.findByType(clusterType.name(),SentinelGroupTblEntity.READSET_FULL);
             }
         });
 
@@ -211,7 +225,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
         Map<Long, Set<Pair<Long, Long>>> sentinelShardMap = dcClusterShardTbls.stream().filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId())).
                 collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
-                        dcClusterShardTbl -> Sets.newHashSet(new Pair<>(groupMap.get(dcClusterShardTbl.getSetinelId()).getSentinelType().equals(ClusterType.CROSS_DC.name()) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
+                        dcClusterShardTbl -> Sets.newHashSet(new Pair<>(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType().equals(ClusterType.CROSS_DC.name()) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
                         (v1, v2) -> {
                             v1.addAll(v2);
                             return v1;
@@ -249,7 +263,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     }
 
     @Override
-    public void updateSentinelGroup(SentinelGroupModel sentinelGroupModel) {
+    public void updateSentinelGroupAddress(SentinelGroupModel sentinelGroupModel) {
         SentinelGroupTbl sentinelGroupTbl = queryHandler.handleQuery(new DalQuery<SentinelGroupTbl>() {
             @Override
             public SentinelGroupTbl doQuery() throws DalException {
@@ -327,7 +341,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         queryHandler.handleUpdate(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
-                return dao.deleteSentinel(sentinelGroupTbl, SentinelGroupTblEntity.UPDATESET_FULL);
+                return dao.deleteSentinelGroup(sentinelGroupTbl, SentinelGroupTblEntity.UPDATESET_FULL);
             }
         });
     }
@@ -372,4 +386,38 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         }
     }
 
+    @VisibleForTesting
+    void setDcClusterShardTblDao(DcClusterShardTblDao dcClusterShardTblDao) {
+        this.dcClusterShardTblDao = dcClusterShardTblDao;
+    }
+
+    @VisibleForTesting
+    void setSentinelService(SentinelService sentinelService) {
+        this.sentinelService = sentinelService;
+    }
+
+    @VisibleForTesting
+    void setDcService(DcService dcService) {
+        this.dcService = dcService;
+    }
+
+    @VisibleForTesting
+    void setDcClusterShardService(DcClusterShardService dcClusterShardService) {
+        this.dcClusterShardService = dcClusterShardService;
+    }
+
+    @VisibleForTesting
+    void setClusterService(ClusterService clusterService) {
+        this.clusterService = clusterService;
+    }
+
+    @VisibleForTesting
+    void setShardService(ShardService shardService) {
+        this.shardService = shardService;
+    }
+
+    @VisibleForTesting
+    void setShardEventHandler(ShardEventHandler shardEventHandler) {
+        this.shardEventHandler = shardEventHandler;
+    }
 }

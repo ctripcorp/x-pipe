@@ -26,7 +26,7 @@ public interface SentinelGroupService {
 
     Map<String, SentinelUsageModel> getAllSentinelsUsage();
 
-    void updateSentinelGroup(SentinelGroupModel sentinelGroupModel);
+    void updateSentinelGroupAddress(SentinelGroupModel sentinelGroupModel);
 
     RetMessage removeSentinelMonitor(String clusterName);
 

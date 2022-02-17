@@ -4,10 +4,8 @@ import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -70,9 +68,6 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
-
-    @Autowired
-    private ConsoleConfig consoleConfig;
 
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
@@ -385,7 +380,7 @@ public class MetaUpdate extends AbstractConsoleController {
                 ShardTbl shardTbl = new ShardTbl()
                         .setSetinelMonitorName(shardCreateInfo.getShardMonitorName())
                         .setShardName(shardCreateInfo.getShardName());
-                shardService.createShard(clusterName, shardTbl, sentinelBalanceService.selectMultiDcSentinels(SentinelType.DR_CLUSTER));
+                shardService.createShard(clusterName, shardTbl, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType())));
                 successShards.add(shardCreateInfo.getShardName());
             } catch (Exception e) {
                 logger.error("[createShards]" + clusterName + "," + shardCreateInfo.getShardName(), e);
@@ -522,7 +517,7 @@ public class MetaUpdate extends AbstractConsoleController {
         ShardTbl proto = new ShardTbl()
                 .setSetinelMonitorName(monitorName)
                 .setShardName(shardName);
-        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, sentinelBalanceService.selectMultiDcSentinels(SentinelType.DR_CLUSTER));
+        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType())));
 
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {

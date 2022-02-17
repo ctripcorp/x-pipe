@@ -9,22 +9,24 @@ public class SentinelGroupModel {
 
     private long sentinelGroupId;
     private List<SentinelInstanceModel> sentinels = new ArrayList<>();
-    private String sentinelType;
+    private String clusterType;
+    private String desc = "";
     private int shardCount;
 
     public SentinelGroupModel() {}
 
     public SentinelGroupModel(SentinelGroupTbl sentinelGroupTbl) {
         this.sentinelGroupId = sentinelGroupTbl.getSentinelGroupId();
-        this.sentinelType = sentinelGroupTbl.getClusterType();
+        this.clusterType = sentinelGroupTbl.getClusterType();
     }
 
     public long getSentinelGroupId() {
         return sentinelGroupId;
     }
 
-    public void setSentinelGroupId(long sentinelGroupId) {
+    public SentinelGroupModel setSentinelGroupId(long sentinelGroupId) {
         this.sentinelGroupId = sentinelGroupId;
+        return this;
     }
 
     public List<SentinelInstanceModel> getSentinels() {
@@ -36,20 +38,27 @@ public class SentinelGroupModel {
         return this;
     }
 
-    public String getSentinelType() {
-        return sentinelType;
+    public SentinelGroupModel setSentinels(List<SentinelInstanceModel> sentinels) {
+        this.sentinels = sentinels;
+        return this;
     }
 
-    public void setSentinelType(String sentinelType) {
-        this.sentinelType = sentinelType;
+    public String getClusterType() {
+        return clusterType;
+    }
+
+    public SentinelGroupModel setClusterType(String clusterType) {
+        this.clusterType = clusterType;
+        return this;
     }
 
     public int getShardCount() {
         return shardCount;
     }
 
-    public void setShardCount(int shardCount) {
+    public SentinelGroupModel setShardCount(int shardCount) {
         this.shardCount = shardCount;
+        return this;
     }
 
     public String getSentinelsAddressString() {
@@ -61,7 +70,7 @@ public class SentinelGroupModel {
     }
 
     public Set<Long> dcIds(){
-       return sentinels.stream().map(sentinelInstanceModel -> sentinelInstanceModel.getDcId()).collect(Collectors.toSet());
+       return sentinels.stream().map(SentinelInstanceModel::getDcId).collect(Collectors.toSet());
     }
 
     public Map<String, Long> dcInfos() {
@@ -72,4 +81,21 @@ public class SentinelGroupModel {
         return dcInfos;
     }
 
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+    @Override
+    public String toString() {
+        return "SentinelGroupModel{" +
+                "sentinelGroupId=" + sentinelGroupId +
+                ", sentinels=" + sentinels +
+                ", clusterType='" + clusterType + '\'' +
+                ", shardCount=" + shardCount +
+                '}';
+    }
 }

@@ -22,54 +22,71 @@ public class SentinelInstanceModel {
         this.dcId = sentinelTbl.getDcId();
         this.sentinelIp = sentinelTbl.getSentinelIp();
         this.sentinelPort = sentinelTbl.getSentinelPort();
-        this.dcName=sentinelTbl.getDcName();
+        this.dcName = sentinelTbl.getDcInfo() == null ? null : sentinelTbl.getDcInfo().getDcName();
     }
 
     public long getSentinelId() {
         return sentinelId;
     }
 
-    public void setSentinelId(long sentinelId) {
+    public SentinelInstanceModel setSentinelId(long sentinelId) {
         this.sentinelId = sentinelId;
+        return this;
     }
 
     public long getSentinelGroupId() {
         return sentinelGroupId;
     }
 
-    public void setSentinelGroupId(long sentinelGroupId) {
+    public SentinelInstanceModel setSentinelGroupId(long sentinelGroupId) {
         this.sentinelGroupId = sentinelGroupId;
+        return this;
     }
 
     public long getDcId() {
         return dcId;
     }
 
-    public void setDcId(long dcId) {
+    public SentinelInstanceModel setDcId(long dcId) {
         this.dcId = dcId;
+        return this;
     }
 
     public String getSentinelIp() {
         return sentinelIp;
     }
 
-    public void setSentinelIp(String sentinelIp) {
+    public SentinelInstanceModel setSentinelIp(String sentinelIp) {
         this.sentinelIp = sentinelIp;
+        return this;
     }
 
     public int getSentinelPort() {
         return sentinelPort;
     }
 
-    public void setSentinelPort(int sentinelPort) {
+    public SentinelInstanceModel setSentinelPort(int sentinelPort) {
         this.sentinelPort = sentinelPort;
+        return this;
     }
 
     public String getDcName() {
         return dcName;
     }
 
-    public void setDcName(String dcName) {
+    public SentinelInstanceModel setDcName(String dcName) {
         this.dcName = dcName;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "SentinelInstanceModel{" +
+                "sentinelId=" + sentinelId +
+                ", sentinelGroupId=" + sentinelGroupId +
+                ", dcId=" + dcId +
+                ", sentinelIp='" + sentinelIp + '\'' +
+                ", sentinelPort=" + sentinelPort +
+                '}';
     }
 }

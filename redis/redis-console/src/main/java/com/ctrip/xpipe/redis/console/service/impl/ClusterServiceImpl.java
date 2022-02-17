@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
@@ -409,7 +408,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			public Integer doQuery() throws DalException {
 				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
 				if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterName))
-					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName(), SentinelType.lookupByClusterType(clusterType)));
+					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
 				else
 					return clusterDao.bindDc(cluster, dc, null);
 			}

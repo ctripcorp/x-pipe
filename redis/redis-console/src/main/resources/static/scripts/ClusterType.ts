@@ -38,7 +38,7 @@ function ClusterType() {
                 supportMigration: false,
             },
             'cross_dc':{
-                name: 'TRocks',
+                name: '跨机房缓存',
                 value: 'cross_dc',
                 multiActiveDcs: false,
                 useKeeper: false,

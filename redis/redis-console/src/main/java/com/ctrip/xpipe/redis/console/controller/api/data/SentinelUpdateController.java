@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.cluster.SentinelType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -75,7 +74,7 @@ public class SentinelUpdateController {
         if (backupDcOnly) {
             sentinelBalanceService.rebalanceBackupDcSentinel(dcTbl.getDcName());
         } else {
-            sentinelBalanceService.rebalanceDcSentinel(dcTbl.getDcName(), SentinelType.DR_CLUSTER);
+            sentinelBalanceService.rebalanceDcSentinel(dcTbl.getDcName(), ClusterType.ONE_WAY);
         }
         return RetMessage.createSuccessMessage();
     }
@@ -85,7 +84,7 @@ public class SentinelUpdateController {
         DcTbl dcTbl = dcService.findByDcName(dcName);
         if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
 
-        sentinelBalanceService.cancelCurrentBalance(dcTbl.getDcName(), SentinelType.DR_CLUSTER);
+        sentinelBalanceService.cancelCurrentBalance(dcTbl.getDcName(), ClusterType.ONE_WAY);
         return RetMessage.createSuccessMessage();
     }
 
@@ -94,7 +93,7 @@ public class SentinelUpdateController {
         DcTbl dcTbl = dcService.findByDcName(dcName);
         if (null == dcTbl) return RetMessage.createFailMessage("unknown dc " + dcName);
 
-        SentinelBalanceTask balanceTask = sentinelBalanceService.getBalanceTask(dcTbl.getDcName(), SentinelType.DR_CLUSTER);
+        SentinelBalanceTask balanceTask = sentinelBalanceService.getBalanceTask(dcTbl.getDcName(), ClusterType.ONE_WAY);
         if (null == balanceTask) {
             return RetMessage.createSuccessMessage("no task");
         } else {
@@ -220,7 +219,7 @@ public class SentinelUpdateController {
     public RetMessage updateSentinelAddrV2(@RequestBody SentinelGroupModel sentinelGroupModel) {
         logger.info("[updateSentinelAddr][begin]");
         try {
-            sentinelGroupService.updateSentinelGroup(sentinelGroupModel);
+            sentinelGroupService.updateSentinelGroupAddress(sentinelGroupModel);
             return RetMessage.createSuccessMessage(jsonTool.encode(sentinelGroupModel));
         } catch (Exception e) {
             logger.error("[updateSentinelAddr]", e);
@@ -361,7 +360,7 @@ public class SentinelUpdateController {
             String shard = dcClusterShardTbl.getShardInfo().getShardName();
             String dc = dcClusterShardTbl.getDcInfo().getDcName();
             SentinelGroupModel sentinelGroupModel = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
-            if (sentinelGroupModel.getSentinelType().equalsIgnoreCase(SentinelType.CROSS_DC_CLUSTER.name())) {
+            if (sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.CROSS_DC.name())) {
                 dc = consoleConfig.crossDcSentinelMonitorNameSuffix();
             }
             String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, dc);
@@ -389,7 +388,7 @@ public class SentinelUpdateController {
             String shardName = dcClusterShardTbl.getShardInfo().getShardName();
             String dcName = dcClusterShardTbl.getDcInfo().getDcName();
             SentinelGroupModel sentinelGroupModel = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
-            if (sentinelGroupModel.getSentinelType().equalsIgnoreCase(SentinelType.CROSS_DC_CLUSTER.name())) {
+            if (sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.CROSS_DC.name())) {
                 dcName = consoleConfig.crossDcSentinelMonitorNameSuffix();
             }
             String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
@@ -415,7 +414,7 @@ public class SentinelUpdateController {
             if (dcClusterShardTbl == null)
                 return RetMessage.createFailMessage(String.format("%s:%s:%s not found", dc, cluster, shard));
             String clusterType = dcClusterShardTbl.getClusterInfo().getClusterType();
-            SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dc,SentinelType.lookupByClusterType(ClusterType.lookup(clusterType)));
+            SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dc, ClusterType.lookup(clusterType));
             if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
                 return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
 
@@ -458,7 +457,7 @@ public class SentinelUpdateController {
             if (dcClusterShardTbl == null)
                 return RetMessage.createFailMessage(String.format("dc cluster shard not found by redis %s:%d", ip,port));
             String clusterType = dcClusterShardTbl.getClusterInfo().getClusterType();
-            SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcClusterShardTbl.getDcInfo().getDcName(),SentinelType.lookupByClusterType(ClusterType.lookup(clusterType)));
+            SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcClusterShardTbl.getDcInfo().getDcName(),ClusterType.lookup(clusterType));
             if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
                 return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
 

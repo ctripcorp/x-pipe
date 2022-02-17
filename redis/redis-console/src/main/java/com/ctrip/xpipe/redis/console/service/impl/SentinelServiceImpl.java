@@ -1,49 +1,20 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
+import com.ctrip.xpipe.redis.console.model.SentinelTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelTblDao;
+import com.ctrip.xpipe.redis.console.model.SentinelTblEntity;
+import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.utils.VisibleForTesting;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.SentinelService;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
-import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Random;
 
 @Service
 public class SentinelServiceImpl extends AbstractConsoleService<SentinelTblDao> implements SentinelService {
-
-	private DcClusterShardTblDao dcClusterShardTblDao;
-
-	@Autowired
-	private DcClusterShardService dcClusterShardService;
-
-	@Autowired
-	private ClusterService clusterService;
-
-	@Autowired
-	private DcService dcService;
-
-	@Autowired
-	private ShardEventHandler shardEventHandler;
-
-	@Autowired
-	private ShardService shardService;
-	
-	@PostConstruct
-	private void postConstruct() {
-		try {
-			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
-		} catch (ComponentLookupException e) {
-			throw new ServerException("Dao construct failed.", e);
-		}
-	}
 
 	@Override
 	public List<SentinelTbl> findAll() {
@@ -242,12 +213,19 @@ public class SentinelServiceImpl extends AbstractConsoleService<SentinelTblDao> 
 
 	@Override
 	public void delete(long id) {
-		SentinelTbl sentinelTbl = dao.createLocal();
-		sentinelTbl.setSentinelId(id);
+		SentinelTbl sentinelTbl = queryHandler.handleQuery(new DalQuery<SentinelTbl>() {
+			@Override
+			public SentinelTbl doQuery() throws DalException {
+				return dao.findByPK(id, SentinelTblEntity.READSET_FULL);
+			}
+		});
+		if (sentinelTbl == null) {
+			throw new IllegalArgumentException(String.format("sentinel with id:%d not exist", id));
+		}
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				return dao.deleteByPK(sentinelTbl);
+				return dao.deleteSentinel(sentinelTbl,SentinelTblEntity.UPDATESET_FULL);
 			}
 		});
 	}
@@ -298,33 +276,4 @@ public class SentinelServiceImpl extends AbstractConsoleService<SentinelTblDao> 
 //		}
 //	}
 
-	@VisibleForTesting
-	protected SentinelServiceImpl setDcClusterShardService(DcClusterShardService dcClusterShardService) {
-		this.dcClusterShardService = dcClusterShardService;
-		return this;
-	}
-
-	@VisibleForTesting
-	protected SentinelServiceImpl setClusterService(ClusterService clusterService) {
-		this.clusterService = clusterService;
-		return this;
-	}
-
-	@VisibleForTesting
-	protected SentinelServiceImpl setDcService(DcService dcService) {
-		this.dcService = dcService;
-		return this;
-	}
-
-	@VisibleForTesting
-	protected SentinelServiceImpl setShardEventHandler(ShardEventHandler shardEventHandler) {
-		this.shardEventHandler = shardEventHandler;
-		return this;
-	}
-
-	@VisibleForTesting
-	protected SentinelServiceImpl setShardService(ShardService shardService) {
-		this.shardService = shardService;
-		return this;
-	}
 }
