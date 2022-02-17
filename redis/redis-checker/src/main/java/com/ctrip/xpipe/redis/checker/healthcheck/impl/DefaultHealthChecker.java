@@ -140,7 +140,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         crossDcClusters.forEach((k, v) -> {
             String maxMasterCountDc = getMaxMasterCountDc(v);
             if (maxMasterCountDc.equalsIgnoreCase(currentDcId)) {
-                generateHealthCheckInstances(v.get(maxMasterCountDc));
+                v.values().forEach(this::generateHealthCheckInstances);
             }
         });
     }
