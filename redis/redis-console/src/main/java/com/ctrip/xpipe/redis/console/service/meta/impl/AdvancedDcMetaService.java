@@ -121,7 +121,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, factory);
+                clusterMetaService, dcClusterShardService, dcService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {
