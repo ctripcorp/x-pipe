@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
@@ -44,15 +45,17 @@ public class CrossDcSentinelHellosAnalyzer extends DefaultSentinelHelloCollector
             DcMeta instanceDcMeta = metaCache.getXpipeMeta().getDcs().get(dcId);
             ShardMeta shardMetaInCurrentDc = instanceDcMeta.getClusters().get(clusterId).getShards().get(shardId);
             long sentinelGroupId = shardMetaInCurrentDc.getSentinelId();
-
+            logger.debug("[{}-{}+{}] {} sentinelGroupId: {}", LOG_TITLE, clusterId,shardId ,dcId, sentinelGroupId);
             Set<HostPort> crossDcSentinels = new HashSet<>();
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
-                crossDcSentinels.addAll(IpUtils.parseAsHostPorts(dcMeta.getSentinels().get(sentinelGroupId).getAddress()));
+                SentinelMeta sentinelMeta = dcMeta.getSentinels().get(sentinelGroupId);
+                if (sentinelMeta != null)
+                    crossDcSentinels.addAll(IpUtils.parseAsHostPorts(sentinelMeta.getAddress()));
             });
 
             return crossDcSentinels;
         } catch (Exception e) {
-            logger.debug("[{}-{}+{}] {} collected hellos8", LOG_TITLE, clusterId,shardId ,dcId, e);
+            logger.error("[{}-{}+{}] {} collected hellos8", LOG_TITLE, clusterId,shardId ,dcId, e);
         }
         return Collections.emptySet();
     }
