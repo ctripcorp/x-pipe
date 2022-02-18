@@ -87,7 +87,7 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
             dcShards.forEach((dc, shardMeta) -> {
                 if (shardMeta.getSentinelId() != sentinelGroupModel.getSentinelGroupId()) {
                     try {
-                        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(clusterName, shardName, dc);
+                        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dc,clusterName, shardName);
                         if (dcClusterShardTbl.getSetinelId() != sentinelGroupModel.getSentinelGroupId()) {
                             dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
                         }
