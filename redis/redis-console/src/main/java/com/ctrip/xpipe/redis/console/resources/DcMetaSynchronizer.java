@@ -241,7 +241,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             case XPIPE_BI_DIRECT:
                 return ClusterType.BI_DIRECTION.name();
         }
-        return null;
+        return clusterType.name();
     }
 
     boolean shouldFilterOuterCluster(OuterClientService.ClusterMeta clusterMeta) {
