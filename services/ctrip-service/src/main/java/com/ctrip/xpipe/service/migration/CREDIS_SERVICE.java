@@ -42,6 +42,6 @@ public enum CREDIS_SERVICE {
 		public static final String PATH_SWITCH_STATUS  = "/keeperApi/switchReadStatus";
 		public static final String PATH_QUERY_STATUS = "keeperApi/queryReadStatus";
 		public static final String PATH_QUERY_CLUSTER = "keeperApi/querycluster";
-		public static final String PATH_QUERY_DC_META = "config/getNonOperatingIdcClusters";
+		public static final String PATH_QUERY_DC_META = "config/getIdcClusters";
 	}
 }
