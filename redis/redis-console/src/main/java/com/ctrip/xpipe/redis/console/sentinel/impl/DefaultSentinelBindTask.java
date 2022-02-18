@@ -19,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.dal.jdbc.DalException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DefaultSentinelBindTask extends AbstractCommand<Void> implements SentinelBindTask {
@@ -59,14 +56,16 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
     }
 
     void bindSentinelGroupWithShards(SentinelGroupModel sentinelGroupModel) {
+        logger.debug("DefaultSentinelBindTask: sentinel group: {}",sentinelGroupModel.toString());
         List<SentinelInstanceModel> sentinelInstanceModels = sentinelGroupModel.getSentinels();
         List<Sentinel> sentinels = sentinelInstanceModels.stream().
                 map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).
                 collect(Collectors.toList());
-        List<String> monitorNames = new ArrayList<>();
+        Set<String> monitorNames = new HashSet<>();
         sentinels.forEach(sentinel -> {
             monitorNames.addAll(getSentinelMonitorNames(sentinel));
         });
+        logger.debug("DefaultSentinelBindTask: monitorNames: {}", monitorNames.toString());
         monitorNames.forEach(monitorName -> {
             bindSentinelGroupWithShard(sentinelGroupModel, monitorName);
         });
@@ -85,14 +84,20 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
             String shardName = sentinelInfo.getShardName();
             String dcInMonitorName = sentinelInfo.getIdc();
 
+            logger.debug("DefaultSentinelBindTask: bindSentinelGroupWithShard: {}", monitorName.toString());
             Map<String, ShardMeta> dcShards = dcShards(dcInMonitorName, shardName, clusterName);
+            logger.debug("DefaultSentinelBindTask: dcShards: {}", dcShards);
 
             dcShards.forEach((dc, shardMeta) -> {
+                logger.debug("DefaultSentinelBindTask: shardSentinelId: {}, sentinelGroupId:{}",shardMeta.getSentinelId(),sentinelGroupModel.getSentinelGroupId());
                 if (shardMeta.getSentinelId() != sentinelGroupModel.getSentinelGroupId()) {
                     try {
                         DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(clusterName, shardName, dc);
-                        if (dcClusterShardTbl.getSetinelId() != sentinelGroupModel.getSentinelGroupId())
+                        logger.debug("DefaultSentinelBindTask: dcClusterShardTbl of {}:{}:{}, id: {}",dc,clusterName,shardName,dcClusterShardTbl.getDcClusterShardId());
+                        if (dcClusterShardTbl.getSetinelId() != sentinelGroupModel.getSentinelGroupId()) {
                             dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
+                            logger.debug("DefaultSentinelBindTask: updateDcClusterShard of {}:{}:{}, id: {}",dc,clusterName,shardName,dcClusterShardTbl.getDcClusterShardId());
+                        }
                         logger.info("bind sentinel group {} with {} {} {} ,dcClusterShardId:{}", sentinelGroupModel.getSentinelGroupId(), dc, clusterName, shardName, dcClusterShardTbl.getDcClusterShardId());
                     } catch (DalException e) {
                         logger.error("bind sentinel group {} with {} {} {} failed", sentinelGroupModel.getSentinelGroupId(), dc, clusterName, shardName, e);
