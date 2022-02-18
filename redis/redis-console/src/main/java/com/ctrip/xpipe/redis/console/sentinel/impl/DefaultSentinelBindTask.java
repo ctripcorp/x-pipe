@@ -82,7 +82,7 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
             String shardName = sentinelInfo.getShardName();
             String dcInMonitorName = sentinelInfo.getIdc();
 
-            Map<String, ShardMeta> dcShards = dcShards(dcInMonitorName, shardName, clusterName);
+            Map<String, ShardMeta> dcShards = dcShards(dcInMonitorName, clusterName, shardName);
 
             dcShards.forEach((dc, shardMeta) -> {
                 if (shardMeta.getSentinelId() != sentinelGroupModel.getSentinelGroupId()) {
