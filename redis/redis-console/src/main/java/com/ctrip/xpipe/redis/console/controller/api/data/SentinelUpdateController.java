@@ -131,7 +131,7 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/bind/sentinels/{}", method = RequestMethod.POST)
+    @RequestMapping(value = "/bind/sentinels/{clusterType}", method = RequestMethod.POST)
     public RetMessage bindSentinels(@PathVariable String clusterType) {
         try {
             sentinelBalanceService.bindShardAndSentinelsByType(ClusterType.lookup(clusterType));
