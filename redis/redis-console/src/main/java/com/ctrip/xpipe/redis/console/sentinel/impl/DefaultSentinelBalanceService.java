@@ -262,7 +262,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
                     newCacheData.get(dcName.toUpperCase()).addSentinel(sentinelGroup);
                 }
             }
-            result.put(k, new SentinelsCache(newCacheData));
+            result.put(k.toUpperCase(), new SentinelsCache(newCacheData));
         });
 
         return result;
