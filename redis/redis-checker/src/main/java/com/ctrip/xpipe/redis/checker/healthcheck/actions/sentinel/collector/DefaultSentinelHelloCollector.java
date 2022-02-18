@@ -150,8 +150,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     @Override
     public void onAction(SentinelActionContext context) {
         try {
-            RedisInstanceInfo info = context.instance().getCheckInfo();
-            logger.debug("[{}-{}+{}][onAction]", LOG_TITLE, info.getClusterId(), info.getShardId());
             CommandFuture<Void> future = new SentinelHelloCollectorCommand(context).execute(collectExecutor);
             ScheduledFuture<?> timeoutFuture = scheduled.schedule(new Runnable() {
                 @Override
@@ -185,35 +183,23 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         RedisInstanceInfo info = context.instance().getCheckInfo();
         String cluster = info.getClusterId();
 
-        logger.debug("[{}-{}+{}] {} collected hellos1: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
-
         if ((System.currentTimeMillis() - context.getRecvTimeMilli()) > context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli()) {
             logger.warn("[{}-{}+{}] {} expired, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
         }
-        logger.debug("[{}-{}+{}] {} collected hellos2: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
 
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
         }
-        logger.debug("[{}-{}+{}] {} collected hellos3: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
 
         Set<SentinelHello> originalHellos = context.getResult();
         Set<SentinelHello> hellos = Sets.newHashSet(originalHellos);
         String clusterId = info.getClusterId();
         String shardId = info.getShardId();
-        logger.debug("[{}-{}+{}] {} collected hellos4: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
-
         String sentinelMonitorName = getSentinelMonitorName(info);
-        logger.debug("[{}-{}+{}] {} collected hellos5: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(),sentinelMonitorName);
-
         Set<HostPort> sentinels = getSentinels(info);
-        logger.debug("[{}-{}+{}] {} collected hellos6: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), sentinels);
-
         QuorumConfig quorumConfig = checkerConfig.getDefaultSentinelQuorumConfig();
-        logger.debug("[{}-{}+{}] {} collected hellos7: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
-
 
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
         transaction.logTransactionSwallowException("sentinel.hello.collect", clusterId, new Task() {
@@ -223,8 +209,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             Set<SentinelHello> toAdd = new HashSet<>();
             @Override
             public void go() throws Exception {
-                logger.debug("[{}-{}+{}] {} collected hellos5: {}", LOG_TITLE, cluster, info.getShardId(), info.getDcId(), context.getResult());
-
                 HostPort trueMaster = null;
                 try{
                     trueMaster = getMaster(info);
@@ -589,11 +573,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         @Override
         protected void doExecute() throws Throwable {
-            logger.debug("[{}-{}+{}] {} SentinelHelloCollectorCommand1: {}", LOG_TITLE, context.instance().getCheckInfo().getClusterId(), context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId(), context.getResult());
-
             if (!future().isDone()) {
-                logger.debug("[{}-{}+{}] {} SentinelHelloCollectorCommand2: {}", LOG_TITLE, context.instance().getCheckInfo().getClusterId(), context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId(), context.getResult());
-
                 collect(context);
                 if (!future().isDone()) {
                     future().setSuccess();

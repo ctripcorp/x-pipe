@@ -104,7 +104,6 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
 
     Map<String, ShardMeta> dcShards(String dcInMonitorName, String clusterName, String shardName) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        logger.debug("DefaultSentinelBindTask: xpipeMeta: {}",xpipeMeta);
         Map<String, ShardMeta> dcShards = new HashMap<>();
         if (dcInMonitorName.equalsIgnoreCase(config.crossDcSentinelMonitorNameSuffix())) {
             xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
