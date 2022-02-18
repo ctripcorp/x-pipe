@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -25,6 +26,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -481,18 +483,34 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
-    public void shouldFilterTest() {
+    public void shouldFilterOuterClusterTest() {
+        when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC","LOCAL_DC"));
         when(consoleConfig.filterOuterClusters()).thenReturn(null);
         dcMetaSynchronizer.buildFilterPattern();
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
+
+        OuterClientService.ClusterMeta clusterMeta = new OuterClientService.ClusterMeta().setName("testCluster").setOperating(false).setClusterType(OuterClientService.ClusterType.XPIPE_ONE_WAY);
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta));
+        clusterMeta.setClusterType(OuterClientService.ClusterType.SINGEL_DC).setOperating(true);
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta));
+        clusterMeta.setOperating(false);
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
 
         when(consoleConfig.filterOuterClusters()).thenReturn("_[v|temp]+[0-9]{8,}?");
         dcMetaSynchronizer.buildFilterPattern();
-        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("AddServCache_v202111011735"));
-        Assert.assertTrue(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_temp202103041704"));
-        Assert.assertFalse(dcMetaSynchronizer.shouldFilter("Ai_AdSystem_Cache_v2"));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("AddServCache_v202111011735")));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_temp202103041704")));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterOuterCluster(clusterMeta.setName("Ai_AdSystem_Cache_v2")));
+    }
+
+    @Test
+    public void shouldFilterInnerClusterTest() {
+        when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
+        Set<String> filteredOuterClusters = Sets.newHashSet("cluster1", "cluster2");
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setId("cluster").setType("one_way"),filteredOuterClusters));
+        Assert.assertTrue(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setType("single_dc").setId("cluster1"),filteredOuterClusters));
+        Assert.assertFalse(dcMetaSynchronizer.shouldFilterInnerCluster(new ClusterMeta().setType("single_dc").setId("cluster"),filteredOuterClusters));
     }
 
     OuterClientService.DcMeta credisDcMeta() {

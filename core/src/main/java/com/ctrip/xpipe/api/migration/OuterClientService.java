@@ -396,7 +396,18 @@ public interface OuterClientService extends Ordered{
 
 		private String ownerEmails;
 
+		private boolean operating;
+
 		private Map<String, GroupMeta> groups = new ConcurrentHashMap<>();
+
+		public boolean isOperating() {
+			return operating;
+		}
+
+		public ClusterMeta setOperating(boolean operating) {
+			this.operating = operating;
+			return this;
+		}
 
 		public String getName() {
 			return name;
@@ -427,8 +438,9 @@ public interface OuterClientService extends Ordered{
 			return clusterType;
 		}
 
-		public void setClusterType(ClusterType clusterType) {
+		public ClusterMeta setClusterType(ClusterType clusterType) {
 			this.clusterType = clusterType;
+			return this;
 		}
 
 		public Map<String, GroupMeta> getGroups() {

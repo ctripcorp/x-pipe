@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcSyncMetaComparator;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -81,8 +82,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         try {
             buildFilterPattern();
             refreshOrganizationsCache();
-            DcMeta current = extractLocalDcMetaWithInterestedTypes(metaCache.getXpipeMeta(), consoleConfig.getOuterClusterTypes());
-            DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
+            Pair<DcMeta, Set<String>> outerDcMeta = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId));
+            DcMeta future = outerDcMeta.getKey();
+            DcMeta current = extractLocalDcMetaWithInterestedTypes(metaCache.getXpipeMeta(), outerDcMeta.getValue());
             DcSyncMetaComparator dcMetaComparator = new DcSyncMetaComparator(current, future);
             dcMetaComparator.compare();
             new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService, sentinelBalanceService, consoleConfig).sync();
@@ -118,31 +120,35 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         return outerClientService.getOutClientDcMeta(dc);
     }
 
-    DcMeta extractOuterDcMetaWithInterestedTypes(OuterClientService.DcMeta outerDcMeta, Set<String> interestedTypes) {
+    Pair<DcMeta, Set<String>> extractOuterDcMetaWithInterestedTypes(OuterClientService.DcMeta outerDcMeta) {
         DcMeta dcMeta = new DcMeta(outerDcMeta.getDcName());
         Map<String, OuterClientService.ClusterMeta> outerClusterMetas = outerDcMeta.getClusters();
-        outerClusterMetas.values().forEach(outerClusterMeta -> {
-            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType())) && !shouldFilter(outerClusterMeta.getName())) {
-                ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
-                if (clusterMeta != null)
-                    dcMeta.addCluster(clusterMeta);
+        Set<String> filterClusters = new HashSet<>();
+        for (OuterClientService.ClusterMeta outerClusterMeta : outerClusterMetas.values()) {
+            if (shouldFilterOuterCluster(outerClusterMeta)) {
+                filterClusters.add(outerClusterMeta.getName());
+                continue;
             }
-        });
-        return dcMeta;
+            ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
+            if (clusterMeta != null)
+                dcMeta.addCluster(clusterMeta);
+
+        }
+        return new Pair<>(dcMeta, filterClusters);
     }
 
-    DcMeta extractLocalDcMetaWithInterestedTypes(XpipeMeta xpipeMeta, Set<String> interestedTypes) {
+    DcMeta extractLocalDcMetaWithInterestedTypes(XpipeMeta xpipeMeta, Set<String> filteredOuterClusters) {
         DcMeta dcMeta = xpipeMeta.findDc(currentDcId);
         if (dcMeta == null)
             return new DcMeta(currentDcId);
 
         DcMeta dcMetaWithInterestedClusters = new DcMeta(dcMeta.getId());
         List<ClusterMeta> interestedClusters = new ArrayList<>();
-        dcMeta.getClusters().values().forEach(clusterMeta -> {
-            if (interestedTypes.contains(clusterMeta.getType()) && !shouldFilter(clusterMeta.getId())) {
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+            if (!shouldFilterInnerCluster(clusterMeta, filteredOuterClusters)) {
                 interestedClusters.add(newClusterMeta(clusterMeta));
             }
-        });
+        }
 
         interestedClusters.forEach(clusterMeta -> {
             dcMetaWithInterestedClusters.addCluster(clusterMeta);
@@ -238,8 +244,24 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         return null;
     }
 
-    boolean shouldFilter(String clusterName) {
+    boolean shouldFilterOuterCluster(OuterClientService.ClusterMeta clusterMeta) {
+        return notInterestedTypes(innerClusterType(clusterMeta.getClusterType())) || isOperating(clusterMeta) || nameMatchFilterPattern(clusterMeta.getName());
+    }
+
+    boolean shouldFilterInnerCluster(ClusterMeta clusterMeta, Set<String> filteredOuterClusters) {
+        return notInterestedTypes(clusterMeta.getType()) || filteredOuterClusters.contains(clusterMeta.getId());
+    }
+
+    boolean nameMatchFilterPattern(String clusterName) {
         return filterClusterPattern != null && filterClusterPattern.matcher(clusterName).find();
+    }
+
+    boolean isOperating(OuterClientService.ClusterMeta clusterMeta) {
+        return clusterMeta.isOperating();
+    }
+
+    boolean notInterestedTypes(String clusterType) {
+        return !consoleConfig.getOuterClusterTypes().contains(clusterType.toUpperCase());
     }
 
 }
