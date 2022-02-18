@@ -56,7 +56,6 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
     }
 
     void bindSentinelGroupWithShards(SentinelGroupModel sentinelGroupModel) {
-        logger.debug("DefaultSentinelBindTask: sentinel group: {}",sentinelGroupModel.toString());
         List<SentinelInstanceModel> sentinelInstanceModels = sentinelGroupModel.getSentinels();
         List<Sentinel> sentinels = sentinelInstanceModels.stream().
                 map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).
@@ -65,7 +64,6 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
         sentinels.forEach(sentinel -> {
             monitorNames.addAll(getSentinelMonitorNames(sentinel));
         });
-        logger.debug("DefaultSentinelBindTask: monitorNames: {}", monitorNames.toString());
         monitorNames.forEach(monitorName -> {
             bindSentinelGroupWithShard(sentinelGroupModel, monitorName);
         });
@@ -84,19 +82,14 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
             String shardName = sentinelInfo.getShardName();
             String dcInMonitorName = sentinelInfo.getIdc();
 
-            logger.debug("DefaultSentinelBindTask: bindSentinelGroupWithShard: {}", monitorName.toString());
             Map<String, ShardMeta> dcShards = dcShards(dcInMonitorName, shardName, clusterName);
-            logger.debug("DefaultSentinelBindTask: dcShards: {}", dcShards);
 
             dcShards.forEach((dc, shardMeta) -> {
-                logger.debug("DefaultSentinelBindTask: shardSentinelId: {}, sentinelGroupId:{}",shardMeta.getSentinelId(),sentinelGroupModel.getSentinelGroupId());
                 if (shardMeta.getSentinelId() != sentinelGroupModel.getSentinelGroupId()) {
                     try {
                         DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(clusterName, shardName, dc);
-                        logger.debug("DefaultSentinelBindTask: dcClusterShardTbl of {}:{}:{}, id: {}",dc,clusterName,shardName,dcClusterShardTbl.getDcClusterShardId());
                         if (dcClusterShardTbl.getSetinelId() != sentinelGroupModel.getSentinelGroupId()) {
                             dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
-                            logger.debug("DefaultSentinelBindTask: updateDcClusterShard of {}:{}:{}, id: {}",dc,clusterName,shardName,dcClusterShardTbl.getDcClusterShardId());
                         }
                         logger.info("bind sentinel group {} with {} {} {} ,dcClusterShardId:{}", sentinelGroupModel.getSentinelGroupId(), dc, clusterName, shardName, dcClusterShardTbl.getDcClusterShardId());
                     } catch (DalException e) {
@@ -113,7 +106,6 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         logger.debug("DefaultSentinelBindTask: xpipeMeta: {}",xpipeMeta);
         Map<String, ShardMeta> dcShards = new HashMap<>();
-        logger.debug("DefaultSentinelBindTask: dcInMonitorName: {}, config suffix: {}",dcInMonitorName,config.crossDcSentinelMonitorNameSuffix());
         if (dcInMonitorName.equalsIgnoreCase(config.crossDcSentinelMonitorNameSuffix())) {
             xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
                 ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
