@@ -12,23 +12,12 @@ public class RedisKey {
 
     private String vectorClock;
 
-    private Long expire;
-
     public RedisKey(String key) {
-        this(key, null, null);
-    }
-
-    public RedisKey(String key, Long expire) {
-        this(key, expire, null);
+        this(key, null);
     }
 
     public RedisKey(String key, String vectorClock) {
-        this(key, null, vectorClock);
-    }
-
-    public RedisKey(String key, Long expire, String vectorClock) {
         this.key = key;
-        this.expire = expire;
         this.vectorClock = vectorClock;
     }
 
@@ -40,22 +29,17 @@ public class RedisKey {
         return vectorClock;
     }
 
-    public Long getExpire() {
-        return expire;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RedisKey redisKey = (RedisKey) o;
-        return key.equals(redisKey.key) &&
-                Objects.equals(vectorClock, redisKey.vectorClock) &&
-                Objects.equals(expire, redisKey.expire);
+        RedisKey key1 = (RedisKey) o;
+        return key.equals(key1.key) &&
+                Objects.equals(vectorClock, key1.vectorClock);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, vectorClock, expire);
+        return Objects.hash(key, vectorClock);
     }
 }

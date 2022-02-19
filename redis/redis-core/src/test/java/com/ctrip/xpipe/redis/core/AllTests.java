@@ -26,6 +26,8 @@ import com.ctrip.xpipe.redis.core.proxy.parser.content.CompressParserTest;
 import com.ctrip.xpipe.redis.core.proxy.parser.content.DefaultProxyContentParserTest;
 import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocolTest;
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
+import com.ctrip.xpipe.redis.core.redis.op.RedisOpDelTest;
+import com.ctrip.xpipe.redis.core.redis.op.RedisOpMsetTest;
 import com.ctrip.xpipe.redis.core.redis.parser.GeneralRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 import com.ctrip.xpipe.redis.core.util.SentinelUtilTest;
@@ -86,7 +88,9 @@ import org.junit.runners.Suite.SuiteClasses;
         TestAbstractSubscribeTest.class,
         FastMetaServerConsoleServiceTest.class,
         DefaultReactorMetaServerConsoleServiceTest.class,
-        GeneralRedisOpParserTest.class
+        GeneralRedisOpParserTest.class,
+        RedisOpMsetTest.class,
+        RedisOpDelTest.class
 })
 public class AllTests {
 

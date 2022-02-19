@@ -41,7 +41,7 @@ public class GeneralRedisOpParserTest extends AbstractRedisTest {
         Assert.assertNull(redisOp.getOpGtidSet());
         Assert.assertEquals(Arrays.asList("SET", "k1", "v1"), redisOp.buildRawOpArgs());
 
-        RedisSingleKeyOp<String> redisSingleKeyOp = (RedisSingleKeyOp<String>) redisOp;
+        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
         Assert.assertEquals("k1", redisSingleKeyOp.getKey().get());
         Assert.assertEquals("v1", redisSingleKeyOp.getValue());
     }
@@ -53,7 +53,7 @@ public class GeneralRedisOpParserTest extends AbstractRedisTest {
         Assert.assertEquals(new GtidSet("a1:10"), redisOp.getOpGtidSet());
         Assert.assertEquals(Arrays.asList("GTID", "a1:10", "set", "k1", "v1"), redisOp.buildRawOpArgs());
 
-        RedisSingleKeyOp<String> redisSingleKeyOp = (RedisSingleKeyOp<String>) redisOp;
+        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
         Assert.assertEquals("k1", redisSingleKeyOp.getKey().get());
         Assert.assertEquals("v1", redisSingleKeyOp.getValue());
     }
@@ -65,7 +65,7 @@ public class GeneralRedisOpParserTest extends AbstractRedisTest {
         Assert.assertNull(redisOp.getOpGtidSet());
         Assert.assertEquals(Arrays.asList("MSET", "k1", "v1", "k2", "v2"), redisOp.buildRawOpArgs());
 
-        RedisMultiKeyOp<String> redisMultiKeyOp = (RedisMultiKeyOp<String>) redisOp;
+        RedisMultiKeyOp<?> redisMultiKeyOp = (RedisMultiKeyOp<?>) redisOp;
         Assert.assertEquals(2, redisMultiKeyOp.getKeys().size());
         Assert.assertEquals(Pair.of(new RedisKey("k1"), "v1"), redisMultiKeyOp.getKeyValue(0));
         Assert.assertEquals(Pair.of(new RedisKey("k2"), "v2"), redisMultiKeyOp.getKeyValue(1));
@@ -78,7 +78,7 @@ public class GeneralRedisOpParserTest extends AbstractRedisTest {
         Assert.assertEquals(new GtidSet("a1:10"), redisOp.getOpGtidSet());
         Assert.assertEquals(Arrays.asList("GTID", "a1:10", "MSET", "k1", "v1", "k2", "v2"), redisOp.buildRawOpArgs());
 
-        RedisMultiKeyOp<String> redisMultiKeyOp = (RedisMultiKeyOp<String>) redisOp;
+        RedisMultiKeyOp<?> redisMultiKeyOp = (RedisMultiKeyOp<?>) redisOp;
         Assert.assertEquals(2, redisMultiKeyOp.getKeys().size());
         Assert.assertEquals(Pair.of(new RedisKey("k1"), "v1"), redisMultiKeyOp.getKeyValue(0));
         Assert.assertEquals(Pair.of(new RedisKey("k2"), "v2"), redisMultiKeyOp.getKeyValue(1));
@@ -89,17 +89,17 @@ public class GeneralRedisOpParserTest extends AbstractRedisTest {
         RedisOp redisOp = parser.parse(Arrays.asList("SELECT", "0"));
         Assert.assertEquals(RedisOpType.SELECT, redisOp.getOpType());
 
-        RedisSingleKeyOp<String> redisSingleKeyOp = (RedisSingleKeyOp<String>) redisOp;
+        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
         Assert.assertNull(redisSingleKeyOp.getKey());
         Assert.assertEquals(0L, redisSingleKeyOp.getValue());
     }
 
     @Test
     public void testPingParse() {
-        RedisOp redisOp = parser.parse(Arrays.asList("PING"));
+        RedisOp redisOp = parser.parse(Arrays.asList("PING", "TEST"));
         Assert.assertEquals(RedisOpType.PING, redisOp.getOpType());
 
-        RedisSingleKeyOp<String> redisSingleKeyOp = (RedisSingleKeyOp<String>) redisOp;
+        RedisSingleKeyOp<?> redisSingleKeyOp = (RedisSingleKeyOp<?>) redisOp;
         Assert.assertNull(redisSingleKeyOp.getKey());
         Assert.assertNull(redisSingleKeyOp.getValue());
     }
