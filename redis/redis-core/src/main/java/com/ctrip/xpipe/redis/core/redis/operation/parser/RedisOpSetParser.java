@@ -21,7 +21,6 @@ public class RedisOpSetParser implements RedisOpParser {
 
     @Override
     public RedisOp parse(List<String> args) {
-        if (args.size() < 3) throw new IllegalArgumentException("no enough args found for set");
         return new RedisOpSet(args, new RedisKey(args.get(1)), args.get(2));
     }
 
