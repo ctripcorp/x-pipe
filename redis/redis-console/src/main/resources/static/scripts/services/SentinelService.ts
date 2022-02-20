@@ -11,6 +11,11 @@ function SentinelService($resource, $q) {
 			url: '/console/:dcName/sentinels',
 			isArray: true
 		},
+		find_sentinels_by_dc_type: {
+			method: 'GET',
+			url: '/console/:dcName/:clusterType/sentinels',
+			isArray: true
+		},
 		find_sentinel_by_id: {
 			method: 'GET',
 			url: '/console/sentinels/:sentinelId'
@@ -31,6 +36,20 @@ function SentinelService($resource, $q) {
 		}, function(result) {
 			d.reject(result);
 		});
+		return d.promise;
+	}
+
+	function findSentinelsByDcAndType(dcName, clusterType) {
+		var d = $q.defer();
+		resource.find_sentinels_by_dc_type({
+				dcName: dcName,
+				clusterType: clusterType
+			},
+			function(result) {
+				d.resolve(result);
+			}, function(result) {
+				d.reject(result);
+			});
 		return d.promise;
 	}
 	
@@ -60,6 +79,7 @@ function SentinelService($resource, $q) {
 	
 	return {
 		findSentinelsByDc: findSentinelsByDc,
+		findSentinelsByDcAndType: findSentinelsByDcAndType,
 		findSentinelById: findSentinelById,
 		findSentinelsByShardId: findSentinelsByShardId
 	}

@@ -238,7 +238,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
 
         SentinelBindTask task = new DefaultSentinelBindTask(sentinelManager, dcClusterShardService,
-                sentinelsCache.getAllSentinelGroups(), config, metaCache);
+                sentinelsCache.getAllSentinelGroups(), clusterType, config, metaCache);
 
         bindTasks.put(clusterType.name().toUpperCase(), task);
         task.execute(executors);

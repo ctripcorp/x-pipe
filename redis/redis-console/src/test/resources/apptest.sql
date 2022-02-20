@@ -116,8 +116,11 @@ insert into REDIS_TBL (run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role
 insert into REDIS_TBL (run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master) values('unknown',19,'10.2.27.53',6399,'redis',0,0);
 insert into REDIS_TBL (run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master) values('unknown',19,'10.2.27.54',6399,'redis',0,0);
 
-insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (4,'cross_dc');
+insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (4,'CROSS_DC');
 
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,4,'10.2.27.97',5000);
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,4,'10.2.27.98',5000);
 insert into SENTINEL_TBL (dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (3,4,'10.2.27.104',5000);
+
+
+insert into REDIS_TBL (run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role,master,redis_master,keepercontainer_id) values('unknown',17,'127.0.0.1',9999,'redis',0,0,null);
