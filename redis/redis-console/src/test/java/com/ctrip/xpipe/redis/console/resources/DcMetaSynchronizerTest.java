@@ -337,7 +337,7 @@ public class DcMetaSynchronizerTest {
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         dcMetaSynchronizer.sync();
         verify(consoleConfig, times(2)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels(ClusterType.ONE_WAY);
+        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels(ClusterType.SINGLE_DC);
     }
 
     @Test

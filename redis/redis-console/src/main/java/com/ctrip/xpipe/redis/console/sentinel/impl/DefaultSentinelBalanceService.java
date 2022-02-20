@@ -103,11 +103,15 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     @Override
     public SentinelGroupModel selectSentinelWithoutCache(String dcId, ClusterType clusterType) {
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(true);
-        if (StringUtil.isEmpty(dcId) || !sentinels.containsKey(dcId.toUpperCase())) {
+        if (StringUtil.isEmpty(dcId)) {
             return null;
         }
 
-        DcSentinels dcSentinels = sentinels.get(clusterType.name().toUpperCase()).getByDc(dcId);
+        SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
+        if (sentinelsCache == null)
+            return null;
+
+        DcSentinels dcSentinels = sentinelsCache.getByDc(dcId.toUpperCase());
         if (dcSentinels == null)
             return null;
 

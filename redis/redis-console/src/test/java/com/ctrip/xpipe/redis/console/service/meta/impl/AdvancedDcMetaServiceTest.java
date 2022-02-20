@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.retry.RetryDelay;
-import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -133,7 +132,7 @@ public class AdvancedDcMetaServiceTest extends AbstractConsoleIntegrationTest {
     public void testClusterOrgInfo() {
         List<ClusterTbl> clusterTbls = clusterService.findAllClustersWithOrgInfo();
 
-        ClusterTbl clusterTbl = clusterTbls.get(1);
+        ClusterTbl clusterTbl = clusterTbls.get(2);
         clusterTbl.setClusterOrgId(3);
         clusterService.update(clusterTbl);
 

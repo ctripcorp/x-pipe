@@ -76,7 +76,7 @@ public class SentinelGroupModel {
     public Map<String, Long> dcInfos() {
         Map<String, Long> dcInfos = new HashMap<>();
         sentinels.forEach(sentinelInstanceModel -> {
-            dcInfos.put(sentinelInstanceModel.getDcName().toUpperCase(), sentinelInstanceModel.getDcId());
+            dcInfos.put(sentinelInstanceModel.getDcName(), sentinelInstanceModel.getDcId());
         });
         return dcInfos;
     }

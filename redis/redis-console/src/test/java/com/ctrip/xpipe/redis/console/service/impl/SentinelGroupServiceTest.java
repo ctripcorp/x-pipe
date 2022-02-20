@@ -1,30 +1,17 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.notifier.ShardEventHandler;
-import com.ctrip.xpipe.redis.console.notifier.shard.ShardEvent;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.FAIL_STATE;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
 
 public class SentinelGroupServiceTest extends AbstractServiceImplTest {
 
@@ -39,22 +26,6 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
 
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
-
-    @Mock
-    private DcService dcService;
-
-    @Mock
-    private DcClusterShardService mockDcClusterShardService;
-
-    @Mock
-    private ClusterService clusterService;
-
-    @Mock
-    private ShardService mockShardService;
-
-    @Mock
-    private ShardEventHandler shardEventHandler;
-
 
     @Test
     public void find() {
@@ -138,8 +109,28 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
         ));
         sentinelGroupService.addSentinelGroup(sentinelGroupModel1);
 
+        SentinelGroupModel sentinelGroupModelCrossDc1 = new SentinelGroupModel().setClusterType(ClusterType.CROSS_DC.name()).setSentinels(Lists.newArrayList(
+                new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(7000),
+                new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7001),
+                new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7002)
+        ));
+        sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc1);
+
+        SentinelGroupModel sentinelGroupModelCrossDc2 = new SentinelGroupModel().setClusterType(ClusterType.CROSS_DC.name()).setSentinels(Lists.newArrayList(
+                new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8000),
+                new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8001),
+                new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(8002),
+                new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8003),
+                new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8004)
+        ));
+        sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc2);
+
+        //force refresh cache
+        sentinelBalanceService.selectSentinelWithoutCache("OY", ClusterType.ONE_WAY);
+
         createCluster(ClusterType.ONE_WAY, Lists.newArrayList("one_way_shard_11", "one_way_shard_12", "one_way_shard_13"), "one_way_1");
         createCluster(ClusterType.ONE_WAY, Lists.newArrayList("one_way_shard_21", "one_way_shard_22"), "one_way_2");
+
         List<SentinelGroupModel> result = sentinelGroupService.getSentinelGroupsWithUsageByType(ClusterType.ONE_WAY);
         Assert.assertEquals(4, result.size());
         int jqUsageOneWay = 0;
@@ -161,22 +152,6 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
         Assert.assertEquals(0, fraUsageOneWay);
 
 
-        SentinelGroupModel sentinelGroupModelCrossDc1 = new SentinelGroupModel().setClusterType(ClusterType.CROSS_DC.name()).setSentinels(Lists.newArrayList(
-                new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(7000),
-                new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7001),
-                new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(7002)
-        ));
-        sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc1);
-        SentinelGroupModel sentinelGroupModelCrossDc2 = new SentinelGroupModel().setClusterType(ClusterType.CROSS_DC.name()).setSentinels(Lists.newArrayList(
-                new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8000),
-                new SentinelInstanceModel().setDcId(1L).setSentinelIp("127.0.0.1").setSentinelPort(8001),
-                new SentinelInstanceModel().setDcId(2L).setSentinelIp("127.0.0.1").setSentinelPort(8002),
-                new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8003),
-                new SentinelInstanceModel().setDcId(3L).setSentinelIp("127.0.0.1").setSentinelPort(8004)
-        ));
-        sentinelGroupService.addSentinelGroup(sentinelGroupModelCrossDc2);
-        //force refresh cache
-        sentinelBalanceService.selectSentinelWithoutCache("OY", ClusterType.ONE_WAY);
         createCluster(ClusterType.CROSS_DC, Lists.newArrayList("cross_dc_shard_1", "cross_dc_shard_2"), "cross_dc_cluster");
         result = sentinelGroupService.getSentinelGroupsWithUsageByType(ClusterType.CROSS_DC);
         Assert.assertEquals(2, result.size());
@@ -211,9 +186,9 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
 
         Map<String, SentinelUsageModel> allUsages = sentinelGroupService.getAllSentinelsUsage();
         Assert.assertEquals(3, allUsages.size());
-        Assert.assertEquals(4, allUsages.get("JQ").getSentinelUsages().size());
-        Assert.assertEquals(3, allUsages.get("OY").getSentinelUsages().size());
-        Assert.assertEquals(2, allUsages.get("FRA").getSentinelUsages().size());
+        Assert.assertEquals(4, allUsages.get("jq").getSentinelUsages().size());
+        Assert.assertEquals(3, allUsages.get("oy").getSentinelUsages().size());
+        Assert.assertEquals(2, allUsages.get("fra").getSentinelUsages().size());
     }
 
     @Test
@@ -261,84 +236,4 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
         Assert.assertTrue(rehealed.get());
     }
 
-
-    @Test
-    public void testRemoveSentinelMonitor() {
-        String dc = "SHAJQ", cluster = "cluster-test";
-        sentinelGroupService = new SentinelGroupServiceImpl() {
-            @Override
-            protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, ClusterType clusterType, DcClusterShardTbl dcClusterShard) {
-                //do nothing
-            }
-        };
-        sentinelGroupService.setClusterService(clusterService);
-        sentinelGroupService.setShardService(mockShardService);
-        sentinelGroupService.setDcService(dcService);
-        sentinelGroupService.setShardEventHandler(shardEventHandler);
-        sentinelGroupService.setDcClusterShardService(mockDcClusterShardService);
-        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1).setClusterType(ClusterType.ONE_WAY.toString()));
-        when(dcService.getDcName(anyLong())).thenReturn(dc);
-        when(mockDcClusterShardService.findAllByDcCluster(dc, cluster))
-                .thenReturn(Lists.newArrayList(new DcClusterShardTbl().setShardId(1).setDcId(1L)));
-        RetMessage retMessage = sentinelGroupService.removeSentinelMonitor(cluster);
-        Assert.assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
-    }
-
-    @Test
-    public void testRemoveSentinelMonitorWithSentinelCallFail() {
-        String dc = "SHAJQ", cluster = "cluster-test";
-        sentinelGroupService = new SentinelGroupServiceImpl() {
-            @Override
-            protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, ClusterType clusterType, DcClusterShardTbl dcClusterShard) {
-                throw new XpipeRuntimeException("fake timeout");
-            }
-        };
-        sentinelGroupService.setClusterService(clusterService);
-        sentinelGroupService.setShardService(mockShardService);
-        sentinelGroupService.setDcService(dcService);
-        sentinelGroupService.setShardEventHandler(shardEventHandler);
-        sentinelGroupService.setDcClusterShardService(mockDcClusterShardService);
-        when(clusterService.find(anyString())).thenReturn(new ClusterTbl().setActivedcId(1).setClusterType(ClusterType.ONE_WAY.toString()));
-        when(dcService.getDcName(anyLong())).thenReturn(dc);
-        when(mockDcClusterShardService.findAllByDcCluster(dc, cluster))
-                .thenReturn(Lists.newArrayList(new DcClusterShardTbl().setShardId(1).setDcId(1L)));
-        RetMessage retMessage = sentinelGroupService.removeSentinelMonitor(cluster);
-        Assert.assertEquals(FAIL_STATE, retMessage.getState());
-    }
-
-    @Test
-    public void testRemoveSentinelMonitorByShard() {
-        sentinelGroupService.setClusterService(clusterService);
-        sentinelGroupService.setDcService(dcService);
-        sentinelGroupService.setShardEventHandler(shardEventHandler);
-        sentinelGroupService.setShardService(mockShardService);
-        sentinelGroupService.setDcClusterShardService(mockDcClusterShardService);
-        String dc = "SHAJQ", cluster = "cluster-test", shard = "shard1";
-        DcClusterShardTbl dcClusterShardTbl = new DcClusterShardTbl().setShardId(1L).setSetinelId(2L);
-        sentinelGroupService = spy(sentinelGroupService);
-        doReturn(new SentinelGroupModel().setSentinelGroupId(1).setSentinels(Lists.newArrayList(
-                new SentinelInstanceModel().setSentinelIp("10.0.0.1").setSentinelPort(5555),
-                new SentinelInstanceModel().setSentinelIp("10.0.0.2").setSentinelPort(5555)
-        ))).when(sentinelGroupService).findById(anyLong());
-//
-        when(mockShardService.find(anyLong())).thenReturn(new ShardTbl().setShardName(shard).setSetinelMonitorName(shard));
-        doNothing().when(shardEventHandler).handleShardDelete(any(ShardEvent.class));
-        sentinelGroupService.removeSentinelMonitorByShard(dc, cluster, ClusterType.ONE_WAY, dcClusterShardTbl);
-        verify(shardEventHandler, times(1)).handleShardDelete(any(ShardEvent.class));
-    }
-
-    @Test
-    public void testRemoveSentinelForCRDTCluster() {
-        sentinelGroupService.setClusterService(clusterService);
-        sentinelGroupService.setDcService(dcService);
-        sentinelGroupService.setShardEventHandler(shardEventHandler);
-        sentinelGroupService.setShardService(mockShardService);
-        sentinelGroupService.setDcClusterShardService(mockDcClusterShardService);
-        String clusterId = "test-cluster";
-        when(clusterService.find(clusterId)).thenReturn(new ClusterTbl().setClusterType(ClusterType.BI_DIRECTION.toString()));
-
-        RetMessage retMessage = sentinelGroupService.removeSentinelMonitor(clusterId);
-        Assert.assertEquals(FAIL_STATE, retMessage.getState());
-        logger.info("[testRemoveSentinelForCRDTCluster] response {}", retMessage.getMessage());
-    }
 }

@@ -145,14 +145,8 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
             if (null != sentinelGroup) {
                 List<SentinelTbl> sentinelTbls = sentinelService.findBySentinelGroupId(sentinelGroup.getSentinelGroupId());
                 for (SentinelTbl sentinelTbl : sentinelTbls) {
-                    res.compute(sentinelTbl.getDcId(), (k, v) -> {
-                        if (v == null) {
-                            v = new SentinelGroupModel(sentinelGroup);
-                        }
-                        v.addSentinel(new SentinelInstanceModel(sentinelTbl));
-                        res.put(sentinelTbl.getDcId(), v);
-                        return v;
-                    });
+                    res.putIfAbsent(sentinelTbl.getDcId(), new SentinelGroupModel(sentinelGroup));
+                    res.get(sentinelTbl.getDcId()).addSentinel(new SentinelInstanceModel(sentinelTbl));
                 }
             }
         }
