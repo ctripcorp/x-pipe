@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.google.common.collect.Lists;
 
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -25,7 +26,11 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
     private final Executor workerThreads;
 
     public SequenceCommand(Command<V> inner, Executor stateThread, Executor workerThreads) {
-        this(null, inner, stateThread, workerThreads);
+        this(Lists.newArrayList(), inner, stateThread, workerThreads);
+    }
+
+    public SequenceCommand(SequenceCommand<?> past, Command<V> inner, Executor stateThread, Executor workerThreads) {
+        this(Lists.newArrayList(past), inner, stateThread, workerThreads);
     }
 
     public SequenceCommand(List<SequenceCommand<?>> pasts, Command<V> inner, Executor stateThread, Executor workerThreads) {

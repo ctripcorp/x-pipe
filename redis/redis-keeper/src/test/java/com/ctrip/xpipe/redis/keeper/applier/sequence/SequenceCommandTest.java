@@ -10,6 +10,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Slight
@@ -44,17 +45,25 @@ public class SequenceCommandTest {
     }
 
     @Test
-    public void waitFor300And500() throws ExecutionException, InterruptedException {
+    public void waitFor100And300() throws ExecutionException, InterruptedException {
 
-        SequenceCommand<String> sc300 = new SequenceCommand<>(new TestSleepCommand(300), stateThread, workerThreads);
-        SequenceCommand<String> sc500 = new SequenceCommand<>(new TestSleepCommand(500), stateThread, workerThreads);
+        long start = System.currentTimeMillis();
+
+        TestSleepCommand tsc100 = new TestSleepCommand(100);
+        TestSleepCommand tsc300 = new TestSleepCommand(300);
+        TestSleepCommand tsc200 = new TestSleepCommand(200);
+
+        SequenceCommand<String> sc300 = new SequenceCommand<>(tsc100, stateThread, workerThreads);
+        SequenceCommand<String> sc500 = new SequenceCommand<>(tsc300, stateThread, workerThreads);
 
         sc300.execute();
         sc500.execute();
 
-        SequenceCommand<String> wait = new SequenceCommand<>(Lists.newArrayList(sc300, sc500), new TestSleepCommand(200), stateThread, workerThreads);
+        SequenceCommand<String> wait = new SequenceCommand<>(Lists.newArrayList(sc300, sc500), tsc200, stateThread, workerThreads);
 
         wait.execute().get();
 
+        assertTrue(System.currentTimeMillis() - start >= 700);
+        assertTrue(tsc200.startTime >= tsc300.endTime && tsc200.startTime >= tsc100.endTime);
     }
 }

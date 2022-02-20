@@ -23,7 +23,6 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
     }
 
     private void executeTilSuccess() {
-        inner.reset();
         CommandFuture<V> future = inner.execute();
 
         future.addListener((f)->{
@@ -35,6 +34,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
                 }
             } else {
                 getLogger().warn("[{}] failed, retry", this);
+                inner.reset();
                 executeTilSuccess();
             }
         });

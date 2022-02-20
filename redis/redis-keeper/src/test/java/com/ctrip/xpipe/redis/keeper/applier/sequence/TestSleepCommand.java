@@ -9,9 +9,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestSleepCommand extends AbstractThreadSwitchCommand<String> {
 
-    private static final String SUCCESS = "success";
+    private static final String SUCCESS = "OK";
 
-    private long duration = 0L;
+    protected long duration = 0L;
+
+    public long startTime = 0L;
+
+    public long endTime = 0L;
 
     public TestSleepCommand(long duration) {
         this.duration = duration;
@@ -21,12 +25,21 @@ public class TestSleepCommand extends AbstractThreadSwitchCommand<String> {
     protected void doBusiness() {
 
         try {
-            getLogger().info("[begin sleep] {}", duration);
+            getLogger().info("[begin sleep] {}", this);
+            startTime = System.currentTimeMillis();
             TimeUnit.MILLISECONDS.sleep(duration);
-            getLogger().info("[end sleep] {}", duration);
+            getLogger().info("[end sleep] {}", this);
+            endTime = System.currentTimeMillis();
         } catch (InterruptedException ignore) {
         }
 
         future().setSuccess(SUCCESS);
+    }
+
+    @Override
+    public String toString() {
+        return "TestSleepCommand{" +
+                "duration=" + duration +
+                '}';
     }
 }

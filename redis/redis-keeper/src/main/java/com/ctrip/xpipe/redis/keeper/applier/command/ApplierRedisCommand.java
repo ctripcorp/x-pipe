@@ -5,7 +5,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
-import com.google.common.collect.Lists;
 
 import java.util.List;
 
@@ -16,17 +15,40 @@ import java.util.List;
  */
 public interface ApplierRedisCommand<V> extends Command<V> {
 
+    enum ApplierRedisCommandType {
+        SINGLE_KEY,
+        MULTI_KEY,
+        MULTI,
+        EXEC,
+        UNKNOWN,
+    }
+
     RedisOp redisOp();
+
+    default ApplierRedisCommandType type() {
+        RedisOp op = redisOp();
+        if (op instanceof RedisSingleKeyOp) {
+            return ApplierRedisCommandType.SINGLE_KEY;
+        }
+        if (op instanceof RedisMultiKeyOp) {
+            return ApplierRedisCommandType.MULTI_KEY;
+        }
+        return ApplierRedisCommandType.UNKNOWN;
+    }
+
+    default RedisKey key() {
+        RedisOp op = redisOp();
+        if (op instanceof RedisSingleKeyOp) {
+            return ((RedisSingleKeyOp<?>) op).getKey();
+        }
+        throw new UnsupportedOperationException("key() not on RedisSingleKeyOp");
+    }
 
     default List<RedisKey> keys() {
         RedisOp op = redisOp();
         if (op instanceof RedisMultiKeyOp) {
             return ((RedisMultiKeyOp<?>) op).getKeys();
         }
-        if (op instanceof RedisSingleKeyOp) {
-            RedisKey key = ((RedisSingleKeyOp<?>) op).getKey();
-            return Lists.newArrayList(key);
-        }
-        return Lists.newArrayList();
+        throw new UnsupportedOperationException("keys() not on RedisMultiKeyOp");
     }
 }
