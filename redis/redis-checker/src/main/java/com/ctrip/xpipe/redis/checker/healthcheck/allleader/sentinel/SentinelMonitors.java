@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SentinelMonitors {
@@ -17,6 +20,8 @@ public class SentinelMonitors {
 
     private List<String> monitors;
 
+    private List<Pair<String, HostPort>> masters = new ArrayList<>();
+
     public SentinelMonitors(int num) {
         this.num = num;
         this.monitors = Lists.newArrayListWithExpectedSize(num);
@@ -24,6 +29,10 @@ public class SentinelMonitors {
 
     public void addMonitor(String monitor) {
         this.monitors.add(monitor);
+    }
+
+    public void addMaster(Pair<String, HostPort> master){
+        this.masters.add(master);
     }
 
     public static SentinelMonitors parseFromString(String infoSentinel) {
@@ -48,6 +57,10 @@ public class SentinelMonitors {
                 String monitorName = info[0].substring(5);
 
                 sentinelMonitors.addMonitor(monitorName);
+
+                String[] address = info[2].split("=");
+                Pair<String, HostPort> masterNameAndHostPort = new Pair<>(monitorName, new HostPort(address[0], Integer.parseInt(address[1])));
+                sentinelMonitors.addMaster(masterNameAndHostPort);
             }
         }
         return sentinelMonitors;
@@ -55,5 +68,9 @@ public class SentinelMonitors {
 
     public List<String> getMonitors() {
         return this.monitors;
+    }
+
+    public List<Pair<String, HostPort>> getMasters() {
+        return masters;
     }
 }
