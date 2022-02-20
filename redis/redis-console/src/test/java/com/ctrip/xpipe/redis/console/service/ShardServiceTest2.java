@@ -46,7 +46,7 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
     @Mock
     private ClusterService clusterService;
     @Mock
-    private SentinelService sentinelService;
+    private SentinelGroupService sentinelService;
     @Mock
     private MetaCache metaCache;
     @Mock
