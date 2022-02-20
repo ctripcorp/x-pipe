@@ -21,7 +21,9 @@ public class TestSleepCommand extends AbstractThreadSwitchCommand<String> {
     protected void doBusiness() {
 
         try {
+            getLogger().info("[begin sleep] {}", duration);
             TimeUnit.MILLISECONDS.sleep(duration);
+            getLogger().info("[end sleep] {}", duration);
         } catch (InterruptedException ignore) {
         }
 
