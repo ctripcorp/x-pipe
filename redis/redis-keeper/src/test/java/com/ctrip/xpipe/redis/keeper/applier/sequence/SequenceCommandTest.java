@@ -47,8 +47,6 @@ public class SequenceCommandTest {
     @Test
     public void waitFor100And300() throws ExecutionException, InterruptedException {
 
-        long start = System.currentTimeMillis();
-
         TestSleepCommand tsc100 = new TestSleepCommand(100);
         TestSleepCommand tsc300 = new TestSleepCommand(300);
         TestSleepCommand tsc200 = new TestSleepCommand(200);
@@ -63,7 +61,6 @@ public class SequenceCommandTest {
 
         wait.execute().get();
 
-        assertTrue(System.currentTimeMillis() - start >= 700);
         assertTrue(tsc200.startTime >= tsc300.endTime && tsc200.startTime >= tsc100.endTime);
     }
 }
