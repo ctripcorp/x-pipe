@@ -59,7 +59,8 @@ public class SentinelMonitors {
                 sentinelMonitors.addMonitor(monitorName);
 
                 String[] address = info[2].split("=");
-                Pair<String, HostPort> masterNameAndHostPort = new Pair<>(monitorName, new HostPort(address[0], Integer.parseInt(address[1])));
+                String[] masterInfo=address[1].split(":");
+                Pair<String, HostPort> masterNameAndHostPort = new Pair<>(monitorName, new HostPort(masterInfo[0], Integer.parseInt(masterInfo[1])));
                 sentinelMonitors.addMaster(masterNameAndHostPort);
             }
         }
