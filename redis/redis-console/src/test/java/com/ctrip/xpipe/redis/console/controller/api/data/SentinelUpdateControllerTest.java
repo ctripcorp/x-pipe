@@ -82,7 +82,7 @@ public class SentinelUpdateControllerTest {
 
     @Test
     public void testSentinelUpdate() {
-        RetMessage message = controller.updateSentinelAddrV2(new SentinelGroupModel());
+        RetMessage message = controller.updateSentinelAddr(new SentinelGroupModel());
         logger.info("{}", message.getState());
     }
 }
