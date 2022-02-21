@@ -23,7 +23,11 @@ public class SentinelShardBind extends AbstractCrossDcIntervalCheck {
     @Override
     protected void doCheck() {
         config.getOuterClusterTypes().forEach(clusterType -> {
-            sentinelBalanceService.bindShardAndSentinelsByType(ClusterType.lookup(clusterType));
+            try {
+                sentinelBalanceService.bindShardAndSentinelsByType(ClusterType.lookup(clusterType));
+            } catch (Exception e) {
+                logger.error("bind sentinel of type: {}", clusterType, e);
+            }
         });
     }
 
