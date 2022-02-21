@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface DcClusterShardService {
+	List<DcClusterShardTbl> findByShardId(long shardId);
     List<DcClusterShardTbl> findAll();
     DcClusterShardTbl findByPk(long dcClusterShardId);
     DcClusterShardTbl findAllByRedis(String ip, int port);
