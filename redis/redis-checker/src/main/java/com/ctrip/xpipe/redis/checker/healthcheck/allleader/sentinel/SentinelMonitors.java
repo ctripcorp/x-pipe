@@ -14,6 +14,8 @@ public class SentinelMonitors {
 
     private static final String COMMA_SPLITTER = "\\s*,\\s*";
 
+    private static final String EQUAL_SIGN_SPLITTER = "\\s*=\\s*";
+
     private static final String SENTINEL_MASTERS = "sentinel_masters";
 
     private int num;
@@ -50,17 +52,14 @@ public class SentinelMonitors {
         for(String line : lines) {
             line = line.trim();
             if(line.startsWith(key)) {
-                String[] keyAndVal = StringUtil.splitRemoveEmpty(COLON_SPLITTER, line);
-                String monitorInfo = keyAndVal[1];
+                String[] info = StringUtil.splitRemoveEmpty(COMMA_SPLITTER, line);
+                String masterNameString = info[0];
+                String masterName = StringUtil.splitRemoveEmpty(EQUAL_SIGN_SPLITTER, masterNameString)[1];
+                sentinelMonitors.addMonitor(masterName);
 
-                String[] info = StringUtil.splitRemoveEmpty(COMMA_SPLITTER, monitorInfo);
-                String monitorName = info[0].substring(5);
-
-                sentinelMonitors.addMonitor(monitorName);
-
-                String[] address = info[2].split("=");
-                String[] masterInfo=address[1].split(":");
-                Pair<String, HostPort> masterNameAndHostPort = new Pair<>(monitorName, new HostPort(masterInfo[0], Integer.parseInt(masterInfo[1])));
+                String[] address = StringUtil.splitRemoveEmpty(EQUAL_SIGN_SPLITTER, info[2]);
+                String[] masterInstanceInfo = StringUtil.splitRemoveEmpty(COLON_SPLITTER, address[1]);
+                Pair<String, HostPort> masterNameAndHostPort = new Pair<>(masterName, new HostPort(masterInstanceInfo[0], Integer.parseInt(masterInstanceInfo[1])));
                 sentinelMonitors.addMaster(masterNameAndHostPort);
             }
         }
