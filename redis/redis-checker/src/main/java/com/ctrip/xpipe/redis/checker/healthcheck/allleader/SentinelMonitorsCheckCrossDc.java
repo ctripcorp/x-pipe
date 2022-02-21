@@ -1,16 +1,18 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelMonitors;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelMonitors;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -115,6 +117,11 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
         SentinelMonitors sentinelMonitors = SentinelMonitors.parseFromString(infoSentinel);
         
         for(String monitorName: sentinelMonitors.getMonitors()) {
+            SentinelUtil.SentinelInfo sentinelInfo = SentinelUtil.SentinelInfo.fromMonitorName(monitorName);
+            String clusterName = sentinelInfo.getClusterName();
+            ClusterType clusterType = metaCache.getClusterType(clusterName);
+            if (!config.supportSentinelHealthCheck(clusterType, clusterName))
+                continue;
             if(metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName);
                 String message = String.format("Sentinel cmonitor: %s not exist in Xpipe", monitorName);
