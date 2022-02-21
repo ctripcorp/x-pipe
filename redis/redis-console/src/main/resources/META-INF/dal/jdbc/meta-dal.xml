@@ -657,6 +657,12 @@
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
 			</readset>
 			<readset name="DC_CLUSTER_SHARD_META_INFO">
+				<readset-ref name="FULL"/>
+				<readset-ref name="BASIC" relation-name="dc-info"/>
+				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
+				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
+			</readset>
+			<readset name="CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
@@ -692,7 +698,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-dc-cluser-shard-by-name" type="SELECT" multiple="false">
+			<query name="find-dc-cluster-shard-by-name" type="SELECT" multiple="false">
 				<param name="dc-name"/>
 				<param name="cluster-name"/>
 				<param name="shard-name"/>
