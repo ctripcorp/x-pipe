@@ -44,7 +44,7 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
 
     private ClusterType clusterType;
 
-    private static final String LOG_TYPE="sentinel.bind";
+    private static final String LOG_TYPE = "sentinel.bind";
 
     public DefaultSentinelBindTask(SentinelManager sentinelManager, DcClusterShardService dcClusterShardService, List<SentinelGroupModel> sentinelGroupModels, ClusterType clusterType, ConsoleConfig config, MetaCache metaCache) {
         this.sentinelManager = sentinelManager;
@@ -67,7 +67,7 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
 
             @Override
             public void go() throws Exception {
-                sentinelGroupModels.forEach(sentinelGroupModel ->  bindSentinelGroupWithShards(sentinelGroupModel));
+                sentinelGroupModels.forEach(sentinelGroupModel -> bindSentinelGroupWithShards(sentinelGroupModel));
                 future().setSuccess();
             }
 
@@ -83,7 +83,7 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
 
     void bindSentinelGroupWithShards(SentinelGroupModel sentinelGroupModel) {
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
-        transaction.logTransactionSwallowException(String.format("%s.%s",LOG_TYPE,"group"), sentinelGroupModel.getSentinelsAddressString(), new Task() {
+        transaction.logTransactionSwallowException(String.format("%s.%s", LOG_TYPE, "group"), sentinelGroupModel.getSentinelsAddressString(), new Task() {
 
             Set<String> monitorNames = new HashSet<>();
 
@@ -128,20 +128,21 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
     void bindSentinelGroupWithShard(SentinelGroupModel sentinelGroupModel, String monitorName) {
 
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
-        transaction.logTransactionSwallowException(String.format("%s.%s",LOG_TYPE,"monitorName"), monitorName, new Task() {
+        transaction.logTransactionSwallowException(String.format("%s.%s", LOG_TYPE, "monitorName"), monitorName, new Task() {
             SentinelUtil.SentinelInfo sentinelInfo = SentinelUtil.SentinelInfo.fromMonitorName(monitorName);
             String clusterName = sentinelInfo.getClusterName();
             String shardName = sentinelInfo.getShardName();
             String dcInMonitorName = sentinelInfo.getIdc();
 
             Map<String, ShardMeta> dcShards = dcShards(dcInMonitorName, clusterName, shardName);
+
             @Override
             public void go() throws Exception {
                 try {
                     dcShards.forEach((dc, shardMeta) -> {
                         if (shardMeta.getSentinelId() != sentinelGroupModel.getSentinelGroupId()) {
                             try {
-                                DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dc,clusterName, shardName);
+                                DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dc, clusterName, shardName);
                                 if (dcClusterShardTbl.getSetinelId() != sentinelGroupModel.getSentinelGroupId()) {
                                     dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
                                 }

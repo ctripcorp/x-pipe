@@ -208,14 +208,7 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
     }
 
     private void checkCurrentBindTask(ClusterType clusterType) {
-        if(cachedSentinels.getData(false).get(clusterType.name().toUpperCase())==null) throw new IllegalArgumentException("unexpected cluster type " + clusterType.name());
 
-        SentinelBindTask bindTask = bindTasks.get(clusterType.name().toUpperCase());
-        if (bindTask != null) {
-            if (!bindTask.future().isDone()) {
-                throw new IllegalStateException("current task running");
-            }
-        }
     }
 
     @Override
@@ -232,7 +225,18 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
 
     @Override
     public void bindShardAndSentinelsByType(ClusterType clusterType) {
-        checkCurrentBindTask(clusterType);
+        if (cachedSentinels.getData(false).get(clusterType.name().toUpperCase()) == null) {
+            logger.debug("no sentinels of cluster type: {} exist", clusterType.name());
+            return;
+        }
+
+        SentinelBindTask bindTask = bindTasks.get(clusterType.name().toUpperCase());
+        if (bindTask != null) {
+            if (!bindTask.future().isDone()) {
+                logger.debug("sentinels of cluster type: {} task running", clusterType.name());
+                return;
+            }
+        }
 
         Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
         SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
