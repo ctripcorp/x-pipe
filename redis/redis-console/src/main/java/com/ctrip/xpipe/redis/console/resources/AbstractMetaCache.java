@@ -265,6 +265,22 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RedisMeta> getSlavesOfShard(String cluster, String shard) {
+        List<RedisMeta> slaves = new ArrayList<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.doGetDcs().forEach(dc -> {
+            ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+            if (shardMeta != null) {
+                shardMeta.getRedises().forEach(redisMeta -> {
+                    if (!redisMeta.isMaster())
+                        slaves.add(redisMeta);
+                });
+            }
+        });
+        return slaves;
+    }
+
+    @Override
     public String getDc(HostPort hostPort) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();

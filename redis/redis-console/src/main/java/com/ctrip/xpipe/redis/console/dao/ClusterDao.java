@@ -137,7 +137,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	}
 
 	@DalTransaction
-	public int bindDc(final ClusterTbl cluster, final DcTbl dc, SetinelTbl sentinel) throws DalException {
+	public int bindDc(final ClusterTbl cluster, final DcTbl dc, SentinelGroupModel sentinel) throws DalException {
 		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
@@ -173,7 +173,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 					dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
 						.setShardId(shard.getId());
 					if (sentinel != null) {
-						dcClusterShard.setSetinelId(sentinel.getSetinelId());
+						dcClusterShard.setSetinelId(sentinel.getSentinelGroupId());
 					}
 					dcClusterShards.add(dcClusterShard);
 				}

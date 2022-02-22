@@ -327,7 +327,7 @@ public class DcMetaSynchronizerTest {
         verify(clusterService, never()).update(any());
 
         verify(consoleConfig, times(1)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, never()).selectMultiDcSentinels();
+        verify(sentinelBalanceService, never()).selectMultiDcSentinels(ClusterType.ONE_WAY);
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
         verify(shardService, never()).deleteShard(any(), any());
 
@@ -339,7 +339,7 @@ public class DcMetaSynchronizerTest {
         when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         dcMetaSynchronizer.sync();
         verify(consoleConfig, times(2)).supportSentinelHealthCheck(any(), any());
-        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels();
+        verify(sentinelBalanceService, times(1)).selectMultiDcSentinels(ClusterType.SINGLE_DC);
     }
 
     @Test

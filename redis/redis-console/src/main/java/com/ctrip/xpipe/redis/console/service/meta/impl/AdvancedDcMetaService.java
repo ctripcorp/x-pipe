@@ -55,7 +55,7 @@ public class AdvancedDcMetaService implements DcMetaService {
     private DcClusterShardService dcClusterShardService;
 
     @Autowired
-    private SentinelService sentinelService;
+    private SentinelGroupService sentinelService;
 
     @Autowired
     private KeeperContainerService keeperContainerService;
@@ -121,7 +121,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
         DcMetaBuilder builder = new DcMetaBuilder(dcMeta, dcTbl.getId(), allowTypes, executors, redisMetaService, dcClusterService,
-                clusterMetaService, dcClusterShardService, dcService, factory);
+                clusterMetaService, dcClusterShardService, dcService, factory, consoleConfig);
         chain.add(retry3TimesUntilSuccess(builder));
 
         try {
@@ -149,7 +149,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         @Override
         protected void doExecute() throws Exception {
             try {
-                List<SetinelTbl> sentinels = sentinelService.findAllByDcName(dcMeta.getId());
+                List<SentinelGroupModel> sentinels = sentinelService.findAllByDcName(dcMeta.getId());
                 sentinels.forEach(sentinel -> dcMeta
                         .addSentinel(sentinelMetaService.encodeSetinelMeta(sentinel, dcMeta)));
                 future().setSuccess();

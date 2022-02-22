@@ -2,13 +2,13 @@ package com.ctrip.xpipe.redis.console.notifier.cluster;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEventListener;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.ctrip.xpipe.redis.console.service.SentinelGroupService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
@@ -39,7 +39,7 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
     private ShardService shardService;
     
     @Autowired
-    private SentinelService sentinelService;
+    private SentinelGroupService sentinelService;
 
     @Autowired
     private ClusterService clusterService;
@@ -70,7 +70,7 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
         if(shardTbls != null) {
             for(ShardTbl shardTbl : shardTbls) {
                 logger.info("[createClusterEvent] Create Shard Delete Event: {}", shardTbl);
-                Map<Long, SetinelTbl> sentinelMap = sentinelService.findByShard(shardTbl.getId());
+                Map<Long, SentinelGroupModel> sentinelMap = sentinelService.findByShard(shardTbl.getId());
                 ShardDeleteEvent shardEvent = new ShardDeleteEvent(clusterName, shardTbl.getShardName(), executors);
                 shardEvent.setClusterType(clusterType);
                 try {
@@ -92,13 +92,13 @@ public class ClusterDeleteEventFactory extends AbstractClusterEventFactory {
         return clusterDeleteEvent;
     }
     
-    private String getShardSentinelAddress(Map<Long, SetinelTbl> sentinelMap) {
+    private String getShardSentinelAddress(Map<Long, SentinelGroupModel> sentinelMap) {
         if(sentinelMap.isEmpty()) {
             return "";
         }
         StringBuffer sb = new StringBuffer();
-        for(SetinelTbl sentinelTbl : sentinelMap.values()) {
-            sb.append(sentinelTbl.getSetinelAddress()).append(",");
+        for(SentinelGroupModel sentinelTbl : sentinelMap.values()) {
+            sb.append(sentinelTbl.getSentinelsAddressString()).append(",");
         }
         return sb.deleteCharAt(sb.length()-1).toString();
     }
