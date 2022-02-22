@@ -223,7 +223,7 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
         List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAll();
         Map<Long, Set<Pair<Long, Long>>> sentinelShardMap = dcClusterShardTbls.stream().filter(dcClusterShardTbl -> groupMap.containsKey(dcClusterShardTbl.getSetinelId())).
                 collect(Collectors.toMap(DcClusterShardTbl::getSetinelId,
-                        dcClusterShardTbl -> Sets.newHashSet(new Pair<>(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType().equals(ClusterType.CROSS_DC.name()) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
+                        dcClusterShardTbl -> Sets.newHashSet(new Pair<>(ClusterType.lookup(groupMap.get(dcClusterShardTbl.getSetinelId()).getClusterType()).equals(ClusterType.CROSS_DC) ? CROSS_DC_CONSTANT : dcClusterShardTbl.getDcClusterId(), dcClusterShardTbl.getShardId())),
                         (v1, v2) -> {
                             v1.addAll(v2);
                             return v1;
