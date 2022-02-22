@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.AbstractCommand;
+import com.google.common.collect.Lists;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
@@ -13,27 +15,36 @@ import java.util.concurrent.Executor;
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
 
-    private final SequenceCommand<?> past;
+    private final List<SequenceCommand<?>> pasts;
+
+    private int complete = 0;
 
     private final Command<V> inner;
 
-    private final Executor singleThread;
+    private final Executor stateThread;
 
-    public SequenceCommand(Command<V> inner, Executor singleThread) {
-        this(null, inner, singleThread);
+    private final Executor workerThreads;
+
+    public SequenceCommand(Command<V> inner, Executor stateThread, Executor workerThreads) {
+        this(Lists.newArrayList(), inner, stateThread, workerThreads);
     }
 
-    public SequenceCommand(SequenceCommand<?> past, Command<V> inner, Executor singleThread) {
-        this.past = past;
+    public SequenceCommand(SequenceCommand<?> past, Command<V> inner, Executor stateThread, Executor workerThreads) {
+        this(Lists.newArrayList(past), inner, stateThread, workerThreads);
+    }
+
+    public SequenceCommand(List<SequenceCommand<?>> pasts, Command<V> inner, Executor stateThread, Executor workerThreads) {
+        this.pasts = pasts;
         this.inner = inner;
-        this.singleThread = singleThread;
+        this.stateThread = stateThread;
+        this.workerThreads = workerThreads;
     }
 
     private void executeSelf() {
-        CommandFuture<V> future = inner.execute();
+        CommandFuture<V> future = inner.execute(workerThreads);
         future.addListener((f)->{
             if (f.isSuccess()) {
-                singleThread.execute(() -> {
+                stateThread.execute(() -> {
                     try {
                         future().setSuccess(f.get());
                     } catch (Exception unlikely) {
@@ -41,32 +52,37 @@ public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V>
                     }
                 });
             } else {
-                getLogger().warn("yet UNLIKELY - stubborn command will retry util success.");
-                singleThread.execute(() -> {
+                getLogger().warn("[executeSelf] yet UNLIKELY - stubborn command will retry util success.");
+                stateThread.execute(() -> {
                     future().setFailure(f.cause());
                 });
             }
         });
     }
 
-    private void nextAfter(CommandFuture<?> future) {
-        future.addListener((f)->{
-            if (f.isSuccess()) {
-                executeSelf();
-            } else {
-                future().setFailure(f.cause());
-            }
-        });
+    private void nextAfter(List<SequenceCommand<?>> pasts) {
+        for (SequenceCommand<?> past : pasts) {
+            past.future().addListener((f)->{
+                if (f.isSuccess()) {
+                    if (++complete == pasts.size()) {
+                        executeSelf();
+                    }
+                } else {
+                    getLogger().warn("[nextAfter] yet UNLIKELY - stubborn command will retry util success.");
+                    future().setFailure(f.cause());
+                }
+            });
+        }
     }
 
     @Override
     protected void doExecute() throws Throwable {
-        if (past == null) {
+        if (pasts == null || pasts.size() == 0) {
             executeSelf();
             return;
         }
 
-        nextAfter(past.future());
+        nextAfter(pasts);
     }
 
     @Override
