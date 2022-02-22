@@ -86,7 +86,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
 
             DcMeta future;
             DcMeta current;
-            Pair<DcMeta, Set<String>> outerDcMeta;
+            Pair<DcMeta, Set<String>> outerDcMeta = new Pair<>();
 
             @Override
             public void go() throws Exception {
