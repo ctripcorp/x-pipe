@@ -406,8 +406,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(cluster.getClusterType()), clusterName))
-					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName()));
+				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
+				if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterName))
+					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
 				else
 					return clusterDao.bindDc(cluster, dc, null);
 			}

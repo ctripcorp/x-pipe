@@ -44,7 +44,7 @@ function ClusterShardCtl($rootScope, $scope, $stateParams, $window,
 
      			$scope.sentinels = {};
      			$scope.clusterDcs.forEach(function(dc) {
-     				SentinelService.findSentinelsByDc(dc.dcName)
+     				SentinelService.findSentinelsByDcAndType(dc.dcName, $scope.cluster.clusterType)
            		.then(function(result) {
            			$scope.sentinels[dc.dcName] = result;
            		});

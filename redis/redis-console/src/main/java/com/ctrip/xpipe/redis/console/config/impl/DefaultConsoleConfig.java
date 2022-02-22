@@ -76,6 +76,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
+    private static final String KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX = "checker.cross.dc.sentinel.monitor.name.suffix";
+
+    private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "console.sentinel.bind.timeout.milli";
+
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -515,5 +519,14 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
-    
+
+    @Override
+    public String crossDcSentinelMonitorNameSuffix() {
+        return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
+    }
+
+    @Override
+    public long sentinelBindTimeoutMilli() {
+        return getLongProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000L);
+    }
 }

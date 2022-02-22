@@ -53,7 +53,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private MetaCache metaCache;
 
 	@Autowired
-	private SentinelService sentinelService;
+	private SentinelGroupService sentinelService;
 
 	@Autowired
 	private List<ShardEventListener> shardEventListeners;
@@ -106,7 +106,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public synchronized ShardTbl createShard(final String clusterName, final ShardTbl shard,
-											 final Map<Long, SetinelTbl> sentinels) {
+											 final Map<Long, SentinelGroupModel> sentinels) {
 		return queryHandler.handleQuery(new DalQuery<ShardTbl>() {
 			@Override
 			public ShardTbl doQuery() throws DalException {
@@ -117,7 +117,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public synchronized ShardTbl findOrCreateShardIfNotExist(String clusterName, ShardTbl shard,
-															 Map<Long, SetinelTbl> sentinels) {
+															 Map<Long, SentinelGroupModel> sentinels) {
 
 		logger.info("[findOrCreateShardIfNotExist] Begin find or create shard: {}", shard);
 		String monitorName = shard.getSetinelMonitorName();
@@ -158,7 +158,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
     	if(null != shard && null != cluster) {
     		// Call shard event
-			Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
+			Map<Long, SentinelGroupModel> sentinels = sentinelService.findByShard(shard.getId());
 			ShardEvent shardEvent = null;
 			if(sentinels != null && !sentinels.isEmpty()) {
 				 shardEvent = createShardDeleteEvent(clusterName, cluster, shardName, shard, sentinels);
@@ -197,7 +197,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 				for (ShardTbl shard : shards) {
 					// Call shard event
-					Map<Long, SetinelTbl> sentinels = sentinelService.findByShard(shard.getId());
+					Map<Long, SentinelGroupModel> sentinels = sentinelService.findByShard(shard.getId());
 					ShardEvent shardEvent = null;
 					if (sentinels != null && !sentinels.isEmpty()) {
 						shardEvent = createShardDeleteEvent(clusterName, cluster, shard.getShardName(), shard, sentinels);
@@ -255,7 +255,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@VisibleForTesting
 	protected ShardDeleteEvent createShardDeleteEvent(String clusterName, ClusterTbl clusterTbl, String shardName, ShardTbl shardTbl,
-												Map<Long, SetinelTbl> sentinelTblMap) {
+												Map<Long, SentinelGroupModel> sentinelTblMap) {
 
 		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
 		ShardDeleteEvent shardDeleteEvent = new ShardDeleteEvent(clusterName, shardName, executors);
@@ -275,8 +275,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		}
 		// Splicing sentinel address as "127.0.0.1:6379,127.0.0.2:6380"
 		StringBuffer sb = new StringBuffer();
-		for(SetinelTbl setinelTbl : sentinelTblMap.values()) {
-			sb.append(setinelTbl.getSetinelAddress()).append(",");
+		for(SentinelGroupModel sentinelGroupModel : sentinelTblMap.values()) {
+			sb.append(sentinelGroupModel.getSentinelsAddressString()).append(",");
 		}
 		sb.deleteCharAt(sb.length() - 1);
 
@@ -287,7 +287,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	private ShardTbl generateMonitorNameAndReturnShard(ShardTbl dupShardTbl, Set<String> monitorNames,
 													   String clusterName, ShardTbl shard,
-													   Map<Long, SetinelTbl> sentinels) {
+													   Map<Long, SentinelGroupModel> sentinels) {
 		String monitorName;
 		if(dupShardTbl == null) {
 			monitorName = shard.getShardName();
@@ -308,7 +308,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	private ShardTbl compareMonitorNameAndReturnShard(ShardTbl dupShardTbl, Set<String> monitorNames,
 													  String clusterName, ShardTbl shard,
-													  Map<Long, SetinelTbl> sentinels) {
+													  Map<Long, SentinelGroupModel> sentinels) {
 
 		String monitorName = shard.getSetinelMonitorName();
 		if(dupShardTbl == null) {
