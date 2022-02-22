@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.applier.client;
 
+import org.assertj.core.util.Lists;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Slight
@@ -14,16 +15,10 @@ import static org.junit.Assert.*;
 public class DoNothingRedisClientTest {
 
     @Test
-    public void set() throws ExecutionException, InterruptedException {
+    public void test() throws ExecutionException, InterruptedException {
 
         ApplierRedisClient client = new DoNothingRedisClient();
-        assertTrue(client.set(new byte[]{}, new byte[]{}).get());
-    }
-
-    @Test
-    public void delete() throws ExecutionException, InterruptedException {
-
-        ApplierRedisClient client = new DoNothingRedisClient();
-        assertTrue(client.delete(new byte[]{}).get());
+        Object shard = client.select("K");
+        assertEquals("OK", client.write(shard, Lists.newArrayList("K", "V")).get());
     }
 }
