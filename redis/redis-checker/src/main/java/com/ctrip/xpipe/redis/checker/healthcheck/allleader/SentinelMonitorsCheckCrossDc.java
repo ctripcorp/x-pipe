@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
@@ -124,6 +125,7 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
                 continue;
             if(metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName);
+                CatEventMonitor.DEFAULT.logEvent("Sentinel.Monitors.Check.Remove", monitorName);
                 String message = String.format("Sentinel cmonitor: %s not exist in Xpipe", monitorName);
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
             }
