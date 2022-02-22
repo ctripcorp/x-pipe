@@ -116,6 +116,10 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
                 return dao.findByPK(id, SentinelGroupTblEntity.READSET_FULL);
             }
         });
+
+        if (sentinelGroupTbl == null)
+            return null;
+
         List<SentinelTbl> sentinels = sentinelService.findBySentinelGroupId(id);
 
         SentinelGroupModel sentinelGroupModel = new SentinelGroupModel(sentinelGroupTbl);
