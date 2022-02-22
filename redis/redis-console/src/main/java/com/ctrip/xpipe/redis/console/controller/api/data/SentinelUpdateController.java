@@ -267,7 +267,7 @@ public class SentinelUpdateController {
             return RetMessage.createFailMessage(String.format("sentinel group id: %d not found", dcClusterShardTbl.getSetinelId()));
 
         List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList(dcClusterShardTbl);
-        if (sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.CROSS_DC.name())) {
+        if (ClusterType.lookup(sentinelGroupModel.getClusterType()).equals(ClusterType.CROSS_DC)) {
             dcClusterShardTbls = dcClusterShardService.findByShardId(dcClusterShardTbl.getShardId());
         }
 
@@ -325,7 +325,7 @@ public class SentinelUpdateController {
         List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList(dcClusterShardTbl);
 
         SentinelGroupModel sentinelGroupModel = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
-        if (sentinelGroupModel != null && sentinelGroupModel.getClusterType().equalsIgnoreCase(ClusterType.CROSS_DC.name())) {
+        if (sentinelGroupModel != null && ClusterType.lookup(sentinelGroupModel.getClusterType()).equals(ClusterType.CROSS_DC)) {
             dc = consoleConfig.crossDcSentinelMonitorNameSuffix();
             dcClusterShardTbls = dcClusterShardService.find(cluster, shard);
         }
@@ -383,7 +383,7 @@ public class SentinelUpdateController {
             return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
         
         List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList(dcClusterShardTbl);
-        if (clusterType.equalsIgnoreCase(ClusterType.CROSS_DC.name())) {
+        if (ClusterType.lookup(clusterType).equals(ClusterType.CROSS_DC)) {
             dcName = consoleConfig.crossDcSentinelMonitorNameSuffix();
             dcClusterShardTbls.addAll(dcClusterShardService.find(clusterName, shardName));
         }
