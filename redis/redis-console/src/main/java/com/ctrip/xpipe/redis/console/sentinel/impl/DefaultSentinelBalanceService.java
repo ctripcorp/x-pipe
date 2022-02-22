@@ -207,10 +207,6 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         }
     }
 
-    private void checkCurrentBindTask(ClusterType clusterType) {
-
-    }
-
     @Override
     public SentinelBalanceTask getBalanceTask(String dcId, ClusterType clusterType) {
 

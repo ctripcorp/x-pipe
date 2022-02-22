@@ -85,30 +85,6 @@ public class SentinelServiceImpl extends AbstractConsoleService<SentinelTblDao> 
 		return setinels.get(index);
 	}
 
-//	@Override
-//	public Map<Long, SetinelTbl> findByShard(long shardId) {
-//		List<DcClusterShardTbl> dcClusterShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
-//			@Override
-//			public List<DcClusterShardTbl> doQuery() throws DalException {
-//				return dcClusterShardTblDao.findAllByShardId(shardId, DcClusterShardTblEntity.READSET_FULL);
-//			}
-//		});
-//
-//		Map<Long, SetinelTbl> res = new HashMap<>(dcClusterShards.size());
-//		for(DcClusterShardTbl dcClusterShard : dcClusterShards) {
-//			SetinelTbl sentinel = queryHandler.handleQuery(new DalQuery<SetinelTbl>() {
-//				@Override
-//				public SetinelTbl doQuery() throws DalException {
-//					return dao.findByPK(dcClusterShard.getSetinelId(), SetinelTblEntity.READSET_FULL);
-//				}
-//			});
-//			if(null != sentinel) {
-//				res.put(sentinel.getDcId(), sentinel);
-//			}
-//		}
-//		return res;
-//	}
-
 	@Override
 	public SentinelTbl insert(SentinelTbl sentinelTbl) {
 
@@ -122,94 +98,6 @@ public class SentinelServiceImpl extends AbstractConsoleService<SentinelTblDao> 
 		return sentinelTbl;
 	}
 
-//	@Override
-//	public List<SetinelTbl> getAllSentinelsWithUsage() {
-//		return queryHandler.handleQuery(new DalQuery<List<SetinelTbl>>() {
-//			@Override
-//			public List<SetinelTbl> doQuery() throws DalException {
-//				return dao.findSentinelUsage(SetinelTblEntity.READSET_SENTINEL_USAGE);
-//			}
-//		});
-//	}
-//
-//	@Override
-//	public Map<String, SentinelUsageModel> getAllSentinelsUsage() {
-//		List<SetinelTbl> sentinels = getAllSentinelsWithUsage();
-//		Map<String, SentinelUsageModel> result = Maps.newHashMapWithExpectedSize(sentinels.size());
-//		for(SetinelTbl sentinelTbl : sentinels) {
-//			if(StringUtil.isEmpty(sentinelTbl.getSetinelAddress()))
-//				continue;
-//			String dcName = sentinelTbl.getDcInfo().getDcName();
-//			result.putIfAbsent(dcName, new SentinelUsageModel(dcName));
-//			SentinelUsageModel usage = result.get(dcName);
-//			usage.addSentinelUsage(sentinelTbl.getSetinelAddress(), sentinelTbl.getShardCount());
-//		}
-//		return result;
-//	}
-//
-//	@Override
-//	public SentinelModel updateSentinelTblAddr(SentinelModel sentinel) {
-//		SetinelTbl target = queryHandler.handleQuery(new DalQuery<SetinelTbl>() {
-//			@Override
-//			public SetinelTbl doQuery() throws DalException {
-//				return dao.findByPK(sentinel.getId(), SetinelTblEntity.READSET_FULL);
-//			}
-//		});
-//		if(target == null) {
-//			throw new IllegalArgumentException("no sentinel found due to id: " + sentinel.getId());
-//		}
-//		target.setSetinelAddress(StringUtil.join(",", new Function<HostPort, String>() {
-//			@Override
-//			public String apply(HostPort hostPort) {
-//				return hostPort.toString();
-//			}
-//		}, sentinel.getSentinels()));
-//		queryHandler.handleUpdate(new DalQuery<Integer>() {
-//			@Override
-//			public Integer doQuery() throws DalException {
-//				return dao.updateSentinelAddr(target, SetinelTblEntity.UPDATESET_ADDRESS);
-//			}
-//		});
-//
-//		return queryHandler.handleQuery(new DalQuery<SentinelModel>() {
-//			@Override
-//			public SentinelModel doQuery() throws DalException {
-//				return new SentinelModel(dao.findByPK(target.getSetinelId(), SetinelTblEntity.READSET_FULL));
-//			}
-//		});
-//	}
-//
-//	@Override
-//	public RetMessage removeSentinelMonitor(String clusterName) {
-//		ClusterTbl clusterTbl = clusterService.find(clusterName);
-//		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
-//		if (null != clusterType && clusterType.supportMultiActiveDC()) {
-//			return RetMessage.createFailMessage("cluster type " + clusterType + " not support remove sentinel");
-//		}
-//
-//		long activedcId = clusterService.find(clusterName).getActivedcId();
-//		String dcName = dcService.getDcName(activedcId);
-//		List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.findAllByDcCluster(dcName, clusterName);
-//		for(DcClusterShardTbl dcClusterShard : dcClusterShardTbls) {
-//			try {
-//				removeSentinelMonitorByShard(dcName, clusterName, clusterType, dcClusterShard);
-//			} catch (Exception e) {
-//				return RetMessage.createFailMessage("[stl-id: " + dcClusterShard.getSetinelId() + "]" + e.getMessage());
-//			}
-//		}
-//		return RetMessage.createSuccessMessage();
-//	}
-//
-//	@VisibleForTesting
-//	protected void removeSentinelMonitorByShard(String activeIdc, String clusterName, ClusterType clusterType, DcClusterShardTbl dcClusterShard) {
-//		ShardTbl shardTbl = shardService.find(dcClusterShard.getShardId());
-//		RemoveShardSentinelMonitorEvent shardEvent = new RemoveShardSentinelMonitorEvent(clusterName,
-//				shardTbl.getShardName(), MoreExecutors.directExecutor());
-//		shardEvent.setClusterType(clusterType);
-//		shardEvent.setShardSentinels(find(dcClusterShard.getSetinelId()).getSetinelAddress());
-//		shardEvent.setShardMonitorName(SentinelUtil.getSentinelMonitorName(clusterName, shardTbl.getSetinelMonitorName(), activeIdc));
-//		shardEventHandler.handleShardDelete(shardEvent);
-//	}
 
 	@Override
 	public void delete(long id) {
@@ -257,23 +145,5 @@ public class SentinelServiceImpl extends AbstractConsoleService<SentinelTblDao> 
 			}
 		});
 	}
-
-
-//	private static class RemoveShardSentinelMonitorEvent extends AbstractShardEvent {
-//
-//		public RemoveShardSentinelMonitorEvent(String clusterName, String shardName, Executor executor) {
-//			super(clusterName, shardName, executor);
-//		}
-//
-//		@Override
-//		public EventType getShardEventType() {
-//			return EventType.DELETE;
-//		}
-//
-//		@Override
-//		protected ShardEvent getSelf() {
-//			return RemoveShardSentinelMonitorEvent.this;
-//		}
-//	}
 
 }

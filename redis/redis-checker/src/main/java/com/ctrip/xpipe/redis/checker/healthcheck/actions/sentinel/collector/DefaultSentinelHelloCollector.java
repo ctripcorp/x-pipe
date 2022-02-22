@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.server.Server;
@@ -155,8 +154,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 @Override
                 public void run() {
                     future.cancel(true);
-                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
-                            String.format("[%s]%s+%s", "cancel", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Cancel",
+                            String.format("%s+%s", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
                 }
             }, context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli(), TimeUnit.MILLISECONDS);
             future.addListener(commandFuture -> {
@@ -409,8 +408,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
                 if (shoudReset) {
                     logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
-                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
-                            String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", String.format("%s,%s", sentinelAddr, reason));
                     sentinelManager.reset(sentinel, sentinelMonitorName);
                 }
             } catch (Exception e) {
@@ -492,7 +490,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             toDelete.forEach((hello -> {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 try {
-                    CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Remove", hello.toString());
                     sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName());
                     logger.info("[{}-{}][deleted]{}", LOG_TITLE, sentinelMonitorName, hello);
                 } catch (Exception e) {
@@ -508,7 +506,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
                     sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
                     logger.info("[{}-{}][clean]", LOG_TITLE, sentinelMonitorName);
-                    CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.RemoveAndAdd", hello.toString());
                     sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
                     logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
 
