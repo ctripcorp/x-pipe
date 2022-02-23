@@ -4,8 +4,11 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRule;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.List;
 
 /**
  * @author chen.zhu
@@ -27,10 +30,12 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     public DefaultRedisInstanceInfo() {
         super();
     }
-
-
     public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc, ClusterType clusterType) {
-        super(clusterId, activeDc, clusterType);
+        this(dcId, clusterId, shardId, hostPort, activeDc, clusterType, null);
+    }
+
+    public DefaultRedisInstanceInfo(String dcId, String clusterId, String shardId, HostPort hostPort, String activeDc, ClusterType clusterType, List<RedisConfigCheckRule> redisConfigCheckRules) {
+        super(clusterId, activeDc, clusterType, redisConfigCheckRules);
         this.dcId = dcId;
         this.clusterId = clusterId;
         this.shardId = shardId;

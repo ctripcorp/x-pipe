@@ -76,6 +76,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
+    private static final String KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN = "cosnole.redis.config.check.open";
+
+    private static final String KEY_REDIS_CONFIG_CHECK_RULES = "console.redis.config.check.rules";
+
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -515,5 +519,15 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public long getMigrationTimeoutMilli() {
         return getLongProperty(KEY_MIGRATION_TIMEOUT_MILLI, 15000L);
     }
-    
+
+    @Override
+    public boolean isRedisConfigCheckMonitorOpen() {
+        return getBooleanProperty(KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN, false);
+    }
+
+    @Override
+    public String getRedisConfigCheckRules() {
+        return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
+    }
+
 }

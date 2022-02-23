@@ -79,7 +79,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
 			protoDcCluster.setDcId(activeDc.getId())
-					.setClusterId(newCluster.getId());
+					.setClusterId(newCluster.getId()).setRedisConfigCheckRules("");
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override
 				public Integer doQuery() throws DalException {
@@ -155,7 +155,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		if(null == existingDcCluster) {
 			DcClusterTbl proto = dcClusterTblDao.createLocal();
 			proto.setDcId(dc.getId())
-				.setClusterId(cluster.getId());
+				.setClusterId(cluster.getId()).setRedisConfigCheckRules("");
 
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
+import com.dianping.cat.kafka.common.protocol.types.Field;
 import io.netty.buffer.ByteBuf;
 
 import java.util.concurrent.ScheduledExecutorService;

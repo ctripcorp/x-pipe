@@ -82,6 +82,7 @@ create table DC_CLUSTER_TBL
 	cluster_id bigint unsigned not null,
 	metaserver_id bigint unsigned not null,
     dc_cluster_phase int not null default 1,
+    redis_config_check_rules varchar(128)  not null default '',
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
@@ -273,3 +274,14 @@ CREATE TABLE `az_tbl` (
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(1) not null default 0,
 ) ;
+
+-- redis_config_check_rule_tbl
+drop table if exists redis_config_check_rule_tbl;
+CREATE TABLE `redis_config_check_rule_tbl` (
+  `id` bigint(20) unsigned not null AUTO_INCREMENT primary key,
+  `check_type` varchar(128) not null default '',
+  `param` varchar(256) not null default '',
+  `description` varchar(1024) not null default '',
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) not null default 0,
+);

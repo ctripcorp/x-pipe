@@ -116,7 +116,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
     }
 
     @VisibleForTesting
-    public ClusterMeta getOrCreateClusterMeta(ClusterTbl cluster) {
+    public ClusterMeta getOrCreateClusterMeta(ClusterTbl cluster, DcClusterTbl dcClusterInfo) {
         return MapUtils.getOrCreate(dcMeta.getClusters(), cluster.getClusterName(), new ObjectFactory<ClusterMeta>(){
             @Override
             public ClusterMeta create() {
@@ -126,6 +126,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 clusterMeta.setAdminEmails(cluster.getClusterAdminEmails());
                 clusterMeta.setType(cluster.getClusterType());
+                clusterMeta.setRedisConfigCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getRedisConfigCheckRules());
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
@@ -279,7 +280,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         protected void doExecute() throws Exception {
             try {
                 for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
-                    ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo());
+                    ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo(), dcClusterShard.getDcClusterInfo());
 
                     ShardMeta shardMeta = getOrCreateShardMeta(clusterMeta.getId(),
                             dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());

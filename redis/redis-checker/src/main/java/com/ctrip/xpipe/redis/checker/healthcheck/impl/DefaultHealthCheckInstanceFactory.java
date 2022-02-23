@@ -3,11 +3,13 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -15,6 +17,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthChe
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisConfigCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -24,8 +27,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.LongStream;
 
 /**
  * @author chen.zhu
@@ -109,12 +113,25 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
         ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
+
+        List<RedisConfigCheckRule> redisConfigCheckRules = new LinkedList<>();
+        if (redisMeta.parent().parent().getRedisConfigCheckRules() != null) {
+            for (String ruleId : redisMeta.parent().parent().getRedisConfigCheckRules().split(",")) {
+                RedisConfigCheckRuleMeta redisConfigCheckRuleMeta = metaCache.getXpipeMeta().getRedisConfigCheckRules().get(Long.parseLong(ruleId));
+                logger.info("ruleId:" + ruleId);
+                if(redisConfigCheckRuleMeta != null) {
+                    Map<String, String> params = JsonCodec.INSTANCE.decode(redisConfigCheckRuleMeta.getParam(), Map.class);
+                    redisConfigCheckRules.add(new RedisConfigCheckRule(redisConfigCheckRuleMeta.getCheckType(), params.get(RedisConfigCheckRule.CONFIG_CHECK_NAME),
+                            params.get(RedisConfigCheckRule.EXPECTED_VAULE)));
+                }
+            }
+        }
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
                 redisMeta.parent().parent().parent().getId(),
                 redisMeta.parent().parent().getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
-                redisMeta.parent().getActiveDc(), clusterType);
+                redisMeta.parent().getActiveDc(), clusterType, redisConfigCheckRules);
         info.isMaster(redisMeta.isMaster());
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
@@ -144,13 +161,14 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     @SuppressWarnings("unchecked")
     private void initActions(DefaultRedisHealthCheckInstance instance) {
         for(RedisHealthCheckActionFactory<?> factory : factoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
-            if(factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
-                installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
-            } else {
-                instance.register(factory.create(instance));
+            if (factory.supportInstnace(instance)) {
+                if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
+                    installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
+                } else {
+                    instance.register(factory.create(instance));
+                }
             }
         }
-
     }
 
     private void startCheck(HealthCheckInstance instance) {
@@ -173,7 +191,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     private void initActions(DefaultClusterHealthCheckInstance instance) {
         for(ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType())) {
-            if(factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
+            if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
                 installActionIfNeeded((SiteLeaderAwareHealthCheckActionFactory) factory, instance);
             } else {
                 instance.register(factory.create(instance));
@@ -185,6 +203,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private void installActionIfNeeded(SiteLeaderAwareHealthCheckActionFactory factory, HealthCheckInstance instance) {
         logger.debug("[try install action] {}", factory.support());
         if(clusterServer != null && clusterServer.amILeader()) {
+            //
             logger.debug("[cluster server not null][installed]");
             instance.register(factory.create(instance));
         }

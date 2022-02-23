@@ -100,6 +100,7 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cluster id',
   `metaserver_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference metaserver id',
   `dc_cluster_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'dc cluster phase',
+  `redis_config_check_rules` varchar(128) NOT NULL DEFAULT '' COMMENT 'should check rules',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`dc_cluster_id`),
@@ -347,3 +348,16 @@ CREATE TABLE `az_tbl` (
   UNIQUE KEY `idx_az_name` (`az_name`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='available zone Info';
+
+-- redis_config_check_rule_tbl
+drop table if exists redis_config_check_rule_tbl;
+CREATE TABLE `redis_config_check_rule_tbl` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `check_type` varchar(128) NOT NULL DEFAULT '' COMMENT 'check type(info or config)',
+  `param` varchar(256) NOT NULL DEFAULT '' COMMENT 'info of checkName, expectedVaule and whetherFix',
+  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for redis config check rule',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='redis config check rule';

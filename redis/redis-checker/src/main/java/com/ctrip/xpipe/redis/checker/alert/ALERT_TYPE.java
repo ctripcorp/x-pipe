@@ -122,6 +122,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("从机房Redis版本错误", "说明：XPipe从机房Redis应该为XRedis，且版本号大于等于0.0.3");
         }
     },
+    REDIS_CONIFIG_CHECK_FAIL("redis_config_check_fail", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return true;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("redis配置错误", "redis配置错误，请检查redis");
+        }
+    },
     REDIS_REPL_DISKLESS_SYNC_ERROR("redis_repl_diskless_sync_error", EMAIL_DBA) {
         @Override
         public boolean urgent() {

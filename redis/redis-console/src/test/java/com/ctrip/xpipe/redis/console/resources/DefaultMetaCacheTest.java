@@ -3,9 +3,11 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.impl.RedisConfigCheckRuleServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisConfigCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
@@ -40,6 +42,9 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     @Mock
     private XpipeMetaManager xpipeMetaManager;
 
+    @Mock
+    private RedisConfigCheckRuleServiceImpl redisConfigCheckRuleService;
+
     @InjectMocks
     private DefaultMetaCache metaCache = new DefaultMetaCache();
 
@@ -65,6 +70,18 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Map<String, DcMeta> dcs = getXpipeMeta().getDcs();
         Assert.assertFalse(dcs.get("jq").getZone().equalsIgnoreCase(dcs.get("fra-aws").getZone()));
     }
+
+    @Test
+    public void testGetAllRedisConfigRules() {
+        Map<Long, RedisConfigCheckRuleMeta> redisConfigCheckRules = getXpipeMeta().getRedisConfigCheckRules();
+        redisConfigCheckRules.values().forEach(redisConfigCheckRuleMeta -> {
+            logger.info(redisConfigCheckRuleMeta.getId() + ":" + redisConfigCheckRuleMeta.getCheckType()
+                    + ":" + redisConfigCheckRuleMeta.getParam());
+        });
+
+        Assert.assertEquals(3, redisConfigCheckRules.values().size());
+    }
+
 
     @Test
     public void testGetAllActiveRedisOfDc() {
