@@ -203,7 +203,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private void installActionIfNeeded(SiteLeaderAwareHealthCheckActionFactory factory, HealthCheckInstance instance) {
         logger.debug("[try install action] {}", factory.support());
         if(clusterServer != null && clusterServer.amILeader()) {
-            //
             logger.debug("[cluster server not null][installed]");
             instance.register(factory.create(instance));
         }

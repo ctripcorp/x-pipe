@@ -17,8 +17,6 @@ public class RedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckR
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
-//        List<RedisConfigCheckRule> configCheckRules = new LinkedList<>();
-//        instance.getCheckInfo().getRedisConfigCheckRules().stream().filter(redisConfigCheckRule -> CONFIG_CHECKER_TYPE.equals(redisConfigCheckRule.getCheckType())).forEach(configCheckRules::add);
         return new RedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, filterNonConifgRule(instance.getCheckInfo().getRedisConfigCheckRules()));
     }
 
