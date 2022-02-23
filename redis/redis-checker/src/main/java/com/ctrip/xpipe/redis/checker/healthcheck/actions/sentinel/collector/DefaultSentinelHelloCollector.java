@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.server.Server;
@@ -64,7 +63,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.THREAD_POOL_TIM
 @Component("defaultSentinelHelloCollector")
 public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
+    protected static final Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.class);
 
     private static final String SENTINEL_TYPE = "sentinel";
 
@@ -155,8 +154,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 @Override
                 public void run() {
                     future.cancel(true);
-                    EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
-                            String.format("[%s]%s+%s", "cancel", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Cancel",
+                            String.format("%s+%s", context.instance().getCheckInfo().getShardId(), context.instance().getCheckInfo().getDcId()));
                 }
             }, context.instance().getHealthCheckConfig().getSentinelCheckIntervalMilli(), TimeUnit.MILLISECONDS);
             future.addListener(commandFuture -> {
@@ -361,58 +360,61 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         resetExecutor.execute(new Runnable() {
             @Override
             public void run() {
-                Set<HostPort> allKeepers = metaCache.getAllKeepers();
-                hellos.forEach((hello) -> {
-                    HostPort sentinelAddr = hello.getSentinelAddr();
-                    Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-                    try {
-                        List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName);
-                        boolean shoudReset = false;
-                        String reason = null;
-                        Set<HostPort> keepers = new HashSet<>();
-
-                        for (HostPort currentSlave : slaves) {
-
-                            if (allKeepers.contains(currentSlave)) {
-                                keepers.add(currentSlave);
-                            }
-
-                            Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
-                            if (clusterShard == null) {
-                                if (isKeeperOrDead(currentSlave)) {
-                                    shoudReset = true;
-                                    reason = String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId);
-                                } else {
-                                    String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
-                                    alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
-                                }
-                                continue;
-                            }
-                            if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
-                                shoudReset = true;
-                                reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
-                                break;
-                            }
-                        }
-
-                        if (!shoudReset && keepers.size() >= 2) {
-                            shoudReset = true;
-                            reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
-                        }
-
-                        if (shoudReset) {
-                            logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
-                            EventMonitor.DEFAULT.logEvent(SENTINEL_TYPE,
-                                    String.format("[%s]%s,%s", ALERT_TYPE.SENTINEL_RESET, sentinelAddr, reason));
-                            sentinelManager.reset(sentinel, sentinelMonitorName);
-                        }
-                    } catch (Exception e) {
-                        logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
-                    }
-                });
+                doCheckReset(clusterId,shardId,sentinelMonitorName,hellos);
             }
         });
 
+    }
+
+    void doCheckReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos){
+        Set<HostPort> allKeepers = metaCache.getAllKeepers();
+        hellos.forEach((hello) -> {
+            HostPort sentinelAddr = hello.getSentinelAddr();
+            Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
+            try {
+                List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName);
+                boolean shoudReset = false;
+                String reason = null;
+                Set<HostPort> keepers = new HashSet<>();
+
+                for (HostPort currentSlave : slaves) {
+
+                    if (allKeepers.contains(currentSlave)) {
+                        keepers.add(currentSlave);
+                    }
+
+                    Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
+                    if (clusterShard == null) {
+                        if (isKeeperOrDead(currentSlave)) {
+                            shoudReset = true;
+                            reason = String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId);
+                        } else {
+                            String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
+                            alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
+                        }
+                        continue;
+                    }
+                    if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
+                        shoudReset = true;
+                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
+                        break;
+                    }
+                }
+
+                if (!shoudReset && keepers.size() >= 2) {
+                    shoudReset = true;
+                    reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
+                }
+
+                if (shoudReset) {
+                    logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", String.format("%s,%s", sentinelAddr, reason));
+                    sentinelManager.reset(sentinel, sentinelMonitorName);
+                }
+            } catch (Exception e) {
+                logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
+            }
+        });
     }
 
     @VisibleForTesting
@@ -488,7 +490,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             toDelete.forEach((hello -> {
                 HostPort sentinelAddr = hello.getSentinelAddr();
                 try {
-                    CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[del]" + hello);
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Remove", hello.toString());
                     sentinelManager.removeSentinelMonitor(new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort()), hello.getMonitorName());
                     logger.info("[{}-{}][deleted]{}", LOG_TITLE, sentinelMonitorName, hello);
                 } catch (Exception e) {
@@ -504,7 +506,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
                     sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
                     logger.info("[{}-{}][clean]", LOG_TITLE, sentinelMonitorName);
-                    CatEventMonitor.DEFAULT.logEvent(SENTINEL_TYPE, "[add]" + hello);
+                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.RemoveAndAdd", hello.toString());
                     sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
                     logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
 

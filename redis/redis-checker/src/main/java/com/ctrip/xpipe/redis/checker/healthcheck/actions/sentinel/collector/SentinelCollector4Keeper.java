@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
+import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
@@ -9,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -100,6 +101,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
 
                 collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName());
+                CatEventMonitor.DEFAULT.logEvent("Sentinel.Collector.4Keeper.Remove", hello.toString());
                 collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
                         getMessage(collector.metaCache.getSentinelMonitorName(info.getClusterId(), info.getShardId()),
                                 hello.getMonitorName()));

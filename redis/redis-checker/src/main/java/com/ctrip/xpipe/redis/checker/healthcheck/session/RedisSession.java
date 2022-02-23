@@ -319,23 +319,6 @@ public class RedisSession {
         });
     }
 
-    public void ConfigSet(Callbackable<Boolean> callback, String configName, String value) {
-        ConfigSetCommand.ConfigSetAny command = new ConfigSetCommand.ConfigSetAny(clientPool, scheduled, configName, value);
-
-        silentCommand(command);
-
-        command.execute().addListener(new CommandFutureListener<Boolean>() {
-            @Override
-            public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
-                if(!commandFuture.isSuccess()) {
-                    callback.fail(commandFuture.cause());
-                } else {
-                    callback.success(commandFuture.get());
-                }
-            }
-        });
-    }
-
 
     public InfoResultExtractor syncInfo(InfoCommand.INFO_TYPE infoType)
             throws InterruptedException, ExecutionException, TimeoutException {

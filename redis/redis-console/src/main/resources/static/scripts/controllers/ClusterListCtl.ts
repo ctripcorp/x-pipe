@@ -118,7 +118,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
 
     function getClusterActiveDc(cluster) {
         var clusterType = ClusterType.lookup(cluster.clusterType)
-        if (clusterType && clusterType.multiActiveDcs) {
+        if (clusterType && (clusterType.multiActiveDcs || clusterType.isCrossDc)) {
             return "-"
         }
 

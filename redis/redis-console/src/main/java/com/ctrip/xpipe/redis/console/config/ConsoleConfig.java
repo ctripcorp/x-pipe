@@ -141,5 +141,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	boolean isRedisConfigCheckMonitorOpen();
 
 	String getRedisConfigCheckRules();
-	
+
+	long sentinelBindTimeoutMilli();
+
 }
