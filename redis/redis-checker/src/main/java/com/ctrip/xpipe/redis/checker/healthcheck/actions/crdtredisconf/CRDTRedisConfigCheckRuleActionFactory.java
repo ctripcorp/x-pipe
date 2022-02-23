@@ -14,8 +14,6 @@ import java.util.List;
 public class CRDTRedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckRuleActionFactory implements BiDirectionSupport {
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
-//        List<RedisConfigCheckRule> configCheckRules = new LinkedList<>();
-//        instance.getCheckInfo().getRedisConfigCheckRules().stream().filter(redisConfigCheckRule -> CONFIG_CHECKER_TYPE.equals(redisConfigCheckRule.getCheckType())).forEach(configCheckRules::add);
         return new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, filterNonConifgRule(instance.getCheckInfo().getRedisConfigCheckRules()));
     }
 
