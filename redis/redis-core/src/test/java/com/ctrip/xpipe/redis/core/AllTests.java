@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpDelTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpMsetTest;
 import com.ctrip.xpipe.redis.core.redis.parser.GeneralRedisOpParserTest;
+import com.ctrip.xpipe.redis.core.redis.parser.RedisReplStreamParseTest;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaTest;
 import com.ctrip.xpipe.redis.core.util.SentinelUtilTest;
 import org.junit.runner.RunWith;
@@ -89,6 +90,7 @@ import org.junit.runners.Suite.SuiteClasses;
         FastMetaServerConsoleServiceTest.class,
         DefaultReactorMetaServerConsoleServiceTest.class,
         GeneralRedisOpParserTest.class,
+        RedisReplStreamParseTest.class,
         RedisOpMsetTest.class,
         RedisOpDelTest.class
 })

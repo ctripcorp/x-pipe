@@ -18,21 +18,7 @@ import java.util.Arrays;
  * date 2022/2/18
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-public class GeneralRedisOpParserTest extends AbstractRedisTest {
-
-    private RedisOpParserManager redisOpParserManager;
-
-    private RedisOpParser parser;
-
-    @Before
-    public void setupGeneralRedisOpParserTest() {
-        redisOpParserManager = new DefaultRedisOpParserManager();
-        parser = new GeneralRedisOpParser(redisOpParserManager);
-        new RedisOpSetParser(redisOpParserManager);
-        new RedisOpMsetParser(redisOpParserManager);
-        new RedisOpSelectParser(redisOpParserManager);
-        new RedisOpPingParser(redisOpParserManager);
-    }
+public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
 
     @Test
     public void testSetParse() {
