@@ -3,9 +3,6 @@ package com.ctrip.xpipe.redis.console.service.vo;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
@@ -28,10 +25,9 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
@@ -95,9 +91,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         testBuildMetaForClusterType(ClusterType.BI_DIRECTION, 1);
     }
 
-    private void tryCreateClusterMeta(ClusterTbl clusterTbl) {
+    private void tryCreateClusterMeta(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl) {
         try {
-            builder.getOrCreateClusterMeta(clusterTbl);
+            builder.getOrCreateClusterMeta(clusterTbl, dcClusterTbl);
         } catch (Exception e) {
             logger.info("[tryCreateClusterMeta] create fail", e);
             throw e;
@@ -106,7 +102,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void getOrCreateOneWayClusterMeta() throws Exception {
-        tryCreateClusterMeta(dcClusterShards.get(0).getClusterInfo());
+        tryCreateClusterMeta(dcClusterShards.get(0).getClusterInfo(), dcClusterShards.get(0).getDcClusterInfo());
         ClusterMeta clusterMeta = dcMeta.getClusters().get(dcClusterShards.get(0).getClusterInfo().getClusterName());
         Assert.assertNotNull(clusterMeta);
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
@@ -119,7 +115,8 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     public void getOrCreateBiDirectionClusterMeta() throws Exception {
         ClusterTbl clusterTbl = clusterService.find("bi-cluster1");
         Assert.assertNotNull(clusterTbl);
-        tryCreateClusterMeta(clusterTbl);
+
+        tryCreateClusterMeta(clusterTbl, dcClusterService.find(clusterTbl.getDcId(), clusterTbl.getId()));
         ClusterMeta clusterMeta = dcMeta.getClusters().get("bi-cluster1");
         Assert.assertNotNull(clusterMeta);
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION));
@@ -134,7 +131,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertNotNull(dcClusterShard);
         ClusterTbl clusterTbl = dcClusterShard.getClusterInfo();
         Assert.assertNotNull(clusterTbl);
-        tryCreateClusterMeta(clusterTbl);
+        tryCreateClusterMeta(clusterTbl, dcClusterShard.getDcClusterInfo());
         ClusterMeta clusterMeta = dcMeta.getClusters().get(dcClusterShard.getClusterInfo().getClusterName());
 
         logger.info("{}", dcClusterShard.getShardInfo());
@@ -164,7 +161,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         clusterModel.setDcs(Lists.newArrayList());
         clusterTbl = clusterService.createCluster(clusterModel);
 
-        dcClusterService.addDcCluster(dcService.getDcName(1), "test-one-dc-cluster");
+//        dcClusterService.addDcCluster(dcService.getDcName(1), "test-one-dc-cluster");
 
         Map<Long, List<DcClusterTbl>> map = Maps.newHashMap();
         map.put(clusterTbl.getId(), Lists.newArrayList(new DcClusterTbl().setClusterId(clusterTbl.getId()).setDcId(1)));

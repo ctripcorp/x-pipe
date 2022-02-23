@@ -105,6 +105,11 @@ public class XPipeMetaVisitor implements IVisitor{
     }
 
     @Override
+    public void visitRedisConfigCheckRule(RedisConfigCheckRuleMeta redisConfigCheckRule) {
+
+    }
+
+    @Override
     public void visitRoute(RouteMeta route) {
 
     }

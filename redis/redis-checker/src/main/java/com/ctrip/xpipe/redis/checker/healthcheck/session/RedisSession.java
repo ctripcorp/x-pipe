@@ -287,6 +287,56 @@ public class RedisSession {
         });
     }
 
+    public void ConfigGet(Callbackable<String> callback, String args) {
+        ConfigGetCommand.ConfigGetAnyCommand command = new ConfigGetCommand.ConfigGetAnyCommand(clientPool, scheduled, args);
+        silentCommand(command);
+
+        command.execute().addListener(new CommandFutureListener<String>() {
+            @Override
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
+                } else {
+                    callback.success(commandFuture.get());
+                }
+            }
+        });
+    }
+
+    public void CRDTConfigGet(Callbackable<String> callback, String args) {
+        CRDTConfigGetCommand command = new CRDTConfigGetCommand(clientPool, scheduled, args);
+        silentCommand(command);
+
+        command.execute().addListener(new CommandFutureListener<String>() {
+            @Override
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
+                } else {
+                    callback.success(commandFuture.get());
+                }
+            }
+        });
+    }
+
+    public void ConfigSet(Callbackable<Boolean> callback, String configName, String value) {
+        ConfigSetCommand.ConfigSetAny command = new ConfigSetCommand.ConfigSetAny(clientPool, scheduled, configName, value);
+
+        silentCommand(command);
+
+        command.execute().addListener(new CommandFutureListener<Boolean>() {
+            @Override
+            public void operationComplete(CommandFuture<Boolean> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
+                } else {
+                    callback.success(commandFuture.get());
+                }
+            }
+        });
+    }
+
+
     public InfoResultExtractor syncInfo(InfoCommand.INFO_TYPE infoType)
             throws InterruptedException, ExecutionException, TimeoutException {
         InfoCommand infoCommand = new InfoCommand(clientPool, infoType, scheduled);

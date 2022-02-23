@@ -97,6 +97,11 @@ public class ClusterShardCounter implements IVisitor{
     }
 
     @Override
+    public void visitRedisConfigCheckRule(RedisConfigCheckRuleMeta redisConfigCheckRule){
+
+    }
+
+    @Override
     public void visitShard(ShardMeta shard) {
 
         Set<String> shards = getOrCreate(shard.parent());

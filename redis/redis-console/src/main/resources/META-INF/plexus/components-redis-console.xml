@@ -165,6 +165,15 @@
 		</component>
 		<component>
 			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>redis-config-check-rule-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>redis_config_check_rule_tbl</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
 			<role-hint>route-tbl</role-hint>
 			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
 			<configuration>
@@ -328,6 +337,15 @@
 		<component>
 			<role>com.ctrip.xpipe.redis.console.model.ProxyTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.ProxyTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.RedisConfigCheckRuleTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.RedisConfigCheckRuleTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>

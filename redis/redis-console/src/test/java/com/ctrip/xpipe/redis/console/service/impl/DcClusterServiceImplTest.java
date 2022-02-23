@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -11,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,6 +55,61 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
         Assert.assertNotNull(dcClusterTbl);
         Assert.assertEquals(101L, dcClusterTbl.getClusterId());
     }
+
+    @Test(expected = BadRequestException.class)
+    public void testAddDcClusterFailWithAlreadyExits() {
+        try {
+            dcClusterService.addDcCluster("jq", "cluster101");
+        } catch (Exception e) {
+            Assert.assertEquals(String.format("DcCluster dc:%s cluster:%s exist", "jq", "cluster101"), e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test
+    public void testUpdateDcCluster() {
+        dcClusterService.addDcCluster("fra", "cluster101");
+        DcClusterTbl dcClusterTbl = dcClusterService.find("fra", "cluster101");
+        Assert.assertNotNull(dcClusterTbl);
+        Assert.assertEquals("", dcClusterTbl.getRedisConfigCheckRules());
+
+        dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisConfigRule("0,1"));
+        dcClusterTbl = dcClusterService.find("fra", "cluster101");
+        Assert.assertNotNull(dcClusterTbl);
+        Assert.assertEquals("0,1", dcClusterTbl.getRedisConfigCheckRules());
+
+        dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra"));
+        dcClusterTbl = dcClusterService.find("fra", "cluster101");
+        Assert.assertNotNull(dcClusterTbl);
+        Assert.assertEquals("", dcClusterTbl.getRedisConfigCheckRules());
+    }
+
+    @Test (expected = BadRequestException.class)
+    public void testUpdateDcClusterFail() {
+        DcClusterCreateInfo dcClusterCreateInfo = new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisConfigRule("0,1");
+        try {
+            dcClusterService.updateDcCluster(dcClusterCreateInfo);
+        } catch (Exception e) {
+            Assert.assertEquals(String.format("Can not update unexist dcCluster %s:%s",
+                    dcClusterCreateInfo.getDcName(), dcClusterCreateInfo.getClusterName()), e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test
+    public void testFindAllDcClusterByClusterName() {
+        List<DcClusterCreateInfo> dcCluster101s = dcClusterService.findClusterRelated("cluster101");
+        Assert.assertEquals(2, dcCluster101s.size());
+
+        dcClusterService.addDcCluster("fra", "cluster101", "0,1");
+
+        dcCluster101s = dcClusterService.findClusterRelated("cluster101");
+        dcCluster101s.forEach(dcCluster101-> {
+            logger.info(dcCluster101.toString());
+        });
+        Assert.assertEquals(3, dcCluster101s.size());
+    }
+
 
     @Test
     public void testFindAllDcClusters() {

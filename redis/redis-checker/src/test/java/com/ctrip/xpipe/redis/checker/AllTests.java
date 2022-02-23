@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.checker.cluster.monitor.DefaultSentinelMonitorsChec
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
@@ -21,6 +23,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.O
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
@@ -77,6 +81,10 @@ import org.junit.runners.Suite;
         RedisWrongSlaveMonitorTest.class,
         MasterOverOneMonitorTest.class,
         VersionCheckActionFactoryTest.class,
+        RedisConfigCheckRuleActionFactoryTest.class,
+        RedisConfigCheckRuleActionTest.class,
+        CRDTRedisConfigCheckRuleActionFactoryTest.class,
+        CRDTRedisConfigCheckRuleActionTest.class,
 
         DefaultAlertEntityHolderTest.class,
         DefaultDcMetaChangeManagerTest.class,
