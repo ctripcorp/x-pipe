@@ -79,6 +79,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN = "cosnole.redis.config.check.open";
 
     private static final String KEY_REDIS_CONFIG_CHECK_RULES = "console.redis.config.check.rules";
+    private static final String KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX = "checker.cross.dc.sentinel.monitor.name.suffix";
+
+    private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "console.sentinel.bind.timeout.milli";
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
@@ -530,4 +533,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
     }
 
+    public String crossDcSentinelMonitorNameSuffix() {
+        return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
+    }
+
+    @Override
+    public long sentinelBindTimeoutMilli() {
+        return getLongProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000L);
+    }
 }

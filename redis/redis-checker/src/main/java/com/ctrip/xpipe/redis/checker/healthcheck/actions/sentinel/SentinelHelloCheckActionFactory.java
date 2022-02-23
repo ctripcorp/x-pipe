@@ -21,7 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_EXECUTORS;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.HELLO_CHECK_SCHEDULED;
 
 /**
  * @author chen.zhu
@@ -29,7 +30,7 @@ import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
  * Oct 09, 2018
  */
 @Component
-public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport {
+public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareHealthCheckActionFactory implements OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport, CrossDcSupport {
 
     private Map<ClusterType, List<SentinelHelloCollector>> collectorsByClusterType;
 

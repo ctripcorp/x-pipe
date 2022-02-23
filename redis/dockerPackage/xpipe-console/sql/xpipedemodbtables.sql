@@ -361,3 +361,32 @@ CREATE TABLE `redis_config_check_rule_tbl` (
   PRIMARY KEY (`id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='redis config check rule';
+
+-- sentinel_group_tbl
+drop table if exists sentinel_group_tbl;
+CREATE TABLE `sentinel_group_tbl`
+(
+    `sentinel_group_id`   bigint(20) NOT NULL AUTO_INCREMENT COMMENT '哨兵组id',
+    `cluster_type`        varchar(40)  NOT NULL DEFAULT '' COMMENT '该哨兵组适用的集群类型',
+    `deleted`             tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    `datachange_lasttime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP (3) COMMENT '更新时间',
+    `sentinel_description` varchar(100)  NOT NULL DEFAULT '',
+    PRIMARY KEY (`sentinel_group_id`),
+    KEY                   `ix_DataChange_LastTime` (`datachange_lasttime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='哨兵组表';
+
+-- sentinel_tbl
+drop table if exists sentinel_tbl;
+CREATE TABLE `sentinel_tbl`
+(
+    `sentinel_id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '哨兵id',
+    `dc_id`               bigint(20) NOT NULL DEFAULT '0' COMMENT '哨兵所在dc id',
+    `sentinel_group_id`   bigint(20) NOT NULL DEFAULT '0' COMMENT '哨兵所属group id',
+    `sentinel_ip`         varchar(40)  NOT NULL DEFAULT '0.0.0.0' COMMENT '哨兵ip',
+    `sentinel_port`       int(11) NOT NULL DEFAULT '0' COMMENT '哨兵port',
+    `deleted`             tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    `datachange_lasttime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP (3) COMMENT '更新时间',
+    PRIMARY KEY (`sentinel_id`),
+    UNIQUE KEY `unniqueKey` (`sentinel_ip`,`sentinel_port`,`deleted`),
+    KEY                   `ix_DataChange_LastTime` (`datachange_lasttime`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='哨兵表';

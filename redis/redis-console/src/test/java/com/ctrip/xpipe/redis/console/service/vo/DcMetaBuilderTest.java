@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.vo;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
@@ -26,9 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-
 import static org.mockito.Mockito.mock;
-
 /**
  * @author chen.zhu
  * <p>
@@ -67,6 +66,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private MigrationService migrationService;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     private List<DcClusterShardTbl> dcClusterShards;
 
     private DcMetaBuilder builder;
@@ -77,7 +79,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         long dcId = dcNameMap.keySet().iterator().next();
         builder = new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-                new DefaultRetryCommandFactory());
+                new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
 
         logger.info("[beforeDcMetaBuilderTest] dcId: {}", dcId);
@@ -174,7 +176,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         new DcMetaBuilder(dcMeta, dcId, Collections.singleton(clusterType.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-                new DefaultRetryCommandFactory()).execute().get();
+                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
 
         Assert.assertEquals(clusterSize, dcMeta.getClusters().size());
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {

@@ -18,8 +18,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
@@ -108,12 +110,18 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private void generateHealthCheckInstances() {
         XpipeMeta meta = metaCache.getXpipeMeta();
+        Map<String, Map<String, ClusterMeta>> crossDcClusters = new HashMap<>();
         for(DcMeta dcMeta : meta.getDcs().values()) {
             if(checkerConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
+                if (clusterType.isCrossDc()) {
+                    crossDcClusters.putIfAbsent(cluster.getId(), new HashMap<>());
+                    crossDcClusters.get(cluster.getId()).put(dcMeta.getId(), cluster);
+                    continue;
+                }
                 // console monitors only cluster with active idc in current idc
                 if (clusterType.supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
@@ -121,15 +129,57 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
                     continue;
                 }
-                // TODO: add cluster checker
-                for(ShardMeta shard : cluster.getShards().values()) {
-                    for(RedisMeta redis : shard.getRedises()) {
-                        instanceManager.getOrCreate(redis);
-                    }
-                }
-                instanceManager.getOrCreate(cluster);
+                generateHealthCheckInstances(cluster);
             }
         }
+        generateHealthCheckInstancesForCrossDcClusters(crossDcClusters);
+    }
+
+
+    void generateHealthCheckInstancesForCrossDcClusters(Map<String, Map<String, ClusterMeta>> crossDcClusters) {
+        crossDcClusters.forEach((k, v) -> {
+            String maxMasterCountDc = getMaxMasterCountDc(v);
+            if (maxMasterCountDc.equalsIgnoreCase(currentDcId)) {
+                v.values().forEach(this::generateHealthCheckInstances);
+            }
+        });
+    }
+
+    String getMaxMasterCountDc(Map<String, ClusterMeta> dcClusters) {
+        Map<String, Integer> dcMasterNumMap = new HashMap<>();
+        dcClusters.forEach((dc, clusterMeta) -> {
+            dcMasterNumMap.put(dc, dcMastersCount(clusterMeta));
+        });
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
+        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());
+            }
+        });
+        return entryList.get(0).getKey();
+    }
+
+    void generateHealthCheckInstances(ClusterMeta clusterMeta){
+        for(ShardMeta shard : clusterMeta.getShards().values()) {
+            for(RedisMeta redis : shard.getRedises()) {
+                instanceManager.getOrCreate(redis);
+            }
+        }
+        instanceManager.getOrCreate(clusterMeta);
+    }
+
+    private int dcMastersCount(ClusterMeta dcCluster) {
+        Map<String, ShardMeta> shards = dcCluster.getShards();
+        AtomicInteger masterCount = new AtomicInteger();
+        shards.forEach((shardId, shardMeta) -> {
+            shardMeta.getRedises().forEach(redisMeta -> {
+                if (redisMeta.isMaster()) {
+                    masterCount.incrementAndGet();
+                }
+            });
+        });
+        return masterCount.get();
     }
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {

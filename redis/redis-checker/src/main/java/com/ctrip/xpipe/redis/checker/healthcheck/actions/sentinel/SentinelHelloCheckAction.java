@@ -122,9 +122,13 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                         try {
                             List<RedisMeta> redisMetas = shardMeta.getRedises();
                             logger.debug("[{}-{}+{}][{}]redis num:{}, detail info:{}", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, dc, redisMetas.size(), redisMetas);
-                            redisMetas.forEach((redisMeta) -> {
+                            for(RedisMeta redisMeta:redisMetas){
                                 try {
                                     RedisHealthCheckInstance redisInstance = instanceManager.findRedisHealthCheckInstance(new HostPort(redisMeta.getIp(), redisMeta.getPort()));
+                                    if (redisInstance == null) {
+                                        logger.debug("[{}-{}+{}][{}]health check instance not exited: {}", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, dc, instance);
+                                        continue;
+                                    }
                                     if (super.shouldCheckInstance(redisInstance)) {
                                         redisHealthCheckInstances.add(redisInstance);
                                         hellos.put(redisInstance, new SentinelHellos());
@@ -132,11 +136,11 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
                                         redisInstance.getRedisSession().closeSubscribedChannel(HELLO_CHANNEL);
                                     }
                                 } catch (Exception e) {
-                                    logger.warn("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
+                                    logger.error("[{}-{}+{}]get redis health check instance {}:{} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, redisMeta.getIp(), redisMeta.getPort(), e);
                                 }
-                            });
+                            }
                         } catch (Exception e) {
-                            logger.warn("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
+                            logger.error("[{}-{}+{}]get redis health check instance from shard {} failed", LOG_TITLE, instance.getCheckInfo().getClusterId(), shardId, shardId, e);
                         }
                     });
                 }

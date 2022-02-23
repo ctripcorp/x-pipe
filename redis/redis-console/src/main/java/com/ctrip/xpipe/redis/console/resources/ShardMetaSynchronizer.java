@@ -68,9 +68,9 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                     try {
                         logger.info("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta);
                         ClusterMeta clusterMeta = shardMeta.parent();
-
-                        if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(clusterMeta.getType()), clusterMeta.getId())) {
-                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels());
+                        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+                        if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterMeta.getId())) {
+                            shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), sentinelBalanceService.selectMultiDcSentinels(clusterType));
                         } else {
                             shardService.findOrCreateShardIfNotExist(shardMeta.parent().getId(), new ShardTbl().setShardName(shardMeta.getId()).setSetinelMonitorName(shardMeta.getId()), null);
                         }

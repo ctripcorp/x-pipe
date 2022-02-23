@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.checker.cluster.monitor;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
@@ -21,7 +22,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 public class DefaultSentinelMonitorsCheckTest {
 
@@ -140,6 +140,8 @@ public class DefaultSentinelMonitorsCheckTest {
 
     @Test
     public void checkSentinel() throws Exception {
+        when(metaCache.getClusterType(any())).thenReturn(ClusterType.ONE_WAY);
+        when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(null);
         checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
                 new HostPort("127.0.0.1", 5000));
@@ -149,6 +151,8 @@ public class DefaultSentinelMonitorsCheckTest {
 
     @Test
     public void checkSentinel2() throws Exception {
+        when(metaCache.getClusterType(any())).thenReturn(ClusterType.ONE_WAY);
+        when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Pair<>("cluster", "shard"));
         checker.setMetaCache(metaCache);
         checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),

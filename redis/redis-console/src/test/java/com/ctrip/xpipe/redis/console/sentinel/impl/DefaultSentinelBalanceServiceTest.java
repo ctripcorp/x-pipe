@@ -1,10 +1,11 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
-import com.ctrip.xpipe.redis.console.service.SentinelService;
+import com.ctrip.xpipe.redis.console.service.SentinelGroupService;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
     private DefaultSentinelBalanceService sentinelBalanceService;
 
     @Autowired
-    private SentinelService sentinelService;
+    private SentinelGroupService sentinelService;
 
     @Override
     protected String prepareDatas() throws IOException {
@@ -31,25 +32,25 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
 
     @Test
     public void testSelectSentinel() {
-        SetinelTbl jqSetinelTbl = sentinelBalanceService.selectSentinel("jq");
-        SetinelTbl oySetinelTbl = sentinelBalanceService.selectSentinel("oy");
-        Assert.assertEquals(101L, jqSetinelTbl.getSetinelId());
-        Assert.assertEquals(102L, oySetinelTbl.getSetinelId());
+        SentinelGroupModel jqSetinelTbl = sentinelBalanceService.selectSentinel("jq", ClusterType.ONE_WAY);
+        SentinelGroupModel oySetinelTbl = sentinelBalanceService.selectSentinel("oy", ClusterType.ONE_WAY);
+        Assert.assertEquals(101L, jqSetinelTbl.getSentinelGroupId());
+        Assert.assertEquals(102L, oySetinelTbl.getSentinelGroupId());
     }
 
     @Test
     public void testSelectMultiSentinels() {
-        Map<Long, SetinelTbl> dcSentinels = sentinelBalanceService.selectMultiDcSentinels();
+        Map<Long, SentinelGroupModel> dcSentinels = sentinelBalanceService.selectMultiDcSentinels(ClusterType.ONE_WAY);
         Assert.assertEquals(3, dcSentinels.size());
-        Assert.assertEquals(101L, dcSentinels.get(1L).getSetinelId());
-        Assert.assertEquals(102L, dcSentinels.get(2L).getSetinelId());
-        Assert.assertEquals(3L, dcSentinels.get(3L).getSetinelId());
+        Assert.assertEquals(101L, dcSentinels.get(1L).getSentinelGroupId());
+        Assert.assertEquals(102L, dcSentinels.get(2L).getSentinelGroupId());
+        Assert.assertEquals(3L, dcSentinels.get(3L).getSentinelGroupId());
     }
 
     @Test
     public void testReBalanceBackupDcSentinels() throws Exception {
         sentinelBalanceService.rebalanceBackupDcSentinel("oy");
-        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy");
+        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("oy",ClusterType.ONE_WAY);
         waitConditionUntilTimeOut(() -> task.future().isDone());
         Assert.assertEquals(0, task.getShardsWaitBalances());
         Assert.assertEquals(2, task.getTargetUsages());
@@ -63,8 +64,8 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
 
     @Test
     public void testReBalanceSentinels() throws Exception {
-        sentinelBalanceService.rebalanceDcSentinel("jq");
-        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq");
+        sentinelBalanceService.rebalanceDcSentinel("jq",ClusterType.ONE_WAY);
+        SentinelBalanceTask task = sentinelBalanceService.getBalanceTask("jq" ,ClusterType.ONE_WAY);
         waitConditionUntilTimeOut(() -> task.future().isDone(), 10000000);
         Assert.assertEquals(0, task.getShardsWaitBalances());
         Assert.assertEquals(3, task.getTargetUsages());
