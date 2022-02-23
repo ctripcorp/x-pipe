@@ -354,7 +354,7 @@ drop table if exists redis_config_check_rule_tbl;
 CREATE TABLE `redis_config_check_rule_tbl` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `check_type` varchar(128) NOT NULL DEFAULT '' COMMENT 'check type(info or config)',
-  `param` varchar(256) NOT NULL DEFAULT '' COMMENT 'info of checkName, expectedVaule and whetherFix',
+  `param` varchar(256) NOT NULL DEFAULT '' COMMENT 'info of checkName, expectedVaule',
   `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for redis config check rule',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
