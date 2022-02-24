@@ -118,13 +118,14 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         ClusterTbl clusterTbl = clusterService.find("bi-cluster1");
         Assert.assertNotNull(clusterTbl);
 
-        tryCreateClusterMeta(clusterTbl, dcClusterService.find(clusterTbl.getDcId(), clusterTbl.getId()));
+        tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
         ClusterMeta clusterMeta = dcMeta.getClusters().get("bi-cluster1");
         Assert.assertNotNull(clusterMeta);
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION));
         Assert.assertNull(clusterMeta.getActiveDc());
         Assert.assertNull(clusterMeta.getBackupDcs());
         Assert.assertEquals("jq,oy", clusterMeta.getDcs());
+        Assert.assertEquals("1,2",clusterMeta.getRedisConfigCheckRules());
     }
 
     @Test
@@ -181,6 +182,8 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(clusterSize, dcMeta.getClusters().size());
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
             Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), clusterType));
+            if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION))
+                Assert.assertEquals("1,2", clusterMeta.getRedisConfigCheckRules());
         }
     }
 

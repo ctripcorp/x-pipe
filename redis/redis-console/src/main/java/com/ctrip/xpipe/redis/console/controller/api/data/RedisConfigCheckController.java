@@ -41,8 +41,8 @@ public class RedisConfigCheckController extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/redisConfigCheck/ruleId:.+", method = RequestMethod.DELETE)
-    public RetMessage deleteRedisConfigCheckRule(@RequestParam Long ruleId) {
+    @RequestMapping(value = "/redisConfigCheck/{ruleId}", method = RequestMethod.DELETE)
+    public RetMessage deleteRedisConfigCheckRule(@PathVariable Long ruleId) {
         try {
             logger.info("[deleteRedisConfigCheckRule] {}", ruleId);
             redisConfigCheckRuleService.deleteRedisConfigCheckRuleById(ruleId);
