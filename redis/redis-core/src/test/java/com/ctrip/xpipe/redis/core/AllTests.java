@@ -89,6 +89,7 @@ import org.junit.runners.Suite.SuiteClasses;
         TestAbstractSubscribeTest.class,
         FastMetaServerConsoleServiceTest.class,
         DefaultReactorMetaServerConsoleServiceTest.class,
+        DefaultXsyncTest.class,
         GeneralRedisOpParserTest.class,
         RedisReplStreamParseTest.class,
         RedisOpMsetTest.class,
