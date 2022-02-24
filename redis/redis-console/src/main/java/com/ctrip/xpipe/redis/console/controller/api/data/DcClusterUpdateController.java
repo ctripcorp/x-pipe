@@ -36,7 +36,7 @@ public class DcClusterUpdateController extends AbstractConsoleController{
     }
 
     @RequestMapping(value = "/dcCluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<DcClusterCreateInfo> getRedisConfigRuleOfCluster(String clusterName) {
+    public List<DcClusterCreateInfo> getRedisConfigRuleOfCluster(@PathVariable String clusterName) {
         try {
             return dcClusterService.findClusterRelated(clusterName);
         } catch (Throwable th) {

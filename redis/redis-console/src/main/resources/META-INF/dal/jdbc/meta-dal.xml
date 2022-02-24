@@ -421,6 +421,12 @@
 			<readset name="CLUSTER_ID">
 				<member name="cluster-id" />
 			</readset>
+			<readset name="DC_CLUSTER_META_INFO">
+				<member name="dc-cluster-id"/>
+				<member name="dc-id"/>
+				<member name="cluster-id"/>
+				<member name="redis-config-check-rules"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -664,6 +670,7 @@
 			</readset>
 			<readset name="CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
+				<readset-ref name="DC_CLUSTER_META_INFO" relation-name="dc-cluster-info"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
