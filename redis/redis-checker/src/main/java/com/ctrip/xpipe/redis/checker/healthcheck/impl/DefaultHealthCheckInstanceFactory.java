@@ -115,7 +115,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
 
         List<RedisConfigCheckRule> redisConfigCheckRules = new LinkedList<>();
-        if (redisMeta.parent().parent().getRedisConfigCheckRules() != null) {
+        if (redisMeta.parent().parent().getRedisConfigCheckRules() != null && !redisMeta.parent().parent().getRedisConfigCheckRules().equals("")) {
             for (String ruleId : redisMeta.parent().parent().getRedisConfigCheckRules().split(",")) {
                 RedisConfigCheckRuleMeta redisConfigCheckRuleMeta = metaCache.getXpipeMeta().getRedisConfigCheckRules().get(Long.parseLong(ruleId));
                 logger.info("ruleId:" + ruleId);
