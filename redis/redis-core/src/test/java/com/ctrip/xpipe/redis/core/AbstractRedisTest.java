@@ -16,6 +16,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.core.server.FakeXsyncHandler;
+import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -436,6 +438,14 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     public XpipeMeta getXpipeMeta() {
         return xpipeMeta;
+    }
+
+    protected FakeXsyncServer startFakeXsyncServer(int serverPort, FakeXsyncHandler xsyncHandler) throws Exception {
+        FakeXsyncServer fakeXsyncServer = new FakeXsyncServer(serverPort, xsyncHandler);
+        fakeXsyncServer.initialize();
+        fakeXsyncServer.start();
+        add(fakeXsyncServer);
+        return fakeXsyncServer;
     }
 
     protected FakeRedisServer startFakeRedisServer() throws Exception {
