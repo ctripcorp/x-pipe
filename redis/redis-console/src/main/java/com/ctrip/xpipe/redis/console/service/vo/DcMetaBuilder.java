@@ -284,9 +284,6 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         protected void doExecute() throws Exception {
             try {
                 for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
-//                    cluster2DcClusterMap.get(dcClusterShard.getClusterInfo().getId()).forEach(dcClusterTbl -> {
-//                        if(dcClusterShard.get)
-//                    });
                     ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo(), dcClusterShard.getDcClusterInfo());
 
                     ShardMeta shardMeta = getOrCreateShardMeta(clusterMeta.getId(),
