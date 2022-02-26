@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
@@ -8,7 +9,7 @@ import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
@@ -16,12 +17,24 @@ import java.util.concurrent.Executors;
  * <p>
  * Jan 29, 2022 4:19 PM
  */
-public class DefaultSequenceController implements ApplierSequenceController {
+public class DefaultSequenceController extends AbstractLifecycle implements ApplierSequenceController {
 
     private final Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
 
-    Executor stateThread = Executors.newSingleThreadExecutor();
-    Executor workerThreads = Executors.newFixedThreadPool(8);
+    ExecutorService stateThread;
+    ExecutorService workerThreads;
+
+    @Override
+    protected void doInitialize() throws Exception {
+        stateThread = Executors.newSingleThreadExecutor();
+        workerThreads = Executors.newFixedThreadPool(8);
+    }
+
+    @Override
+    protected void doDispose() throws Exception {
+        stateThread.shutdown();
+        workerThreads.shutdown();
+    }
 
     @Override
     public void submit(ApplierRedisCommand<?> command) {
