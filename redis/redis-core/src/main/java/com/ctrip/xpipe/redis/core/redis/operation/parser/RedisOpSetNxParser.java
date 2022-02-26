@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.operation.parser;
 
 import com.ctrip.xpipe.redis.core.redis.operation.*;
-import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSelect;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -9,19 +9,19 @@ import java.util.List;
 
 /**
  * @author lishanglin
- * date 2022/2/18
+ * date 2022/2/19
  */
 @Component
-public class RedisOpSelectParser implements RedisOpParser {
+public class RedisOpSetNxParser implements RedisOpParser {
 
     @Autowired
-    public RedisOpSelectParser(RedisOpParserManager redisOpParserManager) {
-        redisOpParserManager.registerParser(RedisOpType.SELECT, this);
+    public RedisOpSetNxParser(RedisOpParserManager redisOpParserManager) {
+        redisOpParserManager.registerParser(RedisOpType.SETNX, this);
     }
 
     @Override
     public RedisOp parse(List<String> args) {
-        return new RedisOpSelect(args, Long.parseLong(args.get(1)));
+        return new RedisOpSet(args, new RedisKey(args.get(1)), args.get(2));
     }
 
     @Override

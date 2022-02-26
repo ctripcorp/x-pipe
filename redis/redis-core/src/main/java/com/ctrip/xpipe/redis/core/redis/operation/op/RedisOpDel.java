@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.tuple.Pair;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +36,13 @@ public class RedisOpDel extends AbstractRedisMultiKeyOp<Void> implements RedisMu
 
     @Override
     protected List<String> innerBuildRawOpArgs() {
-        return Collections.emptyList();
+        List<RedisKey> keys = getKeys();
+        List<String> args = new ArrayList<>(1 + keys.size());
+        args.add(getOpType().name());
+        for (RedisKey key: keys) {
+            args.add(key.get());
+        }
+
+        return args;
     }
 }
