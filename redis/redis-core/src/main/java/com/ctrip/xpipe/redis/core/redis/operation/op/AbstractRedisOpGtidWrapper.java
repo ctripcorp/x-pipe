@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 
@@ -15,12 +14,12 @@ import static com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpGtidParse
  */
 public abstract class AbstractRedisOpGtidWrapper implements RedisOp {
 
-    private GtidSet gtidSet;
+    private String gtid;
 
     private RedisOp innerRedisOp;
 
-    public AbstractRedisOpGtidWrapper(GtidSet gtidSet, RedisOp innerRedisOp) {
-        this.gtidSet = gtidSet;
+    public AbstractRedisOpGtidWrapper(String gtid, RedisOp innerRedisOp) {
+        this.gtid = gtid;
         this.innerRedisOp = innerRedisOp;
     }
 
@@ -30,8 +29,8 @@ public abstract class AbstractRedisOpGtidWrapper implements RedisOp {
     }
 
     @Override
-    public GtidSet getOpGtidSet() {
-        return gtidSet;
+    public String getOpGtid() {
+        return gtid;
     }
 
     @Override
@@ -48,7 +47,7 @@ public abstract class AbstractRedisOpGtidWrapper implements RedisOp {
     public List<String> buildRawOpArgs() {
         List<String> wholeOpArgs = new ArrayList<>();
         wholeOpArgs.add(KEY_GTID);
-        wholeOpArgs.add(gtidSet.toString());
+        wholeOpArgs.add(gtid);
         wholeOpArgs.addAll(innerRedisOp.buildRawOpArgs());
         return wholeOpArgs;
     }
