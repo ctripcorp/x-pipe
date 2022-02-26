@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -21,8 +19,8 @@ public class RedisOpMset extends AbstractRedisMultiKeyOp<String> implements Redi
         super(rawArgs, redisKvs);
     }
 
-    public RedisOpMset(List<String> rawArgs, List<Pair<RedisKey, String>> redisKvs, GtidSet gtidSet) {
-        super(rawArgs, redisKvs, gtidSet);
+    public RedisOpMset(List<String> rawArgs, List<Pair<RedisKey, String>> redisKvs, String gtid) {
+        super(rawArgs, redisKvs, gtid);
     }
 
     @Override
@@ -32,7 +30,7 @@ public class RedisOpMset extends AbstractRedisMultiKeyOp<String> implements Redi
 
     @Override
     public RedisMultiKeyOp<String> subOp(Set<Integer> needKeys) {
-        return new RedisOpMset(null, subKvs(needKeys), getOpGtidSet());
+        return new RedisOpMset(null, subKvs(needKeys), getOpGtid());
     }
 
     @Override

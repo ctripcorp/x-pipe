@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
@@ -20,8 +19,8 @@ public class RedisOpDel extends AbstractRedisMultiKeyOp<Void> implements RedisMu
         super(rawArgs, redisKvs);
     }
 
-    public RedisOpDel(List<String> rawArgs, List<Pair<RedisKey, Void>> redisKvs, GtidSet gtidSet) {
-        super(rawArgs, redisKvs, gtidSet);
+    public RedisOpDel(List<String> rawArgs, List<Pair<RedisKey, Void>> redisKvs, String gtid) {
+        super(rawArgs, redisKvs, gtid);
     }
 
     @Override
@@ -31,7 +30,7 @@ public class RedisOpDel extends AbstractRedisMultiKeyOp<Void> implements RedisMu
 
     @Override
     public RedisMultiKeyOp<Void> subOp(Set<Integer> needKeys) {
-        return new RedisOpDel(null, subKvs(needKeys), getOpGtidSet());
+        return new RedisOpDel(null, subKvs(needKeys), getOpGtid());
     }
 
     @Override
