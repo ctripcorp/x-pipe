@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.client.redis;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.utils.ServicesUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -13,9 +12,9 @@ import java.util.Map;
  */
 public interface AsyncRedisClient {
 
-    Object /* shard */ select(Object key);
+    Object /* resource */ select(Object key);
 
-    Map<Object /* shard */, List<Object> /* keys */> selectMulti(List<Object> keys);
+    Map<Object /* resource */, List<Object> /* keys */> selectMulti(List<Object> keys);
 
-    CommandFuture<Object> write(Object shard, List<Object> rawArgs);
+    CommandFuture<Object> write(Object resource, Object... rawArgs);
 }

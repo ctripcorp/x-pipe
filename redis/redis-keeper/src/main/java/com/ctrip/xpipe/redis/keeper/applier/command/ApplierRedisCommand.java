@@ -41,6 +41,9 @@ public interface ApplierRedisCommand<V> extends Command<V> {
         if (op instanceof RedisSingleKeyOp) {
             return ((RedisSingleKeyOp<?>) op).getKey();
         }
+        if (op instanceof RedisMultiKeyOp) {
+            return keys().get(0);
+        }
         throw new UnsupportedOperationException("key() not on RedisSingleKeyOp");
     }
 
