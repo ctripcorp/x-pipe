@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 /**
@@ -19,6 +21,6 @@ public class CRedisAsyncClientTest {
         AsyncRedisClient client = CRedisAsyncClientFactory.DEFAULT.getOrCreateClient("BBZ_RedisGovUni");
         Object resource = client.select("K");
         CommandFuture<Object> future = client.write(resource, "SET", "K", "K1");
-        future.get();
+        assertArrayEquals("OK".getBytes(), (byte[]) future.get());
     }
 }
