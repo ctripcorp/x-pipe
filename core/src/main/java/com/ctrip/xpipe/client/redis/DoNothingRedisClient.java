@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.applier.client;
+package com.ctrip.xpipe.client.redis;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
@@ -12,7 +12,7 @@ import java.util.Map;
  * <p>
  * Jan 29, 2022 4:20 PM
  */
-public class DoNothingRedisClient implements ApplierRedisClient {
+public class DoNothingRedisClient implements AsyncRedisClient {
 
     private <T> CommandFuture<T> resultFuture(T result) {
         CommandFuture<T> future = new DefaultCommandFuture<>();
