@@ -51,4 +51,10 @@ public interface ApplierRedisCommand<V> extends Command<V> {
         }
         throw new UnsupportedOperationException("keys() not on RedisMultiKeyOp");
     }
+
+    @Override
+    default String getName() {
+        RedisOp op = redisOp();
+        return op.getOpType().name() + ":" + op.getOpGtidSet().toString();
+    }
 }
