@@ -58,6 +58,6 @@ public interface ApplierRedisCommand<V> extends Command<V> {
     @Override
     default String getName() {
         RedisOp op = redisOp();
-        return op.getOpType().name() + ":" + op.getOpGtidSet().toString();
+        return op.getOpType().name() + ":" + op.getOpGtid();
     }
 }
