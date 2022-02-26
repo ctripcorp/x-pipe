@@ -1,6 +1,7 @@
-package com.ctrip.xpipe.redis.keeper.applier.client;
+package com.ctrip.xpipe.client.redis;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.utils.ServicesUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.Map;
  * <p>
  * Jan 29, 2022 4:14 PM
  */
-public interface ApplierRedisClient {
+public interface AsyncRedisClient {
 
     Object /* shard */ select(Object key);
 
