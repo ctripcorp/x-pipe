@@ -31,7 +31,7 @@ public class DoNothingRedisClient implements AsyncRedisClient {
     }
 
     @Override
-    public CommandFuture<Object> write(Object shard, List<Object> rawArgs) {
+    public CommandFuture<Object> write(Object resource, Object... rawArgs) {
         //in most cases, return OK
         return resultFuture("OK");
     }

@@ -19,7 +19,7 @@ public class DoNothingRedisClientTest {
 
         AsyncRedisClient client = new DoNothingRedisClient();
         Object shard = client.select("K");
-        assertEquals("OK", client.write(shard, Lists.newArrayList("K", "V")).get());
+        assertEquals("OK", client.write(shard, Lists.newArrayList("K", "V").toArray()).get());
     }
 
 }
