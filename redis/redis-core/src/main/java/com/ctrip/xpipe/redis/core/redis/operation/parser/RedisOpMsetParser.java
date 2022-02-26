@@ -23,7 +23,7 @@ public class RedisOpMsetParser implements RedisOpParser {
 
     @Override
     public RedisOp parse(List<String> args) {
-        if (args.size() < 3 || 0 == args.size() % 2) throw new IllegalArgumentException("wrong number of arguments for MSET");
+        if (0 == args.size() % 2) throw new IllegalArgumentException("wrong number of arguments for MSET");
         List<Pair<RedisKey, String>> kvs = new ArrayList<>();
 
         for (int i = 1; i < args.size(); i+=2) {

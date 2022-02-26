@@ -4,7 +4,6 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisMultiKeyOpGtidWrapper;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisSingleKeyOpGtidWrapper;
-import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.List;
 
@@ -28,11 +27,15 @@ public class RedisOpGtidParser implements RedisOpParser {
         GtidSet gtidSet = new GtidSet(args.get(1));
 
         String subCmd = args.get(2);
-        if (StringUtil.isEmpty(subCmd)) throw new IllegalArgumentException("illegal empty cmd");
-        RedisOpParser subParser = parserManager.findParser(RedisOpType.lookup(args.get(2).trim()));
-        if (null == subParser) throw new UnsupportedOperationException("no parser for " + subCmd);
+        RedisOpType subOpType = RedisOpType.lookup(subCmd);
+        List<String> subArgs = args.subList(2, args.size());
+        if (!subOpType.checkArgcNotStrictly(subArgs)) {
+            throw new IllegalArgumentException("wrong number of args for " + subCmd);
+        }
 
-        RedisOp redisOp = subParser.parse(args.subList(2, args.size()));
+        RedisOpParser subParser = parserManager.findParser(subOpType);
+        if (null == subParser) throw new UnsupportedOperationException("no parser for " + subCmd);
+        RedisOp redisOp = subParser.parse(subArgs);
 
         if (redisOp instanceof RedisSingleKeyOp) return new RedisSingleKeyOpGtidWrapper<>(gtidSet, (RedisSingleKeyOp<?>)redisOp);
         else if (redisOp instanceof RedisMultiKeyOp) return new RedisMultiKeyOpGtidWrapper<>(gtidSet, (RedisMultiKeyOp<?>)redisOp);
