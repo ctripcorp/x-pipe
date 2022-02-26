@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.tuple.Pair;
@@ -16,8 +15,8 @@ public class RedisMultiKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper im
 
     private RedisMultiKeyOp<T> innerRedisMultiKeyOp;
 
-    public RedisMultiKeyOpGtidWrapper(GtidSet gtidSet, RedisMultiKeyOp<T> innerRedisMultiKeyOp) {
-        super(gtidSet, innerRedisMultiKeyOp);
+    public RedisMultiKeyOpGtidWrapper(String gtid, RedisMultiKeyOp<T> innerRedisMultiKeyOp) {
+        super(gtid, innerRedisMultiKeyOp);
         this.innerRedisMultiKeyOp = innerRedisMultiKeyOp;
     }
 
@@ -38,7 +37,7 @@ public class RedisMultiKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper im
 
     @Override
     public RedisMultiKeyOp<T> subOp(Set<Integer> needKeys) {
-        return new RedisMultiKeyOpGtidWrapper<>(getOpGtidSet(), innerRedisMultiKeyOp.subOp(needKeys));
+        return new RedisMultiKeyOpGtidWrapper<>(getOpGtid(), innerRedisMultiKeyOp.subOp(needKeys));
     }
 
 }
