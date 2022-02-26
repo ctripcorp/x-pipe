@@ -193,7 +193,6 @@ public class SentinelUpdateController {
         }
     }
 
-    //1、给出dc哨兵组信息，以及每组哨兵组当前的监控组数量
     @RequestMapping(value = "/dc/sentinels", method = RequestMethod.GET)
     public RetMessage dcSentinelUsage(@RequestParam String dc) {
         logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage", dc);
@@ -206,7 +205,6 @@ public class SentinelUpdateController {
         }
     }
 
-    //2、给出单个哨兵组的监控分片详情
     @RequestMapping(value = "/sentinel/shards", method = RequestMethod.GET)
     public RetMessage sentinelShards(@RequestParam String sentinelIp, @RequestParam int sentinelPort) {
         logger.info("[sentinelShards] begin to retrieve {}:{} monitor names", sentinelIp, sentinelPort);
@@ -224,7 +222,6 @@ public class SentinelUpdateController {
         }
     }
 
-    //3、给出单个机房分片上的监控哨兵组
     @RequestMapping(value = "/shard/sentinels", method = RequestMethod.GET)
     public RetMessage shardSentinels(@RequestParam String dc, @RequestParam String cluster, @RequestParam String shard) {
         logger.info("[shardSentinels] begin to retrieve {}:{} sentinels", dc, shard);
@@ -284,32 +281,19 @@ public class SentinelUpdateController {
         return GenericRetMessage.createGenericRetMessage(new SentinelShardModel(shardTbl.getShardName(), master).setSentinels(sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new HostPort(sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList())));
     }
 
-    //4、支持永久删除分片上的哨兵信息（需要后续自动加入）：将分片的sentinel_id设置为0
-    @RequestMapping(value = "/redis/sentinels", method = RequestMethod.DELETE)
-    public RetMessage removeRedisSentinel(@RequestParam String ip, @RequestParam int port) {
-        logger.info("[removeRedisSentinel] begin to remove {}:{} sentinels", ip, port);
-        try {
-            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllByRedis(ip, port);
-            if (dcClusterShardTbl == null)
-                return RetMessage.createFailMessage(String.format("dcClusterShard not found by redis %s:%d", ip, port));
-
-            removeShardSentinels(dcClusterShardTbl);
-            return RetMessage.createSuccessMessage();
-        } catch (Exception e) {
-            logger.error("[removeRedisSentinel]", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
-
     @RequestMapping(value = "/shard/sentinels", method = RequestMethod.DELETE)
     public RetMessage removeDcShardSentinels(@RequestParam String dc, @RequestParam String cluster, @RequestParam String shard) {
         logger.info("[removeDcShardSentinels] begin to remove {}:{} sentinels", dc, shard);
         try {
-            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllMeta(dc, cluster, shard);
+            ClusterTbl clusterTbl=clusterService.find(cluster);
+            if (clusterTbl == null)
+                return RetMessage.createFailMessage(String.format("cluster %s not found", cluster));
+
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dc, cluster, shard);
             if (dcClusterShardTbl == null)
                 return RetMessage.createFailMessage(String.format("%s:%s:%s not found", dc, cluster, shard));
 
-            removeShardSentinels(dcClusterShardTbl);
+            removeShardSentinels(dc,clusterTbl,shard,dcClusterShardTbl);
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[removeDcShardSentinels]", e);
@@ -317,14 +301,13 @@ public class SentinelUpdateController {
         }
     }
 
-    private void removeShardSentinels(DcClusterShardTbl dcClusterShardTbl) throws DalException {
-        String cluster = dcClusterShardTbl.getClusterInfo().getClusterName();
-        String shard = dcClusterShardTbl.getShardInfo().getShardName();
-        String dc = dcClusterShardTbl.getDcInfo().getDcName();
+    private void removeShardSentinels(String dc, ClusterTbl clusterTbl, String shard, DcClusterShardTbl dcClusterShardTbl) throws DalException {
+        String cluster = clusterTbl.getClusterName();
+        String clusterType = clusterTbl.getClusterType();
         long originSentinelGroupId = dcClusterShardTbl.getSetinelId();
 
         List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList(dcClusterShardTbl);
-        if (ClusterType.lookup(dcClusterShardTbl.getClusterInfo().getClusterType()).equals(ClusterType.CROSS_DC)) {
+        if (ClusterType.lookup(clusterType).equals(ClusterType.CROSS_DC)) {
             dc = consoleConfig.crossDcSentinelMonitorNameSuffix();
             dcClusterShardTbls = dcClusterShardService.find(cluster, shard);
         }
@@ -347,28 +330,17 @@ public class SentinelUpdateController {
     public RetMessage updateDcShardSentinels(@RequestParam String dc, @RequestParam String cluster, @RequestParam String shard) {
         logger.info("[updateDcShardSentinels] begin to remove {}:{} sentinels", dc, shard);
         try {
-            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllMeta(dc, cluster, shard);
+            ClusterTbl clusterTbl = clusterService.find(cluster);
+            if (clusterTbl == null)
+                return RetMessage.createFailMessage(String.format("cluster %s not found",cluster));
+
+            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dc, cluster, shard);
             if (dcClusterShardTbl == null)
                 return RetMessage.createFailMessage(String.format("%s:%s:%s not found", dc, cluster, shard));
 
-            return updateShardSentinels(dcClusterShardTbl);
+            return updateShardSentinels(dc, clusterTbl, shard, dcClusterShardTbl);
         } catch (Exception e) {
             logger.error("[updateDcShardSentinels]", e);
-            return RetMessage.createFailMessage(e.getMessage());
-        }
-    }
-
-    @RequestMapping(value = "/redis/sentinels", method = RequestMethod.POST)
-    public RetMessage updateRedisSentinels(@RequestParam String ip, @RequestParam int port) {
-        logger.info("[updateRedisSentinels] begin to update {}:{} sentinels", ip, port);
-        try {
-            DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.findAllByRedis(ip, port);
-            if (dcClusterShardTbl == null)
-                return RetMessage.createFailMessage(String.format("dc cluster shard not found by redis %s:%d", ip, port));
-            
-            return updateShardSentinels(dcClusterShardTbl);
-        } catch (Exception e) {
-            logger.error("[updateRedisSentinels]", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
@@ -417,11 +389,9 @@ public class SentinelUpdateController {
         }
     }
 
-    private RetMessage updateShardSentinels(DcClusterShardTbl dcClusterShardTbl) throws DalException {
-        String clusterType = dcClusterShardTbl.getClusterInfo().getClusterType();
-        String clusterName = dcClusterShardTbl.getClusterInfo().getClusterName();
-        String shardName = dcClusterShardTbl.getShardInfo().getShardName();
-        String dcName = dcClusterShardTbl.getDcInfo().getDcName();
+    private RetMessage updateShardSentinels(String dcName,ClusterTbl clusterTbl,String shardName,DcClusterShardTbl dcClusterShardTbl) throws DalException {
+        String clusterType = clusterTbl.getClusterType();
+        String clusterName = clusterTbl.getClusterName();
 
         SentinelGroupModel current = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
         SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType));

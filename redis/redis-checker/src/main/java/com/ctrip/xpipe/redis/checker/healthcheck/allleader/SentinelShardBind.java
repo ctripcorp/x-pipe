@@ -13,38 +13,37 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
-@Component
 public class SentinelShardBind extends AbstractAllCheckerLeaderTask {
 
     static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
-    @Autowired
     private MetaCache metaCache;
 
-    @Autowired
     private CheckerConfig config;
 
-    @Autowired
     private SentinelManager sentinelManager;
 
-    @Autowired
-    @Qualifier(GLOBAL_EXECUTOR)
     private ExecutorService executors;
 
-    @Autowired
     private CheckerConsoleService checkerConsoleService;
 
     private Map<ClusterType, SentinelBindTask> bindTasks = Maps.newConcurrentMap();
+
+    @Autowired
+    public SentinelShardBind(MetaCache metaCache, CheckerConfig config, SentinelManager sentinelManager, ExecutorService executors, CheckerConsoleService checkerConsoleService) {
+        this.metaCache = metaCache;
+        this.config = config;
+        this.sentinelManager = sentinelManager;
+        this.executors = executors;
+        this.checkerConsoleService = checkerConsoleService;
+    }
 
     @Override
     public void doTask() {

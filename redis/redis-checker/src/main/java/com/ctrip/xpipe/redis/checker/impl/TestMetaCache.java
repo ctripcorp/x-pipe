@@ -118,16 +118,6 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public void pauseUpdate() {
-        
-    }
-
-    @Override
-    public void continueUpdate() {
-
-    }
-
-    @Override
     public List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard) {
         return Collections.emptyList();
     }

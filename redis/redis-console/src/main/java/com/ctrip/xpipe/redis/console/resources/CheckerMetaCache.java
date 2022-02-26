@@ -68,13 +68,4 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
         }
     }
 
-    @Override
-    public void pauseUpdate() {
-        
-    }
-
-    @Override
-    public void continueUpdate() {
-
-    }
 }

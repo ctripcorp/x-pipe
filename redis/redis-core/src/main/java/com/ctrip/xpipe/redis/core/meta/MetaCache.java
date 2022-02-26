@@ -61,8 +61,4 @@ public interface MetaCache {
 
     boolean isMetaChain(HostPort src, HostPort dst);
 
-    void pauseUpdate();
-    
-    void continueUpdate();
-    
 }
