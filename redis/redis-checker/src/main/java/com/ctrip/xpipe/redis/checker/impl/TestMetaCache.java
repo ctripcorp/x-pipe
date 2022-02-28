@@ -126,4 +126,9 @@ public class TestMetaCache implements MetaCache {
     public List<RedisMeta> getSlavesOfShard(String cluster, String shard) {
         return null;
     }
+
+    @Override
+    public Pair<String, Integer> getMaxMasterCountDc(String clusterName, Set<String> excludedDcs) {
+        return null;
+    }
 }
