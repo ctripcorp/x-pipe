@@ -46,16 +46,6 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	}
 
 	@Override
-	public DcClusterShardTbl findAllByRedis(String ip, int port) {
-		return queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
-			@Override
-			public DcClusterShardTbl doQuery() throws DalException {
-				return dao.findAllByRedis(ip, port, DcClusterShardTblEntity.READSET_ALL_META_INFO);
-			}
-		});
-	}
-
-	@Override
 	public DcClusterShardTbl find(final long dcClusterId, final long shardId) {
 		return queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>() {
 			@Override
@@ -73,16 +63,6 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 				return dao.findDcClusterShardByName(dcName, clusterName, shardName, DcClusterShardTblEntity.READSET_FULL);
 			}
     	});
-	}
-
-	@Override
-	public DcClusterShardTbl findAllMeta(String dcName, String clusterName, String shardName) {
-		return queryHandler.handleQuery(new DalQuery<DcClusterShardTbl>(){
-			@Override
-			public DcClusterShardTbl doQuery() throws DalException {
-				return dao.findDcClusterShardByName(dcName, clusterName, shardName, DcClusterShardTblEntity.READSET_DC_CLUSTER_SHARD_META_INFO);
-			}
-		});
 	}
 
 	@Override

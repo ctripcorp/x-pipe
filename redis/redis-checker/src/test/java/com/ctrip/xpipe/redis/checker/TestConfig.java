@@ -234,4 +234,19 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public String crossDcSentinelMonitorNameSuffix() {
         return null;
     }
+
+    @Override
+    public boolean shouldBindOuterClusterShardAndSentinel() {
+        return false;
+    }
+
+    @Override
+    public int sentinelBindTimeoutMilli() {
+        return 0;
+    }
+
+    @Override
+    public Set<String> getOuterClusterTypes() {
+        return null;
+    }
 }

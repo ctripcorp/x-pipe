@@ -10,10 +10,8 @@ public interface DcClusterShardService {
 	List<DcClusterShardTbl> findByShardId(long shardId);
     List<DcClusterShardTbl> findAll();
     DcClusterShardTbl findByPk(long dcClusterShardId);
-    DcClusterShardTbl findAllByRedis(String ip, int port);
 	DcClusterShardTbl find(long dcClusterId, long shardId);
 	DcClusterShardTbl find(String dcName, String clusterName, String shardName);
-	DcClusterShardTbl findAllMeta(String dcName, String clusterName, String shardName);
 	List<DcClusterShardTbl> find(String clusterName, String shardName);
 	List<DcClusterShardTbl> findAllByDcCluster(long dcClusterId);
 	List<DcClusterShardTbl> findAllByDcCluster(String dcName, String clusterName);
