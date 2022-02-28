@@ -5,9 +5,7 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -19,7 +17,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
@@ -64,40 +64,6 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
         checker.doInitialize();
 
         Assert.assertEquals(expectedRedises, loadedRedises);
-    }
-
-    @Test
-    public void generateHealthCheckInstancesForCrossDcClusters(){
-        Map<String, ClusterMeta> dcClusters = new HashMap<>();
-        //                单机房trocks
-        ClusterMeta oyCluster = new ClusterMeta().setId("cluster").addShard(
-                new ShardMeta().setId("shard1").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        dcClusters.put("oy", oyCluster);
-        Assert.assertEquals("oy", checker.getMaxMasterCountDc(dcClusters));
-
-//        多机房trocks，单分片，oy master
-        ClusterMeta jqCluster = new ClusterMeta().setId("cluster").addShard(
-                new ShardMeta().setId("shard1").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        dcClusters.put("jq",jqCluster);
-        Assert.assertEquals("oy", checker.getMaxMasterCountDc(dcClusters));
-
-//        多机房trocks，多分片，oy master
-        oyCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        jqCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        Assert.assertEquals("oy", checker.getMaxMasterCountDc(dcClusters));
-
-//        多机房trocks，多分片，一个oy master，一个jq master
-        oyCluster.removeShard("shard2");
-        jqCluster.removeShard("shard2");
-        oyCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        jqCluster.addShard(new ShardMeta().setId("shard2").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        Assert.assertEquals("jq", checker.getMaxMasterCountDc(dcClusters));
-
-//        多机房trocks，多分片，一个oy master，两个jq master
-        oyCluster.addShard(new ShardMeta().setId("shard3").addRedis(new RedisMeta().setMaster("127.0.0.1")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        jqCluster.addShard(new ShardMeta().setId("shard3").addRedis(new RedisMeta().setMaster("")).addRedis(new RedisMeta().setMaster("127.0.0.1")));
-        Assert.assertEquals("jq", checker.getMaxMasterCountDc(dcClusters));
-
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,10 +19,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
@@ -135,29 +136,14 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         generateHealthCheckInstancesForCrossDcClusters(crossDcClusters);
     }
 
-
     void generateHealthCheckInstancesForCrossDcClusters(Map<String, Map<String, ClusterMeta>> crossDcClusters) {
         crossDcClusters.forEach((k, v) -> {
-            String maxMasterCountDc = getMaxMasterCountDc(v);
-            if (maxMasterCountDc.equalsIgnoreCase(currentDcId)) {
+            Pair<String, Integer> maxMasterCountDc = metaCache.getMaxMasterCountDc(k, checkerConfig.getIgnoredHealthCheckDc());
+
+            if (maxMasterCountDc != null && maxMasterCountDc.getValue() > 0 && maxMasterCountDc.getKey().equalsIgnoreCase(currentDcId)) {
                 v.values().forEach(this::generateHealthCheckInstances);
             }
         });
-    }
-
-    String getMaxMasterCountDc(Map<String, ClusterMeta> dcClusters) {
-        Map<String, Integer> dcMasterNumMap = new HashMap<>();
-        dcClusters.forEach((dc, clusterMeta) -> {
-            dcMasterNumMap.put(dc, dcMastersCount(clusterMeta));
-        });
-        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
-        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
-            public int compare(Map.Entry<String, Integer> o1,
-                               Map.Entry<String, Integer> o2) {
-                return o2.getValue().compareTo(o1.getValue());
-            }
-        });
-        return entryList.get(0).getKey();
     }
 
     void generateHealthCheckInstances(ClusterMeta clusterMeta){
@@ -169,18 +155,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         instanceManager.getOrCreate(clusterMeta);
     }
 
-    private int dcMastersCount(ClusterMeta dcCluster) {
-        Map<String, ShardMeta> shards = dcCluster.getShards();
-        AtomicInteger masterCount = new AtomicInteger();
-        shards.forEach((shardId, shardMeta) -> {
-            shardMeta.getRedises().forEach(redisMeta -> {
-                if (redisMeta.isMaster()) {
-                    masterCount.incrementAndGet();
-                }
-            });
-        });
-        return masterCount.get();
-    }
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
         return cluster.getActiveDc().equalsIgnoreCase(currentDcId);

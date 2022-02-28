@@ -151,4 +151,10 @@ public interface CheckerConfig {
     String sentinelCheckDowngradeStrategy();
 
     String crossDcSentinelMonitorNameSuffix();
+
+    boolean shouldBindOuterClusterShardAndSentinel();
+
+    int sentinelBindTimeoutMilli();
+
+    Set<String> getOuterClusterTypes();
 }

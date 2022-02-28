@@ -23,6 +23,7 @@ public class SentinelMetaServiceImpl extends AbstractMetaService implements Sent
 			sentinelMeta.setId(sentinelGroup.getSentinelGroupId());
 			sentinelMeta.setAddress(sentinelGroup.getSentinelsAddressString());
 			sentinelMeta.setParent(dcMeta);
+			sentinelMeta.setClusterType(sentinelGroup.getClusterType());
 		}
 
 		return sentinelMeta;

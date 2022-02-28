@@ -4,11 +4,13 @@ import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
@@ -143,5 +145,10 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     @Override
     public void recordAlert(String console, String eventOperator, AlertMessageEntity message, EmailResponse response) {
         restTemplate.postForObject(console + ConsoleCheckerPath.PATH_POST_RECORD_ALERT, new AlertMessage(eventOperator,message, response), String.class);
+    }
+
+    @Override
+    public void bindShardSentinel(String console, String dc, String cluster, String shard, SentinelMeta sentinelMeta) {
+        restTemplate.postForObject(console + ConsoleCheckerPath.PATH_BIND_SHARD_SENTINEL+"/"+dc+"/"+cluster+"/"+shard, sentinelMeta, RetMessage.class);
     }
 }
