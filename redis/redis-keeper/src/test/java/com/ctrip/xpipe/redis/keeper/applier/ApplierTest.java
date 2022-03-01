@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
+import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
@@ -99,7 +100,7 @@ public class ApplierTest extends AbstractRedisOpParserTest implements XsyncObser
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
-        RedisOpCommand<Boolean> command = new DefaultApplierCommand(client, redisOp);
-        sequenceController.submit(command);
+        ApplierRedisOpCommand<Boolean> command = new DefaultApplierCommand(client, redisOp);
+        command.sharding().forEach(sequenceController::submit);
     }
 }
