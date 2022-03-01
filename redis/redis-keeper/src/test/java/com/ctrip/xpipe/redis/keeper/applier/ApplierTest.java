@@ -70,6 +70,12 @@ public class ApplierTest extends AbstractRedisOpParserTest implements XsyncObser
         server.propagate("gtid a1:21 set k1 v1");
         server.propagate("gtid a1:22 mset k1 v1 k2 v2");
         server.propagate("gtid a1:23 del k1 k2");
+
+        server.propagate("gtid a1:24 set k3 v3");
+        server.propagate("gtid a1:25 set k4 v4");
+        server.propagate("gtid a1:26 set k1 v6");
+
+        server.propagate("gtid a1:27 set k1 v7");
     }
 
     @Override

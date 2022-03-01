@@ -3,14 +3,11 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.google.common.collect.Lists;
-import qunar.tc.qclient.redis.network.SessionChannel;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Slight
@@ -18,6 +15,8 @@ import java.util.stream.Stream;
  * Feb 26, 2022 3:13 PM
  */
 public class DefaultApplierCommand extends AbstractCommand<Boolean> implements ApplierRedisOpCommand<Boolean> {
+
+    public static String ERR_GTID_COMMAND_EXECUTED = "ERR gtId command is executed";
 
     final AsyncRedisClient client;
 
@@ -44,7 +43,17 @@ public class DefaultApplierCommand extends AbstractCommand<Boolean> implements A
 
         client
                 .write(rc, rawArgs)
-                .addListener(f->future().setSuccess(f.isSuccess()));
+                .addListener(f->{
+                    if (f.isSuccess()) {
+                        future().setSuccess(true);
+                    } else {
+                        if (f.cause().getMessage().startsWith(ERR_GTID_COMMAND_EXECUTED)) {
+                            future().setSuccess(true);
+                        } else {
+                            future().setFailure(f.cause());
+                        }
+                    }
+                });
     }
 
     @Override
