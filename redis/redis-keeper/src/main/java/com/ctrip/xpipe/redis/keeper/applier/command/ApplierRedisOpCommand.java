@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
+import java.util.List;
+
 /**
  * @author Slight
  * <p>
@@ -7,4 +9,5 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
  */
 public interface ApplierRedisOpCommand<V> extends RedisOpCommand<V> {
 
+    List<RedisOpCommand<V>> sharding();
 }

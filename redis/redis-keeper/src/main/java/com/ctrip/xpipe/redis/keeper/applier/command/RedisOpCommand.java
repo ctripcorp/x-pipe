@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -24,6 +25,22 @@ public interface RedisOpCommand<V> extends Command<V> {
     }
 
     RedisOp redisOp();
+
+    default RedisSingleKeyOp<V> redisOpAsSingle() {
+        RedisOp op = redisOp();
+        if (op instanceof RedisSingleKeyOp) {
+            return (RedisSingleKeyOp<V>) op;
+        }
+        throw new XpipeRuntimeException("invalid type of RedisOp");
+    }
+
+    default RedisMultiKeyOp<V> redisOpAsMulti() {
+        RedisOp op = redisOp();
+        if (op instanceof RedisMultiKeyOp) {
+            return (RedisMultiKeyOp<V>) op;
+        }
+        throw new XpipeRuntimeException("invalid type of RedisOp");
+    }
 
     default RedisOpCommandType type() {
         RedisOp op = redisOp();
