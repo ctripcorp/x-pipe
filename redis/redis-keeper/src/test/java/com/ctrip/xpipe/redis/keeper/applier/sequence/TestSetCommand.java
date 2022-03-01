@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.RedisOpSetParser;
-import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import org.assertj.core.util.Lists;
 
 import java.util.Arrays;
@@ -14,7 +14,7 @@ import java.util.Arrays;
  * <p>
  * Feb 20, 2022 7:11 PM
  */
-public class TestSetCommand extends TestSleepCommand implements ApplierRedisCommand<String> {
+public class TestSetCommand extends TestSleepCommand implements RedisOpCommand<String> {
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
