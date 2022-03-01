@@ -13,9 +13,9 @@ import java.util.List;
  *
  * Jan 29, 2022 4:08 PM
  */
-public interface ApplierRedisCommand<V> extends Command<V> {
+public interface RedisOpCommand<V> extends Command<V> {
 
-    enum ApplierRedisCommandType {
+    enum RedisOpCommandType {
         SINGLE_KEY,
         MULTI_KEY,
         MULTI,
@@ -25,15 +25,15 @@ public interface ApplierRedisCommand<V> extends Command<V> {
 
     RedisOp redisOp();
 
-    default ApplierRedisCommandType type() {
+    default RedisOpCommandType type() {
         RedisOp op = redisOp();
         if (op instanceof RedisSingleKeyOp) {
-            return ApplierRedisCommandType.SINGLE_KEY;
+            return RedisOpCommandType.SINGLE_KEY;
         }
         if (op instanceof RedisMultiKeyOp) {
-            return ApplierRedisCommandType.MULTI_KEY;
+            return RedisOpCommandType.MULTI_KEY;
         }
-        return ApplierRedisCommandType.UNKNOWN;
+        return RedisOpCommandType.UNKNOWN;
     }
 
     default RedisKey key() {

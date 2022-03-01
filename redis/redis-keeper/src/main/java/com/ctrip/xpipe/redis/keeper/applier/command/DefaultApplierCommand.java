@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
  * <p>
  * Feb 26, 2022 3:13 PM
  */
-public class DefaultApplierRedisCommand extends AbstractCommand<Boolean> implements ApplierRedisCommand<Boolean> {
+public class DefaultApplierCommand extends AbstractCommand<Boolean> implements ApplierRedisOpCommand<Boolean> {
 
     final AsyncRedisClient client;
 
@@ -17,11 +17,11 @@ public class DefaultApplierRedisCommand extends AbstractCommand<Boolean> impleme
 
     final RedisOp redisOp;
 
-    public DefaultApplierRedisCommand(AsyncRedisClient client, RedisOp redisOp) {
+    public DefaultApplierCommand(AsyncRedisClient client, RedisOp redisOp) {
         this(client, null, redisOp);
     }
 
-    public DefaultApplierRedisCommand(AsyncRedisClient client, Object resource, RedisOp redisOp) {
+    public DefaultApplierCommand(AsyncRedisClient client, Object resource, RedisOp redisOp) {
 
         this.client = client;
         this.resource = resource;

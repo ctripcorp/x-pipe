@@ -3,11 +3,12 @@ package com.ctrip.xpipe.redis.keeper.applier.sequence;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
-import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisCommand;
+import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.SequenceCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.StubbornCommand;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,11 +38,17 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
     }
 
     @Override
-    public void submit(ApplierRedisCommand<?> command) {
+    public void submit(RedisOpCommand<?> command) {
 
-        if (command.type() == ApplierRedisCommand.ApplierRedisCommandType.SINGLE_KEY) {
+        if (command.type() == RedisOpCommand.RedisOpCommandType.SINGLE_KEY) {
             stateThread.execute(()->{
                 submitSingleKeyCommand(command);
+            });
+        }
+
+        if (command.type() == RedisOpCommand.RedisOpCommandType.MULTI_KEY) {
+            stateThread.execute(()->{
+                submitMultiKeyCommand(command);
             });
         }
 
@@ -66,7 +73,7 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
         //}
     }
 
-    private void submitSingleKeyCommand(ApplierRedisCommand<?> command) {
+    private void submitSingleKeyCommand(RedisOpCommand<?> command) {
         RedisKey key = command.key();
         SequenceCommand<?> current = runningCommands.get(key);
         if (current == null || current.future().isSuccess()) {
@@ -81,6 +88,11 @@ public class DefaultSequenceController extends AbstractLifecycle implements Appl
         runningCommands.put(key, current);
         forgetWhenSuccess(current, key);
         current.execute();
+    }
+
+    private void submitMultiKeyCommand(RedisOpCommand<?> command) {
+        List<RedisKey> keys = command.keys();
+
     }
 
     private void forgetWhenSuccess(SequenceCommand<?> sequenceCommand, RedisKey key) {

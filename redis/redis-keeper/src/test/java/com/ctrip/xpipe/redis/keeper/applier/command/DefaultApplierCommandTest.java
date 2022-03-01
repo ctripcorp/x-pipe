@@ -11,21 +11,16 @@ import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import org.assertj.core.util.Lists;
 import org.junit.*;
 
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.*;
-
 /**
  * @author Slight
  * <p>
  * Feb 26, 2022 8:45 PM
  */
-public class DefaultApplierRedisCommandTest {
+public class DefaultApplierCommandTest {
 
     private RedisOpParserManager parserManager = new DefaultRedisOpParserManager();
 
     private RedisOpSetParser parser = new RedisOpSetParser(parserManager);
-
 
     private static AsyncRedisClient client;
 
@@ -58,16 +53,16 @@ public class DefaultApplierRedisCommandTest {
 
     @Test
     public void simple() throws Throwable {
-        DefaultApplierRedisCommand command = new DefaultApplierRedisCommand(client, newSetOp("SET", "K", "V10"));
+        RedisOpCommand command = new DefaultApplierCommand(client, newSetOp("SET", "K", "V10"));
         command.execute().get();
     }
 
     @Test
     public void cooperateWithSequenceController() throws InterruptedException {
-        DefaultApplierRedisCommand c1 = new DefaultApplierRedisCommand(client, newSetOp("SET", "K", "V10"));
-        DefaultApplierRedisCommand c2 = new DefaultApplierRedisCommand(client, newSetOp("SET", "K", "V12"));
-        DefaultApplierRedisCommand c3 = new DefaultApplierRedisCommand(client, newSetOp("SET", "K", "V14"));
-        DefaultApplierRedisCommand c4 = new DefaultApplierRedisCommand(client, newSetOp("SET", "K", "V16"));
+        RedisOpCommand c1 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V10"));
+        RedisOpCommand c2 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V12"));
+        RedisOpCommand c3 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V14"));
+        RedisOpCommand c4 = new DefaultApplierCommand(client, newSetOp("SET", "K", "V16"));
 
         controller.submit(c1);
         controller.submit(c2);
