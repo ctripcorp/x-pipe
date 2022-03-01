@@ -10,7 +10,8 @@ import java.util.concurrent.Executor;
 
 /**
  * @author Slight
- * <p>
+ *
+ * Make sure to execute this command on stateThread.
  * Jan 31, 2022 1:06 PM
  */
 public class SequenceCommand<V> extends AbstractCommand<V> implements Command<V> {
