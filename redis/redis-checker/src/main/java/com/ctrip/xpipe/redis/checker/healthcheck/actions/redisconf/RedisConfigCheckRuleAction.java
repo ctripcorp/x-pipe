@@ -26,7 +26,7 @@ public class RedisConfigCheckRuleAction extends AbstractRedisConfigRuleAction {
                 @Override
                 public void success(String message) {
                     if(!redisCheckRule.getParams().get(EXPECTED_VAULE).equals(message)) {
-                        String alertMessage = String.format("config:%s should be %s, but was $s", redisCheckRule.getParams().get(CONFIG_CHECK_NAME), redisCheckRule.getParams().get(EXPECTED_VAULE), message);
+                        String alertMessage = String.format("config:%s should be %s, but was %s", redisCheckRule.getParams().get(CONFIG_CHECK_NAME), redisCheckRule.getParams().get(EXPECTED_VAULE), message);
                         logger.warn("{}", alertMessage);
                         alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONIFIG_CHECK_FAIL, alertMessage);
                    }

@@ -29,4 +29,12 @@ public class RedisCheckRule {
     public void setParams(Map<String, String> params) {
         this.params = params;
     }
+
+    @Override
+    public String toString() {
+        return "RedisCheckRule{" +
+                "checkType='" + checkType + '\'' +
+                ", params=" + params +
+                '}';
+    }
 }
