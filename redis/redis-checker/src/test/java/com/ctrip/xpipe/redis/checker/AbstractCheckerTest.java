@@ -5,7 +5,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRule;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
@@ -62,26 +62,26 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         return newRandomRedisHealthCheckInstance(port, null);
     }
 
-    protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(int port, List<RedisConfigCheckRule> redisConfigCheckRule) throws Exception {
+    protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(int port, List<RedisCheckRule> redisCheckRules) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
                 redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.ONE_WAY);
-        if(null != redisConfigCheckRule)
-            info.setRedisConfigCheckRules(redisConfigCheckRule);
+        if(null != redisCheckRules)
+            info.setRedisCheckRules(redisCheckRules);
 
         return newRandomRedisHealthCheckInstance(info);
     }
 
-    protected RedisHealthCheckInstance newRandomBiDirectionRedisHealthCheckInstance(int port, List<RedisConfigCheckRule> redisConfigCheckRule) throws Exception {
+    protected RedisHealthCheckInstance newRandomBiDirectionRedisHealthCheckInstance(int port, List<RedisCheckRule> redisCheckRules) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
                 redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.BI_DIRECTION);
-        if(null != redisConfigCheckRule)
-            info.setRedisConfigCheckRules(redisConfigCheckRule);
+        if(null != redisCheckRules)
+            info.setRedisCheckRules(redisCheckRules);
 
         return newRandomRedisHealthCheckInstance(info);
     }

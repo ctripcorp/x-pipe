@@ -4,15 +4,17 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRule;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,11 +43,15 @@ public class CRDTRedisConfigCheckRuleActionTest extends AbstractCheckerTest {
         });
 
         alertManager = mock(AlertManager.class);
-        List<RedisConfigCheckRule> redisConfigCheckRules = new LinkedList<>();
-        redisConfigCheckRules.add(new RedisConfigCheckRule("config", "repl-backlog-size", "128"));
-        RedisHealthCheckInstance instance = newRandomBiDirectionRedisHealthCheckInstance(redis.getPort(), redisConfigCheckRules);
+        Map<String, String> param = new HashMap<>();
+        param.put("configCheckName", "repl-backlog-size");
+        param.put("expectedVaule", "128");
 
-        action = new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, redisConfigCheckRules);
+        List<RedisCheckRule> redisCheckRules = new LinkedList<>();
+        redisCheckRules.add(new RedisCheckRule("config", param));
+        RedisHealthCheckInstance instance = newRandomBiDirectionRedisHealthCheckInstance(redis.getPort(), redisCheckRules);
+
+        action = new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, redisCheckRules);
     }
 
     @Test

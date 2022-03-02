@@ -59,7 +59,7 @@ public class RedisConfigCheckMonitorTest {
         when(dcService.dcNameZoneMap()).thenReturn(dcNameZoneMap);
         when(consoleConfig.isRedisConfigCheckMonitorOpen()).thenReturn(true);
         when(dcClusterService.findDcClusterCreateInfo(anyString(), anyString()))
-                .thenReturn(new DcClusterCreateInfo().setRedisConfigRule("1,2").setClusterName("cluster1").setDcName("fra"));
+                .thenReturn(new DcClusterCreateInfo().setRedisCheckRule("1,2").setClusterName("cluster1").setDcName("fra"));
 
         dcNameZoneMap.put("jq", 1L);
         dcNameZoneMap.put("oy", 1L);
@@ -89,8 +89,7 @@ public class RedisConfigCheckMonitorTest {
 
     @Test
     public void testIsBiDirectionAndCrossRegionCluster() {
-        ClusterMeta clusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name())
-                .setRedisConfigCheckRules("1,2").setDcs("jq,oy,fra");
+        ClusterMeta clusterMeta = new ClusterMeta().setType(ClusterType.BI_DIRECTION.name()).setActiveRedisCheckRules("1,2").setDcs("jq,oy,fra");
         Assert.assertEquals(true, redisConfigCheckMonitor.isBiDirectionAndCrossRegionCluster(clusterMeta, dcNameZoneMap));
 
         clusterMeta.setType(ClusterType.ONE_WAY.name());
@@ -102,9 +101,9 @@ public class RedisConfigCheckMonitorTest {
 
     @Test
     public void testGenerateNewRedisConfigRule() {
-        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigRule("1,2", "2,3"),"1,2,3");
-        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigRule(null, "2,3"),"2,3");
-        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigRule("", "2,3"),"2,3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("1,2", "2,3"),"1,2,3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule(null, "2,3"),"2,3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("", "2,3"),"2,3");
     }
 
 
@@ -115,8 +114,8 @@ public class RedisConfigCheckMonitorTest {
             meta.addDc(mockDcMeta(dc));
         }
 
-        meta.addRedisConfigCheckRule(new RedisConfigCheckRuleMeta(1L).setCheckType("config").setParam("{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '256' }"));
-        meta.addRedisConfigCheckRule(new RedisConfigCheckRuleMeta(2L).setCheckType("info").setParam("{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '128' }"));
+        meta.addRedisCheckRule(new RedisCheckRuleMeta(1L).setCheckType("config").setParam("{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '256' }"));
+        meta.addRedisCheckRule(new RedisCheckRuleMeta(2L).setCheckType("info").setParam("{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '128' }"));
 
         return meta;
     }
@@ -136,7 +135,7 @@ public class RedisConfigCheckMonitorTest {
         ClusterMeta clusterMeta = new ClusterMeta();
         clusterMeta.setId(cluster);
         clusterMeta.setType(mockClusterType.toString());
-        clusterMeta.setRedisConfigCheckRules("1,3");
+        clusterMeta.setActiveRedisCheckRules("1,3");
         clusterMeta.setDcs("jq,oy,fra");
 
         return clusterMeta;

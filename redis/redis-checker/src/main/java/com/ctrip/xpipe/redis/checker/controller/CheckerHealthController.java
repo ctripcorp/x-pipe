@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +81,11 @@ public class CheckerHealthController {
             for(Object controller : ((AbstractHealthCheckAction) action).getControllers()) {
                 actionModel.addController(controller.toString());
             }
+            if(action instanceof AbstractRedisConfigRuleAction) {
+                for(Object redisCheckRule : ((AbstractRedisConfigRuleAction) action).getRedisConfigCheckRules()) {
+                    actionModel.addRedisCheckRule(redisCheckRule.toString());
+                }
+            }
             model.addAction(actionModel);
         }
 
@@ -117,6 +123,7 @@ public class CheckerHealthController {
         private String name;
         private List<String> listeners;
         private List<String> controllers;
+        private List<String> redisCheckRules;
 
         public HealthCheckActionModel() {
         }
@@ -125,6 +132,7 @@ public class CheckerHealthController {
             this.name = name;
             this.listeners = Lists.newArrayList();
             this.controllers = Lists.newArrayList();
+            this.redisCheckRules = Lists.newArrayList();
         }
 
         public void addListener(String listener) {
@@ -133,6 +141,10 @@ public class CheckerHealthController {
 
         public void addController(String controller) {
             controllers.add(controller);
+        }
+
+        public void addRedisCheckRule(String redisCheckRule){
+            redisCheckRules.add(redisCheckRule);
         }
 
         public String getName() {
@@ -145,6 +157,10 @@ public class CheckerHealthController {
 
         public List<String> getControllers() {
             return controllers;
+        }
+
+        public List<String> getRedisCheckRules() {
+            return redisCheckRules;
         }
     }
 

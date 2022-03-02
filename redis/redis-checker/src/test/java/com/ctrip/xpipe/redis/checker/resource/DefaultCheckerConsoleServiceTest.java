@@ -39,7 +39,7 @@ public class DefaultCheckerConsoleServiceTest extends AbstractCheckerTest {
         Assert.assertEquals(1, webServer.getRequestCount());
 
 
-        Assert.assertEquals(3, xpipeMeta.getRedisConfigCheckRules().values().size());
+        Assert.assertEquals(3, xpipeMeta.getRedisCheckRules().values().size());
 
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/meta/divide/1?format=xml", request.getPath());

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <model>
   <entity name="xpipe" root="true">
-    <entity-ref name="redisConfigCheckRule" type="list" names="redisConfigCheckRules" />
+    <entity-ref name="redisCheckRule" type="list" names="redisCheckRules" />
     <entity-ref name="dc" type="list" names="dcs" />
   </entity>
-  <entity name="redisConfigCheckRule">
+  <entity name="redisCheckRule">
     <attribute name="id" value-type="long" />
     <attribute name="checkType" value-type="String" />
     <attribute name="param" value-type="String" />
@@ -54,7 +54,7 @@
     <attribute name="type" value-type="String" />
     <attribute name="admin-emails" value-type="String" />
     <attribute name="dcs" value-type="String" />
-    <attribute name="redisConfigCheckRules" value-type="String" />
+    <attribute name="activeRedisCheckRules" value-type="String" />
     <entity-ref name="shard" type="list" names="shards" />
   </entity>
   <entity name="shard">

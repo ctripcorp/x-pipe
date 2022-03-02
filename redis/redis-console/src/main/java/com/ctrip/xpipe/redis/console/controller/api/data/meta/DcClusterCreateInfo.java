@@ -5,7 +5,7 @@ public class DcClusterCreateInfo extends AbstractCreateInfo{
 
     private String dcName;
 
-    private String redisConfigRule;
+    private String redisCheckRule;
 
     @Override
     public void check() throws CheckFailException {
@@ -17,7 +17,7 @@ public class DcClusterCreateInfo extends AbstractCreateInfo{
         return "DcClusterCreateInfo{" +
                 "clusterName='" + clusterName + '\'' +
                 ", dcName='" + dcName + '\'' +
-                ", redisConfigRule='" + redisConfigRule + '\'' +
+                ", redisCheckRule='" + redisCheckRule + '\'' +
                 '}';
     }
 
@@ -39,12 +39,12 @@ public class DcClusterCreateInfo extends AbstractCreateInfo{
         return this;
     }
 
-    public String getRedisConfigRule() {
-        return redisConfigRule;
+    public String getRedisCheckRule() {
+        return redisCheckRule;
     }
 
-    public DcClusterCreateInfo setRedisConfigRule(String redisConfigRule) {
-        this.redisConfigRule = redisConfigRule;
+    public DcClusterCreateInfo setRedisCheckRule(String redisCheckRule) {
+        this.redisCheckRule = redisCheckRule;
         return this;
     }
 }

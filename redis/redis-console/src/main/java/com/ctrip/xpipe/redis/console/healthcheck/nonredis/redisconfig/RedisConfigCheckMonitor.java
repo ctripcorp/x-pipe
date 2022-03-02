@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,6 +33,8 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
 
     @Autowired
     private DcClusterServiceImpl dcClusterService;
+
+    private static final String ACTIVE_DEFAULT_REDIS_CHECK_RULE = "active.default.redis.check.rule";
 
     @Override
     protected void doCheck() {
@@ -56,15 +60,19 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
 
     private void addRedisConfigCheckRulesToDCCluster(ClusterMeta clustMeta, DcMeta dcMeta, String readyToAddRedisConfigRule) {
         DcClusterCreateInfo dcClusterCreateInfo = dcClusterService.findDcClusterCreateInfo(dcMeta.getId(), clustMeta.getId());
-        String newRedisConfigCheckRule = generateNewRedisConfigRule(dcClusterCreateInfo.getRedisConfigRule(), readyToAddRedisConfigRule);
+        String oldRedisConfigCheckRule = dcClusterCreateInfo.getRedisCheckRule();
+        String newRedisConfigCheckRule = generateNewRedisConfigCheckRule(oldRedisConfigCheckRule, readyToAddRedisConfigRule);
 
-        dcClusterCreateInfo.setRedisConfigRule(newRedisConfigCheckRule);
-        logger.info("[addRedisConfigCheckRulesToDCCluster] dc:{} cluster:{} from {} to {}", dcMeta.getId(), clustMeta.getId(), dcClusterCreateInfo.getRedisConfigRule(), newRedisConfigCheckRule);
+        dcClusterCreateInfo.setRedisCheckRule(newRedisConfigCheckRule);
+
         dcClusterService.updateDcCluster(dcClusterCreateInfo);
+        CatEventMonitor.DEFAULT.logEvent(ACTIVE_DEFAULT_REDIS_CHECK_RULE, String.format("redis check rule of dc:%s cluster:%s was changed from %s to %s",
+                dcMeta.getId(), clustMeta.getId(), oldRedisConfigCheckRule, newRedisConfigCheckRule));
+
     }
 
     @VisibleForTesting
-    protected String generateNewRedisConfigRule(String oldRedisConfigRule, String readyToAddRedisConfigRule) {
+    protected String generateNewRedisConfigCheckRule(String oldRedisConfigRule, String readyToAddRedisConfigRule) {
         if(oldRedisConfigRule == null || "".equals(oldRedisConfigRule))
             return readyToAddRedisConfigRule;
 

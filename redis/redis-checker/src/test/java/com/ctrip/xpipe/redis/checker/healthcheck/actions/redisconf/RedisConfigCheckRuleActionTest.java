@@ -10,9 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,11 +32,14 @@ public class RedisConfigCheckRuleActionTest extends AbstractCheckerTest {
         alertManager = mock(AlertManager.class);
         redis = startServer("*2\r\n$17\r\nrepl-backlog-size\r\n$3\r\n256\r\n");
 
-        List<RedisConfigCheckRule> redisConfigCheckRules = new LinkedList<>();
-        redisConfigCheckRules.add(new RedisConfigCheckRule("config", "repl-backlog-size", "128"));
-        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(redis.getPort(), redisConfigCheckRules);
+        List<RedisCheckRule> redisCheckRules = new LinkedList<>();
+        Map<String, String> param1 = new HashMap<>();
+        param1.put("configCheckName", "repl-backlog-size");
+        param1.put("expectedVaule", "128");
+        redisCheckRules.add(new RedisCheckRule("config", param1));
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(redis.getPort(), redisCheckRules);
 
-        action = new RedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, redisConfigCheckRules);
+        action = new RedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, redisCheckRules);
     }
 
     @Test

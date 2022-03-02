@@ -82,6 +82,11 @@ public class ClusterShardCounter implements IVisitor{
     }
 
     @Override
+    public void visitRedisCheckRule(RedisCheckRuleMeta redisCheckRule) {
+
+    }
+
+    @Override
     public void visitRoute(RouteMeta route) {
 
     }
@@ -93,11 +98,6 @@ public class ClusterShardCounter implements IVisitor{
 
     @Override
     public void visitAz(AzMeta az) {
-
-    }
-
-    @Override
-    public void visitRedisConfigCheckRule(RedisConfigCheckRuleMeta redisConfigCheckRule){
 
     }
 

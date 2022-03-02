@@ -2,15 +2,16 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf;
 
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRule;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 
 public class CRDTRedisConfigCheckRuleActionFactoryTest extends AbstractCheckerIntegrationTest {
@@ -22,12 +23,20 @@ public class CRDTRedisConfigCheckRuleActionFactoryTest extends AbstractCheckerIn
 
     @Before
     public void testRedisConfigCheckRuleActionFactoryTest() throws Exception {
-        List<RedisConfigCheckRule> redisConfigCheckRules = new LinkedList<>();
-        redisConfigCheckRules.add(new RedisConfigCheckRule("config", "repl_backlog_size", "256"));
-        redisConfigCheckRules.add(new RedisConfigCheckRule("config", "repl_backlog_size", "128"));
-        redisConfigCheckRules.add(new RedisConfigCheckRule("info", "repl_backlog_size", "256"));
+        List<RedisCheckRule> redisCheckRules = new LinkedList<>();
+        Map<String, String> param1 = new HashMap<>();
+        param1.put("configCheckName", "repl-backlog-size");
+        param1.put("expectedVaule", "256");
 
-        instance = newRandomBiDirectionRedisHealthCheckInstance(randomPort(), redisConfigCheckRules);
+        Map<String, String> param2 = new HashMap<>();
+        param2.put("configCheckName", "repl-backlog-size");
+        param2.put("expectedVaule", "256");
+
+        redisCheckRules.add(new RedisCheckRule("config", param1));
+        redisCheckRules.add(new RedisCheckRule("config", param2));
+        redisCheckRules.add(new RedisCheckRule("info", param1));
+
+        instance = newRandomBiDirectionRedisHealthCheckInstance(randomPort(), redisCheckRules);
         instance.register(factory.create(instance));
     }
 
