@@ -95,7 +95,7 @@ public class RedisCheckRuleServiceImpl extends AbstractConsoleService<RedisCheck
             for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 String oldRedisCheckRule = clusterMeta.getActiveRedisCheckRules();
                 if(oldRedisCheckRule.contains(id.toString())) {
-                    dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName(clusterMeta.getId())
+                    dcClusterService.updateDcCluster(new DcClusterCreateInfo().setDcName(dcMeta.getId())
                             .setClusterName(clusterMeta.getId()).setRedisCheckRule(removeOneRuleId(oldRedisCheckRule, id.toString())));
                 }
             }

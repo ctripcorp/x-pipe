@@ -28,7 +28,7 @@ public class CRDTRedisConfigCheckRuleAction extends AbstractRedisConfigRuleActio
                 @Override
                 public void success(String message) {
                     if(!redisCheckRule.getParams().get(EXPECTED_VAULE).equals(message)) {
-                        String alertMessage = String.format("crdt config:%s of redis:%s should be %s", redisCheckRule.getParams().get(CONFIG_CHECK_NAME), getActionInstance().getEndpoint().toString(), redisCheckRule.getParams().get(EXPECTED_VAULE));
+                        String alertMessage = String.format("crdt config:%s of redis:%s should be %s, but was %s", redisCheckRule.getParams().get(CONFIG_CHECK_NAME), getActionInstance().getEndpoint().toString(), redisCheckRule.getParams().get(EXPECTED_VAULE), message);
                         logger.warn("{}", alertMessage);
                         alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONIFIG_CHECK_FAIL, alertMessage);
                     }
