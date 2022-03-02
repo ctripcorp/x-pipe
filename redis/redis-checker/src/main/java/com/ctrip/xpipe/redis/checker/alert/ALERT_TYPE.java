@@ -135,7 +135,7 @@ public enum ALERT_TYPE {
 
         @Override
         public DetailDesc detailDesc() {
-            return new DetailDesc("redis配置错误", "redis配置错误，请检查redis");
+            return new DetailDesc("redis config check fail", "redis has wrong config, please check it");
         }
     },
     REDIS_REPL_DISKLESS_SYNC_ERROR("redis_repl_diskless_sync_error", EMAIL_DBA) {

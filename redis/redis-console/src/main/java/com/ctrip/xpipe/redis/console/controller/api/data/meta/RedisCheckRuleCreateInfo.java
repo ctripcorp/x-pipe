@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
-import com.ctrip.xpipe.redis.console.model.RedisConfigCheckRuleTbl;
 import com.ctrip.xpipe.utils.StringUtil;
 
-public class RedisConfigCheckRuleCreateInfo extends AbstractCreateInfo{
+public class RedisCheckRuleCreateInfo extends AbstractCreateInfo{
 
     private Long id;
 
@@ -31,7 +30,7 @@ public class RedisConfigCheckRuleCreateInfo extends AbstractCreateInfo{
 
     @Override
     public String toString() {
-        return "RedisConfigCheckRuleCreateInfo{" +
+        return "RedisCheckRuleCreateInfo{" +
                 "id=" + id +
                 ", checkType='" + checkType + '\'' +
                 ", param='" + param + '\'' +
@@ -43,7 +42,7 @@ public class RedisConfigCheckRuleCreateInfo extends AbstractCreateInfo{
         return description;
     }
 
-    public RedisConfigCheckRuleCreateInfo setDescription(String description) {
+    public RedisCheckRuleCreateInfo setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -52,7 +51,7 @@ public class RedisConfigCheckRuleCreateInfo extends AbstractCreateInfo{
         return id;
     }
 
-    public RedisConfigCheckRuleCreateInfo setId(Long id) {
+    public RedisCheckRuleCreateInfo setId(Long id) {
         this.id = id;
         return this;
     }
@@ -61,7 +60,7 @@ public class RedisConfigCheckRuleCreateInfo extends AbstractCreateInfo{
         return checkType;
     }
 
-    public RedisConfigCheckRuleCreateInfo setCheckType(String checkType) {
+    public RedisCheckRuleCreateInfo setCheckType(String checkType) {
         this.checkType = checkType;
         return this;
     }
@@ -70,7 +69,7 @@ public class RedisConfigCheckRuleCreateInfo extends AbstractCreateInfo{
         return param;
     }
 
-    public RedisConfigCheckRuleCreateInfo setParam(String param) {
+    public RedisCheckRuleCreateInfo setParam(String param) {
         this.param = param;
         return this;
     }

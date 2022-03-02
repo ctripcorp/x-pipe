@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
-    <redisConfigCheckRule id = "1" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '256'}"></redisConfigCheckRule>
-    <redisConfigCheckRule id = "2" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '128'}"></redisConfigCheckRule>
-    <redisConfigCheckRule id = "3" checkType="info" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '232'}"></redisConfigCheckRule>
+    <redisCheckRule id = "1" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '256'}"></redisCheckRule>
+    <redisCheckRule id = "2" checkType="config" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '128'}"></redisCheckRule>
+    <redisCheckRule id = "3" checkType="info" param="{ 'configName' : 'repl_backlog_size', 'expectedVaule' : '232'}"></redisCheckRule>
     <dc id="jq" zone="SHA">
         <sentinel id="1" address="127.0.0.1:17171,127.0.0.1:17171"/>
         <sentinel id="2" address="127.0.0.1:17171,127.0.0.1:17171"/>

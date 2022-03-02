@@ -421,8 +421,8 @@
 			<readset name="CLUSTER_ID">
 				<member name="cluster-id" />
 			</readset>
-			<readset name="DC_CLUSTER_REDISCONFIG_RULES">
-				<member name="redis-config-check-rules"/>
+			<readset name="DC_CLUSTER_ACTIVE_REDIS_CHECK_RULES">
+				<member name="active-redis-check-rules"/>
 			</readset>
 		</readsets>
 
@@ -667,7 +667,7 @@
 			</readset>
 			<readset name="CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
-				<readset-ref name="DC_CLUSTER_REDISCONFIG_RULES" relation-name="dc-cluster-info"/>
+				<readset-ref name="DC_CLUSTER_ACTIVE_REDIS_CHECK_RULES" relation-name="dc-cluster-info"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
@@ -2402,9 +2402,9 @@
 			</query>
 		</query-defs>
 	</entity>
-	<entity name="redis-config-check-rule-tbl" table="redis_config_check_rule_tbl" alias="rccrt">
+	<entity name="redis-check-rule-tbl" table="redis_check_rule_tbl" alias="rcrt">
 		<query-defs>
-			<query name="find-redis-config-check-rule-by-id" type="SELECT" multiple="false">
+			<query name="find-redis-check-rule-by-id" type="SELECT" multiple="false">
 				<param name='id'/>
 				<statement>
 					<![CDATA[
@@ -2415,7 +2415,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-redis-config-check-rules-by-param" type="SELECT" multiple="false">
+			<query name="find-redis-check-rules-by-param" type="SELECT" multiple="false">
 				<param name="param"/>
 				<statement>
 					<![CDATA[
@@ -2426,7 +2426,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-redis-config-check-rules-by-checkerType" type="SELECT" multiple="true">
+			<query name="find-redis-check-rules-by-checkerType" type="SELECT" multiple="true">
 				<param name="check-type"/>
 				<statement>
 					<![CDATA[
@@ -2437,7 +2437,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name="find-all-redis-config-check-rules" type="SELECT" multiple="true">
+			<query name="find-all-redis-check-rules" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
@@ -2446,7 +2446,7 @@
 					]]>
 				</statement>
 			</query>
-			<query name='delete-redis-config-check-rule' type='UPDATE' batch='false'>
+			<query name='delete-redis-check-rule' type='UPDATE' batch='false'>
 				<param name='id'/>
 				<statement>
 					<![CDATA[

@@ -71,22 +71,22 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
         dcClusterService.addDcCluster("fra", "cluster101");
         DcClusterTbl dcClusterTbl = dcClusterService.find("fra", "cluster101");
         Assert.assertNotNull(dcClusterTbl);
-        Assert.assertEquals("", dcClusterTbl.getRedisConfigCheckRules());
+        Assert.assertEquals("", dcClusterTbl.getActiveRedisCheckRules());
 
-        dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisConfigRule("0,1"));
+        dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisCheckRule("0,1"));
         dcClusterTbl = dcClusterService.find("fra", "cluster101");
         Assert.assertNotNull(dcClusterTbl);
-        Assert.assertEquals("0,1", dcClusterTbl.getRedisConfigCheckRules());
+        Assert.assertEquals("0,1", dcClusterTbl.getActiveRedisCheckRules());
 
         dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra"));
         dcClusterTbl = dcClusterService.find("fra", "cluster101");
         Assert.assertNotNull(dcClusterTbl);
-        Assert.assertEquals("", dcClusterTbl.getRedisConfigCheckRules());
+        Assert.assertEquals("", dcClusterTbl.getActiveRedisCheckRules());
     }
 
     @Test (expected = BadRequestException.class)
     public void testUpdateDcClusterFail() {
-        DcClusterCreateInfo dcClusterCreateInfo = new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisConfigRule("0,1");
+        DcClusterCreateInfo dcClusterCreateInfo = new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisCheckRule("0,1");
         try {
             dcClusterService.updateDcCluster(dcClusterCreateInfo);
         } catch (Exception e) {

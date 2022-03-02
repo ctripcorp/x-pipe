@@ -9,7 +9,7 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRule;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
@@ -17,7 +17,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthChe
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisConfigCheckRuleMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -114,15 +114,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
         ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
 
-        List<RedisConfigCheckRule> redisConfigCheckRules = new LinkedList<>();
-        if (redisMeta.parent().parent().getRedisConfigCheckRules() != null && !redisMeta.parent().parent().getRedisConfigCheckRules().equals("")) {
-            for (String ruleId : redisMeta.parent().parent().getRedisConfigCheckRules().split(",")) {
-                RedisConfigCheckRuleMeta redisConfigCheckRuleMeta = metaCache.getXpipeMeta().getRedisConfigCheckRules().get(Long.parseLong(ruleId));
+        List<RedisCheckRule> redisCheckRules = new LinkedList<>();
+        if (redisMeta.parent().parent().getActiveRedisCheckRules() != null && !redisMeta.parent().parent().getActiveRedisCheckRules().equals("")) {
+            for (String ruleId : redisMeta.parent().parent().getActiveRedisCheckRules().split(",")) {
+                RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
                 logger.info("ruleId:" + ruleId);
-                if(redisConfigCheckRuleMeta != null) {
-                    Map<String, String> params = JsonCodec.INSTANCE.decode(redisConfigCheckRuleMeta.getParam(), Map.class);
-                    redisConfigCheckRules.add(new RedisConfigCheckRule(redisConfigCheckRuleMeta.getCheckType(), params.get(RedisConfigCheckRule.CONFIG_CHECK_NAME),
-                            params.get(RedisConfigCheckRule.EXPECTED_VAULE)));
+                if(redisCheckRuleMeta != null) {
+                    redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), JsonCodec.INSTANCE.decode(redisCheckRuleMeta.getParam(), Map.class)));
                 }
             }
         }
@@ -131,7 +129,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 redisMeta.parent().parent().getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
-                redisMeta.parent().getActiveDc(), clusterType, redisConfigCheckRules);
+                redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
         info.isMaster(redisMeta.isMaster());
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));

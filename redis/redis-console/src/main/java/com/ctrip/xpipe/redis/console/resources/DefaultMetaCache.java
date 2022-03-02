@@ -6,10 +6,10 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.RedisConfigCheckRuleTbl;
+import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.service.RedisConfigCheckRuleService;
+import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -32,7 +32,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
     private int refreshIntervalMilli = 2000;
 
     @Autowired
-    private RedisConfigCheckRuleService redisConfigCheckRuleService;
+    private RedisCheckRuleService redisCheckRuleService;
 
     @Autowired
     private DcMetaService dcMetaService;
@@ -91,21 +91,21 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
                     dcMetas.add(dcMetaService.getDcMeta(dc.getDcName()));
                 }
 
-                List<RedisConfigCheckRuleTbl> redisConfigCheckRuleTbls = redisConfigCheckRuleService.getAllRedisConfigCheckRules();
-                List<RedisConfigCheckRuleMeta> redisConfigCheckRuleMetas = new LinkedList<>();
+                List<RedisCheckRuleTbl> redisCheckRuleTbls = redisCheckRuleService.getAllRedisCheckRules();
+                List<RedisCheckRuleMeta> redisCheckRuleMetas = new LinkedList<>();
 
-                for(RedisConfigCheckRuleTbl redisConfigCheckRuleTbl : redisConfigCheckRuleTbls) {
-                    RedisConfigCheckRuleMeta redisConfigCheckRuleMeta = new RedisConfigCheckRuleMeta();
-                    redisConfigCheckRuleMeta.setId(redisConfigCheckRuleTbl.getId())
-                            .setCheckType(redisConfigCheckRuleTbl.getCheckType())
-                            .setParam(redisConfigCheckRuleTbl.getParam());
+                for(RedisCheckRuleTbl redisCheckRuleTbl : redisCheckRuleTbls) {
+                    RedisCheckRuleMeta redisCheckRuleMeta = new RedisCheckRuleMeta();
+                    redisCheckRuleMeta.setId(redisCheckRuleTbl.getId())
+                            .setCheckType(redisCheckRuleTbl.getCheckType())
+                            .setParam(redisCheckRuleTbl.getParam());
 
-                    redisConfigCheckRuleMetas.add(redisConfigCheckRuleMeta);
+                    redisCheckRuleMetas.add(redisCheckRuleMeta);
                 }
 
 
                 refreshClusterParts();
-                XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisConfigCheckRuleMetas);
+                XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
                 refreshMeta(xpipeMeta);
             }
 

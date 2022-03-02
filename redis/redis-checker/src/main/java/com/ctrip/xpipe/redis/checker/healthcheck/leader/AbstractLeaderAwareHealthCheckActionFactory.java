@@ -92,6 +92,8 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
     }
 
     private void registerTo(V instance) {
+        if(!supportInstnace(instance))
+            return;
         SiteLeaderAwareHealthCheckAction action = create(instance);
         instance.register(action);
         try {

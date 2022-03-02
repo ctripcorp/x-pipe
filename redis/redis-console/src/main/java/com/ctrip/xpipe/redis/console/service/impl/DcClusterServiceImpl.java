@@ -53,21 +53,21 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 
 		return new DcClusterCreateInfo().setClusterName(clusterService.find(dcClusterTbl.getClusterId()).getClusterName())
 				.setDcName(dcService.find(dcClusterTbl.getDcId()).getDcName())
-				.setRedisConfigRule(dcClusterTbl.getRedisConfigCheckRules());
+				.setRedisCheckRule(dcClusterTbl.getActiveRedisCheckRules());
 	}
 
 
 	@Override
 	public void updateDcCluster(DcClusterCreateInfo dcClusterCreateInfo) {
 		DcClusterTbl dcClusterTbl = find(dcClusterCreateInfo.getDcName(), dcClusterCreateInfo.getClusterName());
-		if(dcClusterTbl == null)
-			throw  new BadRequestException(String.format("Can not update unexist dcCluster %s:%s",
+		if (dcClusterTbl == null)
+			throw new BadRequestException(String.format("Can not update unexist dcCluster %s:%s",
 					dcClusterCreateInfo.getDcName(), dcClusterCreateInfo.getClusterName()));
 
-		if(dcClusterCreateInfo.getRedisConfigRule() == null)
-			dcClusterTbl.setRedisConfigCheckRules("");
+		if (dcClusterCreateInfo.getRedisCheckRule() == null)
+			dcClusterTbl.setActiveRedisCheckRules("");
 		else
-			dcClusterTbl.setRedisConfigCheckRules(dcClusterCreateInfo.getRedisConfigRule());
+			dcClusterTbl.setActiveRedisCheckRules(dcClusterCreateInfo.getRedisCheckRule());
 
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
@@ -78,7 +78,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 	}
 
 	@Override
-	public DcClusterTbl addDcCluster(String dcName, String clusterName, String redisConfigRule) {
+	public DcClusterTbl addDcCluster(String dcName, String clusterName, String redisRule) {
 		DcTbl dcInfo = dcService.find(dcName);
 		ClusterTbl clusterInfo = clusterService.find(clusterName);
 		if(null == dcInfo || null == clusterInfo) throw new BadRequestException("Cannot add dc-cluster to an unknown dc or cluster");
@@ -91,10 +91,10 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		proto.setDcId(dcInfo.getId());
 		proto.setClusterId(clusterInfo.getId());
 		proto.setDcClusterPhase(1);
-		if(redisConfigRule == null )
-			proto.setRedisConfigCheckRules("");
+		if(redisRule == null )
+			proto.setActiveRedisCheckRules("");
 		else
-			proto.setRedisConfigCheckRules(redisConfigRule);
+			proto.setActiveRedisCheckRules(redisRule);
 
 		try {
 			dao.insert(proto);
@@ -170,7 +170,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 
 				return new DcClusterCreateInfo().setClusterName(clusterService.find(dcClusterTbl.getClusterId()).getClusterName())
 						.setDcName(dcService.find(dcClusterTbl.getDcId()).getDcName())
-						.setRedisConfigRule(dcClusterTbl.getRedisConfigCheckRules());
+						.setRedisCheckRule(dcClusterTbl.getActiveRedisCheckRules());
 			}
 		}));
 	}

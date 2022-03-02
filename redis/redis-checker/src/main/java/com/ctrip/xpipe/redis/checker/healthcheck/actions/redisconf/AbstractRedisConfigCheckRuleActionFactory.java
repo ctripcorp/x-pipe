@@ -13,8 +13,8 @@ public abstract class AbstractRedisConfigCheckRuleActionFactory extends Abstract
 
     @Override
     public boolean supportInstnace(RedisHealthCheckInstance instance) {
-        List<RedisConfigCheckRule> redisConfigCheckRules = filterNonConifgRule(instance.getCheckInfo().getRedisConfigCheckRules());
-        if(redisConfigCheckRules == null || redisConfigCheckRules.isEmpty())
+        List<RedisCheckRule> redisCheckRules = filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules());
+        if(redisCheckRules == null || redisCheckRules.isEmpty())
             return false;
         return true;
     }
@@ -24,10 +24,10 @@ public abstract class AbstractRedisConfigCheckRuleActionFactory extends Abstract
         return Lists.newArrayList(ALERT_TYPE.REDIS_CONIFIG_CHECK_FAIL);
     }
 
-    protected List<RedisConfigCheckRule> filterNonConifgRule( List<RedisConfigCheckRule> allConfigCheckRules) {
-        List<RedisConfigCheckRule> resultConfigCheckRules = new LinkedList<>();
-        allConfigCheckRules.stream().filter(redisConfigCheckRule -> CONFIG_CHECKER_TYPE.equals(redisConfigCheckRule.getCheckType())).forEach(resultConfigCheckRules::add);
-        return resultConfigCheckRules;
+    protected List<RedisCheckRule> filterNonConifgRule( List<RedisCheckRule> allConfigCheckRules) {
+        List<RedisCheckRule> resultCheckRules = new LinkedList<>();
+        allConfigCheckRules.stream().filter(redisCheckRule -> CONFIG_CHECKER_TYPE.equals(redisCheckRule.getCheckType())).forEach(resultCheckRules::add);
+        return resultCheckRules;
     }
 
 }

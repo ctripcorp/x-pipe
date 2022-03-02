@@ -125,7 +125,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertNull(clusterMeta.getActiveDc());
         Assert.assertNull(clusterMeta.getBackupDcs());
         Assert.assertEquals("jq,oy", clusterMeta.getDcs());
-        Assert.assertEquals("1,2",clusterMeta.getRedisConfigCheckRules());
+        Assert.assertEquals("1,2",clusterMeta.getActiveRedisCheckRules());
     }
 
     @Test
@@ -183,7 +183,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
             Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), clusterType));
             if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION))
-                Assert.assertEquals("1,2", clusterMeta.getRedisConfigCheckRules());
+                Assert.assertEquals("1,2", clusterMeta.getActiveRedisCheckRules());
         }
     }
 

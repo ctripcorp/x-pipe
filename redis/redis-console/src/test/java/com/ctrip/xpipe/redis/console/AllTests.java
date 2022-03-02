@@ -204,7 +204,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         KeeperAvailableZoneCheckTest.class,
         RedisConfigCheckMonitorTest.class,
-        RedisConfigCheckRuleServiceImplTest.class,
+        RedisCheckRuleServiceImplTest.class,
         EmailSentCounterTest.class
 })
 public class AllTests {

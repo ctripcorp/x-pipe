@@ -3,8 +3,8 @@ insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,status,is_xpipe_interested, cluster_org_id,cluster_type) values
 (6,'credis_trocks_test',0,'Normal',1, 1,'cross_dc');
 
---insert into redis_config_check_rule_tbl (id,check_type,param,description) values (1,'config', '{'configName' : 'repl-backlog-size', 'expectedVaule' : '128'}', 'rule1');
---insert into redis_config_check_rule_tbl (id,check_type,param,description) values (2, 'config', '{'configName' : 'repl-backlog-size', 'expectedVaule' : '256'}', 'rule2');
+insert into redis_check_rule_tbl (id,check_type,param,description) values (1,'config', '{\"configName\" : \"repl-backlog-size\", \"expectedVaule\" : \"128\"}', 'rule1');
+insert into redis_check_rule_tbl (id,check_type,param,description) values (2,'config', '{\"configName\" : \"repl-backlog-size\", \"expectedVaule\" : \"256\"}', 'rule2');
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (10,1,5,1,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (11,1,6,1,0);
@@ -100,8 +100,8 @@ insert into route_tbl(id, route_org_id, src_dc_id, dst_dc_id, src_proxy_ids, dst
 
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id, cluster_type) values (4,'bi-cluster1',0,'bi-cluster:cluster1 , ActiveDC : B','0000000000000000','Normal',1, 4, 'BI_DIRECTION');
 
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,redis_config_check_rules) values (8,1,4,1,0,'1,2');
-insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,redis_config_check_rules) values (9,2,4,1,0,'1,2');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,active_redis_check_rules) values (8,1,4,1,0,'1,2');
+insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id,active_redis_check_rules) values (9,2,4,1,0,'1,2');
 
 insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(7,'bicluster1shard1','bicluster1shard1', 4);
 
