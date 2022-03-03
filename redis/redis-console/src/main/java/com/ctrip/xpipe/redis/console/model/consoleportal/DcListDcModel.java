@@ -1,5 +1,8 @@
 package com.ctrip.xpipe.redis.console.model.consoleportal;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author tt.tu
  * <p>
@@ -9,22 +12,12 @@ public class DcListDcModel {
     protected long dcId;
     protected String dcName;
     protected String dcDescription;
-    protected int clusterCount;
-    protected int redisCount;
-    protected int keeperCount;
-    protected int keeperContainerCount;
-    protected int clusterInActiveDcCount;
+    private List<DcClusterTypeStatisticsModel> dcClusterTypes = new ArrayList<>();
 
-    public DcListDcModel(long dcId, String dcName, String dcDescription, int clusterCount,
-                         int redisCount, int keeperCount, int keeperContainerCount, int clusterInActiveDcCount){
+    public DcListDcModel(long dcId, String dcName, String dcDescription){
         this.dcId = dcId;
         this.dcName = dcName;
         this.dcDescription = dcDescription;
-        this.clusterCount = clusterCount;
-        this.redisCount = redisCount;
-        this.keeperCount = keeperCount;
-        this.keeperContainerCount = keeperContainerCount;
-        this.clusterInActiveDcCount = clusterInActiveDcCount;
     }
 
     public DcListDcModel(){}
@@ -56,44 +49,12 @@ public class DcListDcModel {
         return this;
     }
 
-    public int getClusterCount(){
-        return this.clusterCount;
+    public List<DcClusterTypeStatisticsModel> getClusterTypes() {
+        return dcClusterTypes;
     }
 
-    public DcListDcModel setClusterCount(Integer clusterCount){
-        this.clusterCount = clusterCount;
+    public DcListDcModel setClusterTypes(List<DcClusterTypeStatisticsModel> dcClusterTypeStatisticsModels) {
+        this.dcClusterTypes = dcClusterTypeStatisticsModels;
         return this;
     }
-    public int getRedisCount(){
-        return this.redisCount;
-    }
-
-    public DcListDcModel setRedisCount(Integer redisCount){
-        this.redisCount = redisCount;
-        return this;
-    }
-
-    public int getKeeperCount(){
-        return this.keeperCount;
-    }
-
-    public DcListDcModel setKeeperCount(Integer keeperCount){
-        this.keeperCount = keeperCount;
-        return this;
-    }
-
-    public int getKeeperContainerCount(){return this.keeperContainerCount;}
-
-    public DcListDcModel setKeeperContainerCount(Integer keeperContainerCount){
-        this.keeperContainerCount = keeperContainerCount;
-        return this;
-    }
-
-    public int getClusterInActiveDcCount(){return this.clusterInActiveDcCount;}
-
-    public DcListDcModel setClusterInActiveDcCount(Integer clusterInActiveDcCount){
-        this.clusterInActiveDcCount = clusterInActiveDcCount;
-        return this;
-    }
-
 }

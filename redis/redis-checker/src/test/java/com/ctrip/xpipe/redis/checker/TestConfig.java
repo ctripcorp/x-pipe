@@ -249,4 +249,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public Set<String> getOuterClusterTypes() {
         return null;
     }
+
+    @Override
+    public Map<String, String> sentinelMasterConfig() {
+        return null;
+    }
 }

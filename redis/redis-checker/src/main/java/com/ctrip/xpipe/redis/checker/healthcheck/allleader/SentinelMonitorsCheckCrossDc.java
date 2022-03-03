@@ -117,14 +117,13 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
         
         for(String monitorName: sentinelMonitors.getMonitors()) {
             SentinelUtil.SentinelInfo sentinelInfo = SentinelUtil.SentinelInfo.fromMonitorName(monitorName);
-            String clusterName = sentinelInfo.getClusterName();
-            ClusterType clusterType = metaCache.getClusterType(clusterName);
-            if (!config.supportSentinelHealthCheck(clusterType, clusterName))
+            ClusterType clusterType = ClusterType.lookup(sentinelMeta.getClusterType());
+            if (!config.supportSentinelHealthCheck(clusterType, sentinelInfo.getClusterName()))
                 continue;
             if(metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName);
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Monitors.Check.Remove", monitorName);
-                String message = String.format("Sentinel cmonitor: %s not exist in Xpipe", monitorName);
+                String message = String.format("Sentinel monitor: %s not exist in Xpipe", monitorName);
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
             }
         }

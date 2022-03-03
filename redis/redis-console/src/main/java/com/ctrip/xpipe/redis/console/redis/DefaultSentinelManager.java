@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -192,6 +193,38 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
                 logger.error("[reset] sentinel reset {} for {} : {}", sentinelMonitorName, sentinel, e.getMessage());
             } else {
                 logger.error("[reset] sentinel reset {} for {} : {}", sentinelMonitorName, sentinel, e);
+            }
+        }
+    }
+
+    @Override
+    public void sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
+        try {
+            new AbstractSentinelCommand.SentinelSet(clientPool, scheduled, sentinelMonitorName, configs).execute().get();
+            logger.info("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel);
+        } catch (Exception e) {
+            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
+                logger.error("[sentinelSet] sentinel set {} {} for {}, errMsg: {}", sentinelMonitorName, Arrays.toString(configs), sentinel, e.getMessage());
+            } else {
+                logger.error("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel, e);
+            }
+        }
+    }
+
+    @Override
+    public void sentinelConfigSet(Sentinel sentinel, String configName, String configValue) {
+        SimpleObjectPool<NettyClient> clientPool = keyedClientPool
+                .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
+        try {
+            new AbstractSentinelCommand.SentinelConfigSet(clientPool, scheduled, configName, configValue).execute().get();
+            logger.info("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel);
+        } catch (Exception e) {
+            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
+                logger.error("[sentinelConfigSet] sentinel config set {} {} for {}, errMsg: {}", configName, configValue, sentinel, e.getMessage());
+            } else {
+                logger.error("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel, e);
             }
         }
     }
