@@ -12,20 +12,22 @@ public abstract class AbstractRedisConfigRuleAction extends AbstractLeaderAwareH
 
     protected List<RedisCheckRule> redisCheckRules;
 
-    protected AlertManager alertManager;
+    public static final String CONFIG_CHECK_NAME = "configCheckName";
 
-    protected static final String CONFIG_CHECK_NAME = "configCheckName";
-
-    protected static final String EXPECTED_VAULE = "expectedVaule";
+    public static final String EXPECTED_VAULE = "expectedVaule";
 
 
-    public AbstractRedisConfigRuleAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors, AlertManager alertManager, List<RedisCheckRule> redisCheckRules) {
+    public AbstractRedisConfigRuleAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors, List<RedisCheckRule> redisCheckRules) {
         super(scheduled, instance, executors);
         this.redisCheckRules = redisCheckRules;
-        this.alertManager = alertManager;
     }
 
     public List<RedisCheckRule> getRedisConfigCheckRules() {
         return redisCheckRules;
+    }
+
+    @Override
+    protected int getCheckTimeInterval(int baseInterval) {
+        return getActionInstance().getHealthCheckConfig().getNonCoreCheckIntervalMilli();
     }
 }

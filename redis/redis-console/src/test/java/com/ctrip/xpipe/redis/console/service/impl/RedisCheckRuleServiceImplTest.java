@@ -116,7 +116,7 @@ public class RedisCheckRuleServiceImplTest extends AbstractServiceImplTest{
 
         List<DcClusterCreateInfo> dcClusterCreateInfos = dcClusterService.findClusterRelated("cluster1");
         for (DcClusterCreateInfo dcClusterCreateInfo : dcClusterCreateInfos) {
-            Assert.assertEquals("", dcClusterCreateInfo.getRedisCheckRule());
+            Assert.assertEquals(null, dcClusterCreateInfo.getRedisCheckRule());
             dcClusterCreateInfo.setRedisCheckRule("1");
             dcClusterService.updateDcCluster(dcClusterCreateInfo);
         }

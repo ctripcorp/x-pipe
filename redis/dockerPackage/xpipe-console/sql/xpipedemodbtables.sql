@@ -100,7 +100,7 @@ CREATE TABLE `DC_CLUSTER_TBL` (
   `cluster_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cluster id',
   `metaserver_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference metaserver id',
   `dc_cluster_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'dc cluster phase',
-  `active_redis_check_rules` varchar(128) NOT NULL DEFAULT '' COMMENT 'active redis check rules',
+  `active_redis_check_rules` varchar(128) COMMENT 'active redis check rules',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`dc_cluster_id`),

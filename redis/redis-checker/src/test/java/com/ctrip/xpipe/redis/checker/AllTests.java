@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.r
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionFactoryTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
@@ -85,6 +86,7 @@ import org.junit.runners.Suite;
         RedisConfigCheckRuleActionTest.class,
         CRDTRedisConfigCheckRuleActionFactoryTest.class,
         CRDTRedisConfigCheckRuleActionTest.class,
+        RedisConfigCheckRuleActionListenerTest.class,
 
         DefaultAlertEntityHolderTest.class,
         DefaultDcMetaChangeManagerTest.class,
