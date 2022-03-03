@@ -82,7 +82,7 @@ create table DC_CLUSTER_TBL
 	cluster_id bigint unsigned not null,
 	metaserver_id bigint unsigned not null,
     dc_cluster_phase int not null default 1,
-    active_redis_check_rules varchar(128)  not null default '',
+    active_redis_check_rules varchar(128),
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );

@@ -64,10 +64,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 			throw new BadRequestException(String.format("Can not update unexist dcCluster %s:%s",
 					dcClusterCreateInfo.getDcName(), dcClusterCreateInfo.getClusterName()));
 
-		if (dcClusterCreateInfo.getRedisCheckRule() == null)
-			dcClusterTbl.setActiveRedisCheckRules("");
-		else
-			dcClusterTbl.setActiveRedisCheckRules(dcClusterCreateInfo.getRedisCheckRule());
+		dcClusterTbl.setActiveRedisCheckRules(dcClusterCreateInfo.getRedisCheckRule());
 
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override
@@ -91,10 +88,7 @@ public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao
 		proto.setDcId(dcInfo.getId());
 		proto.setClusterId(clusterInfo.getId());
 		proto.setDcClusterPhase(1);
-		if(redisRule == null )
-			proto.setActiveRedisCheckRules("");
-		else
-			proto.setActiveRedisCheckRules(redisRule);
+		proto.setActiveRedisCheckRules(redisRule);
 
 		try {
 			dao.insert(proto);

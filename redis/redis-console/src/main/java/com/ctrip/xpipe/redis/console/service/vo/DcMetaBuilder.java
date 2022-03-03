@@ -130,7 +130,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 clusterMeta.setAdminEmails(cluster.getClusterAdminEmails());
                 clusterMeta.setType(cluster.getClusterType());
-                clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? "" : dcClusterInfo.getActiveRedisCheckRules());
+                clusterMeta.setActiveRedisCheckRules(dcClusterInfo.getActiveRedisCheckRules());
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));

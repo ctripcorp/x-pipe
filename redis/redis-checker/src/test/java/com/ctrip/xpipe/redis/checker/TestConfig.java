@@ -234,4 +234,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public String crossDcSentinelMonitorNameSuffix() {
         return null;
     }
+
+    @Override
+    public int getNonCoreCheckIntervalMilli() {
+        return 3 * 60 * 60 *1000;
+    }
 }

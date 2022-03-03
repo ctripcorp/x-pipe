@@ -71,7 +71,7 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
         dcClusterService.addDcCluster("fra", "cluster101");
         DcClusterTbl dcClusterTbl = dcClusterService.find("fra", "cluster101");
         Assert.assertNotNull(dcClusterTbl);
-        Assert.assertEquals("", dcClusterTbl.getActiveRedisCheckRules());
+        Assert.assertEquals(null, dcClusterTbl.getActiveRedisCheckRules());
 
         dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra").setRedisCheckRule("0,1"));
         dcClusterTbl = dcClusterService.find("fra", "cluster101");
@@ -81,7 +81,7 @@ public class DcClusterServiceImplTest extends AbstractServiceImplTest {
         dcClusterService.updateDcCluster(new DcClusterCreateInfo().setClusterName("cluster101").setDcName("fra"));
         dcClusterTbl = dcClusterService.find("fra", "cluster101");
         Assert.assertNotNull(dcClusterTbl);
-        Assert.assertEquals("", dcClusterTbl.getActiveRedisCheckRules());
+        Assert.assertEquals(null, dcClusterTbl.getActiveRedisCheckRules());
     }
 
     @Test (expected = BadRequestException.class)

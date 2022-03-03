@@ -14,9 +14,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class RedisConfigCheckRuleAction extends AbstractRedisConfigRuleAction {
     private static final Logger logger = LoggerFactory.getLogger(RedisConfigCheckRuleAction.class);
 
-    public RedisConfigCheckRuleAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors,
-                                      AlertManager alertManager, List<RedisCheckRule> redisCheckRules ) {
-        super(scheduled,  instance, executors, alertManager, redisCheckRules);
+    public RedisConfigCheckRuleAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors, List<RedisCheckRule> redisCheckRules ) {
+        super(scheduled, instance, executors, redisCheckRules);
     }
 
     @Override
@@ -26,9 +25,7 @@ public class RedisConfigCheckRuleAction extends AbstractRedisConfigRuleAction {
                 @Override
                 public void success(String message) {
                     if(!redisCheckRule.getParams().get(EXPECTED_VAULE).equals(message)) {
-                        String alertMessage = String.format("config:%s should be %s, but was %s", redisCheckRule.getParams().get(CONFIG_CHECK_NAME), redisCheckRule.getParams().get(EXPECTED_VAULE), message);
-                        logger.warn("{}", alertMessage);
-                        alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONIFIG_CHECK_FAIL, alertMessage);
+                        notifyListeners(new RedisConfigCheckRuleActionContext(instance, message, redisCheckRule));
                    }
                 }
 

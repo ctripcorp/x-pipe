@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +18,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class CRDTRedisConfigCheckRuleAction extends AbstractRedisConfigRuleAction{
     private static final Logger logger = LoggerFactory.getLogger(CRDTRedisConfigCheckRuleAction.class);
 
-    public CRDTRedisConfigCheckRuleAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors, AlertManager alertManager, List<RedisCheckRule> redisCheckRules) {
-        super(scheduled, instance, executors, alertManager, redisCheckRules);
+    public CRDTRedisConfigCheckRuleAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors, List<RedisCheckRule> redisCheckRules) {
+        super(scheduled, instance, executors, redisCheckRules);
     }
 
     @Override
@@ -28,9 +29,7 @@ public class CRDTRedisConfigCheckRuleAction extends AbstractRedisConfigRuleActio
                 @Override
                 public void success(String message) {
                     if(!redisCheckRule.getParams().get(EXPECTED_VAULE).equals(message)) {
-                        String alertMessage = String.format("crdt config:%s of redis:%s should be %s, but was %s", redisCheckRule.getParams().get(CONFIG_CHECK_NAME), getActionInstance().getEndpoint().toString(), redisCheckRule.getParams().get(EXPECTED_VAULE), message);
-                        logger.warn("{}", alertMessage);
-                        alertManager.alert(getActionInstance().getCheckInfo(), ALERT_TYPE.REDIS_CONIFIG_CHECK_FAIL, alertMessage);
+                        notifyListeners(new RedisConfigCheckRuleActionContext(instance, message, redisCheckRule));
                     }
                 }
 

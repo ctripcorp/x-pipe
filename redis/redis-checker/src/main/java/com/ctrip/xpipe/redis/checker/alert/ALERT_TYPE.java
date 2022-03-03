@@ -130,7 +130,7 @@ public enum ALERT_TYPE {
 
         @Override
         public boolean reportRecovery() {
-            return true;
+            return false;
         }
 
         @Override

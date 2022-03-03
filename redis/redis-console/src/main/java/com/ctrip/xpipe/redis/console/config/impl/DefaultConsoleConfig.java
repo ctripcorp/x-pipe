@@ -541,4 +541,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public long sentinelBindTimeoutMilli() {
         return getLongProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000L);
     }
+
+    @Override
+    public int getNonCoreCheckIntervalMilli() {
+        return getIntProperty(KEY_NON_CORE_CHECK_INTERVAL, 3 * 60 * 60 * 1000);
+    }
 }

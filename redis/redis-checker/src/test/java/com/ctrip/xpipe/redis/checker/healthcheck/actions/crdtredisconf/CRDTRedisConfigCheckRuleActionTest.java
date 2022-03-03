@@ -5,16 +5,24 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,10 +35,16 @@ public class CRDTRedisConfigCheckRuleActionTest extends AbstractCheckerTest {
 
     private AlertManager alertManager;
 
+    private RedisConfigCheckRuleActionContext actionContext = null;
+
+    @Mock
+    private RedisConfigCheckRuleActionListener listener;
+
     private Server redis;
 
     @Before
     public void startCRDTRedisConfigCheckRuleActionTest() throws Exception {
+        MockitoAnnotations.initMocks(this);
         redis = startServer(randomPort(), new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -51,16 +65,22 @@ public class CRDTRedisConfigCheckRuleActionTest extends AbstractCheckerTest {
         redisCheckRules.add(new RedisCheckRule("config", param));
         RedisHealthCheckInstance instance = newRandomBiDirectionRedisHealthCheckInstance(redis.getPort(), redisCheckRules);
 
-        action = new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, alertManager, redisCheckRules);
+        action = new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, redisCheckRules);
+        action.addListener(listener);
+
+        Mockito.when(listener.worksfor(Mockito.any())).thenReturn(true);
+        doNothing().when(listener).onAction(Mockito.any());
+        Mockito.doAnswer(invocation -> {
+            actionContext = invocation.getArgument(0, RedisConfigCheckRuleActionContext.class);
+            return null;
+        }).when(listener).onAction(Mockito.any());
     }
 
     @Test
-    public void testDoTask() {
-        doNothing().when(alertManager).alert(any(DefaultRedisInstanceInfo.class), any(ALERT_TYPE.class), anyString());
+    public void testDoTask() throws TimeoutException {
         action.doTask();
-        sleep(1000);
-
-        verify(alertManager, times(1)).alert(any(DefaultRedisInstanceInfo.class), any(ALERT_TYPE.class), anyString());
+        waitConditionUntilTimeOut(() -> null != actionContext, 1000);
+        Assert.assertEquals("256", actionContext.getResult());
     }
 
     @After
