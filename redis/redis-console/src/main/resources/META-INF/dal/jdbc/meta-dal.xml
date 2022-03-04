@@ -652,19 +652,6 @@
 				<member name="cluster-count" />
 				<member name="shard-count" />
 			</readset>
-			<readset name="ALL_META_INFO">
-				<readset-ref name="FULL"/>
-				<readset-ref name="BASIC" relation-name="dc-info"/>
-				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
-				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
-				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
-			</readset>
-			<readset name="DC_CLUSTER_SHARD_META_INFO">
-				<readset-ref name="FULL"/>
-				<readset-ref name="BASIC" relation-name="dc-info"/>
-				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
-				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
-			</readset>
 			<readset name="CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
 				<readset-ref name="DC_CLUSTER_ACTIVE_REDIS_CHECK_RULES" relation-name="dc-cluster-info"/>
@@ -802,29 +789,6 @@
 					AND rt.deleted = 0
 					AND ct.deleted = 0
 					AND dct.deleted = 0
-					AND <FIELD name='deleted'/> = 0
-					]]>
-				</statement>
-			</query>
-			<query name='find-all-by-redis' type='SELECT' multiple='false'>
-				<param name="redis-ip"/>
-				<param name="redis-port"/>
-				<statement>
-					<![CDATA[
-					SELECT <FIELDS/>
-					FROM <TABLE/>, <TABLE name='dc-info'/>,<TABLE name='cluster-info'/>, <TABLE name='dc-cluster-info'/>, <TABLE name='redis-info'/>, <TABLE name='shard-info'/>
-					WHERE rt.redis_ip = ${redis-ip}
-					AND rt.redis_port = ${redis-port}
-					AND dct.cluster_id = ct.id
-					AND dct.dc_id = dt.id
-					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
-					AND <FIELD name='shard-id' /> = st2.id
-					AND <FIELD name='dc-cluster-shard-id'/> = rt.dc_cluster_shard_id
-					AND st2.deleted = 0
-					AND rt.deleted = 0
-					AND ct.deleted = 0
-					AND dct.deleted = 0
-					AND dt.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
