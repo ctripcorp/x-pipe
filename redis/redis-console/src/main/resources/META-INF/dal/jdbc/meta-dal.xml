@@ -654,7 +654,6 @@
 			</readset>
 			<readset name="CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
-				<readset-ref name="DC_CLUSTER_ACTIVE_REDIS_CHECK_RULES" relation-name="dc-cluster-info"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
