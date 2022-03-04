@@ -1,9 +1,9 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -18,6 +18,8 @@ import java.util.List;
 public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChange>{
 	
 	private ShardMeta current, future;
+
+	private boolean metaChange;
 	
 	public ShardMetaComparator(ShardMeta current, ShardMeta future){
 		this.current = current;
@@ -26,9 +28,16 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 
 	@Override
 	public void compare() {
+		ShardMeta currentClone = MetaClone.clone(current);
+		ShardMeta futureClone = MetaClone.clone(future);
+		currentClone.getRedises().clear();
+		futureClone.getRedises().clear();
+		currentClone.getKeepers().clear();
+		futureClone.getKeepers().clear();
+		metaChange = !(currentClone.toString().equals(futureClone.toString()));
+
 		List<Redis> currentAll =  getAll(current);
 		List<Redis> futureAll =  getAll(future);
-
 
 		Pair<List<Redis>, List<Pair<Redis, Redis>>> subResult = sub(futureAll, currentAll);
 		List<Redis> tAdded = subResult.getKey();
@@ -94,6 +103,10 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 	
 	public ShardMeta getFuture() {
 		return future;
+	}
+
+	public boolean metaChange() {
+		return metaChange;
 	}
 
 	@Override
