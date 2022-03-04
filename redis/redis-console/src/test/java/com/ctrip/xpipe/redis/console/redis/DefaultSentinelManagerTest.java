@@ -82,11 +82,18 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test// manual test
     public void infoSentinel() throws Exception {
-        String info = manager.infoSentinel(new Sentinel("test", "10.2.48.234", 5000));
+        String info = manager.infoSentinel(new Sentinel("test", "10.2.27.97", 5000));
         logger.info("=====================================");
         SentinelMonitors.parseFromString(info).getMonitors().forEach(monitor -> logger.info(monitor));
         logger.info("=====================================");
 
+    }
+
+    @Test// manual test
+    public void sentinelSet() throws Exception {
+        manager.sentinelSet(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS", new String[]{"failover-timeout", "180000"});
+
+        logger.info("sentinel set success");
     }
 
 }

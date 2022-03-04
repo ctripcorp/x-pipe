@@ -143,7 +143,7 @@ public class DefaultSentinelMonitorsCheckTest {
         when(metaCache.getClusterType(any())).thenReturn(ClusterType.ONE_WAY);
         when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(null);
-        checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, atLeastOnce()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, atLeastOnce()).removeSentinelMonitor(any(), any());
@@ -155,7 +155,7 @@ public class DefaultSentinelMonitorsCheckTest {
         when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Pair<>("cluster", "shard"));
         checker.setMetaCache(metaCache);
-        checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, never()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());

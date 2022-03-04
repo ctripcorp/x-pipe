@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDe
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -157,4 +158,6 @@ public interface CheckerConfig {
     int sentinelBindTimeoutMilli();
 
     Set<String> getOuterClusterTypes();
+
+    Map<String, String> sentinelMasterConfig();
 }

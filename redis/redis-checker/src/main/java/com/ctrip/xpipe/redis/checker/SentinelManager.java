@@ -23,4 +23,9 @@ public interface SentinelManager {
     List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName);
 
     void reset(Sentinel sentinel, String sentinelMonitorName);
+
+    void sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs);
+
+    void sentinelConfigSet(Sentinel sentinel, String configName, String configValue);
+
 }

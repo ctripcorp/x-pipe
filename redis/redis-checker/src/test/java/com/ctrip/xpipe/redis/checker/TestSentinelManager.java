@@ -40,4 +40,14 @@ public class TestSentinelManager implements SentinelManager {
     public void reset(Sentinel sentinel, String sentinelMonitorName) {
 
     }
+
+    @Override
+    public void sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs) {
+
+    }
+
+    @Override
+    public void sentinelConfigSet(Sentinel sentinel, String configName, String configValue) {
+
+    }
 }
