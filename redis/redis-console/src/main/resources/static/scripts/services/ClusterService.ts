@@ -93,9 +93,19 @@ function ClusterService($resource, $q) {
             url: '/console/clusters/allBind/:dcName',
             isArray: true
         },
+        find_clusters_by_dc_name_bind_and_type :{
+            method: 'GET',
+            url: '/console/clusters/allBind/:dcName/:clusterType',
+            isArray: true
+        },
         find_clusters_by_dc_name:{
             method: 'GET',
             url: '/console/clusters/activeDc/:dcName',
+            isArray: true
+        },
+        find_clusters_by_dc_name_and_type:{
+            method: 'GET',
+            url: '/console/clusters/activeDc/:dcName/:clusterType',
             isArray: true
         },
         find_master_unhealthy_clusters: {
@@ -351,10 +361,40 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
+    function findClustersByDcNameBindAndType(dcName, clusterType) {
+        var d = $q.defer();
+        resource.find_clusters_by_dc_name_bind_and_type(
+            {
+                dcName: dcName,
+                clusterType: clusterType
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     function findClustersByDcName(dcName) {
         var d = $q.defer();
         resource.find_clusters_by_dc_name(
             {dcName: dcName},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findClustersByDcNameAndType(dcName, clusterType) {
+        var d = $q.defer();
+        resource.find_clusters_by_dc_name_and_type(
+            {
+                dcName: dcName,
+                clusterType: clusterType
+            },
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -431,6 +471,8 @@ function ClusterService($resource, $q) {
         getUnhealthyShards: getUnhealthyShards,
         findClustersByDcNameBind: findClustersByDcNameBind,
         findClustersByDcName : findClustersByDcName,
+        findClustersByDcNameBindAndType: findClustersByDcNameBindAndType,
+        findClustersByDcNameAndType : findClustersByDcNameAndType,
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
         getClusterHickwallAddr: getClusterHickwallAddr,

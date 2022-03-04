@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
@@ -30,9 +31,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 
@@ -329,7 +328,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(checkerConfig.getSentinelRateLimitSize()).thenReturn(0);
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(true);
         sentinelCollector.postConstruct();
-        sentinelCollector.doAction("monitor", new HostPort("127.0.0.1", 6379), Sets.newHashSet(new SentinelHello()), Sets.newHashSet(), new QuorumConfig(5, 3));
+        sentinelCollector.doAction(ClusterType.ONE_WAY,"monitor", new HostPort("127.0.0.1", 6379), Sets.newHashSet(new SentinelHello()), Sets.newHashSet(), new QuorumConfig(5, 3));
         verify(sentinelManager, never()).removeSentinelMonitor(any(), anyString());
     }
 
@@ -340,7 +339,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(checkerConfig.getSentinelRateLimitSize()).thenReturn(0);
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
         sentinelCollector.postConstruct();
-        sentinelCollector.doAction("monitor", new HostPort("127.0.0.1", 6379),
+        sentinelCollector.doAction(ClusterType.ONE_WAY,"monitor", new HostPort("127.0.0.1", 6379),
                 Sets.newHashSet(new SentinelHello(new HostPort("127.0.0.1", 5050), new HostPort("127.0.0.1", 6379), "monitorName")), Sets.newHashSet(), new QuorumConfig(5, 3));
         verify(sentinelManager, times(1)).removeSentinelMonitor(any(), anyString());
     }
@@ -516,6 +515,31 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(2)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName);
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
+    }
+
+    @Test
+    public void sentinelSetTest() {
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        Map<ClusterType, String[]> clusterTypeSentinelConfig = new HashMap<>();
+        clusterTypeSentinelConfig.put(ClusterType.CROSS_DC, new String[]{"failover-timeout", "60000"});
+        sentinelCollector.setClusterTypeSentinelConfig(clusterTypeSentinelConfig);
+
+        Sentinel sentinel = new Sentinel(new HostPort(LOCAL_HOST, 5000).toString(), LOCAL_HOST, 5000);
+        sentinelCollector.doAction(ClusterType.CROSS_DC, monitorName, master,
+                Sets.newHashSet(), Sets.newHashSet(new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName)), quorumConfig);
+
+
+        verify(sentinelManager, times(1)).removeSentinelMonitor(sentinel, monitorName);
+        verify(sentinelManager, times(1)).monitorMaster(sentinel, monitorName, master, quorumConfig.getQuorum());
+        verify(sentinelManager, times(1)).sentinelSet(sentinel, monitorName, clusterTypeSentinelConfig.get(ClusterType.CROSS_DC));
+
+        sentinelCollector.doAction(ClusterType.SINGLE_DC, monitorName, master,
+                Sets.newHashSet(), Sets.newHashSet(new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName)), quorumConfig);
+
+
+        verify(sentinelManager, times(2)).removeSentinelMonitor(sentinel, monitorName);
+        verify(sentinelManager, times(2)).monitorMaster(sentinel, monitorName, master, quorumConfig.getQuorum());
+        verify(sentinelManager, times(1)).sentinelSet(sentinel, monitorName, clusterTypeSentinelConfig.get(ClusterType.CROSS_DC));
     }
 
 }

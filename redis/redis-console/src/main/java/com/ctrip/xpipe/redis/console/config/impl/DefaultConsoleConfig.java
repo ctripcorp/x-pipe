@@ -78,6 +78,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX = "checker.cross.dc.sentinel.monitor.name.suffix";
 
+    private static final String KEY_SENTINEL_MASTER_CONFIG = "checker.sentinel.master.config";
+
     private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "checker.sentinel.bind.timeout.milli";
 
     private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
@@ -535,5 +537,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int sentinelBindTimeoutMilli() {
         return getIntProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000);
+    }
+
+    @Override
+    public Map<String, String> sentinelMasterConfig() {
+        String property = getProperty(KEY_SENTINEL_MASTER_CONFIG, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 }
