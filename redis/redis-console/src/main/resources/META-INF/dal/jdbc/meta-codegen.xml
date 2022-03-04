@@ -104,7 +104,7 @@
     <member name="cluster-id" field="cluster_id" value-type="long" length="20" nullable="false" />
     <member name="metaserver-id" field="metaserver_id" value-type="long" length="20" nullable="false" />
     <member name="dc-cluster-phase" field="dc_cluster_phase" value-type="int" length="10" nullable="false" />
-    <member name="active-redis-check-rules" field="active_redis_check_rules" value-type="String" length="128" nullable="false" />
+    <member name="active-redis-check-rules" field="active_redis_check_rules" value-type="String" length="128" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-dc-cluster-id" value-type="long" key-member="dc-cluster-id" />

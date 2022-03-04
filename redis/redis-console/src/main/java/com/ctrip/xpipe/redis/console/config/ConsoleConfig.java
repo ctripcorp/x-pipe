@@ -140,6 +140,4 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getRedisConfigCheckRules();
 
-	long sentinelBindTimeoutMilli();
-
 }
