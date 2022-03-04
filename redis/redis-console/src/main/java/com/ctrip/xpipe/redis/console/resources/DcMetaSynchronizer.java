@@ -148,10 +148,14 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         Set<String> filterClusters = new HashSet<>();
         for (OuterClientService.ClusterMeta outerClusterMeta : outerClusterMetas.values()) {
             try {
+                if (notInterestedTypes(outerClusterMeta.getClusterType().innerType().name()))
+                    continue;
+
                 if (shouldFilterOuterCluster(outerClusterMeta)) {
                     filterClusters.add(outerClusterMeta.getName());
                     continue;
                 }
+
                 ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
                 if (clusterMeta != null)
                     dcMeta.addCluster(clusterMeta);
@@ -172,6 +176,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         List<ClusterMeta> interestedClusters = new ArrayList<>();
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
             try {
+                if (notInterestedTypes(clusterMeta.getType()))
+                    continue;
+
                 if (!shouldFilterInnerCluster(clusterMeta, filteredOuterClusters)) {
                     interestedClusters.add(newClusterMeta(clusterMeta));
                 }
@@ -260,12 +267,13 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         return redisMeta;
     }
 
+
     boolean shouldFilterOuterCluster(OuterClientService.ClusterMeta clusterMeta) {
-        return notInterestedTypes(clusterMeta.getClusterType().innerType().name()) || isOperating(clusterMeta) || nameMatchFilterPattern(clusterMeta.getName());
+        return isOperating(clusterMeta) || nameMatchFilterPattern(clusterMeta.getName());
     }
 
     boolean shouldFilterInnerCluster(ClusterMeta clusterMeta, Set<String> filteredOuterClusters) {
-        return notInterestedTypes(clusterMeta.getType()) || filteredOuterClusters.contains(clusterMeta.getId());
+        return filteredOuterClusters.contains(clusterMeta.getId());
     }
 
     boolean nameMatchFilterPattern(String clusterName) {

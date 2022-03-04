@@ -29,18 +29,22 @@ import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceService
 import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
 import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariablesCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster.UnhealthyClusterCheckerTest;
+import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
+import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -59,7 +63,8 @@ import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotif
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
+import com.ctrip.xpipe.redis.console.resources.*;
+import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
@@ -174,6 +179,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
+        CheckerMetaCacheTest.class,
         DcMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,

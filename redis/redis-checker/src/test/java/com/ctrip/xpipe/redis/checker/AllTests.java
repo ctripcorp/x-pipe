@@ -49,6 +49,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.Curr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CurrentDcSentinelCheckControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelBindTaskTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconActiveDcControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconMetaCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
@@ -142,7 +143,8 @@ import org.junit.runners.Suite;
         DefaultSentinelMonitorsCheckTest.class,
         AlertManagerTest.class,
 
-        TestConnectProxyWithProxyClient.class
+        TestConnectProxyWithProxyClient.class,
+        SentinelBindTaskTest.class
 })
 public class AllTests {
 }
