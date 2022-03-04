@@ -38,6 +38,7 @@
   <entity name="sentinel">
     <attribute name="id" value-type="int" />
     <attribute name="address" value-type="String" />
+    <attribute name="cluster_type" value-type="String" />
   </entity>
   <entity name="az">
     <attribute name="id" value-type="String" />
@@ -94,4 +95,3 @@
     <attribute name="routeInfo" value-type="String" />
   </entity>
 </model>
-

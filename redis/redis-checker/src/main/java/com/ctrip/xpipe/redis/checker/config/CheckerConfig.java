@@ -155,4 +155,10 @@ public interface CheckerConfig {
     String crossDcSentinelMonitorNameSuffix();
 
     int getNonCoreCheckIntervalMilli();
+
+    boolean shouldBindOuterClusterShardAndSentinel();
+
+    int sentinelBindTimeoutMilli();
+
+    Set<String> getOuterClusterTypes();
 }

@@ -28,5 +28,4 @@ public interface SentinelBalanceService {
 
     SentinelBalanceTask getBalanceTask(String dc, ClusterType clusterType);
 
-    void bindShardAndSentinelsByType(ClusterType clusterType);
 }

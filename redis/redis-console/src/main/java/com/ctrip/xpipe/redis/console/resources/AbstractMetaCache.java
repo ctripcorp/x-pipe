@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author lishanglin
@@ -375,6 +376,58 @@ public abstract class AbstractMetaCache implements MetaCache {
         }
         return false;
     }
+
+
+    private Map<String, Integer> getDcMasterCnt(String clusterName, Set<String> excludedDcs) {
+
+        XpipeMeta xpipeMeta = meta.getKey();
+        Map<String, ClusterMeta> dcClusters = new HashMap<>();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (excludedDcs.contains(dcMeta.getId()))
+                continue;
+            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
+            if (clusterMeta != null)
+                dcClusters.put(dcMeta.getId(), clusterMeta);
+        }
+
+        Map<String, Integer> dcMasterNumMap = new HashMap<>();
+        dcClusters.forEach((dc, clusterMeta) -> {
+            dcMasterNumMap.put(dc, dcMastersCount(clusterMeta));
+        });
+
+        return dcMasterNumMap;
+    }
+
+    @Override
+    public  Pair<String, Integer> getMaxMasterCountDc(String clusterName, Set<String> excludedDcs) {
+        Map<String, Integer> dcMasterNumMap = getDcMasterCnt(clusterName, excludedDcs);
+
+        if (dcMasterNumMap.isEmpty())
+            return null;
+
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
+        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());
+            }
+        });
+        return new Pair<>(entryList.get(0).getKey(), entryList.get(0).getValue());
+    }
+
+    private int dcMastersCount(ClusterMeta dcCluster) {
+        Map<String, ShardMeta> shards = dcCluster.getShards();
+        AtomicInteger masterCount = new AtomicInteger();
+        shards.forEach((shardId, shardMeta) -> {
+            shardMeta.getRedises().forEach(redisMeta -> {
+                if (redisMeta.isMaster()) {
+                    masterCount.incrementAndGet();
+                }
+            });
+        });
+        return masterCount.get();
+    }
+
     @VisibleForTesting
     public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;
