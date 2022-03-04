@@ -61,14 +61,12 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     public void isleader() {
         super.isleader();
         logger.info("[SentinelMonitorsCheckCrossDc] start");
-        metaCache.continueUpdate();
     }
 
     @Override
     public void notLeader() {
         super.notLeader();
         logger.info("[SentinelMonitorsCheckCrossDc] stop");
-        metaCache.pauseUpdate();
     }
 
     protected List<DcMeta> dcsToCheck() {

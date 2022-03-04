@@ -1,16 +1,13 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
-import com.ctrip.xpipe.redis.console.sentinel.SentinelBindTask;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.SentinelGroupService;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
@@ -38,8 +35,6 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
 
     private SentinelGroupService sentinelService;
 
-    private SentinelManager sentinelManager;
-
     private DcClusterShardService dcClusterShardService;
 
     private ScheduledExecutorService balanceScheduled;
@@ -48,27 +43,21 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
 
     private ExecutorService executors;
 
-    private MetaCache metaCache;
-
     private TimeBoundCache<Map<String, SentinelsCache>> cachedSentinels;
 
     private Map<String, SentinelBalanceTasks> balanceTasks = Maps.newConcurrentMap();
-
-    private Map<String, SentinelBindTask> bindTasks = Maps.newConcurrentMap();
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultSentinelBalanceService.class);
 
     @Autowired
     public DefaultSentinelBalanceService(SentinelGroupService sentinelService, DcClusterShardService dcClusterShardService,
-                                         ConsoleConfig config, @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors, SentinelManager sentinelManager, MetaCache metaCache) {
+                                         ConsoleConfig config, @Qualifier(GLOBAL_EXECUTOR) ExecutorService executors) {
         this.sentinelService = sentinelService;
         this.dcClusterShardService = dcClusterShardService;
         this.config = config;
         this.balanceScheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("SentinelBalanceScheduled"));
         this.executors = executors;
         this.cachedSentinels = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::refreshCache);
-        this.sentinelManager = sentinelManager;
-        this.metaCache = metaCache;
     }
 
     @Override
@@ -216,32 +205,6 @@ public class DefaultSentinelBalanceService implements SentinelBalanceService {
         }
 
         return typeTasks.getTaskByDc(dcId.toUpperCase());
-    }
-
-
-    @Override
-    public void bindShardAndSentinelsByType(ClusterType clusterType) {
-        if (cachedSentinels.getData(false).get(clusterType.name().toUpperCase()) == null) {
-            logger.debug("no sentinels of cluster type: {} exist", clusterType.name());
-            return;
-        }
-
-        SentinelBindTask bindTask = bindTasks.get(clusterType.name().toUpperCase());
-        if (bindTask != null) {
-            if (!bindTask.future().isDone()) {
-                logger.debug("sentinels of cluster type: {} task running", clusterType.name());
-                return;
-            }
-        }
-
-        Map<String, SentinelsCache> sentinels = cachedSentinels.getData(false);
-        SentinelsCache sentinelsCache = sentinels.get(clusterType.name().toUpperCase());
-
-        SentinelBindTask task = new DefaultSentinelBindTask(sentinelManager, dcClusterShardService,
-                sentinelsCache.getAllSentinelGroups(), clusterType, config, metaCache);
-
-        bindTasks.put(clusterType.name().toUpperCase(), task);
-        task.execute(executors);
     }
 
     private Map<String, SentinelsCache> refreshCache() {
