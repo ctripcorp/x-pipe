@@ -10,24 +10,16 @@ import java.util.List;
 
 public abstract class AbstractRedisConfigCheckRuleActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory {
     protected static final String CONFIG_CHECKER_TYPE = "config";
-
-    @Override
-    public boolean supportInstnace(RedisHealthCheckInstance instance) {
-        List<RedisCheckRule> redisCheckRules = filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules());
-        if(redisCheckRules == null || redisCheckRules.isEmpty())
-            return false;
-        return true;
-    }
+    protected static final String CRDT_CONFIG_CHECKER_TYPE = "crdt.config";
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
         return Lists.newArrayList(ALERT_TYPE.REDIS_CONIFIG_CHECK_FAIL);
     }
 
-    protected List<RedisCheckRule> filterNonConifgRule( List<RedisCheckRule> allConfigCheckRules) {
+    protected List<RedisCheckRule> filterNonConifgRule( List<RedisCheckRule> allConfigCheckRules, String confgCheckType) {
         List<RedisCheckRule> resultCheckRules = new LinkedList<>();
-        allConfigCheckRules.stream().filter(redisCheckRule -> CONFIG_CHECKER_TYPE.equals(redisCheckRule.getCheckType())).forEach(resultCheckRules::add);
+        allConfigCheckRules.stream().filter(redisCheckRule -> confgCheckType.equals(redisCheckRule.getCheckType())).forEach(resultCheckRules::add);
         return resultCheckRules;
     }
-
 }

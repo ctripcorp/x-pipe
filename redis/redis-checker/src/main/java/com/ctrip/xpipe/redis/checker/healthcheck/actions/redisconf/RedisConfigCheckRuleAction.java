@@ -31,7 +31,7 @@ public class RedisConfigCheckRuleAction extends AbstractRedisConfigRuleAction {
 
                 @Override
                 public void fail(Throwable throwable) {
-                    logger.error("[RedisConfigCheckRuleAction] redis: {}, config name :{}", getActionInstance().getCheckInfo(), redisCheckRule.getParams().get(CONFIG_CHECK_NAME), throwable);
+                    logger.error("[RedisConfigCheckRuleAction] redis: {}, {} name :{}", getActionInstance().getCheckInfo(), redisCheckRule.getCheckType(), redisCheckRule.getParams().get(CONFIG_CHECK_NAME), throwable);
                 }
             }, redisCheckRule.getParams().get(CONFIG_CHECK_NAME));
         });

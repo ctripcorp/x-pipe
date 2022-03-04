@@ -20,7 +20,8 @@ public class RedisConfigCheckRuleActionListener implements HealthCheckActionList
     @Override
     public void onAction(RedisConfigCheckRuleActionContext redisConfigCheckRuleActionContext) {
 
-        String alertMessage = String.format("config:%s should be %s, but was %s",
+        String alertMessage = String.format("%s:%s should be %s, but was %s",
+                redisConfigCheckRuleActionContext.getRedisCheckRule().getCheckType(),
                 redisConfigCheckRuleActionContext.getRedisCheckRule().getParams().get(CONFIG_CHECK_NAME),
                 redisConfigCheckRuleActionContext.getRedisCheckRule().getParams().get(EXPECTED_VAULE),
                 redisConfigCheckRuleActionContext.getResult());

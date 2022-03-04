@@ -13,12 +13,12 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Component
-public class RedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckRuleActionFactory implements OneWaySupport {
+public class RedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckRuleActionFactory implements OneWaySupport, BiDirectionSupport {
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         RedisConfigCheckRuleAction redisConfigCheckRuleAction
-                = new RedisConfigCheckRuleAction(scheduled, instance, executors, filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules()));
+                = new RedisConfigCheckRuleAction(scheduled, instance, executors, filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), CONFIG_CHECKER_TYPE));
         redisConfigCheckRuleAction.addListener(new RedisConfigCheckRuleActionListener(alertManager));
         return redisConfigCheckRuleAction;
     }
@@ -26,5 +26,13 @@ public class RedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckR
     @Override
     public Class<? extends SiteLeaderAwareHealthCheckAction> support() {
         return RedisConfigCheckRuleAction.class;
+    }
+
+    @Override
+    public boolean supportInstnace(RedisHealthCheckInstance instance) {
+        List<RedisCheckRule> redisCheckRules = filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), CONFIG_CHECKER_TYPE);
+        if(redisCheckRules == null || redisCheckRules.isEmpty())
+            return false;
+        return true;
     }
 }
