@@ -40,33 +40,34 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
 
     @Override
     public void visitModified(MetaComparator comparator) {
-        ((ShardMetaComparator)comparator).accept(new MetaComparatorVisitor<Redis>() {
-            @Override
-            public void visitAdded(Redis added) {
-                if(added instanceof RedisMeta) {
-                    redisAdd.accept((RedisMeta) added);
-                }
-            }
+        ShardMetaComparator shardMetaComparator = (ShardMetaComparator)comparator;
 
-            @Override
-            public void visitModified(MetaComparator comparator) {
-                logger.info("[visitModified][redis] {}", comparator);
-                RedisComparator redisComparator = (RedisComparator) comparator;
-                Redis current = redisComparator.getCurrent(), future = redisComparator.getFuture();
-                if(current instanceof RedisMeta && future instanceof RedisMeta) {
-                    if(((RedisMeta) current).isMaster() ^ ((RedisMeta) future).isMaster()) {
-                        redisChanged.accept((RedisMeta) future);
+        if (shardMetaComparator.metaChange()) {
+            reloadShard();
+        } else {
+            shardMetaComparator.accept(new MetaComparatorVisitor<Redis>() {
+                @Override
+                public void visitAdded(Redis added) {
+                    if(added instanceof RedisMeta) {
+                        redisAdd.accept((RedisMeta) added);
                     }
                 }
-            }
 
-            @Override
-            public void visitRemoved(Redis removed) {
-                if(removed instanceof RedisMeta) {
-                    redisDelete.accept((RedisMeta) removed);
+                @Override
+                public void visitModified(MetaComparator comparator) {
+                    logger.info("[visitModified][redis] {}", comparator);
+                    RedisComparator redisComparator = (RedisComparator) comparator;
+                    reloadRedis();
                 }
-            }
-        });
+
+                @Override
+                public void visitRemoved(Redis removed) {
+                    if(removed instanceof RedisMeta) {
+                        redisDelete.accept((RedisMeta) removed);
+                    }
+                }
+            });
+        }
     }
 
     @Override

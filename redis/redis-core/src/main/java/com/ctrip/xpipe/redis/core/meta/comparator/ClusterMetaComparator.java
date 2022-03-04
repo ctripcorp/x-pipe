@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import org.unidal.tuple.Triple;
 
 import java.util.Set;
@@ -14,6 +15,8 @@ import java.util.Set;
 public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta, ClusterChange>{
 	
 	private ClusterMeta current, future;
+
+	private boolean metaChange;
 	
 	public ClusterMetaComparator(ClusterMeta current, ClusterMeta future) {
 		this.current = current;
@@ -22,7 +25,13 @@ public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta, Clu
 
 	@Override
 	public void compare() {
-		
+
+		ClusterMeta currentClone = MetaClone.clone(current);
+		ClusterMeta futureClone = MetaClone.clone(future);
+		currentClone.getShards().clear();
+		futureClone.getShards().clear();
+		metaChange = !(currentClone.toString().equals(futureClone.toString()));
+
 		Triple<Set<String>, Set<String>, Set<String>> result = getDiff(current.getShards().keySet(), future.getShards().keySet());
 		
 		for(String shardId : result.getFirst()){
@@ -51,6 +60,10 @@ public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta, Clu
 	
 	public ClusterMeta getFuture() {
 		return future;
+	}
+
+	public boolean metaChange() {
+		return metaChange;
 	}
 
 	@Override

@@ -113,6 +113,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void visitModified(MetaComparator comparator) {
+        ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
+        if (((ClusterMetaComparator) comparator).metaChange()) {
+            reloadCluster();
+        } else {
+            clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged));
+        }
     }
 
 
@@ -138,6 +144,17 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         return true;
     }
+
+    private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
+        @Override
+        public void accept(RedisMeta redisMeta) {
+            if (!isInterestedInCluster(redisMeta.parent().parent())) {
+                return;
+            }
+            logger.info("[Redis-Change] {}, master: {}", redisMeta, redisMeta.isMaster());
+            instanceManager.getOrCreate(redisMeta).getCheckInfo().isMaster(redisMeta.isMaster());
+        }
+    };
 
     boolean isMaxMasterCountInCurrentDc(ClusterMeta clusterMeta) {
         Pair<String, Integer> maxMasterCountDc = metaCache.getMaxMasterCountDc(clusterMeta.getId(), checkerConfig.getIgnoredHealthCheckDc());
