@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf;
 
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
@@ -35,7 +33,7 @@ public class CRDTRedisConfigCheckRuleAction extends AbstractRedisConfigRuleActio
 
                 @Override
                 public void fail(Throwable throwable) {
-                    logger.error("[CRDTRedisConfigCheckRuleAction] redis: {}, config name :{}", getActionInstance().getCheckInfo(), redisCheckRule.getParams().get(CONFIG_CHECK_NAME), throwable);
+                    logger.error("[CRDTRedisConfigCheckRuleAction] redis: {}, {} name :{}", getActionInstance().getCheckInfo(), redisCheckRule.getCheckType(), redisCheckRule.getParams().get(CONFIG_CHECK_NAME), throwable);
                 }
             }, redisCheckRule.getParams().get(CONFIG_CHECK_NAME));
         });

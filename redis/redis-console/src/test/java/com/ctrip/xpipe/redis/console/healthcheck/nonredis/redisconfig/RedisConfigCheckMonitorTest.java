@@ -70,7 +70,7 @@ public class RedisConfigCheckMonitorTest {
     public void testDoCheck() {
         when(consoleConfig.getRedisConfigCheckRules()).thenReturn("2,3");
         redisConfigCheckMonitor.doCheck();
-        verify(dcClusterService, times(6)).updateDcCluster(any(DcClusterCreateInfo.class));
+        verify(dcClusterService, times(1)).updateDcCluster(any(DcClusterCreateInfo.class));
     }
 
     @Test

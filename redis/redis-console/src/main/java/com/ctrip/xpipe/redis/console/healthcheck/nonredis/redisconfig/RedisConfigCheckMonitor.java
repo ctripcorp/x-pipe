@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,7 +41,7 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
     protected void doCheck() {
         if(consoleConfig.isRedisConfigCheckMonitorOpen()) {
             String redisConfigCheckRule = consoleConfig.getRedisConfigCheckRules();
-            if(null == redisConfigCheckRule || redisConfigCheckRule.equals("")) {
+            if(StringUtil.isEmpty(redisConfigCheckRule)) {
                 logger.info("[RedisConfigCheckMonitor][doCheck] no ready to add redis config check rule");
                 return;
             }
@@ -63,26 +64,23 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
         String oldRedisConfigCheckRule = dcClusterCreateInfo.getRedisCheckRule();
         String newRedisConfigCheckRule = generateNewRedisConfigCheckRule(oldRedisConfigCheckRule, readyToAddRedisConfigRule);
 
-        dcClusterCreateInfo.setRedisCheckRule(newRedisConfigCheckRule);
-
-        dcClusterService.updateDcCluster(dcClusterCreateInfo);
-        CatEventMonitor.DEFAULT.logEvent(ACTIVE_DEFAULT_REDIS_CHECK_RULE, String.format("redis check rule of dc:%s cluster:%s was changed from %s to %s",
-                dcMeta.getId(), clustMeta.getId(), oldRedisConfigCheckRule, newRedisConfigCheckRule));
-
+        if(!newRedisConfigCheckRule.equals(oldRedisConfigCheckRule)) {
+            dcClusterCreateInfo.setRedisCheckRule(newRedisConfigCheckRule);
+            dcClusterService.updateDcCluster(dcClusterCreateInfo);
+            CatEventMonitor.DEFAULT.logEvent(ACTIVE_DEFAULT_REDIS_CHECK_RULE, String.format("redis check rule of dc:%s cluster:%s was changed from %s to %s",
+                    dcMeta.getId(), clustMeta.getId(), oldRedisConfigCheckRule, newRedisConfigCheckRule));
+        }
     }
 
     @VisibleForTesting
     protected String generateNewRedisConfigCheckRule(String oldRedisConfigRule, String readyToAddRedisConfigRule) {
-        if(oldRedisConfigRule == null || "".equals(oldRedisConfigRule))
+        if(StringUtil.isEmpty(oldRedisConfigRule))
             return readyToAddRedisConfigRule;
 
         List<String> newRules = Stream.of(Arrays.asList(oldRedisConfigRule.split(",")), Arrays.asList(readyToAddRedisConfigRule.split(",")))
                 .flatMap(Collection::stream).distinct().collect(Collectors.toList());
 
-        StringBuilder stringBuilder = new StringBuilder();
-        newRules.forEach(s -> stringBuilder.append(s).append(","));
-        stringBuilder.deleteCharAt(stringBuilder.length() -1);
-        return stringBuilder.toString();
+        return StringUtil.join(",", (arg)->(arg), newRules);
     }
 
     @VisibleForTesting

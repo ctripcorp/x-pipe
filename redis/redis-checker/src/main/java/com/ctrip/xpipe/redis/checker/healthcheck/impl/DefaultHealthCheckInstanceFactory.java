@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -20,6 +21,7 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,12 +117,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
 
         List<RedisCheckRule> redisCheckRules = new LinkedList<>();
-        if (redisMeta.parent().parent().getActiveRedisCheckRules() != null && !redisMeta.parent().parent().getActiveRedisCheckRules().equals("")) {
+        if (!StringUtil.isEmpty(redisMeta.parent().parent().getActiveRedisCheckRules())) {
             for (String ruleId : redisMeta.parent().parent().getActiveRedisCheckRules().split(",")) {
                 RedisCheckRuleMeta redisCheckRuleMeta = metaCache.getXpipeMeta().getRedisCheckRules().get(Long.parseLong(ruleId));
-                logger.info("ruleId:" + ruleId);
                 if(redisCheckRuleMeta != null) {
-                    redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), JsonCodec.INSTANCE.decode(redisCheckRuleMeta.getParam(), Map.class)));
+                    redisCheckRules.add(new RedisCheckRule(redisCheckRuleMeta.getCheckType(), Codec.DEFAULT.decode(redisCheckRuleMeta.getParam(), Map.class)));
+                    logger.info("[createRedisInstanceInfo] add redis check rule {} {} to redis {}:{}",
+                            redisCheckRuleMeta.getCheckType(), redisCheckRuleMeta.getParam(),redisMeta.getIp(), redisMeta.getPort());
                 }
             }
         }
