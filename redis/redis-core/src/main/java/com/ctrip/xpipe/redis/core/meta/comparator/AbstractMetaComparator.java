@@ -2,23 +2,24 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
 import com.ctrip.xpipe.redis.core.BaseEntity;
+import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * @author wenchao.meng
  *
  * Sep 2, 2016
  */
-public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements MetaComparator<T, C>{
+public abstract class AbstractMetaComparator<V extends Serializable, T, C extends Enum<C>> implements MetaComparator<T, C>{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -29,8 +30,87 @@ public abstract class AbstractMetaComparator<T, C extends Enum<C>> implements Me
 	
 	protected List<ConfigChanged<C>> configChanged = new LinkedList<>();
 
+	protected V current;
+	protected V future;
 
-	
+	private boolean isShallowChange = false;
+
+	public AbstractMetaComparator() {
+	}
+
+	public AbstractMetaComparator(V current, V future) {
+		this.current = current;
+		this.future = future;
+	}
+
+	@Override
+	public boolean isShallowChange() {
+		return isShallowChange;
+	}
+
+	@Override
+	public void compare() {
+		checkShallowChange();
+		doDetailedCompare();
+	}
+
+	protected void checkShallowChange() {
+
+	    if (current == null && future == null) {
+			isShallowChange = false;
+			return;
+		}
+
+	    if (current == null || future == null) {
+			isShallowChange = true;
+			return;
+		}
+
+	    try {
+			V currentClone = MetaClone.clone(current);
+			V futureClone = MetaClone.clone(future);
+			for (Field field : currentClone.getClass().getDeclaredFields()) {
+				if (!needCheck(field.getType())) {
+					resetField(field, currentClone);
+				}
+			}
+			for (Field field : futureClone.getClass().getDeclaredFields()) {
+				if (!needCheck(field.getType())) {
+					resetField(field, futureClone);
+				}
+			}
+			isShallowChange = !(currentClone.toString().equals(futureClone.toString()));
+		} catch (Throwable t) {
+	        logger.error("[checkShallowChange] UNLIKELY", t);
+		}
+	}
+
+	private void resetField(Field field, V instance) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+		Class<?> clazz = field.getType();
+		field.setAccessible(true);
+		if (Map.class.isAssignableFrom(clazz)) {
+		    clazz.getDeclaredMethod("clear").invoke(field.get(instance));
+		    return;
+		}
+		if (Collection.class.isAssignableFrom(clazz)) {
+			clazz.getDeclaredMethod("clear").invoke(field.get(instance));
+			return;
+		}
+		field.set(instance, null);
+	}
+
+	private boolean needCheck(Class<?> clazz) {
+	    if (String.class.isAssignableFrom(clazz)) {
+	        return true;
+		}
+	    if (Number.class.isAssignableFrom(clazz)) {
+	        return true;
+		}
+		return clazz.isPrimitive();
+	}
+
+	protected void doDetailedCompare() {}
+
 	/**
 	 * @param current
 	 * @param future

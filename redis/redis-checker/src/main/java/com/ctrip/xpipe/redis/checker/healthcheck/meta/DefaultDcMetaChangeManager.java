@@ -115,7 +115,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     public void visitModified(MetaComparator comparator) {
         ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
         if (((ClusterMetaComparator) comparator).metaChange()) {
-            reloadCluster();
+            //reloadCluster();
         } else {
             clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged));
         }

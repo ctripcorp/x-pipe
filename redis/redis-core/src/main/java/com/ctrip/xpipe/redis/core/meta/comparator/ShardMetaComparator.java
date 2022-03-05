@@ -15,15 +15,12 @@ import java.util.List;
  *
  * Sep 2, 2016
  */
-public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChange>{
+public class ShardMetaComparator extends AbstractMetaComparator<ShardMeta, Redis, ShardChange>{
 	
-	private ShardMeta current, future;
-
 	private boolean metaChange;
 	
 	public ShardMetaComparator(ShardMeta current, ShardMeta future){
-		this.current = current;
-		this.future = future;
+	    super(current, future);
 	}
 
 	@Override

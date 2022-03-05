@@ -7,19 +7,20 @@ import com.ctrip.xpipe.redis.core.entity.Redis;
  *
  * Sep 2, 2016
  */
-public class RedisComparator extends AbstractMetaComparator<Object, RedisChange>{
-	
-	@SuppressWarnings("unused")
-	private Redis current, future;
+public class RedisComparator extends AbstractMetaComparator<Redis, Object, RedisChange>{
 	
 	public RedisComparator(Redis current, Redis future) {
-		this.current = current;
-		this.future = future;
+		super(current, future);
 	}
 
 	@Override
 	public void compare() {
-		
+		//too many redis meta, avoid reflection
+	}
+
+	@Override
+	public boolean isShallowChange() {
+		throw new UnsupportedOperationException("too many redis meta, avoid reflection");
 	}
 
 	@Override
