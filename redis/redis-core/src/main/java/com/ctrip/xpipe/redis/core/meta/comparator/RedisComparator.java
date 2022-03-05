@@ -20,7 +20,7 @@ public class RedisComparator extends AbstractMetaComparator<Redis, Object, Redis
 
 	@Override
 	public boolean isShallowChange() {
-		throw new UnsupportedOperationException("too many redis meta, avoid reflection");
+		throw new UnsupportedOperationException("too many redis meta, avoid reflection. realize it yourself if you need it indeed. ");
 	}
 
 	@Override
