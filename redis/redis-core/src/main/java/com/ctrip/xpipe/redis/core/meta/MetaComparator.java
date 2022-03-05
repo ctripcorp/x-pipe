@@ -29,6 +29,8 @@ public interface MetaComparator<T, C extends Enum<C>> {
 	 */
 	int totalChangedCount();
 
+	boolean isShallowChange();
+
 	String idDesc();
 	
 	void accept(MetaComparatorVisitor<T> visitor);

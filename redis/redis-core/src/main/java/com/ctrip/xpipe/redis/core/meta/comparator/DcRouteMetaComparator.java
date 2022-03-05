@@ -8,15 +8,12 @@ import org.unidal.tuple.Triple;
 
 import java.util.Set;
 
-public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta, RouteChange> {
-
-    private DcMeta current, future;
+public class DcRouteMetaComparator extends AbstractMetaComparator<DcMeta, RouteMeta, RouteChange> {
 
     private String routeTagFilter;
 
     public DcRouteMetaComparator(DcMeta current, DcMeta future, String routeTagFilter) {
-        this.current = current;
-        this.future = future;
+        super(current, future);
         this.routeTagFilter = routeTagFilter;
     }
 

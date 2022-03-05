@@ -43,7 +43,7 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
         ShardMetaComparator shardMetaComparator = (ShardMetaComparator)comparator;
 
         if (shardMetaComparator.metaChange()) {
-            reloadShard();
+            //reloadShard();
         } else {
             shardMetaComparator.accept(new MetaComparatorVisitor<Redis>() {
                 @Override
@@ -57,7 +57,7 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
                 public void visitModified(MetaComparator comparator) {
                     logger.info("[visitModified][redis] {}", comparator);
                     RedisComparator redisComparator = (RedisComparator) comparator;
-                    reloadRedis();
+                    //reloadRedis();
                 }
 
                 @Override
