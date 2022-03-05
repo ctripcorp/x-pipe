@@ -5,7 +5,6 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.AbstractCrossDcIntervalCheck;
-import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -14,12 +13,11 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,49 +36,59 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
     private static final String ACTIVE_DEFAULT_REDIS_CHECK_RULE = "active.default.redis.check.rule";
 
     @Override
+    protected boolean shouldCheck() {
+        if(super.shouldCheck() && consoleConfig.isRedisConfigCheckMonitorOpen() && !StringUtil.isEmpty(consoleConfig.getRedisConfigCheckRules())) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     protected void doCheck() {
-        if(consoleConfig.isRedisConfigCheckMonitorOpen()) {
-            String redisConfigCheckRule = consoleConfig.getRedisConfigCheckRules();
-            if(StringUtil.isEmpty(redisConfigCheckRule)) {
-                logger.info("[RedisConfigCheckMonitor][doCheck] no ready to add redis config check rule");
-                return;
-            }
+        Set<String> redisConfigCheckRule = Sets.newHashSet(consoleConfig.getRedisConfigCheckRules().split(","));
+        Map<String, Long> dcNameZoneMap = dcService.dcNameZoneMap();
 
-            Map<String, Long> dcNameZoneMap = dcService.dcNameZoneMap();
-
-            XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-            for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-                for(ClusterMeta clustMeta : dcMeta.getClusters().values()) {
-                    if(isBiDirectionAndCrossRegionCluster(clustMeta, dcNameZoneMap)) {
-                        addRedisConfigCheckRulesToDCCluster(clustMeta, dcMeta, redisConfigCheckRule);
-                    }
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            for(ClusterMeta clustMeta : dcMeta.getClusters().values()) {
+                if(isBiDirectionAndCrossRegionCluster(clustMeta, dcNameZoneMap)) {
+                    addRedisConfigCheckRulesToDCCluster(clustMeta, dcMeta, redisConfigCheckRule);
                 }
             }
         }
     }
 
-    private void addRedisConfigCheckRulesToDCCluster(ClusterMeta clustMeta, DcMeta dcMeta, String readyToAddRedisConfigRule) {
+    private void addRedisConfigCheckRulesToDCCluster(ClusterMeta clustMeta, DcMeta dcMeta, Set<String> readyToAddRedisConfigRules) {
         DcClusterCreateInfo dcClusterCreateInfo = dcClusterService.findDcClusterCreateInfo(dcMeta.getId(), clustMeta.getId());
-        String oldRedisConfigCheckRule = dcClusterCreateInfo.getRedisCheckRule();
-        String newRedisConfigCheckRule = generateNewRedisConfigCheckRule(oldRedisConfigCheckRule, readyToAddRedisConfigRule);
-
-        if(!newRedisConfigCheckRule.equals(oldRedisConfigCheckRule)) {
-            dcClusterCreateInfo.setRedisCheckRule(newRedisConfigCheckRule);
-            dcClusterService.updateDcCluster(dcClusterCreateInfo);
-            CatEventMonitor.DEFAULT.logEvent(ACTIVE_DEFAULT_REDIS_CHECK_RULE, String.format("redis check rule of dc:%s cluster:%s was changed from %s to %s",
-                    dcMeta.getId(), clustMeta.getId(), oldRedisConfigCheckRule, newRedisConfigCheckRule));
+        String newRedisConfigCheckRule = generateNewRedisConfigCheckRule(dcClusterCreateInfo.getRedisCheckRule(), readyToAddRedisConfigRules);
+        if(newRedisConfigCheckRule != null) {
+            updateRedisConfigCheckRules(clustMeta.getId(), dcMeta.getId(), dcClusterCreateInfo, newRedisConfigCheckRule);
         }
     }
 
+
+
     @VisibleForTesting
-    protected String generateNewRedisConfigCheckRule(String oldRedisConfigRule, String readyToAddRedisConfigRule) {
+    protected String generateNewRedisConfigCheckRule(String oldRedisConfigRule, Set<String> readyToAddRedisConfigRule) {
         if(StringUtil.isEmpty(oldRedisConfigRule))
-            return readyToAddRedisConfigRule;
+            return StringUtil.join(",", (arg)->(arg), readyToAddRedisConfigRule);
 
-        List<String> newRules = Stream.of(Arrays.asList(oldRedisConfigRule.split(",")), Arrays.asList(readyToAddRedisConfigRule.split(",")))
-                .flatMap(Collection::stream).distinct().collect(Collectors.toList());
+        Set<String> oldRedisConfigCheckRules = Sets.newHashSet(oldRedisConfigRule.split(","));
+        if(oldRedisConfigCheckRules.containsAll(readyToAddRedisConfigRule))
+            return null;
 
-        return StringUtil.join(",", (arg)->(arg), newRules);
+        Set<String> newRedisConfigCheckRules = new HashSet<>();
+        newRedisConfigCheckRules.addAll(oldRedisConfigCheckRules);
+        newRedisConfigCheckRules.addAll(readyToAddRedisConfigRule);
+
+        return StringUtil.join(",", (arg)->(arg), newRedisConfigCheckRules);
+    }
+
+    private void updateRedisConfigCheckRules(String clusterId, String dcId, DcClusterCreateInfo dcClusterCreateInfo, String newRedisConfigCheckRule) {
+        dcClusterCreateInfo.setRedisCheckRule(newRedisConfigCheckRule);
+        dcClusterService.updateDcCluster(dcClusterCreateInfo);
+        CatEventMonitor.DEFAULT.logEvent(ACTIVE_DEFAULT_REDIS_CHECK_RULE, String.format("redis check rule of dc:%s cluster:%s was changed from %s to %s",
+                dcId, clusterId, dcClusterCreateInfo.getRedisCheckRule() , newRedisConfigCheckRule));
     }
 
     @VisibleForTesting

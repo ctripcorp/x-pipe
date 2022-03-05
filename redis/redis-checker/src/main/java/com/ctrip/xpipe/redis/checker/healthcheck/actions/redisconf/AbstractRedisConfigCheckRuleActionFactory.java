@@ -9,8 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 public abstract class AbstractRedisConfigCheckRuleActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory {
-    protected static final String CONFIG_CHECKER_TYPE = "config";
-    protected static final String CRDT_CONFIG_CHECKER_TYPE = "crdt.config";
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
@@ -22,4 +20,14 @@ public abstract class AbstractRedisConfigCheckRuleActionFactory extends Abstract
         allConfigCheckRules.stream().filter(redisCheckRule -> confgCheckType.equals(redisCheckRule.getCheckType())).forEach(resultCheckRules::add);
         return resultCheckRules;
     }
+
+    @Override
+    public boolean supportInstnace(RedisHealthCheckInstance instance) {
+        List<RedisCheckRule> redisCheckRules = filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), getCheckType());
+        if(redisCheckRules == null || redisCheckRules.isEmpty())
+            return false;
+        return true;
+    }
+
+    public abstract String getCheckType();
 }

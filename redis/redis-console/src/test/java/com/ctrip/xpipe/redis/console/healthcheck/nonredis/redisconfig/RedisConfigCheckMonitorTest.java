@@ -17,10 +17,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.OngoingStubbing;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -76,14 +73,18 @@ public class RedisConfigCheckMonitorTest {
     @Test
     public void testDoCheckWithNullRedisConfigCheckRule() {
         when(consoleConfig.getRedisConfigCheckRules()).thenReturn(null);
-        redisConfigCheckMonitor.doCheck();
+        if(redisConfigCheckMonitor.shouldCheck()) {
+            redisConfigCheckMonitor.doCheck();
+        }
         verify(dcClusterService, times(0)).updateDcCluster(any(DcClusterCreateInfo.class));
     }
 
     @Test
     public void testDoCheckWithNonRedisConfigCheckRule() {
         when(consoleConfig.getRedisConfigCheckRules()).thenReturn("");
-        redisConfigCheckMonitor.doCheck();
+        if(redisConfigCheckMonitor.shouldCheck()) {
+            redisConfigCheckMonitor.doCheck();
+        }
         verify(dcClusterService, times(0)).updateDcCluster(any(DcClusterCreateInfo.class));
     }
 
@@ -101,9 +102,13 @@ public class RedisConfigCheckMonitorTest {
 
     @Test
     public void testGenerateNewRedisConfigRule() {
-        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("1,2", "2,3"),"1,2,3");
-        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule(null, "2,3"),"2,3");
-        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("", "2,3"),"2,3");
+        Set<String> readyToAddRedisConfigCheckRules = new HashSet<>();
+        readyToAddRedisConfigCheckRules.add("2");
+        readyToAddRedisConfigCheckRules.add("3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("1,2", readyToAddRedisConfigCheckRules),"1,2,3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule(null, readyToAddRedisConfigCheckRules),"2,3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("", readyToAddRedisConfigCheckRules),"2,3");
+        Assert.assertEquals(redisConfigCheckMonitor.generateNewRedisConfigCheckRule("1,2,3", readyToAddRedisConfigCheckRules),null);
     }
 
 
