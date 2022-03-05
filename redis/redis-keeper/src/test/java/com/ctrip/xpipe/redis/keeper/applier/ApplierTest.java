@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.keeper.applier.command.ApplierRedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.DefaultApplierCommand;
-import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import org.junit.After;
@@ -75,6 +74,12 @@ public class ApplierTest extends AbstractRedisOpParserTest implements XsyncObser
         server.propagate("gtid a1:25 set k4 v4");
         server.propagate("gtid a1:26 set k1 v6");
 
+        server.propagate("MULTI");
+        server.propagate("set k13 v13");
+        server.propagate("set k14 v14");
+        server.propagate("set k15 v15");
+        server.propagate("GTID a1:28");
+
         server.propagate("gtid a1:27 set k1 v7");
     }
 
@@ -103,10 +108,19 @@ public class ApplierTest extends AbstractRedisOpParserTest implements XsyncObser
 
     }
 
+    private boolean inTransaction = false;
+
     @Override
     public void onCommand(Object[] rawCmdArgs) {
         RedisOp redisOp = parser.parse(Stream.of(rawCmdArgs).map(Object::toString).collect(Collectors.toList()));
         ApplierRedisOpCommand<Boolean> command = new DefaultApplierCommand(client, redisOp);
-        command.sharding().forEach(sequenceController::submit);
+        switch (command.type()) {
+            case MULTI:
+                inTransaction = true;
+            case EXEC:
+                inTransaction = false;
+            default:
+                command.sharding().forEach(sequenceController::submit);
+        }
     }
 }

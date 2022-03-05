@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpExec;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMulti;
 
 import java.util.List;
 
@@ -44,6 +46,12 @@ public interface RedisOpCommand<V> extends Command<V> {
 
     default RedisOpCommandType type() {
         RedisOp op = redisOp();
+        if (op instanceof RedisOpMulti) {
+            return RedisOpCommandType.MULTI;
+        }
+        if (op instanceof RedisOpExec) {
+            return RedisOpCommandType.EXEC;
+        }
         if (op instanceof RedisSingleKeyOp) {
             return RedisOpCommandType.SINGLE_KEY;
         }
