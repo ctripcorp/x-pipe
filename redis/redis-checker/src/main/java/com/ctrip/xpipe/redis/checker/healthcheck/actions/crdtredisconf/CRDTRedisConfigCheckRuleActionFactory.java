@@ -3,19 +3,18 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigCheckRuleActionFactory;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCheckRuleActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 public class CRDTRedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckRuleActionFactory implements BiDirectionSupport {
+    private static final String CRDT_CONFIG_CHECK_TYPE = "crdt.config";
+
     @Override
     public SiteLeaderAwareHealthCheckAction create(RedisHealthCheckInstance instance) {
         CRDTRedisConfigCheckRuleAction crdtRedisConfigCheckRuleAction =
-                new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), CRDT_CONFIG_CHECKER_TYPE));
+                new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), CRDT_CONFIG_CHECK_TYPE));
         crdtRedisConfigCheckRuleAction.addListener(new RedisConfigCheckRuleActionListener(alertManager));
         return crdtRedisConfigCheckRuleAction;
     }
@@ -25,11 +24,9 @@ public class CRDTRedisConfigCheckRuleActionFactory extends AbstractRedisConfigCh
         return CRDTRedisConfigCheckRuleAction.class;
     }
 
+
     @Override
-    public boolean supportInstnace(RedisHealthCheckInstance instance) {
-        List<RedisCheckRule> redisCheckRules = filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), CRDT_CONFIG_CHECKER_TYPE);
-        if(redisCheckRules == null || redisCheckRules.isEmpty())
-            return false;
-        return true;
+    public String getCheckType() {
+        return CRDT_CONFIG_CHECK_TYPE;
     }
 }
