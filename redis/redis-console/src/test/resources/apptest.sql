@@ -1,7 +1,7 @@
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id,cluster_type) values
-                        (5,'singleDcCluster',1,'Cluster:singleDcCluster , ActiveDC : A','0000000000000000','Normal',1, 1,'single_dc');
+                        (5,'singleDcCluster',1,'Cluster:singleDcCluster , ActiveDC : A','0000000000000000','Normal',1, 1,'SINGLE_DC');
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,status,is_xpipe_interested, cluster_org_id,cluster_type) values
-(6,'credis_trocks_test',0,'Normal',1, 1,'cross_dc');
+(6,'credis_trocks_test',0,'Normal',1, 1,'CROSS_DC');
 
 insert into redis_check_rule_tbl (id,check_type,param,description) values (1,'config', '{\"configName\" : \"repl-backlog-size\", \"expectedVaule\" : \"128\"}', 'rule1');
 insert into redis_check_rule_tbl (id,check_type,param,description) values (2,'config', '{\"configName\" : \"repl-backlog-size\", \"expectedVaule\" : \"256\"}', 'rule2');
