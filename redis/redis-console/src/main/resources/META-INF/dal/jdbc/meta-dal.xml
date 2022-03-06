@@ -421,6 +421,9 @@
 			<readset name="CLUSTER_ID">
 				<member name="cluster-id" />
 			</readset>
+			<readset name="DC_CLUSTER_ACTIVE_REDIS_CHECK_RULES">
+				<member name="active-redis-check-rules"/>
+			</readset>
 		</readsets>
 
 		<query-defs>
@@ -2355,6 +2358,63 @@
 					<![CDATA[
 					UPDATE <TABLE/>
 					SET <FIELD name='deleted'/> = 1 , <FIELD name='az-name'/> = ${az-name}
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+	<entity name="redis-check-rule-tbl" table="redis_check_rule_tbl" alias="rcrt">
+		<query-defs>
+			<query name="find-redis-check-rule-by-id" type="SELECT" multiple="false">
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='id'/> = ${id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-redis-check-rules-by-param" type="SELECT" multiple="false">
+				<param name="param"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='param'/>  = ${param}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-redis-check-rules-by-checkerType" type="SELECT" multiple="true">
+				<param name="check-type"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='check-type'/>  = ${check-type}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-redis-check-rules" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='delete-redis-check-rule' type='UPDATE' batch='false'>
+				<param name='id'/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
 					WHERE <FIELD name='id'/> = ${id}
 					AND <FIELD name='deleted'/> = 0
 					]]>

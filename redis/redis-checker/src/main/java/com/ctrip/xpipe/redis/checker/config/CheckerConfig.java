@@ -85,6 +85,8 @@ public interface CheckerConfig {
 
     String KEY_PROXY_CHECK_INTERVAL = "proxy.check.interval";
 
+    String KEY_NON_CORE_CHECK_INTERVAL = "non.core.check.interval";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -152,6 +154,8 @@ public interface CheckerConfig {
     String sentinelCheckDowngradeStrategy();
 
     String crossDcSentinelMonitorNameSuffix();
+
+    int getNonCoreCheckIntervalMilli();
 
     boolean shouldBindOuterClusterShardAndSentinel();
 

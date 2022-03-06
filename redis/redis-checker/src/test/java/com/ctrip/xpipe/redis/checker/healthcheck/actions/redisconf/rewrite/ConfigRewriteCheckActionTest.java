@@ -50,7 +50,6 @@ public class ConfigRewriteCheckActionTest extends AbstractTest {
         }
     }
 
-
     @Test
     public void testIgnoreRedisLoadingError() throws Exception {
         Server server = startServer("-ERR Only CONFIG GET is allowed during loading\r\n");

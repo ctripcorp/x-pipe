@@ -1,5 +1,8 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <xpipe>
+		<redisCheckRule id = "1234567890123456789" checkType = "config" param = "{configName:'repl_backlog_size', expectedValue:256MB, whetherFix:true}"></redisCheckRule>
+		<redisCheckRule id = "1234567890123456788" checkType = "config" param = "{configName:'repl_backlog_ttl', expectedValue:124, whetherFix:false}"></redisCheckRule>
+
 	<dc id="jq" lastModifiedTime="1234567abc" zone="SHA">
 		<metaServer ip="1.1.1.1" port="9747" master="true"/>
 		<metaServer ip="1.1.1.1" port="9748" master="false"/>
@@ -58,7 +61,7 @@
 			<route id="1" org-id="1" tag="meta" src-dc="fra" dst-dc="jq" routeInfo="PROXY://1.1.1.1:80,PROXY://1.1.1.2:80 PROXYTLS://1.1.1.5:443,PROXYTLS://1.1.1.6:443"/>
 			<route id="2" org-id="1" tag="console" src-dc="fra" dst-dc="jq" routeInfo="PROXY://1.1.1.3:80"/>
 		</routes>
-		<cluster id="cluster1" active-dc="jq" backup-dcs = "fra,oy" org-id="1" phase="1" lastModifiedTime="1234567abc"><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
+		<cluster id="cluster1" active-dc="jq" backup-dcs = "fra,oy" org-id="1" phase="1" lastModifiedTime="1234567abc" activeRedisCheckRules = "1,2,3" ><!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
 			<shard id="shard1" sentinelId="1" sentinelMonitorName="cluster1-shard1" phase="1"> <!-- phase静态内容用于表达结构是阶段一或者阶段二 -->
 				<keeper id="40a" ip="1.1.1.1" port="8888" master="1.1.1.1:1234" active="true" keeperContainerId="1" offset="111111" survive="false"/>
 				<keeper id="40a" ip="1.1.1.2" port="9999" master="1.1.1.1:8888" active="false" keeperContainerId="1" offset="11111" survive="false"/>

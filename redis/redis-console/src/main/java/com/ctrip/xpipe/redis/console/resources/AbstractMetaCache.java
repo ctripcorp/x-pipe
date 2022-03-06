@@ -67,12 +67,17 @@ public abstract class AbstractMetaCache implements MetaCache {
         lastUpdateTime = System.currentTimeMillis();
     }
 
-    protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas){
+    protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas, List<RedisCheckRuleMeta> redisCheckRuleMetas){
 
         XpipeMeta xpipeMeta = new XpipeMeta();
         for (DcMeta dcMeta : dcMetas) {
             xpipeMeta.addDc(dcMeta);
         }
+
+        for(RedisCheckRuleMeta redisCheckRuleMeta : redisCheckRuleMetas) {
+            xpipeMeta.addRedisCheckRule(redisCheckRuleMeta);
+        }
+
         return xpipeMeta;
 
     }
@@ -90,6 +95,8 @@ public abstract class AbstractMetaCache implements MetaCache {
             dcMeta.getRoutes().forEach(partDcMeta::addRoute);
             dcMeta.getMetaServers().forEach(partDcMeta::addMetaServer);
         }
+
+        full.getRedisCheckRules().values().forEach(redisCheckRuleMeta -> part.addRedisCheckRule(redisCheckRuleMeta));
 
         return part;
     }
