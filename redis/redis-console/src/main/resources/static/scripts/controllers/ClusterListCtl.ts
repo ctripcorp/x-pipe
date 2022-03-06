@@ -40,6 +40,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.showMigrating = false;
     $scope.dcName = $stateParams.dcName;
     $scope.type = $stateParams.type;
+    $scope.clusterType = $stateParams.clusterType;
     $scope.clusterTypes = ClusterType.selectData()
     $scope.gotoClusterHickwall = gotoClusterHickwall;
 
@@ -51,12 +52,11 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         .then(function (data) {
             loadTable([data])
         });
-    }
-    else if ($scope.dcName){
-        if ($scope.type === "activeDC"){
-            showClustersByActiveDc($scope.dcName);
-        }else if ($scope.type === "bindDC"){
-            showClustersBindDc($scope.dcName);
+    } else if ($scope.dcName) {
+        if ($scope.type === "activeDC") {
+            showClustersByActiveDcAndType($scope.dcName, $scope.clusterType)
+        } else if ($scope.type === "bindDC") {
+            showClustersBindDcAndType($scope.dcName, $scope.clusterType);
         }
     }
     else if ($scope.containerId) {
@@ -287,8 +287,20 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         ClusterService.findClustersByDcNameBind(dcName).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
+    function showClustersBindDcAndType(dcName, clusterType) {
+        ClusterService.findClustersByDcNameBindAndType(dcName, clusterType).then(loadTable).then(() => {
+            $scope.showAll = true;
+        });
+    }
+
     function showClustersByActiveDc(dcName) {
         ClusterService.findClustersByDcName(dcName).then(loadTable).then(() => { $scope.showAll = true; });
+    }
+
+    function showClustersByActiveDcAndType(dcName, clusterType) {
+        ClusterService.findClustersByDcNameAndType(dcName, clusterType).then(loadTable).then(() => {
+            $scope.showAll = true;
+        });
     }
 
     function showClustersByContainer(containerId) {

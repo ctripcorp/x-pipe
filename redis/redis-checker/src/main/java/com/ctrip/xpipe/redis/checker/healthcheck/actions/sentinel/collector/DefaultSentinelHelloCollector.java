@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandExecutionException;
 import com.ctrip.xpipe.command.CommandTimeoutException;
@@ -96,6 +97,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     private ScheduledExecutorService scheduled;
 
+    private Map<ClusterType, String[]> clusterTypeSentinelConfig = new HashMap<>();
+
     @PostConstruct
     public void postConstruct() {
         try {
@@ -109,6 +112,11 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             );
             leakyBucket = new SentinelLeakyBucket(checkerConfig, scheduled);
             leakyBucket.start();
+            Map<String, String> configMap = checkerConfig.sentinelMasterConfig();
+            configMap.forEach((k, v) -> {
+                String[] sentinelConfigs = v.split("\\s*,\\s*");
+                clusterTypeSentinelConfig.put(ClusterType.lookup(k), sentinelConfigs);
+            });
         } catch (Exception e) {
             logger.error("[postConstruct]", e);
         }
@@ -239,7 +247,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 // check add
                 toAdd.addAll(checkToAdd(clusterId, shardId, sentinelMonitorName, sentinels, hellos, trueMaster, quorumConfig));
 
-                doAction(sentinelMonitorName, trueMaster, toDelete, toAdd, quorumConfig);
+                doAction(info.getClusterType(), sentinelMonitorName, trueMaster, toDelete, toAdd, quorumConfig);
             }
 
             @Override
@@ -462,8 +470,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     @VisibleForTesting
-    void doAction(String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
-                            QuorumConfig quorumConfig) {
+    void doAction(ClusterType clusterType, String sentinelMonitorName, HostPort masterAddr, Set<SentinelHello> toDelete, Set<SentinelHello> toAdd,
+                  QuorumConfig quorumConfig) {
         if ((toDelete == null || toDelete.size() == 0) && (toAdd == null || toAdd.size() == 0)) {
             return;
         }
@@ -509,11 +517,24 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.RemoveAndAdd", hello.toString());
                     sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), quorumConfig.getQuorum());
                     logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello);
-
+                    setMasterConfigIfNeeded(clusterType, sentinel, sentinelMonitorName);
                 } catch (Exception e) {
                     logger.error("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, hello, e);
                 }
             });
+        }
+    }
+
+    void setMasterConfigIfNeeded(ClusterType clusterType, Sentinel sentinel, String sentinelMonitorName) {
+        String[] sentinelConfigs = clusterTypeSentinelConfig.get(clusterType);
+        try {
+            if (sentinelConfigs == null || sentinelConfigs.length == 0)
+                return;
+
+            sentinelManager.sentinelSet(sentinel, sentinelMonitorName, sentinelConfigs);
+            logger.info("[{}-{}][sentinelSet]{}", LOG_TITLE, sentinelMonitorName, Arrays.toString(sentinelConfigs));
+        } catch (Exception e) {
+            logger.error("[{}-{}][sentinelSet]{}", LOG_TITLE, sentinelMonitorName, Arrays.toString(sentinelConfigs), e);
         }
     }
 
@@ -642,5 +663,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     public void setResetExecutor(ExecutorService resetExecutor) {
         this.resetExecutor = resetExecutor;
+    }
+
+    @VisibleForTesting
+    void setClusterTypeSentinelConfig(Map<ClusterType, String[]> clusterTypeSentinelConfig) {
+        this.clusterTypeSentinelConfig = clusterTypeSentinelConfig;
     }
 }
