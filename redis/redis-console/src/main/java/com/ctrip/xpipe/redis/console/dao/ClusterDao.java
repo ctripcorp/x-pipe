@@ -78,8 +78,8 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			// related dc-cluster
 			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
-			protoDcCluster.setDcId(activeDc.getId())
-					.setClusterId(newCluster.getId());
+			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId());
+
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override
 				public Integer doQuery() throws DalException {
@@ -154,8 +154,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		// not binded
 		if(null == existingDcCluster) {
 			DcClusterTbl proto = dcClusterTblDao.createLocal();
-			proto.setDcId(dc.getId())
-				.setClusterId(cluster.getId());
+			proto.setDcId(dc.getId()).setClusterId(cluster.getId());
 
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override

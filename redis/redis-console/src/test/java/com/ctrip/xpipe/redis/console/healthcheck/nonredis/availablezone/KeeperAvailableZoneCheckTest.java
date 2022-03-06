@@ -138,7 +138,4 @@ public class KeeperAvailableZoneCheckTest {
         keeperMeta.setIp(ip);
         return keeperMeta;
     }
-
-
-
 }

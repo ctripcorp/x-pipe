@@ -17,6 +17,17 @@ import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTe
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig.RedisConfigCheckMonitorTest;
+import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
+import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
+import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
+import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
+import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
+import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
+import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
+import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
@@ -198,6 +209,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultSentinelBalanceServiceTest.class,
 
         KeeperAvailableZoneCheckTest.class,
+        RedisConfigCheckMonitorTest.class,
+        RedisCheckRuleServiceImplTest.class,
         EmailSentCounterTest.class
 })
 public class AllTests {

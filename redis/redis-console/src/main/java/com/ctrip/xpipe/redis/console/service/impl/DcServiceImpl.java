@@ -114,6 +114,15 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
+	public Map<String, Long> dcNameZoneMap() {
+		List<DcTbl> allDcs = findAllDcs();
+		Map<String, Long> result = new HashMap<>();
+
+		allDcs.forEach(dcTbl -> result.put(dcTbl.getDcName(), dcTbl.getZoneId()));
+		return result;
+	}
+
+	@Override
 	public List<DcListDcModel> findAllDcsRichInfo(){
 		try {
 			List<DcTbl> dcTbls = findAllDcs();
