@@ -85,10 +85,11 @@ public class RedisConfigCheckMonitor extends AbstractCrossDcIntervalCheck {
     }
 
     private void updateRedisConfigCheckRules(String clusterId, String dcId, DcClusterCreateInfo dcClusterCreateInfo, String newRedisConfigCheckRule) {
+        String oldRedisCheckRule = dcClusterCreateInfo.getRedisCheckRule();
         dcClusterCreateInfo.setRedisCheckRule(newRedisConfigCheckRule);
         dcClusterService.updateDcCluster(dcClusterCreateInfo);
         CatEventMonitor.DEFAULT.logEvent(ACTIVE_DEFAULT_REDIS_CHECK_RULE, String.format("redis check rule of dc:%s cluster:%s was changed from %s to %s",
-                dcId, clusterId, dcClusterCreateInfo.getRedisCheckRule() , newRedisConfigCheckRule));
+                dcId, clusterId, oldRedisCheckRule, newRedisConfigCheckRule));
     }
 
     @VisibleForTesting

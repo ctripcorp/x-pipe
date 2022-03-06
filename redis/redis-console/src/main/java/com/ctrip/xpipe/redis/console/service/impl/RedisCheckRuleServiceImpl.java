@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,7 +95,7 @@ public class RedisCheckRuleServiceImpl extends AbstractConsoleService<RedisCheck
         for(DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
             for(ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
                 String oldRedisCheckRule = clusterMeta.getActiveRedisCheckRules();
-                if(oldRedisCheckRule.contains(id.toString())) {
+                if(!StringUtil.isEmpty(oldRedisCheckRule) && oldRedisCheckRule.contains(id.toString())) {
                     dcClusterService.updateDcCluster(new DcClusterCreateInfo().setDcName(dcMeta.getId())
                             .setClusterName(clusterMeta.getId()).setRedisCheckRule(removeOneRuleId(oldRedisCheckRule, id.toString())));
                 }

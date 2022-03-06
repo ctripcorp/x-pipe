@@ -22,10 +22,6 @@ public class RedisCheckRuleCreateInfo extends AbstractCreateInfo{
         if(StringUtil.isEmpty(param)) {
             throw new CheckFailException("param Empty");
         }
-
-        if(!"info".equals(checkType) && !"config".equals(checkType)){
-            throw new CheckFailException("checkType must be info or config");
-        }
     }
 
     @Override
