@@ -1,8 +1,5 @@
 package com.ctrip.xpipe.redis.core.meta;
 
-import com.ctrip.xpipe.redis.core.meta.comparator.ConfigChanged;
-
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -10,7 +7,7 @@ import java.util.Set;
  *
  * Sep 2, 2016
  */
-public interface MetaComparator<T, C extends Enum<C>> {
+public interface MetaComparator<T> {
 	
 	Set<T> getAdded();
 	
@@ -21,15 +18,13 @@ public interface MetaComparator<T, C extends Enum<C>> {
 	
 	void compare();
 
-	List<ConfigChanged<C>> getConfigChanged();
-	
+	boolean isConfigChange();
+
 	/**
 	 * add or remvoed or removed
 	 * @return
 	 */
 	int totalChangedCount();
-
-	boolean isShallowChange();
 
 	String idDesc();
 	

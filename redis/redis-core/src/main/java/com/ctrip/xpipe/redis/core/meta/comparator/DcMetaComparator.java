@@ -13,7 +13,9 @@ import java.util.stream.Collectors;
  *
  * Sep 2, 2016
  */
-public class DcMetaComparator extends AbstractMetaComparator<DcMeta, ClusterMeta, DcChange>{
+public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta>{
+
+	private DcMeta current, future;
 	
 	public static DcMetaComparator  buildComparator(DcMeta current, DcMeta future){
 		
@@ -46,7 +48,8 @@ public class DcMetaComparator extends AbstractMetaComparator<DcMeta, ClusterMeta
 	}
 
 	public DcMetaComparator(DcMeta current, DcMeta future) {
-		super(current, future);
+		this.current = current;
+		this.future = future;
 	}
 
 	public void compare(){

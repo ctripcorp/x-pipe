@@ -11,14 +11,20 @@ import java.util.Set;
  *
  * Sep 2, 2016
  */
-public class ClusterMetaComparator extends AbstractMetaComparator<ClusterMeta, ShardMeta, ClusterChange>{
+public class ClusterMetaComparator extends AbstractMetaComparator<ShardMeta>{
+
+	private ClusterMeta current;
+
+	private ClusterMeta future;
 	
 	public ClusterMetaComparator(ClusterMeta current, ClusterMeta future) {
-		super(current, future);
+		this.current = current;
+		this.future = future;
 	}
 
 	@Override
-	protected void doDetailedCompare() {
+	public void compare() {
+		configChanged = checkShallowChange(current, future);
 
 		Triple<Set<String>, Set<String>, Set<String>> result = getDiff(current.getShards().keySet(), future.getShards().keySet());
 

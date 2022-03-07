@@ -10,10 +10,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class DcSyncMetaComparator extends AbstractMetaComparator<DcMeta, ClusterMeta, DcChange> {
+public class DcSyncMetaComparator extends AbstractMetaComparator<ClusterMeta> {
+
+    private DcMeta current, future;
 
     public DcSyncMetaComparator(DcMeta current, DcMeta future) {
-        super(current, future);
+        this.current = current;
+        this.future = future;
     }
 
     public void compare() {

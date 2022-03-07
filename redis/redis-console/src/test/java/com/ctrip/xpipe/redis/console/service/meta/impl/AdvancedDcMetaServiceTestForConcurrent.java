@@ -9,9 +9,6 @@ import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.AbstractMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ClusterChange;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcChange;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardChange;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -176,7 +173,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
         }
     }
 
-    class DcComparator extends AbstractMetaComparator<ClusterMeta, DcChange> {
+    class DcComparator extends AbstractMetaComparator<ClusterMeta> {
         DcMeta current, future;
 
         public DcComparator(DcMeta current, DcMeta future) {
@@ -218,7 +215,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
         }
     }
 
-    class ClusterComparator extends AbstractMetaComparator<ShardMeta, ClusterChange> {
+    class ClusterComparator extends AbstractMetaComparator<ShardMeta> {
 
         private ClusterMeta current, future;
 
@@ -259,7 +256,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
     }
 
 
-    public class ShardComparator extends AbstractMetaComparator<Redis, ShardChange>{
+    public class ShardComparator extends AbstractMetaComparator<Redis>{
 
         private ShardMeta current, future;
 
