@@ -19,7 +19,7 @@ import java.util.*;
  *
  * Sep 2, 2016
  */
-public abstract class AbstractMetaComparator<V extends Serializable, T, C extends Enum<C>> implements MetaComparator<T, C>{
+public abstract class AbstractMetaComparator<T> implements MetaComparator<T>{
 	
 	protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -27,48 +27,30 @@ public abstract class AbstractMetaComparator<V extends Serializable, T, C extend
 	protected Set<T> removed = new HashSet<>(); 
 	@SuppressWarnings("rawtypes")
 	protected Set<MetaComparator>  modified= new HashSet<>();
-	
-	protected List<ConfigChanged<C>> configChanged = new LinkedList<>();
 
-	protected V current;
-	protected V future;
-
-	private boolean isShallowChange = false;
+	protected volatile boolean configChanged = false;
 
 	public AbstractMetaComparator() {
 	}
 
-	public AbstractMetaComparator(V current, V future) {
-		this.current = current;
-		this.future = future;
-	}
-
 	@Override
-	public boolean isShallowChange() {
-		return isShallowChange;
+	public boolean isConfigChange() {
+		return configChanged;
 	}
 
-	@Override
-	public void compare() {
-		checkShallowChange();
-		doDetailedCompare();
-	}
-
-	protected void checkShallowChange() {
+	protected <Type extends Serializable> boolean checkShallowChange(Type current, Type future) {
 
 	    if (current == null && future == null) {
-			isShallowChange = false;
-			return;
+			return false;
 		}
 
 	    if (current == null || future == null) {
-			isShallowChange = true;
-			return;
+			return true;
 		}
 
 	    try {
-			V currentClone = MetaClone.clone(current);
-			V futureClone = MetaClone.clone(future);
+			Type currentClone = MetaClone.clone(current);
+			Type futureClone = MetaClone.clone(future);
 			for (Field field : currentClone.getClass().getDeclaredFields()) {
 				if (!needCheck(field.getType())) {
 					resetField(field, currentClone);
@@ -79,13 +61,14 @@ public abstract class AbstractMetaComparator<V extends Serializable, T, C extend
 					resetField(field, futureClone);
 				}
 			}
-			isShallowChange = !(currentClone.toString().equals(futureClone.toString()));
+			return  !(currentClone.toString().equals(futureClone.toString()));
 		} catch (Throwable t) {
 	        logger.error("[checkShallowChange] UNLIKELY", t);
+	        return false;
 		}
 	}
 
-	private void resetField(Field field, V instance) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+	private void resetField(Field field, Object instance) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 		Class<?> clazz = field.getType();
 		field.setAccessible(true);
 		if (Map.class.isAssignableFrom(clazz)) {
@@ -143,10 +126,6 @@ public abstract class AbstractMetaComparator<V extends Serializable, T, C extend
 	@Override
 	public Set<MetaComparator> getMofified() {
 		return modified;
-	}
-
-	public List<ConfigChanged<C>> getConfigChanged() {
-		return new LinkedList<>(configChanged);
 	}
 
 	protected boolean reflectionEquals(BaseEntity<?> currentMeta, BaseEntity<?> futureMeta) {

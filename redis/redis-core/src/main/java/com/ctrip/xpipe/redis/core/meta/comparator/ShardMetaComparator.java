@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -15,23 +14,18 @@ import java.util.List;
  *
  * Sep 2, 2016
  */
-public class ShardMetaComparator extends AbstractMetaComparator<ShardMeta, Redis, ShardChange>{
-	
-	private boolean metaChange;
-	
+public class ShardMetaComparator extends AbstractMetaComparator<Redis>{
+
+	private ShardMeta current, future;
+
 	public ShardMetaComparator(ShardMeta current, ShardMeta future){
-	    super(current, future);
+		this.current = current;
+		this.future = future;
 	}
 
 	@Override
 	public void compare() {
-		ShardMeta currentClone = MetaClone.clone(current);
-		ShardMeta futureClone = MetaClone.clone(future);
-		currentClone.getRedises().clear();
-		futureClone.getRedises().clear();
-		currentClone.getKeepers().clear();
-		futureClone.getKeepers().clear();
-		metaChange = !(currentClone.toString().equals(futureClone.toString()));
+		configChanged = checkShallowChange(current, future);
 
 		List<Redis> currentAll =  getAll(current);
 		List<Redis> futureAll =  getAll(future);
@@ -100,10 +94,6 @@ public class ShardMetaComparator extends AbstractMetaComparator<ShardMeta, Redis
 	
 	public ShardMeta getFuture() {
 		return future;
-	}
-
-	public boolean metaChange() {
-		return metaChange;
 	}
 
 	@Override

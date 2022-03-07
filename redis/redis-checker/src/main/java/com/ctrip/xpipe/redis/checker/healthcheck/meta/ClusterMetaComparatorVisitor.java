@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.Shard;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -27,10 +29,14 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
 
     private Consumer<RedisMeta> redisChanged;
 
-    public ClusterMetaComparatorVisitor(Consumer<RedisMeta> redisAdd, Consumer<RedisMeta> redisDelete, Consumer<RedisMeta> redisChanged) {
+    private BiConsumer<ShardMeta, ShardMeta> shardConfigChanged;
+
+    public ClusterMetaComparatorVisitor(Consumer<RedisMeta> redisAdd, Consumer<RedisMeta> redisDelete,
+                                        Consumer<RedisMeta> redisChanged, BiConsumer<ShardMeta, ShardMeta> shardConfigChanged) {
         this.redisAdd = redisAdd;
         this.redisDelete = redisDelete;
         this.redisChanged = redisChanged;
+        this.shardConfigChanged = shardConfigChanged;
     }
 
     @Override
@@ -42,8 +48,8 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
     public void visitModified(MetaComparator comparator) {
         ShardMetaComparator shardMetaComparator = (ShardMetaComparator)comparator;
 
-        if (shardMetaComparator.metaChange()) {
-            //reloadShard();
+        if (shardMetaComparator.isConfigChange()) {
+            shardConfigChanged.accept(shardMetaComparator.getCurrent(), shardMetaComparator.getFuture());
         } else {
             shardMetaComparator.accept(new MetaComparatorVisitor<Redis>() {
                 @Override
@@ -57,7 +63,10 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
                 public void visitModified(MetaComparator comparator) {
                     logger.info("[visitModified][redis] {}", comparator);
                     RedisComparator redisComparator = (RedisComparator) comparator;
-                    //reloadRedis();
+                    Redis future = redisComparator.getFuture();
+                    if (future instanceof RedisMeta) {
+                        redisChanged.accept((RedisMeta) redisComparator.getFuture());
+                    }
                 }
 
                 @Override

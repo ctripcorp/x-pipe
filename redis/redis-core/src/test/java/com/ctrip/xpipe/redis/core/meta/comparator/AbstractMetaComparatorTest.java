@@ -20,7 +20,12 @@ public class AbstractMetaComparatorTest {
         ClusterMeta current = new ClusterMeta();
         ClusterMeta future = new ClusterMeta();
 
-        MetaComparator comparator = new AbstractMetaComparator<ClusterMeta, ClusterMeta, DcChange>(current, future) {
+        MetaComparator comparator = new AbstractMetaComparator<ClusterMeta>() {
+
+            @Override
+            public void compare() {
+                configChanged = checkShallowChange(current, future);
+            }
 
             @Override
             protected void doDetailedCompare() {
@@ -35,11 +40,11 @@ public class AbstractMetaComparatorTest {
 
         current.addShard(new ShardMeta());
         comparator.compare();
-        assertFalse(comparator.isShallowChange());
+        assertFalse(comparator.isConfigChange());
 
         current.setDbId(10L);
         comparator.compare();
-        assertTrue(comparator.isShallowChange());
+        assertTrue(comparator.isConfigChange());
     }
 
     @Test
@@ -48,7 +53,12 @@ public class AbstractMetaComparatorTest {
         ClusterMeta current = new ClusterMeta();
         ClusterMeta future = new ClusterMeta();
 
-        MetaComparator comparator = new AbstractMetaComparator<ClusterMeta, ClusterMeta, DcChange>(current, future) {
+        MetaComparator comparator = new AbstractMetaComparator<ClusterMeta>() {
+
+            @Override
+            public void compare() {
+                configChanged = checkShallowChange(current, future);
+            }
 
             @Override
             protected void doDetailedCompare() {
