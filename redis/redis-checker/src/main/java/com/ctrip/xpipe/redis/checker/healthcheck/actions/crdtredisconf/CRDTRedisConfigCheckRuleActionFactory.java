@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCh
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import org.springframework.stereotype.Component;
 
+
+
 @Component
 public class CRDTRedisConfigCheckRuleActionFactory extends AbstractRedisConfigCheckRuleActionFactory implements BiDirectionSupport {
     private static final String CRDT_CONFIG_CHECK_TYPE = "crdt.config";
@@ -16,6 +18,7 @@ public class CRDTRedisConfigCheckRuleActionFactory extends AbstractRedisConfigCh
         CRDTRedisConfigCheckRuleAction crdtRedisConfigCheckRuleAction =
                 new CRDTRedisConfigCheckRuleAction(scheduled, instance, executors, filterNonConifgRule(instance.getCheckInfo().getRedisCheckRules(), CRDT_CONFIG_CHECK_TYPE));
         crdtRedisConfigCheckRuleAction.addListener(new RedisConfigCheckRuleActionListener(alertManager));
+        crdtRedisConfigCheckRuleAction.addControllers(controllersByClusterType.get(instance.getCheckInfo().getClusterType()));
         return crdtRedisConfigCheckRuleAction;
     }
 
