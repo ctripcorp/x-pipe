@@ -100,7 +100,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     }
 
     @Override
-    protected int getFirstCheckTimeInterval(int baseInterval) {
+    protected int getCheckInitialDelay(int baseInterval) {
         return Math.abs(random.nextInt(baseInterval) % baseInterval);
     }
 
