@@ -231,7 +231,7 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
-    public void crossDcNotSupportedTest() throws Exception {
+    public void clusterExistedButNoShardsTest() throws Exception {
         when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
                 new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
                 new OrganizationTbl().setId(9L).setOrgId(45).setOrgName("酒店")
@@ -251,15 +251,15 @@ public class DcMetaSynchronizerTest {
         dcMetaSynchronizer.sync();
 
         verify(clusterService,times(1)).find(singleDcCacheCluster);
-        verify(clusterService, never()).bindDc(any(), any());
+        verify(clusterService, times(1)).bindDc(any(), any());
         verify(clusterService, never()).createCluster(any());
         verify(clusterService, never()).unbindDc(any(), any());
         verify(clusterService, never()).deleteCluster(any());
         verify(clusterService, never()).update(any());
 
-        verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), any());
+        verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
 
-        verify(redisService, never()).insertRedises(any(), any(), any(), any());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
     }
 
     @Test

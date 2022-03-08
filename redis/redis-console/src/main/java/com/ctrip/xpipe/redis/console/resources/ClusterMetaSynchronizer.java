@@ -141,15 +141,11 @@ public class ClusterMetaSynchronizer {
     }
 
     boolean shouldAddDc(ClusterMeta toAdd, ClusterTbl exist) {
-        return !existDiffTypeCluster(toAdd, exist) && crossDcSupported(exist);
+        return !existDiffTypeCluster(toAdd, exist);
     }
 
     boolean existDiffTypeCluster(ClusterMeta toAdd, ClusterTbl exist) {
         return exist != null && !toAdd.getType().equalsIgnoreCase(exist.getClusterType());
-    }
-
-    boolean crossDcSupported(ClusterTbl exist) {
-        return exist != null && !ClusterType.lookup(exist.getClusterType()).equals(ClusterType.SINGLE_DC);
     }
 
     void update() {

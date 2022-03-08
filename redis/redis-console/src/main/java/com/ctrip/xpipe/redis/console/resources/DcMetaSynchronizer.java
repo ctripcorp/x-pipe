@@ -119,6 +119,8 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         String filterPattern = consoleConfig.filterOuterClusters();
         if (!Strings.isNullOrEmpty(filterPattern))
             filterClusterPattern = Pattern.compile(filterPattern);
+        else
+            filterClusterPattern = null;
     }
 
     void refreshOrganizationsCache() {
