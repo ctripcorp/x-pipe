@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf;
 
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 
@@ -27,7 +26,7 @@ public abstract class AbstractRedisConfigRuleAction extends AbstractLeaderAwareH
     }
 
     @Override
-    protected int getCheckTimeInterval(int baseInterval) {
+    protected int getBaseCheckInterval() {
         return getActionInstance().getHealthCheckConfig().getNonCoreCheckIntervalMilli();
     }
 }
