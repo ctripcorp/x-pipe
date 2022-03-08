@@ -156,11 +156,11 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/sentinels/usage", method = RequestMethod.GET)
-    public RetMessage sentinelUsage() {
+    @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
+    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
         try {
-            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage();
+            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
             return GenericRetMessage.createGenericRetMessage(sentienlUsage);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
@@ -193,11 +193,11 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/dc/sentinels", method = RequestMethod.GET)
-    public RetMessage dcSentinelUsage(@RequestParam String dc) {
+    @RequestMapping(value = {"/dc/sentinels/{clusterType}", "/dc/sentinels"}, method = RequestMethod.GET)
+    public RetMessage dcSentinelUsage(@RequestParam String dc, @PathVariable(required = false) String clusterType) {
         logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage", dc);
         try {
-            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage().get(dc.toUpperCase());
+            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType).get(dc.toUpperCase());
             return GenericRetMessage.createGenericRetMessage(sentinelUsage);
         } catch (Exception e) {
             logger.error("[dcSentinelUsage]", e);

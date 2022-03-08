@@ -55,7 +55,7 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         Assert.assertEquals(0, task.getShardsWaitBalances());
         Assert.assertEquals(2, task.getTargetUsages());
 
-        Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage();
+        Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage(null);
         Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("oy").getSentinelUsages();
         for (Long usage: sentinelUsage.values()) {
             Assert.assertEquals(2L, usage.longValue());
@@ -70,7 +70,7 @@ public class DefaultSentinelBalanceServiceTest extends AbstractConsoleIntegratio
         Assert.assertEquals(0, task.getShardsWaitBalances());
         Assert.assertEquals(3, task.getTargetUsages());
 
-        Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage();
+        Map<String, SentinelUsageModel> sentinelUsageModelMap = sentinelService.getAllSentinelsUsage("");
         Map<String, Long> sentinelUsage = sentinelUsageModelMap.get("jq").getSentinelUsages();
         for (Long usage: sentinelUsage.values()) {
             Assert.assertEquals(3L, usage.longValue());
