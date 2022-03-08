@@ -1,14 +1,29 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractRedisConfigCheckRuleActionFactory extends AbstractRedisLeaderAwareHealthCheckActionFactory {
+
+    @Autowired
+    private List<RedisConfigCheckController> controllers;
+
+    protected Map<ClusterType, List<RedisConfigCheckController>> controllersByClusterType;
+
+    @PostConstruct
+    public void postConstruct() {
+        controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
+    }
 
     @Override
     protected List<ALERT_TYPE> alertTypes() {
