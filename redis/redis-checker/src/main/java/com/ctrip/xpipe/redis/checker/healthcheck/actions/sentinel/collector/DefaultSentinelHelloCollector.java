@@ -12,6 +12,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
@@ -84,6 +85,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @Autowired
     private SentinelManager sentinelManager;
+
+    @Autowired
+    private PersistenceCache persistenceCache;
 
     @Resource(name = KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
@@ -189,6 +193,11 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
         if (!checkerDbConfig.shouldSentinelCheck(cluster)) {
             logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
+            return;
+        }
+
+        if (persistenceCache.isClusterOnMigration(cluster)) {
+            logger.info("[{}-{}+{}] {} in migration, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
             return;
         }
 

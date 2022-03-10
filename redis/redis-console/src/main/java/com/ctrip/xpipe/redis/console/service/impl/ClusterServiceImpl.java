@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -504,6 +505,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				return false;
 		}
 		return true;
+	}
+
+	@Override
+	public Set<String> findMigratingClusterNames() {
+		List<ClusterTbl> clusterTbls = clusterDao.findMigratingClusterNames();
+		return clusterTbls.stream().map(ClusterTbl::getClusterName).collect(Collectors.toSet());
 	}
 
 	@Override

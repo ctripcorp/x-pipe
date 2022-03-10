@@ -141,6 +141,11 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         return persistenceCache.clusterAlertWhiteList();
     }
 
+    @GetMapping(ConsoleCheckerPath.PATH_GET_MIGRATING_CLUSTER_LIST)
+    public Set<String> migratingClusterList() {
+        return persistenceCache.migratingClusterList();
+    }
+
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_SENTINEL_AUTO_PROCESS, method = RequestMethod.GET)
     public boolean isSentinelAutoProcess() {
         return persistenceCache.isSentinelAutoProcess();
