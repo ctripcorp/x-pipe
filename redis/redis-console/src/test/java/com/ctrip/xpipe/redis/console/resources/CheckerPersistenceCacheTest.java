@@ -31,7 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
 import java.util.*;
@@ -237,6 +237,25 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
         String json = Codec.DEFAULT.encode(alertMessageEntity);
         AlertMessageEntity result = Codec.DEFAULT.decode(json, AlertMessageEntity.class);
         Assert.assertEquals(result.toString(), alertMessageEntity.toString());
+    }
+
+    @Test
+    public void testIsClusterOnMigration() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
+                .setHeader("Content-Type", "application/json"));
+
+        Set<String> migratingClusterList = checkerPersistenceCache.migratingClusterList();
+        // turn cluster list into low case for cluster searching with case ignore
+        Assert.assertEquals(Collections.singleton("Cluster1"), migratingClusterList);
+        Assert.assertTrue(checkerPersistenceCache.isClusterOnMigration("Cluster1"));
+        Assert.assertFalse(checkerPersistenceCache.isClusterOnMigration("Cluster2"));
+
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals(ConsoleCheckerPath.PATH_GET_MIGRATING_CLUSTER_LIST, req.getPath());
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(1, webServer.getRequestCount());
     }
     
 }

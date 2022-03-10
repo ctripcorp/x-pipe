@@ -29,9 +29,12 @@ public class TimeBoundCache<T> {
             return data;
         }
 
-        this.data = dataSupplier.get();
-        this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
-        return this.data;
+        synchronized (this) {
+            if (!disableCache && null != data && expiredAt > System.currentTimeMillis()) return data;
+            this.data = dataSupplier.get();
+            this.expiredAt = System.currentTimeMillis() + timeoutMillSupplier.getAsLong();
+            return this.data;
+        }
     }
 
 }

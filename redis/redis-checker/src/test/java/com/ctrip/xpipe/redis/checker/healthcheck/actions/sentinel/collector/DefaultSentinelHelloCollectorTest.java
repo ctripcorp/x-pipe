@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -73,6 +74,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Mock
     private SentinelLeakyBucket leakyBucket;
 
+    @Mock
+    private PersistenceCache persistenceCache;
+
     private int originTimeout;
 
     @Before
@@ -100,6 +104,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 new HostPort("127.0.0.1", 5003),
                 new HostPort("127.0.0.1", 5004)
         );
+        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(false);
 
     }
 
@@ -348,6 +353,16 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Test
     public void testSkipCollectForSentinelWhiteList() throws Exception {
         when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(false);
+        when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        sentinelCollector.onAction(new SentinelActionContext(instance, Collections.emptySet()));
+        verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
+    }
+
+    @Test
+    public void testSkipMigratingCluster() throws Exception {
+        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(true);
         when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());

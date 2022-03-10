@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.resource;
 
 import com.ctrip.xpipe.api.email.EmailResponse;
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -42,6 +44,9 @@ import java.util.Set;
 public class DefaultCheckerConsoleService extends AbstractService implements CheckerConsoleService {
     
     private static final ParameterizedTypeReference<List<ProxyTunnelInfo>> proxyTunnelInfosTypeDef = new ParameterizedTypeReference<List<ProxyTunnelInfo>>(){};
+
+    private static final ParameterizedTypeReference<Set<String>> stringSetRespTypeDef =
+            new ParameterizedTypeReference<Set<String>>(){};
 
     public XpipeMeta getXpipeMeta(String console, int clusterPartIndex) throws SAXException, IOException {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_META)
@@ -105,6 +110,13 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     @Override
     public Set<String> clusterAlertWhiteList(String console) {
         return restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_CLUSTER_ALERT_WHITE_LIST, Set.class);
+    }
+
+    @Override
+    public Set<String> migratingClusterList(String console) {
+        ResponseEntity<Set<String>> response = restTemplate
+                .exchange(console + ConsoleCheckerPath.PATH_GET_MIGRATING_CLUSTER_LIST, HttpMethod.GET, null, stringSetRespTypeDef);
+        return response.getBody();
     }
 
     @Override

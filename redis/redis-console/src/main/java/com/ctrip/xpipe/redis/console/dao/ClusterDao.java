@@ -17,8 +17,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.ctrip.xpipe.redis.console.model.ClusterTblEntity.READSET_FULL_WITH_MIGRATION_EVENT;
-import static com.ctrip.xpipe.redis.console.model.ClusterTblEntity.READSET_FULL_WITH_MIGRATION_OVERVIEW;
+import static com.ctrip.xpipe.redis.console.model.ClusterTblEntity.*;
 
 
 /**
@@ -309,5 +308,9 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		return queryHandler.handleQuery(() -> {
 			return clusterTblDao.findMigratingClustersOverview(READSET_FULL_WITH_MIGRATION_OVERVIEW);
 		});
+	}
+
+	public List<ClusterTbl> findMigratingClusterNames() {
+		return queryHandler.handleQuery(() -> clusterTblDao.findMigratingClusters(READSET_NAME));
 	}
 }
