@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ClusterConfigModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
@@ -162,8 +161,6 @@ public class ChangeConfig extends AbstractConsoleController{
 
     private void checkClusterName(String clusterName) {
         if (StringUtil.isEmpty(clusterName)) throw new IllegalArgumentException("cluster can not be empty");
-        ClusterTbl clusterTbl = clusterService.find(clusterName);
-        if (null == clusterTbl) throw new IllegalArgumentException("cluster not exist");
     }
 
     private ConfigModel configModel(HttpServletRequest request, ConfigModel configModel) {
