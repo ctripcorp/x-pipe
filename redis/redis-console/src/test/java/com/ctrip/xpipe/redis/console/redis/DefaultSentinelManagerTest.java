@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.redis;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
@@ -26,6 +28,7 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
     private DefaultSentinelManager manager;
 
     private int port;
+
 
     @Before
     public void beforeShardDeleteEventListener4SentinelTest() throws Exception {
@@ -76,13 +79,16 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void removeSentinel() throws Exception {
-        manager.removeSentinelMonitor(new Sentinel("b99ecc0cc2194c349c61bc2e95b59b9cb07250da", "127.0.0.1", port),
-                "test");
+        try {
+            logger.info("removeSentinel: {}", manager.removeSentinelMonitor(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS").execute().get(1000, TimeUnit.MILLISECONDS));
+        }catch (Exception e){
+            logger.error("removeSentinel failed",e);
+        }
     }
 
     @Test// manual test
     public void infoSentinel() throws Exception {
-        String info = manager.infoSentinel(new Sentinel("test", "10.2.27.97", 5000));
+        String info = manager.infoSentinel(new Sentinel("test", "10.2.27.97", 5000)).execute().get(1000, TimeUnit.MILLISECONDS);
         logger.info("=====================================");
         SentinelMonitors.parseFromString(info).getMonitors().forEach(monitor -> logger.info(monitor));
         logger.info("=====================================");
@@ -91,9 +97,24 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test// manual test
     public void sentinelSet() throws Exception {
-        manager.sentinelSet(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS", new String[]{"failover-timeout", "180000"});
+        manager.sentinelSet(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS", new String[]{"failover-timeout", "60000"}).execute().get(1000, TimeUnit.MILLISECONDS);
 
         logger.info("sentinel set success");
+    }
+
+    @Test// manual test
+    public void sentinelSlaves() throws Exception {
+        List<HostPort> slaves = manager.slaves(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS").execute().get(3000, TimeUnit.MILLISECONDS);
+        logger.info("sentinel slaves: {}", slaves);
+    }
+
+    @Test
+    public void sentinelMonitor() throws Exception {
+        try {
+            logger.info("sentinelMonitor:{}", manager.monitorMaster(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS", new HostPort("10.2.27.55", 6399), 3).execute().get(1000, TimeUnit.MILLISECONDS));
+        } catch (Exception e) {
+            logger.error("sentinelMonitor failed", e);
+        }
     }
 
 }

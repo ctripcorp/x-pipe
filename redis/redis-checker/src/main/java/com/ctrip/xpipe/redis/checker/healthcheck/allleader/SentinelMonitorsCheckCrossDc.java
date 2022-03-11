@@ -17,11 +17,11 @@ import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 
 public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
@@ -37,8 +37,7 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     private SentinelManager sentinelManager;
     
     private AlertManager alertManager;
-    
-    @Autowired
+
     public SentinelMonitorsCheckCrossDc(
             MetaCache metaCache,
             PersistenceCache persistenceCache,
@@ -102,7 +101,7 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     
     public void checkSentinel(SentinelMeta sentinelMeta, HostPort sentinelHostPort) {
         Sentinel sentinel = new Sentinel(sentinelHostPort.toString(), sentinelHostPort.getHost(), sentinelHostPort.getPort());
-        String infoSentinel = sentinelManager.infoSentinel(sentinel);
+        String infoSentinel = infoSentinel(sentinel);
         
         if(infoSentinel == null) {
             logger.warn("[checkSentinel] info sentinel empty: {}", sentinel);
@@ -120,13 +119,27 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
             ClusterType clusterType = ClusterType.lookup(sentinelMeta.getClusterType());
             if (!config.supportSentinelHealthCheck(clusterType, sentinelInfo.getClusterName()))
                 continue;
-            if(metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
-                sentinelManager.removeSentinelMonitor(sentinel, monitorName);
+            if (metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
+                try {
+                    sentinelManager.removeSentinelMonitor(sentinel, monitorName).execute().get();
+                } catch (Exception e) {
+                    logger.error("[checkSentinel] removeSentinelMonitor failed: {},{}", sentinel, monitorName, e);
+                }
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Monitors.Check.Remove", monitorName);
                 String message = String.format("Sentinel monitor: %s not exist in Xpipe", monitorName);
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
             }
         }
+    }
+
+    String infoSentinel(Sentinel sentinel) {
+        String infoSentinel = null;
+        try {
+            infoSentinel = sentinelManager.infoSentinel(sentinel).execute().get(2050, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, e);
+        }
+        return infoSentinel;
     }
 
     @Override

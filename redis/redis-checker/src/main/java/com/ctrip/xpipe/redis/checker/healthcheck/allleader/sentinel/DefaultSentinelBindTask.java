@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class DefaultSentinelBindTask extends AbstractCommand<Void> implements SentinelBindTask {
@@ -114,13 +115,23 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
     }
 
     List<String> getSentinelMonitorNames(Sentinel sentinel) {
-        String infoSentinel = sentinelManager.infoSentinel(sentinel);
+        String infoSentinel = infoSentinel(sentinel);
         if (Strings.isNullOrEmpty(infoSentinel)) {
             logger.error("info sentinel failed: {}", sentinel);
             return Lists.newArrayList();
         }
         SentinelMonitors sentinelMonitors = SentinelMonitors.parseFromString(infoSentinel);
         return sentinelMonitors.getMonitors();
+    }
+
+    String infoSentinel(Sentinel sentinel) {
+        String infoSentinel = null;
+        try {
+            infoSentinel = sentinelManager.infoSentinel(sentinel).execute().get(2050, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, e);
+        }
+        return infoSentinel;
     }
 
     void bindSentinelGroupWithShard(SentinelMeta sentinelMeta, String monitorName) {

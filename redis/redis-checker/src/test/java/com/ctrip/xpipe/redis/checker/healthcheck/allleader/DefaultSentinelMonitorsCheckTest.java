@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.cluster.monitor;
+package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
@@ -17,6 +16,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -26,6 +26,7 @@ import static org.mockito.Mockito.*;
 public class DefaultSentinelMonitorsCheckTest {
 
     @InjectMocks
+    @Spy
     private SentinelMonitorsCheckCrossDc checker;
 
     @Mock
@@ -133,7 +134,7 @@ public class DefaultSentinelMonitorsCheckTest {
                 "master79:name=xpipe-auto-build-59-shard-1,status=ok,address=10.5.109.155:6437,slaves=2,sentinels=5\n" +
                 "master80:name=xpipe-auto-build-49-shard-3,status=ok,address=10.5.109.147:6427,slaves=2,sentinels=5\n" +
                 "master81:name=xpipe-auto-build-87-shard-2,status=ok,address=10.5.109.151:6465,slaves=2,sentinels=5";
-        when(sentinelManager.infoSentinel(any())).thenReturn(result);
+        doReturn(result).when(checker).infoSentinel(any());
         when(alertManager.shouldAlert(any())).thenReturn(true);
         when(persistenceCache.isSentinelAutoProcess()).thenReturn(true);
     }

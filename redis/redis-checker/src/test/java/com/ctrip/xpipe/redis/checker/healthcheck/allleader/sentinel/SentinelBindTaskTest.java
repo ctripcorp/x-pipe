@@ -38,8 +38,9 @@ public class SentinelBindTaskTest {
 
         dcMeta.addCluster(new ClusterMeta("cluster").addShard(new ShardMeta("shard").setSentinelId(1L)));
 
-        when(sentinelManager.infoSentinel(Mockito.any())).thenReturn(infoSentinel);
         DefaultSentinelBindTask task = new DefaultSentinelBindTask(sentinelManager, dcMeta, ClusterType.SINGLE_DC, checkerConsoleService, config);
+        task = Mockito.spy(task);
+        doReturn(infoSentinel).when(task).infoSentinel(any());
         task.doExecute();
 
         verify(checkerConsoleService,times(1)).bindShardSentinel(any(),any(),any(),any(),any());

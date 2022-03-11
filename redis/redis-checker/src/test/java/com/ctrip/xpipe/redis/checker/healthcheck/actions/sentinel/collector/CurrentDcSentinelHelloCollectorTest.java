@@ -21,14 +21,18 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
+
+import static org.mockito.Mockito.doAnswer;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @InjectMocks
+    @Spy
     private CurrentDcSentinelHelloCollector collector;
 
     @Mock
@@ -99,13 +103,12 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
             put(sentinel3, null);
         }};
 
-
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
             Sentinel sentinel = invocation.getArgument(0, Sentinel.class);
             Pair<String, String> clusterShard = clusterShardBySentinel.get(new HostPort(sentinel.getIp(), sentinel.getPort()));
             Mockito.when(metaCache.findClusterShard(Mockito.any())).thenReturn(clusterShard);
             return Collections.singletonList(new HostPort("127.0.0.1", 7379));
-        }).when(sentinelManager).slaves(Mockito.any(), Mockito.anyString());
+        }).when(collector).slaves(Mockito.any(), Mockito.anyString());
 
         Set<SentinelHello> hellos = new HashSet<>();
         hellos.add(new SentinelHello(sentinel1, masterAddr, sentinelMonitorName));
