@@ -26,7 +26,7 @@ public abstract class AbstractLeaderAwareHealthCheckAction<T extends HealthCheck
     }
 
     @Override
-    protected int getCheckTimeInterval(int baseInterval) {
+    protected int getCheckInitialDelay(int baseInterval) {
         return Math.abs(random.nextInt(START_TIME_INTERVAL_MILLI) % START_TIME_INTERVAL_MILLI);
     }
 

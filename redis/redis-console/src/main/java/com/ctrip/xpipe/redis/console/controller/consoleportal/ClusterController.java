@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
@@ -168,10 +168,22 @@ public class ClusterController extends AbstractConsoleController {
         return clusterService.findAllClusterByDcNameBind(dcName);
     }
 
+    @RequestMapping(value = "/clusters/allBind/{dcName}/{clusterType}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClustersByDcNameBindAndType(@PathVariable String dcName, @PathVariable String clusterType) {
+        logger.info("[findClustersByDcNameBindAndType]dcName: {}, clusterType: {}", dcName, clusterType);
+        return clusterService.findAllClusterByDcNameBindAndType(dcName, clusterType);
+    }
+
     @RequestMapping(value = "/clusters/activeDc/{dcName}", method = RequestMethod.GET)
     public List<ClusterTbl> findClustersByActiveDcName(@PathVariable String dcName){
         logger.info("[findClustersByActiveDcName]dcName: {}", dcName);
         return clusterService.findActiveClustersByDcName(dcName);
+    }
+
+    @RequestMapping(value = "/clusters/activeDc/{dcName}/{clusterType}", method = RequestMethod.GET)
+    public List<ClusterTbl> findClustersByActiveDcNameAndType(@PathVariable String dcName, @PathVariable String clusterType) {
+        logger.info("[findClustersByActiveDcNameAndType]dcName: {}, clusterType: {}", dcName, clusterType);
+        return clusterService.findActiveClustersByDcNameAndType(dcName, clusterType);
     }
 
     @RequestMapping(value = "/clusters/master/unhealthy/{level}", method = RequestMethod.GET)

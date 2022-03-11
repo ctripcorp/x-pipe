@@ -614,11 +614,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType) {
+		List<ClusterTbl> dcClusters = findAllClusterByDcNameBind(dcName);
+		if(clusterType.isEmpty()) return dcClusters;
+		return dcClusters.stream().filter(clusterTbl -> clusterTbl.getClusterType().equalsIgnoreCase(clusterType)).collect(Collectors.toList());
+	}
+
+	@Override
 	public List<ClusterTbl> findActiveClustersByDcName(String dcName){
 		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	@Override
+	public List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType) {
+		List<ClusterTbl> dcActiveClusters = findActiveClustersByDcName(dcName);
+		if(clusterType.isEmpty()) return dcActiveClusters;
+		return dcActiveClusters.stream().filter(clusterTbl -> clusterTbl.getClusterType().equalsIgnoreCase(clusterType)).collect(Collectors.toList());
 	}
 
 	@Override
