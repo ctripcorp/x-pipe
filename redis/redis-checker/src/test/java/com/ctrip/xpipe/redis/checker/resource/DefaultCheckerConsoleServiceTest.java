@@ -38,6 +38,9 @@ public class DefaultCheckerConsoleServiceTest extends AbstractCheckerTest {
         Assert.assertNotNull(xpipeMeta.getDcs().get("jq").getClusters().get("cluster1").parent());
         Assert.assertEquals(1, webServer.getRequestCount());
 
+
+        Assert.assertEquals(3, xpipeMeta.getRedisCheckRules().values().size());
+
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/meta/divide/1?format=xml", request.getPath());
         Assert.assertEquals("GET", request.getMethod());

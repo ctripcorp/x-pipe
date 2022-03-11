@@ -76,7 +76,12 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
+    private static final String KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN = "cosnole.redis.config.check.open";
+
+    private static final String KEY_REDIS_CONFIG_CHECK_RULES = "console.redis.config.check.rules";
     private static final String KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX = "checker.cross.dc.sentinel.monitor.name.suffix";
+
+    private static final String KEY_SENTINEL_MASTER_CONFIG = "checker.sentinel.master.config";
 
     private static final String KEY_SENTINEL_BIND_TIMEOUT_MILLI = "checker.sentinel.bind.timeout.milli";
 
@@ -523,6 +528,15 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public boolean isRedisConfigCheckMonitorOpen() {
+        return getBooleanProperty(KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN, false);
+    }
+
+    @Override
+    public String getRedisConfigCheckRules() {
+        return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
+    }
+
     public String crossDcSentinelMonitorNameSuffix() {
         return getProperty(KEY_CROSS_DC_SENTINEL_MONITOR_NAME_SUFFIX, "CROSS_DC");
     }
@@ -535,5 +549,16 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public int sentinelBindTimeoutMilli() {
         return getIntProperty(KEY_SENTINEL_BIND_TIMEOUT_MILLI, 30000);
+    }
+
+    @Override
+    public int getNonCoreCheckIntervalMilli() {
+        return getIntProperty(KEY_NON_CORE_CHECK_INTERVAL, 3 * 60 * 60 * 1000);
+    }
+
+    @Override
+    public Map<String, String> sentinelMasterConfig() {
+        String property = getProperty(KEY_SENTINEL_MASTER_CONFIG, "{}");
+        return JsonCodec.INSTANCE.decode(property, Map.class);
     }
 }
