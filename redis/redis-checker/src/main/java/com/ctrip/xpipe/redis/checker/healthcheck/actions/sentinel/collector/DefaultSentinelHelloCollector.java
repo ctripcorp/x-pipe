@@ -500,17 +500,22 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
                 if (currentMasterConsistent(currentCollectedMasters)) {
                     trueMaster = currentCollectedMasters.iterator().next();
+                    logger.debug("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
                     future().setSuccess();
                 }  else {
+                    logger.warn("[{}-{}+{}]too many masters: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMasters);
                     Map<HostPort, HostPort> trueMastersMap = new ConcurrentHashMap<>();
                     ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(),false);
                     currentCollectedMasters.forEach(currentCollectedMaster -> {
                         RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(currentCollectedMaster.getHost(), currentCollectedMaster.getPort())), scheduled);
                         roleCommand.future().addListener(innerFuture -> {
                             if (innerFuture.isSuccess()) {
+                                logger.info("[{}-{}+{}]instance {} role {}", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMaster, innerFuture.get());
                                 if (innerFuture.get() instanceof MasterRole) {
                                     trueMastersMap.put(currentCollectedMaster, currentCollectedMaster);
                                 }
+                            } else {
+                                logger.warn("[{}-{}+{}]instance {} role failed", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMaster, innerFuture.cause());
                             }
                         });
                         chain.add(roleCommand);
@@ -519,11 +524,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     HostPort finalMetaMaster = metaMaster;
                     chain.execute().addListener(outerFuture -> {
                         try {
-                            if (finalMetaMaster != null && trueMastersMap.containsKey(finalMetaMaster)) {
-                                trueMaster = finalMetaMaster;
-                                future().setSuccess();
-                            } else if (currentMasterConsistent(trueMastersMap.keySet())) {
+                            if (currentMasterConsistent(trueMastersMap.keySet())) {
                                 trueMaster = trueMastersMap.keySet().iterator().next();
+                                logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
+                                future().setSuccess();
+                            } else if (finalMetaMaster != null && ((trueMastersMap.containsKey(finalMetaMaster) || trueMastersMap.keySet().isEmpty()))) {
+                                trueMaster = finalMetaMaster;
+                                logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
                                 future().setSuccess();
                             } else {
                                 logger.warn("[{}-{}+{}] {} currentMasterConsistent: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMastersMap.keySet());

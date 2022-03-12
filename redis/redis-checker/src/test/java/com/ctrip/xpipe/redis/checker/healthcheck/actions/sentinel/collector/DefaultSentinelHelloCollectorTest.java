@@ -188,9 +188,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         command = sentinelCollector.new SentinelHelloCollectorCommand(new SentinelActionContext(newRandomRedisHealthCheckInstance(randomPort()), hellos));
         try {
             command.new CheckTrueMaster().execute().get();
-            Assert.fail();
+            Assert.assertEquals(metaMaster, command.getTrueMaster());
         } catch (Exception e) {
-            Assert.assertTrue(e.getCause() instanceof MasterNotFoundException);
+            Assert.fail();
         }
     }
 
