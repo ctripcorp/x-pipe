@@ -34,8 +34,6 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     private AtomicBoolean needDowngrade = new AtomicBoolean(false);
 
-    private AtomicBoolean activeDcCollected = new AtomicBoolean(false);
-
     private MetaCache metaCache;
 
     private CheckerConfig checkerConfig;
@@ -48,7 +46,6 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        activeDcCollected.compareAndSet(true, false);
         return shouldCheckFromRedis(instance);
     }
 
@@ -61,28 +58,19 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
             public void go() throws Exception {
                 if (!info.getClusterId().equalsIgnoreCase(clusterId) || !info.getShardId().equalsIgnoreCase(shardId))
                     return;
+
                 if (!shouldCheckFromRedis(context.instance())) return;
 
-                if (info.isInActiveDc() && activeDcCollected.compareAndSet(false, true)) {
-                    // only deal with success result when downgrade
-                    needDowngrade.compareAndSet(true, false);
-                    if (context.isSuccess()) {
-                        logger.info("[{}-{}+{}]active dc {} redis {} sub finish", LOG_TITLE, clusterId, shardId, info.getDcId(), info.getHostPort());
-                        handleAllActiveDcHellos(context.instance(), context.getResult());
-                    }
-                    return;
-                }
+                int collected = collectHello(context);
 
-                // handle backup dc hello when all right
-                if (info.isInActiveDc()) return;
-                if (collectHello(context) >= countBackDcRedis()) {
+                if (downgradeAndOverDrSlavesCollected(collected) || notDowngradeAndAllDrSlavesCollected(collected)) {
                     if (shouldDowngrade(info)) {
                         logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
                         beginDowngrade();
                         return;
                     }
                     needDowngrade.compareAndSet(true, false);
-                    logger.debug("[{}-{}+{}]backup dc {} sub finish: {}", LOG_TITLE, clusterId, shardId, info.getDcId(), checkResult.toString());
+                    logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
                     handleAllBackupDcHellos(context.instance());
                 }
             }
@@ -96,6 +84,14 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         });
     }
 
+    boolean downgradeAndOverDrSlavesCollected(int collected) {
+        return needDowngrade.get() && (collected > countBackDcRedis());
+    }
+
+    boolean notDowngradeAndAllDrSlavesCollected(int collected) {
+        return !needDowngrade.get() && (collected >= countBackDcRedis());
+    }
+
     @Override
     public void stopWatch(HealthCheckAction action) {
         super.stopWatch(action);
@@ -103,6 +99,8 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     }
 
     private boolean shouldDowngrade(RedisInstanceInfo info) {
+        if (needDowngrade.get())
+            return false;
         DowngradeStrategy strategy = DowngradeStrategy.lookUp(checkerConfig.sentinelCheckDowngradeStrategy());
         boolean shouldDowngrade = strategy.needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
         if (shouldDowngrade)
@@ -111,7 +109,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
     }
 
     private boolean shouldCheckFromRedis(RedisHealthCheckInstance instance) {
-        return noNeedDowngradeAndIsDrSlave(instance) || needDowngradeAndIsActiveDcSlave(instance);
+        return noNeedDowngradeAndIsDrSlave(instance) || needDowngradeAndIsSlave(instance);
     }
 
     private boolean noNeedDowngradeAndIsDrSlave(RedisHealthCheckInstance instance) {
@@ -123,10 +121,10 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         return shouldCheck;
     }
 
-    private boolean needDowngradeAndIsActiveDcSlave(RedisHealthCheckInstance instance) {
-        boolean shouldCheck = needDowngrade.get() && !instance.getCheckInfo().isMaster() && instance.getCheckInfo().isInActiveDc();
+    private boolean needDowngradeAndIsSlave(RedisHealthCheckInstance instance) {
+        boolean shouldCheck = needDowngrade.get() && !instance.getCheckInfo().isMaster();
 
-        logger.debug("[{}-{}+{}][{}]needDowngradeAndIsActiveDcSlave:{}, needDowngrade:{}, isMaster:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
+        logger.debug("[{}-{}+{}][{}]needDowngradeAndIsSlave:{}, needDowngrade:{}, isMaster:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
                 shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster());
 
         return shouldCheck;
