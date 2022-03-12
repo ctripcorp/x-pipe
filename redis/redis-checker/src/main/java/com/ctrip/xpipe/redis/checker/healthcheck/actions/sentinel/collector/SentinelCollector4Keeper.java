@@ -98,7 +98,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                logger.error("[doAction][MASTER_GOOD_MONITOR_BAD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
 
                 try {
@@ -138,7 +138,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
                         collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
                                 getMessage(expect.toString(), masterAddr.toString()));
                     } else {
-                        logger.warn("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                        logger.warn("[doAction][MASTER_BAD_MONITOR_GOOD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                                 info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
                     }
                 } catch (Exception e) {
@@ -156,7 +156,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                logger.error("[doAction] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
+                logger.error("[doAction][MASTER_BAD_MONITOR_BAD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
                 collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, getMessage(null, hello.toString()));
             }

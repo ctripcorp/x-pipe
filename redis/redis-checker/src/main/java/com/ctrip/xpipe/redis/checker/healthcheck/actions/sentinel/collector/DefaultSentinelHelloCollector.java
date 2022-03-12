@@ -9,7 +9,6 @@ import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -27,6 +26,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyB
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
+import com.ctrip.xpipe.redis.core.exception.NoResourceException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
@@ -500,30 +500,47 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
                 if (currentMasterConsistent(currentCollectedMasters)) {
                     trueMaster = currentCollectedMasters.iterator().next();
+                    logger.debug("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
                     future().setSuccess();
                 }  else {
+                    logger.warn("[{}-{}+{}]too many masters: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMasters);
                     Map<HostPort, HostPort> trueMastersMap = new ConcurrentHashMap<>();
                     ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(),false);
                     currentCollectedMasters.forEach(currentCollectedMaster -> {
                         RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(currentCollectedMaster.getHost(), currentCollectedMaster.getPort())), scheduled);
                         roleCommand.future().addListener(innerFuture -> {
                             if (innerFuture.isSuccess()) {
+                                logger.info("[{}-{}+{}]instance {} role {}", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMaster, innerFuture.get());
                                 if (innerFuture.get() instanceof MasterRole) {
                                     trueMastersMap.put(currentCollectedMaster, currentCollectedMaster);
                                 }
+                            } else {
+                                logger.warn("[{}-{}+{}]instance {} role failed", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMaster, innerFuture.cause());
                             }
                         });
                         chain.add(roleCommand);
                     });
+
+                    HostPort finalMetaMaster = metaMaster;
                     chain.execute().addListener(outerFuture -> {
-                        if (!currentMasterConsistent(trueMastersMap.keySet())) {
-                            logger.warn("[{}-{}+{}] {} currentMasterConsistent: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMastersMap.keySet());
-                            String message = String.format("master inconsistent, monitorName:%s, masters:%s", sentinelMonitorName, trueMastersMap.keySet());
-                            alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(), ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
-                            future().setFailure(new MasterNotFoundException(info.getClusterId(), info.getShardId()));
-                        } else {
-                            trueMaster = trueMastersMap.keySet().iterator().next();
-                            future().setSuccess();
+                        try {
+                            if (currentMasterConsistent(trueMastersMap.keySet())) {
+                                trueMaster = trueMastersMap.keySet().iterator().next();
+                                logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
+                                future().setSuccess();
+                            } else if (finalMetaMaster != null && ((trueMastersMap.containsKey(finalMetaMaster) || trueMastersMap.keySet().isEmpty()))) {
+                                trueMaster = finalMetaMaster;
+                                logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
+                                future().setSuccess();
+                            } else {
+                                logger.warn("[{}-{}+{}] {} currentMasterConsistent: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMastersMap.keySet());
+                                String message = String.format("master inconsistent, monitorName:%s, masters:%s", sentinelMonitorName, trueMastersMap.keySet());
+                                alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(), ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
+                                future().setFailure(new MasterNotFoundException(info.getClusterId(), info.getShardId()));
+                            }
+                        } catch (Throwable e) {
+                            logger.error("[{}-{}+{}]CheckTrueMaster failed,", LOG_TITLE, info.getClusterId(), info.getShardId(), e);
+                            future().setFailure(e);
                         }
                     });
                 }
@@ -571,7 +588,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 // add rate limit logic to reduce frequently sentinel operations
                 if (!leakyBucket.tryAcquire()) {
                     logger.warn("[{}-{}][acquire failed]", LOG_TITLE, sentinelMonitorName);
-                    future().setFailure(new XpipeRuntimeException("leakyBucket.tryAcquire failed"));
+                    future().setFailure(new NoResourceException("leakyBucket.tryAcquire failed"));
                 } else {
                     // I got the lock, remember to release it
                     leakyBucket.delayRelease(1000, TimeUnit.MILLISECONDS);
