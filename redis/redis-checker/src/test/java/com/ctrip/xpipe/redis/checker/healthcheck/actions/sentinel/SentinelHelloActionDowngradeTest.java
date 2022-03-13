@@ -168,6 +168,8 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     public void backupErrRespTest() {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
+        Assert.assertFalse(downgradeController.getNeedDowngrade());
+
         setServerErrResp(false, false, true, true);
         allActionDoTask();
 
@@ -179,6 +181,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         assertServerCalled(false, false, true, true);
         verify(sentinelHelloCollector, times(0)).onAction(Mockito.any());
         verify(downgradeController, times(2)).onAction(Mockito.any());
+        Assert.assertTrue(downgradeController.getNeedDowngrade());
 
         resetCalled();
         allActionDoTask();
@@ -191,7 +194,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         assertServerCalled(false, true, true, true);
         verify(downgradeController, times(5)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(1)).onAction(Mockito.any());
-
+        Assert.assertFalse(downgradeController.getNeedDowngrade());
 
         setServerErrResp(false, false, false, false);
         resetCalled();
@@ -206,6 +209,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         assertServerCalled(false, false, true, true);
         verify(downgradeController, times(7)).onAction(Mockito.any());
         verify(sentinelHelloCollector, times(2)).onAction(Mockito.any());
+        Assert.assertFalse(downgradeController.getNeedDowngrade());
 
         resetCalled();
         allActionDoTask();

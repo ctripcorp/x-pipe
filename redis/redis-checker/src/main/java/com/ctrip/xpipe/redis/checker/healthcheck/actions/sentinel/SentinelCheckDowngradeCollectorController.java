@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,8 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     private CheckerConfig checkerConfig;
 
+    private AtomicBoolean allCollected = new AtomicBoolean(false);
+
     public SentinelCheckDowngradeCollectorController(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterId, String shardId, CheckerConfig checkerConfig) {
         super(sentinelHelloCollector, clusterId, shardId);
         this.metaCache = metaCache;
@@ -46,6 +49,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
+        allCollected.set(false);
         return shouldCheckFromRedis(instance);
     }
 
@@ -63,15 +67,17 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
 
                 int collected = collectHello(context);
 
-                if (downgradeAndOverDrSlavesCollected(collected) || notDowngradeAndAllDrSlavesCollected(collected)) {
-                    if (shouldDowngrade(info)) {
-                        logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
-                        beginDowngrade();
-                        return;
+                if (downgradeAndAllShardSlavesCollected(collected) || notDowngradeAndAllDrSlavesCollected(collected)) {
+                    if (allCollected.compareAndSet(false, true)) {
+                        if (shouldDowngrade(info)) {
+                            logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
+                            beginDowngrade();
+                            return;
+                        }
+                        needDowngrade.compareAndSet(true, false);
+                        logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
+                        handleAllBackupDcHellos(context.instance());
                     }
-                    needDowngrade.compareAndSet(true, false);
-                    logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
-                    handleAllBackupDcHellos(context.instance());
                 }
             }
 
@@ -84,8 +90,8 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         });
     }
 
-    boolean downgradeAndOverDrSlavesCollected(int collected) {
-        return needDowngrade.get() && (collected > countBackDcRedis());
+    boolean downgradeAndAllShardSlavesCollected(int collected) {
+        return needDowngrade.get() && (collected >= countShardSlaves());
     }
 
     boolean notDowngradeAndAllDrSlavesCollected(int collected) {
@@ -146,6 +152,20 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         return redisCnt;
     }
 
+    private int countShardSlaves() {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (null == xpipeMeta || StringUtil.isEmpty(clusterId)) return 0;
+
+        int redisCnt = 0;
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (!dcMeta.getClusters().containsKey(clusterId)) continue;
+            ShardMeta shardMeta = dcMeta.findCluster(clusterId).findShard(shardId);
+            if (null == shardMeta) continue; // cluster missing shard when no instances in it
+            redisCnt += shardMeta.getRedises().stream().filter(redisMeta -> !redisMeta.isMaster()).count();
+        }
+        return redisCnt;
+    }
+
     private void beginDowngrade() {
         needDowngrade.compareAndSet(false, true);
         resetCheckResult();
@@ -182,4 +202,8 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
         }
     }
 
+    @VisibleForTesting
+    boolean getNeedDowngrade() {
+        return needDowngrade.get();
+    }
 }
