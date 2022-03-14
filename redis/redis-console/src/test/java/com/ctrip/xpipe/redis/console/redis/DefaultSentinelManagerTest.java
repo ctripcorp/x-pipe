@@ -79,11 +79,11 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void removeSentinel() throws Exception {
-        try {
-            logger.info("removeSentinel: {}", manager.removeSentinelMonitor(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS").execute().get(1000, TimeUnit.MILLISECONDS));
-        }catch (Exception e){
-            logger.error("removeSentinel failed",e);
-        }
+        logger.info("removeSentinel: {}", manager.removeSentinelMonitor(new Sentinel("test", "10.2.27.97", 5000), "newcredis_trocks_test+credis_trocks_test_1+TROCKS").execute().
+                getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("removeSentinel: ", throwable);
+                    return null;
+                }));
     }
 
     @Test// manual test

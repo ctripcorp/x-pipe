@@ -323,15 +323,16 @@ public class SentinelUpdateController {
             String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, dc);
             List<Sentinel> sentinels = sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
 
-            try {
-                ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-                sentinels.forEach(sentinel -> {
-                    chain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
-                });
-                chain.execute().get(1000, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-                logger.error("removeShardSentinels failed: {},{}", sentinelMonitorName, sentinels, e);
-            }
+
+            ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+            sentinels.forEach(sentinel -> {
+                chain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
+            });
+            chain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                logger.error("removeShardSentinels failed: {},{}", sentinelMonitorName, sentinels, throwable);
+                return null;
+            });
+
         }
     }
 
@@ -421,15 +422,16 @@ public class SentinelUpdateController {
         String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
         if (current != null) {
             List<Sentinel> currentSentinels = current.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
-            try {
-                ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-                currentSentinels.forEach(sentinel -> {
-                    chain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
-                });
-                chain.execute().get(1000, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-                logger.error("removeSentinelMonitor failed, {}, {}", sentinelMonitorName, currentSentinels, e);
-            }
+
+            ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+            currentSentinels.forEach(sentinel -> {
+                chain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
+            });
+            chain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                logger.error("removeSentinelMonitor failed, {}, {}", sentinelMonitorName, currentSentinels, throwable);
+                return null;
+            });
+
         }
 
         List<RedisTbl> redisTbls = new ArrayList<>();
@@ -448,15 +450,15 @@ public class SentinelUpdateController {
         }
 
         List<Sentinel> selectedSentinels = selected.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
-        try {
-            ParallelCommandChain monitorChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-            for (Sentinel sentinel : selectedSentinels) {
-                monitorChain.add(sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum()));
-            }
-            monitorChain.execute().get(1000, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("monitorMaster failed, {}, {}", sentinelMonitorName, selectedSentinels, e);
+
+        ParallelCommandChain monitorChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+        for (Sentinel sentinel : selectedSentinels) {
+            monitorChain.add(sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum()));
         }
+        monitorChain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+            logger.error("monitorMaster failed, {}, {}", sentinelMonitorName, selectedSentinels, throwable);
+            return null;
+        });
 
         return RetMessage.createSuccessMessage(String.format("sentinel changed to %s", selected.getSentinelsAddressString()));
     }

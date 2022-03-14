@@ -69,7 +69,7 @@ public class SentinelCheckDowngradeCollectorController extends AbstractAggregati
                         beginDowngrade();
                     } else {
                         logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
-                        handleAllBackupDcHellos(context.instance());
+                        handleAllHellos(context.instance());
                         endDowngrade();
                     }
                 }

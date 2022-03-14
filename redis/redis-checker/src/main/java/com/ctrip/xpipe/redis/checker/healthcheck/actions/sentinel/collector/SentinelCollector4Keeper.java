@@ -101,11 +101,13 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
                 logger.error("[doAction][MASTER_GOOD_MONITOR_BAD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
 
-                try {
-                    collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName()).execute().get(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
-                } catch (Exception e) {
-                    logger.error("[removeSentinels] sentinel remove {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), e.getMessage());
-                }
+
+                collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName())
+                        .execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("[removeSentinelMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), throwable.getMessage());
+                    return null;
+                });
+
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Collector.4Keeper.Remove", hello.toString());
                 collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
                         getMessage(collector.metaCache.getSentinelMonitorName(info.getClusterId(), info.getShardId()),
@@ -121,13 +123,11 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                HostPort masterAddr = null;
-                try {
-                    masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello),
-                            hello.getMonitorName()).execute().get(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
-                } catch (Exception e) {
-                    logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), e.getMessage());
-                }
+                HostPort masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello), hello.getMonitorName()).
+                        execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), throwable.getMessage());
+                    return null;
+                });
 
                 // check again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
                 boolean checkAgain = false;

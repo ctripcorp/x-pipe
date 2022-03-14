@@ -273,12 +273,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             HostPort sentinelAddr = hello.getSentinelAddr();
             Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
             try {
-                List<HostPort> slaves = new ArrayList<>();
-                try {
-                    slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().get(2050, TimeUnit.MILLISECONDS);
-                } catch (Exception e) {
-                    logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, e);
-                }
+                List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().getOrHandle(2050, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
+                    return new ArrayList<>();
+                });
 
                 boolean shoudReset = false;
                 String reason = null;
@@ -316,7 +314,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 if (shoudReset) {
                     logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
                     CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", String.format("%s,%s", sentinelAddr, reason));
-                    sentinelManager.reset(sentinel, sentinelMonitorName);
+                    sentinelManager.reset(sentinel, sentinelMonitorName).execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                        logger.error("[{}-{}+{}][reset]{}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, throwable);
+                        return null;
+                    });
                 }
             } catch (Exception e) {
                 logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);

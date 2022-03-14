@@ -115,12 +115,11 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
     }
 
     List<String> getSentinelMonitorNames(Sentinel sentinel) {
-        String infoSentinel = null;
-        try {
-            infoSentinel = sentinelManager.infoSentinel(sentinel).execute().get(2050, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, e);
-        }
+        String infoSentinel = sentinelManager.infoSentinel(sentinel).execute().getOrHandle(2050, TimeUnit.MILLISECONDS, throwable -> {
+            logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, throwable);
+            return null;
+        });
+
         if (Strings.isNullOrEmpty(infoSentinel)) {
             logger.error("info sentinel failed: {}", sentinel);
             return Lists.newArrayList();

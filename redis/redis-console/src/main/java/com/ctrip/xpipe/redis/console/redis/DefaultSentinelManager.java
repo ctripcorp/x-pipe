@@ -87,15 +87,15 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
         }
 
         logger.info("[removeShardSentinelMonitors]realSentinels: {}", realSentinels);
-        try {
-            ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-            for (Sentinel sentinel : realSentinels) {
-                chain.add(removeSentinelMonitor(sentinel, sentinelMonitorName));
-            }
-            chain.execute().get(1000, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("[removeShardSentinelMonitors]realSentinels: {}", realSentinels, e);
+
+        ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+        for (Sentinel sentinel : realSentinels) {
+            chain.add(removeSentinelMonitor(sentinel, sentinelMonitorName));
         }
+        chain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+            logger.error("[removeShardSentinelMonitors]realSentinels: {}", realSentinels, throwable);
+            return null;
+        });
 
     }
 
