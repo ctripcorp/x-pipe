@@ -207,7 +207,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     }
 
     @VisibleForTesting
-    protected Set<HostPort> collectMetaMasterAndHelloMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
+    protected Set<HostPort> metaMasterAndHelloMasters(HostPort metaMaster, Set<SentinelHello> hellos) {
         Set<HostPort> masters = new HashSet<>();
         hellos.forEach(sentinelHello -> {
             masters.add(sentinelHello.getMasterAddr());
@@ -273,7 +273,13 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             HostPort sentinelAddr = hello.getSentinelAddr();
             Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
             try {
-                List<HostPort> slaves = slaves(sentinel, sentinelMonitorName);
+                List<HostPort> slaves = new ArrayList<>();
+                try {
+                    slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().get(2050, TimeUnit.MILLISECONDS);
+                } catch (Exception e) {
+                    logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, e);
+                }
+
                 boolean shoudReset = false;
                 String reason = null;
                 Set<HostPort> keepers = new HashSet<>();
@@ -316,15 +322,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
             }
         });
-    }
-
-    List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName) {
-        try {
-            return sentinelManager.slaves(sentinel, sentinelMonitorName).execute().get(2050, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, e);
-        }
-        return Collections.EMPTY_LIST;
     }
 
     @VisibleForTesting
@@ -496,14 +493,14 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     logger.warn("[{}-{}+{}] {} master not found", LOG_TITLE, info.getClusterId(), info.getShardId(), info.getDcId(), e);
                 }
 
-                Set<HostPort> currentCollectedMasters = collectMetaMasterAndHelloMasters(metaMaster, hellos);
+                Set<HostPort> currentCollectedMasters = metaMasterAndHelloMasters(metaMaster, hellos);
 
                 if (currentMasterConsistent(currentCollectedMasters)) {
                     trueMaster = currentCollectedMasters.iterator().next();
                     logger.debug("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
                     future().setSuccess();
                 }  else {
-                    logger.warn("[{}-{}+{}]too many masters: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMasters);
+                    logger.warn("[{}-{}+{}]collected masters not unique: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), currentCollectedMasters);
                     Map<HostPort, HostPort> trueMastersMap = new ConcurrentHashMap<>();
                     ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(),false);
                     currentCollectedMasters.forEach(currentCollectedMaster -> {
@@ -528,7 +525,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                                 trueMaster = trueMastersMap.keySet().iterator().next();
                                 logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
                                 future().setSuccess();
-                            } else if (finalMetaMaster != null && ((trueMastersMap.containsKey(finalMetaMaster) || trueMastersMap.keySet().isEmpty()))) {
+                            } else if (metaMasterIsTrueMaster(finalMetaMaster, trueMastersMap.keySet())) {
                                 trueMaster = finalMetaMaster;
                                 logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, trueMaster);
                                 future().setSuccess();
@@ -544,6 +541,18 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         }
                     });
                 }
+            }
+
+            boolean metaMasterIsTrueMaster(HostPort metaMaster, Set<HostPort> trueMasters) {
+                return noTrueMastersFound(metaMaster, trueMasters) || trueMastersContainsMetaMaster(metaMaster, trueMasters);
+            }
+
+            boolean trueMastersContainsMetaMaster(HostPort metaMaster, Set<HostPort> trueMasters) {
+                return metaMaster != null && trueMasters.contains(metaMaster);
+            }
+
+            boolean noTrueMastersFound(HostPort metaMaster, Set<HostPort> trueMasters) {
+                return metaMaster != null && trueMasters.isEmpty();
             }
 
             @Override

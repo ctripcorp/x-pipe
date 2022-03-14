@@ -48,9 +48,9 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     private SentinelCheckStatus backupDcSlave2;
 
     private RedisMeta activeDcMasterMeta = new RedisMeta().setIp("activeDcMasterMeta");
-    private RedisMeta activeDcSlaveMeta = new RedisMeta().setIp("activeDcSlaveMeta");
-    private RedisMeta backupDcSlave1Meta = new RedisMeta().setIp("backupDcSlave1Meta");
-    private RedisMeta backupDcSlave2Meta = new RedisMeta().setIp("backupDcSlave2Meta");
+    private RedisMeta activeDcSlaveMeta = new RedisMeta().setIp("activeDcSlaveMeta").setMaster("0.0.0.0:0");
+    private RedisMeta backupDcSlave1Meta = new RedisMeta().setIp("backupDcSlave1Meta").setMaster("0.0.0.0:0");
+    private RedisMeta backupDcSlave2Meta = new RedisMeta().setIp("backupDcSlave2Meta").setMaster("0.0.0.0:0");
 
     @Mock
     protected CheckerDbConfig config;

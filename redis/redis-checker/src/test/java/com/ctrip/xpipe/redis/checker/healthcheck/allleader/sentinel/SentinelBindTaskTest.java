@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -39,8 +40,24 @@ public class SentinelBindTaskTest {
         dcMeta.addCluster(new ClusterMeta("cluster").addShard(new ShardMeta("shard").setSentinelId(1L)));
 
         DefaultSentinelBindTask task = new DefaultSentinelBindTask(sentinelManager, dcMeta, ClusterType.SINGLE_DC, checkerConsoleService, config);
-        task = Mockito.spy(task);
-        doReturn(infoSentinel).when(task).infoSentinel(any());
+
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(infoSentinel);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
         task.doExecute();
 
         verify(checkerConsoleService,times(1)).bindShardSentinel(any(),any(),any(),any(),any());

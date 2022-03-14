@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWaySupport {
 
     private static Logger logger = LoggerFactory.getLogger(SentinelCollector4Keeper.class);
-
+    private static final int SENTINEL_COMMAND_TIMEOUT = 1000;
     @Autowired
     private SentinelManager sentinelManager;
 
@@ -102,7 +102,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
                         info.getClusterId(), info.getShardId(), info.getHostPort(), hello);
 
                 try {
-                    collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName()).execute().get();
+                    collector.sentinelManager.removeSentinelMonitor(collector.toSentinel(hello), hello.getMonitorName()).execute().get(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     logger.error("[removeSentinels] sentinel remove {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), e.getMessage());
                 }
@@ -124,7 +124,7 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
                 HostPort masterAddr = null;
                 try {
                     masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello),
-                            hello.getMonitorName()).execute().get(1000, TimeUnit.MILLISECONDS);
+                            hello.getMonitorName()).execute().get(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), e.getMessage());
                 }

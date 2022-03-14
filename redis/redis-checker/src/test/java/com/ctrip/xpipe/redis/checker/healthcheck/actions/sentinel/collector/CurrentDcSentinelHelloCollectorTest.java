@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -21,7 +22,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
@@ -32,7 +32,6 @@ import static org.mockito.Mockito.doAnswer;
 public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @InjectMocks
-    @Spy
     private CurrentDcSentinelHelloCollector collector;
 
     @Mock
@@ -107,8 +106,23 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
             Sentinel sentinel = invocation.getArgument(0, Sentinel.class);
             Pair<String, String> clusterShard = clusterShardBySentinel.get(new HostPort(sentinel.getIp(), sentinel.getPort()));
             Mockito.when(metaCache.findClusterShard(Mockito.any())).thenReturn(clusterShard);
-            return Collections.singletonList(new HostPort("127.0.0.1", 7379));
-        }).when(collector).slaves(Mockito.any(), Mockito.anyString());
+            return new AbstractCommand<List<HostPort>>() {
+                @Override
+                protected void doExecute() throws Throwable {
+                    future().setSuccess(Collections.singletonList(new HostPort("127.0.0.1", 7379)));
+                }
+
+                @Override
+                protected void doReset() {
+
+                }
+
+                @Override
+                public String getName() {
+                    return null;
+                }
+            };
+        }).when(sentinelManager).slaves(Mockito.any(), Mockito.anyString());
 
         Set<SentinelHello> hellos = new HashSet<>();
         hellos.add(new SentinelHello(sentinel1, masterAddr, sentinelMonitorName));

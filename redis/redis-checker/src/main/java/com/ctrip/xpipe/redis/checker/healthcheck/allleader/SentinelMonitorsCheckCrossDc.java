@@ -38,6 +38,8 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     
     private AlertManager alertManager;
 
+    private static final int LONG_SENTINEL_COMMAND_TIMEOUT = 2000;
+    private static final int SENTINEL_COMMAND_TIMEOUT = 1000;
     public SentinelMonitorsCheckCrossDc(
             MetaCache metaCache,
             PersistenceCache persistenceCache,
@@ -101,7 +103,12 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
     
     public void checkSentinel(SentinelMeta sentinelMeta, HostPort sentinelHostPort) {
         Sentinel sentinel = new Sentinel(sentinelHostPort.toString(), sentinelHostPort.getHost(), sentinelHostPort.getPort());
-        String infoSentinel = infoSentinel(sentinel);
+        String infoSentinel = null;
+        try {
+            infoSentinel = sentinelManager.infoSentinel(sentinel).execute().get(LONG_SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, e);
+        }
         
         if(infoSentinel == null) {
             logger.warn("[checkSentinel] info sentinel empty: {}", sentinel);
@@ -121,7 +128,7 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
                 continue;
             if (metaCache.findClusterShardBySentinelMonitor(monitorName) == null) {
                 try {
-                    sentinelManager.removeSentinelMonitor(sentinel, monitorName).execute().get();
+                    sentinelManager.removeSentinelMonitor(sentinel, monitorName).execute().get(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
                 } catch (Exception e) {
                     logger.error("[checkSentinel] removeSentinelMonitor failed: {},{}", sentinel, monitorName, e);
                 }
@@ -130,16 +137,6 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
                 alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
             }
         }
-    }
-
-    String infoSentinel(Sentinel sentinel) {
-        String infoSentinel = null;
-        try {
-            infoSentinel = sentinelManager.infoSentinel(sentinel).execute().get(2050, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, e);
-        }
-        return infoSentinel;
     }
 
     @Override

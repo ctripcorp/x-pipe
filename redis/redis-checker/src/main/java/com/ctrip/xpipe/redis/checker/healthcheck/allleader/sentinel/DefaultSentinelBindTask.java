@@ -115,23 +115,18 @@ public class DefaultSentinelBindTask extends AbstractCommand<Void> implements Se
     }
 
     List<String> getSentinelMonitorNames(Sentinel sentinel) {
-        String infoSentinel = infoSentinel(sentinel);
-        if (Strings.isNullOrEmpty(infoSentinel)) {
-            logger.error("info sentinel failed: {}", sentinel);
-            return Lists.newArrayList();
-        }
-        SentinelMonitors sentinelMonitors = SentinelMonitors.parseFromString(infoSentinel);
-        return sentinelMonitors.getMonitors();
-    }
-
-    String infoSentinel(Sentinel sentinel) {
         String infoSentinel = null;
         try {
             infoSentinel = sentinelManager.infoSentinel(sentinel).execute().get(2050, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             logger.error("[checkSentinel] infoSentinel failed: {}", sentinel, e);
         }
-        return infoSentinel;
+        if (Strings.isNullOrEmpty(infoSentinel)) {
+            logger.error("info sentinel failed: {}", sentinel);
+            return Lists.newArrayList();
+        }
+        SentinelMonitors sentinelMonitors = SentinelMonitors.parseFromString(infoSentinel);
+        return sentinelMonitors.getMonitors();
     }
 
     void bindSentinelGroupWithShard(SentinelMeta sentinelMeta, String monitorName) {

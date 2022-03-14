@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -16,7 +17,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -26,7 +26,6 @@ import static org.mockito.Mockito.*;
 public class DefaultSentinelMonitorsCheckTest {
 
     @InjectMocks
-    @Spy
     private SentinelMonitorsCheckCrossDc checker;
 
     @Mock
@@ -134,7 +133,24 @@ public class DefaultSentinelMonitorsCheckTest {
                 "master79:name=xpipe-auto-build-59-shard-1,status=ok,address=10.5.109.155:6437,slaves=2,sentinels=5\n" +
                 "master80:name=xpipe-auto-build-49-shard-3,status=ok,address=10.5.109.147:6427,slaves=2,sentinels=5\n" +
                 "master81:name=xpipe-auto-build-87-shard-2,status=ok,address=10.5.109.151:6465,slaves=2,sentinels=5";
-        doReturn(result).when(checker).infoSentinel(any());
+
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
         when(alertManager.shouldAlert(any())).thenReturn(true);
         when(persistenceCache.isSentinelAutoProcess()).thenReturn(true);
     }
