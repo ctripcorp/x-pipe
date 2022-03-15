@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -36,8 +38,13 @@ public class ClusterMetaSynchronizer {
     private OrganizationService organizationService;
     private SentinelBalanceService sentinelBalanceService;
     private ConsoleConfig consoleConfig;
+    private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
-    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService, OrganizationService organizationService, SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig) {
+    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified,
+                                   DcService dcService, ClusterService clusterService, ShardService shardService,
+                                   RedisService redisService, OrganizationService organizationService,
+                                   SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig,
+                                   ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -48,6 +55,7 @@ public class ClusterMetaSynchronizer {
         this.organizationService = organizationService;
         this.sentinelBalanceService = sentinelBalanceService;
         this.consoleConfig = consoleConfig;
+        this.clusterTypeUpdateEventFactory = clusterTypeUpdateEventFactory;
     }
 
     public void sync() {
@@ -141,15 +149,11 @@ public class ClusterMetaSynchronizer {
     }
 
     boolean shouldAddDc(ClusterMeta toAdd, ClusterTbl exist) {
-        return !existDiffTypeCluster(toAdd, exist) && crossDcSupported(exist);
+        return !existDiffTypeCluster(toAdd, exist);
     }
 
     boolean existDiffTypeCluster(ClusterMeta toAdd, ClusterTbl exist) {
         return exist != null && !toAdd.getType().equalsIgnoreCase(exist.getClusterType());
-    }
-
-    boolean crossDcSupported(ClusterTbl exist) {
-        return exist != null && !ClusterType.lookup(exist.getClusterType()).equals(ClusterType.SINGLE_DC);
     }
 
     void update() {
@@ -160,6 +164,7 @@ public class ClusterMetaSynchronizer {
                     ClusterSyncMetaComparator clusterMetaComparator = (ClusterSyncMetaComparator) metaComparator;
                     ClusterMeta future = clusterMetaComparator.getFuture();
                     ClusterTbl currentClusterTbl = clusterService.find(future.getId());
+                    String currentClusterTye = currentClusterTbl.getClusterType();
                     if (needUpdate(future, currentClusterTbl, currentDcId)) {
                         if (future.getOrgId() != null && currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
                             currentClusterTbl.setClusterOrgId(future.getOrgId());
@@ -176,6 +181,7 @@ public class ClusterMetaSynchronizer {
                         logger.info("[ClusterMetaSynchronizer][update]{} -> {}, toUpdateTbl: {}", clusterMetaComparator.getCurrent(), future, currentClusterTbl);
                         clusterService.update(currentClusterTbl);
                         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateCluster]%s-%s", DcMetaSynchronizer.currentDcId, future.getId()));
+                        notifyIfClusterTypeUpdated(currentClusterTye, currentClusterTbl);
                     }
                     new ShardMetaSynchronizer(clusterMetaComparator.getAdded(), clusterMetaComparator.getRemoved(), clusterMetaComparator.getMofified(), redisService, shardService, sentinelBalanceService, consoleConfig).sync();
                 } catch (Exception e) {
@@ -184,6 +190,17 @@ public class ClusterMetaSynchronizer {
             });
         } catch (Exception e) {
             logger.error("[ClusterMetaSynchronizer][update]", e);
+        }
+    }
+
+    void notifyIfClusterTypeUpdated(String originType, ClusterTbl currentClusterTbl) {
+        try {
+            if (!originType.equalsIgnoreCase(currentClusterTbl.getClusterType())) {
+                ClusterEvent clusterEvent = clusterTypeUpdateEventFactory.createClusterEvent(currentClusterTbl.getClusterName(), currentClusterTbl);
+                if (null != clusterEvent) clusterEvent.onEvent();
+            }
+        } catch (Throwable e) {
+            logger.error("[ClusterMetaSynchronizer][notifyIfClusterTypeUpdated]{} -> {}", originType, currentClusterTbl.getClusterType(), e);
         }
     }
 

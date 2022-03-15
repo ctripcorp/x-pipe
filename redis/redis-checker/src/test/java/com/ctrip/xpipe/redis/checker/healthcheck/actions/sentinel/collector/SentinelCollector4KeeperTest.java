@@ -48,7 +48,6 @@ public class SentinelCollector4KeeperTest {
     @Before
     public void beforeSentinelCollector4KeeperTest() {
         MockitoAnnotations.initMocks(this);
-        doNothing().when(sentinelManager).removeSentinelMonitor(any(), any());
         when(alertManager.shouldAlert(any())).thenReturn(true);
     }
 
@@ -89,7 +88,6 @@ public class SentinelCollector4KeeperTest {
 
     @Test
     public void testDoAction2() {
-        doNothing().when(sentinelManager).removeSentinelMonitor(any(), any());
         doNothing().when(alertManager).alert(any(), any(), any(), any(), any());
         boolean masterGood = true, monitorGood = false;
         SentinelCollector4Keeper.SentinelCollectorAction action = SentinelCollector4Keeper

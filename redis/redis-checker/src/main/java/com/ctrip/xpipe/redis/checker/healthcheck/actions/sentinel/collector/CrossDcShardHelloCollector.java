@@ -42,7 +42,7 @@ public class CrossDcShardHelloCollector extends AbstractAggregationCollector<Cro
                         return;
                     }
                     logger.debug("[{}-{}][onAction] sentinel hello collect finish: {}", clusterId, shardId, checkResult.toString());
-                    handleAllBackupDcHellos(context.instance());
+                    handleAllHellos(context.instance());
                 }
             }
 

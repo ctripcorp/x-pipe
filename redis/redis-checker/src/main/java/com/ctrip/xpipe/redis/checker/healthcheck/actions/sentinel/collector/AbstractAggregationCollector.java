@@ -45,13 +45,9 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
         return checkFinishedInstance.size();
     }
 
-    protected synchronized void handleAllBackupDcHellos(RedisHealthCheckInstance instance) {
+    protected synchronized void handleAllHellos(RedisHealthCheckInstance instance) {
         Set<SentinelHello> hellos = new HashSet<>(checkResult);
         resetCheckResult();
-        this.realCollector.onAction(new SentinelActionContext(instance, hellos));
-    }
-
-    protected void handleAllActiveDcHellos(RedisHealthCheckInstance instance, Set<SentinelHello> hellos) {
         this.realCollector.onAction(new SentinelActionContext(instance, hellos));
     }
 

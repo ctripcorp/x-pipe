@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -62,6 +63,9 @@ public class DcMetaSynchronizerTest {
 
     @Mock
     private SentinelBalanceService sentinelBalanceService;
+
+    @Mock
+    private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
@@ -231,7 +235,7 @@ public class DcMetaSynchronizerTest {
     }
 
     @Test
-    public void crossDcNotSupportedTest() throws Exception {
+    public void clusterExistedButNoShardsTest() throws Exception {
         when(organizationService.getAllOrganizations()).thenReturn(Lists.newArrayList(
                 new OrganizationTbl().setId(8L).setOrgId(44).setOrgName("框架"),
                 new OrganizationTbl().setId(9L).setOrgId(45).setOrgName("酒店")
@@ -251,15 +255,15 @@ public class DcMetaSynchronizerTest {
         dcMetaSynchronizer.sync();
 
         verify(clusterService,times(1)).find(singleDcCacheCluster);
-        verify(clusterService, never()).bindDc(any(), any());
+        verify(clusterService, times(1)).bindDc(any(), any());
         verify(clusterService, never()).createCluster(any());
         verify(clusterService, never()).unbindDc(any(), any());
         verify(clusterService, never()).deleteCluster(any());
         verify(clusterService, never()).update(any());
 
-        verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), any());
+        verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), any());
 
-        verify(redisService, never()).insertRedises(any(), any(), any(), any());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
     }
 
     @Test
@@ -294,6 +298,7 @@ public class DcMetaSynchronizerTest {
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, never()).insertRedises(any(), any(), any(), any());
         verify(redisService, never()).updateBatchMaster(any());
+        verify(clusterTypeUpdateEventFactory,times(1)).createClusterEvent(anyString(),any(ClusterTbl.class));
     }
 
     @Test
@@ -381,7 +386,7 @@ public class DcMetaSynchronizerTest {
 
         //        add redis
         OuterClientService.DcMeta credisDcMeta = credisDcMeta().setDcName(DcMetaSynchronizer.currentDcId);
-        credisDcMeta.getClusters().get(singleDcCacheCluster).getGroups().get("credis_test_cluster_1_1").getRedises().add(new OuterClientService.RedisMeta().setHost("127.0.0.1").setPort(6379).setMaster(false));
+        credisDcMeta.getClusters().get(singleDcCacheCluster).getGroups().get("credis_test_cluster_1_1").getRedises().add(new OuterClientService.RedisMeta().setHost("127.0.0.1").setPort(6379).setMaster(true));
 
         when(consoleConfig.getOuterClusterTypes()).thenReturn(Sets.newHashSet("SINGLE_DC", "LOCAL_DC"));
         when(outerClientService.getOutClientDcMeta(DcMetaSynchronizer.currentDcId)).thenReturn(credisDcMeta);
@@ -389,6 +394,7 @@ public class DcMetaSynchronizerTest {
         when(dcService.find(DcMetaSynchronizer.currentDcId)).thenReturn(new DcTbl().setId(1));
         when(clusterService.find(singleDcCacheCluster)).thenReturn(new ClusterTbl().setId(17730).setClusterName(singleDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.SINGLE_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(8));
         when(clusterService.find(localDcCacheCluster)).thenReturn(new ClusterTbl().setId(17728).setClusterName(localDcCacheCluster).setActivedcId(1).setClusterType(ClusterType.LOCAL_DC.name()).setClusterAdminEmails("test@ctrip.com").setClusterOrgId(9));
+        when(redisService.findRedisesByDcClusterShard(DcMetaSynchronizer.currentDcId,singleDcCacheCluster,"credis_test_cluster_1_1")).thenReturn(Lists.newArrayList(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(false)));
         dcMetaSynchronizer.sync();
 
         verify(clusterService, never()).bindDc(any(), any());
@@ -402,7 +408,7 @@ public class DcMetaSynchronizerTest {
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, times(1)).insertRedises(any(), any(), any(), any());
-        verify(redisService, never()).updateBatchMaster(any());
+        verify(redisService, times(1)).updateBatchMaster(any());
     }
 
     @Test
