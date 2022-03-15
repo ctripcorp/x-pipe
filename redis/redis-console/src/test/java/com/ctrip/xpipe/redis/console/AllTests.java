@@ -17,17 +17,6 @@ import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTe
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig.RedisConfigCheckMonitorTest;
-import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
-import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
-import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
-import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
-import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
-import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
-import com.ctrip.xpipe.redis.console.service.impl.DelayServiceTest;
-import com.ctrip.xpipe.redis.console.service.impl.CrossMasterDelayServiceTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
@@ -41,6 +30,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariable
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.metacache.MetaCacheCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig.RedisConfigCheckMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster.UnhealthyClusterCheckerTest;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
@@ -61,6 +51,7 @@ import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.resources.*;
@@ -211,7 +202,9 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperAvailableZoneCheckTest.class,
         RedisConfigCheckMonitorTest.class,
         RedisCheckRuleServiceImplTest.class,
-        EmailSentCounterTest.class
+        EmailSentCounterTest.class,
+
+        ClusterTypeUpdateEventListenerTest.class
 })
 public class AllTests {
 

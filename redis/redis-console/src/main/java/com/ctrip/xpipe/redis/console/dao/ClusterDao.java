@@ -174,6 +174,16 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 					if (sentinel != null) {
 						dcClusterShard.setSetinelId(sentinel.getSentinelGroupId());
 					}
+					if (ClusterType.lookup(cluster.getClusterType()).isCrossDc()) {
+						List<DcClusterShardTbl> allShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
+							@Override
+							public List<DcClusterShardTbl> doQuery() throws DalException {
+								return dcClusterShardTblDao.findAllByShardId(dcClusterShard.getShardId(), DcClusterShardTblEntity.READSET_FULL);
+							}
+						});
+						if (allShards != null && !allShards.isEmpty())
+							dcClusterShard.setSetinelId(allShards.get(0).getSetinelId());
+					}
 					dcClusterShards.add(dcClusterShard);
 				}
 				queryHandler.handleBatchInsert(new DalQuery<int[]>() {

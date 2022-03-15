@@ -8,14 +8,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.LocalDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.SingleDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregationCollector<CurrentDcSentinelHelloCollector> implements BiDirectionSupport, SingleDcSupport, LocalDcSupport {
@@ -49,7 +46,7 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
                         return;
                     }
                     logger.debug("[{}-{}][onAction] sentinel hello collect finish: {}", clusterId, shardId, checkResult.toString());
-                    handleAllBackupDcHellos(context.instance());
+                    handleAllHellos(context.instance());
                 }
             }
 

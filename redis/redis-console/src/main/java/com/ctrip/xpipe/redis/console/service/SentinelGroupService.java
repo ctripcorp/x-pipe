@@ -24,7 +24,7 @@ public interface SentinelGroupService {
 
     List<SentinelGroupModel> getAllSentinelGroupsWithUsage();
 
-    Map<String, SentinelUsageModel> getAllSentinelsUsage();
+    Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType);
 
     void updateSentinelGroupAddress(SentinelGroupModel sentinelGroupModel);
 
