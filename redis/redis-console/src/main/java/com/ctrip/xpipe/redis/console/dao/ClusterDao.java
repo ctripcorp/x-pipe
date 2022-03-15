@@ -181,7 +181,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 								return dcClusterShardTblDao.findAllByShardId(dcClusterShard.getShardId(), DcClusterShardTblEntity.READSET_FULL);
 							}
 						});
-						if (!allShards.isEmpty())
+						if (allShards != null && !allShards.isEmpty())
 							dcClusterShard.setSetinelId(allShards.get(0).getSetinelId());
 					}
 					dcClusterShards.add(dcClusterShard);

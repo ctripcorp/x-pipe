@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -62,6 +63,9 @@ public class DcMetaSynchronizerTest {
 
     @Mock
     private SentinelBalanceService sentinelBalanceService;
+
+    @Mock
+    private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
@@ -294,6 +298,7 @@ public class DcMetaSynchronizerTest {
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
         verify(redisService, never()).insertRedises(any(), any(), any(), any());
         verify(redisService, never()).updateBatchMaster(any());
+        verify(clusterTypeUpdateEventFactory,times(1)).createClusterEvent(anyString(),any(ClusterTbl.class));
     }
 
     @Test

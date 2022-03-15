@@ -40,7 +40,11 @@ public class ClusterMetaSynchronizer {
     private ConsoleConfig consoleConfig;
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
-    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified, DcService dcService, ClusterService clusterService, ShardService shardService, RedisService redisService, OrganizationService organizationService, SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig) {
+    public ClusterMetaSynchronizer(Set<ClusterMeta> added, Set<ClusterMeta> removed, Set<MetaComparator> modified,
+                                   DcService dcService, ClusterService clusterService, ShardService shardService,
+                                   RedisService redisService, OrganizationService organizationService,
+                                   SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig,
+                                   ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
@@ -51,6 +55,7 @@ public class ClusterMetaSynchronizer {
         this.organizationService = organizationService;
         this.sentinelBalanceService = sentinelBalanceService;
         this.consoleConfig = consoleConfig;
+        this.clusterTypeUpdateEventFactory = clusterTypeUpdateEventFactory;
     }
 
     public void sync() {

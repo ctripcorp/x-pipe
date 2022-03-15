@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.notifier.cluster;
 
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
@@ -17,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+
+import static com.ctrip.xpipe.redis.core.meta.MetaSynchronizer.META_SYNC;
 
 @Component
 public class ClusterTypeUpdateEventListener implements ClusterEventListener {
@@ -81,9 +84,10 @@ public class ClusterTypeUpdateEventListener implements ClusterEventListener {
         try {
             List<DcClusterShardTbl> dcClusterShardTbls = dcClusterShardService.find(clusterName, shardName);
             SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
-            for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                if (sentinelGroupModel != null) {
+            if (sentinelGroupModel != null) {
+                for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
                     dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
+                    CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateSentinel]%s-%s-%s,sentinelGroupId:%s",clusterType.name(), clusterName, shardName, dcClusterShardTbl.getSetinelId()));
                 }
             }
         } catch (Throwable e) {
@@ -101,11 +105,12 @@ public class ClusterTypeUpdateEventListener implements ClusterEventListener {
         try {
             DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcName, clusterName, shardName);
             SentinelGroupModel sentinelGroupModel = sentinelBalanceService.selectSentinel(dcName, clusterType);
-            if (sentinelGroupModel != null) {
+            if (dcClusterShardTbl != null && sentinelGroupModel != null) {
                 dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinelGroupModel.getSentinelGroupId()));
+                CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateSentinel]%s-%s-%s-%s,sentinelGroupId:%s", clusterType.name(), dcName, clusterName, shardName, dcClusterShardTbl.getSetinelId()));
             }
         } catch (Throwable e) {
-            logger.error("[changeDcShardSentinel]{},{},{},{}", dcName, clusterName, shardName, clusterType.name());
+            logger.error("[changeDcShardSentinel]{},{},{},{}", dcName, clusterName, shardName, clusterType.name(),e);
         }
     }
 
