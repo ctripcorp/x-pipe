@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.checker.healthcheck;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
+
+import java.util.List;
 
 /**
  * @author lishanglin
@@ -16,4 +19,5 @@ public interface CheckInfo {
 
     void setActiveDc(String activeDc);
 
+    List<RedisCheckRule> getRedisCheckRules();
 }

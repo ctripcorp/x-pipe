@@ -104,8 +104,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getOuterClientSyncInterval();
 
-	Set<String> getOuterClusterTypes();
-
 	String filterOuterClusters();
 
 	Map<String, String> getConsoleDomains();
@@ -140,4 +138,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	long getServletMethodTimeoutMilli();
 	
+	boolean isRedisConfigCheckMonitorOpen();
+
+	String getRedisConfigCheckRules();
+
 }

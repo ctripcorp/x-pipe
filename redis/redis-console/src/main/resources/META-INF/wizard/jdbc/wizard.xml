@@ -28,6 +28,9 @@
          <table name="proxy_tbl"/>
          <table name="route_tbl"/>
          <table name="az_tbl"/>
+         <table name="sentinel_tbl"/>
+         <table name="sentinel_group_tbl"/>
+         <table name="redis_check_rule_tbl"/>
       </group>
    </jdbc>
 </wizard>

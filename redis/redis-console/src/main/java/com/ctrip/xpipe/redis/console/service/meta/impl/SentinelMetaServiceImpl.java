@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.service.meta.AbstractMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.SentinelMetaService;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -16,13 +16,14 @@ import org.springframework.stereotype.Service;
 public class SentinelMetaServiceImpl extends AbstractMetaService implements SentinelMetaService {
 
 	@Override
-	public SentinelMeta encodeSetinelMeta(SetinelTbl sentinel, DcMeta dcMeta) {
+	public SentinelMeta encodeSetinelMeta(SentinelGroupModel sentinelGroup, DcMeta dcMeta) {
 		SentinelMeta sentinelMeta = new SentinelMeta();
 		
-		if(null != sentinel) {
-			sentinelMeta.setId(sentinel.getSetinelId());
-			sentinelMeta.setAddress(sentinel.getSetinelAddress());
+		if(null != sentinelGroup) {
+			sentinelMeta.setId(sentinelGroup.getSentinelGroupId());
+			sentinelMeta.setAddress(sentinelGroup.getSentinelsAddressString());
 			sentinelMeta.setParent(dcMeta);
+			sentinelMeta.setClusterType(sentinelGroup.getClusterType());
 		}
 
 		return sentinelMeta;

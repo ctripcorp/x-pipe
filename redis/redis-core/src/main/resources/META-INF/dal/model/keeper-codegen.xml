@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <model>
   <entity name="xpipe" root="true">
+    <entity-ref name="redisCheckRule" type="list" names="redisCheckRules" />
     <entity-ref name="dc" type="list" names="dcs" />
+  </entity>
+  <entity name="redisCheckRule">
+    <attribute name="id" value-type="long" />
+    <attribute name="checkType" value-type="String" />
+    <attribute name="param" value-type="String" />
   </entity>
   <entity name="dc">
     <attribute name="id" value-type="String" />
@@ -32,6 +38,7 @@
   <entity name="sentinel">
     <attribute name="id" value-type="int" />
     <attribute name="address" value-type="String" />
+    <attribute name="cluster_type" value-type="String" />
   </entity>
   <entity name="az">
     <attribute name="id" value-type="String" />
@@ -48,6 +55,7 @@
     <attribute name="type" value-type="String" />
     <attribute name="admin-emails" value-type="String" />
     <attribute name="dcs" value-type="String" />
+    <attribute name="activeRedisCheckRules" value-type="String" />
     <entity-ref name="shard" type="list" names="shards" />
   </entity>
   <entity name="shard">

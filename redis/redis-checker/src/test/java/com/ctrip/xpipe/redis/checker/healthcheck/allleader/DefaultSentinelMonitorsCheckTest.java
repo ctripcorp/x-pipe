@@ -1,12 +1,13 @@
-package com.ctrip.xpipe.redis.checker.cluster.monitor;
+package com.ctrip.xpipe.redis.checker.healthcheck.allleader;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheckCrossDc;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -21,7 +22,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 public class DefaultSentinelMonitorsCheckTest {
 
@@ -133,15 +133,34 @@ public class DefaultSentinelMonitorsCheckTest {
                 "master79:name=xpipe-auto-build-59-shard-1,status=ok,address=10.5.109.155:6437,slaves=2,sentinels=5\n" +
                 "master80:name=xpipe-auto-build-49-shard-3,status=ok,address=10.5.109.147:6427,slaves=2,sentinels=5\n" +
                 "master81:name=xpipe-auto-build-87-shard-2,status=ok,address=10.5.109.151:6465,slaves=2,sentinels=5";
-        when(sentinelManager.infoSentinel(any())).thenReturn(result);
+
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
         when(alertManager.shouldAlert(any())).thenReturn(true);
         when(persistenceCache.isSentinelAutoProcess()).thenReturn(true);
     }
 
     @Test
     public void checkSentinel() throws Exception {
+        when(metaCache.getClusterType(any())).thenReturn(ClusterType.ONE_WAY);
+        when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(null);
-        checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, atLeastOnce()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, atLeastOnce()).removeSentinelMonitor(any(), any());
@@ -149,9 +168,11 @@ public class DefaultSentinelMonitorsCheckTest {
 
     @Test
     public void checkSentinel2() throws Exception {
+        when(metaCache.getClusterType(any())).thenReturn(ClusterType.ONE_WAY);
+        when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Pair<>("cluster", "shard"));
         checker.setMetaCache(metaCache);
-        checker.checkSentinel(new SentinelMeta().setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, never()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());

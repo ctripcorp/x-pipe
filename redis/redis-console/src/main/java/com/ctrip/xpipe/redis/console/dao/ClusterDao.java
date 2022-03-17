@@ -78,8 +78,8 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 			// related dc-cluster
 			DcTbl activeDc = dcTblDao.findByPK(cluster.getActivedcId(), DcTblEntity.READSET_FULL);
 			DcClusterTbl protoDcCluster = dcClusterTblDao.createLocal();
-			protoDcCluster.setDcId(activeDc.getId())
-					.setClusterId(newCluster.getId());
+			protoDcCluster.setDcId(activeDc.getId()).setClusterId(newCluster.getId());
+
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override
 				public Integer doQuery() throws DalException {
@@ -137,7 +137,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 	}
 
 	@DalTransaction
-	public int bindDc(final ClusterTbl cluster, final DcTbl dc, SetinelTbl sentinel) throws DalException {
+	public int bindDc(final ClusterTbl cluster, final DcTbl dc, SentinelGroupModel sentinel) throws DalException {
 		List<ShardTbl> shards = queryHandler.handleQuery(new DalQuery<List<ShardTbl>>() {
 			@Override
 			public List<ShardTbl> doQuery() throws DalException {
@@ -154,8 +154,7 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 		// not binded
 		if(null == existingDcCluster) {
 			DcClusterTbl proto = dcClusterTblDao.createLocal();
-			proto.setDcId(dc.getId())
-				.setClusterId(cluster.getId());
+			proto.setDcId(dc.getId()).setClusterId(cluster.getId());
 
 			queryHandler.handleInsert(new DalQuery<Integer>() {
 				@Override
@@ -173,7 +172,17 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 					dcClusterShard.setDcClusterId(dcCluster.getDcClusterId())
 						.setShardId(shard.getId());
 					if (sentinel != null) {
-						dcClusterShard.setSetinelId(sentinel.getSetinelId());
+						dcClusterShard.setSetinelId(sentinel.getSentinelGroupId());
+					}
+					if (ClusterType.lookup(cluster.getClusterType()).isCrossDc()) {
+						List<DcClusterShardTbl> allShards = queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
+							@Override
+							public List<DcClusterShardTbl> doQuery() throws DalException {
+								return dcClusterShardTblDao.findAllByShardId(dcClusterShard.getShardId(), DcClusterShardTblEntity.READSET_FULL);
+							}
+						});
+						if (allShards != null && !allShards.isEmpty())
+							dcClusterShard.setSetinelId(allShards.get(0).getSetinelId());
 					}
 					dcClusterShards.add(dcClusterShard);
 				}

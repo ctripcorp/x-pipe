@@ -396,7 +396,18 @@ public interface OuterClientService extends Ordered{
 
 		private String ownerEmails;
 
+		private boolean operating;
+
 		private Map<String, GroupMeta> groups = new ConcurrentHashMap<>();
+
+		public boolean isOperating() {
+			return operating;
+		}
+
+		public ClusterMeta setOperating(boolean operating) {
+			this.operating = operating;
+			return this;
+		}
 
 		public String getName() {
 			return name;
@@ -427,8 +438,9 @@ public interface OuterClientService extends Ordered{
 			return clusterType;
 		}
 
-		public void setClusterType(ClusterType clusterType) {
+		public ClusterMeta setClusterType(ClusterType clusterType) {
 			this.clusterType = clusterType;
+			return this;
 		}
 
 		public Map<String, GroupMeta> getGroups() {
@@ -579,11 +591,36 @@ public interface OuterClientService extends Ordered{
 	}
 
 	enum ClusterType {
-		SINGEL_DC(0),
-		LOCAL_DC(2),
-		XPIPE_ONE_WAY(3),
-		XPIPE_BI_DIRECT(4),
-		TROCKS(5);
+		SINGEL_DC(0){
+			@Override
+			public com.ctrip.xpipe.cluster.ClusterType innerType() {
+				return com.ctrip.xpipe.cluster.ClusterType.SINGLE_DC;
+			}
+		},
+		LOCAL_DC(2){
+			@Override
+			public com.ctrip.xpipe.cluster.ClusterType innerType() {
+				return com.ctrip.xpipe.cluster.ClusterType.LOCAL_DC;
+			}
+		},
+		XPIPE_ONE_WAY(3){
+			@Override
+			public com.ctrip.xpipe.cluster.ClusterType innerType() {
+				return com.ctrip.xpipe.cluster.ClusterType.ONE_WAY;
+			}
+		},
+		XPIPE_BI_DIRECT(4){
+			@Override
+			public com.ctrip.xpipe.cluster.ClusterType innerType() {
+				return com.ctrip.xpipe.cluster.ClusterType.BI_DIRECTION;
+			}
+		},
+		TROCKS(5){
+			@Override
+			public com.ctrip.xpipe.cluster.ClusterType innerType() {
+				return com.ctrip.xpipe.cluster.ClusterType.CROSS_DC;
+			}
+		};
 
 		private Integer intVal;
 
@@ -603,6 +640,8 @@ public interface OuterClientService extends Ordered{
 			}
 			return SINGEL_DC;
 		}
+
+		public abstract com.ctrip.xpipe.cluster.ClusterType innerType();
 	}
 
 	enum InstanceStatus {

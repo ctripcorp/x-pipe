@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDe
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -84,6 +85,8 @@ public interface CheckerConfig {
 
     String KEY_PROXY_CHECK_INTERVAL = "proxy.check.interval";
 
+    String KEY_NON_CORE_CHECK_INTERVAL = "non.core.check.interval";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -148,6 +151,17 @@ public interface CheckerConfig {
 
     void register(List<String> keys, ConfigChangeListener configListener);
 
-
     String sentinelCheckDowngradeStrategy();
+
+    String crossDcSentinelMonitorNameSuffix();
+
+    int getNonCoreCheckIntervalMilli();
+
+    boolean shouldBindOuterClusterShardAndSentinel();
+
+    int sentinelBindTimeoutMilli();
+
+    Set<String> getOuterClusterTypes();
+
+    Map<String, String> sentinelMasterConfig();
 }

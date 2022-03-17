@@ -45,10 +45,10 @@
                             <th>
                                 端口
                             </th>
-                            <th>
+                            <th ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
                             	状态
                             </th>
-                            <th>
+                            <th ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
                                 延迟
                             </th>
                             <th ng-if="clusterType == 'bi_direction'" title="发送给其他master的流量">
@@ -75,7 +75,7 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
-                            <td>
+                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'">
                                 <span style="position: relative" ng-if="undefined !== redis.healthy" class="{{redis.healthy ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}">
                                     <button ng-if="showCrossMasterHealthStatus && redis.master && !redis.healthy" style="position: absolute; left: 20px; top: -3px;" class="btn btn-info btn-minier btn-yellow"
                                             ng-click="shard.showCrossMasters = !shard.showCrossMasters">
@@ -83,7 +83,7 @@
                                 </button>
                                 </span>
                             </td>
-                            <td ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
+                            <td ng-if="clusterType == 'bi_direction'||clusterType == 'one_way'" ng-class="{'hickwall_td': clusterType == 'bi_direction'}"><span class="hickwall" aria-hidden="true" ng-click="gotoHickwall(clusterName,shard.shardTbl.shardName,redis.redisIp, redis.redisPort)"></span></td>
                             <td ng-if="clusterType == 'bi_direction'" class="hickwall_td">
                                 <span  class="hickwall" aria-hidden="true" ng-click="gotoOutComingTrafficToPeerHickwall(redis.redisIp, redis.redisPort)"></span>
                             </td>

@@ -74,7 +74,8 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
                 if ((clusterType.equals(ClusterType.BI_DIRECTION) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof BiDirectionSupport)
                         || (clusterType.equals(ClusterType.ONE_WAY) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof OneWaySupport
                         || clusterType.equals(ClusterType.LOCAL_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof LocalDcSupport
-                        || clusterType.equals(ClusterType.SINGLE_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof SingleDcSupport)) {
+                        || clusterType.equals(ClusterType.SINGLE_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof SingleDcSupport
+                        || clusterType.equals(ClusterType.CROSS_DC) && AbstractLeaderAwareHealthCheckActionFactory.this instanceof CrossDcSupport)) {
                     registerTo(instance);
                 }
             }
@@ -92,6 +93,8 @@ public abstract class AbstractLeaderAwareHealthCheckActionFactory<V extends Heal
     }
 
     private void registerTo(V instance) {
+        if(!supportInstnace(instance))
+            return;
         SiteLeaderAwareHealthCheckAction action = create(instance);
         instance.register(action);
         try {
