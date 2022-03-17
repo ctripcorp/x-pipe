@@ -91,7 +91,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
         instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
-        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool()));
+        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(), buildCheckerConfig()));
         return instance;
     }
 
