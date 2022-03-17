@@ -18,7 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Component
-public class CrossDcSentinelHellosAnalyzer extends DefaultSentinelHelloCollector {
+public class CrossDcSentinelHellosCollector extends DefaultSentinelHelloCollector {
 
     @Autowired
     private CheckerConfig checkerConfig;

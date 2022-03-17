@@ -32,7 +32,7 @@ public class CurrentDcSentinelCheckControllerTest extends AbstractCheckerTest {
     private RedisInstanceInfo info;
 
     @InjectMocks
-    private CurrentDcSentinelCheckController controller = new CurrentDcSentinelCheckController(FoundationService.DEFAULT);
+    private CurrentDcSentinelHelloCheckController controller = new CurrentDcSentinelHelloCheckController();
 
     private String dcId = "jq", clusterId = "cluster1", shardId = "shard1";
 

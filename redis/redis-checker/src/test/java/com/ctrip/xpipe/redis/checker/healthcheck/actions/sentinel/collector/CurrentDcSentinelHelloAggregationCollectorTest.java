@@ -4,9 +4,11 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator.CurrentDcSentinelHelloAggregationCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -32,6 +34,9 @@ public class CurrentDcSentinelHelloAggregationCollectorTest extends AbstractChec
     @Mock
     private RedisHealthCheckInstance instance;
 
+    @Mock
+    private CheckerConfig config;
+
     private CurrentDcSentinelHelloAggregationCollector collector;
 
     private HostPort masterAddr = new HostPort("127.0.0.1", 6379);
@@ -44,7 +49,7 @@ public class CurrentDcSentinelHelloAggregationCollectorTest extends AbstractChec
     @Before
     public void setupCurrentDcSentinelHelloAggregationCollectorTest() {
         dcId = FoundationService.DEFAULT.getDataCenter();
-        collector = new CurrentDcSentinelHelloAggregationCollector(metaCache, sentinelHelloCollector, clusterId, shardId);
+        collector = new CurrentDcSentinelHelloAggregationCollector(metaCache, sentinelHelloCollector, clusterId, shardId, config);
         Mockito.when(instance.getCheckInfo())
                 .thenReturn(new DefaultRedisInstanceInfo(dcId, clusterId, shardId, slaveAddr, null, ClusterType.BI_DIRECTION));
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockMeta());

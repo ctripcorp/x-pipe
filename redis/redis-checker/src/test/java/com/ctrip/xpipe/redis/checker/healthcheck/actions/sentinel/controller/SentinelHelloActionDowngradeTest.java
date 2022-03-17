@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -9,7 +9,10 @@ import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator.OneWaySentinelCheckAggregationCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
@@ -65,7 +68,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
     private int sentinelSubTimeout = 500;
 
     @InjectMocks
-    private SentinelCheckDowngradeManager checkActionController;
+    private OneWaySentinelHelloCheckController checkActionController;
 
     @Mock
     private MetaCache metaCache;
@@ -86,7 +89,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
 
     private ClusterHealthCheckInstance instance;
 
-    private SentinelCheckDowngradeCollectorController downgradeController;
+    private OneWaySentinelCheckAggregationCollector downgradeController;
 
     private static final String activeDc = "dc1";
 
@@ -100,7 +103,7 @@ public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
         ((DefaultClusterHealthCheckInstance)instance).setHealthCheckConfig(healthCheckConfig);
         when(healthCheckConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence,metaCache,instanceManager);
-        downgradeController = new SentinelCheckDowngradeCollectorController(metaCache, sentinelHelloCollector, clusterName, shardName, checkerConfig);
+        downgradeController = new OneWaySentinelCheckAggregationCollector(metaCache, sentinelHelloCollector, clusterName, shardName, checkerConfig);
         downgradeController = Mockito.spy(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
         checkActionController.addCheckCollectorController(clusterName, shardName, downgradeController);
