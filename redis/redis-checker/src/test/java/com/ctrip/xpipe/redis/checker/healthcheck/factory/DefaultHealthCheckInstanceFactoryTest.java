@@ -60,6 +60,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         Assert.assertNotNull(instance.getEndpoint());
         Assert.assertNotNull(instance.getHealthCheckConfig());
         Assert.assertNotNull(instance.getCheckInfo());
+        Assert.assertNotNull(instance.getCheckInfo().getRedisCheckRules());
         Assert.assertNotNull(instance.getRedisSession());
 
         Assert.assertEquals(instance.getEndpoint(), new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort()));
@@ -109,7 +110,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
     protected RedisMeta normalRedisMeta() {
         DcMeta dcMeta = new DcMeta().setId("dc");
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString());
+        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString()).setActiveRedisCheckRules("0,1");
         ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
         RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
         return redisMeta;

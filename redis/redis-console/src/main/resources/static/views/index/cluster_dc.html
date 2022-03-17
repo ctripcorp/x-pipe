@@ -36,9 +36,10 @@
 					<span class="label label-info arrowed-right arrowed-in"
 						ng-if="isActiveDc(dc.id)">主数据中心</span>
 					<span class="label label-warning label-sm"
-						ng-if="!isActiveDc(dc.id)">从数据中心</span>
+						ng-if="notActiveDc(dc.id)">从数据中心</span>
+                    <span ng-if="isCrossDc()">-</span>
                 <td>
-                    <a ng-if="!isActiveDc(dc.id)"
+                    <a ng-if="notActiveDc(dc.id)"
                        ng-click="preUnbindDc(dc)">解除绑定</a>
                 </td>
             </tr>

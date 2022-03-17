@@ -48,7 +48,9 @@ public interface ClusterService {
 
 	List<ClusterListUnhealthyClusterModel> findUnhealthyClusters();
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
+	List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType);
 	List<ClusterTbl> findActiveClustersByDcName(String dcName);
+	List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType);
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
 
 	List<ClusterTbl> findAllClusterByKeeperContainer(long keeperContainerId);

@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -406,8 +407,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		queryHandler.handleQuery(new DalQuery<Integer>() {
 			@Override
 			public Integer doQuery() throws DalException {
-				if (consoleConfig.supportSentinelHealthCheck(ClusterType.lookup(cluster.getClusterType()), clusterName))
-					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName()));
+				ClusterType clusterType=ClusterType.lookup(cluster.getClusterType());
+				if (consoleConfig.supportSentinelHealthCheck(clusterType, clusterName))
+					return clusterDao.bindDc(cluster, dc, sentinelBalanceService.selectSentinel(dc.getDcName(), clusterType));
 				else
 					return clusterDao.bindDc(cluster, dc, null);
 			}
@@ -606,11 +608,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType) {
+		List<ClusterTbl> dcClusters = findAllClusterByDcNameBind(dcName);
+		if(clusterType.isEmpty()) return dcClusters;
+		return dcClusters.stream().filter(clusterTbl -> clusterTbl.getClusterType().equalsIgnoreCase(clusterType)).collect(Collectors.toList());
+	}
+
+	@Override
 	public List<ClusterTbl> findActiveClustersByDcName(String dcName){
 		if (StringUtil.isEmpty(dcName))
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	@Override
+	public List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType) {
+		List<ClusterTbl> dcActiveClusters = findActiveClustersByDcName(dcName);
+		if(clusterType.isEmpty()) return dcActiveClusters;
+		return dcActiveClusters.stream().filter(clusterTbl -> clusterTbl.getClusterType().equalsIgnoreCase(clusterType)).collect(Collectors.toList());
 	}
 
 	@Override

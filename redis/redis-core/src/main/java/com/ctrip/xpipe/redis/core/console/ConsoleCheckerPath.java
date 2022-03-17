@@ -7,6 +7,8 @@ package com.ctrip.xpipe.redis.core.console;
 public class ConsoleCheckerPath {
 
     private ConsoleCheckerPath() {}
+
+    public static final String PATH_BIND_SHARD_SENTINEL = "/api/bind/shard/sentinels";
     
     public static final String PATH_GET_ALL_META = "/api/meta/divide";
 

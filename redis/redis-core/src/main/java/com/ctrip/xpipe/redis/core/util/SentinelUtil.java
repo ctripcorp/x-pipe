@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.util;
 
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
-import org.unidal.tuple.Triple;
 
 public class SentinelUtil {
 

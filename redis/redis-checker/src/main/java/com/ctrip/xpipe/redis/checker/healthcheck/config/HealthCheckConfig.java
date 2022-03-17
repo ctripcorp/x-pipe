@@ -32,4 +32,6 @@ public interface HealthCheckConfig {
     String getMinDiskLessReplVersion();
 
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
+
+    int getNonCoreCheckIntervalMilli();
 }

@@ -3,9 +3,7 @@ package com.ctrip.xpipe.redis.console.service.vo;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationCluster;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
@@ -28,11 +26,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.mockito.Matchers.anyString;
+import java.util.concurrent.atomic.AtomicReference;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * @author chen.zhu
  * <p>
@@ -71,6 +66,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     @Autowired
     private MigrationService migrationService;
 
+    @Autowired
+    private ConsoleConfig consoleConfig;
+
     private List<DcClusterShardTbl> dcClusterShards;
 
     private DcMetaBuilder builder;
@@ -81,7 +79,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         long dcId = dcNameMap.keySet().iterator().next();
         builder = new DcMetaBuilder(dcMeta, dcId, Collections.singleton(ClusterType.ONE_WAY.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-                new DefaultRetryCommandFactory());
+                new DefaultRetryCommandFactory(), consoleConfig);
         builder.execute().get();
 
         logger.info("[beforeDcMetaBuilderTest] dcId: {}", dcId);
@@ -95,9 +93,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         testBuildMetaForClusterType(ClusterType.BI_DIRECTION, 1);
     }
 
-    private void tryCreateClusterMeta(ClusterTbl clusterTbl) {
+    private void tryCreateClusterMeta(ClusterTbl clusterTbl, DcClusterTbl dcClusterTbl) {
         try {
-            builder.getOrCreateClusterMeta(clusterTbl);
+            builder.getOrCreateClusterMeta(clusterTbl, dcClusterTbl);
         } catch (Exception e) {
             logger.info("[tryCreateClusterMeta] create fail", e);
             throw e;
@@ -106,7 +104,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void getOrCreateOneWayClusterMeta() throws Exception {
-        tryCreateClusterMeta(dcClusterShards.get(0).getClusterInfo());
+        tryCreateClusterMeta(dcClusterShards.get(0).getClusterInfo(), dcClusterShards.get(0).getDcClusterInfo());
         ClusterMeta clusterMeta = dcMeta.getClusters().get(dcClusterShards.get(0).getClusterInfo().getClusterName());
         Assert.assertNotNull(clusterMeta);
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
@@ -119,13 +117,15 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
     public void getOrCreateBiDirectionClusterMeta() throws Exception {
         ClusterTbl clusterTbl = clusterService.find("bi-cluster1");
         Assert.assertNotNull(clusterTbl);
-        tryCreateClusterMeta(clusterTbl);
+
+        tryCreateClusterMeta(clusterTbl, dcClusterService.find(1, clusterTbl.getId()));
         ClusterMeta clusterMeta = dcMeta.getClusters().get("bi-cluster1");
         Assert.assertNotNull(clusterMeta);
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION));
         Assert.assertNull(clusterMeta.getActiveDc());
         Assert.assertNull(clusterMeta.getBackupDcs());
         Assert.assertEquals("jq,oy", clusterMeta.getDcs());
+        Assert.assertEquals("1,2",clusterMeta.getActiveRedisCheckRules());
     }
 
     @Test
@@ -134,7 +134,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertNotNull(dcClusterShard);
         ClusterTbl clusterTbl = dcClusterShard.getClusterInfo();
         Assert.assertNotNull(clusterTbl);
-        tryCreateClusterMeta(clusterTbl);
+        tryCreateClusterMeta(clusterTbl, dcClusterShard.getDcClusterInfo());
         ClusterMeta clusterMeta = dcMeta.getClusters().get(dcClusterShard.getClusterInfo().getClusterName());
 
         logger.info("{}", dcClusterShard.getShardInfo());
@@ -164,7 +164,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         clusterModel.setDcs(Lists.newArrayList());
         clusterTbl = clusterService.createCluster(clusterModel);
 
-        dcClusterService.addDcCluster(dcService.getDcName(1), "test-one-dc-cluster");
+//        dcClusterService.addDcCluster(dcService.getDcName(1), "test-one-dc-cluster");
 
         Map<Long, List<DcClusterTbl>> map = Maps.newHashMap();
         map.put(clusterTbl.getId(), Lists.newArrayList(new DcClusterTbl().setClusterId(clusterTbl.getId()).setDcId(1)));
@@ -177,11 +177,13 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
         new DcMetaBuilder(dcMeta, dcId, Collections.singleton(clusterType.toString()),
                 executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
-                new DefaultRetryCommandFactory()).execute().get();
+                new DefaultRetryCommandFactory(),consoleConfig).execute().get();
 
         Assert.assertEquals(clusterSize, dcMeta.getClusters().size());
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
             Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), clusterType));
+            if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION))
+                Assert.assertEquals("1,2", clusterMeta.getActiveRedisCheckRules());
         }
     }
 

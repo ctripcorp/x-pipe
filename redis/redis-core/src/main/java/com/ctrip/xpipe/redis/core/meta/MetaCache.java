@@ -38,6 +38,8 @@ public interface MetaCache {
 
     List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
 
+    List<RedisMeta> getSlavesOfShard(String cluster, String shard);
+
     String getDc(HostPort hostPort);
 
     Pair<String, String> findClusterShardBySentinelMonitor(String monitor);
@@ -59,8 +61,5 @@ public interface MetaCache {
 
     boolean isMetaChain(HostPort src, HostPort dst);
 
-    void pauseUpdate();
-    
-    void continueUpdate();
-    
+    Pair<String, Integer> getMaxMasterCountDc(String clusterName, Set<String> excludedDcs);
 }

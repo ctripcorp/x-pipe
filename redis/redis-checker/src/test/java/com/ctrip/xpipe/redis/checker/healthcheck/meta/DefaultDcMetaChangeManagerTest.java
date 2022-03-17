@@ -2,15 +2,16 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.google.common.collect.Sets;
@@ -37,6 +38,12 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     @Mock
     private HealthCheckEndpointFactory factory;
 
+    @Mock
+    private MetaCache metaCache;
+
+    @Mock
+    private CheckerConfig checkerConfig;
+
     private RedisHealthCheckInstance instance = null;
 
     private Set<HostPort> addedRedises = new HashSet<>();
@@ -58,7 +65,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
             return null;
         }).when(instanceManager).remove(any(HostPort.class));
         
-        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory);
+        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, metaCache, checkerConfig);
     }
 
     private void prepareData(String dc) {
@@ -256,7 +263,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void visitRemovedClusterActiveDc() {
-        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory));
+        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache, checkerConfig));
         manager.compare(getDcMeta("jq"));
 
         DcMeta dcMeta = MetaClone.clone(getDcMeta("jq"));
