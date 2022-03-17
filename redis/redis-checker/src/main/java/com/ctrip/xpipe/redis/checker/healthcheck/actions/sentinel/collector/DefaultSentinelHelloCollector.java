@@ -741,21 +741,15 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     logger.info("[{}-{}][toAdd]master: {}, stl: {}", LOG_TITLE, sentinelMonitorName, trueMaster,
                             toAdd.stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toSet()));
 
-                    SequenceCommandChain removeAndAdd = new SequenceCommandChain(true);
-                    ParallelCommandChain deleteChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
                     ParallelCommandChain addChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-
                     toAdd.forEach((hello) -> {
-                        CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.RemoveAndAdd", hello.toString());
+                        CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Add", hello.toString());
                         HostPort sentinelAddr = hello.getSentinelAddr();
                         Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-                        deleteChain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
                         addChain.add(sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), checkerConfig.getDefaultSentinelQuorumConfig().getQuorum()));
                     });
 
-                    removeAndAdd.add(deleteChain);
-                    removeAndAdd.add(addChain);
-                    removeAndAdd.execute().addListener(innerFuture -> {
+                    addChain.execute().addListener(innerFuture -> {
                         if (innerFuture.isSuccess()) {
                             logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, toAdd);
                         } else {
