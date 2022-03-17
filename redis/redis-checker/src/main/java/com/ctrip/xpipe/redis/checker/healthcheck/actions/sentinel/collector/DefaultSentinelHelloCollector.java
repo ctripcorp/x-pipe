@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
@@ -443,6 +444,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         @Override
                         public void go() throws Exception {
                             SequenceCommandChain chain = new SequenceCommandChain(false);
+                            chain.add(new FindMonitorInfoFromMissingSentinels());
                             chain.add(new CheckTrueMaster());
                             chain.add(new AnalyseHellos());
                             chain.add(new AcquireLeakyBucket());
@@ -476,6 +478,59 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         @Override
         public String getName() {
             return getClass().getSimpleName();
+        }
+
+        class FindMonitorInfoFromMissingSentinels extends AbstractCommand<Void> {
+            @Override
+            public String getName() {
+                return "FindMonitorInfoFromMissingSentinels";
+            }
+
+            @Override
+            protected void doExecute() throws Throwable {
+                Set<HostPort> missingSentinels = new HashSet<>();
+                sentinels.forEach(sentinel -> {
+                    if (!foundInHellos(sentinel))
+                        missingSentinels.add(sentinel);
+                });
+                if (missingSentinels.isEmpty())
+                    future().setSuccess();
+                else {
+                    Map<HostPort, SentinelHello> monitors = new ConcurrentHashMap<>();
+                    ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+                    sentinels.forEach(sentinel -> {
+                        Command<HostPort> command = sentinelManager.getMasterOfMonitor(new Sentinel(String.format("%s:%d", sentinel.getHost(), sentinel.getPort()), sentinel.getHost(), sentinel.getPort()), sentinelMonitorName);
+                        command.future().addListener(innerFuture -> {
+                            if (innerFuture.isSuccess()) {
+                                monitors.put(sentinel, new SentinelHello(sentinel, innerFuture.get(), sentinelMonitorName));
+                                logger.info("[{}-{}+{}][getMasterOfMonitor]{},{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.get());
+                            } else {
+                                logger.warn("[{}-{}+{}][getMasterOfMonitor]{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.cause());
+                            }
+                        });
+                        chain.add(command);
+                    });
+                    chain.execute().addListener(future -> {
+                        if (!monitors.isEmpty()) {
+                            hellos.addAll(monitors.values());
+                        }
+                        future().setSuccess();
+                    });
+                }
+            }
+
+            boolean foundInHellos(HostPort sentinel) {
+                for (SentinelHello sentinelHello : hellos) {
+                    if (sentinelHello.getSentinelAddr().equals(sentinel))
+                        return true;
+                }
+                return false;
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
         }
 
         class CheckTrueMaster extends AbstractCommand<Void> {
