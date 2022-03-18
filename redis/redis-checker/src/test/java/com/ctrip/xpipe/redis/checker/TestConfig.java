@@ -259,4 +259,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public Map<String, String> sentinelMasterConfig() {
         return null;
     }
+
+    @Override
+    public long subscribeTimeoutMilli() {
+        return 5000L;
+    }
 }

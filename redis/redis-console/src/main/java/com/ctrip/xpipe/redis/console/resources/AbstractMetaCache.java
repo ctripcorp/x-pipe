@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * @author lishanglin
@@ -273,6 +274,14 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+        if (null == shardMeta) return Collections.emptyList();
+        return shardMeta.getRedises().stream().filter(redisMeta -> !redisMeta.isMaster()).collect(Collectors.toList());
+    }
+
+    @Override
     public List<RedisMeta> getSlavesOfShard(String cluster, String shard) {
         List<RedisMeta> slaves = new ArrayList<>();
         XpipeMetaManager xpipeMetaManager = meta.getValue();
@@ -286,6 +295,19 @@ public abstract class AbstractMetaCache implements MetaCache {
             }
         });
         return slaves;
+    }
+
+    @Override
+    public List<RedisMeta> getAllInstancesOfShard(String cluster, String shard) {
+        List<RedisMeta> instances = new ArrayList<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.doGetDcs().forEach(dc -> {
+            ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+            if (shardMeta != null) {
+                instances.addAll(shardMeta.getRedises());
+            }
+        });
+        return instances;
     }
 
     @Override
