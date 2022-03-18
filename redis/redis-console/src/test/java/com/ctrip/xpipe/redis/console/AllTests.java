@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareReques
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTest;
+import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.ExclusiveThreadsForMigrationTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
@@ -66,6 +67,7 @@ import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServi
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
+import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -182,6 +184,8 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconMetaServiceImplTest.class,
         BeaconMigrationServiceImplTest.class,
         MigrationApiTest.class,
+        ExclusiveThreadsForMigrationTest.class,
+        XPipeHandlerMethodCommandTest.class,
 
         MigrationPreCheckCmdTest.class,
         MigrationFetchProcessingEventCmdTest.class,
