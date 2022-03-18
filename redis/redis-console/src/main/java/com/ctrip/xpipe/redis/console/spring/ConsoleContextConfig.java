@@ -48,7 +48,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"})
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
-public class ConsoleContextConfig implements WebMvcRegistrations {
+public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
@@ -150,8 +150,4 @@ public class ConsoleContextConfig implements WebMvcRegistrations {
 		return FoundationService.DEFAULT;
 	}
 
-	@Override
-	public RequestMappingHandlerAdapter getRequestMappingHandlerAdapter() {
-		return new XPipeHandlerAdapter();
-	}
 }
