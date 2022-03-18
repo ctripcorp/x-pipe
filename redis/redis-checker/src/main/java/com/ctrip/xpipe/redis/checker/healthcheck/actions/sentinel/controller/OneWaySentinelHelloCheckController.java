@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
+package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -6,7 +6,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggregator.OneWaySentinelCheckAggregationCollector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -20,7 +24,7 @@ import java.util.Map;
 
 
 @Component
-public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHelloCollector, SentinelActionController {
+public class OneWaySentinelHelloCheckController implements OneWaySupport, SentinelHelloCollector, SentinelActionController {
 
     @Autowired
     private MetaCache metaCache;
@@ -32,7 +36,7 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
     @Qualifier("defaultSentinelHelloCollector")
     private DefaultSentinelHelloCollector sentinelAdjuster;
 
-    private Map<Pair<String, String>, SentinelCheckDowngradeCollectorController> controllerMap = Maps.newConcurrentMap();
+    private Map<Pair<String, String>, OneWaySentinelCheckAggregationCollector> controllerMap = Maps.newConcurrentMap();
 
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
@@ -49,28 +53,28 @@ public class SentinelCheckDowngradeManager implements OneWaySupport, SentinelHel
 
     @Override
     public void stopWatch(HealthCheckAction action) {
-        for (SentinelCheckDowngradeCollectorController sentinelCheckDowngradeCollectorController : controllerMap.values())
-            sentinelCheckDowngradeCollectorController.stopWatch(action);
+        for (OneWaySentinelCheckAggregationCollector collector : controllerMap.values())
+            collector.stopWatch(action);
         controllerMap.clear();
     }
 
-    private SentinelCheckDowngradeCollectorController getCheckCollectorController(String cluster, String shard) {
+    private OneWaySentinelCheckAggregationCollector getCheckCollectorController(String cluster, String shard) {
         Pair<String, String> key = new Pair<>(cluster, shard);
-        return MapUtils.getOrCreate(controllerMap, key, new ObjectFactory<SentinelCheckDowngradeCollectorController>() {
+        return MapUtils.getOrCreate(controllerMap, key, new ObjectFactory<OneWaySentinelCheckAggregationCollector>() {
             @Override
-            public SentinelCheckDowngradeCollectorController create() {
-                return new SentinelCheckDowngradeCollectorController(metaCache, sentinelAdjuster, cluster, shard, checkerConfig);
+            public OneWaySentinelCheckAggregationCollector create() {
+                return new OneWaySentinelCheckAggregationCollector(metaCache, sentinelAdjuster, cluster, shard, checkerConfig);
             }
         });
     }
 
     @VisibleForTesting
-    protected void addCheckCollectorController(String cluster, String shard, SentinelCheckDowngradeCollectorController collectorController) {
+    protected void addCheckCollectorController(String cluster, String shard, OneWaySentinelCheckAggregationCollector collectorController) {
         controllerMap.put(Pair.of(cluster, shard), collectorController);
     }
 
     @VisibleForTesting
-    protected Map<Pair<String, String>, SentinelCheckDowngradeCollectorController> getAllCheckCollectorControllers() {
+    protected Map<Pair<String, String>, OneWaySentinelCheckAggregationCollector> getAllCheckCollectorControllers() {
         return controllerMap;
     }
 

@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.redis;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -114,6 +116,27 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
             logger.info("sentinelMonitor:{}", manager.monitorMaster(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test+credis_trocks_test_1+TROCKS", new HostPort("10.2.27.55", 6399), 3).execute().get(1000, TimeUnit.MILLISECONDS));
         } catch (Exception e) {
             logger.error("sentinelMonitor failed", e);
+        }
+    }
+
+    @Test
+    public void sentinelMaster() throws Exception {
+        Command<HostPort> command = manager.getMasterOfMonitor(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test1+credis_trocks_test_1+TROCKS");
+        command.future().addListener(inner -> {
+            if (inner.isSuccess()) {
+                logger.info("sentinel master :{}", inner.get());
+            } else {
+                logger.error("sentinel master failed", inner.cause());
+                Assert.assertTrue(inner.cause() instanceof com.ctrip.xpipe.redis.core.protocal.error.RedisError);
+                Assert.assertEquals("ERR No such master with that name",inner.cause().getMessage());
+                logger.info("getMessage :{}", inner.cause().getMessage());
+            }
+        });
+
+        try {
+            command.execute().get(1000, TimeUnit.MILLISECONDS);
+        }catch (Exception e){
+            logger.warn("sentinel master failed",e);
         }
     }
 

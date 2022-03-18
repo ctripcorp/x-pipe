@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
@@ -27,6 +28,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionMana
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.exception.NoResourceException;
+import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
@@ -95,6 +97,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     private ScheduledExecutorService scheduled;
 
     private Map<ClusterType, String[]> clusterTypeSentinelConfig = new HashMap<>();
+
+    public static final String NO_SUCH_MASTER = "ERR No such master with that name";
 
     @PostConstruct
     public void postConstruct() {
@@ -419,6 +423,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         private final Set<SentinelHello> hellos ;
         private final String sentinelMonitorName;
         private final Set<HostPort> sentinels ;
+        private final Map<HostPort, SentinelHello> missingSentinelMonitors = new ConcurrentHashMap<>();
+        private final Map<HostPort, Throwable> networkErrorSentinels = new ConcurrentHashMap<>();
         private HostPort trueMaster = null;
         private final Set<SentinelHello> toDelete = new HashSet<>();
         private final Set<SentinelHello> toAdd = new HashSet<>();
@@ -443,6 +449,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         @Override
                         public void go() throws Exception {
                             SequenceCommandChain chain = new SequenceCommandChain(false);
+                            chain.add(new FindMonitorInfoFromMissingSentinels());
                             chain.add(new CheckTrueMaster());
                             chain.add(new AnalyseHellos());
                             chain.add(new AcquireLeakyBucket());
@@ -476,6 +483,83 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         @Override
         public String getName() {
             return getClass().getSimpleName();
+        }
+
+        class FindMonitorInfoFromMissingSentinels extends AbstractCommand<Void> {
+
+            @Override
+            public String getName() {
+                return "FindMonitorInfoFromMissingSentinels";
+            }
+
+            @Override
+            protected void doExecute() throws Throwable {
+                Set<HostPort> missingSentinels = missingSentinels();
+                if (missingSentinels.isEmpty())
+                    future().setSuccess();
+                else {
+                    ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+                    missingSentinels.forEach(sentinel -> chain.add(sentinelMaster(sentinel)));
+                    chain.execute().addListener(future -> {
+                        if (majoritySentinelsNetworkError()) {
+                            logger.warn("[{}-{}+{}] {} lost connection to majority sentinels : {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, networkErrorSentinels.keySet());
+                            String message = String.format("monitorName:%s, network error sentinels :%s", sentinelMonitorName, networkErrorSentinels.keySet());
+                            alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(), ALERT_TYPE.MAJORITY_SENTINELS_NETWORK_ERROR, message);
+                            future().setFailure(new SentinelsException(message));
+                        } else {
+                            if (!missingSentinelMonitors.isEmpty()) {
+                                hellos.addAll(missingSentinelMonitors.values());
+                            }
+                            future().setSuccess();
+                        }
+                    });
+                }
+            }
+
+            boolean majoritySentinelsNetworkError() {
+                return networkErrorSentinels.size() >= checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
+            }
+
+            Set<HostPort> missingSentinels() {
+                Set<HostPort> missingSentinels = new HashSet<>();
+                sentinels.forEach(sentinel -> {
+                    if (!foundInHellos(sentinel))
+                        missingSentinels.add(sentinel);
+                });
+                return missingSentinels;
+            }
+
+            boolean foundInHellos(HostPort sentinel) {
+                for (SentinelHello sentinelHello : hellos) {
+                    if (sentinelHello.getSentinelAddr().equals(sentinel))
+                        return true;
+                }
+                return false;
+            }
+
+            Command<HostPort> sentinelMaster(HostPort sentinel) {
+                Command<HostPort> command = sentinelManager.getMasterOfMonitor(new Sentinel(String.format("%s:%d", sentinel.getHost(), sentinel.getPort()), sentinel.getHost(), sentinel.getPort()), sentinelMonitorName);
+                command.future().addListener(innerFuture -> {
+                    if (innerFuture.isSuccess()) {
+                        missingSentinelMonitors.put(sentinel, new SentinelHello(sentinel, innerFuture.get(), sentinelMonitorName));
+                        logger.info("[{}-{}+{}][getMasterOfMonitor]{},{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.get());
+                    } else {
+                        if (networkError(innerFuture.cause()))
+                            networkErrorSentinels.put(sentinel, innerFuture.cause());
+                        logger.warn("[{}-{}+{}][getMasterOfMonitor]{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.cause());
+                    }
+                });
+                return command;
+            }
+
+            boolean networkError(Throwable th) {
+                return (th instanceof CommandTimeoutException) || (th instanceof SocketException);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
         }
 
         class CheckTrueMaster extends AbstractCommand<Void> {
@@ -575,7 +659,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos));
                 // check wrong master hellos
                 checkWrongMasterHellos(hellos, trueMaster);
-                // check add
+                // check add,ignore network error sentinels
+                sentinels.removeAll(networkErrorSentinels.keySet());
                 toAdd.addAll(checkToAdd(info.getClusterId(), info.getShardId(), sentinelMonitorName, sentinels, hellos, trueMaster, checkerConfig.getDefaultSentinelQuorumConfig()));
 
                 future().setSuccess();
@@ -686,21 +771,15 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     logger.info("[{}-{}][toAdd]master: {}, stl: {}", LOG_TITLE, sentinelMonitorName, trueMaster,
                             toAdd.stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toSet()));
 
-                    SequenceCommandChain removeAndAdd = new SequenceCommandChain(true);
-                    ParallelCommandChain deleteChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
                     ParallelCommandChain addChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-
                     toAdd.forEach((hello) -> {
-                        CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.RemoveAndAdd", hello.toString());
+                        CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Add", hello.toString());
                         HostPort sentinelAddr = hello.getSentinelAddr();
                         Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-                        deleteChain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
                         addChain.add(sentinelManager.monitorMaster(sentinel, hello.getMonitorName(), hello.getMasterAddr(), checkerConfig.getDefaultSentinelQuorumConfig().getQuorum()));
                     });
 
-                    removeAndAdd.add(deleteChain);
-                    removeAndAdd.add(addChain);
-                    removeAndAdd.execute().addListener(innerFuture -> {
+                    addChain.execute().addListener(innerFuture -> {
                         if (innerFuture.isSuccess()) {
                             logger.info("[{}-{}][added]{}", LOG_TITLE, sentinelMonitorName, toAdd);
                         } else {
