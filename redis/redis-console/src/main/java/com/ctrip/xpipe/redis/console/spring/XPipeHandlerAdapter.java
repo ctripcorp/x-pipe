@@ -21,16 +21,24 @@ import java.util.concurrent.TimeUnit;
  */
 public class XPipeHandlerAdapter extends RequestMappingHandlerAdapter implements HandlerAdapter, Ordered {
 
-    public static int CORE_POOl_SIZE = 10;
+    public static int TASK_QUEUE_SIZE = 200;
+    public static int CORE_POOl_SIZE = 200;
     public static int MAX_POOl_SIZE = 600;
     public static int KEEP_ALIVE_SECONDS = 60;
 
-    public Executor executor = new ThreadPoolExecutor(CORE_POOl_SIZE, MAX_POOl_SIZE,
-            KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, new TaskQueue(),
-            new TaskThreadFactory("xpipe-handler-adapter-exec-", true, Thread.NORM_PRIORITY));
+    public Executor executor = executor();
 
     @Autowired
     private ConsoleConfig config;
+
+    private ThreadPoolExecutor executor() {
+        TaskQueue taskqueue = new TaskQueue(TASK_QUEUE_SIZE);
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(CORE_POOl_SIZE, MAX_POOl_SIZE,
+                KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, taskqueue,
+                new TaskThreadFactory("xpipe-handler-adapter-exec-", true, Thread.NORM_PRIORITY));
+        taskqueue.setParent(executor);
+        return executor;
+    }
 
     @Override
     protected ServletInvocableHandlerMethod createInvocableHandlerMethod(HandlerMethod handlerMethod) {
