@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.aggr
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -62,4 +63,13 @@ public class CrossDcSentinelHelloCheckController implements CrossDcSupport, Sent
         });
     }
 
+    @VisibleForTesting
+    Map<Pair<String, String>, CrossDcSentinelHelloAggregationCollector> getCollectors() {
+        return collectors;
+    }
+
+    @VisibleForTesting
+    void addCollector(String cluster, String shard, CrossDcSentinelHelloAggregationCollector collector) {
+        this.collectors.put(new Pair<>(cluster, shard), collector);
+    }
 }

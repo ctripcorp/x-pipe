@@ -29,7 +29,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
 
     private T realCollector;
 
-    protected static Logger logger = LoggerFactory.getLogger(OneWaySentinelCheckAggregationCollector.class);
+    protected static Logger logger = LoggerFactory.getLogger(AbstractAggregationCollector.class);
 
     protected Set<HostPort> checkFinishedInstance = new HashSet<>();
 
@@ -44,6 +44,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     protected CheckerConfig checkerConfig;
 
     protected AtomicBoolean needDowngrade = new AtomicBoolean(false);
+    protected AtomicBoolean allCollected = new AtomicBoolean(false);
 
     public AbstractAggregationCollector(T sentinelHelloCollector, String clusterId, String shardId, CheckerConfig config) {
         this.realCollector = sentinelHelloCollector;
@@ -66,13 +67,15 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
 
                 int collectedInstanceCount = collectHello(context);
                 if (allInstancesCollected(collectedInstanceCount)) {
-                    if (!needDowngrade.get() && shouldDowngrade(info)) {
-                        logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
-                        beginDowngrade();
-                    } else {
-                        logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
-                        handleAllHellos(context.instance());
-                        endDowngrade();
+                    if (allCollected.compareAndSet(false, true)) {
+                        if (!needDowngrade.get() && shouldDowngrade(info)) {
+                            logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
+                            beginDowngrade();
+                        } else {
+                            logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
+                            handleAllHellos(context.instance());
+                            endDowngrade();
+                        }
                     }
                 }
             }
@@ -171,6 +174,7 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
         this.checkFinishedInstance.clear();
         this.checkFailInstance.clear();
         this.checkResult.clear();
+        this.allCollected.set(false);
     }
 
     @VisibleForTesting

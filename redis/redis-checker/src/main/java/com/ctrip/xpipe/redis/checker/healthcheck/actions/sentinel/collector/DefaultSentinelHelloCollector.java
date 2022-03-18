@@ -28,9 +28,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionMana
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.exception.NoResourceException;
+import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
+import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
@@ -96,6 +98,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
     private ScheduledExecutorService scheduled;
 
     private Map<ClusterType, String[]> clusterTypeSentinelConfig = new HashMap<>();
+
+    public static final String NO_SUCH_MASTER = "ERR No such master with that name";
 
     @PostConstruct
     public void postConstruct() {
@@ -481,6 +485,9 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         }
 
         class FindMonitorInfoFromMissingSentinels extends AbstractCommand<Void> {
+            private final Map<HostPort, SentinelHello> missingSentinelMonitors = new ConcurrentHashMap<>();
+            private final Map<HostPort, Throwable> unconnectedSentinels = new ConcurrentHashMap<>();
+
             @Override
             public String getName() {
                 return "FindMonitorInfoFromMissingSentinels";
@@ -488,35 +495,39 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
             @Override
             protected void doExecute() throws Throwable {
+                Set<HostPort> missingSentinels = missingSentinels();
+                if (missingSentinels.isEmpty())
+                    future().setSuccess();
+                else {
+                    ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+                    missingSentinels.forEach(sentinel -> chain.add(sentinelMaster(sentinel)));
+                    chain.execute().addListener(future -> {
+                        if (majoritySentinelsUnsure()) {
+                            logger.warn("[{}-{}+{}] {} lost connection to majority sentinels : {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, unconnectedSentinels.keySet());
+                            String message = String.format("monitorName:%s, unconnected sentinels :%s", sentinelMonitorName, unconnectedSentinels.keySet());
+                            alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(), ALERT_TYPE.MAJORITY_SENTINELS_UNCONNECTED, message);
+                            future().setFailure(new SentinelsException(message));
+                        } else {
+                            if (!missingSentinelMonitors.isEmpty()) {
+                                hellos.addAll(missingSentinelMonitors.values());
+                            }
+                            future().setSuccess();
+                        }
+                    });
+                }
+            }
+
+            boolean majoritySentinelsUnsure() {
+                return unconnectedSentinels.size() >= checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
+            }
+
+            Set<HostPort> missingSentinels() {
                 Set<HostPort> missingSentinels = new HashSet<>();
                 sentinels.forEach(sentinel -> {
                     if (!foundInHellos(sentinel))
                         missingSentinels.add(sentinel);
                 });
-                if (missingSentinels.isEmpty())
-                    future().setSuccess();
-                else {
-                    Map<HostPort, SentinelHello> monitors = new ConcurrentHashMap<>();
-                    ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-                    sentinels.forEach(sentinel -> {
-                        Command<HostPort> command = sentinelManager.getMasterOfMonitor(new Sentinel(String.format("%s:%d", sentinel.getHost(), sentinel.getPort()), sentinel.getHost(), sentinel.getPort()), sentinelMonitorName);
-                        command.future().addListener(innerFuture -> {
-                            if (innerFuture.isSuccess()) {
-                                monitors.put(sentinel, new SentinelHello(sentinel, innerFuture.get(), sentinelMonitorName));
-                                logger.info("[{}-{}+{}][getMasterOfMonitor]{},{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.get());
-                            } else {
-                                logger.warn("[{}-{}+{}][getMasterOfMonitor]{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.cause());
-                            }
-                        });
-                        chain.add(command);
-                    });
-                    chain.execute().addListener(future -> {
-                        if (!monitors.isEmpty()) {
-                            hellos.addAll(monitors.values());
-                        }
-                        future().setSuccess();
-                    });
-                }
+                return missingSentinels;
             }
 
             boolean foundInHellos(HostPort sentinel) {
@@ -525,6 +536,25 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         return true;
                 }
                 return false;
+            }
+
+            Command<HostPort> sentinelMaster(HostPort sentinel) {
+                Command<HostPort> command = sentinelManager.getMasterOfMonitor(new Sentinel(String.format("%s:%d", sentinel.getHost(), sentinel.getPort()), sentinel.getHost(), sentinel.getPort()), sentinelMonitorName);
+                command.future().addListener(innerFuture -> {
+                    if (innerFuture.isSuccess()) {
+                        missingSentinelMonitors.put(sentinel, new SentinelHello(sentinel, innerFuture.get(), sentinelMonitorName));
+                        logger.info("[{}-{}+{}][getMasterOfMonitor]{},{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.get());
+                    } else {
+                        if (!noSuchMasterError(innerFuture.cause()))
+                            unconnectedSentinels.put(sentinel, innerFuture.cause());
+                        logger.warn("[{}-{}+{}][getMasterOfMonitor]{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.cause());
+                    }
+                });
+                return command;
+            }
+
+            boolean noSuchMasterError(Throwable th) {
+                return (th instanceof RedisError) && th.getMessage().contains(NO_SUCH_MASTER);
             }
 
             @Override

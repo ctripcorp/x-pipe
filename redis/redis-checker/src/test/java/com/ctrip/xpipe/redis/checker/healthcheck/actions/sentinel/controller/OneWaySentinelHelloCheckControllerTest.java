@@ -43,7 +43,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SentinelHelloActionDowngradeTest extends AbstractCheckerTest {
+public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest {
 
     private SentinelCheckStatus activeDcMaster;
     private SentinelCheckStatus activeDcSlave;

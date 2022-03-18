@@ -40,6 +40,15 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         return newRandomRedisHealthCheckInstance(info);
     }
 
+    protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, String activeDc, int port, ClusterType clusterType) throws Exception {
+        RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(currentDc,
+                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+                new HostPort(redisMeta.getIp(), redisMeta.getPort()),
+                activeDc, clusterType);
+        return newRandomRedisHealthCheckInstance(info);
+    }
+
     protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, ClusterType clusterType, int port) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(currentDc,

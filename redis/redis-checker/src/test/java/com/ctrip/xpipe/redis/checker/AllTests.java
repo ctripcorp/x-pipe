@@ -46,12 +46,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloC
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyBucketTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloAggregationCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CurrentDcSentinelCheckControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.SentinelHelloActionDowngradeTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CrossDcSentinelHelloCheckControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CurrentDcSentinelHelloCheckControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.OneWaySentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelBindTaskTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconActiveDcControllerTest;
@@ -97,9 +97,8 @@ import org.junit.runners.Suite;
         DefaultDcMetaChangeManagerTest.class,
         DelayActionTest.class,
         CRDTDelayActionControllerTest.class,
-        CurrentDcSentinelHelloAggregationCollectorTest.class,
         CurrentDcSentinelHelloCollectorTest.class,
-        CurrentDcSentinelCheckControllerTest.class,
+
         RedisMasterControllerTest.class,
         DefaultHealthCheckerMockTest.class,
         ConflictMetricListenerTest.class,
@@ -130,7 +129,10 @@ import org.junit.runners.Suite;
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
         DefaultRouteHealthEventProcessorTest.class,
-        SentinelHelloActionDowngradeTest.class,
+        OneWaySentinelHelloCheckControllerTest.class,
+        CurrentDcSentinelHelloCheckControllerTest.class,
+        CrossDcSentinelHelloCheckControllerTest.class,
+
         SentinelLeakyBucketTest.class,
         CRDTDelayPingActionCollectorTest.class,
         ActionContextRetMessageTest.class,
