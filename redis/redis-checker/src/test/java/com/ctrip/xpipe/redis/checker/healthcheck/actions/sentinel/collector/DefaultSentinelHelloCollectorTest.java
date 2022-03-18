@@ -423,6 +423,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         Sentinel Sentinel5003 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
         Sentinel Sentinel5004 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
 
+//        missing 5000 and 5001
         when(sentinelManager.getMasterOfMonitor(Sentinel5000, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -505,7 +506,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
             }
         });
 
-
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         SentinelActionContext context = new SentinelActionContext(instance, new HashSet<>());
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
@@ -515,6 +515,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
 
+//        5002~5004 read timed out, stop check
         when(sentinelManager.getMasterOfMonitor(Sentinel5002, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -564,12 +565,67 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
             }
         });
 
-
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
         verify(sentinelManager, times(10)).getMasterOfMonitor(any(),any());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+
+//        5000~5002 missing , 5003~5004 read timed out
+        when(sentinelManager.getMasterOfMonitor(Sentinel5002, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new RedisError(NO_SUCH_MASTER));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5003, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5004, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
+        verify(sentinelManager, times(15)).getMasterOfMonitor(any(),any());
+        verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(5)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
     }
 
     @Test

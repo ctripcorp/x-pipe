@@ -32,7 +32,6 @@ import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
@@ -424,6 +423,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         private final Set<SentinelHello> hellos ;
         private final String sentinelMonitorName;
         private final Set<HostPort> sentinels ;
+        private final Map<HostPort, SentinelHello> missingSentinelMonitors = new ConcurrentHashMap<>();
+        private final Map<HostPort, Throwable> networkErrorSentinels = new ConcurrentHashMap<>();
         private HostPort trueMaster = null;
         private final Set<SentinelHello> toDelete = new HashSet<>();
         private final Set<SentinelHello> toAdd = new HashSet<>();
@@ -485,8 +486,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         }
 
         class FindMonitorInfoFromMissingSentinels extends AbstractCommand<Void> {
-            private final Map<HostPort, SentinelHello> missingSentinelMonitors = new ConcurrentHashMap<>();
-            private final Map<HostPort, Throwable> unconnectedSentinels = new ConcurrentHashMap<>();
 
             @Override
             public String getName() {
@@ -502,10 +501,10 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                     ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
                     missingSentinels.forEach(sentinel -> chain.add(sentinelMaster(sentinel)));
                     chain.execute().addListener(future -> {
-                        if (majoritySentinelsUnsure()) {
-                            logger.warn("[{}-{}+{}] {} lost connection to majority sentinels : {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, unconnectedSentinels.keySet());
-                            String message = String.format("monitorName:%s, unconnected sentinels :%s", sentinelMonitorName, unconnectedSentinels.keySet());
-                            alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(), ALERT_TYPE.MAJORITY_SENTINELS_UNCONNECTED, message);
+                        if (majoritySentinelsNetworkError()) {
+                            logger.warn("[{}-{}+{}] {} lost connection to majority sentinels : {}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinelMonitorName, networkErrorSentinels.keySet());
+                            String message = String.format("monitorName:%s, network error sentinels :%s", sentinelMonitorName, networkErrorSentinels.keySet());
+                            alertManager.alert(info.getClusterId(), info.getShardId(), info.getHostPort(), ALERT_TYPE.MAJORITY_SENTINELS_NETWORK_ERROR, message);
                             future().setFailure(new SentinelsException(message));
                         } else {
                             if (!missingSentinelMonitors.isEmpty()) {
@@ -517,8 +516,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 }
             }
 
-            boolean majoritySentinelsUnsure() {
-                return unconnectedSentinels.size() >= checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
+            boolean majoritySentinelsNetworkError() {
+                return networkErrorSentinels.size() >= checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
             }
 
             Set<HostPort> missingSentinels() {
@@ -545,16 +544,16 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         missingSentinelMonitors.put(sentinel, new SentinelHello(sentinel, innerFuture.get(), sentinelMonitorName));
                         logger.info("[{}-{}+{}][getMasterOfMonitor]{},{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.get());
                     } else {
-                        if (!noSuchMasterError(innerFuture.cause()))
-                            unconnectedSentinels.put(sentinel, innerFuture.cause());
+                        if (networkError(innerFuture.cause()))
+                            networkErrorSentinels.put(sentinel, innerFuture.cause());
                         logger.warn("[{}-{}+{}][getMasterOfMonitor]{},{}", LOG_TITLE, info.getClusterId(), info.getShardId(), sentinel, sentinelMonitorName, innerFuture.cause());
                     }
                 });
                 return command;
             }
 
-            boolean noSuchMasterError(Throwable th) {
-                return (th instanceof RedisError) && th.getMessage().contains(NO_SUCH_MASTER);
+            boolean networkError(Throwable th) {
+                return (th instanceof CommandTimeoutException) || (th instanceof SocketException);
             }
 
             @Override
@@ -660,7 +659,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos));
                 // check wrong master hellos
                 checkWrongMasterHellos(hellos, trueMaster);
-                // check add
+                // check add,ignore network error sentinels
+                sentinels.removeAll(networkErrorSentinels.keySet());
                 toAdd.addAll(checkToAdd(info.getClusterId(), info.getShardId(), sentinelMonitorName, sentinels, hellos, trueMaster, checkerConfig.getDefaultSentinelQuorumConfig()));
 
                 future().setSuccess();
