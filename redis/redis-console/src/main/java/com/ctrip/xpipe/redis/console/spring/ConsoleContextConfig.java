@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -131,11 +132,11 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public PersistenceCache persistenceCache3(CheckerConfig config,
-										AlertEventService alertEventService,
-										ConfigDao configDao,
-										DcClusterShardService dcClusterShardService,
-										RedisDao redisDao,
-										ClusterDao clusterDao) {
+											  AlertEventService alertEventService,
+											  ConfigDao configDao,
+											  DcClusterShardService dcClusterShardService,
+											  RedisDao redisDao,
+											  ClusterDao clusterDao) {
 		return new DefaultPersistenceCache(
 				config, 
 				alertEventService,

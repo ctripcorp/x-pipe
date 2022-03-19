@@ -95,9 +95,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
 
         Set<HostPort> expectedRedises = Sets.newHashSet(new HostPort("127.0.0.1", 8100),
-                new HostPort("127.0.0.1", 8101));
+                new HostPort("127.0.0.1", 8101), new HostPort("127.0.0.1", 16479),
+                new HostPort("127.0.0.1", 17479));
         manager.visitAdded(getDcMeta("oy").findCluster("cluster1"));
-        verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
+        verify(instanceManager, times(4)).getOrCreate(any(RedisMeta.class));
         Assert.assertEquals(expectedRedises, addedRedises);
     }
 
@@ -133,6 +134,19 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         future.findCluster("cluster1").getShards().values().iterator().next().getRedises().get(0).setMaster("");
         manager.compare(future);
 
+        // only changed redis reload
+        Mockito.verify(instanceManager, times(1)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).getOrCreate(any(RedisMeta.class));
+    }
+
+    @Test
+    public void testShardConfigChange() throws Exception {
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster1").getShards().values().iterator().next().setSentinelId(100L);
+        manager.compare(future);
+
+        // only redis in changed shard reload
         Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
         Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
     }
@@ -176,8 +190,9 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager.compare(future);
 
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
-        Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 8100), new HostPort("127.0.0.1", 8101)), deletedRedised);
+        Mockito.verify(instanceManager, times(4)).remove(any(HostPort.class));
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 8100), new HostPort("127.0.0.1", 8101),
+                 new HostPort("127.0.0.1", 16479), new HostPort("127.0.0.1", 17479)), deletedRedised);
     }
 
     @Test
