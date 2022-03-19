@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.Shard;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -27,10 +29,14 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
 
     private Consumer<RedisMeta> redisChanged;
 
-    public ClusterMetaComparatorVisitor(Consumer<RedisMeta> redisAdd, Consumer<RedisMeta> redisDelete, Consumer<RedisMeta> redisChanged) {
+    private BiConsumer<ShardMeta, ShardMeta> shardConfigChanged;
+
+    public ClusterMetaComparatorVisitor(Consumer<RedisMeta> redisAdd, Consumer<RedisMeta> redisDelete,
+                                        Consumer<RedisMeta> redisChanged, BiConsumer<ShardMeta, ShardMeta> shardConfigChanged) {
         this.redisAdd = redisAdd;
         this.redisDelete = redisDelete;
         this.redisChanged = redisChanged;
+        this.shardConfigChanged = shardConfigChanged;
     }
 
     @Override
@@ -40,33 +46,37 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
 
     @Override
     public void visitModified(MetaComparator comparator) {
-        ((ShardMetaComparator)comparator).accept(new MetaComparatorVisitor<Redis>() {
-            @Override
-            public void visitAdded(Redis added) {
-                if(added instanceof RedisMeta) {
-                    redisAdd.accept((RedisMeta) added);
-                }
-            }
+        ShardMetaComparator shardMetaComparator = (ShardMetaComparator)comparator;
 
-            @Override
-            public void visitModified(MetaComparator comparator) {
-                logger.info("[visitModified][redis] {}", comparator);
-                RedisComparator redisComparator = (RedisComparator) comparator;
-                Redis current = redisComparator.getCurrent(), future = redisComparator.getFuture();
-                if(current instanceof RedisMeta && future instanceof RedisMeta) {
-                    if(((RedisMeta) current).isMaster() ^ ((RedisMeta) future).isMaster()) {
-                        redisChanged.accept((RedisMeta) future);
+        if (shardMetaComparator.isConfigChange()) {
+            shardConfigChanged.accept(shardMetaComparator.getCurrent(), shardMetaComparator.getFuture());
+        } else {
+            shardMetaComparator.accept(new MetaComparatorVisitor<Redis>() {
+                @Override
+                public void visitAdded(Redis added) {
+                    if(added instanceof RedisMeta) {
+                        redisAdd.accept((RedisMeta) added);
                     }
                 }
-            }
 
-            @Override
-            public void visitRemoved(Redis removed) {
-                if(removed instanceof RedisMeta) {
-                    redisDelete.accept((RedisMeta) removed);
+                @Override
+                public void visitModified(MetaComparator comparator) {
+                    logger.info("[visitModified][redis] {}", comparator);
+                    RedisComparator redisComparator = (RedisComparator) comparator;
+                    Redis future = redisComparator.getFuture();
+                    if (future instanceof RedisMeta) {
+                        redisChanged.accept((RedisMeta) redisComparator.getFuture());
+                    }
                 }
-            }
-        });
+
+                @Override
+                public void visitRemoved(Redis removed) {
+                    if(removed instanceof RedisMeta) {
+                        redisDelete.accept((RedisMeta) removed);
+                    }
+                }
+            });
+        }
     }
 
     @Override

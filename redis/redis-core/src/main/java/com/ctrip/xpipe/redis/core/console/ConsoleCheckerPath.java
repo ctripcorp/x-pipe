@@ -30,6 +30,8 @@ public class ConsoleCheckerPath {
     
     public static final String PATH_GET_CLUSTER_ALERT_WHITE_LIST = PATH_PERSISTENCE + "clusterAlertWhiteList";
 
+    public static final String PATH_GET_MIGRATING_CLUSTER_LIST = PATH_PERSISTENCE + "migratingClusterList";
+
     public static final String PATH_GET_IS_SENTINEL_AUTO_PROCESS = PATH_PERSISTENCE + "isSentinelAutoProcess";
 
     public static final String PATH_GET_IS_ALERT_SYSTEM_ON = PATH_PERSISTENCE + "isAlertSystemOn";

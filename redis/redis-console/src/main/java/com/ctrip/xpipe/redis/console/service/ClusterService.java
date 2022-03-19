@@ -38,6 +38,7 @@ public interface ClusterService {
 	void update(ClusterTbl cluster);
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);
 
+	Set<String> findMigratingClusterNames();
 	List<ClusterTbl> findErrorMigratingClusters();
 	List<ClusterTbl> findMigratingClusters();
 	default void resetClustersStatus(List<Long> ids) {

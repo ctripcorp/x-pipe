@@ -72,6 +72,19 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 		Assert.assertEquals(0, comparator.getMofified().size());
 	}
 
+	@Test
+	public void testConfigChanged() {
+		current.setSentinelId(1L);
+		future.setSentinelId(2L);
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertTrue(comparator.isConfigChange());
+		Assert.assertTrue(comparator.getAdded().isEmpty());
+		Assert.assertTrue(comparator.getRemoved().isEmpty());
+		Assert.assertTrue(comparator.getMofified().isEmpty());
+	}
+
 
 	@Test
 	public void testEqualsWithSentinelIdChanged(){

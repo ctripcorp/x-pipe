@@ -88,7 +88,6 @@
 					AND dct.deleted = 0
 					AND dcst.deleted = 0
 					AND rt.deleted = 0
-					AND ct.is_xpipe_interested = 1
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
@@ -228,6 +227,16 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/> left join  <TABLE name='organization-info'/> on <FIELD name='cluster-org-id'/> = ot.id
 					WHERE <FIELD name='cluster-type' /> = ${cluster-type}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-migrating-clusters" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='status'/> != 'Normal'
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
