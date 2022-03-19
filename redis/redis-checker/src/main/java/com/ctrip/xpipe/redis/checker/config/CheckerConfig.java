@@ -87,6 +87,8 @@ public interface CheckerConfig {
 
     String KEY_NON_CORE_CHECK_INTERVAL = "non.core.check.interval";
 
+    String KEY_SUBSCRIBE_TIMEOUT_MILLI = "checker.subscribe.timeout.milli";
+
     int getRedisReplicationHealthCheckInterval();
 
     int getClusterHealthCheckInterval();
@@ -164,4 +166,6 @@ public interface CheckerConfig {
     Set<String> getOuterClusterTypes();
 
     Map<String, String> sentinelMasterConfig();
+
+    long subscribeTimeoutMilli();
 }

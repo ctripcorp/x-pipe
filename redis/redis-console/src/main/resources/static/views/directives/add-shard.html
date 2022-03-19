@@ -60,7 +60,7 @@
 						<td data-title="'机房'">{{dc.dcName}}</td>
 						<td data-title="'Sentinels'">
 							<select class="form-control" ng-model="currentShard.sentinels[dc.id]"
-								ng-options="sentinel.setinelAddress for sentinel in sentinels[dc.dcName]">
+								ng-options="sentinel.sentinelsAddressString for sentinel in sentinels[dc.dcName]">
 							</select>
 						</td>
 						</tr>

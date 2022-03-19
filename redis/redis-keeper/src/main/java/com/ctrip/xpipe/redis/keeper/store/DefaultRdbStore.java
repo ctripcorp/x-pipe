@@ -179,21 +179,22 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		long lastLogTime = System.currentTimeMillis();
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
 			
-		ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
-		
-		rdbFileListener.onFileData(referenceFileRegion);
-		if(referenceFileRegion.count() <= 0)
-			try {
-				Thread.sleep(1);
-				long currentTime = System.currentTimeMillis();
-				if(currentTime - lastLogTime > 10000){
-					logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}", 
-							status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
-					lastLogTime = currentTime;
+			ReferenceFileRegion referenceFileRegion = referenceFileChannel.readTilEnd();
+
+			rdbFileListener.onFileData(referenceFileRegion);
+			if(referenceFileRegion.count() <= 0) {
+				try {
+					Thread.sleep(1);
+					long currentTime = System.currentTimeMillis();
+					if (currentTime - lastLogTime > 10000) {
+						logger.info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}",
+								status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
+						lastLogTime = currentTime;
+					}
+				} catch (InterruptedException e) {
+					logger.error("[doReadRdbFile]" + rdbFileListener, e);
+					Thread.currentThread().interrupt();
 				}
-			} catch (InterruptedException e) {
-				logger.error("[doReadRdbFile]" + rdbFileListener, e);
-				Thread.currentThread().interrupt();
 			}
 		}
 

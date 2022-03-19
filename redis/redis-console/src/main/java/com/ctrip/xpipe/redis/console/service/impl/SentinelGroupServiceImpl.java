@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -247,14 +248,17 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
     }
 
     @Override
-    public Map<String, SentinelUsageModel> getAllSentinelsUsage() {
+    public Map<String, SentinelUsageModel> getAllSentinelsUsage(String clusterType) {
+        String type = Strings.isNullOrEmpty(clusterType) ? ClusterType.ONE_WAY.name() : clusterType;
         List<SentinelGroupModel> allSentinelGroups = getAllSentinelGroupsWithUsage();
         Map<String, SentinelUsageModel> result = new HashMap<>();
         allSentinelGroups.forEach(sentinelGroupModel -> {
-            Set<String> dcs = sentinelGroupModel.dcInfos().keySet();
-            for (String dc : dcs) {
-                result.putIfAbsent(dc, new SentinelUsageModel(dc));
-                result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
+            if (sentinelGroupModel.getClusterType().equalsIgnoreCase(type)) {
+                Set<String> dcs = sentinelGroupModel.dcInfos().keySet();
+                for (String dc : dcs) {
+                    result.putIfAbsent(dc, new SentinelUsageModel(dc));
+                    result.get(dc).addSentinelUsage(sentinelGroupModel.getSentinelsAddressString(), sentinelGroupModel.getShardCount());
+                }
             }
         });
         return result;

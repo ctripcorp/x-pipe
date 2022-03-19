@@ -32,9 +32,11 @@ import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 
 /**
@@ -47,7 +49,7 @@ import org.springframework.context.annotation.*;
 @ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"})
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
-public class ConsoleContextConfig {
+public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
@@ -148,4 +150,5 @@ public class ConsoleContextConfig {
 	public FoundationService foundationService() {
 		return FoundationService.DEFAULT;
 	}
+
 }

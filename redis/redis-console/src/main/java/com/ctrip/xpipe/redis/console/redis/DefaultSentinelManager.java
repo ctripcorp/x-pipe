@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.redis;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.ExceptionUtils;
@@ -18,7 +20,7 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -29,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static com.ctrip.xpipe.redis.checker.resource.Resource.KEYED_NETTY_CLIENT_POOL;
 import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
@@ -85,148 +88,172 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
 
         logger.info("[removeShardSentinelMonitors]realSentinels: {}", realSentinels);
 
-        for(Sentinel sentinel : realSentinels) {
-
-            removeSentinelMonitor(sentinel, sentinelMonitorName);
+        ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
+        for (Sentinel sentinel : realSentinels) {
+            chain.add(removeSentinelMonitor(sentinel, sentinelMonitorName));
         }
+        chain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+            logger.error("[removeShardSentinelMonitors]realSentinels: {}", realSentinels, throwable);
+            return null;
+        });
+
     }
 
     @Override
-    public HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<HostPort> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
                 .SentinelMaster(clientPool, scheduled, sentinelMonitorName);
         silentCommand(sentinelMaster);
-
-        HostPort result = null;
-        try {
-            result = sentinelMaster.execute().get();
-            logger.info("[getMasterOfMonitor] sentinel master {} from {} : {}", sentinelMonitorName, sentinel, result);
-        } catch (Exception e) {
-            logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
-        }
-        return result;
+        sentinelMaster.future().addListener(innerFuture -> {
+            if (innerFuture.isSuccess()) {
+                logger.info("[getMasterOfMonitor] sentinel master {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.get());
+            } else {
+                logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.cause().getMessage());
+            }
+        });
+        return sentinelMaster;
     }
 
     @Override
-    public void removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<String> removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 
         AbstractSentinelCommand.SentinelRemove sentinelRemove = new AbstractSentinelCommand
                 .SentinelRemove(clientPool, sentinelMonitorName, scheduled);
         silentCommand(sentinelRemove);
-        try {
-            String result = sentinelRemove.execute().get();
-            logger.info("[removeSentinels] sentinel remove {} from {} : {}", sentinelMonitorName, sentinel, result);
-
-        } catch (Exception e) {
-            logger.error("[removeSentinels] sentinel remove {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
-        }
+        sentinelRemove.future().addListener(innerFuture -> {
+            if (innerFuture.isSuccess()) {
+                logger.info("[removeSentinels] sentinel remove {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.get());
+            } else {
+                logger.error("[removeSentinels] sentinel remove {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.cause().getMessage());
+            }
+        });
+        return sentinelRemove;
     }
 
     @Override
-    public String infoSentinel(Sentinel sentinel) {
+    public Command<String> infoSentinel(Sentinel sentinel) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
 
         InfoCommand infoCommand = new InfoCommand(clientPool, InfoCommand.INFO_TYPE.SENTINEL, scheduled);
         infoCommand.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
         silentCommand(infoCommand);
-        try {
-            return infoCommand.execute().get();
-        } catch (Exception e) {
-            logger.error("[infoSentinel] " + sentinel, e);
-        }
-        return null;
+        infoCommand.future().addListener(innerFuture -> {
+            if (!innerFuture.isSuccess()) {
+                logger.error("[infoSentinel] " + sentinel, innerFuture.cause());
+            }
+        });
+        return infoCommand;
     }
 
     @Override
-    public void monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum) {
+    public Command<String> monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-        try {
-            AbstractSentinelCommand.SentinelMonitor command = new AbstractSentinelCommand.SentinelMonitor(clientPool,
-                    scheduled, sentinelMonitorName, master, quorum);
-            silentCommand(command);
-            String result=command.execute().get();
-            logger.info("[monitor] sentinel monitor {} for {} : {}", sentinelMonitorName, sentinel, result);
-        } catch (Exception e) {
-            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
-                logger.error("[monitor] sentinel monitor {} for {} : {}", sentinelMonitorName, sentinel, e.getMessage());
+
+        AbstractSentinelCommand.SentinelMonitor command = new AbstractSentinelCommand.SentinelMonitor(clientPool,
+                scheduled, sentinelMonitorName, master, quorum);
+        silentCommand(command);
+        command.future().addListener(innerFuture -> {
+            if (innerFuture.isSuccess()) {
+                logger.info("[monitor] sentinel monitor {} for {} : {}", sentinelMonitorName, sentinel, innerFuture.get());
             } else {
-                logger.error("[monitor] sentinel monitor {} for {}", sentinelMonitorName, sentinel, e);
+                if (ExceptionUtils.getRootCause(innerFuture.cause()) instanceof CommandTimeoutException) {
+                    logger.error("[monitor] sentinel monitor {} for {} : {}", sentinelMonitorName, sentinel, innerFuture.cause().getMessage());
+                } else {
+                    logger.error("[monitor] sentinel monitor {} for {}", sentinelMonitorName, sentinel, innerFuture.cause());
+                }
             }
-        }
+        });
+        return command;
     }
 
     @Override
-    public List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<List<HostPort>> slaves(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-        try {
-            AbstractSentinelCommand.SentinelSlaves command = new AbstractSentinelCommand.SentinelSlaves(clientPool,
-                    scheduled, sentinelMonitorName);
-            command.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
-            silentCommand(command);
-            return command.execute().get();
-        } catch (Exception e) {
-            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
-                logger.error("[slaves] sentinel slaves {} from {} : {}", sentinelMonitorName, sentinel, e.getMessage());
-            } else {
-                logger.error("[slaves] sentinel slaves {} from {} : {}", sentinelMonitorName, sentinel, e);
+
+        AbstractSentinelCommand.SentinelSlaves command = new AbstractSentinelCommand.SentinelSlaves(clientPool,
+                scheduled, sentinelMonitorName);
+        command.setCommandTimeoutMilli(LONG_SENTINEL_COMMAND_TIMEOUT);
+        silentCommand(command);
+        command.future().addListener(innerFuture -> {
+            if (!innerFuture.isSuccess()) {
+                if (ExceptionUtils.getRootCause(innerFuture.cause()) instanceof CommandTimeoutException) {
+                    logger.error("[slaves] sentinel slaves {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.cause().getMessage());
+                } else {
+                    logger.error("[slaves] sentinel slaves {} from {} : {}", sentinelMonitorName, sentinel, innerFuture.cause());
+                }
             }
-        }
-        return Lists.newArrayList();
+        });
+        return command;
     }
 
     @Override
-    public void reset(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<Long> reset(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-        try {
-            new AbstractSentinelCommand.SentinelReset(clientPool, sentinelMonitorName, scheduled).execute().get();
-            logger.info("[reset] sentinel reset {} for {}", sentinelMonitorName, sentinel);
-        } catch (Exception e) {
-            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
-                logger.error("[reset] sentinel reset {} for {} : {}", sentinelMonitorName, sentinel, e.getMessage());
+
+        AbstractSentinelCommand.SentinelReset sentinelReset = new AbstractSentinelCommand.SentinelReset(clientPool, sentinelMonitorName, scheduled);
+        silentCommand(sentinelReset);
+        sentinelReset.future().addListener(innerFuture -> {
+            if (innerFuture.isSuccess()) {
+                logger.info("[reset] sentinel reset {} for {}", sentinelMonitorName, sentinel);
             } else {
-                logger.error("[reset] sentinel reset {} for {} : {}", sentinelMonitorName, sentinel, e);
+                if (ExceptionUtils.getRootCause(innerFuture.cause()) instanceof CommandTimeoutException) {
+                    logger.error("[reset] sentinel reset {} for {} : {}", sentinelMonitorName, sentinel, innerFuture.cause().getMessage());
+                } else {
+                    logger.error("[reset] sentinel reset {} for {} : {}", sentinelMonitorName, sentinel, innerFuture.cause());
+                }
             }
-        }
+        });
+        return sentinelReset;
     }
 
     @Override
-    public void sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs) {
+    public Command<String> sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-        try {
-            new AbstractSentinelCommand.SentinelSet(clientPool, scheduled, sentinelMonitorName, configs).execute().get();
-            logger.info("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel);
-        } catch (Exception e) {
-            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
-                logger.error("[sentinelSet] sentinel set {} {} for {}, errMsg: {}", sentinelMonitorName, Arrays.toString(configs), sentinel, e.getMessage());
+
+        AbstractSentinelCommand.SentinelSet sentinelSet = new AbstractSentinelCommand.SentinelSet(clientPool, scheduled, sentinelMonitorName, configs);
+        silentCommand(sentinelSet);
+        sentinelSet.future().addListener(innerFuture -> {
+            if (innerFuture.isSuccess()) {
+                logger.info("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel);
             } else {
-                logger.error("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel, e);
+                if (ExceptionUtils.getRootCause(innerFuture.cause()) instanceof CommandTimeoutException) {
+                    logger.error("[sentinelSet] sentinel set {} {} for {}, errMsg: {}", sentinelMonitorName, Arrays.toString(configs), sentinel, innerFuture.cause().getMessage());
+                } else {
+                    logger.error("[sentinelSet] sentinel set {} {} for {}", sentinelMonitorName, Arrays.toString(configs), sentinel, innerFuture.cause());
+                }
             }
-        }
+        });
+        return sentinelSet;
     }
 
     @Override
-    public void sentinelConfigSet(Sentinel sentinel, String configName, String configValue) {
+    public Command<String> sentinelConfigSet(Sentinel sentinel, String configName, String configValue) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
-        try {
-            new AbstractSentinelCommand.SentinelConfigSet(clientPool, scheduled, configName, configValue).execute().get();
-            logger.info("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel);
-        } catch (Exception e) {
-            if (ExceptionUtils.getRootCause(e) instanceof CommandTimeoutException) {
-                logger.error("[sentinelConfigSet] sentinel config set {} {} for {}, errMsg: {}", configName, configValue, sentinel, e.getMessage());
+
+        AbstractSentinelCommand.SentinelConfigSet sentinelConfigSet = new AbstractSentinelCommand.SentinelConfigSet(clientPool, scheduled, configName, configValue);
+        silentCommand(sentinelConfigSet);
+        sentinelConfigSet.future().addListener(innerFuture -> {
+            if (innerFuture.isSuccess()) {
+                logger.info("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel);
             } else {
-                logger.error("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel, e);
+                if (ExceptionUtils.getRootCause(innerFuture.cause()) instanceof CommandTimeoutException) {
+                    logger.error("[sentinelConfigSet] sentinel config set {} {} for {}, errMsg: {}", configName, configValue, sentinel, innerFuture.cause().getMessage());
+                } else {
+                    logger.error("[sentinelConfigSet] sentinel config set {} {} for {}", configName, configValue, sentinel, innerFuture.cause());
+                }
             }
-        }
+        });
+        return sentinelConfigSet;
     }
 
     private boolean checkEmpty(String sentinelMonitorName, String allSentinels) {

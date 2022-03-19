@@ -38,7 +38,11 @@ public interface MetaCache {
 
     List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
 
+    List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard);
+
     List<RedisMeta> getSlavesOfShard(String cluster, String shard);
+
+    List<RedisMeta> getAllInstancesOfShard(String cluster, String shard);
 
     String getDc(HostPort hostPort);
 
