@@ -136,6 +136,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	long getMigrationTimeoutMilli();
 
+	long getServletMethodTimeoutMilli();
+	
 	boolean isRedisConfigCheckMonitorOpen();
 
 	String getRedisConfigCheckRules();

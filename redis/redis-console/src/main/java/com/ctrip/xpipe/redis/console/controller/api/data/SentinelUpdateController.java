@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
@@ -16,10 +17,9 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
-import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractController.CLUSTER_NAME_PATH_VARIABLE;
@@ -156,11 +157,11 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/sentinels/usage", method = RequestMethod.GET)
-    public RetMessage sentinelUsage() {
+    @RequestMapping(value = {"/sentinels/usage/{clusterType}","/sentinels/usage"}, method = RequestMethod.GET)
+    public RetMessage sentinelUsage(@PathVariable(required = false) String clusterType) {
         logger.info("[sentinelUsage] begin to retrieve all sentinels' usage");
         try {
-            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage();
+            Map<String, SentinelUsageModel> sentienlUsage = sentinelGroupService.getAllSentinelsUsage(clusterType);
             return GenericRetMessage.createGenericRetMessage(sentienlUsage);
         } catch (Exception e) {
             logger.error("[sentinelUsage]", e);
@@ -193,11 +194,11 @@ public class SentinelUpdateController {
         }
     }
 
-    @RequestMapping(value = "/dc/sentinels", method = RequestMethod.GET)
-    public RetMessage dcSentinelUsage(@RequestParam String dc) {
+    @RequestMapping(value = {"/dc/sentinels/{clusterType}", "/dc/sentinels"}, method = RequestMethod.GET)
+    public RetMessage dcSentinelUsage(@RequestParam String dc, @PathVariable(required = false) String clusterType) {
         logger.info("[dcSentinelUsage] begin to retrieve {} sentinels' usage", dc);
         try {
-            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage().get(dc.toUpperCase());
+            SentinelUsageModel sentinelUsage = sentinelGroupService.getAllSentinelsUsage(clusterType).get(dc.toUpperCase());
             return GenericRetMessage.createGenericRetMessage(sentinelUsage);
         } catch (Exception e) {
             logger.error("[dcSentinelUsage]", e);
@@ -210,7 +211,7 @@ public class SentinelUpdateController {
         logger.info("[sentinelShards] begin to retrieve {}:{} monitor names", sentinelIp, sentinelPort);
         try {
             List<SentinelShardModel> sentinelShardModels = new ArrayList<>();
-            String info = sentinelManager.infoSentinel(new Sentinel(String.format("%s:%d", sentinelIp, sentinelPort), sentinelIp, sentinelPort));
+            String info = sentinelManager.infoSentinel(new Sentinel(String.format("%s:%d", sentinelIp, sentinelPort), sentinelIp, sentinelPort)).execute().get(2050, TimeUnit.MILLISECONDS);
             SentinelMonitors sentinelMonitors = SentinelMonitors.parseFromString(info);
             sentinelMonitors.getMasters().forEach(master -> {
                 sentinelShardModels.add(new SentinelShardModel(SentinelUtil.getSentinelInfoFromMonitorName(master.getKey()).getShardName(), master.getValue()));
@@ -319,9 +320,17 @@ public class SentinelUpdateController {
         if (sentinelGroupModel != null) {
             String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, dc);
             List<Sentinel> sentinels = sentinelGroupModel.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
+
+
+            ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
             sentinels.forEach(sentinel -> {
-                sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
+                chain.add(sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName));
             });
+            chain.execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                logger.error("removeShardSentinels failed: {},{}", sentinelMonitorName, sentinels, throwable);
+                return null;
+            });
+
         }
     }
 
@@ -349,39 +358,6 @@ public class SentinelUpdateController {
     public RetMessage bindShardSentinels(@PathVariable String dcName, @PathVariable String clusterName, @PathVariable String shardName, @RequestBody SentinelMeta sentinelMeta) {
         logger.info("[bindShardSentinels] begin to bind shard {}:{}:{} with sentinels {}", dcName, clusterName, shardName, sentinelMeta);
         try {
-            if (sentinelMeta == null||Strings.isNullOrEmpty(sentinelMeta.getAddress()))
-                return RetMessage.createFailMessage("sentinel meta address cannot be empty");
-
-            List<HostPort> sentinels = IpUtils.parseAsHostPorts(sentinelMeta.getAddress());
-            if (sentinels.isEmpty())
-                return RetMessage.createFailMessage(String.format("cannot parse sentinel host port from %s", sentinelMeta.getAddress()));
-
-            SentinelTbl sentinel = sentinelService.findByIpPort(sentinels.get(0).getHost(), sentinels.get(0).getPort());
-            if (sentinel == null)
-                return RetMessage.createFailMessage(String.format("sentinel %s:%d not found", sentinels.get(0).getHost(), sentinels.get(0).getPort()));
-
-            List<DcClusterShardTbl> dcClusterShardTbls = new ArrayList<>();
-
-            ClusterTbl clusterTbl = clusterService.find(clusterName);
-            if (clusterTbl == null) {
-                return RetMessage.createFailMessage(String.format("cluster %s not found", clusterName));
-            }
-            if (ClusterType.lookup(clusterTbl.getClusterType()).equals(ClusterType.CROSS_DC)) {
-                dcClusterShardTbls.addAll(dcClusterShardService.find(clusterName, shardName));
-            } else {
-                DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcName, clusterName, shardName);
-                if (dcClusterShardTbl == null)
-                    return RetMessage.createFailMessage(String.format("dc cluster shard not found by %s:%s:%s", dcName, clusterName, shardName));
-
-                dcClusterShardTbls.add(dcClusterShardTbl);
-            }
-
-            for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
-                if (dcClusterShardTbl.getSetinelId() != sentinel.getSentinelGroupId()) {
-                    dcClusterShardService.updateDcClusterShard(dcClusterShardTbl.setSetinelId(sentinel.getSentinelGroupId()));
-                }
-            }
-
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("bindShardSentinels: {}:{}:{}, sentinels:{}", dcName, clusterName, shardName, sentinelMeta.getAddress());
@@ -393,47 +369,17 @@ public class SentinelUpdateController {
         String clusterType = clusterTbl.getClusterType();
         String clusterName = clusterTbl.getClusterName();
 
-        SentinelGroupModel current = sentinelGroupService.findById(dcClusterShardTbl.getSetinelId());
         SentinelGroupModel selected = sentinelBalanceService.selectSentinel(dcName, ClusterType.lookup(clusterType));
         if (dcClusterShardTbl.getSetinelId() == selected.getSentinelGroupId())
             return RetMessage.createSuccessMessage("current sentinel is suitable, no change");
 
         List<DcClusterShardTbl> dcClusterShardTbls = Lists.newArrayList(dcClusterShardTbl);
         if (ClusterType.lookup(clusterType).equals(ClusterType.CROSS_DC)) {
-            dcName = consoleConfig.crossDcSentinelMonitorNameSuffix();
             dcClusterShardTbls = dcClusterShardService.find(clusterName, shardName);
         }
 
         for (DcClusterShardTbl dcClusterShard : dcClusterShardTbls) {
             dcClusterShardService.updateDcClusterShard(dcClusterShard.setSetinelId(selected.getSentinelGroupId()));
-        }
-
-        String sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterName, shardName, dcName);
-        if (current != null) {
-            List<Sentinel> currentSentinels = current.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
-            currentSentinels.forEach(sentinel -> {
-                sentinelManager.removeSentinelMonitor(sentinel, sentinelMonitorName);
-            });
-        }
-
-        List<RedisTbl> redisTbls = new ArrayList<>();
-        for (DcClusterShardTbl dcClusterShard : dcClusterShardTbls)
-            redisTbls.addAll(redisService.findAllByDcClusterShard(dcClusterShard.getDcClusterShardId()));
-
-        HostPort master = null;
-        for (RedisTbl redis : redisTbls) {
-            if (redis.isMaster()) {
-                master = new HostPort(redis.getRedisIp(), redis.getRedisPort());
-                break;
-            }
-        }
-        if (master == null) {
-            return RetMessage.createFailMessage("master is null");
-        }
-
-        List<Sentinel> selectedSentinels = selected.getSentinels().stream().map(sentinelInstanceModel -> new Sentinel(String.format("%s:%d", sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort()), sentinelInstanceModel.getSentinelIp(), sentinelInstanceModel.getSentinelPort())).collect(Collectors.toList());
-        for (Sentinel sentinel : selectedSentinels) {
-            sentinelManager.monitorMaster(sentinel, sentinelMonitorName, master, consoleConfig.getQuorum());
         }
 
         return RetMessage.createSuccessMessage(String.format("sentinel changed to %s", selected.getSentinelsAddressString()));

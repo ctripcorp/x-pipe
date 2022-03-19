@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
@@ -24,6 +25,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
+
+import static org.mockito.Mockito.doAnswer;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
@@ -99,12 +102,26 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
             put(sentinel3, null);
         }};
 
-
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
             Sentinel sentinel = invocation.getArgument(0, Sentinel.class);
             Pair<String, String> clusterShard = clusterShardBySentinel.get(new HostPort(sentinel.getIp(), sentinel.getPort()));
             Mockito.when(metaCache.findClusterShard(Mockito.any())).thenReturn(clusterShard);
-            return Collections.singletonList(new HostPort("127.0.0.1", 7379));
+            return new AbstractCommand<List<HostPort>>() {
+                @Override
+                protected void doExecute() throws Throwable {
+                    future().setSuccess(Collections.singletonList(new HostPort("127.0.0.1", 7379)));
+                }
+
+                @Override
+                protected void doReset() {
+
+                }
+
+                @Override
+                public String getName() {
+                    return null;
+                }
+            };
         }).when(sentinelManager).slaves(Mockito.any(), Mockito.anyString());
 
         Set<SentinelHello> hellos = new HashSet<>();

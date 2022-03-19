@@ -6,6 +6,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.proxy.ProxyEnabledEndpoint;
+import com.ctrip.xpipe.redis.checker.TestConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
@@ -14,10 +15,10 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.PublishCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.SubscribeListener;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
-import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.NaiveNextHopAlgorithm;
 import com.ctrip.xpipe.redis.core.proxy.netty.ProxyEnabledNettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
 import com.ctrip.xpipe.redis.core.proxy.resource.ConsoleProxyResourceManager;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import org.junit.Assert;
@@ -48,7 +49,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         RedisMeta redisMeta = new RedisMeta().setIp("127.0.0.1").setPort(redisPort);
         startRedis(redisMeta);
         endpoint = new DefaultEndPoint(redisMeta.getIp(), redisMeta.getPort());
-        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool());
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), new TestConfig());
     }
 
     @Test
@@ -233,7 +234,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.164:80 TCP://10.5.111.145:6379";
         ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         endpoint = new ProxyEnabledEndpoint("10.5.111.145", 6379, protocol);
-        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool());
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), new TestConfig());
         redisSession.ping(new PingCallback() {
             @Override
             public void pong(String pongMsg) {
@@ -253,7 +254,7 @@ public class RedisSessionTest extends AbstractIntegratedTest {
         String protocolStr = "PROXY ROUTE PROXYTCP://10.5.111.148:80 TCP://10.5.111.145:6379";
         ProxyConnectProtocol protocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         endpoint = new ProxyEnabledEndpoint("10.5.111.145", 6379, protocol);
-        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool());
+        redisSession = new RedisSession(endpoint, scheduled, getReqResNettyClientPool(), new TestConfig());
         redisSession.subscribeIfAbsent(SUBSCRIBE_CHANNEL, new RedisSession.SubscribeCallback() {
             @Override
             public void message(String channel, String message) {

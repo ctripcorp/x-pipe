@@ -184,11 +184,11 @@ public class SentinelGroupServiceTest extends AbstractServiceImplTest {
         Assert.assertEquals(2, crossSentinelsUsage);
 
 
-        Map<String, SentinelUsageModel> allUsages = sentinelGroupService.getAllSentinelsUsage();
+        Map<String, SentinelUsageModel> allUsages = sentinelGroupService.getAllSentinelsUsage(ClusterType.CROSS_DC.name());
         Assert.assertEquals(3, allUsages.size());
-        Assert.assertEquals(4, allUsages.get("jq").getSentinelUsages().size());
-        Assert.assertEquals(3, allUsages.get("oy").getSentinelUsages().size());
-        Assert.assertEquals(2, allUsages.get("fra").getSentinelUsages().size());
+        Assert.assertEquals(2, allUsages.get("jq").getSentinelUsages().size());
+        Assert.assertEquals(2, allUsages.get("oy").getSentinelUsages().size());
+        Assert.assertEquals(1, allUsages.get("fra").getSentinelUsages().size());
     }
 
     @Test

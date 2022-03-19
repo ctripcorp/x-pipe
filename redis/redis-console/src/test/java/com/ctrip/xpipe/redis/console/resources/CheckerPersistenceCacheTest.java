@@ -34,7 +34,9 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
-import java.util.*;
+import java.util.Collections;
+import java.util.Properties;
+import java.util.Set;
 
 import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_PERSISTENCE;
 import static org.mockito.Mockito.when;
@@ -197,7 +199,7 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
         instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
-        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool()));
+        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(),buildCheckerConfig()));
         checkerPersistenceCache.updateRedisRole(instance, Server.SERVER_ROLE.MASTER);
 
         RecordedRequest req = webServer.takeRequest();

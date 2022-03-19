@@ -32,7 +32,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private static final Logger logger = LoggerFactory.getLogger(SentinelHelloCheckAction.class);
 
-    protected static int SENTINEL_COLLECT_INFO_INTERVAL = 10000;
+    public static int SENTINEL_COLLECT_INFO_INTERVAL = 10000;
 
     public static final String HELLO_CHANNEL = "__sentinel__:hello";
 

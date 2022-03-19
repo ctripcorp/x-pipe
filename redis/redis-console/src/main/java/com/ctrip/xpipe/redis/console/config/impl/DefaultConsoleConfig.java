@@ -76,6 +76,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
+    private static final String KEY_SERVLET_METHOD_TIMEOUT_MILLI = "servlet.method.timeout.milli";
+
     private static final String KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN = "cosnole.redis.config.check.open";
 
     private static final String KEY_REDIS_CONFIG_CHECK_RULES = "console.redis.config.check.rules";
@@ -528,6 +530,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
+    public long getServletMethodTimeoutMilli() {
+        return getLongProperty(KEY_SERVLET_METHOD_TIMEOUT_MILLI, 10000L);
+    }
+
     public boolean isRedisConfigCheckMonitorOpen() {
         return getBooleanProperty(KEY_REDIS_CONFIG_CHECK_MONITOR_OPEN, false);
     }
@@ -560,5 +566,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public Map<String, String> sentinelMasterConfig() {
         String property = getProperty(KEY_SENTINEL_MASTER_CONFIG, "{}");
         return JsonCodec.INSTANCE.decode(property, Map.class);
+    }
+
+    @Override
+    public long subscribeTimeoutMilli() {
+        return getLongProperty(KEY_SUBSCRIBE_TIMEOUT_MILLI, 5000L);
     }
 }
