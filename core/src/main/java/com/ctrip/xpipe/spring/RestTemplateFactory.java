@@ -87,7 +87,7 @@ public class RestTemplateFactory {
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient) {
             @Override
             public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
-                logger.info("[rest][{}] {}", httpMethod, uri);
+                logger.debug("[rest][{}] {}", httpMethod, uri);
                 return super.createRequest(uri, httpMethod);
             }
         };
