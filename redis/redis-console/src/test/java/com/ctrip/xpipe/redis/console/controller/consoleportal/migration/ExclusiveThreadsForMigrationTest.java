@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Slight
@@ -41,6 +42,8 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
     private SpringApplicationStarter springApplicationStarter;
     private int port = 8080;
 
+    private static volatile CountDownLatch stopSleep;
+
     @SpringBootApplication
     @RestController
     @RequestMapping("/api")
@@ -48,7 +51,9 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
 
         @GetMapping(value = "/sleep")
         public int syncMigrate() throws InterruptedException {
-            TimeUnit.SECONDS.sleep(60);
+            if (stopSleep != null) {
+                stopSleep.await();
+            }
             return 0;
         }
 
@@ -82,16 +87,21 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
 
     @Before
     public void beforeRestTemplateFactoryTest() throws Exception {
+        restOperations = RestTemplateFactory.createCommonsHttpRestTemplate(2, 2, 1200, 60000);
 
-        restOperations = RestTemplateFactory.createCommonsHttpRestTemplate();
-
-        springApplicationStarter = new SpringApplicationStarter(port, 1, TestDependency.class, SlowController.class, MigrationApi4Beacon.class);
+        springApplicationStarter = new SpringApplicationStarter(port, 1, SlowController.class, TestDependency.class, MigrationApi4Beacon.class);
         springApplicationStarter.start();
     }
 
     @After
     public void afterRestTemplateFactoryTest() throws Exception {
         springApplicationStarter.stop();
+    }
+
+    @Test
+    public void testEnvStartupTime() throws Exception {
+        //do nothing
+        assertTrue(true);
     }
 
 
@@ -105,15 +115,22 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
         migrationReq.setIsForced(true);
         migrationReq.setTargetIDC("OY");
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch threadCreated = new CountDownLatch(1);
+        /* the 2 latches below are used to reduce time cost of test */
+        CountDownLatch sleepResponseReceived = new CountDownLatch(1);
+        stopSleep = new CountDownLatch(1);
+
         Executors.newSingleThreadExecutor().execute(()->{
-            latch.countDown();
+            threadCreated.countDown();
             restOperations.getForObject("http://localhost:" + port + "/api/sleep", Integer.class);
+            sleepResponseReceived.countDown();
         });
 
-        latch.await();
+        threadCreated.await();
         TimeUnit.MILLISECONDS.sleep(50);
         BeaconMigrationResponse response = restOperations.postForObject("http://localhost:" + port + "/api/beacon/migration/sync", migrationReq, BeaconMigrationResponse.class);
         assertEquals("success", response.getMsg());
+        stopSleep.countDown();
+        sleepResponseReceived.await();
     }
 }
