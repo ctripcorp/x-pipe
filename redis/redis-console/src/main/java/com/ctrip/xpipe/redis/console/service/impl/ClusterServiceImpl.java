@@ -508,6 +508,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public Set<String> findMigratingClusterNames() {
+		List<ClusterTbl> clusterTbls = clusterDao.findMigratingClusterNames();
+		return clusterTbls.stream().map(ClusterTbl::getClusterName).collect(Collectors.toSet());
+	}
+
+	@Override
 	public List<ClusterTbl> findErrorMigratingClusters() {
 		List<ClusterTbl> errorClusters = Lists.newArrayList();
 		List<ClusterTbl> clustersWithEvents = clusterDao.findMigratingClustersWithEvents();

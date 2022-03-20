@@ -18,9 +18,6 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
-import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
-import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
-import com.ctrip.xpipe.redis.console.dao.MigrationShardDao;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorServiceManager;
@@ -30,7 +27,6 @@ import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
@@ -51,8 +47,7 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
  * date 2021/3/8
  */
 @Configuration
-@ComponentScan(excludeFilters = { @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {MigrationEventDao.class, MigrationClusterDao.class, MigrationShardDao.class}) },
-        basePackages = { "com.ctrip.xpipe.redis.console.dao", "com.ctrip.xpipe.redis.checker" })
+@ComponentScan(basePackages = { "com.ctrip.xpipe.redis.checker" })
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CHECKER)
 public class CheckerContextConfig {
 
@@ -157,11 +152,6 @@ public class CheckerContextConfig {
     @Bean
     public RemoteCheckerManager remoteCheckerManager(CheckerConfig checkerConfig) {
         return new DefaultRemoteCheckerManager(checkerConfig);
-    }
-
-    @Bean
-    public AlertEventService alertEventService() {
-        return new AlertEventService();
     }
 
     @Bean

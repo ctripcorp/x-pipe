@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -67,11 +68,11 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
 
     @Bean
     public PersistenceCache persistenceCache(CheckerConfig config,
-                                        AlertEventService alertEventService,
-                                        ConfigDao configDao,
-                                        DcClusterShardService dcClusterShardService,
-                                        RedisDao redisDao,
-                                        ClusterDao clusterDao) {
+                                             AlertEventService alertEventService,
+                                             ConfigDao configDao,
+                                             DcClusterShardService dcClusterShardService,
+                                             RedisDao redisDao,
+                                             ClusterDao clusterDao) {
         return new DefaultPersistenceCache(
                 config,
                 alertEventService,

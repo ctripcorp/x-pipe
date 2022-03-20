@@ -150,11 +150,6 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public AlertEventService alertEventService() {
-        return new AlertEventService();
-    }
-
-    @Bean
     @Lazy
     public SentinelManager sentinelManager() {
         return new DefaultSentinelManager();

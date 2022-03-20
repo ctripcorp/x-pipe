@@ -2,9 +2,11 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -19,6 +21,7 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
+import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Sets;
@@ -32,8 +35,10 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
+import java.net.SocketException;
 import java.util.*;
 
+import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector.NO_SUCH_MASTER;
 import static org.mockito.Mockito.*;
 
 /**
@@ -73,6 +78,9 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Mock
     private SentinelLeakyBucket leakyBucket;
 
+    @Mock
+    private PersistenceCache persistenceCache;
+
     private int originTimeout;
 
     @Before
@@ -101,6 +109,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 new HostPort("127.0.0.1", 5003),
                 new HostPort("127.0.0.1", 5004)
         );
+        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(false);
 
     }
 
@@ -386,6 +395,16 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
+    public void testSkipMigratingCluster() throws Exception {
+        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(true);
+        when(checkerConfig.isSentinelRateLimitOpen()).thenReturn(false);
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        sentinelCollector.onAction(new SentinelActionContext(instance, Collections.emptySet()));
+        verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
+    }
+
+    @Test
     public void checkWrongHelloMastersTest() throws Exception {
         Set<SentinelHello> hellos = Sets.newHashSet(
                 new SentinelHello(new HostPort("127.0.0.1", 5000), new HostPort("127.0.0.3", 6379), monitorName),
@@ -413,12 +432,214 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(metaCache.findMaster(cluster, shard)).thenReturn(master);
         when(leakyBucket.tryAcquire()).thenReturn(true);
 
+        Sentinel Sentinel5000 = new Sentinel(new HostPort(LOCAL_HOST, 5000).toString(), LOCAL_HOST, 5000);
+        Sentinel Sentinel5001 = new Sentinel(new HostPort(LOCAL_HOST, 5001).toString(), LOCAL_HOST, 5001);
+        Sentinel Sentinel5002 = new Sentinel(new HostPort(LOCAL_HOST, 5002).toString(), LOCAL_HOST, 5002);
+        Sentinel Sentinel5003 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
+        Sentinel Sentinel5004 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
+
+//        missing 5000 and 5001
+        when(sentinelManager.getMasterOfMonitor(Sentinel5000, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new RedisError(NO_SUCH_MASTER));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5001, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new RedisError(NO_SUCH_MASTER));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        when(sentinelManager.getMasterOfMonitor(Sentinel5002, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(master);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5003, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(master);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5004, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(master);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         SentinelActionContext context = new SentinelActionContext(instance, new HashSet<>());
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
 
+        verify(sentinelManager, times(5)).getMasterOfMonitor(any(),any());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
-        verify(sentinelManager, times(5)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+
+//        5002~5004 read timed out, stop check
+        when(sentinelManager.getMasterOfMonitor(Sentinel5002, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5003, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5004, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
+        verify(sentinelManager, times(10)).getMasterOfMonitor(any(),any());
+        verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+
+//        5000~5002 missing , 5003~5004 read timed out
+        when(sentinelManager.getMasterOfMonitor(Sentinel5002, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new RedisError(NO_SUCH_MASTER));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5003, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5004, monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new SocketException("read timed out"));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
+        verify(sentinelManager, times(15)).getMasterOfMonitor(any(),any());
+        verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(5)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
     }
 
@@ -433,7 +654,40 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
         when(metaCache.findMaster(cluster, shard)).thenReturn(master);
         when(leakyBucket.tryAcquire()).thenReturn(true);
+        Sentinel Sentinel5003 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
+        Sentinel Sentinel5004 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
+        when(sentinelManager.getMasterOfMonitor(Sentinel5003,monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new RedisError(NO_SUCH_MASTER));
+            }
 
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(Sentinel5004,monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(master);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
@@ -443,10 +697,10 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
 
-        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
-        verify(sentinelManager, times(2)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
+        verify(sentinelManager, times(2)).getMasterOfMonitor(any(),any());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(1)).monitorMaster(any(Sentinel.class), anyString(), any(HostPort.class), anyInt());
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003), monitorName, master, quorumConfig.getQuorum());
-        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
     }
 
@@ -507,9 +761,8 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
 
         verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), "monitorName2");
-        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004),  monitorName);
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
     }
@@ -542,8 +795,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
         metaMasterServer.stop();
         verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
-        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName);
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
     }
@@ -564,6 +816,23 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         clusterTypeSentinelConfig.put(ClusterType.ONE_WAY, new String[]{"failover-timeout", "60000"});
         sentinelCollector.setClusterTypeSentinelConfig(clusterTypeSentinelConfig);
 
+        Sentinel sentinel = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
+        when(sentinelManager.getMasterOfMonitor(sentinel,monitorName)).thenReturn(new AbstractCommand<HostPort>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(new RedisError(NO_SUCH_MASTER));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
@@ -574,8 +843,8 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
 
-        Sentinel sentinel = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
-        verify(sentinelManager, times(1)).removeSentinelMonitor(sentinel, monitorName);
+        verify(sentinelManager, times(1)).getMasterOfMonitor(sentinel, monitorName);
+        verify(sentinelManager, never()).removeSentinelMonitor(sentinel, monitorName);
         verify(sentinelManager, times(1)).monitorMaster(sentinel, monitorName, master,quorumConfig.getQuorum());
         verify(sentinelManager, times(1)).sentinelSet(sentinel, monitorName,clusterTypeSentinelConfig.get(ClusterType.ONE_WAY));
 
@@ -583,7 +852,8 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         clusterTypeSentinelConfig.put(ClusterType.CROSS_DC, new String[]{"failover-timeout", "60000"});
 
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
-        verify(sentinelManager, times(2)).removeSentinelMonitor(sentinel, monitorName);
+        verify(sentinelManager, times(2)).getMasterOfMonitor(sentinel, monitorName);
+        verify(sentinelManager, never()).removeSentinelMonitor(sentinel, monitorName);
         verify(sentinelManager, times(2)).monitorMaster(sentinel, monitorName, master,quorumConfig.getQuorum());
         verify(sentinelManager, times(1)).sentinelSet(any(), any(),any());
     }

@@ -151,6 +151,22 @@ public class DefaultSentinelMonitorsCheckTest {
             }
         });
 
+        when(sentinelManager.removeSentinelMonitor(any(),any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess("OK");
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
         when(alertManager.shouldAlert(any())).thenReturn(true);
         when(persistenceCache.isSentinelAutoProcess()).thenReturn(true);
     }
