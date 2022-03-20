@@ -2,14 +2,11 @@ package com.ctrip.xpipe.redis.console.proxy.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SafeLoop;
-import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardPeer;
 import com.ctrip.xpipe.redis.console.proxy.*;
 import com.ctrip.xpipe.redis.console.service.RouteService;
@@ -118,7 +115,7 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
         List<ProxyMonitorCollector> collectors = proxyMonitorCollectorManager.getProxyMonitorResults();
         List<TunnelInfo> tunnels = Lists.newArrayList();
         for(ProxyMonitorCollector collector : collectors) {
-            logger.info("[fullUpdate] {}, {}", collector.getProxyInfo(), collector.getTunnelInfos());
+            logger.debug("[fullUpdate] {}, {}", collector.getProxyInfo(), collector.getTunnelInfos());
             tunnels.addAll(collector.getTunnelInfos());
         }
 

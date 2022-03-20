@@ -362,6 +362,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("哨兵监控与配置不一致", "");
         }
     },
+    MAJORITY_SENTINELS_NETWORK_ERROR("majority_sentinels_network_error", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("超过一半哨兵失联", "");
+        }
+    },
     INSTANCE_SICK_BUT_DELAY_MARK_DOWN("instance_lag_delay_mark_down", EMAIL_XPIPE_ADMIN | EMAIL_DBA) {
         @Override
         public boolean urgent() {

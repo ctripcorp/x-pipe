@@ -39,6 +39,8 @@ public interface CheckerConsoleService {
 
     Set<String> clusterAlertWhiteList(String console);
 
+    Set<String> migratingClusterList(String console);
+
     boolean isSentinelAutoProcess(String console);
 
     boolean isAlertSystemOn(String console);

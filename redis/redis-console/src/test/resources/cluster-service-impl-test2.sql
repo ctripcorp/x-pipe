@@ -16,6 +16,9 @@ insert into REDIS_TBL (id,run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_r
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (101,'cluster101',1,'Cluster:cluster101 , ActiveDC : A','0000000000000000','Normal',1, 1);
 insert into CLUSTER_TBL (id,cluster_name,activedc_id,cluster_description,cluster_last_modified_time,status,is_xpipe_interested, cluster_org_id) values (102,'cluster102',1,'Cluster:cluster102 , ActiveDC : A','0000000000000000','Normal',1, 1);
 
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(101,'cluster101_shard1','cluster101_shard1', 101);
+insert into SHARD_TBL (id,shard_name,setinel_monitor_name,cluster_id) values(102,'cluster101_shard2','cluster101_shard2', 101);
+
 insert into organization_tbl(org_id, org_name) values (1, 'org-1');
 
 

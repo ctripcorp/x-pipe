@@ -19,19 +19,6 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
     }
 
     @Override
-    public boolean isClusterOnMigration(String clusterId) {
-        try {
-            return service.isClusterOnMigration(config.getConsoleAddress(), clusterId);
-        } catch (RestClientException e) {
-            logger.warn("[isClusterOnMigration] rest fail, {}", e.getMessage());
-        } catch (Throwable th) {
-            logger.warn("[isClusterOnMigration] fail", th);
-        }
-
-        return false;
-    }
-
-    @Override
     public void updateRedisRole(RedisHealthCheckInstance instance, Server.SERVER_ROLE role) {
         service.updateRedisRole(config.getConsoleAddress(), instance, role);
     }
@@ -64,6 +51,19 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
             logger.warn("[doClusterAlertWhiteList] rest fail, {}", e.getMessage());
         } catch (Throwable th) {
             logger.warn("[doClusterAlertWhiteList] fail", th);
+        }
+
+        return Collections.emptySet();
+    }
+
+    @Override
+    Set<String> doGetMigratingClusterList() {
+        try {
+            return service.migratingClusterList(config.getConsoleAddress());
+        } catch (RestClientException e) {
+            logger.warn("[doGetMigratingClusterList] rest fail, {}", e.getMessage());
+        } catch (Throwable th) {
+            logger.warn("[doGetMigratingClusterList] fail", th);
         }
 
         return Collections.emptySet();

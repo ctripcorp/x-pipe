@@ -567,4 +567,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
         String property = getProperty(KEY_SENTINEL_MASTER_CONFIG, "{}");
         return JsonCodec.INSTANCE.decode(property, Map.class);
     }
+
+    @Override
+    public long subscribeTimeoutMilli() {
+        return getLongProperty(KEY_SUBSCRIBE_TIMEOUT_MILLI, 5000L);
+    }
 }

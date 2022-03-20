@@ -11,7 +11,8 @@ import org.springframework.web.servlet.HandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod;
 
-import java.util.concurrent.Executor;
+import javax.annotation.PreDestroy;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,10 +27,15 @@ public class XPipeHandlerAdapter extends RequestMappingHandlerAdapter implements
     public static int MAX_POOl_SIZE = 600;
     public static int KEEP_ALIVE_SECONDS = 60;
 
-    public Executor executor = executor();
+    public ExecutorService executor = executor();
 
     @Autowired
     private ConsoleConfig config;
+
+    @PreDestroy
+    public void preDestroy(){
+        executor.shutdown();
+    }
 
     private ThreadPoolExecutor executor() {
         TaskQueue taskqueue = new TaskQueue(TASK_QUEUE_SIZE);
@@ -43,5 +49,10 @@ public class XPipeHandlerAdapter extends RequestMappingHandlerAdapter implements
     @Override
     protected ServletInvocableHandlerMethod createInvocableHandlerMethod(HandlerMethod handlerMethod) {
         return new XPipeServletInvocableHandlerMethod(handlerMethod, executor, config.getServletMethodTimeoutMilli());
+    }
+
+    @Override
+    public int getOrder() {
+        return super.getOrder();
     }
 }
