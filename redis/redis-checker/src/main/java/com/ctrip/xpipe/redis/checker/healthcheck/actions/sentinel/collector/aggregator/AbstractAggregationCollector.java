@@ -69,10 +69,10 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
                 if (allInstancesCollected(collectedInstanceCount)) {
                     if (allCollected.compareAndSet(false, true)) {
                         if (!needDowngrade.get() && shouldDowngrade(info)) {
-                            logger.warn("[{}-{}+{}]backup dc {} sub failed, try to sub from active dc", LOG_TITLE, clusterId, shardId, info.getDcId());
+                            logger.warn("[{}-{}+{}]backup dc or slaves {} sub failed, try to sub from active dc or master", LOG_TITLE, clusterId, shardId, info.getDcId());
                             beginDowngrade();
                         } else {
-                            logger.info("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
+                            logger.debug("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
                             handleAllHellos(context.instance());
                             endDowngrade();
                         }
