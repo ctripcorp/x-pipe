@@ -65,7 +65,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
             return null;
         }).when(instanceManager).remove(any(HostPort.class));
         
-        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, metaCache, checkerConfig);
+        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory);
     }
 
     private void prepareData(String dc) {
@@ -278,7 +278,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void visitRemovedClusterActiveDc() {
-        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache, checkerConfig));
+        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory));
         manager.compare(getDcMeta("jq"));
 
         DcMeta dcMeta = MetaClone.clone(getDcMeta("jq"));
