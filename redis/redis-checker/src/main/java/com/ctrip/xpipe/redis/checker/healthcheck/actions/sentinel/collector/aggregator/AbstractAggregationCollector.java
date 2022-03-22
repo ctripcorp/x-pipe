@@ -44,7 +44,6 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     protected CheckerConfig checkerConfig;
 
     protected AtomicBoolean needDowngrade = new AtomicBoolean(false);
-    protected AtomicBoolean allCollected = new AtomicBoolean(false);
 
     public AbstractAggregationCollector(T sentinelHelloCollector, String clusterId, String shardId, CheckerConfig config) {
         this.realCollector = sentinelHelloCollector;
@@ -66,19 +65,19 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
                 if (!shouldCheckFromRedis(context.instance())) return;
 
                 int collectedInstanceCount = collectHello(context);
+
                 if (allInstancesCollected(collectedInstanceCount)) {
-                    if (allCollected.compareAndSet(false, true)) {
-                        if (!needDowngrade.get() && shouldDowngrade(info)) {
-                            logger.warn("[{}-{}+{}]backup dc or slaves {} sub failed, try to sub from active dc or master", LOG_TITLE, clusterId, shardId, info.getDcId());
-                            beginDowngrade();
-                        } else {
-                            logger.debug("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
-                            handleAllHellos(context.instance());
-                            endDowngrade();
-                        }
+                    if (!needDowngrade.get() && shouldDowngrade(info)) {
+                        logger.warn("[{}-{}+{}]backup dc or slaves {} sub failed, try to sub from active dc or master", LOG_TITLE, clusterId, shardId, info.getDcId());
+                        beginDowngrade();
+                    } else {
+                        logger.debug("[{}-{}+{}]sub finish: {}", LOG_TITLE, clusterId, shardId, checkResult.toString());
+                        handleAllHellos(context.instance());
+                        endDowngrade();
                     }
                 }
             }
+
 
             @Override
             public Map<String, Object> getData() {
@@ -101,6 +100,8 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     }
 
     private boolean shouldDowngrade(RedisInstanceInfo info) {
+        if (checkFinishedInstance.isEmpty())
+            return false;
         DowngradeStrategy strategy = DowngradeStrategy.lookUp(checkerConfig.sentinelCheckDowngradeStrategy());
         boolean shouldDowngrade = strategy.needDowngrade(checkResult, checkerConfig.getDefaultSentinelQuorumConfig());
         if (shouldDowngrade)
@@ -165,6 +166,8 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     }
 
     protected synchronized void handleAllHellos(RedisHealthCheckInstance instance) {
+        if (checkFinishedInstance.isEmpty())
+            return;
         Set<SentinelHello> hellos = new HashSet<>(checkResult);
         resetCheckResult();
         this.realCollector.onAction(new SentinelActionContext(instance, hellos));
@@ -174,7 +177,6 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
         this.checkFinishedInstance.clear();
         this.checkFailInstance.clear();
         this.checkResult.clear();
-        this.allCollected.set(false);
     }
 
     @VisibleForTesting
