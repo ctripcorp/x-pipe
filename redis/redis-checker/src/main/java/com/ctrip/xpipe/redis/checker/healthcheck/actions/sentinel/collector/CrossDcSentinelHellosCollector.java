@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -8,13 +9,16 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -53,12 +57,6 @@ public class CrossDcSentinelHellosCollector extends DefaultSentinelHelloCollecto
     }
 
     @Override
-    protected boolean isKeeperOrDead(HostPort hostPort) {
-        // no keeper for cross dc cluster
-        return false;
-    }
-
-    @Override
     protected boolean isHelloMasterInWrongDc(SentinelHello hello) {
 //      master of cross dc cluster may in any dc
         return false;
@@ -71,6 +69,23 @@ public class CrossDcSentinelHellosCollector extends DefaultSentinelHelloCollecto
                 && xpipeMeta.getDcs().containsKey(dcId)
                 && xpipeMeta.getDcs().get(dcId).getClusters().containsKey(clusterId)
                 && xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().containsKey(shardId);
+    }
+
+
+    @Override
+    protected Pair<Boolean, String> shouldReset(List<HostPort> slaves, String clusterId, String shardId) {
+        Pair<Boolean, String> inOtherClusterShard = inOtherClusterShard(slaves, clusterId, shardId);
+        if (inOtherClusterShard.getKey()) return inOtherClusterShard;
+
+        Pair<Boolean, String> unknownInactiveInstance = redundantInstances(slaves, clusterId, shardId);
+        if (unknownInactiveInstance.getKey()) return unknownInactiveInstance;
+
+        return new Pair<>(false, null);
+    }
+
+    @Override
+    boolean redundant(CommandFuture<Role> roleCommandFuture) {
+        return inactive(roleCommandFuture);
     }
 
 }

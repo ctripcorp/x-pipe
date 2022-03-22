@@ -117,7 +117,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
                 // console monitors only cluster with active idc in current idc
-                if (hasActiveDc(clusterType) && !isClusterActiveIdcCurrentIdc(cluster)) {
+                if ((clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) && !isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
                 }
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
@@ -126,10 +126,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 generateHealthCheckInstances(cluster);
             }
         }
-    }
-
-    private boolean hasActiveDc(ClusterType clusterType) {
-        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
     }
 
     void generateHealthCheckInstances(ClusterMeta clusterMeta){

@@ -161,7 +161,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-        if (hasActiveDc(clusterType)) {
+        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
             return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         }
         if (clusterType.supportMultiActiveDC()) {
@@ -171,10 +171,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
 
         return true;
-    }
-
-    private boolean hasActiveDc(ClusterType clusterType) {
-        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
     }
 
     private BiConsumer<ShardMeta, ShardMeta> shardConfigChanged = new BiConsumer<ShardMeta, ShardMeta>() {

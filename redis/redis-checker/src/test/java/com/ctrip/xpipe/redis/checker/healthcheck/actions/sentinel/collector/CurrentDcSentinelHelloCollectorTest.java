@@ -2,19 +2,20 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,9 +25,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
@@ -39,6 +41,9 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Mock
     private SentinelManager sentinelManager;
+
+    @Mock
+    private AlertManager alertManager;
 
     @Mock QuorumConfig quorumConfig;
 
@@ -57,7 +62,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
     }};
 
     @Before
-    public void setupCurrentDcSentinelHelloCollectorTest() {
+    public void setupCurrentDcSentinelHelloCollectorTest() throws Exception {
         collector.setScheduled(scheduled);
         collector.setCollectExecutor(executors);
         collector.setResetExecutor(executors);
@@ -66,6 +71,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockMeta());
         Mockito.when(quorumConfig.getTotal()).thenReturn(5);
         Mockito.when(metaCache.getDc(masterAddr)).thenReturn(dcId);
+        collector.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
     }
 
     @Test
@@ -91,52 +97,32 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testReset() throws Exception {
-        Mockito.when(metaCache.getAllKeepers()).thenReturn(Collections.emptySet());
-        HostPort sentinel1 = new HostPort("10.0.0.1", 5000);
-        HostPort sentinel2 = new HostPort("10.0.0.1", 5001);
-        HostPort sentinel3 = new HostPort("10.0.0.1", 5002);
+        HostPort trueSlave=new HostPort(LOCAL_HOST,6379);
+        when(metaCache.findClusterShard(trueSlave)).thenReturn(new Pair<>("cluster","shard"));
+        Pair<Boolean, String> shouldResetAndReason = collector.shouldReset(Lists.newArrayList(trueSlave), "cluster", "shard");
+        Assert.assertFalse(shouldResetAndReason.getKey());
 
-        Map<HostPort, Pair<String, String>> clusterShardBySentinel = new HashMap<HostPort, Pair<String, String>>() {{
-            put(sentinel1, Pair.of(clusterId, shardId));
-            put(sentinel2, Pair.of("other-cluster", "other-shard"));
-            put(sentinel3, null);
-        }};
+        HostPort wrongSlave=new HostPort("otherClusterShardSlave",6379);
+        when(metaCache.findClusterShard(wrongSlave)).thenReturn(new Pair<>("otherCluster","otherShard"));
+        shouldResetAndReason = collector.shouldReset(Lists.newArrayList(trueSlave,wrongSlave), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("but meta:otherCluster:otherShard"));
 
-        doAnswer(invocation -> {
-            Sentinel sentinel = invocation.getArgument(0, Sentinel.class);
-            Pair<String, String> clusterShard = clusterShardBySentinel.get(new HostPort(sentinel.getIp(), sentinel.getPort()));
-            Mockito.when(metaCache.findClusterShard(Mockito.any())).thenReturn(clusterShard);
-            return new AbstractCommand<List<HostPort>>() {
-                @Override
-                protected void doExecute() throws Throwable {
-                    future().setSuccess(Collections.singletonList(new HostPort("127.0.0.1", 7379)));
-                }
+        Server unknownActiveServer = startServer(randomPort(), "*3\r\n"
+                + "$6\r\nslave\r\n"
+                + ":0\r\n*0\r\n");
+        HostPort unknownActive=new HostPort(LOCAL_HOST,unknownActiveServer.getPort());
+        when(metaCache.findClusterShard(unknownActive)).thenReturn(null);
+        shouldResetAndReason = collector.shouldReset(Lists.newArrayList(trueSlave,unknownActive), "cluster", "shard");
+        Assert.assertFalse(shouldResetAndReason.getKey());
+        verify(alertManager,times(1)).alert(anyString(), anyString(), any(), any(), anyString());
 
-                @Override
-                protected void doReset() {
+        unknownActiveServer.stop();
+        shouldResetAndReason = collector.shouldReset(Lists.newArrayList(trueSlave, unknownActive), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));
+        verify(metaCache,never()).getAllKeepers();
 
-                }
-
-                @Override
-                public String getName() {
-                    return null;
-                }
-            };
-        }).when(sentinelManager).slaves(Mockito.any(), Mockito.anyString());
-
-        Set<SentinelHello> hellos = new HashSet<>();
-        hellos.add(new SentinelHello(sentinel1, masterAddr, sentinelMonitorName));
-        hellos.add(new SentinelHello(sentinel2, masterAddr, sentinelMonitorName));
-        hellos.add(new SentinelHello(sentinel3, masterAddr, sentinelMonitorName));
-
-        collector.checkReset(clusterId, shardId, sentinelMonitorName, hellos);
-        Thread.sleep(120);
-        Mockito.verify(sentinelManager, Mockito.never())
-                .reset(new Sentinel(sentinel1.toString(), sentinel1.getHost(), sentinel1.getPort()), sentinelMonitorName);
-        Mockito.verify(sentinelManager, Mockito.times(1))
-                .reset(new Sentinel(sentinel2.toString(), sentinel2.getHost(), sentinel2.getPort()), sentinelMonitorName);
-        Mockito.verify(sentinelManager, Mockito.never())
-                .reset(new Sentinel(sentinel3.toString(), sentinel3.getHost(), sentinel3.getPort()), sentinelMonitorName);
     }
 
     @Test
