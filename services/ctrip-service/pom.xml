@@ -84,22 +84,7 @@
         </dependency>
         <dependency>
             <groupId>com.ctrip.infosec</groupId>
-            <artifactId>sso-client-qconfig</artifactId>
-            <version>1.0.7</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>qunar.common</groupId>
-                    <artifactId>common-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-collections</groupId>
-                    <artifactId>commons-collections</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.alibaba</groupId>
-                    <artifactId>fastjson</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>sso-client-new</artifactId>
         </dependency>
         <dependency>
             <groupId>net.razorvine</groupId>
