@@ -1,19 +1,19 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
+import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollector {
@@ -40,12 +40,6 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
         if (null == sentinelMeta) return Collections.emptySet();
 
         return new HashSet<>(IpUtils.parseAsHostPorts(sentinelMeta.getAddress()));
-    }
-
-    @Override
-    protected boolean isKeeperOrDead(HostPort hostPort) {
-        // no keeper for bi direction cluster
-        return false;
     }
 
     @Override
@@ -78,6 +72,22 @@ public class CurrentDcSentinelHelloCollector extends DefaultSentinelHelloCollect
                 && xpipeMeta.getDcs().containsKey(dcId)
                 && xpipeMeta.getDcs().get(dcId).getClusters().containsKey(clusterId)
                 && xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().containsKey(shardId);
+    }
+
+    @Override
+    protected Pair<Boolean, String> shouldReset(List<HostPort> slaves, String clusterId, String shardId) {
+        Pair<Boolean, String> inOtherClusterShard = inOtherClusterShard(slaves, clusterId, shardId);
+        if (inOtherClusterShard.getKey()) return inOtherClusterShard;
+
+        Pair<Boolean, String> unknownInactiveInstance = redundantInstances(slaves, clusterId, shardId);
+        if (unknownInactiveInstance.getKey()) return unknownInactiveInstance;
+
+        return new Pair<>(false, null);
+    }
+
+    @Override
+    boolean redundant(CommandFuture<Role> roleCommandFuture) {
+        return inactive(roleCommandFuture);
     }
 
 }

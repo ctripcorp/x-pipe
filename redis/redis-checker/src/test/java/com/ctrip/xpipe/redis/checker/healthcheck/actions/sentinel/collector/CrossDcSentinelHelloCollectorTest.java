@@ -4,14 +4,13 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.tuple.Pair;
@@ -28,24 +27,23 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
-public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
-
+@RunWith(MockitoJUnitRunner.class)
+public class CrossDcSentinelHelloCollectorTest extends AbstractCheckerTest {
     @InjectMocks
-    private CurrentDcSentinelHelloCollector collector;
+    private CrossDcSentinelHellosCollector collector;
 
     @Mock
-    protected MetaCache metaCache;
-
-    @Mock
-    private SentinelManager sentinelManager;
+    private MetaCache metaCache;
 
     @Mock
     private AlertManager alertManager;
 
-    @Mock QuorumConfig quorumConfig;
+    @Mock
+    private CheckerConfig config;
 
     private String dcId = "jq", clusterId = "cluster1", shardId = "shard1";
 
@@ -62,15 +60,13 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
     }};
 
     @Before
-    public void setupCurrentDcSentinelHelloCollectorTest() throws Exception {
+    public void setupCrossDcSentinelHelloCollectorTest() throws Exception {
         collector.setScheduled(scheduled);
         collector.setCollectExecutor(executors);
         collector.setResetExecutor(executors);
         dcId = FoundationService.DEFAULT.getDataCenter();
-        sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterId, shardId, dcId);
+        sentinelMonitorName = SentinelUtil.getSentinelMonitorName(clusterId, shardId, "CROSS_DC");
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockMeta());
-        Mockito.when(quorumConfig.getTotal()).thenReturn(5);
-        Mockito.when(metaCache.getDc(masterAddr)).thenReturn(dcId);
         collector.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
     }
 
@@ -78,7 +74,7 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
     public void testDeleted() {
         SentinelHello normalHello = new SentinelHello(sentinels.iterator().next(), masterAddr, sentinelMonitorName);
         HostPort remoteDcMAster = new HostPort("127.0.0.1", 7379);
-        Mockito.when(metaCache.getDc(remoteDcMAster)).thenReturn("remote-dc");
+//        Mockito.when(metaCache.getDc(remoteDcMAster)).thenReturn("remote-dc");
 
         Set<SentinelHello> hellos = new HashSet<>();
         hellos.add(normalHello);
@@ -88,10 +84,10 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
         Set<SentinelHello> needDeletedHello = collector.checkStaleHellos(sentinelMonitorName, sentinels, hellos);
         logger.info("[testDeleted] {}", needDeletedHello);
-        Assert.assertEquals(3, needDeletedHello.size());
+        Assert.assertEquals(2, needDeletedHello.size());
         Assert.assertFalse(needDeletedHello.contains(normalHello));
 
-        Assert.assertEquals(1, hellos.size());
+        Assert.assertEquals(2, hellos.size());
         Assert.assertTrue(hellos.contains(normalHello));
     }
 
@@ -127,8 +123,10 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     @Test
     public void testGetSentinelMonitorName() {
+        String dc="cross_dc";
+        when(config.crossDcSentinelMonitorNameSuffix()).thenReturn(dc);
         RedisInstanceInfo info = mockInstanceInfo("127.0.0.1", 6379);
-        Assert.assertEquals(String.format("%s+%s+%s", clusterId, shardId, dcId),
+        Assert.assertEquals(String.format("%s+%s+%s", clusterId, shardId, dc),
                 collector.getSentinelMonitorName(info));
     }
 
@@ -139,24 +137,9 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
         Assert.assertEquals(sentinels, result);
     }
 
-    @Test
-    public void testGetMaster() throws Exception {
-        RedisInstanceInfo info = mockInstanceInfo("127.0.0.1", 6379);
-        HostPort result = collector.getMaster(info);
-        Assert.assertEquals(masterAddr, result);
-    }
-
-    @Test
-    public void testIsHelloMasterInWrongDc() {
-        HostPort remoteDcMAster = new HostPort("127.0.0.1", 7379);
-        SentinelHello hello = new SentinelHello(sentinels.iterator().next(), remoteDcMAster, sentinelMonitorName);
-        Mockito.when(metaCache.getDc(remoteDcMAster)).thenReturn("remote-dc");
-        Assert.assertTrue(collector.isHelloMasterInWrongDc(hello));
-    }
-
     private RedisInstanceInfo mockInstanceInfo(String ip, int port) {
         return new DefaultRedisInstanceInfo(dcId, clusterId, shardId, new HostPort(ip, port), null,
-                ClusterType.BI_DIRECTION);
+                ClusterType.CROSS_DC);
     }
 
     private XpipeMeta mockMeta() {
@@ -164,9 +147,19 @@ public class CurrentDcSentinelHelloCollectorTest extends AbstractCheckerTest {
         DcMeta dcMeta = new DcMeta(dcId);
         ClusterMeta clusterMeta = new ClusterMeta(clusterId);
         ShardMeta shardMeta = new ShardMeta(shardId).setSentinelId(1L);
-        dcMeta.addSentinel(new SentinelMeta(1L).setAddress("10.0.0.1:5000,10.0.0.1:5001,10.0.0.1:5002,10.0.0.1:5003,10.0.0.1:5004"));
+        dcMeta.addSentinel(new SentinelMeta(1L).setAddress("10.0.0.1:5000,10.0.0.1:5001"));
         shardMeta.addRedis(new RedisMeta().setIp(masterAddr.getHost()).setPort(masterAddr.getPort()));
-        return xpipeMeta.addDc(dcMeta.addCluster(clusterMeta.addShard(shardMeta)));
-    }
+        clusterMeta.addShard(shardMeta);
+        dcMeta.addCluster(clusterMeta);
 
+        DcMeta oyDcMeta = new DcMeta("oy");
+        ClusterMeta oyClusterMeta = new ClusterMeta(clusterId);
+        ShardMeta oyShardMeta = new ShardMeta(shardId).setSentinelId(1L);
+        oyDcMeta.addSentinel(new SentinelMeta(1L).setAddress("10.0.0.1:5002,10.0.0.1:5003,10.0.0.1:5004"));
+        oyShardMeta.addRedis(new RedisMeta().setIp(LOCAL_HOST).setPort(6380));
+        oyClusterMeta.addShard(oyShardMeta);
+        oyDcMeta.addCluster(oyClusterMeta);
+
+        return xpipeMeta.addDc(dcMeta).addDc(oyDcMeta);
+    }
 }

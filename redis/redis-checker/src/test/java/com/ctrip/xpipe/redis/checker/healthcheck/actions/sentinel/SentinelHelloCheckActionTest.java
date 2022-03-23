@@ -190,6 +190,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     }
 
     @Test
+    @Ignore
     public void testDoScheduleTaskWithSentinelHelloSuccess() throws Exception {
         StringBuilder shard1Builder = new StringBuilder(SUBSCRIBE_HEADER);
         for (int i = 0; i < 5; i++) {

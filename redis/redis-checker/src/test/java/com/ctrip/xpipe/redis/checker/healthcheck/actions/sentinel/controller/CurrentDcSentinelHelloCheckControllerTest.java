@@ -24,7 +24,11 @@ import com.ctrip.xpipe.simpleserver.AbstractIoAction;
 import com.ctrip.xpipe.simpleserver.IoAction;
 import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
-import org.junit.*;
+import com.google.common.collect.Lists;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -151,8 +155,6 @@ public class CurrentDcSentinelHelloCheckControllerTest extends AbstractCheckerTe
     }
 
     @Test
-    @Ignore
-    // TODO: fix random pass
     public void slaveErrRespTest() {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
@@ -258,6 +260,10 @@ public class CurrentDcSentinelHelloCheckControllerTest extends AbstractCheckerTe
         xpipeMeta.addDc(dc1);
         xpipeMeta.addDc(dc2);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(metaCache.getRedisOfDcClusterShard("jq", clusterName, shardName)).thenReturn(Lists.newArrayList(jqMasterMeta, jqSlaveMeta));
+//        Mockito.when(metaCache.getRedisOfDcClusterShard("oy", clusterName, shardName)).thenReturn(Lists.newArrayList(oyMasterMeta, oySlaveMeta));
+        Mockito.when(metaCache.getSlavesOfDcClusterShard("jq", clusterName, shardName)).thenReturn(Lists.newArrayList(jqSlaveMeta));
+//        Mockito.when(metaCache.getSlavesOfDcClusterShard("oy", clusterName, shardName)).thenReturn(Lists.newArrayList(oySlaveMeta));
     }
 
     private void resetCalled() {

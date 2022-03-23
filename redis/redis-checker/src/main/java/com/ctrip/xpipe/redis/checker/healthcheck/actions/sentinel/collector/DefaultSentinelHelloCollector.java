@@ -25,8 +25,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelAction
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyBucket;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.exception.NoResourceException;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
@@ -51,7 +49,7 @@ import javax.annotation.Resource;
 import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
@@ -76,9 +74,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @Autowired
     private CheckerDbConfig checkerDbConfig;
-
-    @Autowired
-    private DefaultRedisSessionManager sessionManager;
 
     @Autowired
     private AlertManager alertManager;
@@ -265,118 +260,157 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @VisibleForTesting
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
-
-        resetExecutor.execute(new Runnable() {
+        ParallelCommandChain resetChain = new ParallelCommandChain(resetExecutor, false);
+        for (SentinelHello hello : hellos) {
+            resetChain.add(new SentinelReset(clusterId, shardId, hello, sentinelMonitorName));
+        }
+        CommandFuture resetFuture = resetChain.execute();
+        ScheduledFuture<?> resetTimeoutFuture = scheduled.schedule(new Runnable() {
             @Override
             public void run() {
-                doCheckReset(clusterId,shardId,sentinelMonitorName,hellos);
+                resetFuture.cancel(true);
             }
+        }, 3000, TimeUnit.MILLISECONDS);
+        resetFuture.addListener(commandFuture -> {
+            if (!commandFuture.isCancelled())
+                resetTimeoutFuture.cancel(true);
         });
-
     }
 
-    void doCheckReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos){
-        Set<HostPort> allKeepers = metaCache.getAllKeepers();
-        hellos.forEach((hello) -> {
+    class SentinelReset extends AbstractCommand<Void> {
+
+        private String clusterId;
+        private String shardId;
+        private SentinelHello hello;
+        private String sentinelMonitorName;
+
+        public SentinelReset(String clusterId, String shardId, SentinelHello sentinelHello, String sentinelMonitorName) {
+            this.clusterId = clusterId;
+            this.shardId = shardId;
+            this.hello = sentinelHello;
+            this.sentinelMonitorName = sentinelMonitorName;
+        }
+
+        @Override
+        public String getName() {
+            return "SentinelReset";
+        }
+
+        @Override
+        protected void doExecute() throws Throwable {
             HostPort sentinelAddr = hello.getSentinelAddr();
             Sentinel sentinel = new Sentinel(sentinelAddr.toString(), sentinelAddr.getHost(), sentinelAddr.getPort());
-            try {
-                List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().getOrHandle(2050, TimeUnit.MILLISECONDS, throwable -> {
-                    logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
-                    return new ArrayList<>();
-                });
 
-                boolean shoudReset = false;
-                String reason = null;
-                Set<HostPort> keepers = new HashSet<>();
-
-                for (HostPort currentSlave : slaves) {
-
-                    if (allKeepers.contains(currentSlave)) {
-                        keepers.add(currentSlave);
-                    }
-
-                    Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
-                    if (clusterShard == null) {
-                        if (isKeeperOrDead(currentSlave)) {
-                            shoudReset = true;
-                            reason = String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId);
-                        } else {
-                            String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
-                            alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
-                        }
-                        continue;
-                    }
-                    if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue())) {
-                        shoudReset = true;
-                        reason = String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue());
-                        break;
-                    }
-                }
-
-                if (!shoudReset && keepers.size() >= 2) {
-                    shoudReset = true;
-                    reason = String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers);
-                }
-
-                if (shoudReset) {
-                    logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, reason);
-                    CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", String.format("%s,%s", sentinelAddr, reason));
-                    sentinelManager.reset(sentinel, sentinelMonitorName).execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
-                        logger.error("[{}-{}+{}][reset]{}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, throwable);
-                        return null;
-                    });
-                }
-            } catch (Exception e) {
-                logger.error("[{}-{}+{}][checkReset]{}", LOG_TITLE, clusterId, shardId, hello, e);
-            }
-        });
-    }
-
-    @VisibleForTesting
-    protected boolean isKeeperOrDead(HostPort hostPort) {
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<Object> role = new AtomicReference<>();
-
-        try {
-            RedisSession redisSession = sessionManager.findOrCreateSession(hostPort);
-            redisSession.role(new RedisSession.RollCallback() {
-                @Override
-                public void role(String roleDesc, Role detail) {
-                    role.set(roleDesc);
-                    latch.countDown();
-                }
-
-                @Override
-                public void fail(Throwable e) {
-                    logger.error("[isKeeperOrDead][fail]" + hostPort, e);
-                    role.set(e);
-                    latch.countDown();
-                }
+            List<HostPort> slaves = sentinelManager.slaves(sentinel, sentinelMonitorName).execute().getOrHandle(2050, TimeUnit.MILLISECONDS, throwable -> {
+                logger.error("[{}-{}][checkReset-slaves]{}", LOG_TITLE, sentinelMonitorName, sentinel, throwable);
+                return new ArrayList<>();
             });
-        } catch (Exception e) {
-            role.set(e);
-            logger.error("[isKeeperOrDead]" + hostPort, e);
+
+            if (slaves.isEmpty())
+                return;
+
+            Pair<Boolean, String> shouldResetAndReason = shouldReset(slaves, clusterId, shardId);
+
+            if (shouldResetAndReason.getKey()) {
+                logger.info("[{}-{}+{}][reset]{}, {}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, shouldResetAndReason.getValue());
+                CatEventMonitor.DEFAULT.logEvent("Sentinel.Hello.Collector.Reset", String.format("%s,%s", sentinelAddr, shouldResetAndReason.getValue()));
+                sentinelManager.reset(sentinel, sentinelMonitorName).execute().getOrHandle(1000, TimeUnit.MILLISECONDS, throwable -> {
+                    logger.error("[{}-{}+{}][reset]{}, {}", LOG_TITLE, clusterId, shardId, sentinelMonitorName, sentinelAddr, throwable);
+                    return null;
+                });
+            }
         }
 
-        try {
-            latch.await(2, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            logger.error("[isKeeperOrDead]latch await error", e);
-        }
+        @Override
+        protected void doReset() {
 
-        if (role.get() instanceof String && Server.SERVER_ROLE.KEEPER.sameRole((String) role.get())) {
-            return true;
         }
-        if (role.get() instanceof CommandExecutionException || role.get() instanceof CommandTimeoutException
-                || role.get() instanceof SocketException) {
-            return true;
-        }
-        logger.info("[isKeeperOrDead] role: {}", role.get());
-        return false;
     }
 
+    protected Pair<Boolean, String> shouldReset(List<HostPort> slaves, String clusterId, String shardId) {
+        Pair<Boolean, String> tooManyKeepers = tooManyKeepers(slaves, clusterId, shardId);
+        if (tooManyKeepers.getKey()) return tooManyKeepers;
+
+        Pair<Boolean, String> inOtherClusterShard = inOtherClusterShard(slaves, clusterId, shardId);
+        if (inOtherClusterShard.getKey()) return inOtherClusterShard;
+
+        Pair<Boolean, String> unknownInstanceAndIsKeeperOrDead = redundantInstances(slaves, clusterId, shardId);
+        if (unknownInstanceAndIsKeeperOrDead.getKey()) return unknownInstanceAndIsKeeperOrDead;
+
+        return new Pair<>(false, null);
+    }
+
+    Pair<Boolean, String> tooManyKeepers(List<HostPort> slaves, String clusterId, String shardId) {
+        Set<HostPort> allKeepers = metaCache.getAllKeepers();
+        Set<HostPort> keepers = new HashSet<>();
+        for (HostPort currentSlave : slaves) {
+
+            if (allKeepers.contains(currentSlave)) {
+                keepers.add(currentSlave);
+            }
+        }
+        slaves.removeAll(keepers);
+        if (keepers.size() > 1)
+            return new Pair<>(true, String.format("%s,%s, has %d keepers:%s", clusterId, shardId, keepers.size(), keepers));
+        else
+            return new Pair<>(false, null);
+    }
+
+    Pair<Boolean, String> inOtherClusterShard(List<HostPort> slaves, String clusterId, String shardId) {
+        for (HostPort currentSlave : slaves) {
+            Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
+            if (clusterShard != null) {
+                if (!ObjectUtils.equals(clusterId, clusterShard.getKey()) || !ObjectUtils.equals(shardId, clusterShard.getValue()))
+                    return new Pair<>(true, String.format("[%s], current:%s,%s, but meta:%s:%s", currentSlave, clusterId, shardId, clusterShard.getKey(), clusterShard.getValue()));
+            }
+        }
+        return new Pair<>(false, null);
+    }
+
+
+    Pair<Boolean, String> redundantInstances(List<HostPort> slaves, String clusterId, String shardId) {
+        for (HostPort currentSlave : slaves) {
+            Pair<String, String> clusterShard = metaCache.findClusterShard(currentSlave);
+            if (clusterShard == null) {
+                if (redundantInstance(currentSlave))
+                    return new Pair<>(true, String.format("[%s]keeper or dead, current:%s,%s, with no cluster shard", currentSlave, clusterId, shardId));
+                else {
+                    String message = String.format("sentinel monitors redis %s not in xpipe", currentSlave.toString());
+                    alertManager.alert(clusterId, shardId, currentSlave, ALERT_TYPE.SENTINEL_MONITOR_REDUNDANT_REDIS, message);
+                }
+            }
+        }
+        return new Pair<>(false, null);
+    }
+
+    protected boolean redundantInstance(HostPort hostPort) {
+        AtomicBoolean redundant = new AtomicBoolean(false);
+        RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(hostPort.getHost(), hostPort.getPort())), scheduled);
+        roleCommand.future().addListener(roleFuture -> redundant.set(redundant(roleFuture)));
+        try {
+            Role role = roleCommand.execute().get(1, TimeUnit.SECONDS);
+            logger.info("[isKeeperOrDead] role: {}", role.getServerRole().name());
+        } catch (Throwable th) {
+            logger.error("[isKeeperOrDead][failed]{}", hostPort, th);
+        }
+
+        return redundant.get();
+    }
+
+    boolean redundant(CommandFuture<Role> roleCommandFuture) throws ExecutionException, InterruptedException {
+        return isKeeper(roleCommandFuture) || inactive(roleCommandFuture);
+    }
+
+    boolean isKeeper(CommandFuture<Role> roleCommandFuture) throws ExecutionException, InterruptedException {
+        return roleCommandFuture.isSuccess() && Server.SERVER_ROLE.KEEPER.equals(roleCommandFuture.get().getServerRole());
+    }
+
+    boolean inactive(CommandFuture<Role> roleCommandFuture) {
+        return !roleCommandFuture.isSuccess() &&
+                (roleCommandFuture.cause() instanceof CommandExecutionException ||
+                        roleCommandFuture.cause() instanceof CommandTimeoutException ||
+                        roleCommandFuture.cause() instanceof SocketException);
+    }
 
     @VisibleForTesting
     protected boolean isHelloMasterInWrongDc(SentinelHello hello) {
@@ -857,11 +891,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
         public Set<SentinelHello> getToAdd() {
             return toAdd;
         }
-    }
-
-    @VisibleForTesting
-    public void setSessionManager(DefaultRedisSessionManager sessionManager) {
-        this.sessionManager = sessionManager;
     }
 
     @VisibleForTesting

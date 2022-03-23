@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelAction
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyBucket;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultRedisSessionManager;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
@@ -24,6 +23,8 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.simpleserver.Server;
+import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -97,9 +98,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         });
         when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(true);
         when(checkerConfig.sentinelMasterConfig()).thenReturn(new HashMap<>());
-        sentinelCollector.setSessionManager(new DefaultRedisSessionManager()
-                .setExecutors(executors).setScheduled(scheduled).setEndpointFactory(endpointFactory)
-                .setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()));
         sentinelCollector.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
         sentinelCollector.setResetExecutor(executors);
         masterSentinels = Sets.newHashSet(
@@ -204,6 +202,41 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
+    public void testReset() throws Exception {
+//        sentinelManager.slaves
+        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)));
+        Pair<Boolean, String> shouldResetAndReason = sentinelCollector.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001)), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("has 2 keepers"));
+
+        HostPort wrongSlave=new HostPort("otherClusterShardSlave",6379);
+        when(metaCache.findClusterShard(wrongSlave)).thenReturn(new Pair<>("otherCluster","otherShard"));
+        shouldResetAndReason = sentinelCollector.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), wrongSlave), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("but meta:otherCluster:otherShard"));
+
+        Server unknownKeeperServer = startServer(randomPort(), "*3\r\n"
+                + "$6\r\nkeeper\r\n"
+                + ":0\r\n*0\r\n");
+        HostPort unknownKeeper=new HostPort(LOCAL_HOST,unknownKeeperServer.getPort());
+        when(metaCache.findClusterShard(unknownKeeper)).thenReturn(null);
+        shouldResetAndReason = sentinelCollector.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownKeeper), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));
+
+        unknownKeeperServer.stop();
+        shouldResetAndReason = sentinelCollector.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), unknownKeeper), "cluster", "shard");
+        Assert.assertTrue(shouldResetAndReason.getKey());
+        Assert.assertTrue(shouldResetAndReason.getValue().contains("keeper or dead"));
+
+        HostPort trueSlave=new HostPort(LOCAL_HOST,6379);
+        when(metaCache.findClusterShard(trueSlave)).thenReturn(new Pair<>("cluster","shard"));
+        shouldResetAndReason = sentinelCollector.shouldReset(Lists.newArrayList(new HostPort(LOCAL_HOST, 8000), trueSlave), "cluster", "shard");
+        Assert.assertFalse(shouldResetAndReason.getKey());
+
+    }
+
+    @Test
     public void testAdd() {
 
         Set<SentinelHello> hellos = Sets.newHashSet(
@@ -256,7 +289,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         int originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
         try {
             AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 10;
-            boolean result = sentinelCollector.isKeeperOrDead(localHostport(0));
+            boolean result = sentinelCollector.redundantInstance(localHostport(0));
             logger.info("{}", result);
             Assert.assertTrue(result);
         } finally {

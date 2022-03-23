@@ -4,17 +4,17 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +32,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDcMetaChangeManager.class);
 
-    private MetaCache metaCache;
-
     private DcMeta current;
 
     private HealthCheckInstanceManager instanceManager;
@@ -42,15 +40,12 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     
     private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
-    private CheckerConfig checkerConfig;
-
     private final String dcId;
-    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory, MetaCache metaCache, CheckerConfig checkerConfig) {
+
+    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory) {
         this.dcId = dcId;
         this.instanceManager = instanceManager;
         this.healthCheckEndpointFactory = healthCheckEndpointFactory;
-        this.metaCache = metaCache;
-        this.checkerConfig = checkerConfig;
     }
 
     @Override
@@ -165,10 +160,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
-        if (clusterType.equals(ClusterType.CROSS_DC)) {
-            return isMaxMasterCountInCurrentDc(cluster);
-        }
-        if (clusterType.supportSingleActiveDC()) {
+
+        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
             return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         }
         if (clusterType.supportMultiActiveDC()) {
@@ -203,11 +196,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             addRedis(redisMeta);
         }
     };
-
-    boolean isMaxMasterCountInCurrentDc(ClusterMeta clusterMeta) {
-        Pair<String, Integer> maxMasterCountDc = metaCache.getMaxMasterCountDc(clusterMeta.getId(), checkerConfig.getIgnoredHealthCheckDc());
-        return maxMasterCountDc != null && maxMasterCountDc.getValue() > 0 && maxMasterCountDc.getKey().equalsIgnoreCase(currentDcId);
-    }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
         @Override
