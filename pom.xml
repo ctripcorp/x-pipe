@@ -69,6 +69,7 @@
         <jackson.version>2.10.3</jackson.version>
 
         <soa.version>2.21.17</soa.version>
+        <sso.version>0.0.8</sso.version>
         <vi.version>0.11.33</vi.version>
         <dal.version>2.3.1</dal.version>
         <ucs.version>0.3.4</ucs.version>
@@ -120,25 +121,10 @@
                 <artifactId>jackson-dataformat-protobuf</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-            <!-- qconfig sso -->
             <dependency>
                 <groupId>com.ctrip.infosec</groupId>
-                <artifactId>sso-client-qconfig</artifactId>
-                <version>1.0.7-SNAPSHOT</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.ctrip.framework</groupId>
-                        <artifactId>vi</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>qunar.tc</groupId>
-                        <artifactId>common-zookeeper</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>qunar.tc.qclient</groupId>
-                        <artifactId>qclient-redis</artifactId>
-                    </exclusion>
-                </exclusions>
+                <artifactId>sso-client-new</artifactId>
+                <version>${sso.version}</version>
             </dependency>
             <dependency>
                 <groupId>qunar.common</groupId>
@@ -717,6 +703,16 @@
             <dependency>
                 <groupId>com.ctriposs.baiji</groupId>
                 <artifactId>baiji-rpc-mobile-request-filter</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-formatter-protobuf</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-extensions</artifactId>
                 <version>${soa.version}</version>
             </dependency>
             <dependency>
