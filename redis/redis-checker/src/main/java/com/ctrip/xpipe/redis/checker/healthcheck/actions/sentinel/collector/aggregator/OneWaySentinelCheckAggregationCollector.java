@@ -37,19 +37,19 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
     }
 
     private boolean noNeedDowngradeAndIsDrSlave(RedisHealthCheckInstance instance) {
-        boolean shouldCheck = !needDowngrade.get() && !instance.getCheckInfo().isMaster() && !instance.getCheckInfo().isInActiveDc();
+        boolean shouldCheck = !needDowngrade && !instance.getCheckInfo().isMaster() && !instance.getCheckInfo().isInActiveDc();
 
         logger.debug("[{}-{}+{}][{}]noNeedDowngradeAndIsDrSlave:{}, needDowngrade:{}, isMaster:{}, isInActiveDc:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
-                shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster(), instance.getCheckInfo().isInActiveDc());
+                shouldCheck, needDowngrade, instance.getCheckInfo().isMaster(), instance.getCheckInfo().isInActiveDc());
 
         return shouldCheck;
     }
 
     private boolean needDowngradeAndIsSlave(RedisHealthCheckInstance instance) {
-        boolean shouldCheck = needDowngrade.get() && !instance.getCheckInfo().isMaster();
+        boolean shouldCheck = needDowngrade && !instance.getCheckInfo().isMaster();
 
         logger.debug("[{}-{}+{}][{}]needDowngradeAndIsSlave:{}, needDowngrade:{}, isMaster:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
-                shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster());
+                shouldCheck, needDowngrade, instance.getCheckInfo().isMaster());
 
         return shouldCheck;
     }
