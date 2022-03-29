@@ -510,7 +510,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		
 		Integer phase = oldRedisMaster.parent().getPhase(); 
 		if(phase == null){
-			phase = oldRedisMaster.parent().parent().getPhase();
+			phase = ((ClusterMeta) oldRedisMaster.parent().parent()).getPhase();
 		}
 		if(phase == null){
 			phase = 1;

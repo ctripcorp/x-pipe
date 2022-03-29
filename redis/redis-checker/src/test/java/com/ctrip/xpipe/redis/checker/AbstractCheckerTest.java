@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckIns
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import org.junit.BeforeClass;
 
@@ -31,7 +32,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
     protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, String activeDc, int port) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(currentDc,
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 activeDc, ClusterType.ONE_WAY);
         return newRandomRedisHealthCheckInstance(info);
@@ -40,7 +41,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
     protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String currentDc, ClusterType clusterType, int port) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
         DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(currentDc,
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 null, clusterType);
         return newRandomRedisHealthCheckInstance(info);
@@ -48,8 +49,8 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
     protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(String activeDc, int port) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
-        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 activeDc, ClusterType.ONE_WAY);
         return newRandomRedisHealthCheckInstance(info);
@@ -57,8 +58,8 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
     protected RedisHealthCheckInstance newRandomRedisHealthCheckInstance(int port) throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(port);
-        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.ONE_WAY);
         return newRandomRedisHealthCheckInstance(info);
@@ -75,8 +76,8 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
     protected RedisHealthCheckInstance newHangedRedisHealthCheckInstance() throws Exception {
         RedisMeta redisMeta = newRandomFakeRedisMeta(getTimeoutIp(), 6379);
-        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(), redisMeta.parent().getId(),
+        DefaultRedisInstanceInfo info = new DefaultRedisInstanceInfo(((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(), redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), ClusterType.ONE_WAY);
         return newRandomRedisHealthCheckInstance(info);
