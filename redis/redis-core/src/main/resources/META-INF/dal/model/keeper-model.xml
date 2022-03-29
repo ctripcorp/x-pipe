@@ -17,6 +17,9 @@
 		<attribute name="id" key="true" />
 		<entity-ref name="shard" type="map" />
 	</entity>
+	<entity name="source" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Source">
+		<entity-ref name="shard" type="map" />
+	</entity>
 	<entity name="shard" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Shard">
 		<attribute name="id" key="true" />
 		<attribute name="sentinelId" value-type="Long"/>
@@ -26,6 +29,13 @@
 	</entity>
 	<entity name="keeperContainer" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
+	</entity>
+	<entity name="applierContainer" implements="java.io.Serializable">
+		<attribute name="id" value-type="Long" />
+	</entity>
+	<entity name="applier" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Applier">
+		<attribute name="active" primitive="true" />
+		<attribute name="applierContainerId" value-type="Long" />
 	</entity>
 	<entity name="keeper" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Keeper">
 		<attribute name="active" primitive="true" />

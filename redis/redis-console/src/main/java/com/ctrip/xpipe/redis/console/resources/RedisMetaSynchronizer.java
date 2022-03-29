@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -45,7 +46,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             List<Pair<String, Integer>> toDeleted = new ArrayList<>();
             for (Redis redis : removed) {
                 toDeleted.add(new Pair<>(redis.getIp(), redis.getPort()));
-                clusterId = ((RedisMeta) redis).parent().parent().getId();
+                clusterId = ((ClusterMeta) ((RedisMeta) redis).parent().parent()).getId();
                 shardId = ((RedisMeta) redis).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][deleteRedises]{}", removed);
@@ -65,7 +66,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             List<Pair<String, Integer>> toAdded = new ArrayList<>();
             for (Redis redis : added) {
                 toAdded.add(new Pair<>(redis.getIp(), redis.getPort()));
-                clusterId = ((RedisMeta) redis).parent().parent().getId();
+                clusterId = ((ClusterMeta) ((RedisMeta) redis).parent().parent()).getId();
                 shardId = ((RedisMeta) redis).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
@@ -87,7 +88,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             for (MetaComparator metaComparator : modified) {
                 RedisMeta redisMeta = (RedisMeta) ((RedisComparator) metaComparator).getFuture();
                 futureMetaList.add(redisMeta);
-                clusterId = redisMeta.parent().parent().getId();
+                clusterId = ((ClusterMeta) redisMeta.parent().parent()).getId();
                 shardId = redisMeta.parent().getId();
             }
 

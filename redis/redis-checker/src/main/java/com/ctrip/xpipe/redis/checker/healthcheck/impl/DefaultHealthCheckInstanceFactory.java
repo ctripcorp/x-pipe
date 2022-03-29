@@ -108,10 +108,10 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
-        ClusterType clusterType = ClusterType.lookup(redisMeta.parent().parent().getType());
+        ClusterType clusterType = ClusterType.lookup(((ClusterMeta)redisMeta.parent().parent()).getType());
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(
-                redisMeta.parent().parent().parent().getId(),
-                redisMeta.parent().parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).parent().getId(),
+                ((ClusterMeta) redisMeta.parent().parent()).getId(),
                 redisMeta.parent().getId(),
                 new HostPort(redisMeta.getIp(), redisMeta.getPort()),
                 redisMeta.parent().getActiveDc(), clusterType);

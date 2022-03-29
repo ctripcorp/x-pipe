@@ -9,15 +9,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  */
 public interface Shard {
 
-    Cluster parent();
+    <T> T parent();
 
     @JsonIgnore
     default String getActiveDc(){
-        return parent().getActiveDc();
+        if (parent() instanceof Cluster) {
+            return ((Cluster) parent()).getActiveDc();
+        } else {
+            return ((Source) parent()).parent().getActiveDc();
+        }
     }
 
     @JsonIgnore
     default String getBackupDcs(){
-        return parent().getBackupDcs();
+        if (parent() instanceof Cluster) {
+            return ((Cluster) parent()).getBackupDcs();
+        } else {
+            return ((Source) parent()).parent().getBackupDcs();
+        }
     }
 }

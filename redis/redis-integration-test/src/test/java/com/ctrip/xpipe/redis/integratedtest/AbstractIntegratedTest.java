@@ -336,7 +336,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		Map<String, RedisKeeperServer> redisKeeperServers = getRegistry().getComponents(RedisKeeperServer.class);
 
 		for (RedisKeeperServer server : redisKeeperServers.values()) {
-			String currentDc = server.getCurrentKeeperMeta().parent().parent().parent().getId();
+			String currentDc = ((ClusterMeta) server.getCurrentKeeperMeta().parent().parent()).parent().getId();
 			if (dc.equals(currentDc) && server.getRedisKeeperServerState().keeperState().isActive()) {
 				return server;
 			}
