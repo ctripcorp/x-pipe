@@ -828,7 +828,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
         metaMasterServer.stop();
         verify(sentinelManager, never()).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
         verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
     }
