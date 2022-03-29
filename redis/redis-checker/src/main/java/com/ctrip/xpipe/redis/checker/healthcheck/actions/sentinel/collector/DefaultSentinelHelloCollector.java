@@ -700,7 +700,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 // check stale hellos
                 toDelete.addAll(checkStaleHellos(sentinelMonitorName, sentinels, hellos));
                 // check wrong master hellos
-                checkWrongMasterHellos(hellos, trueMaster);
+                toDelete.addAll(checkWrongMasterHellos(hellos, trueMaster));
                 // check add,ignore network error sentinels
                 sentinels.removeAll(networkErrorSentinels.keySet());
                 toAdd.addAll(checkToAdd(info.getClusterId(), info.getShardId(), sentinelMonitorName, sentinels, hellos, trueMaster, checkerConfig.getDefaultSentinelQuorumConfig()));
