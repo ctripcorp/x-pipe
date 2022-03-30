@@ -1,19 +1,20 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.ProxyPingStatsModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.TunnelSocketStatsMetricOverview;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.TunnelSocketStatsAnalyzerManager;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.ProxyService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -158,6 +159,17 @@ public class ProxyChainController extends AbstractConsoleController {
     @RequestMapping(value = "/proxy/chain", method = RequestMethod.DELETE)
     public RetMessage closeProxyChain(@RequestBody List<HostPort> proxies) {
         return proxyService.deleteProxyChain(proxies);
+    }
+
+    @RequestMapping(value = "/proxy/uri/{dcName}", method = RequestMethod.GET)
+    public List<String> getAllProxyUriByDc(@PathVariable String dcName) {
+        logger.info("[getAllProxyUriByDc]{}", dcName);
+        try {
+            return proxyService.getActiveProxyUrisByDc(dcName);
+        } catch (Throwable th) {
+            logger.error("[getAllProxyUriByDc]:{}", dcName, th);
+            return Collections.emptyList();
+        }
     }
 
 }

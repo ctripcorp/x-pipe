@@ -36,6 +36,11 @@ function ProxyService($resource, $q, $http) {
         close_proxy_chain: {
             method: 'DELETE',
             url: '/console/proxy/chain'
+        },
+        get_proxy_uri_by_dc: {
+            method: 'GET',
+            url: 'console/proxy/uri/:dcName',
+            isArray: true
         }
     });
 
@@ -124,12 +129,25 @@ function ProxyService($resource, $q, $http) {
         return d.promise;
     }
 
+    function getAllProxyUriByDc(dcName) {
+        var d = $q.defer();
+        resource.get_proxy_uri_by_dc({
+                dcName: dcName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
     return {
         loadAllProxyChainsForDcCluster : loadAllProxyChainsForDcCluster,
         existsClusterRoute: existsClusterRoute,
         getProxyChainHickwall: getProxyChainHickwall,
         getAllProxyInfo: getAllProxyInfo,
         getProxyTrafficHickwall: getProxyTrafficHickwall,
-        closeProxyChain: closeProxyChain
+        closeProxyChain: closeProxyChain,
+        getAllProxyUriByDc: getAllProxyUriByDc
     }
 }
