@@ -5,9 +5,9 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.*;
@@ -32,12 +32,9 @@ public class RedisSession {
 
     private static Logger logger = LoggerFactory.getLogger(RedisSession.class);
 
-    public static final String KEY_SUBSCRIBE_TIMEOUT_SECONDS = "SUBSCRIBE_TIMEOUT_SECONDS";
     public static final String KEY_REDISSESSION_COMMAND_TIMEOUT= "KEY_REDISSESSION_COMMAND_TIMEOUT";
 
     private int waitResultSeconds = 2;
-
-    private int subscribConnsTimeoutSeconds = Integer.parseInt(System.getProperty(KEY_SUBSCRIBE_TIMEOUT_SECONDS, "60"));
 
     private Endpoint endpoint;
 
@@ -47,13 +44,16 @@ public class RedisSession {
 
     private SimpleObjectPool<NettyClient> clientPool;
 
+    private CheckerConfig config;
+
     private int commandTimeOut = Integer.parseInt(System.getProperty(KEY_REDISSESSION_COMMAND_TIMEOUT, String.valueOf(AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI)));
 
     public RedisSession(Endpoint endpoint, ScheduledExecutorService scheduled,
-                        XpipeNettyClientKeyedObjectPool keyedObjectPool) {
+                        XpipeNettyClientKeyedObjectPool keyedObjectPool, CheckerConfig config) {
         this.endpoint = endpoint;
         this.scheduled = scheduled;
         this.clientPool = keyedObjectPool.getKeyPool(endpoint);
+        this.config = config;
         if(ProxyRegistry.getProxy(endpoint.getHost(), endpoint.getPort()) != null) {
             commandTimeOut = AbstractRedisCommand.PROXYED_REDIS_CONNECTION_COMMAND_TIME_OUT_MILLI;
         }
@@ -67,7 +67,7 @@ public class RedisSession {
             String channel = entry.getKey();
             PubSubConnectionWrapper pubSubConnectionWrapper = entry.getValue();
 
-            if (System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > subscribConnsTimeoutSeconds * 1000) {
+            if (System.currentTimeMillis() - pubSubConnectionWrapper.getLastActiveTime() > config.subscribeTimeoutMilli()) {
 
                 logger.info("[check][connection inactive for a long time, force reconnect]{}, {}", channel, endpoint);
                 pubSubConnectionWrapper.closeAndClean();
@@ -286,6 +286,39 @@ public class RedisSession {
             }
         });
     }
+
+    public void ConfigGet(Callbackable<String> callback, String args) {
+        ConfigGetCommand.ConfigGetAnyCommand command = new ConfigGetCommand.ConfigGetAnyCommand(clientPool, scheduled, args);
+        silentCommand(command);
+
+        command.execute().addListener(new CommandFutureListener<String>() {
+            @Override
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
+                } else {
+                    callback.success(commandFuture.get());
+                }
+            }
+        });
+    }
+
+    public void CRDTConfigGet(Callbackable<String> callback, String args) {
+        CRDTConfigGetCommand command = new CRDTConfigGetCommand(clientPool, scheduled, args);
+        silentCommand(command);
+
+        command.execute().addListener(new CommandFutureListener<String>() {
+            @Override
+            public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
+                if(!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
+                } else {
+                    callback.success(commandFuture.get());
+                }
+            }
+        });
+    }
+
 
     public InfoResultExtractor syncInfo(InfoCommand.INFO_TYPE infoType)
             throws InterruptedException, ExecutionException, TimeoutException {

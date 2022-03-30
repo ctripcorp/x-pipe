@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -31,9 +32,11 @@ import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 
 /**
@@ -46,7 +49,7 @@ import org.springframework.context.annotation.*;
 @ComponentScan(basePackages = {"com.ctrip.xpipe.service.sso", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker.alert"})
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
-public class ConsoleContextConfig {
+public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
 	@Bean
 	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper() {
@@ -129,11 +132,11 @@ public class ConsoleContextConfig {
 
 	@Bean
 	public PersistenceCache persistenceCache3(CheckerConfig config,
-										AlertEventService alertEventService,
-										ConfigDao configDao,
-										DcClusterShardService dcClusterShardService,
-										RedisDao redisDao,
-										ClusterDao clusterDao) {
+											  AlertEventService alertEventService,
+											  ConfigDao configDao,
+											  DcClusterShardService dcClusterShardService,
+											  RedisDao redisDao,
+											  ClusterDao clusterDao) {
 		return new DefaultPersistenceCache(
 				config, 
 				alertEventService,
@@ -147,4 +150,5 @@ public class ConsoleContextConfig {
 	public FoundationService foundationService() {
 		return FoundationService.DEFAULT;
 	}
+
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.api.command;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 
 /**
@@ -29,12 +30,14 @@ public interface CommandFuture<V> extends Future<V>{
 	
 	CommandFuture<V> sync() throws InterruptedException, ExecutionException;
 
-    Future<V> await() throws InterruptedException;
+	Future<V> await() throws InterruptedException;
 
-    boolean await(long timeout, TimeUnit unit) throws InterruptedException;
+	boolean await(long timeout, TimeUnit unit) throws InterruptedException;
     
-    void addListener(CommandFutureListener<V> commandFutureListener);
+	void addListener(CommandFutureListener<V> commandFutureListener);
     
-    V getNow();
+	V getNow();
+
+	V getOrHandle(long timeout, TimeUnit unit, Function<Throwable, V> handler);
 
 }

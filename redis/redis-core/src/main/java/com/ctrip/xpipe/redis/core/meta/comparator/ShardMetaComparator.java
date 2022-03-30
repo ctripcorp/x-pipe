@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.core.meta.comparator;
 
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
@@ -15,10 +14,10 @@ import java.util.List;
  *
  * Sep 2, 2016
  */
-public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChange>{
-	
+public class ShardMetaComparator extends AbstractMetaComparator<Redis>{
+
 	private ShardMeta current, future;
-	
+
 	public ShardMetaComparator(ShardMeta current, ShardMeta future){
 		this.current = current;
 		this.future = future;
@@ -26,9 +25,10 @@ public class ShardMetaComparator extends AbstractMetaComparator<Redis, ShardChan
 
 	@Override
 	public void compare() {
+		configChanged = checkShallowChange(current, future);
+
 		List<Redis> currentAll =  getAll(current);
 		List<Redis> futureAll =  getAll(future);
-
 
 		Pair<List<Redis>, List<Pair<Redis, Redis>>> subResult = sub(futureAll, currentAll);
 		List<Redis> tAdded = subResult.getKey();

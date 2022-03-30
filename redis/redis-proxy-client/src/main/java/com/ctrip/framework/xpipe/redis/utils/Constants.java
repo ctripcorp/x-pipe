@@ -18,4 +18,6 @@ public class Constants {
 
     public static final String SOCKET = "java.net.Socket";
 
+    public static final String ABSTRACT_NIO_SOCKET = "java.nio.channels.spi.AbstractInterruptibleChannel";
+
 }

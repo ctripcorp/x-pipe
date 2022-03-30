@@ -8,6 +8,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.command.SequenceCommandChain;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -50,6 +51,8 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
 
     private RetryCommandFactory factory;
 
+    private ConsoleConfig consoleConfig;
+
     private long dcId;
 
     private Set<String> interestClusterTypes;
@@ -61,7 +64,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
     private static final String DC_NAME_DELIMITER = ",";
 
     public DcMetaBuilder(DcMeta dcMeta, long dcId, Set<String> clusterTypes, ExecutorService executors, RedisMetaService redisMetaService, DcClusterService dcClusterService,
-                         ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, RetryCommandFactory factory) {
+                         ClusterMetaService clusterMetaService, DcClusterShardService dcClusterShardService, DcService dcService, RetryCommandFactory factory, ConsoleConfig consoleConfig) {
         this.dcMeta = dcMeta;
         this.dcId = dcId;
         this.interestClusterTypes = clusterTypes;
@@ -72,6 +75,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         this.dcClusterShardService = dcClusterShardService;
         this.dcService = dcService;
         this.factory = factory;
+        this.consoleConfig = consoleConfig;
     }
 
     @Override
@@ -116,7 +120,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
     }
 
     @VisibleForTesting
-    public ClusterMeta getOrCreateClusterMeta(ClusterTbl cluster) {
+    public ClusterMeta getOrCreateClusterMeta(ClusterTbl cluster, DcClusterTbl dcClusterInfo) {
         return MapUtils.getOrCreate(dcMeta.getClusters(), cluster.getClusterName(), new ObjectFactory<ClusterMeta>(){
             @Override
             public ClusterMeta create() {
@@ -126,6 +130,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
                 clusterMeta.setAdminEmails(cluster.getClusterAdminEmails());
                 clusterMeta.setType(cluster.getClusterType());
+                clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());
 
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
@@ -179,7 +184,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
                 ShardMeta shardMeta = new ShardMeta(shard.getShardName());
                 shardMeta.setDbId(shard.getId());
                 shardMeta.setParent(clusterMeta);
-                shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(clusterId, shard.getSetinelMonitorName(), dcMeta.getId()));
+                shardMeta.setSentinelMonitorName(SentinelUtil.getSentinelMonitorName(clusterId, shard.getSetinelMonitorName(), ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.CROSS_DC) ? consoleConfig.crossDcSentinelMonitorNameSuffix() : dcMeta.getId()));
                 shardMeta.setSentinelId(sentinelId);
                 return shardMeta;
             }
@@ -279,7 +284,7 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
         protected void doExecute() throws Exception {
             try {
                 for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
-                    ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo());
+                    ClusterMeta clusterMeta = getOrCreateClusterMeta(dcClusterShard.getClusterInfo(), getDcClusterInfo(dcClusterShard));
 
                     ShardMeta shardMeta = getOrCreateShardMeta(clusterMeta.getId(),
                             dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
@@ -295,6 +300,16 @@ public class DcMetaBuilder extends AbstractCommand<DcMeta> {
             } catch (Exception e) {
                 future().setFailure(e);
             }
+        }
+
+        private DcClusterTbl getDcClusterInfo(DcClusterShardTbl dcClusterShard) {
+            for(DcClusterTbl dcClusterTbl: cluster2DcClusterMap.get(dcClusterShard.getClusterInfo().getId())) {
+                if (dcClusterTbl.getDcId() == dcId) {
+                    return dcClusterTbl;
+                }
+            }
+            return null;
+
         }
 
         @Override

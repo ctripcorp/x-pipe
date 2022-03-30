@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -108,12 +111,18 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
     private void generateHealthCheckInstances() {
         XpipeMeta meta = metaCache.getXpipeMeta();
+        Map<String, Map<String, ClusterMeta>> crossDcClusters = new HashMap<>();
         for(DcMeta dcMeta : meta.getDcs().values()) {
             if(checkerConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
                 continue;
             }
             for(ClusterMeta cluster : dcMeta.getClusters().values()) {
                 ClusterType clusterType = ClusterType.lookup(cluster.getType());
+                if (clusterType.isCrossDc()) {
+                    crossDcClusters.putIfAbsent(cluster.getId(), new HashMap<>());
+                    crossDcClusters.get(cluster.getId()).put(dcMeta.getId(), cluster);
+                    continue;
+                }
                 // console monitors only cluster with active idc in current idc
                 if (clusterType.supportSingleActiveDC() && !isClusterActiveIdcCurrentIdc(cluster)) {
                     continue;
@@ -121,16 +130,31 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 if (clusterType.supportMultiActiveDC() && !isClusterInCurrentIdc(cluster)) {
                     continue;
                 }
-                // TODO: add cluster checker
-                for(ShardMeta shard : cluster.getShards().values()) {
-                    for(RedisMeta redis : shard.getRedises()) {
-                        instanceManager.getOrCreate(redis);
-                    }
-                }
-                instanceManager.getOrCreate(cluster);
+                generateHealthCheckInstances(cluster);
             }
         }
+        generateHealthCheckInstancesForCrossDcClusters(crossDcClusters);
     }
+
+    void generateHealthCheckInstancesForCrossDcClusters(Map<String, Map<String, ClusterMeta>> crossDcClusters) {
+        crossDcClusters.forEach((k, v) -> {
+            Pair<String, Integer> maxMasterCountDc = metaCache.getMaxMasterCountDc(k, checkerConfig.getIgnoredHealthCheckDc());
+
+            if (maxMasterCountDc != null && maxMasterCountDc.getValue() > 0 && maxMasterCountDc.getKey().equalsIgnoreCase(currentDcId)) {
+                v.values().forEach(this::generateHealthCheckInstances);
+            }
+        });
+    }
+
+    void generateHealthCheckInstances(ClusterMeta clusterMeta){
+        for(ShardMeta shard : clusterMeta.getShards().values()) {
+            for(RedisMeta redis : shard.getRedises()) {
+                instanceManager.getOrCreate(redis);
+            }
+        }
+        instanceManager.getOrCreate(clusterMeta);
+    }
+
 
     private boolean isClusterActiveIdcCurrentIdc(ClusterMeta cluster) {
         return cluster.getActiveDc().equalsIgnoreCase(currentDcId);

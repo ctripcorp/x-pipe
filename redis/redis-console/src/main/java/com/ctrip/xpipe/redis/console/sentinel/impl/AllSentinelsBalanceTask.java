@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.sentinel.impl;
 
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.model.SetinelTbl;
+import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.sentinel.exception.NoSentinelsToUseException;
@@ -48,9 +48,9 @@ public class AllSentinelsBalanceTask extends BackupDcOnlySentinelBalanceTask imp
         }
     }
 
-    private SetinelTbl findNextBusySentinels() {
-        for (SetinelTbl setinelTbl: busySentinels) {
-            if (setinelTbl.getShardCount() > targetUsage) return setinelTbl;
+    private SentinelGroupModel findNextBusySentinels() {
+        for (SentinelGroupModel sentinelGroupModel: busySentinels) {
+            if (sentinelGroupModel.getShardCount() > targetUsage) return sentinelGroupModel;
         }
 
         return null;
@@ -75,17 +75,17 @@ public class AllSentinelsBalanceTask extends BackupDcOnlySentinelBalanceTask imp
     }
 
     private void balanceNextSentinel() {
-        SetinelTbl sentinel = findNextBusySentinels();
-        if (null == sentinel) return;
+        SentinelGroupModel sentinelGroup = findNextBusySentinels();
+        if (null == sentinelGroup) return;
 
-        List<DcClusterShardTbl> relatedShards = dcClusterShardService.findAllShardsBySentinel(sentinel.getSetinelId());
+        List<DcClusterShardTbl> relatedShards = dcClusterShardService.findAllShardsBySentinel(sentinelGroup.getSentinelGroupId());
 
         if (relatedShards.size() > targetUsage) {
             int batch = Math.min(balanceBatch, relatedShards.size() - targetUsage);
-            getLogger().debug("[balanceSentinel]{} sentinel:{} batch:{}", getName(), sentinel.getSetinelId(), batch);
-            doBalanceSentinel(sentinel, relatedShards.subList(0, batch));
+            getLogger().debug("[balanceSentinel]{} sentinel:{} batch:{}", getName(), sentinelGroup.getSentinelGroupId(), batch);
+            doBalanceSentinel(sentinelGroup, relatedShards.subList(0, batch));
         } else {
-            sentinel.setShardCount(relatedShards.size());
+            sentinelGroup.setShardCount(relatedShards.size());
         }
     }
 

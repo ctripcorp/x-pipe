@@ -18,6 +18,8 @@ public interface PersistenceCache {
 
     Set<String> clusterAlertWhiteList();
 
+    Set<String> migratingClusterList();
+
     boolean isSentinelAutoProcess();
 
     boolean isAlertSystemOn();

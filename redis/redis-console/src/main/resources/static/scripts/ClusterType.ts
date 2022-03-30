@@ -12,6 +12,7 @@ function ClusterType() {
                 useKeeper: true,
                 healthCheck: true,
                 supportMigration: true,
+                isCrossDc:false,
             },
             'bi_direction': {
                 name: '双向同步',
@@ -20,6 +21,7 @@ function ClusterType() {
                 useKeeper: false,
                 healthCheck: true,
                 supportMigration: false,
+                isCrossDc:false,
             },
             'single_dc': {
                 name: '单机房缓存',
@@ -28,6 +30,7 @@ function ClusterType() {
                 useKeeper: false,
                 healthCheck: false,
                 supportMigration: false,
+                isCrossDc:false,
             },
             'local_dc': {
                 name: '本机房缓存',
@@ -36,6 +39,16 @@ function ClusterType() {
                 useKeeper: false,
                 healthCheck: false,
                 supportMigration: false,
+                isCrossDc:false,
+            },
+            'cross_dc':{
+                name: '跨机房缓存',
+                value: 'cross_dc',
+                multiActiveDcs: true,
+                useKeeper: false,
+                healthCheck: false,
+                supportMigration: false,
+                isCrossDc:true,
             }
         },
         lookup(typeName) {

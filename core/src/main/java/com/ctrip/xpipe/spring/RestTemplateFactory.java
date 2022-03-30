@@ -13,6 +13,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -21,9 +25,11 @@ import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConve
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +39,8 @@ import java.util.List;
  *         Aug 5, 2016
  */
 public class RestTemplateFactory {
+
+    private static final Logger logger = LoggerFactory.getLogger(RestTemplateFactory.class);
 
     public static RestTemplate createRestTemplate() {
 
@@ -76,7 +84,13 @@ public class RestTemplateFactory {
                 .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(soTimeout).build())
                 .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build())
                 .build();
-        ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient) {
+            @Override
+            public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {
+                logger.debug("[rest][{}] {}", httpMethod, uri);
+                return super.createRequest(uri, httpMethod);
+            }
+        };
         RestTemplate restTemplate = new RestTemplate(factory);
 
         List<HttpMessageConverter<?>> converters = new ArrayList<>();
