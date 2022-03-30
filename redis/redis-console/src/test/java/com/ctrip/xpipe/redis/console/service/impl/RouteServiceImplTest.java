@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.RouteModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -46,6 +47,12 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
             }
         });
         Assert.assertEquals(Lists.newArrayList(route1, route2), routes);
+    }
+
+    @Test
+    public void testGetAllRouteInfos(){
+        List<RouteInfoModel> allActiveRouteInfos = service.getAllActiveRouteInfos();
+        allActiveRouteInfos.forEach(routeInfoModel -> logger.info(routeInfoModel.getSrcProxies().toString()));
     }
 
     @Test

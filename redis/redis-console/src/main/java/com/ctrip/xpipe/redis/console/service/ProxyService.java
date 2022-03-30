@@ -35,6 +35,10 @@ public interface ProxyService extends ProxyManager {
 
     List<ProxyTbl> getActiveProxyTbls();
 
+    List<ProxyModel> getActiveProxyTblsByDc(String dcName);
+
+    List<String> getActiveProxyUrisByDc(String dcName);
+
     /**Proxy Chain related*/
     ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId);
 
@@ -49,4 +53,8 @@ public interface ProxyService extends ProxyManager {
     List<ProxyInfoModel> getAllProxyInfo();
 
     RetMessage deleteProxyChain(List<HostPort> proxies);
+
+    Map<Long, String> proxyIdUriMap();
+
+    Map<String, Long> proxyUriIdMap();
 }
