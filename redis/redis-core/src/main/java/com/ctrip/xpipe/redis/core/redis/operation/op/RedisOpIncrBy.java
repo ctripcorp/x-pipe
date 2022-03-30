@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
@@ -17,8 +16,8 @@ public class RedisOpIncrBy extends AbstractRedisSingleKeyOp<Long> implements Red
         super(rawArgs, redisKey, redisValue);
     }
 
-    public RedisOpIncrBy(List<String> rawArgs, RedisKey redisKey, Long redisValue, GtidSet gtidSet) {
-        super(rawArgs, redisKey, redisValue, gtidSet);
+    public RedisOpIncrBy(List<String> rawArgs, RedisKey redisKey, Long redisValue, String gtid) {
+        super(rawArgs, redisKey, redisValue, gtid);
     }
 
     @Override

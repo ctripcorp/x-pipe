@@ -3,6 +3,12 @@
 	enable-sax-parser="true" class-suffix="Meta" parent="true">
 	<entity name="xpipe" implements="java.io.Serializable">
 		<entity-ref name="dc" type="map" />
+		<entity-ref name="redisCheckRule" type="map"/>
+	</entity>
+	<entity name="redisCheckRule" implements="java.io.Serializable">
+		<attribute name="id" key="true" value-type="Long" />
+		<attribute name="checkType" value-type="String"/>
+		<attribute name="param" value-type="String"/>
 	</entity>
 	<entity name="metaServer" implements="java.io.Serializable">
 	</entity>

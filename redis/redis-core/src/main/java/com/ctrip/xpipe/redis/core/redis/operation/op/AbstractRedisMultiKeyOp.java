@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.tuple.Pair;
@@ -25,8 +24,8 @@ public abstract class AbstractRedisMultiKeyOp<T> extends AbstractRedisOp impleme
         this.kvs = redisKvs;
     }
 
-    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, GtidSet gtidSet) {
-        super(rawArgs, gtidSet);
+    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, String gtid) {
+        super(rawArgs, gtid);
         this.kvs = redisKvs;
     }
 
@@ -35,8 +34,8 @@ public abstract class AbstractRedisMultiKeyOp<T> extends AbstractRedisOp impleme
         this.kvs = redisKvs;
     }
 
-    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, GtidSet gtidSet, String gid, Long timestamp) {
-        super(rawArgs, gtidSet, gid, timestamp);
+    public AbstractRedisMultiKeyOp(List<String> rawArgs, List<Pair<RedisKey, T>> redisKvs, String gtid, String gid, Long timestamp) {
+        super(rawArgs, gtid, gid, timestamp);
         this.kvs = redisKvs;
     }
 

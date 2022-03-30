@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.xml.sax.SAXException;
@@ -38,6 +39,8 @@ public interface CheckerConsoleService {
 
     Set<String> clusterAlertWhiteList(String console);
 
+    Set<String> migratingClusterList(String console);
+
     boolean isSentinelAutoProcess(String console);
 
     boolean isAlertSystemOn(String console);
@@ -45,6 +48,8 @@ public interface CheckerConsoleService {
     Date getClusterCreateTime(String console, String clusterId);
     
     Map<String, Date> loadAllClusterCreateTime(String console);
+
+    void bindShardSentinel(String console, String dc, String cluster, String shard, SentinelMeta sentinelMeta);
 
     public class AlertMessage {
         private AlertMessageEntity message;

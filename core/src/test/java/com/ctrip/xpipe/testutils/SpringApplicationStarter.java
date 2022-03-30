@@ -37,6 +37,14 @@ public class SpringApplicationStarter extends AbstractStartStoppable {
         application.setEnvironment(createEnvironment());
     }
 
+    public SpringApplicationStarter(int port, int maxThreads, Class<?>... resources) {
+        application = new SpringApplication(resources);
+        application.setBannerMode(Banner.Mode.OFF);
+        this.port = port;
+        this.maxThreads = maxThreads;
+        application.setEnvironment(createEnvironment());
+    }
+
     public int getPort() {
         return port;
     }

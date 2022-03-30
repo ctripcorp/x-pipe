@@ -116,11 +116,11 @@ public abstract class AbstractHealthCheckAction<T extends HealthCheckInstance> e
     }
 
     protected void scheduleTask(int baseInterval) {
-        long checkInterval = getCheckTimeInterval(baseInterval);
-        future = scheduled.scheduleWithFixedDelay(new ScheduledHealthCheckTask(), checkInterval, baseInterval, TimeUnit.MILLISECONDS);
+        long checkInitialDelay = getCheckInitialDelay(baseInterval);
+        future = scheduled.scheduleWithFixedDelay(new ScheduledHealthCheckTask(), checkInitialDelay, baseInterval, TimeUnit.MILLISECONDS);
     }
 
-    protected int getCheckTimeInterval(int baseInterval) {
+    protected int getCheckInitialDelay(int baseInterval) {
         return baseInterval + (((Math.abs(random.nextInt())) % DELTA));
     }
 

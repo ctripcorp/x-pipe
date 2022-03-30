@@ -2,15 +2,16 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.google.common.collect.Sets;
@@ -37,6 +38,12 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     @Mock
     private HealthCheckEndpointFactory factory;
 
+    @Mock
+    private MetaCache metaCache;
+
+    @Mock
+    private CheckerConfig checkerConfig;
+
     private RedisHealthCheckInstance instance = null;
 
     private Set<HostPort> addedRedises = new HashSet<>();
@@ -58,7 +65,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
             return null;
         }).when(instanceManager).remove(any(HostPort.class));
         
-        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory);
+        manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, metaCache, checkerConfig);
     }
 
     private void prepareData(String dc) {
@@ -88,9 +95,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
 
         Set<HostPort> expectedRedises = Sets.newHashSet(new HostPort("127.0.0.1", 8100),
-                new HostPort("127.0.0.1", 8101));
+                new HostPort("127.0.0.1", 8101), new HostPort("127.0.0.1", 16479),
+                new HostPort("127.0.0.1", 17479));
         manager.visitAdded(getDcMeta("oy").findCluster("cluster1"));
-        verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
+        verify(instanceManager, times(4)).getOrCreate(any(RedisMeta.class));
         Assert.assertEquals(expectedRedises, addedRedises);
     }
 
@@ -126,6 +134,19 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         future.findCluster("cluster1").getShards().values().iterator().next().getRedises().get(0).setMaster("");
         manager.compare(future);
 
+        // only changed redis reload
+        Mockito.verify(instanceManager, times(1)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, times(1)).getOrCreate(any(RedisMeta.class));
+    }
+
+    @Test
+    public void testShardConfigChange() throws Exception {
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        future.findCluster("cluster1").getShards().values().iterator().next().setSentinelId(100L);
+        manager.compare(future);
+
+        // only redis in changed shard reload
         Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
         Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
     }
@@ -169,8 +190,9 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager.compare(future);
 
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
-        Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 8100), new HostPort("127.0.0.1", 8101)), deletedRedised);
+        Mockito.verify(instanceManager, times(4)).remove(any(HostPort.class));
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 8100), new HostPort("127.0.0.1", 8101),
+                 new HostPort("127.0.0.1", 16479), new HostPort("127.0.0.1", 17479)), deletedRedised);
     }
 
     @Test
@@ -256,7 +278,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void visitRemovedClusterActiveDc() {
-        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory));
+        manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache, checkerConfig));
         manager.compare(getDcMeta("jq"));
 
         DcMeta dcMeta = MetaClone.clone(getDcMeta("jq"));

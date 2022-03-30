@@ -94,7 +94,7 @@ function router($stateProvider, $urlRouterProvider) {
             controller: 'ClusterDcCtl'
         })
         .state('cluster_list', {
-            url: '/cluster_list?clusterName&dcName&type?keepercontainer',
+            url: '/cluster_list?clusterName&dcName&type&clusterType?keepercontainer',
             templateUrl: 'views/index/cluster_list.html',
             controller: 'ClusterListCtl'
         })

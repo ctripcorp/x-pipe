@@ -7,19 +7,13 @@ import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MetaServiceTest extends AbstractConsoleTest{
@@ -63,7 +57,7 @@ public class MetaServiceTest extends AbstractConsoleTest{
 	public void testSetinelMetaService() {
 		SentinelMeta expect = new SentinelMeta().setId(1L).setAddress("1").setParent(null);
 		
-		SetinelTbl setinelTbl = new SetinelTbl().setSetinelId(1L).setSetinelAddress("1");
+		SentinelGroupModel setinelTbl = new SentinelGroupModel(new SentinelGroupTbl().setSentinelGroupId(1L)).addSentinel(new SentinelInstanceModel(new SentinelTbl().setSentinelIp("1")));
 		assertEquals(expect,new SentinelMetaServiceImpl().encodeSetinelMeta(setinelTbl, null));
 	}
 	

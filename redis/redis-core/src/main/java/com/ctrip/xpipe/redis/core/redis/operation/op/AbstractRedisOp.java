@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.List;
  */
 public abstract class AbstractRedisOp implements RedisOp {
 
-    private GtidSet gtidSet;
+    private String gtid;
 
     private Long timestamp;
 
@@ -23,24 +22,24 @@ public abstract class AbstractRedisOp implements RedisOp {
         this(rawArgs, null, null, null);
     }
 
-    public AbstractRedisOp(List<String> rawArgs, GtidSet gtidSet) {
-        this(rawArgs, gtidSet, null, null);
+    public AbstractRedisOp(List<String> rawArgs, String gtid) {
+        this(rawArgs, gtid, null, null);
     }
 
     public AbstractRedisOp(List<String> rawArgs, String gid, Long timestamp) {
         this(rawArgs, null, gid, timestamp);
     }
 
-    public AbstractRedisOp(List<String> rawArgs, GtidSet gtidSet, String gid, Long timestamp) {
+    public AbstractRedisOp(List<String> rawArgs, String gtid, String gid, Long timestamp) {
         this.rawArgs = rawArgs;
-        this.gtidSet = gtidSet;
+        this.gtid = gtid;
         this.gid = gid;
         this.timestamp = timestamp;
     }
 
     @Override
-    public GtidSet getOpGtidSet() {
-        return gtidSet;
+    public String getOpGtid() {
+        return gtid;
     }
 
     @Override

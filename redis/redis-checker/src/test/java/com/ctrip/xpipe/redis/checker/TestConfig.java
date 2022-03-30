@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.checker;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
@@ -228,5 +228,40 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     @Override
     public void register(List<String> keys, ConfigChangeListener configListener) {
 
+    }
+
+    @Override
+    public String crossDcSentinelMonitorNameSuffix() {
+        return null;
+    }
+
+    @Override
+    public int getNonCoreCheckIntervalMilli() {
+        return 3 * 60 * 60 *1000;
+    }
+  
+    @Override
+    public boolean shouldBindOuterClusterShardAndSentinel() {
+        return false;
+    }
+
+    @Override
+    public int sentinelBindTimeoutMilli() {
+        return 0;
+    }
+
+    @Override
+    public Set<String> getOuterClusterTypes() {
+        return null;
+    }
+
+    @Override
+    public Map<String, String> sentinelMasterConfig() {
+        return null;
+    }
+
+    @Override
+    public long subscribeTimeoutMilli() {
+        return 5000L;
     }
 }

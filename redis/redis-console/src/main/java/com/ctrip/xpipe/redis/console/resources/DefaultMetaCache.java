@@ -6,16 +6,23 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
+import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     private int refreshIntervalMilli = 2000;
+
+    @Autowired
+    private RedisCheckRuleService redisCheckRuleService;
 
     @Autowired
     private DcMetaService dcMetaService;
@@ -86,8 +96,21 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
                     dcMetas.add(dcMetaService.getDcMeta(dc.getDcName()));
                 }
 
+                List<RedisCheckRuleTbl> redisCheckRuleTbls = redisCheckRuleService.getAllRedisCheckRules();
+                List<RedisCheckRuleMeta> redisCheckRuleMetas = new LinkedList<>();
+
+                for(RedisCheckRuleTbl redisCheckRuleTbl : redisCheckRuleTbls) {
+                    RedisCheckRuleMeta redisCheckRuleMeta = new RedisCheckRuleMeta();
+                    redisCheckRuleMeta.setId(redisCheckRuleTbl.getId())
+                            .setCheckType(redisCheckRuleTbl.getCheckType())
+                            .setParam(redisCheckRuleTbl.getParam());
+
+                    redisCheckRuleMetas.add(redisCheckRuleMeta);
+                }
+
+
                 refreshClusterParts();
-                XpipeMeta xpipeMeta = createXpipeMeta(dcMetas);
+                XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
                 refreshMeta(xpipeMeta);
             }
 
@@ -124,16 +147,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         Set<String> requestClusters = clusterParts.get(partIndex);
 
         return createDividedMeta(xpipeMeta, requestClusters);
-    }
-
-    @Override
-    public void pauseUpdate() {
-        
-    }
-
-    @Override
-    public void continueUpdate() {
-
     }
 
 }

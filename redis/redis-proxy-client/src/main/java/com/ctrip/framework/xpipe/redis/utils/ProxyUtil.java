@@ -1,7 +1,5 @@
 package com.ctrip.framework.xpipe.redis.utils;
 
-import com.alibaba.arthas.deps.org.slf4j.Logger;
-import com.alibaba.arthas.deps.org.slf4j.LoggerFactory;
 import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.proxy.*;
 import com.google.common.annotations.VisibleForTesting;
@@ -150,6 +148,11 @@ public class ProxyUtil extends ConcurrentHashMap<SocketAddress, ProxyResourceMan
 
     public void setChecker(ProxyChecker checker) {
         this.checker = checker;
+    }
+
+    @VisibleForTesting
+    public int usingProxySocketSize() {
+        return socketAddressMap.size();
     }
 
     @VisibleForTesting

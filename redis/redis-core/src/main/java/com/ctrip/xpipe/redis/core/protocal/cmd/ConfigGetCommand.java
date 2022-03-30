@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Dec 2, 2016
  */
 public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
-	
+
 	public ConfigGetCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
 		super(clientPool, scheduled);
 	}
@@ -121,4 +121,32 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 		}
 	}
 
+	public static class ConfigGetAnyCommand extends ConfigGetCommand<String> {
+
+		private String args;
+
+		public ConfigGetAnyCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled, String args) {
+			super(clientPool, scheduled);
+			this.args = args;
+		}
+
+
+		@Override
+		protected String doFormat(Object[] payload) {
+			if(payload.length < 2){
+				throw new IllegalStateException(getName() + " result length not right:" + payload.length);
+			}
+			return payloadToString(payload[1]);
+		}
+
+		@Override
+		protected String getConfigName() {
+			return args;
+		}
+
+		@Override
+		public String getName() {
+			return super.getName() + args;
+		}
+	}
 }

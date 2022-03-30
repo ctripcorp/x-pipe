@@ -122,6 +122,22 @@ public enum ALERT_TYPE {
             return new DetailDesc("从机房Redis版本错误", "说明：XPipe从机房Redis应该为XRedis，且版本号大于等于0.0.3");
         }
     },
+    REDIS_CONIFIG_CHECK_FAIL("redis_config_check_fail", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("redis config check fail", "redis has wrong config, please check it");
+        }
+    },
     REDIS_REPL_DISKLESS_SYNC_ERROR("redis_repl_diskless_sync_error", EMAIL_DBA) {
         @Override
         public boolean urgent() {
@@ -344,6 +360,22 @@ public enum ALERT_TYPE {
         @Override
         public DetailDesc detailDesc() {
             return new DetailDesc("哨兵监控与配置不一致", "");
+        }
+    },
+    MAJORITY_SENTINELS_NETWORK_ERROR("majority_sentinels_network_error", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() {
+            return false;
+        }
+
+        @Override
+        public boolean reportRecovery() {
+            return false;
+        }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("超过一半哨兵失联", "");
         }
     },
     INSTANCE_SICK_BUT_DELAY_MARK_DOWN("instance_lag_delay_mark_down", EMAIL_XPIPE_ADMIN | EMAIL_DBA) {

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 /**
  * @author wenchao.meng
@@ -117,8 +118,16 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
         throw new TimeoutException();
     }
 
+	@Override
+	public V getOrHandle(long timeout, TimeUnit unit, Function<Throwable, V> handler) {
+		try {
+			return this.get(timeout, unit);
+		} catch (Throwable t) {
+			return handler.apply(t);
+		}
+	}
 
-    private static final class CauseHolder {
+	private static final class CauseHolder {
         final Throwable cause;
         CauseHolder(Throwable cause) {
             this.cause = cause;
