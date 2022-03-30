@@ -2,12 +2,12 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.framework.xpipe.redis.ProxyChecker;
 import com.ctrip.framework.xpipe.redis.ProxyRegistry;
-import com.ctrip.framework.xpipe.redis.utils.ProxyUtil;
-import com.ctrip.xpipe.api.config.ConfigChangeListener;
+import com.ctrip.framework.xpipe.redis.instrument.AgentMain;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -22,16 +22,12 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.Ordered;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_PROXY_CHECK_INTERVAL;
 
@@ -127,6 +123,23 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
     
     @PostConstruct
     public void postConstruct() {
+        ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
+        scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() throws Exception {
+                if (!AgentMain.isProxyJarReady()) {
+                    logger.debug("[initEndpointChecker][skip] ProxyJar not ready");
+                    return;
+                }
+
+                initEndpointChecker();
+                scheduled.shutdown();
+            }
+        }, 0, 2, TimeUnit.SECONDS);
+    }
+    
+    public void initEndpointChecker() {
+        logger.info("[initEndpointChecker][begin]");
         ProxyRegistry.setChecker(proxyChecker::check, proxyChecker::getRetryUpTimes, proxyChecker::getRetryDownTimes);
         ProxyRegistry.startCheck();
         ProxyRegistry.onProxyUp(proxyInetSocketAddress ->  {
@@ -147,6 +160,7 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
                     break;
             }
         });
+        logger.info("[initEndpointChecker][success]");
     }
     
     @Override

@@ -20,6 +20,8 @@ public class TestPersistenceCache implements PersistenceCache {
 
     private Set<String> clusterAlertWhitelist = new HashSet<>();
 
+    private Set<String> migratingClusterList = new HashSet<>();
+
     private boolean sentinelAutoProcess = true;
 
     private boolean alertSystemOn = true;
@@ -50,6 +52,11 @@ public class TestPersistenceCache implements PersistenceCache {
     @Override
     public Set<String> clusterAlertWhiteList() {
         return clusterAlertWhitelist;
+    }
+
+    @Override
+    public Set<String> migratingClusterList() {
+        return migratingClusterList;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation.op;
 
-import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 
 /**
@@ -11,8 +10,8 @@ public class RedisSingleKeyOpGtidWrapper<T> extends AbstractRedisOpGtidWrapper i
 
     private RedisSingleKeyOp<T> innerRedisSingleKeyOp;
 
-    public RedisSingleKeyOpGtidWrapper(GtidSet gtidSet, RedisSingleKeyOp<T> innerRedisSingleKeyOp) {
-        super(gtidSet, innerRedisSingleKeyOp);
+    public RedisSingleKeyOpGtidWrapper(String gtid, RedisSingleKeyOp<T> innerRedisSingleKeyOp) {
+        super(gtid, innerRedisSingleKeyOp);
         this.innerRedisSingleKeyOp = innerRedisSingleKeyOp;
     }
 

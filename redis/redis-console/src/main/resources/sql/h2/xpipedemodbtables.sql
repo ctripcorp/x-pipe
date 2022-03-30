@@ -82,6 +82,7 @@ create table DC_CLUSTER_TBL
 	cluster_id bigint unsigned not null,
 	metaserver_id bigint unsigned not null,
     dc_cluster_phase int not null default 1,
+    active_redis_check_rules varchar(128),
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );
@@ -272,4 +273,39 @@ CREATE TABLE `az_tbl` (
   `description` varchar(1024) not null default '',
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(1) not null default 0,
+) ;
+
+-- redis_check_rule_tbl
+drop table if exists redis_check_rule_tbl;
+CREATE TABLE `redis_check_rule_tbl` (
+  `id` bigint(20) unsigned not null AUTO_INCREMENT primary key,
+  `check_type` varchar(128) not null default '',
+  `param` varchar(256) not null default '',
+  `description` varchar(1024) not null default '',
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) not null default 0,
+);
+
+-- sentinel_group_tbl
+drop table if exists sentinel_group_tbl;
+CREATE TABLE `sentinel_group_tbl`
+(
+    `sentinel_group_id`   bigint(20) NOT NULL AUTO_INCREMENT primary key,
+    `cluster_type`        varchar(40)  NOT NULL DEFAULT '',
+    `deleted`             tinyint(4) NOT NULL DEFAULT '0',
+    `datachange_lasttime` timestamp default CURRENT_TIMESTAMP,
+    `sentinel_description` varchar(100)  NOT NULL DEFAULT '',
+) ;
+
+-- sentinel_tbl
+drop table if exists sentinel_tbl;
+CREATE TABLE `sentinel_tbl`
+(
+    `sentinel_id`         bigint(20) NOT NULL AUTO_INCREMENT primary key,
+    `dc_id`               bigint(20) NOT NULL DEFAULT '0',
+    `sentinel_group_id`   bigint(20) NOT NULL DEFAULT '0',
+    `sentinel_ip`         varchar(40)  NOT NULL DEFAULT '0.0.0.0',
+    `sentinel_port`       int(11) NOT NULL DEFAULT '0',
+    `deleted`             tinyint(4) NOT NULL DEFAULT '0',
+    `datachange_lasttime` timestamp default CURRENT_TIMESTAMP,
 ) ;

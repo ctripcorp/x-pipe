@@ -9,6 +9,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
+
 
 /**
  * @author wenchao.meng
@@ -25,9 +27,7 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		future = MetaClone.clone(current);
 		
 	}
-	
-	
-	
+
 	@Test
 	public void testAdded(){
 		
@@ -37,15 +37,13 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(current, future);
 		clusterMetaComparator.compare();
 
+		assertFalse(clusterMetaComparator.isConfigChange());
 
 		Assert.assertEquals(1, clusterMetaComparator.getAdded().size());
 		Assert.assertEquals(shard, clusterMetaComparator.getAdded().toArray()[0]);
 		
 		Assert.assertEquals(0, clusterMetaComparator.getRemoved().size());
 		Assert.assertEquals(0, clusterMetaComparator.getMofified().size());
-
-		
-		
 	}
 
 	
@@ -54,7 +52,9 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		
 		ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(current, future);
 		clusterMetaComparator.compare();
-		
+
+		assertFalse(clusterMetaComparator.isConfigChange());
+
 		Assert.assertEquals(0, clusterMetaComparator.getAdded().size());
 		Assert.assertEquals(0, clusterMetaComparator.getRemoved().size());
 		Assert.assertEquals(0, clusterMetaComparator.getMofified().size());
@@ -71,6 +71,7 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(current, future);
 		clusterMetaComparator.compare();
 
+		assertFalse(clusterMetaComparator.isConfigChange());
 
 		Assert.assertEquals(0, clusterMetaComparator.getAdded().size());
 		
@@ -97,6 +98,20 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		ShardMetaComparator comparator = (ShardMetaComparator) clusterMetaComparator.getMofified().toArray()[0];
 		Assert.assertEquals(shardMeta.getId(), comparator.getCurrent().getId());
 	}
+
+
+	@Test
+	public void testConfigChanged() {
+		current.setDcs("dc1");
+		future.setDcs("dc1,dc2");
+		ClusterMetaComparator clusterMetaComparator = new ClusterMetaComparator(current, future);
+		clusterMetaComparator.compare();
+
+		Assert.assertTrue(clusterMetaComparator.isConfigChange());
+		Assert.assertTrue(clusterMetaComparator.getAdded().isEmpty());
+		Assert.assertTrue(clusterMetaComparator.getRemoved().isEmpty());
+		Assert.assertTrue(clusterMetaComparator.getMofified().isEmpty());
+	}
 	
 	@Test
 	public void testEquals(){
@@ -106,10 +121,9 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		Assert.assertTrue(EqualsBuilder.reflectionEquals(a2, a1, false));
 		
 		a1.hashCode();
-		Assert.assertFalse(EqualsBuilder.reflectionEquals(a2, a1, false));
+		assertFalse(EqualsBuilder.reflectionEquals(a2, a1, false));
 		
 		Assert.assertTrue(EqualsBuilder.reflectionEquals(a1, a2, "hash"));
-		
 	}
 
 }

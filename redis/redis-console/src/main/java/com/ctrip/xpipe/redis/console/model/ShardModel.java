@@ -18,7 +18,7 @@ public class ShardModel implements java.io.Serializable{
 	private List<RedisTbl> m_redises = new ArrayList<RedisTbl>();
 	
 	/** for creation **/
-	private Map<Long, SetinelTbl> sentinels;
+	private Map<Long, SentinelGroupModel> sentinels;
 	
 	public ShardModel(){
 	}
@@ -54,11 +54,11 @@ public class ShardModel implements java.io.Serializable{
 		this.shardTbl = shardTbl;
 	}
 	
-	public Map<Long, SetinelTbl> getSentinels() {
+	public Map<Long, SentinelGroupModel> getSentinels() {
 		return this.sentinels;
 	}
 	
-	public void setSentinels(Map<Long, SetinelTbl> sentinels) {
+	public void setSentinels(Map<Long, SentinelGroupModel> sentinels) {
 		this.sentinels = sentinels;
 	}
 

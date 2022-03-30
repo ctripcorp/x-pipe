@@ -58,7 +58,7 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
         }
     }
 
-    private void loadMeta() {
+    void loadMeta() {
         try {
             logger.debug("[loadMeta] start");
             XpipeMeta xpipeMeta = checkerConsoleService.getXpipeMeta(config.getConsoleAddress(), config.getClustersPartIndex());
@@ -68,13 +68,4 @@ public class CheckerMetaCache extends AbstractMetaCache implements MetaCache {
         }
     }
 
-    @Override
-    public void pauseUpdate() {
-        
-    }
-
-    @Override
-    public void continueUpdate() {
-
-    }
 }

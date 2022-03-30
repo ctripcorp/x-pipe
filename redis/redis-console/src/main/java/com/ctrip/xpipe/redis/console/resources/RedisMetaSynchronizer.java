@@ -4,6 +4,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
@@ -64,13 +65,16 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
             String clusterId = "";
             String shardId = "";
             List<Pair<String, Integer>> toAdded = new ArrayList<>();
+            List<RedisMeta> toUpdateMaster = new ArrayList<>();
             for (Redis redis : added) {
                 toAdded.add(new Pair<>(redis.getIp(), redis.getPort()));
+                toUpdateMaster.add((RedisMeta) redis);
                 clusterId = ((ClusterMeta) ((RedisMeta) redis).parent().parent()).getId();
                 shardId = ((RedisMeta) redis).parent().getId();
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
             redisService.insertRedises(DcMetaSynchronizer.currentDcId, clusterId, shardId, toAdded);
+            updateBatchMaster(toUpdateMaster, clusterId, shardId);
             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", toAdded));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
@@ -84,29 +88,34 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
 
             String clusterId = "";
             String shardId = "";
-            List<RedisMeta> futureMetaList = new ArrayList<>();
+            List<RedisMeta> futureList = new ArrayList<>();
             for (MetaComparator metaComparator : modified) {
                 RedisMeta redisMeta = (RedisMeta) ((RedisComparator) metaComparator).getFuture();
-                futureMetaList.add(redisMeta);
+                futureList.add(redisMeta);
                 clusterId = ((ClusterMeta) redisMeta.parent().parent()).getId();
                 shardId = redisMeta.parent().getId();
             }
-
-            List<RedisTbl> currentTblList = redisService.findRedisesByDcClusterShard(DcMetaSynchronizer.currentDcId, clusterId, shardId);
-            List<RedisTbl> futureTblList = new ArrayList<>();
-            for (RedisMeta future : futureMetaList) {
-                for (RedisTbl current : currentTblList) {
-                    if (current.getRedisIp().equals(future.getIp()) && current.getRedisPort() == future.getPort()) {
-                        futureTblList.add(current.setMaster(future.isMaster()));
-                        break;
-                    }
-                }
-            }
-            logger.info("[RedisMetaSynchronizer][updateRedises]{}", futureTblList);
-            redisService.updateBatchMaster(futureTblList);
-            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateBatchMaster]%s", futureMetaList));
+            updateBatchMaster(futureList, clusterId, shardId);
+            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[updateBatchMaster]%s", futureList));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][updateRedises]", e);
+        }
+    }
+
+    void updateBatchMaster(List<RedisMeta> futureMetaList, String clusterId, String shardId) throws ResourceNotFoundException {
+        List<RedisTbl> currentTblList = redisService.findRedisesByDcClusterShard(DcMetaSynchronizer.currentDcId, clusterId, shardId);
+        List<RedisTbl> futureTblList = new ArrayList<>();
+        for (RedisMeta future : futureMetaList) {
+            for (RedisTbl current : currentTblList) {
+                if (current.getRedisIp().equals(future.getIp()) && current.getRedisPort() == future.getPort()) {
+                    futureTblList.add(current.setMaster(future.isMaster()));
+                    break;
+                }
+            }
+        }
+        if (!futureTblList.isEmpty()) {
+            logger.info("[RedisMetaSynchronizer][updateRedises]{}", futureTblList);
+            redisService.updateBatchMaster(futureTblList);
         }
     }
 

@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -14,11 +15,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author wenchao.meng
@@ -47,6 +44,9 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private DcClusterService dcClusterService;
+
+    @Autowired
+    private MigrationEventDao migrationEventDao;
 
     @Test
     public void testCreateOneWayCluster(){
@@ -232,6 +232,21 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         latter = clusterService.find(102L);
         Assert.assertEquals(former.getClusterName(), "cluster101");
         Assert.assertEquals(latter.getClusterName(), "cluster102");
+    }
+
+    @Test
+    public void testMigratingClusterNames() {
+        Assert.assertTrue(clusterService.findMigratingClusterNames().isEmpty());
+        ClusterTbl clusterTbl = clusterService.find("cluster101");
+
+        MigrationRequest migrationRequest = new MigrationRequest("unit_test");
+        MigrationRequest.ClusterInfo clusterInfo = new MigrationRequest.ClusterInfo(clusterTbl.getId(),
+                clusterTbl.getClusterName(), 1, "jq", 2, "oy");
+        migrationRequest.addClusterInfo(clusterInfo);
+        migrationRequest.setTag("unit_test");
+        migrationEventDao.createMigrationEvent(migrationRequest);
+
+        Assert.assertEquals(Collections.singleton("cluster101"), clusterService.findMigratingClusterNames());
     }
 
     @Override

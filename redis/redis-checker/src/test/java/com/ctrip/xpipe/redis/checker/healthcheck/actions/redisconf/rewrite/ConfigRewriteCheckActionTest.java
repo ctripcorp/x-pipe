@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.TestConfig;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
@@ -50,14 +51,13 @@ public class ConfigRewriteCheckActionTest extends AbstractTest {
         }
     }
 
-
     @Test
     public void testIgnoreRedisLoadingError() throws Exception {
         Server server = startServer("-ERR Only CONFIG GET is allowed during loading\r\n");
         AlertManager alertManager = mock(AlertManager.class);
         doNothing().when(alertManager).alert(any(DefaultRedisInstanceInfo.class), any(ALERT_TYPE.class), anyString());
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
-        instance.setSession(new RedisSession(new DefaultEndPoint("localhost", server.getPort()), scheduled, getXpipeNettyClientKeyedObjectPool()))
+        instance.setSession(new RedisSession(new DefaultEndPoint("localhost", server.getPort()), scheduled, getXpipeNettyClientKeyedObjectPool(), new TestConfig()))
                 .setInstanceInfo(new DefaultRedisInstanceInfo("dc", "cluster", "shard", new HostPort(), "SHAJQ", ClusterType.ONE_WAY));
         try {
             new ConfigRewriteCheckAction(scheduled, instance,
@@ -74,7 +74,7 @@ public class ConfigRewriteCheckActionTest extends AbstractTest {
     @Ignore
     @Test
     public void testAlertOnlyWhenConfigRewriteExactlyFail() throws Exception {
-        RedisSession redisSession = new RedisSession(new DefaultEndPoint("127.0.0.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool());
+        RedisSession redisSession = new RedisSession(new DefaultEndPoint("127.0.0.1", 6379), scheduled, getXpipeNettyClientKeyedObjectPool(), new TestConfig());
         redisSession.configRewrite((s, t)->{
             System.out.println("result: " + s);
             System.out.println("throwable: " + t.getMessage());

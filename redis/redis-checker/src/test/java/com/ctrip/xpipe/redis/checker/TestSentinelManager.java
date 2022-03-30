@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 
@@ -12,32 +13,42 @@ import java.util.List;
 public class TestSentinelManager implements SentinelManager {
 
     @Override
-    public void removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName) {
-
-    }
-
-    @Override
-    public HostPort getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<String> removeSentinelMonitor(Sentinel sentinel, String sentinelMonitorName) {
         return null;
     }
 
     @Override
-    public String infoSentinel(Sentinel sentinel) {
+    public Command<HostPort> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
         return null;
     }
 
     @Override
-    public void monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum) {
-
-    }
-
-    @Override
-    public List<HostPort> slaves(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<String> infoSentinel(Sentinel sentinel) {
         return null;
     }
 
     @Override
-    public void reset(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<String> monitorMaster(Sentinel sentinel, String sentinelMonitorName, HostPort master, int quorum) {
+        return null;
+    }
 
+    @Override
+    public Command<List<HostPort>> slaves(Sentinel sentinel, String sentinelMonitorName) {
+        return null;
+    }
+
+    @Override
+    public Command<Long> reset(Sentinel sentinel, String sentinelMonitorName) {
+        return null;
+    }
+
+    @Override
+    public Command<String> sentinelSet(Sentinel sentinel, String sentinelMonitorName, String[] configs) {
+        return null;
+    }
+
+    @Override
+    public Command<String> sentinelConfigSet(Sentinel sentinel, String configName, String configValue) {
+        return null;
     }
 }

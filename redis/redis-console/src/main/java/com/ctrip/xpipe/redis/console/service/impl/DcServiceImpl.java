@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.DcTblDao;
 import com.ctrip.xpipe.redis.console.model.DcTblEntity;
+import com.ctrip.xpipe.redis.console.model.consoleportal.DcClusterTypeStatisticsModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
@@ -11,7 +12,6 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -114,6 +114,15 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 	}
 
 	@Override
+	public Map<String, Long> dcNameZoneMap() {
+		List<DcTbl> allDcs = findAllDcs();
+		Map<String, Long> result = new HashMap<>();
+
+		allDcs.forEach(dcTbl -> result.put(dcTbl.getDcName(), dcTbl.getZoneId()));
+		return result;
+	}
+
+	@Override
 	public List<DcListDcModel> findAllDcsRichInfo(){
 		try {
 			List<DcTbl> dcTbls = findAllDcs();
@@ -125,32 +134,18 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 			dcTbls.forEach(dcTbl -> {
 				DcMeta dcMeta = dcMetaService.getDcMeta(dcTbl.getDcName());
 
-				DcListDcModel dcModel = new DcListDcModel();
-				int countRedisNums = 0, countKeeperNums = 0, countClusterInActiveDc = 0;
-				dcModel.setDcId(dcTbl.getId());
-				dcModel.setClusterCount(dcMeta.getClusters().values().size());
-				dcModel.setDcName(dcMeta.getId());
-				dcModel.setKeeperContainerCount(dcMeta.getKeeperContainers().size());
-				for (ClusterMeta clusterMeta: dcMeta.getClusters().values()){
-					if (dcTbl.getDcName().equals(clusterMeta.getActiveDc()))
-						countClusterInActiveDc++;
-
-					for (ShardMeta shardMeta: clusterMeta.getShards().values()){
-						if (-countRedisNums <= Integer.MIN_VALUE || -countRedisNums - shardMeta.getRedises().size() <= Integer.MIN_VALUE){
-							throw new XpipeRuntimeException(String.format("redis numbers overflow: %d", countRedisNums));
-						}else if (-countKeeperNums <= Integer.MIN_VALUE || -countKeeperNums - shardMeta.getKeepers().size() <= Integer.MIN_VALUE){
-							throw new XpipeRuntimeException(String.format("keeper numbers overflow: %d", countKeeperNums));
-						}else{
-							countRedisNums  += shardMeta.getRedises().size();
-							countKeeperNums += shardMeta.getKeepers().size();
-						}
-
-					}
+				Map<String, List<ClusterMeta>> typeClusters = new HashMap<>();
+				for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+					String type = clusterMeta.getType().toUpperCase();
+					typeClusters.putIfAbsent(type, new ArrayList<>());
+					typeClusters.get(type).add(clusterMeta);
 				}
-				dcModel.setRedisCount(countRedisNums);
-				dcModel.setKeeperCount(countKeeperNums);
-				dcModel.setClusterInActiveDcCount(countClusterInActiveDc);
-				result.add(dcModel);
+
+				List<DcClusterTypeStatisticsModel> dcClusterTypeClustersAnalyzers = new ArrayList<>();
+				dcClusterTypeClustersAnalyzers.addAll(clusterTypesStatistics(dcMeta, typeClusters));
+				dcClusterTypeClustersAnalyzers.add(totalStatistics(dcMeta.getId(), dcClusterTypeClustersAnalyzers));
+
+				result.add(new DcListDcModel().setDcName(dcTbl.getDcName()).setDcDescription(dcTbl.getDcDescription()).setDcId(dcTbl.getId()).setClusterTypes(dcClusterTypeClustersAnalyzers));
 			});
 
 			return result;
@@ -170,6 +165,39 @@ public class DcServiceImpl extends AbstractConsoleService<DcTblDao> implements D
 				);
 			}
 		});
+	}
+
+	private List<DcClusterTypeStatisticsModel> clusterTypesStatistics(DcMeta dcMeta,Map<String, List<ClusterMeta>> typeClusters) {
+		List<DcClusterTypeStatisticsModel> allTypes = new ArrayList<>();
+		typeClusters.forEach((k, v) -> {
+			DcClusterTypeStatisticsModel analyzer = new DcClusterTypeStatisticsModel(dcMeta.getId(), k, v);
+			if (ClusterType.lookup(k).supportKeeper()) {
+				analyzer.setKeeperContainerCount(dcMeta.getKeeperContainers().size());
+			}
+			allTypes.add(analyzer);
+			analyzer.analyse();
+		});
+		return allTypes;
+	}
+
+	private DcClusterTypeStatisticsModel totalStatistics(String dc, List<DcClusterTypeStatisticsModel> allTypes) {
+		int allTypeClusterCount = 0, allTypeRedisCount = 0, allTypeKeeperCount = 0, allTypeClusterInActiveDcCount = 0, allTypeKeeperContainerCount = 0;
+		for (DcClusterTypeStatisticsModel model : allTypes) {
+			allTypeClusterCount += model.getClusterCount();
+			allTypeRedisCount += model.getRedisCount();
+			allTypeKeeperCount += model.getKeeperCount();
+			allTypeClusterInActiveDcCount += model.getClusterInActiveDcCount();
+			allTypeKeeperContainerCount += model.getKeeperContainerCount();
+		}
+		return new DcClusterTypeStatisticsModel().
+				setClusterType("").
+				setDcName(dc).
+				setClusterCount(allTypeClusterCount).
+				setRedisCount(allTypeRedisCount).
+				setKeeperCount(allTypeKeeperCount).
+				setClusterInActiveDcCount(allTypeClusterInActiveDcCount).
+				setKeeperContainerCount(allTypeKeeperContainerCount);
+
 	}
 
 }

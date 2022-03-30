@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.operation;
 
-import com.ctrip.xpipe.gtid.GtidSet;
-
 import java.util.List;
 
 /**
@@ -12,7 +10,7 @@ public interface RedisOp {
 
     RedisOpType getOpType();
 
-    GtidSet getOpGtidSet();
+    String getOpGtid();
 
     Long getTimestamp();
 

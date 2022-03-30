@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class DcSyncMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChange> {
+public class DcSyncMetaComparator extends AbstractMetaComparator<ClusterMeta> {
 
     private DcMeta current, future;
 

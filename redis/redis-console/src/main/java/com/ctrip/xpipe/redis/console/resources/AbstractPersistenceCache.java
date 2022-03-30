@@ -16,6 +16,7 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
 
     private TimeBoundCache<Set<String>> sentinelCheckWhiteListCache;
     private TimeBoundCache<Set<String>> clusterAlertWhiteListCache;
+    private TimeBoundCache<Set<String>> migratingClusterListCache;
     private TimeBoundCache<Boolean> isSentinelAutoProcessCache;
     private TimeBoundCache<Boolean> isAlertSystemOnCache;
     private TimeBoundCache<Map<String, Date>> allClusterCreateTimeCache;
@@ -24,11 +25,12 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
     
     abstract Set<String> doSentinelCheckWhiteList();
     abstract Set<String> doClusterAlertWhiteList();
+    abstract Set<String> doGetMigratingClusterList();
     abstract boolean doIsSentinelAutoProcess();
     abstract boolean doIsAlertSystemOn();
     abstract Map<String, Date> doLoadAllClusterCreateTime();
     public AbstractPersistenceCache(CheckerConfig config) {
-        setConfig(config);
+        initWithConfig(config);
     }
 
     @Override
@@ -44,6 +46,16 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
     @Override
     public boolean isSentinelAutoProcess() {
         return isSentinelAutoProcessCache.getData(false);
+    }
+
+    @Override
+    public boolean isClusterOnMigration(String clusterId) {
+        return migratingClusterList().contains(clusterId);
+    }
+
+    @Override
+    public Set<String> migratingClusterList() {
+        return migratingClusterListCache.getData(false);
     }
 
     @Override
@@ -63,10 +75,11 @@ public abstract class AbstractPersistenceCache implements PersistenceCache {
     }
 
     @VisibleForTesting
-    protected void setConfig(CheckerConfig config) {
+    protected void initWithConfig(CheckerConfig config) {
         this.config = config;
         this.sentinelCheckWhiteListCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doSentinelCheckWhiteList);
         this.clusterAlertWhiteListCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doClusterAlertWhiteList);
+        this.migratingClusterListCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doGetMigratingClusterList);
         this.isSentinelAutoProcessCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doIsSentinelAutoProcess);
         this.isAlertSystemOnCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doIsAlertSystemOn);
         this.allClusterCreateTimeCache = new TimeBoundCache<>(config::getConfigCacheTimeoutMilli, this::doLoadAllClusterCreateTime);

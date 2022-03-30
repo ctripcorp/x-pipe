@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.redis.console.health;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.PingCallback;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.After;
@@ -32,6 +33,9 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
     @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executors;
 
+    @Resource
+    private CheckerConfig config;
+
     @Before
     public void beforeRedisSessionTest() throws Exception {
         int BLOCKED_PORT = 55555;
@@ -45,7 +49,7 @@ public class RedisSessionResponseTimeTest extends AbstractConsoleIntegrationTest
                 return "+OK\r\n";
             }
         });
-        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled, getXpipeNettyClientKeyedObjectPool());
+        redisSession = new RedisSession(new DefaultEndPoint(HOST, BLOCKED_PORT), scheduled, getXpipeNettyClientKeyedObjectPool(), config);
     }
 
     @Test

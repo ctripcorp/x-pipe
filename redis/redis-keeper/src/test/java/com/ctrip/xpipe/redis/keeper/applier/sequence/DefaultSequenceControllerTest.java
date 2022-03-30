@@ -36,8 +36,6 @@ public class DefaultSequenceControllerTest {
 
         assertEquals(first.key(), second.key());
 
-        ApplierSequenceController controller = new DefaultSequenceController();
-
         controller.submit(first);
         controller.submit(second);
 

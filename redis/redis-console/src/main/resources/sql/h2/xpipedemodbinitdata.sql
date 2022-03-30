@@ -15,3 +15,21 @@ insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercont
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (4,2,'127.0.0.1',7180,1);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (5,2,'127.0.0.1',7181,1);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active) values (6,2,'127.0.0.1',7182,1);
+
+insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (1,'ONE_WAY');
+insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (2,'ONE_WAY');
+insert into SENTINEL_GROUP_TBL (sentinel_group_id,cluster_type) values (3,'ONE_WAY');
+
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (1,1,1,'127.0.0.1',5000);
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (2,1,1,'127.0.0.1',5001);
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (3,1,1,'127.0.0.1',5002);
+
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (4,2,2,'127.0.0.1',17170);
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (5,2,2,'127.0.0.1',17171);
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (6,2,2,'127.0.0.1',17172);
+
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (7,3,3,'127.0.0.1',32222);
+insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, sentinel_port) values (8,3,3,'127.0.0.1',32223);
+
+
+

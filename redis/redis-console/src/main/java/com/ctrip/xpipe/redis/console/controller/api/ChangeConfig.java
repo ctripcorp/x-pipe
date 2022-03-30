@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ClusterConfigModel;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
@@ -124,7 +123,9 @@ public class ChangeConfig extends AbstractConsoleController{
     @RequestMapping(value = "/config/sentinel/check/exclude/all", method = RequestMethod.GET)
     public List<String> getAllSentinelCheckExcludeConfig() {
         List<ConfigModel> configModels = configService.getActiveSentinelCheckExcludeConfig();
-        return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
+        List<String> whitelist = configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
+        logger.info("[sentinel][whitelist] {}", whitelist);
+        return whitelist;
     }
 
     @PostMapping(value = "/config/alert/" + CLUSTER_NAME_PATH_VARIABLE + "/start")
@@ -153,13 +154,13 @@ public class ChangeConfig extends AbstractConsoleController{
     @GetMapping(value = "/config/alert/cluster/exclude/all")
     public List<String> getAllClusterAlertExcludeConfig() {
         List<ConfigModel> configModels = configService.getActiveClusterAlertExcludeConfig();
-        return configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
+        List<String> whitelist = configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
+        logger.info("[alert][whitelist] {}", whitelist);
+        return whitelist;
     }
 
     private void checkClusterName(String clusterName) {
         if (StringUtil.isEmpty(clusterName)) throw new IllegalArgumentException("cluster can not be empty");
-        ClusterTbl clusterTbl = clusterService.find(clusterName);
-        if (null == clusterTbl) throw new IllegalArgumentException("cluster not exist");
     }
 
     private ConfigModel configModel(HttpServletRequest request, ConfigModel configModel) {

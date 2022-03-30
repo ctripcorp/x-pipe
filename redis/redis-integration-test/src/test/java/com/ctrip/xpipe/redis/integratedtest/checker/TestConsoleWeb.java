@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.checker;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -15,9 +14,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckIns
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
@@ -28,7 +24,6 @@ import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractXpipeServerMultiDcTest;
 import com.google.common.collect.Lists;
-import com.lambdaworks.redis.models.role.RedisInstance;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -87,7 +82,7 @@ public class TestConsoleWeb extends AbstractXpipeServerMultiDcTest {
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
         instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig()));
-        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, pool));
+        instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, pool, buildCheckerConfig()));
         service.updateRedisRole( consoleUrl, instance, Server.SERVER_ROLE.MASTER);
 
         AlertMessageEntity alertMessageEntity = new AlertMessageEntity("Test", "test", Lists.newArrayList("test-list"), new AlertEntity(new HostPort("127.0.0.1", 6379), "jq", "cluster1", "shard1", "aaa", ALERT_TYPE.CRDT_CROSS_DC_REPLICATION_DOWN));
