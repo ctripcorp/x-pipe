@@ -11,6 +11,10 @@ public interface HealthCheckActionFactory<T extends HealthCheckAction, V extends
 
     T create(V instance);
 
+    default boolean supportInstnace(V instance){
+        return true;
+    }
+
     default void destroy(T t) throws Exception {
         LifecycleHelper.stopIfPossible(t);
     }

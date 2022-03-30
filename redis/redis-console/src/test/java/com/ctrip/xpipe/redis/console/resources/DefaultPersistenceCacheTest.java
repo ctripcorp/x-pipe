@@ -1,23 +1,11 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.api.codec.Codec;
-import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.endpoint.DefaultEndPoint;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
-import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.google.common.collect.Lists;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.junit.After;
 import org.junit.Assert;
@@ -30,7 +18,6 @@ import org.unidal.dal.jdbc.DalException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Date;
-import java.util.Properties;
 
 import static org.mockito.Mockito.when;
 
@@ -55,20 +42,20 @@ public class DefaultPersistenceCacheTest extends AbstractConsoleIntegrationTest 
     public void beforeDefaultPersistenceCacheTest() throws SQLException, ComponentLookupException, IOException {
         DefaultPersistenceCache cache = ((DefaultPersistenceCache)persistenceCache);
         oldConfig = cache.getConfig();
-        cache.setConfig(config);
+        cache.initWithConfig(config);
         when(config.getConfigCacheTimeoutMilli()).thenReturn(1L);
     }
     
     @After
     public void afterDefaultPersistenceCacheTest() {
         DefaultPersistenceCache cache = ((DefaultPersistenceCache)persistenceCache);
-        cache.setConfig(oldConfig);
+        cache.initWithConfig(oldConfig);
     }
     
     @Test
     public void testIsClusterOnMigration() {
-        Assert.assertFalse(persistenceCache.isClusterOnMigration("cluster1"));
-        Assert.assertTrue(persistenceCache.isClusterOnMigration("cluster2"));
+        Assert.assertFalse(persistenceCache.isClusterOnMigration("Cluster1"));
+        Assert.assertTrue(persistenceCache.isClusterOnMigration("Cluster2"));
     }
 
     @Test
@@ -91,7 +78,7 @@ public class DefaultPersistenceCacheTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testGetClusterCreateTime() {
-        Date date = persistenceCache.getClusterCreateTime("cluster1");
+        Date date = persistenceCache.getClusterCreateTime("Cluster1");
         Assert.assertNotNull(date);
         Assert.assertTrue(DateTimeUtils.getHoursBeforeDate(new Date(), 1).before(date));
         Assert.assertTrue(new Date().after(date));

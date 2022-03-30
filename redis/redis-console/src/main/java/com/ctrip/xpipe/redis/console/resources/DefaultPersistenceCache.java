@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -19,6 +18,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 
@@ -26,7 +26,7 @@ import static com.ctrip.xpipe.redis.console.service.ConfigService.*;
 public class DefaultPersistenceCache extends AbstractPersistenceCache{
     
     private ClusterDao clusterDao;
-    
+
     private RedisDao redisDao;
     
     private DcClusterShardService dcClusterShardService;
@@ -47,14 +47,6 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
         this.dcClusterShardService = dcClusterShardService;
         this.redisDao = redisDao;
         this.clusterDao = clusterDao;
-    }
-
-    @Override
-    public boolean isClusterOnMigration(String clusterId) {
-        ClusterTbl clusterTbl = clusterDao.findClusterByClusterName(clusterId);
-        if (null == clusterTbl) return false;
-
-        return !ClusterStatus.isSameClusterStatus(clusterTbl.getStatus(), ClusterStatus.Normal);
     }
 
     @Override
@@ -140,6 +132,13 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
     @Override
     Set<String> doClusterAlertWhiteList() {
         return findConfigWhiteList(KEY_CLUSTER_ALERT_EXCLUDE);
+    }
+
+    @Override
+    Set<String> doGetMigratingClusterList() {
+        return clusterDao.findMigratingClusterNames()
+                .stream().map(ClusterTbl::getClusterName)
+                .collect(Collectors.toSet());
     }
 
     private boolean isConfigOnOrExpired(String key) {

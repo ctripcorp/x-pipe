@@ -2,11 +2,14 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -14,6 +17,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcSyncMetaComparator;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
@@ -63,6 +67,9 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     @Autowired
     private SentinelBalanceService sentinelBalanceService;
 
+    @Autowired
+    private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
+
     private Map<Long, OrganizationTbl> organizations = new HashMap<>();
 
     @PostConstruct
@@ -78,23 +85,49 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     }
 
     public void sync() {
-        try {
-            buildFilterPattern();
-            refreshOrganizationsCache();
-            DcMeta current = extractLocalDcMetaWithInterestedTypes(metaCache.getXpipeMeta(), consoleConfig.getOuterClusterTypes());
-            DcMeta future = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId), consoleConfig.getOuterClusterTypes());
-            DcSyncMetaComparator dcMetaComparator = new DcSyncMetaComparator(current, future);
-            dcMetaComparator.compare();
-            new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(), dcService, clusterService, shardService, redisService, organizationService, sentinelBalanceService, consoleConfig).sync();
-        } catch (Exception e) {
-            logger.error("[DcMetaSynchronizer][sync]", e);
-        }
+        TransactionMonitor transaction = TransactionMonitor.DEFAULT;
+        transaction.logTransactionSwallowException("meta.sync", currentDcId, new Task() {
+
+            DcMeta future;
+            DcMeta current;
+            Pair<DcMeta, Set<String>> outerDcMeta = new Pair<>();
+
+            @Override
+            public void go() throws Exception {
+                try {
+                    buildFilterPattern();
+                    refreshOrganizationsCache();
+                    outerDcMeta = extractOuterDcMetaWithInterestedTypes(getDcMetaFromOutClient(currentDcId));
+                    future = outerDcMeta.getKey();
+                    current = extractLocalDcMetaWithInterestedTypes(metaCache.getXpipeMeta(), outerDcMeta.getValue());
+                    DcSyncMetaComparator dcMetaComparator = new DcSyncMetaComparator(current, future);
+                    dcMetaComparator.compare();
+                    new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(),
+                            dcService, clusterService, shardService, redisService,
+                            organizationService, sentinelBalanceService, consoleConfig,
+                            clusterTypeUpdateEventFactory).sync();
+                } catch (Throwable e) {
+                    logger.error("[DcMetaSynchronizer][sync]", e);
+                }
+            }
+
+            @Override
+            public Map<String, Object> getData() {
+                Map<String, Object> transactionData = new HashMap<>();
+                transactionData.put("current", current);
+                transactionData.put("future", future);
+                transactionData.put("filtered", outerDcMeta.getValue());
+                return transactionData;
+            }
+        });
     }
 
     void buildFilterPattern() {
         String filterPattern = consoleConfig.filterOuterClusters();
         if (!Strings.isNullOrEmpty(filterPattern))
             filterClusterPattern = Pattern.compile(filterPattern);
+        else
+            filterClusterPattern = null;
     }
 
     void refreshOrganizationsCache() {
@@ -118,31 +151,50 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         return outerClientService.getOutClientDcMeta(dc);
     }
 
-    DcMeta extractOuterDcMetaWithInterestedTypes(OuterClientService.DcMeta outerDcMeta, Set<String> interestedTypes) {
+    Pair<DcMeta, Set<String>> extractOuterDcMetaWithInterestedTypes(OuterClientService.DcMeta outerDcMeta) {
         DcMeta dcMeta = new DcMeta(outerDcMeta.getDcName());
         Map<String, OuterClientService.ClusterMeta> outerClusterMetas = outerDcMeta.getClusters();
-        outerClusterMetas.values().forEach(outerClusterMeta -> {
-            if (interestedTypes.contains(innerClusterType(outerClusterMeta.getClusterType())) && !shouldFilter(outerClusterMeta.getName())) {
+        Set<String> filterClusters = new HashSet<>();
+        for (OuterClientService.ClusterMeta outerClusterMeta : outerClusterMetas.values()) {
+            try {
+                if (notInterestedTypes(outerClusterMeta.getClusterType().innerType().name()))
+                    continue;
+
+                if (shouldFilterOuterCluster(outerClusterMeta)) {
+                    filterClusters.add(outerClusterMeta.getName());
+                    continue;
+                }
+
                 ClusterMeta clusterMeta = outerClusterToInner(outerClusterMeta);
                 if (clusterMeta != null)
                     dcMeta.addCluster(clusterMeta);
+
+            } catch (Throwable e) {
+                logger.error("[extractOuterDcMetaWithInterestedTypes]: {}", outerClusterMeta.getName(), e);
             }
-        });
-        return dcMeta;
+        }
+        return new Pair<>(dcMeta, filterClusters);
     }
 
-    DcMeta extractLocalDcMetaWithInterestedTypes(XpipeMeta xpipeMeta, Set<String> interestedTypes) {
+    DcMeta extractLocalDcMetaWithInterestedTypes(XpipeMeta xpipeMeta, Set<String> filteredOuterClusters) {
         DcMeta dcMeta = xpipeMeta.findDc(currentDcId);
         if (dcMeta == null)
             return new DcMeta(currentDcId);
 
         DcMeta dcMetaWithInterestedClusters = new DcMeta(dcMeta.getId());
         List<ClusterMeta> interestedClusters = new ArrayList<>();
-        dcMeta.getClusters().values().forEach(clusterMeta -> {
-            if (interestedTypes.contains(clusterMeta.getType()) && !shouldFilter(clusterMeta.getId())) {
-                interestedClusters.add(newClusterMeta(clusterMeta));
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+            try {
+                if (notInterestedTypes(clusterMeta.getType()))
+                    continue;
+
+                if (!shouldFilterInnerCluster(clusterMeta, filteredOuterClusters)) {
+                    interestedClusters.add(newClusterMeta(clusterMeta));
+                }
+            } catch (Throwable e) {
+                logger.error("[extractLocalDcMetaWithInterestedTypes]: {}", clusterMeta.getId(), e);
             }
-        });
+        }
 
         interestedClusters.forEach(clusterMeta -> {
             dcMetaWithInterestedClusters.addCluster(clusterMeta);
@@ -153,7 +205,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     ClusterMeta outerClusterToInner(OuterClientService.ClusterMeta outer) {
         try {
             ClusterMeta clusterMeta = new ClusterMeta(outer.getName());
-            clusterMeta.setType(innerClusterType(outer.getClusterType()));
+            clusterMeta.setType(outer.getClusterType().innerType().name());
             if (ClusterType.lookup(clusterMeta.getType()).supportSingleActiveDC()) {
                 clusterMeta.setActiveDc(currentDcId);
             } else {
@@ -224,22 +276,25 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         return redisMeta;
     }
 
-    String innerClusterType(OuterClientService.ClusterType clusterType) {
-        switch (clusterType) {
-            case SINGEL_DC:
-                return ClusterType.SINGLE_DC.name();
-            case LOCAL_DC:
-                return ClusterType.LOCAL_DC.name();
-            case XPIPE_ONE_WAY:
-                return ClusterType.ONE_WAY.name();
-            case XPIPE_BI_DIRECT:
-                return ClusterType.BI_DIRECTION.name();
-        }
-        return null;
+
+    boolean shouldFilterOuterCluster(OuterClientService.ClusterMeta clusterMeta) {
+        return isOperating(clusterMeta) || nameMatchFilterPattern(clusterMeta.getName());
     }
 
-    boolean shouldFilter(String clusterName) {
+    boolean shouldFilterInnerCluster(ClusterMeta clusterMeta, Set<String> filteredOuterClusters) {
+        return filteredOuterClusters.contains(clusterMeta.getId());
+    }
+
+    boolean nameMatchFilterPattern(String clusterName) {
         return filterClusterPattern != null && filterClusterPattern.matcher(clusterName).find();
+    }
+
+    boolean isOperating(OuterClientService.ClusterMeta clusterMeta) {
+        return clusterMeta.isOperating();
+    }
+
+    boolean notInterestedTypes(String clusterType) {
+        return !consoleConfig.getOuterClusterTypes().contains(clusterType.toUpperCase());
     }
 
 }

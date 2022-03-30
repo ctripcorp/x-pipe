@@ -38,6 +38,7 @@ public interface ClusterService {
 	void update(ClusterTbl cluster);
 	void exchangeName(Long formerClusterId, String formerClusterName, Long latterClusterId, String latterClusterName);
 
+	Set<String> findMigratingClusterNames();
 	List<ClusterTbl> findErrorMigratingClusters();
 	List<ClusterTbl> findMigratingClusters();
 	default void resetClustersStatus(List<Long> ids) {
@@ -48,7 +49,9 @@ public interface ClusterService {
 
 	List<ClusterListUnhealthyClusterModel> findUnhealthyClusters();
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
+	List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType);
 	List<ClusterTbl> findActiveClustersByDcName(String dcName);
+	List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType);
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
 
 	List<ClusterTbl> findAllClusterByKeeperContainer(long keeperContainerId);

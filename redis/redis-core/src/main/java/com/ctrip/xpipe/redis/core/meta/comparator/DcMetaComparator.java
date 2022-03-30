@@ -13,10 +13,9 @@ import java.util.stream.Collectors;
  *
  * Sep 2, 2016
  */
-public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChange>{
-	
+public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta>{
+
 	private DcMeta current, future;
-	
 	
 	public static DcMetaComparator  buildComparator(DcMeta current, DcMeta future){
 		
@@ -45,15 +44,14 @@ public class DcMetaComparator extends AbstractMetaComparator<ClusterMeta, DcChan
 		return dcMetaComparator;
 	}
 
-	private DcMetaComparator(){
-		
+	public DcMetaComparator() {
 	}
-	
-	public DcMetaComparator(DcMeta current, DcMeta future){
+
+	public DcMetaComparator(DcMeta current, DcMeta future) {
 		this.current = current;
 		this.future = future;
 	}
-	
+
 	public void compare(){
 		Map<Long, ClusterMeta> currentClustersMap = current.getClusters().values().stream()
 				.collect(Collectors.toMap(ClusterMeta::getDbId, clusterMeta -> clusterMeta));

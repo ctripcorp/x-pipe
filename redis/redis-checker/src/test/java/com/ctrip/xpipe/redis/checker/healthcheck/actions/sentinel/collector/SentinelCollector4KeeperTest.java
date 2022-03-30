@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
@@ -48,7 +49,6 @@ public class SentinelCollector4KeeperTest {
     @Before
     public void beforeSentinelCollector4KeeperTest() {
         MockitoAnnotations.initMocks(this);
-        doNothing().when(sentinelManager).removeSentinelMonitor(any(), any());
         when(alertManager.shouldAlert(any())).thenReturn(true);
     }
 
@@ -89,12 +89,27 @@ public class SentinelCollector4KeeperTest {
 
     @Test
     public void testDoAction2() {
-        doNothing().when(sentinelManager).removeSentinelMonitor(any(), any());
         doNothing().when(alertManager).alert(any(), any(), any(), any(), any());
         boolean masterGood = true, monitorGood = false;
         SentinelCollector4Keeper.SentinelCollectorAction action = SentinelCollector4Keeper
                 .SentinelCollectorAction.getAction(masterGood, monitorGood);
 
+        when(sentinelManager.removeSentinelMonitor(any(),any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess("OK");
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
         action.doAction(collector, hello, info);
 
         verify(alertManager).alert(any(RedisInstanceInfo.class), any(), any());

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.integratedtest.AbstractIntegratedTest;
 import org.junit.After;
 import org.junit.Assert;
@@ -14,6 +15,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -43,14 +47,18 @@ public class RedisSlaveReplAllTest extends AbstractIntegratedTest{
     private void slaveWritable(List<RedisMeta> redises) {
 
         redises.forEach((redis) -> {
-            try {
-                logger.info("{} readonly no", redis.desc());
-                SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(redis.getIp(), redis.getPort()));
-                new ConfigSetCommand.ConfigSetSlaveReadOnly(false, keyPool, scheduled).execute().get();
-            } catch (Exception e) {
-                logger.error("[slaveWritable]" + redis.desc(), e);
-            }
+            slaveReadOnly(redis, false);
         });
+    }
+
+    private void slaveReadOnly(RedisMeta redis, boolean readonly) {
+        try {
+            logger.info("[slaveReadOnly][{}] readonly {}", redis, readonly);
+            SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(redis.getIp(), redis.getPort()));
+            new ConfigSetCommand.ConfigSetSlaveReadOnly(readonly, keyPool, scheduled).execute().get();
+        } catch (Exception e) {
+            logger.error("[slaveReadOnly][{}][{}] fail", redis.desc(), readonly, e);
+        }
     }
 
     @Test
@@ -169,6 +177,64 @@ public class RedisSlaveReplAllTest extends AbstractIntegratedTest{
     @Test
     public void testSlaveReplAllSlaveOf(){
 
+    }
+
+    @Test
+    public void testConcurrentCloseSlaveAndFeedData() throws Exception {
+        RedisMeta master = redises.get(0);
+        RedisMeta slave = redises.get(1);
+        slaveReadOnly(master, true);
+        slaveReadOnly(slave, true);
+
+        int cnt = 1;
+        while (true) {
+            logger.info("[testConcurrentCloseSlaveAndFeedData] round {}", cnt++);
+            createJedis(master).slaveofNoOne();
+            createJedis(slave).slaveof(master.getIp(), master.getPort());
+            waitSlaveOnline(slave.getIp(), slave.getPort());
+
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            CountDownLatch latch = new CountDownLatch(2);
+            executors.execute(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    // ignore
+                }
+
+                try {
+                    sendMessageToMaster(master, 100);
+                } catch (Exception e) {
+                    // ignore
+                }
+                latch.countDown();
+            });
+            executors.execute(() -> {
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    // ignore
+                }
+
+                sleep(1);
+                createJedis(master).slaveof("127.0.0.1", 0);
+                latch.countDown();
+            });
+
+            if (!latch.await(2, TimeUnit.SECONDS)) {
+                logger.info("[testConcurrentCloseSlaveAndFeedData] wait latch fail");
+            }
+
+            sleep(1000);
+            long masterOffset = Long.parseLong(infoRedis(master.getIp(), master.getPort(), InfoCommand.INFO_TYPE.REPLICATION, "master_repl_offset"));
+            long slaveOffset = Long.parseLong(infoRedis(slave.getIp(), slave.getPort(), InfoCommand.INFO_TYPE.REPLICATION, "master_repl_offset"));
+            if (masterOffset != slaveOffset) {
+                logger.info("[testConcurrentCloseSlaveAndFeedData][offset not match] {} {}", masterOffset, slaveOffset);
+                waitForAnyKey();
+            } else {
+                logger.info("[testConcurrentCloseSlaveAndFeedData] offset match {}", masterOffset);
+            }
+        }
     }
 
     @Override

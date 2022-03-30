@@ -22,7 +22,9 @@ function ClusterDcCtl($rootScope, $scope, $window, $stateParams, AppUtil,
 	$scope.bindDc = bindDc;
 	$scope.preUnbindDc = preUnbindDc;
 	$scope.unbindDc = unbindDc;
-	$scope.isActiveDc = isActiveDc
+	$scope.isActiveDc = isActiveDc;
+	$scope.notActiveDc = notActiveDc;
+	$scope.isCrossDc = isCrossDc;
 
 	$scope.toBindDc = {};
 	function preBindDc(dc) {
@@ -104,7 +106,22 @@ function ClusterDcCtl($rootScope, $scope, $window, $stateParams, AppUtil,
 	function isActiveDc(dcId) {
 		if (!$scope.cluster) return false
 		var clusterType = ClusterType.lookup($scope.cluster.clusterType)
+		if(clusterType.isCrossDc)
+			return false
 		if (clusterType && clusterType.multiActiveDcs) return true
 		else return $scope.cluster.activedcId === dcId
+	}
+
+	function notActiveDc(dcId) {
+		if (!$scope.cluster) return false
+		var clusterType = ClusterType.lookup($scope.cluster.clusterType)
+		if(clusterType.isCrossDc)
+			return false
+		else return !isActiveDc(dcId);
+	}
+
+	function isCrossDc() {
+		var clusterType = ClusterType.lookup($scope.cluster.clusterType)
+		return clusterType.isCrossDc;
 	}
 }
