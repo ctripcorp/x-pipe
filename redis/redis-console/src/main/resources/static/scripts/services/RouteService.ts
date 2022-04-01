@@ -17,9 +17,19 @@ function RouteService($resource, $q) {
             url: '/console/route/tag/:tag',
             isArray: true
         },
+        get_route_by_tag_and_direction:{
+            method: 'GET',
+            url: 'console/route/tag/:tag/direction/:srcDcName/:dstDcName',
+            isArray: true
+        },
         get_route_by_id:{
             method: 'GET',
             url: '/console/route/id/:route_id',
+        },
+        get_route_direction_infos_by_tag:{
+            method: 'GET',
+            url: '/console/route/direction/tag/:tag',
+            isArray: true
         },
         get_all_organizations: {
             method: 'GET',
@@ -33,6 +43,10 @@ function RouteService($resource, $q) {
         update_route: {
             method: 'PUT',
             url: '/console/route'
+        },
+        update_routes: {
+            method: 'PUT',
+            url: '/console/routes'
         }
     });
 
@@ -59,7 +73,7 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
-    function addRoute(orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, description) {
+    function addRoute(orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, public, description) {
         var d = $q.defer();
         resource.add_route({}, {
             orgName: orgName,
@@ -70,6 +84,7 @@ function RouteService($resource, $q) {
             dstDcName : dstDcName,
             tag : tag,
             active : active,
+            public : public,
             description : description
         }, function(result) {
             d.resolve(result);
@@ -80,7 +95,7 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
-    function updateRoute(id, orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, description) {
+    function updateRoute(id, orgName, srcProxies, optionalProxies, dstProxies, srcDcName, dstDcName, tag, active, public, description) {
         var d = $q.defer();
         resource.update_route({}, {
             id: id,
@@ -92,6 +107,7 @@ function RouteService($resource, $q) {
             dstDcName : dstDcName,
             tag : tag,
             active : active,
+            public : public,
             description : description
         }, function(result) {
             d.resolve(result);
@@ -102,12 +118,38 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
+    function updateRoutes(routes) {
+        var d = $q.defer();
+        resource.update_routes({},{
+                routeInfoModels : routes
+            },function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
 
 
     function getRouteById(route_id) {
         var d = $q.defer();
         resource.get_route_by_id({
             route_id : route_id
+        }, function(result) {
+            d.resolve(result);
+        }, function(result) {
+            d.reject(result);
+        });
+
+        return d.promise;
+    }
+
+    function getAllActiveRouteRouteByTagAndDirection(tag, srcDcName, dstDcName) {
+        var d = $q.defer();
+        resource.get_route_by_tag_and_direction({
+            tag : tag,
+            srcDcName : srcDcName,
+            dstDcName : dstDcName
         }, function(result) {
             d.resolve(result);
         }, function(result) {
@@ -130,6 +172,19 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
+    function getRoutesDirectionInfoByTag(tag) {
+        var d = $q.defer();
+        resource.get_route_direction_infos_by_tag({
+            tag : tag
+        }, function(result) {
+            d.resolve(result);
+        }, function(result) {
+            d.reject(result);
+        });
+
+        return d.promise;
+    }
+
 
     return {
         getAllActiveRoute : getAllActiveRoute,
@@ -137,6 +192,9 @@ function RouteService($resource, $q) {
         getRouteById : getRouteById,
         getAllActiveRouteRouteByTag : getAllActiveRouteRouteByTag,
         addRoute : addRoute,
-        updateRoute : updateRoute
+        updateRoute : updateRoute,
+        updateRoutes : updateRoutes,
+        getRoutesDirectionInfoByTag : getRoutesDirectionInfoByTag,
+        getAllActiveRouteRouteByTagAndDirection : getAllActiveRouteRouteByTagAndDirection
     }
 }

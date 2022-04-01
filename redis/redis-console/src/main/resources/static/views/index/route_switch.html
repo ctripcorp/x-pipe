@@ -1,199 +1,71 @@
+
 <div class="col-md-10 col-md-offset-1">
-    <h3 class="header smaller lighter blue" ng-if="operateType !== 'create' ">
-        <a href="/#/route/overview">Route List</a>
-        <span> > </span>
-        <span>Route信息</span>
-    </h3>
     <div class="panel panel-primary">
-        <div class="panel-heading">
-            <span ng-if="operateType == 'create'">创建Route</span>
-            <h4 ng-if="operateType == 'update'">更新Route</h4>
-            <h4 ng-if="operateType == 'retrieve'">Route信息</h4>
-        </div>
-
-        <div class="panel-body">
-            <form class="form-horizontal" ng-submit="doAddRoute()" ng-show="operateType !== 'retrieve'">
-
-                <div class="form-group" >
-                    <label class="col-sm-4 control-label no-padding-right">tag</label>
-
-                    <div class="col-sm-7">
-                        <select
-                                ng-model="route.tag"
-                                allow_single_deselect=true
-                                style="width:330px;"
-                                ng-options="tag for tag in tags"
-                                ng-required="true"
-                        >
-<!--                            <option ng-repeat="tag in tags">{{tag}}</option>-->
-                            <option value=""></option>
-                        </select>
-                    </div>
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6">
+                    <span>Route List</span>
+                    <span> > </span>
+                    <span>Route切换</span>
                 </div>
-
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right">orgName</label>
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.orgName"
-                                allow_single_deselect=true
-                                ng-options="orgName for orgName in organizationNames"
-                                style="width:330px;"
-                        >
-                            <option value=""></option>
-                        </select>
-                    </div>
+                <div class="col-md-6 text-right">
                 </div>
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"> active </label>
-
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.active"
-                                allow_single_deselect=true
-                                style="width:330px;"
-                                ng-required="true"
-                                ng-options="bool for bool in bools"
-                        >
-                            <option value=""></option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"> src_dc </label>
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.srcDcName"
-                                allow_single_deselect=true
-                                style="width:330px;"
-                                ng-required="true"
-                                ng-options="srcDcName for srcDcName in dcNames"
-                        >
-                            <option value=""/>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"> src_proxies </label>
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.srcProxies"
-                                multiple = "multiple"
-                                style="width:330px;"
-                                chosen="directiveOptions"
-                                ng-options="proxy for proxy in dcProxies[route.srcDcName]"
-                        >
-                            <option value=""/>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"> optional_proxies </label>
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.optionalProxies"
-                                multiple = "multiple"
-                                chosen="directiveOptions"
-                                style="width:330px;"
-                                ng-required="true"
-                                ng-options="proxy for proxy in allProxies"
-                        >
-                            <option value=""/>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"> dst_dc </label>
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.dstDcName"
-                                allow_single_deselect=true
-                                style="width:330px;"
-                                ng-required="true"
-                                ng-options="dstDcName for dstDcName in dcNames"
-                        >
-                            <option value=""/>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"> dst_proxies </label>
-                    <div class="col-sm-6">
-                        <select
-                                ng-model="route.dstProxies"
-                                multiple = "multiple"
-                                chosen="directiveOptions"
-                                style="width:330px;"
-                                ng-required="true"
-                                ng-options="proxy for proxy in dcProxies[route.dstDcName]"
-                        >
-                            <option value=""></option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right">desc</label>
-
-                    <div class="col-sm-7">
-                        <textarea rows="1" style="width: 330px;" placeholder="单/双向说明，optionalIdc或其他特殊部署"
-                                  ng-model="route.description" ng-required="false"></textarea>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-4 control-label no-padding-right"></label>
-                    <div class="col-sm-7">
-                        <button class="btn btn-info" type="submit">
-                            <i class="icon-ok bigger-110"></i>
-                            提交
-                        </button>
-                        <a href="/#/route/overview" class="btn btn-warning"
-                           type="button" ng-show="operateType == 'update'">
-                            返回
-                        </a>
-                        <a href="/#/route/overview" class="btn btn-warning"
-                           type="button" ng-show="operateType == 'create'">
-                            撤销
-                        </a>
-                    </div>
-                </div>
-            </form>
-
-            <div class="form-horizontal" ng-show="operateType == 'retrieve'">
-                <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
-                    <tr>
-                        <td data-title="'route_id'" ng-bind="route.id"></td>
-                        <td data-title="'org_name'" filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="route.orgName"></td>
-                        <td data-title="'src_info'" >
-                            <span>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 1cm; text-align: left" >DcName:</p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" >{{route.srcDcName}}</p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 1cm; text-align: left" ng-if="route.srcProxies && route.srcProxies.length">Proxies: </p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" ng-repeat="proxy in route.srcProxies">{{proxy}}</p>
-                            </span>
-                        </td>
-                        <!--                <td data-title=" ">&#45;&#45;&#45;&#45;&ndash;&gt;</td>-->
-                        <td data-title="'optional_info'">
-                            <span>
-                                <p align="center" style= "margin: 1cm 0cm 0pt 1cm; text-align: left" ng-if="route.optionalProxies && route.optionalProxies.length">Proxies: </p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" ng-repeat="proxy in route.optionalProxies">{{proxy}}</p>
-                            </span>
-                        </td>
-                        <!--                <td data-title=" ">&#45;&#45;&#45;&#45;&ndash;&gt;</td>-->
-                        <td data-title="'dst_info'">
-                            <span>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 1cm; text-align: left" >DcName:</p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" >{{route.dstDcName}}</p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 1cm; text-align: left" ng-if="route.dstProxies && route.dstProxies.length">Proxies: </p>
-                                <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
-                            </span>
-                        </td>
-                        <td data-title="'desc'" ng-bind="route.description"></td>
-                </table>
             </div>
+        </header>
+        <div style="height:35px">
+            <ul style="float:left" class="nav nav-tabs tab-size-bigger">
+                <li ng-repeat="tag in tags" ng-class="{'active' : currentTag == tag}">
+                    <a ng-click="switchTag(tag)" data-toggle="tab">{{tag}}</a>
+                </li>
+            </ul>
         </div>
-    </div>
 
+        <form ng-submit="doChangeRoute()">
+            <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
+                <tr ng-repeat="route in $data">
+                    <td data-title="'是否使用'" class="{{route.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"
+                        ng-click="route.public = !route.public">
+
+                    </td>
+                    <td data-title="'route_id'" ng-bind="route.id"></td>
+                    <td data-title="'org_name'" filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="route.orgName"></td>
+                    <td data-title="'src_dcName'" ng-bind="route.srcDcName"></td>
+                    <td data-title="'src_proxies'">
+                    <span>
+                        <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.srcProxies">{{proxy}}</p>
+                    </span>
+                    </td>
+                    <td data-title="'optional_info'">
+                    <span>
+                        <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.optionalProxies">{{proxy}}</p>
+                    </span>
+                    </td>
+                    <td data-title="'src_dcName'" ng-bind="route.dstDcName"></td>
+                    <td data-title="'dst_proxies'">
+                    <span>
+                        <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
+                    </span>
+                    </td>
+            </table>
+
+            <div class="form-group">
+                <label class="col-sm-4 control-label no-padding-right"></label>
+                <div class="col-sm-7">
+                    <button class="btn btn-info" type="submit">
+                        <i class="icon-ok bigger-110"></i>
+                        提交
+                    </button>
+                    <a href="/#/route_direction/route" class="btn btn-warning"
+                       type="button">
+                        返回
+                    </a>
+                </div>
+            </div>
+        </form>
+
+    </div>
 </div>
+
+<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+    <i class="icon-double-angle-up icon-only bigger-110"></i>
+</a>

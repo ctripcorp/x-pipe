@@ -686,7 +686,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		//for same org id
 		List<RouteMeta> resultsCandidates = new LinkedList<>();
 		dstDcRoutes.forEach(routeMeta -> {
-			if(ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
+			if(routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
 				resultsCandidates.add(routeMeta);
 			}
 		});
@@ -697,7 +697,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 
 
 		dstDcRoutes.forEach(routeMeta -> {
-			if(OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
+			if(routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
 				resultsCandidates.add(routeMeta);
 			}
 		});

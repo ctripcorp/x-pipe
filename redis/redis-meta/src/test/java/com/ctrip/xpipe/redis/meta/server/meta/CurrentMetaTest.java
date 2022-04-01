@@ -276,7 +276,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	public void testGetActiveDc() {
 		ClusterMeta clusterMeta1 = MetaClone.clone(clusterMeta);
 		clusterMeta1.setActiveDc("fq").setBackupDcs("jq,fra");
-		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1");
+		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1").setIsPublic(true);
 		List<RouteMeta> allroutes = new LinkedList<>();
 		allroutes.add(hadOrgIdRoute);
 		
@@ -291,7 +291,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		Assert.assertEquals(route, null);
 		// add jq->fq route (orgid = null)
 		List<RouteMeta> allroutes = new LinkedList<>();
-		RouteMeta noOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2");
+		RouteMeta noOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2").setIsPublic(true);
 		allroutes.add(noOrgIdRoute);
 		List<String> dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
 		Assert.assertEquals(dcs.size() , 1);
@@ -299,7 +299,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		route = currentMeta.getClusterRouteByDcId(biClusterDbId,"fq");
 		Assert.assertEquals(route, noOrgIdRoute);
 		// add jq->fq route (orgid = 1)
-		RouteMeta hadOrgIdRoute = new RouteMeta().setOrgId(1).setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1");
+		RouteMeta hadOrgIdRoute = new RouteMeta().setOrgId(1).setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:1").setIsPublic(true);
 		allroutes.add(hadOrgIdRoute);
 		biClusterMeta.setOrgId(1);
 		dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
@@ -328,7 +328,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		Assert.assertEquals(route, hadOrgIdRoute);
 		//add 2 hadorgid route
 		allroutes = new LinkedList<>();
-		RouteMeta hadOrgIdRoute2 = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(3).setOrgId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:3");
+		RouteMeta hadOrgIdRoute2 = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(3).setOrgId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:3").setIsPublic(true);
 		allroutes.add(hadOrgIdRoute);
 		allroutes.add(hadOrgIdRoute2);
 		biClusterMeta.setOrgId(1);

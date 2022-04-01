@@ -404,15 +404,9 @@ public class CurrentMeta implements Releasable {
 		private RouteMeta chooseRoute(Integer orgId, List<RouteMeta> dstDcRoutes, ChooseRouteStrategy strategy) {
 			if(dstDcRoutes == null) return null;
 			List<RouteMeta> resultsCandidates = new LinkedList<>();
-			Set<Long> clusterRouteIds = new HashSet<>();
-			dstDcRoutes.forEach(routeMeta -> {
-				if(clusterRouteIds.contains(routeMeta.getId())){
-					resultsCandidates.add(routeMeta);
-				}
-			});
 
 			dstDcRoutes.forEach(routeMeta -> {
-				if(ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
+				if(routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
 					resultsCandidates.add(routeMeta);
 				}
 			});
@@ -423,7 +417,7 @@ public class CurrentMeta implements Releasable {
 
 
 			dstDcRoutes.forEach(routeMeta -> {
-				if(OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
+				if(routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
 					resultsCandidates.add(routeMeta);
 				}
 			});

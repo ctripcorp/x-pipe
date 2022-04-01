@@ -84,7 +84,7 @@ function router($stateProvider, $urlRouterProvider) {
             controller: 'ProxyListCtl'
         })
         .state('route_overview', {
-            url: '/route/overview',
+            url: '/route/overview?srcDcName&dstDcName',
             params: {
             },
             templateUrl: 'views/index/route_list.html',
@@ -94,6 +94,16 @@ function router($stateProvider, $urlRouterProvider) {
             url: '/route_form?routeId&type',
             templateUrl: 'views/index/route_form.html',
             controller: 'RouteFormCtl'
+        })
+        .state('route_direction',{
+            url: '/route_direction/route',
+            templateUrl: 'views/index/route_direction.html',
+            controller: 'RouteDirectionCtl'
+        })
+        .state('route_switch',{
+            url: '/route_switch?tag&srcDcName&dstDcName',
+            templateUrl: 'views/index/route_switch.html',
+            controller: 'RouteSwitchCtl'
         })
         .state('cluster_dc_shard_update', {
         	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',
