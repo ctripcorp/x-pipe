@@ -9,17 +9,21 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class ResourceInfo {
 
-    public int migExecThreadActive;
+    public int migExecThreads;
 
     public int migExecThreadMax;
 
-    public int migPrepareThreadActive;
+    public int migPrepareThreads;
 
     public int migPrepareThreadMax;
 
-    public int migIoCallbackThreadActive;
+    public int migIoCallbackThreads;
 
     public int migIoCallbackThreadMax;
+
+    public int httpThreads;
+
+    public int httpThreadMax;
 
     public int migExecQueueSize;
 
@@ -33,9 +37,13 @@ public class ResourceInfo {
 
     public int migIoCallbackQueueCapacity;
 
+    public int httpQueueSize;
+
+    public int httpQueueCapacity;
+
     public void collectDataFromMigrationExecutor(ThreadPoolExecutor executor) {
         if (null == executor) return;
-        migExecThreadActive = executor.getActiveCount();
+        migExecThreads = executor.getPoolSize();
         migExecThreadMax = executor.getMaximumPoolSize();
         BlockingQueue<Runnable> queue = executor.getQueue();
         migExecQueueSize = queue.size();
@@ -44,7 +52,7 @@ public class ResourceInfo {
 
     public void collectDataFromPrepareExecutor(ThreadPoolExecutor executor) {
         if (null == executor) return;
-        migPrepareThreadActive = executor.getActiveCount();
+        migPrepareThreads = executor.getPoolSize();
         migPrepareThreadMax = executor.getMaximumPoolSize();
         BlockingQueue<Runnable> queue = executor.getQueue();
         migPrepareQueueSize = queue.size();
@@ -53,11 +61,20 @@ public class ResourceInfo {
 
     public void collectDataFromIoCallbackExecutor(ThreadPoolExecutor executor) {
         if (null == executor) return;
-        migIoCallbackThreadActive = executor.getActiveCount();
+        migIoCallbackThreads = executor.getPoolSize();
         migIoCallbackThreadMax = executor.getMaximumPoolSize();
         BlockingQueue<Runnable> queue = executor.getQueue();
         migIoCallbackQueueSize = queue.size();
         migIoCallbackQueueCapacity = queue.size() + queue.remainingCapacity();
+    }
+
+    public void collectDataFromHttpExecutor(ThreadPoolExecutor executor) {
+        if (null == executor) return;
+        httpThreads = executor.getPoolSize();
+        httpThreadMax = executor.getMaximumPoolSize();
+        BlockingQueue<Runnable> queue = executor.getQueue();
+        httpQueueSize = queue.size();
+        httpQueueCapacity = queue.size() + queue.remainingCapacity();
     }
 
 }

@@ -4,6 +4,9 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ResourceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
+import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +37,9 @@ public class ResourceController {
     @Resource(name = MIGRATION_IO_CALLBACK_EXECUTOR)
     private ExecutorService ioCallBackExecutor;
 
+    @Autowired
+    public ServletWebServerApplicationContext context;
+
     private static final String CLAZZ_DELEGATED_EXECUTOR_SERVICE = "DelegatedExecutorService";
 
     private Logger logger = LoggerFactory.getLogger(ResourceController.class);
@@ -44,10 +50,13 @@ public class ResourceController {
         ThreadPoolExecutor migrationThreadPoolExecutor = getInnerPoolExecutor(migrationExecutor);
         ThreadPoolExecutor prepareThreadPoolExecutor = getInnerPoolExecutor(prepareExecutor);
         ThreadPoolExecutor ioCallBackThreadPoolExecutor = getInnerPoolExecutor(ioCallBackExecutor);
+        ThreadPoolExecutor httpThreadPoolExecutor = (ThreadPoolExecutor) ((TomcatWebServer) context.getWebServer())
+                .getTomcat().getConnector().getProtocolHandler().getExecutor();
 
         resourceInfo.collectDataFromMigrationExecutor(migrationThreadPoolExecutor);
         resourceInfo.collectDataFromPrepareExecutor(prepareThreadPoolExecutor);
         resourceInfo.collectDataFromIoCallbackExecutor(ioCallBackThreadPoolExecutor);
+        resourceInfo.collectDataFromHttpExecutor(httpThreadPoolExecutor);
 
         return resourceInfo;
     }
