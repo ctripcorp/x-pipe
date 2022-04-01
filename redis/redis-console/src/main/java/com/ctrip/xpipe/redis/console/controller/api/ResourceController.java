@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
-import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ResourceInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.ctrip.xpipe.spring.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
 import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
@@ -25,8 +23,8 @@ import static com.ctrip.xpipe.redis.console.migration.MigrationResources.*;
  * date 2022/3/31
  */
 @RestController
-@RequestMapping(AbstractConsoleController.API_PREFIX)
-public class ResourceController {
+@RequestMapping(AbstractController.API_PREFIX)
+public class ResourceController extends AbstractController {
 
     @Resource(name = MIGRATION_EXECUTOR)
     private ExecutorService migrationExecutor;
@@ -41,8 +39,6 @@ public class ResourceController {
     public ServletWebServerApplicationContext context;
 
     private static final String CLAZZ_DELEGATED_EXECUTOR_SERVICE = "DelegatedExecutorService";
-
-    private Logger logger = LoggerFactory.getLogger(ResourceController.class);
 
     @GetMapping("/resource")
     public ResourceInfo getResource() {
