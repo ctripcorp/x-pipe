@@ -2,18 +2,16 @@ angular
     .module('index')
     .controller('RouteFormCtl', RouteFormCtl);
 
-RouteFormCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'DcService', 'RouteService', 'ProxyService', 'NgTableParams'];
+RouteFormCtl.$inject = ['$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'DcService', 'RouteService', 'ProxyService', 'NgTableParams'];
 
-function RouteFormCtl($rootScope, $scope, $stateParams, $window, toastr, AppUtil, DcService, RouteService, ProxyService, NgTableParams) {
+function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService, RouteService, ProxyService, NgTableParams) {
 
-    $rootScope.currentNav = '1-3';
     $scope.routes = {};
     $scope.tableParams = new NgTableParams({}, {});
 
     var OPERATE_TYPE = {
         CREATE: 'create',
         UPDATE: 'update',
-        RETRIEVE: 'retrieve'
     };
 
     $scope.tags = ['META', 'CONSOLE'];
@@ -72,29 +70,30 @@ function RouteFormCtl($rootScope, $scope, $stateParams, $window, toastr, AppUtil
             });
         } else {
             $scope.route = {};
-            $window.route = $scope.route;
+            $scope.route.tag = $scope.tags[0];
+            $scope.route.active = $scope.bools[0];
+            $scope.route.public = $scope.bools[0];
+
         }
     }
 
     function doAddRoute() {
-        console.log("1111");
         if($scope.operateType == OPERATE_TYPE.CREATE) {
             RouteService.addRoute($scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
-                                        $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.description)
+                                        $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
                     toastr.success("添加成功");
-                    $window.location.href = "/#/route/overview";
+                    $window.location.href = "/#/route/overview?srcDcName&dstDcName";
                 }, function(result) {
                     toastr.error(AppUtil.errorMsg(result), "添加失败");
                 });
         } else {
             console.log($scope.route);
             RouteService.updateRoute($scope.route.id, $scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
-                                        $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.description)
+                                        $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
                     toastr.success("更新成功");
-                    $window.location.href =
-                        "/#/route_form?routeId=" + result.id + "&type=retrieve";
+                    $window.location.href = "/#/route/overview?srcDcName&dstDcName";
                 }, function(result) {
                    toastr.error(AppUtil.errorMsg(result), "更新失败");
                 });

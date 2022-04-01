@@ -22,13 +22,15 @@ public class RouteInfoModel {
 
     private boolean active;
 
-    private String description;
+    private boolean isPublic;
+
+    private String description="";
 
     public RouteInfoModel() {
 
     }
 
-    public RouteInfoModel(long id, String orgName, List<String> srcProxies, List<String> optionalProxies,
+    public RouteInfoModel(long id, String orgName, List<String> srcProxies, List<String> optionalProxies, boolean isPublic,
                           List<String> dstProxies, String srcDcName, String dstDcName, String tag, boolean active, String description) {
         this.id = id;
         this.orgName = orgName;
@@ -40,6 +42,7 @@ public class RouteInfoModel {
         this.tag = tag;
         this.active = active;
         this.description = description;
+        this.isPublic = isPublic;
     }
 
     public long getId() {
@@ -123,6 +126,15 @@ public class RouteInfoModel {
         return this;
     }
 
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public RouteInfoModel setPublic(boolean isPublic) {
+        this.isPublic = isPublic;
+        return this;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -144,6 +156,7 @@ public class RouteInfoModel {
                 ", dstDcName='" + dstDcName + '\'' +
                 ", tag='" + tag + '\'' +
                 ", active=" + active +
+                ", isPublic=" + isPublic +
                 ", description='" + description + '\'' +
                 '}';
     }

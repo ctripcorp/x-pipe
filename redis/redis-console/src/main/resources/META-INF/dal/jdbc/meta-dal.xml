@@ -2260,6 +2260,7 @@
 				<member name='id'/>
 				<member name="tag"/>
 				<member name="active"/>
+				<member name="is-public"/>
 				<member name='route_org_id'/>
 				<member name="src_dc_id"/>
 				<member name="dst_dc_id"/>
@@ -2273,6 +2274,7 @@
 			<updateset name="main">
 				<member name="tag"/>
 				<member name="active"/>
+				<member name="is-public"/>
 				<member name='route_org_id'/>
 				<member name="src_dc_id"/>
 				<member name="dst_dc_id"/>
@@ -2302,6 +2304,22 @@
 					WHERE <FIELD name='deleted'/> = 0
 					AND <FIELD name='active'/> = 1
 					AND <FIELD name='tag'/> = ${tag}
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-active-by-tag-direction" type="SELECT" multiple="true">
+				<param name='tag'/>
+				<param name="src-dc-id"/>
+				<param name="dst-dc-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
+					AND <FIELD name='tag'/> = ${tag}
+					AND <FIELD name='src-dc-id'/> = ${src-dc-id}
+					AND <FIELD name='dst-dc-id'/> = ${dst-dc-id}
 					]]>
 				</statement>
 			</query>

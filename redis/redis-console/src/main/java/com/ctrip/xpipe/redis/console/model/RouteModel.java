@@ -27,6 +27,8 @@ public class RouteModel {
 
     private boolean active;
 
+    private boolean isPublic;
+
     private String description = "";
 
     public long getId() {
@@ -119,10 +121,19 @@ public class RouteModel {
         return this;
     }
 
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public RouteModel setPublic(boolean aPublic) {
+        isPublic = aPublic;
+        return this;
+    }
+
     public static RouteModel fromRouteTbl(RouteTbl routeTbl, DcIdNameMapper mapper) {
         RouteModel model = new RouteModel();
         model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds())
-                .setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
+                .setActive(routeTbl.isActive()).setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
 
         model.setSrcDcName(mapper.getName(routeTbl.getSrcDcId()))
                 .setDstDcName(mapper.getName(routeTbl.getDstDcId()));
@@ -135,7 +146,7 @@ public class RouteModel {
     public RouteTbl toRouteTbl(DcIdNameMapper mapper) {
         RouteTbl proto = new RouteTbl();
         proto.setActive(active).setId(id).setOptionalProxyIds(optionProxyIds).setSrcProxyIds(srcProxyIds)
-                .setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId).setDescription(description);
+                .setIsPublic(isPublic).setDstProxyIds(dstProxyIds).setTag(tag).setRouteOrgId(orgId).setDescription(description);
         proto.setSrcDcId(mapper.getId(srcDcName)).setDstDcId(mapper.getId(dstDcName));
         return proto;
     }
@@ -154,18 +165,19 @@ public class RouteModel {
                 Objects.equals(srcDcName, that.srcDcName) &&
                 Objects.equals(dstDcName, that.dstDcName) &&
                 Objects.equals(tag, that.tag) &&
+                Objects.equals(isPublic, that.isPublic) &&
                 Objects.equals(description, that.description);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(id, orgId, srcProxyIds, dstProxyIds, optionProxyIds, srcDcName, dstDcName, tag, active, description);
+        return Objects.hash(id, orgId, srcProxyIds, dstProxyIds, optionProxyIds, srcDcName, dstDcName, tag, active, isPublic, description);
     }
 
     @Override
     public String toString() {
-        return String.format("RouteModel[id: %d, orgId: %d, srcProxyIds: %s, dstProxyIds: %s, srcDcName: %s, dstDcName: %s, tag: %s, active: %b, description: %s]",
-                id, orgId, srcProxyIds, dstProxyIds, srcDcName, dstDcName, tag, active, description);
+        return String.format("RouteModel[id: %d, orgId: %d, srcProxyIds: %s, dstProxyIds: %s, srcDcName: %s, dstDcName: %s, tag: %s, active: %b, isPublic:%b, description: %s]",
+                id, orgId, srcProxyIds, dstProxyIds, srcDcName, dstDcName, tag, active, isPublic, description);
     }
 }

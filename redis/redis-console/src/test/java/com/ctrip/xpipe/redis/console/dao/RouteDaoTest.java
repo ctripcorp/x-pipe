@@ -27,15 +27,15 @@ public class RouteDaoTest extends AbstractConsoleIntegrationTest {
     @Before
     public void beforeRouteDaoTest() {
 
-        proto1 = new RouteTbl().setRouteOrgId(4L).setActive(true).setDstDcId(2L)
+        proto1 = new RouteTbl().setRouteOrgId(4L).setActive(true).setDstDcId(2L).setIsPublic(true).setDescription("desc")
                 .setDstProxyIds("1,2").setOptionalProxyIds("").setSrcDcId(1L).setSrcProxyIds("3,4").setTag(Route.TAG_META);
-        proto2 = new RouteTbl().setRouteOrgId(3L).setActive(false).setDstDcId(2L)
+        proto2 = new RouteTbl().setRouteOrgId(3L).setActive(false).setDstDcId(2L).setIsPublic(false).setDescription("test false")
                 .setDstProxyIds("1,2").setOptionalProxyIds("").setSrcDcId(1L).setSrcProxyIds("3,4").setTag(Route.TAG_CONSOLE);
 
         routeDao.insert(proto1);
         routeDao.insert(proto2);
 
-        RouteTbl proto3 = new RouteTbl().setRouteOrgId(3L).setActive(false).setDstDcId(2L).setDeleted(1)
+        RouteTbl proto3 = new RouteTbl().setRouteOrgId(3L).setActive(false).setDstDcId(2L).setDeleted(1).setDescription("")
                 .setDstProxyIds("1,2").setOptionalProxyIds("").setSrcDcId(1L).setSrcProxyIds("3,4").setTag(Route.TAG_CONSOLE);
         routeDao.insert(proto3);
     }

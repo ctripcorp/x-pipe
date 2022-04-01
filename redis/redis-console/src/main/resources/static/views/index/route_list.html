@@ -4,11 +4,18 @@
         <header class="panel-heading">
             <div class="row">
                 <div class="col-md-6">
-                    <span class="col-sm-2"> Routes </span>
+                    <span>Route List</span>
+                    <span> > </span>
+                    <span>Route信息</span>
                 </div>
+<!--                <h3 class="header smaller lighter blue" ng-if="operateType !== 'create'">-->
+<!--                    <a href="/#/route/overview?srcDcName&dstDcName">Route List</a>-->
+<!--                    <span> > </span>-->
+<!--                    <span>Route信息</span>-->
+<!--                </h3>-->
                 <div class="col-md-6 text-right">
                     <a type="button" class="btn btn-info btn-xs" href="/#/route_form?routeId=&type=create">AddRoute</a>
-<!--                    <button class="btn btn-info btn-xs" ng-click="routeSwitch()">routeSwitch</button>-->
+                    <a type="button" class="btn btn-info btn-xs" href="/#/route_direction/route">DirectionInfo</a>
                 </div>
             </div>
         </header>
@@ -69,92 +76,32 @@
             <tr ng-repeat="route in $data">
                 <td data-title="'route_id'" ng-bind="route.id"></td>
                 <td data-title="'org_name'" filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="route.orgName"></td>
-                <td data-title="'src_info'" >
+                <td data-title="'public'" class="{{route.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></td>
+                <td data-title="'src_dcName'" filter="{srcDcName: 'text'}" sortable="'srcDcName'" ng-bind="route.srcDcName"></td>
+                <td data-title="'src_proxies'">
                     <span>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" >DcName:</p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 3cm; text-align: left" >{{route.srcDcName}}</p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" ng-if="route.srcProxies && route.srcProxies.length">Proxies: </p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 3cm; text-align: left" ng-repeat="proxy in route.srcProxies">{{proxy}}</p>
+                        <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.srcProxies">{{proxy}}</p>
                     </span>
                 </td>
-<!--                <td data-title=" ">&#45;&#45;&#45;&#45;&ndash;&gt;</td>-->
                 <td data-title="'optional_info'">
                     <span>
-                        <p align="center" style= "margin: 1cm 0cm 0pt 2cm; text-align: left" ng-if="route.optionalProxies && route.optionalProxies.length">Proxies: </p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 3cm; text-align: left" ng-repeat="proxy in route.optionalProxies">{{proxy}}</p>
+                        <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.optionalProxies">{{proxy}}</p>
                     </span>
                 </td>
-                <!--                <td data-title=" ">&#45;&#45;&#45;&#45;&ndash;&gt;</td>-->
-                <td data-title="'dst_info'">
+                <td data-title="'src_dcName'" filter="{dstDcName: 'text'}" sortable="'dstDcName'" ng-bind="route.dstDcName"></td>
+                <td data-title="'dst_proxies'">
                     <span>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" >DcName:</p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 3cm; text-align: left" >{{route.dstDcName}}</p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 2cm; text-align: left" ng-if="route.dstProxies && route.dstProxies.length">Proxies: </p>
-                        <p align="center" style= "margin: 0cm 0cm 0pt 3cm; text-align: left" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
+                        <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
                     </span>
                 </td>
                 <td data-title="'desc'" ng-bind="route.description"></td>
                 <td data-title="'操作'">
-                    <a href="/#/route_form?routeId={{route.id}}&type=update" class="btn btn-warning" type="button">修改</a>&nbsp;
+                    <a href="/#/route_form?routeId={{route.id}}&type=update" class="btn btn-warning btn-xs" type="button">修改</a>&nbsp;
                 </td>
         </table>
 
     </div>
 </div>
-
-<form class="modal fade form-horizontal" id="routeSwitch" tabindex="-1" role="dialog" novalidate
-      ng-submit="routeSwitch()">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header panel-primary">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                        aria-hidden="true">&times;</span></button>
-                <div class="modal-title">
-                    <span style="">route switch</span>
-                </div>
-            </div>
-<!--            <div class="modal-body form-horizontal">-->
-<!--                <div class="alert alert-danger" role="alert" ng-show="createKeeperErrorMsg">-->
-<!--                    {{createKeeperErrorMsg}}-->
-<!--                </div>-->
-<!--                <div>-->
-<!--                    <div class="form-group">-->
-<!--                        <label class="col-sm-4 control-label">-->
-<!--                            KeeperContainer-->
-<!--                        </label>-->
-<!--                        <div class="col-sm-6">-->
-<!--                            <select class="form-control" ng-model="toCreateFirstKeeper.keepercontainerId">-->
-<!--                                <option ng-repeat="keeperContainer in keeperContainers"-->
-<!--                                        value="{{keeperContainer.keepercontainerId}}"-->
-<!--                                        ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort"></option>-->
-<!--                            </select>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                    <div class="form-group">-->
-<!--                        <label class="col-sm-4 control-label">-->
-<!--                            port-->
-<!--                        </label>-->
-<!--                        <div class="col-sm-6">-->
-<!--                            <input type="text" class="form-control" ng-model="toCreateFirstKeeper.redisPort" ng-required="true">-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                    <hr/>-->
-<!--                </div>-->
-
-
-<!--                <div class="form-group text-center">-->
-<!--                    <button class="btn btn-default btn-xs" type="button" ng-click="addCreateBackupKeeperForm()">add-->
-<!--                        backup keeper-->
-<!--                    </button>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--            <div class="modal-footer">-->
-<!--                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>-->
-<!--                <button type="submit" class="btn btn-primary" ng-disabled="freeKeeperContainers.length <= 0">创建</button>-->
-<!--            </div>-->
-        </div>
-    </div>
-</form>
 
 <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
     <i class="icon-double-angle-up icon-only bigger-110"></i>
