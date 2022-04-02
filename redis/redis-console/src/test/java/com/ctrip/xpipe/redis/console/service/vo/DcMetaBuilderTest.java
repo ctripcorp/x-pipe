@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import static org.mockito.Mockito.mock;
 /**
  * @author chen.zhu
  * <p>
@@ -110,6 +108,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertTrue(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY));
         Assert.assertEquals("jq", clusterMeta.getActiveDc());
         Assert.assertEquals("oy,fra", clusterMeta.getBackupDcs());
+        Assert.assertEquals("1,2", clusterMeta.getClusterDesignatedRouteIds());
         Assert.assertNull(clusterMeta.getDcs());
     }
 
@@ -126,6 +125,7 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertNull(clusterMeta.getBackupDcs());
         Assert.assertEquals("jq,oy", clusterMeta.getDcs());
         Assert.assertEquals("1,2",clusterMeta.getActiveRedisCheckRules());
+        Assert.assertEquals("1,2",clusterMeta.getClusterDesignatedRouteIds());
     }
 
     @Test

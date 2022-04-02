@@ -63,6 +63,42 @@ public class RouteDaoTest extends AbstractConsoleIntegrationTest {
 
     }
 
+    @Test
+    public void testGetAllRouteByTagAndDirection() {
+        List<RouteTbl> routes = routeDao.getAllAvailableRoutesByTagAndDirection(Route.TAG_META,1,2);
+        Assert.assertEquals(1, routes.size());
+
+        routes = routeDao.getAllAvailableRoutesByTagAndDirection(Route.TAG_META,1,3);
+        Assert.assertEquals(0, routes.size());
+
+        routes = routeDao.getAllAvailableRoutesByTagAndDirection(Route.TAG_CONSOLE,1,2);
+        Assert.assertEquals(0, routes.size());
+
+    }
+
+    @Test
+    public void testGetAllAvailableRoutesByTag() {
+        List<RouteTbl> routes = routeDao.getAllAvailableRoutesByTag(Route.TAG_META);
+        Assert.assertEquals(1, routes.size());
+
+        routes = routeDao.getAllAvailableRoutesByTag(Route.TAG_CONSOLE);
+        Assert.assertEquals(0, routes.size());
+    }
+
+    @Test
+    public void testGetRouteById() {
+        RouteTbl route = routeDao.getRouteById(1L);
+
+        Assert.assertEquals(proto1.isActive(), route.isActive());
+        Assert.assertEquals(proto1.isIsPublic(), route.isIsPublic());
+        Assert.assertEquals(proto1.getRouteOrgId(), route.getRouteOrgId());
+        Assert.assertEquals(proto1.getTag(), route.getTag());
+        Assert.assertEquals(proto1.getDstDcId(), route.getDstDcId());
+        Assert.assertEquals(proto1.getDstProxyIds(), route.getDstProxyIds());
+        Assert.assertEquals(proto1.getSrcDcId(), route.getSrcDcId());
+        Assert.assertEquals(proto1.getSrcProxyIds(), route.getSrcProxyIds());
+
+    }
 
     @Test
     public void testDelete() {

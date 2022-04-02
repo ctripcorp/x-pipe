@@ -35,8 +35,6 @@ public interface ProxyService extends ProxyManager {
 
     List<ProxyTbl> getActiveProxyTbls();
 
-    List<ProxyModel> getActiveProxyTblsByDc(String dcName);
-
     List<String> getActiveProxyUrisByDc(String dcName);
 
     /**Proxy Chain related*/

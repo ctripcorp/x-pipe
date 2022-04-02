@@ -132,8 +132,8 @@ public class RouteModel {
 
     public static RouteModel fromRouteTbl(RouteTbl routeTbl, DcIdNameMapper mapper) {
         RouteModel model = new RouteModel();
-        model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds())
-                .setActive(routeTbl.isActive()).setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
+        model.setActive(routeTbl.isActive()).setDstProxyIds(routeTbl.getDstProxyIds()).setPublic(routeTbl.isIsPublic())
+                .setId(routeTbl.getId()).setSrcProxyIds(routeTbl.getSrcProxyIds());
 
         model.setSrcDcName(mapper.getName(routeTbl.getSrcDcId()))
                 .setDstDcName(mapper.getName(routeTbl.getDstDcId()));
