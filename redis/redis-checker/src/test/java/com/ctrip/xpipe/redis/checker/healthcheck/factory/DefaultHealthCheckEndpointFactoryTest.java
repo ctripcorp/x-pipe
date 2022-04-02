@@ -6,7 +6,6 @@ import com.ctrip.framework.xpipe.redis.proxy.ProxyResourceManager;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.proxy.ProxyEndpoint;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
@@ -20,14 +19,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -63,8 +58,11 @@ public class DefaultHealthCheckEndpointFactoryTest extends AbstractRedisTest {
 
     @Test
     public void testGetOrCreateProxyEnabledEndpoint() {
-        String routeInfo = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
-        when(metaCache.getRoutes()).thenReturn(Lists.newArrayList(new RouteMeta().setRouteInfo(routeInfo).setDstDc("oy")));
+        String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
+        String routeInfo2 = "PROXYTCP://127.0.0.2:8008,PROXYTCP://127.0.0.2:8998";
+        RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("oy").setIsPublic(true);
+        RouteMeta routeMeta2 = new RouteMeta().setRouteInfo(routeInfo2).setDstDc("oy").setIsPublic(false);
+        when(metaCache.getRoutes()).thenReturn(Lists.newArrayList(routeMeta1, routeMeta2));
         HostPort hostport = localHostport(randomPort());
         when(metaCache.getDc(hostport)).thenReturn("oy");
         factory.updateRoutes();
@@ -73,7 +71,7 @@ public class DefaultHealthCheckEndpointFactoryTest extends AbstractRedisTest {
         Assert.assertEquals(hostport.getHost(), endpoint.getHost());
         Assert.assertEquals(hostport.getPort(), endpoint.getPort());
 
-        String[] expected = StringUtil.splitRemoveEmpty("\\s*,\\s*", routeInfo);
+        String[] expected = StringUtil.splitRemoveEmpty("\\s*,\\s*", routeInfo1);
         Arrays.sort(expected);
         ProxyResourceManager proxyResourceManager = ProxyRegistry.getProxy(hostport.getHost(), hostport.getPort());
         List<ProxyInetSocketAddress> endpoints = proxyResourceManager.nextEndpoints();
