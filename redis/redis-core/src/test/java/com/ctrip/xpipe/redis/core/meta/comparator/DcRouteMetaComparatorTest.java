@@ -75,4 +75,17 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
 
         Assert.assertEquals(1, comparator.getMofified().size());
     }
+
+    @Test
+    public void testCompareWithModifiedWithPublic() {
+        future.getRoutes().get(0).setIsPublic(true);
+        comparator = new DcRouteMetaComparator(current, future);
+        comparator.compare();
+
+        Assert.assertTrue(comparator.getAdded().isEmpty());
+        Assert.assertTrue(comparator.getRemoved().isEmpty());
+        Assert.assertFalse(comparator.getMofified().isEmpty());
+
+        Assert.assertEquals(1, comparator.getMofified().size());
+    }
 }

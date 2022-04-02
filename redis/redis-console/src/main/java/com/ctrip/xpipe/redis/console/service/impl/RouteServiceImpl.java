@@ -94,7 +94,6 @@ public class RouteServiceImpl implements RouteService {
             }
         });
 
-//        MapUtils.getOrCreate();
         return Lists.newArrayList(clone);
     }
 
@@ -211,8 +210,6 @@ public class RouteServiceImpl implements RouteService {
     }
 
     private RouteTbl convertRouteInfoModelToRouteTbl(RouteInfoModel model) {
-//        if(model.getDstProxies() == null || model.getDstProxies().isEmpty())
-//            throw new BadRequestException("Dest Dc Proxies must not be null!");
 
         RouteTbl routeTbl = new RouteTbl();
         Map<String, Long> proxyUriIdMap = proxyService.proxyUriIdMap();
@@ -227,7 +224,6 @@ public class RouteServiceImpl implements RouteService {
         routeTbl.setActive(model.isActive()).setTag(model.getTag()).setIsPublic(model.isPublic())
                 .setSrcDcId(dcService.findByDcName(model.getSrcDcName()).getId())
                 .setDstDcId(dcService.findByDcName(model.getDstDcName()).getId())
-//                .setDstProxyIds(StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getDstProxies()))
                 .setDescription(model.getDescription());
 
         return routeTbl;

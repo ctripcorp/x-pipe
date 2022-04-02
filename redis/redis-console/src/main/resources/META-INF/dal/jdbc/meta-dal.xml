@@ -175,6 +175,7 @@
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
 				<member name="cluster-admin-emails"/>
+				<member name="cluster-designated-route-ids"/>
 			</readset>
 			<readset name="FULL_WITH_MIGRATION_EVENT">
                 <readset-ref name="FULL"/>

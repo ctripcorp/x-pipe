@@ -121,11 +121,6 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     }
 
     @Override
-    public List<ProxyModel> getActiveProxyTblsByDc(String dcName) {
-        return convert(proxyDao.getActiveProxyTblsByDc(dcService.find(dcName).getId()));
-    }
-
-    @Override
     public ProxyChain getProxyChain(String backupDcId, String clusterId, String shardId, String peerDcId) {
         return analyzer.getProxyChain(backupDcId, clusterId, shardId, peerDcId);
     }
@@ -193,18 +188,6 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
             int chainNum = getChainNumber(proxy);
             result.add(new ProxyInfoModel(model.getHostPort().getHost(), model.getHostPort().getPort(), model.getDcName(), chainNum));
         }
-        return result;
-    }
-
-    public List<ProxyModel> getAllDcProxyModel() {
-        List<ProxyModel> result = Lists.newArrayList();
-//        proxyDao.getAllProxyTbls()
-//        List<ProxyMonitorCollector> proxies = proxyMonitorCollectorManager.getProxyMonitorResults();
-//        for(ProxyMonitorCollector proxy : proxies) {
-//            ProxyModel model = proxy.getProxyInfo();
-//            int chainNum = getChainNumber(proxy);
-//            result.add(new ProxyInfoModel(model.getHostPort().getHost(), model.getHostPort().getPort(), model.getDcName(), chainNum));
-//        }
         return result;
     }
 
