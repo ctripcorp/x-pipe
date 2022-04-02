@@ -72,6 +72,10 @@
                 <redis ip="10.0.0.2" port="6479" master="true" />
             </shard>
         </cluster>
+        <routes>
+            <route id="1" org-id="0" tag="console" src-dc="oy" dst-dc="fra" isPulic="true" routeInfo="PROXYTCP://127.0.0.1:80"/>
+            <route id="2" org-id="0" tag="console" src-dc="oy" dst-dc="fra" isPulic="true" routeInfo="PROXYTCP://127.0.0.2:80"/>
+        </routes>
     </dc>
     <dc id="fra-aws" zone="FRA">
 
