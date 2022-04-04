@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
@@ -123,20 +124,21 @@ public class SentinelCollector4Keeper implements SentinelHelloCollector, OneWayS
 
             @Override
             public void doAction(SentinelCollector4Keeper collector, SentinelHello hello, RedisInstanceInfo info) {
-                HostPort masterAddr = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello), hello.getMonitorName()).
+                SentinelMasterInstance sentinelMasterInstance = collector.sentinelManager.getMasterOfMonitor(collector.toSentinel(hello), hello.getMonitorName()).
                         execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
                     logger.error("[getMasterOfMonitor] sentinel master {} from {} : {}", hello.getMonitorName(), collector.toSentinel(hello), throwable.getMessage());
                     return null;
                 });
-
+                if (sentinelMasterInstance == null)
+                    return;
                 // check again, findRedisHealthCheckInstance master from sentinel monitor, see if master matches
                 boolean checkAgain = false;
                 try {
                     HostPort expect = collector.metaCache.findMaster(info.getClusterId(), info.getShardId());
-                    checkAgain = ObjectUtils.equals(masterAddr, expect);
+                    checkAgain = ObjectUtils.equals(sentinelMasterInstance.getHostPort(), expect);
                     if(!checkAgain) {
                         collector.alertManager.alert(info, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS,
-                                getMessage(expect.toString(), masterAddr.toString()));
+                                getMessage(expect.toString(), sentinelMasterInstance.getHostPort().toString()));
                     } else {
                         logger.warn("[doAction][MASTER_BAD_MONITOR_GOOD] {}-{}-{} findRedisHealthCheckInstance from sentinel hello: {}",
                                 info.getClusterId(), info.getShardId(), info.getHostPort(), hello);

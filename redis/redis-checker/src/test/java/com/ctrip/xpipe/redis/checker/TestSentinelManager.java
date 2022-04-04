@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class TestSentinelManager implements SentinelManager {
     }
 
     @Override
-    public Command<HostPort> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<SentinelMasterInstance> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
         return null;
     }
 

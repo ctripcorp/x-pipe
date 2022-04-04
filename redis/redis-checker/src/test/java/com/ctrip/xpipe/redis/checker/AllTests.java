@@ -49,6 +49,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyB
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.CurrentDcSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.SentinelCollector4KeeperTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.AnalyseHellosTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.CheckTrueMasterTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.DeleteWrongSentinelsTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.ResetSentinelsTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CrossDcSentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CurrentDcSentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.OneWaySentinelHelloCheckControllerTest;
@@ -72,6 +76,10 @@ import org.junit.runners.Suite;
         DefaultCheckerDbConfigTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
+        AnalyseHellosTest.class,
+        CheckTrueMasterTest.class,
+        DeleteWrongSentinelsTest.class,
+        ResetSentinelsTest.class,
         SentinelCollector4KeeperTest.class,
         AlertPolicyManagerTest.class,
 

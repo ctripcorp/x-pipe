@@ -61,6 +61,10 @@ public class SentinelHello {
         return monitorName;
     }
 
+    public void setMasterAddr(HostPort masterAddr) {
+        this.masterAddr = masterAddr;
+    }
+
     @Override
     public boolean equals(Object obj) {
 
