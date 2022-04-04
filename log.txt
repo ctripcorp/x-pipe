@@ -1,0 +1,1297 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.ctrip.framework.xpipe:core:jar:1.2.6
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: qunar.common:common-core:jar -> duplicate declaration of version ${qunaer.common.version} @ com.ctrip.framework.xpipe:xpipe-parent:1.2.6, /Users/lilj/IdeaProjects/x-pipe/pom.xml, line 144, column 25
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.velocity:velocity:jar -> duplicate declaration of version ${velocity.version} @ com.ctrip.framework.xpipe:xpipe-parent:1.2.6, /Users/lilj/IdeaProjects/x-pipe/pom.xml, line 805, column 25
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: com.squareup.okhttp3:mockwebserver:jar -> version ${okhttp3.version} vs ${mockwebserver.version} @ com.ctrip.framework.xpipe:xpipe-parent:1.2.6, /Users/lilj/IdeaProjects/x-pipe/pom.xml, line 836, column 25
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.ctrip.framework.xpipe.redis:redis-checker:jar:1.2.6
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.springframework.boot:spring-boot-starter-test:jar -> duplicate declaration of version (?) @ com.ctrip.framework.xpipe.redis:redis-checker:[unknown-version], /Users/lilj/IdeaProjects/x-pipe/redis/redis-checker/pom.xml, line 40, column 21
+[WARNING] The expression ${parent.version} is deprecated. Please use ${project.parent.version} instead.
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.ctrip.framework.xpipe.redis:redis-proxy:jar:1.2.6
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: io.netty:netty-tcnative-boringssl-static:jar -> duplicate declaration of version (?) @ com.ctrip.framework.xpipe.redis:redis-proxy:[unknown-version], /Users/lilj/IdeaProjects/x-pipe/redis/redis-proxy/pom.xml, line 52, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.ctrip.framework.xpipe.redis:redis-proxy-client:jar:1.2.6
+[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-shade-plugin is missing. @ com.ctrip.framework.xpipe.redis:redis-proxy-client:[unknown-version], /Users/lilj/IdeaProjects/x-pipe/redis/redis-proxy-client/pom.xml, line 67, column 21
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.ctrip.framework.xpipe:xpipe-parent:pom:1.2.6
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: qunar.common:common-core:jar -> duplicate declaration of version ${qunaer.common.version} @ line 144, column 25
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.apache.velocity:velocity:jar -> duplicate declaration of version ${velocity.version} @ line 805, column 25
+[WARNING] 'dependencyManagement.dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: com.squareup.okhttp3:mockwebserver:jar -> version ${okhttp3.version} vs ${mockwebserver.version} @ line 836, column 25
+[WARNING] 'parent.version' is either LATEST or RELEASE (both of them are being deprecated) @ com.ctrip:super-pom:1.0.0, /Users/lilj/.m2/repository/com/ctrip/super-pom/1.0.0/super-pom-1.0.0.pom, line 9, column 18
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] xpipe-parent                                                       [pom]
+[INFO] core                                                               [jar]
+[INFO] redis-parent                                                       [pom]
+[INFO] redis-core                                                         [jar]
+[INFO] redis-keeper                                                       [jar]
+[INFO] redis-meta                                                         [jar]
+[INFO] redis-proxy-client                                                 [jar]
+[INFO] redis-checker                                                      [jar]
+[INFO] redis-console                                                      [jar]
+[INFO] redis-proxy                                                        [jar]
+[INFO] redis-integration-test                                             [jar]
+[INFO] services                                                           [pom]
+[INFO] 
+[INFO] ---------------< com.ctrip.framework.xpipe:xpipe-parent >---------------
+[INFO] Building xpipe-parent 1.2.6                                       [1/12]
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ xpipe-parent ---
+[INFO] com.ctrip.framework.xpipe:xpipe-parent:pom:1.2.6
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:test
+[INFO] |  |  |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     +- org.springframework:spring-aop:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     +- org.springframework:spring-beans:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  |  \- junit:junit:jar:4.12:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -------------------< com.ctrip.framework.xpipe:core >-------------------
+[INFO] Building core 1.2.6                                               [2/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ core ---
+[INFO] com.ctrip.framework.xpipe:core:jar:1.2.6
+[INFO] +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] +- commons-io:commons-io:jar:2.4:compile
+[INFO] +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:test
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:test
+[INFO] |  \- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] +- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] +- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |  +- jline:jline:jar:0.9.94:compile
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  +- org.apache.commons:commons-math:jar:2.2:test
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] +- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  |  \- junit:junit:jar:4.12:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] ------------< com.ctrip.framework.xpipe.redis:redis-parent >------------
+[INFO] Building redis-parent 1.2.6                                       [3/12]
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-parent ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-parent:pom:1.2.6
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:test
+[INFO] |  |  |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     +- org.springframework:spring-aop:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     +- org.springframework:spring-beans:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  |  \- junit:junit:jar:4.12:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -------------< com.ctrip.framework.xpipe.redis:redis-core >-------------
+[INFO] Building redis-core 1.2.6                                         [4/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-core ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe:core:jar:1.2.6:compile
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |  |  \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] |  +- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] +- org.unidal.framework:foundation-service:jar:3.1.4:compile
+[INFO] |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:compile
+[INFO] +- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  \- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] +- commons-io:commons-io:jar:2.4:compile
+[INFO] +- org.apache.commons:commons-exec:jar:1.3:compile
+[INFO] +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] +- redis.clients:jedis:jar:3.3.0:test
+[INFO] |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |  +- jline:jline:jar:0.9.94:compile
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  +- org.apache.commons:commons-math:jar:2.2:test
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- com.squareup.okhttp3:mockwebserver:jar:3.12.0:test
+[INFO] |  +- com.squareup.okhttp3:okhttp:jar:3.12.0:test
+[INFO] |  |  \- com.squareup.okio:okio:jar:1.15.0:test
+[INFO] |  \- junit:junit:jar:4.12:test
+[INFO] |     \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] ------------< com.ctrip.framework.xpipe.redis:redis-keeper >------------
+[INFO] Building redis-keeper 1.2.6                                       [5/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-keeper ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-keeper:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6:compile
+[INFO] |  +- com.ctrip.framework.xpipe:core:jar:1.2.6:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.unidal.framework:foundation-service:jar:3.1.4:compile
+[INFO] |  |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:compile
+[INFO] |  +- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] |  |  \- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  +- commons-io:commons-io:jar:2.4:compile
+[INFO] |  +- org.apache.commons:commons-exec:jar:1.3:compile
+[INFO] |  \- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:compile
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:compile
+[INFO] |  \- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] +- redis.clients:jedis:jar:3.3.0:test
+[INFO] |  +- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] |  \- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:test-jar:tests:1.2.6:test
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |  +- jline:jline:jar:0.9.94:compile
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  +- org.apache.commons:commons-math:jar:2.2:test
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  |  \- junit:junit:jar:4.12:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -------------< com.ctrip.framework.xpipe.redis:redis-meta >-------------
+[INFO] Building redis-meta 1.2.6                                         [6/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-meta ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-meta:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6:compile
+[INFO] |  +- com.ctrip.framework.xpipe:core:jar:1.2.6:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.unidal.framework:foundation-service:jar:3.1.4:compile
+[INFO] |  |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:compile
+[INFO] |  +- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] |  +- commons-io:commons-io:jar:2.4:compile
+[INFO] |  +- org.apache.commons:commons-exec:jar:1.3:compile
+[INFO] |  \- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:compile
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:compile
+[INFO] |  \- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  \- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] +- org.aspectj:aspectjweaver:jar:1.9.6:compile
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] |  +- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] +- redis.clients:jedis:jar:3.3.0:test
+[INFO] |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:test-jar:tests:1.2.6:test
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |  +- jline:jline:jar:0.9.94:compile
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  +- org.apache.commons:commons-math:jar:2.2:test
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- com.squareup.okhttp3:mockwebserver:jar:3.12.0:test
+[INFO] |  +- com.squareup.okhttp3:okhttp:jar:3.12.0:test
+[INFO] |  |  \- com.squareup.okio:okio:jar:1.15.0:test
+[INFO] |  \- junit:junit:jar:4.12:test
+[INFO] |     \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] ---------< com.ctrip.framework.xpipe.redis:redis-proxy-client >---------
+[INFO] Building redis-proxy-client 1.2.6                                 [7/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-proxy-client ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-proxy-client:jar:1.2.6
+[INFO] +- com.alibaba.arthas:arthas-repackage-asm:jar:0.0.6:compile
+[INFO] +- com.alibaba.arthas:arthas-repackage-logger:jar:0.0.6:compile
+[INFO] +- javax.servlet:javax.servlet-api:jar:3.1.0:provided
+[INFO] +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:provided
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:provided
+[INFO] |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:provided
+[INFO] |     +- org.springframework:spring-aop:jar:5.2.15.RELEASE:provided
+[INFO] |     +- org.springframework:spring-beans:jar:5.2.15.RELEASE:provided
+[INFO] |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:provided
+[INFO] +- junit:junit:jar:4.12:test
+[INFO] |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- com.squareup.okhttp3:mockwebserver:jar:3.12.0:test
+[INFO] |  \- com.squareup.okhttp3:okhttp:jar:3.12.0:test
+[INFO] |     \- com.squareup.okio:okio:jar:1.15.0:test
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -----------< com.ctrip.framework.xpipe.redis:redis-checker >------------
+[INFO] Building redis-checker 1.2.6                                      [8/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-checker ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-checker:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6:compile
+[INFO] |  +- com.ctrip.framework.xpipe:core:jar:1.2.6:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.unidal.framework:foundation-service:jar:3.1.4:compile
+[INFO] |  |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:compile
+[INFO] |  +- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] |  |  \- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  +- commons-io:commons-io:jar:2.4:compile
+[INFO] |  +- org.apache.commons:commons-exec:jar:1.3:compile
+[INFO] |  \- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:compile
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:compile
+[INFO] |  \- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-aop:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |  \- org.aspectj:aspectjweaver:jar:1.9.6:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-velocity:jar:1.4.3.RELEASE:compile
+[INFO] |  +- commons-beanutils:commons-beanutils:jar:1.9.3:compile
+[INFO] |  +- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  +- commons-digester:commons-digester:jar:2.1:compile
+[INFO] |  +- org.apache.velocity:velocity-tools:jar:2.0:compile
+[INFO] |  |  +- commons-chain:commons-chain:jar:1.1:compile
+[INFO] |  |  +- commons-validator:commons-validator:jar:1.3.1:compile
+[INFO] |  |  +- dom4j:dom4j:jar:1.1:compile
+[INFO] |  |  +- oro:oro:jar:2.0.8:compile
+[INFO] |  |  +- sslext:sslext:jar:1.2-0:compile
+[INFO] |  |  +- org.apache.struts:struts-core:jar:1.3.8:compile
+[INFO] |  |  |  \- antlr:antlr:jar:2.7.7:compile
+[INFO] |  |  +- org.apache.struts:struts-taglib:jar:1.3.8:compile
+[INFO] |  |  \- org.apache.struts:struts-tiles:jar:1.3.8:compile
+[INFO] |  \- org.springframework:spring-context-support:jar:5.2.15.RELEASE:compile
+[INFO] +- org.apache.velocity:velocity:jar:1.7:compile
+[INFO] |  \- commons-lang:commons-lang:jar:2.6:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] |  +- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:test-jar:tests:1.2.6:test
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |  +- jline:jline:jar:0.9.94:compile
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  +- org.apache.commons:commons-math:jar:2.2:test
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- redis.clients:jedis:jar:3.3.0:compile
+[INFO] |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] +- com.squareup.okhttp3:mockwebserver:jar:3.12.0:test
+[INFO] |  +- com.squareup.okhttp3:okhttp:jar:3.12.0:test
+[INFO] |  |  \- com.squareup.okio:okio:jar:1.15.0:test
+[INFO] |  \- junit:junit:jar:4.12:test
+[INFO] |     \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-proxy-client:jar:1.2.6:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -----------< com.ctrip.framework.xpipe.redis:redis-console >------------
+[INFO] Building redis-console 1.2.6                                      [9/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-console ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-console:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6:compile
+[INFO] |  +- com.ctrip.framework.xpipe:core:jar:1.2.6:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.unidal.framework:foundation-service:jar:3.1.4:compile
+[INFO] |  |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:compile
+[INFO] |  +- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] |  |  \- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  +- commons-io:commons-io:jar:2.4:compile
+[INFO] |  +- org.apache.commons:commons-exec:jar:1.3:compile
+[INFO] |  \- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-checker:jar:1.2.6:compile
+[INFO] |  \- com.ctrip.framework.xpipe.redis:redis-proxy-client:jar:1.2.6:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-checker:test-jar:tests:1.2.6:test
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:compile
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:compile
+[INFO] |  \- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-aop:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |  \- org.aspectj:aspectjweaver:jar:1.9.6:compile
+[INFO] +- dnsjava:dnsjava:jar:2.1.6:compile
+[INFO] +- redis.clients:jedis:jar:3.3.0:compile
+[INFO] |  +- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] |  \- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] +- biz.paluch.redis:lettuce:jar:3.2.Final:compile
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.unidal.framework:dal-jdbc:jar:3.1.4:compile
+[INFO] |  +- com.mchange:c3p0:jar:0.9.5.2:compile
+[INFO] |  |  \- com.mchange:mchange-commons-java:jar:0.2.11:compile
+[INFO] |  \- junit:junit:jar:4.12:test
+[INFO] |     \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- mysql:mysql-connector-java:jar:5.1.38:compile
+[INFO] +- com.h2database:h2:jar:1.4.191:test
+[INFO] +- org.springframework.boot:spring-boot-starter-velocity:jar:1.4.3.RELEASE:compile
+[INFO] |  +- commons-beanutils:commons-beanutils:jar:1.9.3:compile
+[INFO] |  +- commons-collections:commons-collections:jar:3.2.2:compile
+[INFO] |  +- commons-digester:commons-digester:jar:2.1:compile
+[INFO] |  +- org.apache.velocity:velocity-tools:jar:2.0:compile
+[INFO] |  |  +- commons-chain:commons-chain:jar:1.1:compile
+[INFO] |  |  +- commons-validator:commons-validator:jar:1.3.1:compile
+[INFO] |  |  +- dom4j:dom4j:jar:1.1:compile
+[INFO] |  |  +- oro:oro:jar:2.0.8:compile
+[INFO] |  |  +- sslext:sslext:jar:1.2-0:compile
+[INFO] |  |  +- org.apache.struts:struts-core:jar:1.3.8:compile
+[INFO] |  |  |  \- antlr:antlr:jar:2.7.7:compile
+[INFO] |  |  +- org.apache.struts:struts-taglib:jar:1.3.8:compile
+[INFO] |  |  \- org.apache.struts:struts-tiles:jar:1.3.8:compile
+[INFO] |  \- org.springframework:spring-context-support:jar:5.2.15.RELEASE:compile
+[INFO] +- org.apache.velocity:velocity:jar:1.7:compile
+[INFO] |  \- commons-lang:commons-lang:jar:2.6:compile
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:test-jar:tests:1.2.6:test
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |  +- jline:jline:jar:0.9.94:compile
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  \- org.apache.commons:commons-math:jar:2.2:test
+[INFO] +- com.squareup.okhttp3:mockwebserver:jar:3.12.0:test
+[INFO] |  \- com.squareup.okhttp3:okhttp:jar:3.12.0:test
+[INFO] |     \- com.squareup.okio:okio:jar:1.15.0:test
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] ------------< com.ctrip.framework.xpipe.redis:redis-proxy >-------------
+[INFO] Building redis-proxy 1.2.6                                       [10/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-proxy ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-proxy:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6:compile
+[INFO] |  +- com.ctrip.framework.xpipe:core:jar:1.2.6:compile
+[INFO] |  +- org.unidal.framework:foundation-service:jar:3.1.4:compile
+[INFO] |  |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:compile
+[INFO] |  +- org.springframework:spring-web:jar:5.2.15.RELEASE:compile
+[INFO] |  |  \- org.springframework:spring-beans:jar:5.2.15.RELEASE:compile
+[INFO] |  +- commons-io:commons-io:jar:2.4:compile
+[INFO] |  +- org.apache.commons:commons-exec:jar:1.3:compile
+[INFO] |  \- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:compile
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.glassfish:jakarta.el:jar:3.0.3:compile
+[INFO] |  |  \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:compile
+[INFO] |  \- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-aop:jar:5.2.15.RELEASE:compile
+[INFO] |     +- org.springframework:spring-context:jar:5.2.15.RELEASE:compile
+[INFO] |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:compile
+[INFO] +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] +- io.netty:netty-tcnative-boringssl-static:jar:2.0.12.Final:compile
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:compile
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:compile
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:compile
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:compile
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:compile
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:compile
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:compile
+[INFO] |  +- org.apache.commons:commons-pool2:jar:2.3:compile
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:compile
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:compile
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:compile
+[INFO] |  |        \- org.apache.zookeeper:zookeeper:jar:3.4.9:compile
+[INFO] |  |           +- jline:jline:jar:0.9.94:compile
+[INFO] |  |           \- io.netty:netty:jar:3.10.5.Final:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.2:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.10:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:compile
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] |     \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:test-jar:tests:1.2.6:test
+[INFO] +- com.github.luben:zstd-jni:jar:1.3.6-1:compile
+[INFO] +- org.xerial.snappy:snappy-java:jar:1.1.2.6:test
+[INFO] +- net.jpountz.lz4:lz4:jar:1.3.0:test
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  |  \- junit:junit:jar:4.12:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:compile
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -------< com.ctrip.framework.xpipe.redis:redis-integration-test >-------
+[INFO] Building redis-integration-test 1.2.6                            [11/12]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ redis-integration-test ---
+[INFO] com.ctrip.framework.xpipe.redis:redis-integration-test:jar:1.2.6
+[INFO] +- com.ctrip.framework.xpipe:core:test-jar:tests:1.2.6:test
+[INFO] |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:9.0.46:test
+[INFO] |  |  \- org.apache.tomcat:tomcat-annotations-api:jar:9.0.46:test
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- commons-io:commons-io:jar:2.4:test
+[INFO] |  +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.3:test
+[INFO] |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.3:test
+[INFO] |  |  \- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.3:test
+[INFO] |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:test
+[INFO] |  +- org.springframework:spring-webmvc:jar:5.2.15.RELEASE:test
+[INFO] |  |  +- org.springframework:spring-beans:jar:5.2.15.RELEASE:test
+[INFO] |  |  \- org.springframework:spring-expression:jar:5.2.15.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter-webflux:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-json:jar:2.3.12.RELEASE:test
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.11.4:test
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.11.4:test
+[INFO] |  |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.11.4:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-reactor-netty:jar:2.3.12.RELEASE:test
+[INFO] |  |  |  \- io.projectreactor.netty:reactor-netty:jar:0.9.20.RELEASE:test
+[INFO] |  |  +- org.springframework:spring-webflux:jar:5.2.15.RELEASE:test
+[INFO] |  |  |  \- io.projectreactor:reactor-core:jar:3.3.17.RELEASE:test
+[INFO] |  |  |     \- org.reactivestreams:reactive-streams:jar:1.0.3:test
+[INFO] |  |  \- org.synchronoss.cloud:nio-multipart-parser:jar:1.1.0:test
+[INFO] |  |     \- org.synchronoss.cloud:nio-stream-storage:jar:1.1.3:test
+[INFO] |  +- org.apache.commons:commons-pool2:jar:2.3:test
+[INFO] |  +- org.apache.curator:curator-recipes:jar:2.11.0:test
+[INFO] |  |  \- org.apache.curator:curator-framework:jar:2.11.0:test
+[INFO] |  |     \- org.apache.curator:curator-client:jar:2.11.0:test
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.2:test
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.5:test
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.10:test
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.4:test
+[INFO] |  \- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-console:test-jar:tests:1.2.6:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter-web:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.springframework.boot:spring-boot-starter-tomcat:jar:2.3.12.RELEASE:test
+[INFO] |  |     +- org.glassfish:jakarta.el:jar:3.0.3:test
+[INFO] |  |     \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:9.0.46:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter-aop:jar:2.3.12.RELEASE:test
+[INFO] |  +- dnsjava:dnsjava:jar:2.1.6:test
+[INFO] |  +- biz.paluch.redis:lettuce:jar:3.2.Final:test
+[INFO] |  +- org.unidal.framework:dal-jdbc:jar:3.1.4:test
+[INFO] |  |  \- com.mchange:c3p0:jar:0.9.5.2:test
+[INFO] |  |     \- com.mchange:mchange-commons-java:jar:0.2.11:test
+[INFO] |  +- mysql:mysql-connector-java:jar:5.1.38:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter-velocity:jar:1.4.3.RELEASE:test
+[INFO] |  |  +- commons-beanutils:commons-beanutils:jar:1.9.3:test
+[INFO] |  |  +- commons-collections:commons-collections:jar:3.2.2:test
+[INFO] |  |  +- commons-digester:commons-digester:jar:2.1:test
+[INFO] |  |  +- org.apache.velocity:velocity-tools:jar:2.0:test
+[INFO] |  |  |  +- commons-chain:commons-chain:jar:1.1:test
+[INFO] |  |  |  +- commons-validator:commons-validator:jar:1.3.1:test
+[INFO] |  |  |  +- dom4j:dom4j:jar:1.1:test
+[INFO] |  |  |  +- oro:oro:jar:2.0.8:test
+[INFO] |  |  |  +- sslext:sslext:jar:1.2-0:test
+[INFO] |  |  |  +- org.apache.struts:struts-core:jar:1.3.8:test
+[INFO] |  |  |  |  \- antlr:antlr:jar:2.7.7:test
+[INFO] |  |  |  +- org.apache.struts:struts-taglib:jar:1.3.8:test
+[INFO] |  |  |  \- org.apache.struts:struts-tiles:jar:1.3.8:test
+[INFO] |  |  \- org.springframework:spring-context-support:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.apache.velocity:velocity:jar:1.7:test
+[INFO] |     \- commons-lang:commons-lang:jar:2.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-checker:test-jar:tests:1.2.6:test
+[INFO] |  \- com.ctrip.framework.xpipe.redis:redis-proxy-client:jar:1.2.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-proxy:jar:1.2.6:test
+[INFO] |  +- io.netty:netty-tcnative-boringssl-static:jar:2.0.12.Final:test
+[INFO] |  \- com.github.luben:zstd-jni:jar:1.3.6-1:test
+[INFO] +- com.h2database:h2:jar:1.4.191:test
+[INFO] +- junit:junit:jar:4.12:test
+[INFO] |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:jar:1.2.6:test
+[INFO] |  +- com.ctrip.framework.xpipe:core:jar:1.2.6:test
+[INFO] |  +- org.unidal.framework:foundation-service:jar:3.1.4:test
+[INFO] |  |  \- org.codehaus.plexus:plexus-container-default:jar:3.1.4:test
+[INFO] |  \- org.springframework:spring-web:jar:5.2.15.RELEASE:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-keeper:jar:1.2.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-meta:jar:1.2.6:test
+[INFO] |  +- org.springframework:spring-aop:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.aspectj:aspectjweaver:jar:1.9.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-meta:test-jar:tests:1.2.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-console:jar:1.2.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-checker:jar:1.2.6:test
+[INFO] +- com.ctrip.framework.xpipe.redis:redis-core:test-jar:tests:1.2.6:test
+[INFO] +- org.apache.commons:commons-exec:jar:1.3:test
+[INFO] +- org.unidal.framework:test-framework:jar:3.1.4:test
+[INFO] |  +- org.codehaus.plexus:plexus-utils:jar:3.0.24:test
+[INFO] |  +- org.eclipse.jetty:jetty-server:jar:9.4.42.v20210604:test
+[INFO] |  |  +- javax.servlet:javax.servlet-api:jar:4.0.1:test
+[INFO] |  |  +- org.eclipse.jetty:jetty-http:jar:9.4.42.v20210604:test
+[INFO] |  |  \- org.eclipse.jetty:jetty-io:jar:9.4.42.v20210604:test
+[INFO] |  +- org.eclipse.jetty:jetty-webapp:jar:9.4.42.v20210604:test
+[INFO] |  |  +- org.eclipse.jetty:jetty-xml:jar:9.4.42.v20210604:test
+[INFO] |  |  \- org.eclipse.jetty:jetty-servlet:jar:9.4.42.v20210604:test
+[INFO] |  |     +- org.eclipse.jetty:jetty-security:jar:9.4.42.v20210604:test
+[INFO] |  |     \- org.eclipse.jetty:jetty-util-ajax:jar:9.4.42.v20210604:test
+[INFO] |  \- org.eclipse.jetty:jetty-servlets:jar:9.4.42.v20210604:test
+[INFO] |     +- org.eclipse.jetty:jetty-continuation:jar:9.4.42.v20210604:test
+[INFO] |     \- org.eclipse.jetty:jetty-util:jar:9.4.42.v20210604:test
+[INFO] +- redis.clients:jedis:jar:3.3.0:test
+[INFO] |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] +- org.apache.curator:curator-test:jar:2.11.0:test
+[INFO] |  +- org.apache.zookeeper:zookeeper:jar:3.4.9:test
+[INFO] |  |  +- jline:jline:jar:0.9.94:test
+[INFO] |  |  \- io.netty:netty:jar:3.10.5.Final:test
+[INFO] |  +- org.javassist:javassist:jar:3.20.0-GA:test
+[INFO] |  +- org.apache.commons:commons-math:jar:2.2:test
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] 
+[INFO] -----------------< com.ctrip.framework.xpipe:services >-----------------
+[INFO] Building services 1.2.6                                          [12/12]
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:2.8:tree (default-cli) @ services ---
+[INFO] com.ctrip.framework.xpipe:services:pom:1.2.6
+[INFO] +- org.springframework.boot:spring-boot-starter-log4j2:jar:2.3.12.RELEASE:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-slf4j-impl:jar:2.16.0:compile
+[INFO] |  |  \- org.slf4j:slf4j-api:jar:1.7.21:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-core:jar:2.16.0:compile
+[INFO] |  +- org.apache.logging.log4j:log4j-jul:jar:2.13.3:compile
+[INFO] |  \- org.slf4j:jul-to-slf4j:jar:1.7.21:compile
+[INFO] +- com.lmax:disruptor:jar:3.3.6:compile
+[INFO] +- com.dianping.cat:cat-client:jar:3.3.18:compile
+[INFO] |  +- io.netty:netty-all:jar:4.1.28.Final:compile
+[INFO] |  +- org.slf4j:jcl-over-slf4j:jar:1.7.21:compile
+[INFO] |  +- com.google.code.gson:gson:jar:2.8.0:compile
+[INFO] |  +- org.xerial.snappy:snappy-java:jar:1.1.2.6:compile
+[INFO] |  \- com.dianping.cat.kafka:kafka-clients:jar:1.1.1-ctrip.1:compile
+[INFO] +- com.ctrip.framework:framework-foundation:jar:1.8.11:compile
+[INFO] |  \- com.google.guava:guava:jar:19.0:compile
+[INFO] +- org.springframework.boot:spring-boot-starter-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-starter:jar:2.3.12.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot:jar:2.3.12.RELEASE:test
+[INFO] |  |  |  \- org.springframework:spring-context:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     +- org.springframework:spring-aop:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     +- org.springframework:spring-beans:jar:5.2.15.RELEASE:test
+[INFO] |  |  |     \- org.springframework:spring-expression:jar:5.2.15.RELEASE:test
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  |  \- org.yaml:snakeyaml:jar:1.26:test
+[INFO] |  +- org.springframework.boot:spring-boot-test:jar:2.3.12.RELEASE:test
+[INFO] |  +- org.springframework.boot:spring-boot-test-autoconfigure:jar:2.3.12.RELEASE:test
+[INFO] |  +- com.jayway.jsonpath:json-path:jar:2.4.0:test
+[INFO] |  |  \- net.minidev:json-smart:jar:2.3.1:test
+[INFO] |  |     \- net.minidev:accessors-smart:jar:2.3.1:test
+[INFO] |  |        \- org.ow2.asm:asm:jar:5.2:test
+[INFO] |  +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.3:test
+[INFO] |  |  \- jakarta.activation:jakarta.activation-api:jar:1.2.2:test
+[INFO] |  +- org.assertj:assertj-core:jar:3.16.1:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter:jar:5.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.3:test
+[INFO] |  |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.3:test
+[INFO] |  |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.3:test
+[INFO] |  |  \- org.junit.jupiter:junit-jupiter-engine:jar:5.6.3:test
+[INFO] |  +- org.junit.vintage:junit-vintage-engine:jar:5.6.3:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.junit.platform:junit-platform-engine:jar:1.6.3:test
+[INFO] |  |  \- junit:junit:jar:4.12:test
+[INFO] |  +- org.mockito:mockito-core:jar:3.3.3:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.10.22:test
+[INFO] |  |  +- net.bytebuddy:byte-buddy-agent:jar:1.10.22:test
+[INFO] |  |  \- org.objenesis:objenesis:jar:2.6:test
+[INFO] |  +- org.mockito:mockito-junit-jupiter:jar:3.3.3:test
+[INFO] |  +- org.skyscreamer:jsonassert:jar:1.5.0:test
+[INFO] |  |  \- com.vaadin.external.google:android-json:jar:0.0.20131108.vaadin1:test
+[INFO] |  +- org.springframework:spring-core:jar:5.2.15.RELEASE:test
+[INFO] |  +- org.springframework:spring-test:jar:5.2.15.RELEASE:test
+[INFO] |  \- org.xmlunit:xmlunit-core:jar:2.7.0:test
+[INFO] \- org.apache.logging.log4j:log4j-web:jar:2.16.0:test
+[INFO]    \- org.apache.logging.log4j:log4j-api:jar:2.16.0:compile
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for xpipe-parent 1.2.6:
+[INFO] 
+[INFO] xpipe-parent ....................................... SUCCESS [  1.738 s]
+[INFO] core ............................................... SUCCESS [  0.454 s]
+[INFO] redis-parent ....................................... SUCCESS [  0.114 s]
+[INFO] redis-core ......................................... SUCCESS [  0.204 s]
+[INFO] redis-keeper ....................................... SUCCESS [  0.142 s]
+[INFO] redis-meta ......................................... SUCCESS [  0.158 s]
+[INFO] redis-proxy-client ................................. SUCCESS [  0.153 s]
+[INFO] redis-checker ...................................... SUCCESS [  0.268 s]
+[INFO] redis-console ...................................... SUCCESS [  0.220 s]
+[INFO] redis-proxy ........................................ SUCCESS [  0.154 s]
+[INFO] redis-integration-test ............................. SUCCESS [  0.278 s]
+[INFO] services ........................................... SUCCESS [  0.065 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.498 s
+[INFO] Finished at: 2022-04-03T11:16:56+08:00
+[INFO] ------------------------------------------------------------------------

@@ -129,7 +129,7 @@ public class SentinelMonitorTest extends AbstractXPipeDrTest {
                 .getKeyPool(new DefaultEndPoint(host, port));
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand
                 .SentinelMaster(clientPool, scheduled, monitorName);
-        return sentinelMaster.execute().get();
+        return sentinelMaster.execute().get().getHostPort();
     }
 
     protected String sentinelRemove(String host, int port, String monitorName) throws Exception {
