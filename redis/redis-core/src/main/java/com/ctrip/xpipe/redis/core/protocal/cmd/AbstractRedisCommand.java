@@ -13,9 +13,11 @@ import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.*;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -219,6 +221,14 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 
 		String result = payloadToString(payload);
 		return Long.parseLong(result);
+	}
+
+	protected Map<String, String> payloadToMap(Object[] payloads) {
+		Map<String, String> result = Maps.newHashMap();
+		for (int i = 0; i < payloads.length; i += 2) {
+			result.put(payloadToString(payloads[i]), payloadToString(payloads[i + 1]));
+		}
+		return result;
 	}
 
 	@Override

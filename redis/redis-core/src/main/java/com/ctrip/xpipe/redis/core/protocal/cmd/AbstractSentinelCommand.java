@@ -4,7 +4,9 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
+import com.ctrip.xpipe.redis.core.protocal.pojo.DefaultSentinelMasterInstance;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
@@ -189,7 +191,7 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		}
 	}
 
-	public static class SentinelMaster extends AbstractSentinelCommand<HostPort> {
+	public static class SentinelMaster extends AbstractSentinelCommand<SentinelMasterInstance> {
 
 		private static final Logger logger = LoggerFactory.getLogger(SentinelMaster.class);
 
@@ -205,14 +207,14 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 		}
 
 		@Override
-		public HostPort format(Object payload) {
+		public SentinelMasterInstance format(Object payload) {
 			if(!(payload instanceof Object[])){
 				throw new IllegalStateException("expected Object[], but:" + payload + "," + payload.getClass());
 			}
 			return doFormat((Object[])payload);
 		}
 
-		private HostPort doFormat(Object[] payload) {
+		private SentinelMasterInstance doFormat(Object[] payload) {
 			if(payload.length < 6) {
 				throw new IllegalStateException("expected arg len >=6, but:" + payload.length + ","
 						+ StringUtil.join(",", payload));
@@ -222,7 +224,7 @@ public abstract class AbstractSentinelCommand<T> extends AbstractRedisCommand<T>
 				throw new IllegalMonitorStateException("expected monitor name: " + monitorName + ", but is: "
 						+ monitorNameFromSentinel);
 			}
-			return new HostPort(payloadToString(payload[3]), payloadToInteger(payload[5]));
+			return new DefaultSentinelMasterInstance(payloadToMap(payload));
 		}
 
 		@Override

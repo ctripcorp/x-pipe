@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.monitor.SentinelMonitors;
 import com.ctrip.xpipe.redis.console.notifier.shard.ShardDeleteEvent;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
@@ -121,7 +122,7 @@ public class DefaultSentinelManagerTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void sentinelMaster() throws Exception {
-        Command<HostPort> command = manager.getMasterOfMonitor(new Sentinel("test", "10.2.27.97", 5000), "credis_trocks_test1+credis_trocks_test_1+TROCKS");
+        Command<SentinelMasterInstance> command = manager.getMasterOfMonitor(new Sentinel("test", "10.2.27.97", 5001), "non_dr_cluster_31+non_dr_group_31+NTGXH");
         command.future().addListener(inner -> {
             if (inner.isSuccess()) {
                 logger.info("sentinel master :{}", inner.get());
