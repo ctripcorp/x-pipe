@@ -2,27 +2,15 @@ package com.ctrip.xpipe.redis.integratedtest.checker;
 
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
-import com.ctrip.xpipe.api.server.Server;
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
-import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
-import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ZkServerMeta;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.integratedtest.console.cmd.RedisStartCmd;
 import com.ctrip.xpipe.redis.integratedtest.metaserver.AbstractXpipeServerMultiDcTest;
-import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -30,8 +18,10 @@ import org.junit.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static com.ctrip.xpipe.redis.checker.config.CheckerConfig.KEY_REDIS_CONF_CHECK_INTERVAL;
@@ -169,13 +159,13 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         
         SimpleObjectPool<NettyClient> clientPool = pool.getKeyPool(new DefaultEndPoint(localHost, sentinel_port));
         String addResult = new AbstractSentinelCommand.SentinelAdd(clientPool, sentinelMaster, localHost, localPort, 3, scheduled).execute().get();
-        HostPort master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get();
+        HostPort master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get().getHostPort();
         Assert.assertEquals(master.getHost(), localHost);
         Assert.assertEquals(master.getPort(), localPort);
         waitConditionUntilTimeOut(() -> {
             HostPort port = null;
             try {
-                port = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get();
+                port = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get().getHostPort();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -183,11 +173,11 @@ public class TestAllCheckerLeader extends AbstractXpipeServerMultiDcTest {
         }, waitTime, 1000);
         checker.close();
         addResult = new AbstractSentinelCommand.SentinelAdd(clientPool, sentinelMaster, localHost, localPort, 3, scheduled).execute().get();
-        master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get();
+        master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get().getHostPort();
         Assert.assertEquals(master.getHost(), localHost);
         Assert.assertEquals(master.getPort(), localPort);
         Thread.currentThread().sleep(waitTime);
-        master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get();
+        master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, sentinelMaster).execute().get().getHostPort();
         Assert.assertEquals(master.getHost(), localHost);
         Assert.assertEquals(master.getPort(), localPort);
     }
