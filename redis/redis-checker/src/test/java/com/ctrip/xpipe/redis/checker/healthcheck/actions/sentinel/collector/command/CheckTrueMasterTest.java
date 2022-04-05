@@ -30,11 +30,8 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
     private String monitorName = "shard1";
     private Set<HostPort> masterSentinels;
     private HostPort master = new HostPort("127.0.0.1", randomPort());
+    private HostPort slave = new HostPort(LOCAL_HOST, 20001);
 
-//    Set<SentinelHello> hellos,
-//    String sentinelMonitorName, Set<HostPort> sentinels,
-//    HostPort metaMaster, List<HostPort> shardInstances,
-//    Map<ClusterType, String[]> clusterTypeSentinelConfig
 
     @Before
     public void init() throws Exception {
@@ -52,14 +49,14 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
     @Test
     public void checkTrueMastersTest() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
-        SentinelHelloCollectContext context = new SentinelHelloCollectContext(instance.getCheckInfo(), new HashSet<>(), monitorName, masterSentinels, null, Lists.newArrayList(), null);
+        SentinelHelloCollectContext context = new SentinelHelloCollectContext(instance.getCheckInfo(), new HashSet<>(), monitorName, masterSentinels, null, Lists.newArrayList(master, slave), null);
         checkTrueMaster.setContext(context);
 
 //        meta master and hello masters all empty
         Set<SentinelHello> hellos = new HashSet<>();
         try {
             checkTrueMaster.execute().get();
-            Assert.assertNull(context.getTrueMaster());
+            Assert.assertNull(context.getTrueMasterInfo());
             Assert.fail();
         } catch (Exception e) {
             Assert.assertTrue(e.getCause() instanceof MasterNotFoundException);
@@ -75,18 +72,21 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
         SentinelHello hello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), helloMaster, monitorName);
         hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
         context.setHellos(hellos);
-        context.setTrueMaster(null);
+        context.setTrueMasterInfo(null);
         context.setAllMasters(new HashSet<>());
+        context.setShardInstances(Lists.newArrayList(slave, helloMaster));
 
         checkTrueMaster.execute().get();
-        Assert.assertEquals(helloMaster, context.getTrueMaster());
+        Assert.assertEquals(helloMaster, context.getTrueMasterInfo().getKey());
+        Assert.assertEquals(Sets.newHashSet(slave), Sets.newHashSet(context.getTrueMasterInfo().getValue()));
 
 //        meta master null and hello master consistent
-        context.setTrueMaster(null);
+        context.setTrueMasterInfo(null);
         context.setAllMasters(new HashSet<>());
         context.setMetaMaster(null);
         checkTrueMaster.execute().get();
-        Assert.assertEquals(helloMaster, context.getTrueMaster());
+        Assert.assertEquals(helloMaster, context.getTrueMasterInfo().getKey());
+        Assert.assertEquals(Sets.newHashSet(slave), Sets.newHashSet(context.getTrueMasterInfo().getValue()));
 
 //        meta master inconsistent with hello master
 
@@ -120,24 +120,25 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
 
 //      the master do not has all slaves
         try {
-            context.setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST,20001),new HostPort(LOCAL_HOST,20002),new HostPort(LOCAL_HOST,helloMaster.getPort())));
+            context.setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST, 20001), new HostPort(LOCAL_HOST, 20002), new HostPort(LOCAL_HOST, helloMaster.getPort())));
             context.setMetaMaster(metaMaster);
-            context.setTrueMaster(null);
+            context.setTrueMasterInfo(null);
             context.setAllMasters(new HashSet<>());
             checkTrueMaster.execute().get();
-            Assert.assertNull(context.getTrueMaster());
-            Assert.fail();
+            Assert.assertEquals(helloMaster, context.getTrueMasterInfo().getKey());
+            Assert.assertEquals(Sets.newHashSet(new HostPort(LOCAL_HOST, 20001), new HostPort(LOCAL_HOST, 6380)), Sets.newHashSet(context.getTrueMasterInfo().getValue()));
         } catch (Exception e) {
-            Assert.assertTrue(e.getCause() instanceof MasterNotFoundException);
+            Assert.fail();
         }
 //      the master has all slaves
         try {
             context.setShardInstances(Lists.newArrayList(new HostPort(LOCAL_HOST,20001),new HostPort(LOCAL_HOST,helloMaster.getPort())));
             context.setMetaMaster(metaMaster);
-            context.setTrueMaster(null);
+            context.setTrueMasterInfo(null);
             context.setAllMasters(new HashSet<>());
             checkTrueMaster.execute().get();
-            Assert.assertEquals(helloMaster, context.getTrueMaster());
+            Assert.assertEquals(helloMaster, context.getTrueMasterInfo().getKey());
+            Assert.assertEquals(Sets.newHashSet(new HostPort(LOCAL_HOST, 20001), new HostPort(LOCAL_HOST, 6380)), Sets.newHashSet(context.getTrueMasterInfo().getValue()));
         } catch (Exception e) {
             Assert.fail();
         }
@@ -153,11 +154,11 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
         hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
 
         try {
-            context.setTrueMaster(null);
+            context.setTrueMasterInfo(null);
             context.setAllMasters(new HashSet<>());
             context.setHellos(hellos);
             checkTrueMaster.execute().get();
-            Assert.assertNull(context.getTrueMaster());
+            Assert.assertNull(context.getTrueMasterInfo());
             Assert.fail();
         } catch (Exception e) {
             Assert.assertTrue(e.getCause() instanceof MasterNotFoundException);

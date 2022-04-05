@@ -9,7 +9,8 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import java.util.List;
@@ -38,19 +39,24 @@ public class CheckTrueMaster extends AbstractSentinelHelloCollectCommand {
         collectAllMasters();
 
         if (currentMasterConsistent(context.getAllMasters())) {
-            context.setTrueMaster(context.getAllMasters().iterator().next());
-            logger.debug("[{}-{}+{}] {} true master in CheckTrueMaster step: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getTrueMaster());
+            HostPort trueMaster = context.getAllMasters().iterator().next();
+            List<HostPort> shardSlaves = context.getShardInstances();
+            shardSlaves.remove(trueMaster);
+            context.setTrueMasterInfo(new Pair<>(trueMaster, shardSlaves));
+            logger.debug("[{}-{}+{}] {} true master in CheckTrueMaster step: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getTrueMasterInfo().getKey());
             future().setSuccess();
         } else {
             logger.warn("[{}-{}+{}]collected masters not unique in CheckTrueMaster step: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getAllMasters());
-            Map<HostPort, Role> trueMastersMap = new ConcurrentHashMap<>();
+            Map<HostPort, MasterRole> trueMastersMap = new ConcurrentHashMap<>();
             ParallelCommandChain roleCommandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
             context.getAllMasters().forEach(master -> roleCommandChain.add(roleCommand(trueMastersMap, master)));
             roleCommandChain.execute().addListener(outerFuture -> {
                 try {
-                    if (foundTrueMaster(trueMastersMap)) {
-                        context.setTrueMaster(trueMastersMap.keySet().iterator().next());
-                        logger.info("[{}-{}+{}] {} true master: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getTrueMaster());
+                    if (currentMasterConsistent(trueMastersMap.keySet())) {
+                        HostPort trueMaster = trueMastersMap.keySet().iterator().next();
+                        List<HostPort> slaves = trueMastersMap.get(trueMaster).getSlaveHostPorts();
+                        context.setTrueMasterInfo(new Pair<>(trueMaster, slaves));
+                        logger.info("[{}-{}+{}] {} true master info: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getTrueMasterInfo());
                         future().setSuccess();
                     } else {
                         logger.warn("[{}-{}+{}] {} master not found: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), trueMastersMap.keySet());
@@ -66,13 +72,13 @@ public class CheckTrueMaster extends AbstractSentinelHelloCollectCommand {
         }
     }
 
-    RoleCommand roleCommand(Map<HostPort, Role> trueMastersMap, HostPort master) {
+    RoleCommand roleCommand(Map<HostPort, MasterRole> trueMastersMap, HostPort master) {
         RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
         roleCommand.future().addListener(innerFuture -> {
             if (innerFuture.isSuccess()) {
                 logger.info("[{}-{}+{}]instance {} role {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), master, innerFuture.get());
                 if (innerFuture.get() instanceof MasterRole) {
-                    trueMastersMap.put(master, innerFuture.get());
+                    trueMastersMap.put(master, (MasterRole) innerFuture.get());
                 }
             } else {
                 logger.warn("[{}-{}+{}]instance {} role failed", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), master, innerFuture.cause());
@@ -81,23 +87,13 @@ public class CheckTrueMaster extends AbstractSentinelHelloCollectCommand {
         return roleCommand;
     }
 
-    boolean foundTrueMaster(Map<HostPort, Role> trueMastersMap) {
-        if (currentMasterConsistent(trueMastersMap.keySet())) {
-            HostPort uniqueMaster = trueMastersMap.keySet().iterator().next();
-            List<HostPort> slaves = ((MasterRole) trueMastersMap.get(uniqueMaster)).getSlaveHostPorts();
-            List<HostPort> allShardInstances = context.getShardInstances();
-            allShardInstances.remove(uniqueMaster);
-            allShardInstances.removeAll(slaves);
-            return allShardInstances.isEmpty();
-        }
-        return false;
-    }
-
+    @VisibleForTesting
     CheckTrueMaster setKeyedObjectPool(XpipeNettyClientKeyedObjectPool keyedObjectPool) {
         this.keyedObjectPool = keyedObjectPool;
         return this;
     }
 
+    @VisibleForTesting
     CheckTrueMaster setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
         return this;

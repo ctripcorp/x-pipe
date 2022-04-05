@@ -729,7 +729,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void wrongMasterTest() throws Exception {
+    public void masterLoseSlavesAndDeleteAllSentinelsTest() throws Exception {
         String cluster = "cluster";
         String shard = "shard";
         String dc = "dc";
@@ -739,7 +739,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
         when(metaCache.findMaster(cluster, shard)).thenReturn(master);
         when(leakyBucket.tryAcquire()).thenReturn(true);
-        when(metaCache.getRedisOfDcClusterShard(dc, cluster, shard)).thenReturn(Lists.newArrayList(new RedisMeta().setIp(LOCAL_HOST).setPort(20001), new RedisMeta().setIp(LOCAL_HOST).setPort(20002),new RedisMeta().setIp(LOCAL_HOST).setPort(master.getPort())));
+        when(metaCache.getRedisOfDcClusterShard(any(), any(), any())).thenReturn(Lists.newArrayList(new RedisMeta().setIp(LOCAL_HOST).setPort(20001), new RedisMeta().setIp(LOCAL_HOST).setPort(20002),new RedisMeta().setIp(LOCAL_HOST).setPort(master.getPort())));
 
         Sentinel sentinel3 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
         Sentinel sentinel1 = new Sentinel(new HostPort(LOCAL_HOST, 5001).toString(), LOCAL_HOST, 5001);
@@ -747,12 +747,16 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         Sentinel sentinel0 = new Sentinel(new HostPort(LOCAL_HOST, 5000).toString(), LOCAL_HOST, 5000);
         Sentinel sentinel4 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
 
+        HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
+        int port = wrongMaster.getPort();
         sentinelMasterInfo.put("flags", SentinelFlag.master.name());
-        Map<String, String> otherSentinelMasterInfo = new HashMap<>(sentinelMasterInfo);
+        sentinelMasterInfo.put("port", String.valueOf(port));
+
+
         when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
             @Override
             protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
             }
 
             @Override
@@ -768,7 +772,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
             @Override
             protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
             }
 
             @Override
@@ -784,7 +788,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
             @Override
             protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
             }
 
             @Override
@@ -797,10 +801,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 return null;
             }
         });
-
-        HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
-        int port = wrongMaster.getPort();
-        sentinelMasterInfo.put("port", String.valueOf(port));
         when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -855,8 +855,297 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 "224016497\r\n");
 
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
-                new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
-                new SentinelHello(new HostPort(LOCAL_HOST, 5001), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), wrongMaster, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
+
+        verify(sentinelManager, times(5)).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
+        verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
+
+        metaMasterServer.stop();
+    }
+
+    @Test
+    public void masterHasAllSlavesAndDeleteAllSentinelsTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        when(metaCache.getRedisOfDcClusterShard(any(), any(), any())).thenReturn(Lists.newArrayList(new RedisMeta().setIp(LOCAL_HOST).setPort(20001),new RedisMeta().setIp(LOCAL_HOST).setPort(master.getPort())));
+
+        Sentinel sentinel3 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
+        Sentinel sentinel1 = new Sentinel(new HostPort(LOCAL_HOST, 5001).toString(), LOCAL_HOST, 5001);
+        Sentinel sentinel2 = new Sentinel(new HostPort(LOCAL_HOST, 5002).toString(), LOCAL_HOST, 5002);
+        Sentinel sentinel0 = new Sentinel(new HostPort(LOCAL_HOST, 5000).toString(), LOCAL_HOST, 5000);
+        Sentinel sentinel4 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
+
+        HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
+        int port = wrongMaster.getPort();
+        sentinelMasterInfo.put("flags", SentinelFlag.master.name());
+        sentinelMasterInfo.put("port", String.valueOf(port));
+
+
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
+                "$6\r\nmaster\r\n" +
+                ":224016677\r\n" +
+                "*2\r\n" +
+                "*3\r\n" +
+                "$9\r\n" +
+                "127.0.0.1\r\n" +
+                "$5\r\n" +
+                "20001\r\n" +
+                "$9\r\n" +
+                "224016497\r\n" +
+                "*3\r\n" +
+                "$9\r\n" +
+                "127.0.0.1\r\n" +
+                "$4\r\n" +
+                "6380\r\n" +
+                "$9\r\n" +
+                "224016497\r\n");
+
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), wrongMaster, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
+
+        verify(sentinelManager, times(5)).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, times(5)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(5)).monitorMaster(any(), any(), any(), anyInt());
+        verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
+
+        metaMasterServer.stop();
+    }
+
+    @Test
+    public void masterLoseSlavesAndDeletePartialSentinelsTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        when(metaCache.getRedisOfDcClusterShard(any(), any(), any())).thenReturn(Lists.newArrayList(new RedisMeta().setIp(LOCAL_HOST).setPort(20001), new RedisMeta().setIp(LOCAL_HOST).setPort(20002),new RedisMeta().setIp(LOCAL_HOST).setPort(master.getPort())));
+
+        Sentinel sentinel3 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
+        Sentinel sentinel1 = new Sentinel(new HostPort(LOCAL_HOST, 5001).toString(), LOCAL_HOST, 5001);
+        Sentinel sentinel2 = new Sentinel(new HostPort(LOCAL_HOST, 5002).toString(), LOCAL_HOST, 5002);
+        Sentinel sentinel0 = new Sentinel(new HostPort(LOCAL_HOST, 5000).toString(), LOCAL_HOST, 5000);
+        Sentinel sentinel4 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
+
+        sentinelMasterInfo.put("flags", SentinelFlag.master.name());
+        sentinelMasterInfo.put("port",String.valueOf(master.getPort()));
+        Map<String, String> other = new HashMap<>(sentinelMasterInfo);
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(other));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
+        int port = wrongMaster.getPort();
+        sentinelMasterInfo.put("port", String.valueOf(port));
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
+                "$6\r\nmaster\r\n" +
+                ":224016677\r\n" +
+                "*2\r\n" +
+                "*3\r\n" +
+                "$9\r\n" +
+                "127.0.0.1\r\n" +
+                "$5\r\n" +
+                "20001\r\n" +
+                "$9\r\n" +
+                "224016497\r\n" +
+                "*3\r\n" +
+                "$9\r\n" +
+                "127.0.0.1\r\n" +
+                "$4\r\n" +
+                "6380\r\n" +
+                "$9\r\n" +
+                "224016497\r\n");
+
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), wrongMaster, monitorName),
                 new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName),
                 new SentinelHello(new HostPort(LOCAL_HOST, 5003), wrongMaster, monitorName),
                 new SentinelHello(new HostPort(LOCAL_HOST, 5004), wrongMaster, monitorName)
@@ -865,13 +1154,153 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
 
         verify(sentinelManager, times(5)).getMasterOfMonitor(any(Sentinel.class), anyString());
-        verify(sentinelManager, times(2)).removeSentinelMonitor(any(), any());
-        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName);
-        verify(sentinelManager, times(1)).removeSentinelMonitor(new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003), monitorName);
+        verify(sentinelManager, times(4)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(4)).monitorMaster(any(), any(), any(), anyInt());
+        verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
 
-        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004), monitorName, master, quorumConfig.getQuorum());
-        verify(sentinelManager, times(1)).monitorMaster(new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003), monitorName, master, quorumConfig.getQuorum());
-        verify(sentinelManager, times(2)).monitorMaster(any(), any(), any(), anyInt());
+        metaMasterServer.stop();
+    }
+
+    @Test
+    public void masterHasAllSlavesAndDeletePartialSentinelsTest() throws Exception {
+        String cluster = "cluster";
+        String shard = "shard";
+        String dc = "dc";
+        when(checkerDbConfig.shouldSentinelCheck(cluster)).thenReturn(true);
+        when(metaCache.getSentinelMonitorName(cluster, shard)).thenReturn(monitorName);
+        when(metaCache.getActiveDcSentinels(cluster, shard)).thenReturn(masterSentinels);
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(quorumConfig);
+        when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        when(leakyBucket.tryAcquire()).thenReturn(true);
+        when(metaCache.getRedisOfDcClusterShard(any(), any(), any())).thenReturn(Lists.newArrayList(new RedisMeta().setIp(LOCAL_HOST).setPort(20001),new RedisMeta().setIp(LOCAL_HOST).setPort(master.getPort())));
+
+        Sentinel sentinel3 = new Sentinel(new HostPort(LOCAL_HOST, 5003).toString(), LOCAL_HOST, 5003);
+        Sentinel sentinel1 = new Sentinel(new HostPort(LOCAL_HOST, 5001).toString(), LOCAL_HOST, 5001);
+        Sentinel sentinel2 = new Sentinel(new HostPort(LOCAL_HOST, 5002).toString(), LOCAL_HOST, 5002);
+        Sentinel sentinel0 = new Sentinel(new HostPort(LOCAL_HOST, 5000).toString(), LOCAL_HOST, 5000);
+        Sentinel sentinel4 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
+
+        sentinelMasterInfo.put("flags", SentinelFlag.master.name());
+        sentinelMasterInfo.put("port",String.valueOf(master.getPort()));
+        Map<String, String> other = new HashMap<>(sentinelMasterInfo);
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(other));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
+        int port = wrongMaster.getPort();
+        sentinelMasterInfo.put("port", String.valueOf(port));
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
+                "$6\r\nmaster\r\n" +
+                ":224016677\r\n" +
+                "*2\r\n" +
+                "*3\r\n" +
+                "$9\r\n" +
+                "127.0.0.1\r\n" +
+                "$5\r\n" +
+                "20001\r\n" +
+                "$9\r\n" +
+                "224016497\r\n" +
+                "*3\r\n" +
+                "$9\r\n" +
+                "127.0.0.1\r\n" +
+                "$4\r\n" +
+                "6380\r\n" +
+                "$9\r\n" +
+                "224016497\r\n");
+
+        Set<SentinelHello> sentinelHellos = Sets.newHashSet(
+                new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5001), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5002), master, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5003), wrongMaster, monitorName),
+                new SentinelHello(new HostPort(LOCAL_HOST, 5004), wrongMaster, monitorName)
+        );
+        SentinelActionContext context = new SentinelActionContext(instance, sentinelHellos);
+        sentinelCollector.new SentinelHelloCollectorCommand(context).execute().get();
+
+        verify(sentinelManager, times(5)).getMasterOfMonitor(any(Sentinel.class), anyString());
+        verify(sentinelManager, times(4)).removeSentinelMonitor(any(), any());
+        verify(sentinelManager, times(4)).monitorMaster(any(), any(), any(), anyInt());
         verify(sentinelManager, never()).sentinelSet(any(), anyString(), any());
 
         metaMasterServer.stop();

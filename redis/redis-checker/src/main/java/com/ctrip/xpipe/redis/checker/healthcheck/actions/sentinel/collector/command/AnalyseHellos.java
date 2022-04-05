@@ -25,12 +25,17 @@ public class AnalyseHellos extends AbstractSentinelHelloCollectCommand {
     @Override
     protected void doExecute() throws Throwable {
         // check wrong master hellos
-        context.getToDelete().addAll(checkWrongMasterHellos(context.getHellos(), context.getTrueMaster()));
+        context.getToDelete().addAll(checkWrongMasterHellos(context.getHellos(), context.getTrueMasterInfo().getKey()));
+
+        // to check reset
+        Set<SentinelHello> toCheckReset = Sets.newHashSet(context.getHellos());
+        context.setToCheckReset(ignoreNetWorkErrorHellos(toCheckReset));
+
         // check add,ignore network error sentinels
-        context.getSentinels().removeAll(context.getNetworkErrorSentinels().keySet());
-        context.getToAdd().addAll(checkToAdd(context.getInfo().getClusterId(), context.getInfo().getShardId(),
-                context.getSentinelMonitorName(), context.getSentinels(), context.getHellos(), context.getTrueMaster(),
-                checkerConfig.getDefaultSentinelQuorumConfig()));
+        Set<SentinelHello> toAdd = checkToAdd(context.getInfo().getClusterId(), context.getInfo().getShardId(),
+                context.getSentinelMonitorName(), context.getSentinels(), context.getHellos(), context.getTrueMasterInfo().getKey(),
+                checkerConfig.getDefaultSentinelQuorumConfig());
+        context.setToAdd(ignoreNetWorkErrorHellos(toAdd));
 
         future().setSuccess();
     }
@@ -81,5 +86,15 @@ public class AnalyseHellos extends AbstractSentinelHelloCollectCommand {
             }
         }
         return toAdd;
+    }
+
+    Set<SentinelHello> ignoreNetWorkErrorHellos(Set<SentinelHello> sentinelHellos) {
+        Set<SentinelHello> ignoreReset = new HashSet<>();
+        sentinelHellos.forEach(toCheckSentinel -> {
+            if (context.getNetworkErrorSentinels().containsKey(toCheckSentinel.getSentinelAddr()))
+                ignoreReset.add(toCheckSentinel);
+        });
+        sentinelHellos.removeAll(ignoreReset);
+        return sentinelHellos;
     }
 }
