@@ -23,7 +23,7 @@ public class CheckFailoverInProgress extends AbstractSentinelHelloCollectCommand
         collectAllMasters();
 
         if (currentMasterConsistent(context.getAllMasters())) {
-            logger.debug("[{}-{}+{}] {} true master in CheckFailoverInProgress step : {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getTrueMaster());
+            logger.debug("[{}-{}+{}] {} unique master in CheckFailoverInProgress step : {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getAllMasters().iterator().next());
             future().setSuccess();
         } else {
             logger.warn("[{}-{}+{}]collected masters not unique in CheckFailoverInProgress step: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getAllMasters());

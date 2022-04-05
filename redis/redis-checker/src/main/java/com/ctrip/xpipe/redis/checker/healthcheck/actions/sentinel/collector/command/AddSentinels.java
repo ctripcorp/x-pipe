@@ -29,7 +29,7 @@ public class AddSentinels extends AbstractSentinelHelloCollectCommand {
         if (context.getToAdd().size() == 0) {
             future().setSuccess();
         } else {
-            logger.info("[{}-{}][toAdd]master: {}, stl: {}", LOG_TITLE, context.getSentinelMonitorName(), context.getTrueMaster(),
+            logger.info("[{}-{}][toAdd]master: {}, stl: {}", LOG_TITLE, context.getSentinelMonitorName(), context.getTrueMasterInfo().getKey(),
                     context.getToAdd().stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toSet()));
 
             ParallelCommandChain addChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);

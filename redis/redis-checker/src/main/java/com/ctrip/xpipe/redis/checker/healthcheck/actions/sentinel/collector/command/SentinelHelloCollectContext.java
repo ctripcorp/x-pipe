@@ -5,28 +5,27 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
+import com.ctrip.xpipe.tuple.Pair;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SentinelHelloCollectContext {
-    private  RedisInstanceInfo info;
-    private  Set<SentinelHello> hellos ;
-    private  String sentinelMonitorName;
-    private  Set<HostPort> sentinels ;
-    private  List<HostPort> shardInstances;
-    private  HostPort metaMaster;
-    private  Map<ClusterType, String[]> clusterTypeSentinelConfig;
+    private RedisInstanceInfo info;
+    private Set<SentinelHello> hellos;
+    private String sentinelMonitorName;
+    private Set<HostPort> sentinels;
+    private List<HostPort> shardInstances;
+    private HostPort metaMaster;
+    private Map<ClusterType, String[]> clusterTypeSentinelConfig;
 
-    private  Map<HostPort, SentinelMasterInstance> sentinelMonitors = new ConcurrentHashMap<>();
-    private  Map<HostPort, Throwable> networkErrorSentinels = new ConcurrentHashMap<>();
-    private  Set<HostPort> allMasters = new HashSet<>();
-    private  HostPort trueMaster = null;
-    private  Set<SentinelHello> toDelete = new HashSet<>();
-    private  Set<SentinelHello> toAdd = new HashSet<>();
+    private Map<HostPort, SentinelMasterInstance> sentinelMonitors = new ConcurrentHashMap<>();
+    private Map<HostPort, Throwable> networkErrorSentinels = new ConcurrentHashMap<>();
+    private Set<HostPort> allMasters = new HashSet<>();
+    private Pair<HostPort, List<HostPort>> trueMasterInfo;
+    private Set<SentinelHello> toDelete = new HashSet<>();
+    private Set<SentinelHello> toAdd = new HashSet<>();
+    private Set<SentinelHello> toCheckReset = new HashSet<>();
 
 
     public SentinelHelloCollectContext() {}
@@ -57,7 +56,7 @@ public class SentinelHelloCollectContext {
     }
 
     public Set<HostPort> getSentinels() {
-        return sentinels;
+        return new HashSet<>(sentinels);
     }
 
     public Map<HostPort, SentinelMasterInstance> getSentinelMonitors() {
@@ -72,12 +71,12 @@ public class SentinelHelloCollectContext {
         return allMasters;
     }
 
-    public HostPort getTrueMaster() {
-        return trueMaster;
+    public Pair<HostPort, List<HostPort>> getTrueMasterInfo() {
+        return trueMasterInfo;
     }
 
-    public SentinelHelloCollectContext setTrueMaster(HostPort trueMaster) {
-        this.trueMaster = trueMaster;return this;
+    public void setTrueMasterInfo(Pair<HostPort, List<HostPort>> trueMasterInfo) {
+        this.trueMasterInfo = trueMasterInfo;
     }
 
     public Set<SentinelHello> getToDelete() {
@@ -97,7 +96,7 @@ public class SentinelHelloCollectContext {
     }
 
     public List<HostPort> getShardInstances() {
-        return shardInstances;
+        return new ArrayList<>(shardInstances);
     }
 
     public SentinelHelloCollectContext setShardInstances(List<HostPort> shardInstances) {
@@ -146,6 +145,15 @@ public class SentinelHelloCollectContext {
 
     public SentinelHelloCollectContext setToAdd(Set<SentinelHello> toAdd) {
         this.toAdd = toAdd;
+        return this;
+    }
+
+    public Set<SentinelHello> getToCheckReset() {
+        return toCheckReset;
+    }
+
+    public SentinelHelloCollectContext setToCheckReset(Set<SentinelHello> toCheckReset) {
+        this.toCheckReset = toCheckReset;
         return this;
     }
 }

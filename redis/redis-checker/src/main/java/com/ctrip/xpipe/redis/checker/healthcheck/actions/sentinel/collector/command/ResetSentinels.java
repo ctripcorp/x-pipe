@@ -54,11 +54,13 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
     @Override
     protected void doExecute() throws Throwable {
-        checkReset(context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getHellos());
+        checkReset(context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getToCheckReset());
         future().setSuccess();
     }
 
     protected void checkReset(String clusterId, String shardId, String sentinelMonitorName, Set<SentinelHello> hellos) {
+        if (hellos.isEmpty())
+            return;
         ParallelCommandChain resetChain = new ParallelCommandChain(resetExecutor, false);
         for (SentinelHello hello : hellos) {
             resetChain.add(new ResetSentinel(clusterId, shardId, hello, sentinelMonitorName));
