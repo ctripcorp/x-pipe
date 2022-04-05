@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.ctrip.xpipe.database.ConnectionPoolDesc;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -40,6 +42,8 @@ public class ResourceInfo {
     public int httpQueueSize;
 
     public int httpQueueCapacity;
+
+    public ConnectionPoolDesc connectionPoolDesc;
 
     public void collectDataFromMigrationExecutor(ThreadPoolExecutor executor) {
         if (null == executor) return;
