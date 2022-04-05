@@ -1,10 +1,17 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.database.ConnectionPoolDesc;
+import com.ctrip.xpipe.database.ConnectionPoolHolder;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ResourceInfo;
+import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
 import com.ctrip.xpipe.spring.AbstractController;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.unidal.dal.jdbc.datasource.DataSource;
+import org.unidal.dal.jdbc.datasource.DataSourceManager;
+import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.Resource;
 import java.lang.reflect.Field;
@@ -34,6 +41,8 @@ public class ResourceController extends AbstractController {
     @Resource(name = MIGRATION_IO_CALLBACK_EXECUTOR)
     private ExecutorService ioCallBackExecutor;
 
+    private DataSource dataSource;
+
     private static final String CLAZZ_DELEGATED_EXECUTOR_SERVICE = "DelegatedExecutorService";
 
     @GetMapping("/resource")
@@ -51,6 +60,7 @@ public class ResourceController extends AbstractController {
         if (tomcatHttpExecutor instanceof ThreadPoolExecutor)
             resourceInfo.collectDataFromHttpExecutor((ThreadPoolExecutor) tomcatHttpExecutor);
 
+        resourceInfo.connectionPoolDesc = tryGetConnectionPoolDesc();
         return resourceInfo;
     }
 
@@ -81,6 +91,39 @@ public class ResourceController extends AbstractController {
         }
 
         return null;
+    }
+
+    private ConnectionPoolDesc tryGetConnectionPoolDesc() {
+        DataSource localDataSource = tryGetDataSource();
+
+        if (!(localDataSource instanceof XPipeDataSource)) return null;
+
+        if (((XPipeDataSource)localDataSource).getInnerDataSource() instanceof ConnectionPoolHolder) {
+            return ((ConnectionPoolHolder) ((XPipeDataSource)localDataSource).getInnerDataSource()).getConnectionPoolDesc();
+        }
+
+        return null;
+    }
+
+    private DataSource tryGetDataSource() {
+        if (null != dataSource) return dataSource;
+        synchronized (this) {
+            if (null != dataSource) return dataSource;
+            try {
+                DataSourceManager dataSourceManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+                if (dataSourceManager.getDataSourceNames().isEmpty()) {
+                    logger.info("[tryGetDataSource] no datasource found");
+                } else {
+                    dataSource = dataSourceManager.getDataSource(dataSourceManager.getDataSourceNames().get(0));
+                }
+            } catch (ComponentLookupException e) {
+                logger.info("[tryGetDataSource] xpipe datasource miss");
+            } catch (Throwable th) {
+                logger.info("[tryGetDataSource] fail", th);
+            }
+
+            return dataSource;
+        }
     }
 
 }

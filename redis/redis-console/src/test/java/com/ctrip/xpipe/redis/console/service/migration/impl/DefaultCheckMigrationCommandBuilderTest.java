@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleDbTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -113,7 +114,7 @@ public class DefaultCheckMigrationCommandBuilderTest extends AbstractConsoleDbTe
     public void testCheckMetaServer() throws Exception {
         server = startServer(54321, "test");
         when(dcService.findClusterRelatedDc(clusterId)).thenReturn(Lists.newArrayList(new DcTbl().setDcName("localmeta")));
-        Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER);
+        Command<MigrationSystemAvailableChecker.CheckResult> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER);
         RetMessage message = command.execute().get();
         logger.info("");
         logger.info("{}", message.getMessage());
