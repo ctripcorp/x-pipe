@@ -136,7 +136,7 @@ public class RouteServiceImpl implements RouteService {
                 .setDescription(routeTbl.getDescription());
 
         if (!OrgUtil.isDefaultOrg(routeTbl.getRouteOrgId())) {
-            routeInfoModel.setOrgName(organizationService.getOrganization(routeTbl.getRouteOrgId()).getOrgName());
+            routeInfoModel.setOrgName(organizationService.getOrganizationTblByCMSOrganiztionId(routeTbl.getRouteOrgId()).getOrgName());
         }
         return routeInfoModel;
     }
