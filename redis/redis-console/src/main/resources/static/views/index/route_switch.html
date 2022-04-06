@@ -20,10 +20,12 @@
             </ul>
         </div>
 
-        <form ng-submit="doChangeRoute()">
+        <form ng-submit="preDoSwitchRoute()">
             <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
                 <tr ng-repeat="route in $data">
-                    <td data-title="'是否使用'" class="{{route.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"
+<!--                    <td data-title="'是否使用'" class="{{route.public == true ? 'glyphicon glyphicon-check green' : 'glyphicon glyphicon-unchecked gray'}}"-->
+<!--                        ng-click="route.public = !route.public">-->
+                    <td data-title="'是否使用'" style= "margin: 6pt 0pt 0pt 0cm;" class="{{route.public == true ? 'icon-span icon-span-select' : 'icon-span'}}"
                         ng-click="route.public = !route.public">
 
                     </td>
@@ -40,7 +42,7 @@
                         <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.optionalProxies">{{proxy}}</p>
                     </span>
                     </td>
-                    <td data-title="'src_dcName'" ng-bind="route.dstDcName"></td>
+                    <td data-title="'dst_dcName'" ng-bind="route.dstDcName"></td>
                     <td data-title="'dst_proxies'">
                     <span>
                         <p align="center" style= "margin: 0cm 0cm 0pt 0cm;" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
@@ -69,3 +71,7 @@
 <a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
     <i class="icon-double-angle-up icon-only bigger-110"></i>
 </a>
+
+<xpipeconfirmdialog xpipe-dialog-id="'doSwitchrConfirm'" xpipe-title="'切换路由'"
+                    xpipe-detail="'您确定要切换该方向上的路由吗）?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="doSwtichRoute"></xpipeconfirmdialog>

@@ -43,3 +43,42 @@ a {
 .hickwall_td {
 	width: 60px;
 }
+
+.icon-span{
+    display: inline-block;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1pt solid #ddd;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
+.icon-span::after{
+    border: 2px solid;
+    border-left: 0;
+    border-top: 0;
+    content: " ";
+    top: 2px;
+    left: 5px;
+    position: absolute;
+    width: 4px;
+    height: 8px;
+    -webkit-transform: rotate(45deg) scale(0);
+    transform: rotate(45deg) scale(0);
+    -webkit-transition: -webkit-transform .2s;
+    transition: -webkit-transform .2s;
+    transition: transform .2s;
+    transition: transform .2s, -webkit-transform .2s;
+}
+.icon-span-select{
+    background-color: red;
+    color:#fff;
+    border-color: red!important;
+
+}
+.icon-span-select::after{
+    border-color: #fff;
+    -webkit-transform: rotate(45deg) scale(1);
+    transform: rotate(45deg) scale(1);
+}
