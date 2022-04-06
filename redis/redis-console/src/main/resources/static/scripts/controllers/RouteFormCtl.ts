@@ -14,7 +14,7 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
         UPDATE: 'update',
     };
 
-    $scope.tags = ['META', 'CONSOLE'];
+    $scope.tags = ['meta', 'console'];
     $scope.bools = [true, false];
 
     $scope.operateType = $stateParams.type;
@@ -88,7 +88,6 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
                     toastr.error(AppUtil.errorMsg(result), "添加失败");
                 });
         } else {
-            console.log($scope.route);
             RouteService.updateRoute($scope.route.id, $scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
                                         $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
