@@ -79,10 +79,12 @@ public class DeleteSentinels extends AbstractSentinelHelloCollectCommand {
 
     boolean deleteAllSentinels() {
         List<HostPort> toDeleteSentinels = context.getToDelete().stream().map(SentinelHello::getSentinelAddr).collect(Collectors.toList());
-        Set<HostPort> allConnectedSentinels = context.getSentinelMonitors().keySet();
-        allConnectedSentinels.removeAll(toDeleteSentinels);
 
-        return allConnectedSentinels.isEmpty();
+        Set<HostPort> allSentinels = context.getSentinels();
+        allSentinels.removeAll(context.getNetworkErrorSentinels().keySet());
+        allSentinels.removeAll(toDeleteSentinels);
+
+        return allSentinels.isEmpty();
     }
 
 }
