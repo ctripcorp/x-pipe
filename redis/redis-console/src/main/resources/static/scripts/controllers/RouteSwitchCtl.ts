@@ -8,7 +8,7 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
 
     $scope.routes = {};
     $scope.tableParams = new NgTableParams({}, {});
-    $scope.tags = ['META', 'CONSOLE'];
+    $scope.tags = ['meta', 'console'];
 
     $scope.currentTag = $stateParams.tag;
     $scope.srcDcName = $stateParams.srcDcName;
@@ -22,7 +22,7 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
     showRoutes();
 
     function showRoutes() {
-        if($scope.currentTag = 'true') $scope.currentTag = 'META';
+        if($scope.currentTag = 'true') $scope.currentTag = 'meta';
         loadAllRouteDirectionInfoByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
     }
 
@@ -30,7 +30,6 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
         RouteService.getAllActiveRouteRouteByTagAndDirection(tag, srcDcName, dstDcName)
             .then(function (data) {
                 if(Array.isArray(data)) $scope.routes = data;
-                console.log($scope.routes);
                 $scope.tableParams = new NgTableParams({
                     page : 1,
                     count : 10,

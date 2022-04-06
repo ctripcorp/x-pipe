@@ -8,14 +8,14 @@ function RouteDirectionCtl($scope, RouteService, NgTableParams) {
 
     $scope.routeDirectionInfos = {};
     $scope.tableParams = new NgTableParams({}, {});
-    $scope.tags = ['META', 'CONSOLE'];
+    $scope.tags = ['meta', 'console'];
     $scope.switchTag = switchTag;
 
 
     showAllRoutes();
 
     function showAllRoutes() {
-        $scope.currentTag = ['META'];
+        $scope.currentTag = ['meta'];
         loadAllRouteDirectionInfoByTag($scope.currentTag);
     }
 

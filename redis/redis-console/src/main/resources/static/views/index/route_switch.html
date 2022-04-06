@@ -23,8 +23,6 @@
         <form ng-submit="preDoSwitchRoute()">
             <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
                 <tr ng-repeat="route in $data">
-<!--                    <td data-title="'是否使用'" class="{{route.public == true ? 'glyphicon glyphicon-check green' : 'glyphicon glyphicon-unchecked gray'}}"-->
-<!--                        ng-click="route.public = !route.public">-->
                     <td data-title="'是否使用'" style= "margin: 6pt 0pt 0pt 0cm;" class="{{route.public == true ? 'icon-span icon-span-select' : 'icon-span'}}"
                         ng-click="route.public = !route.public">
 
