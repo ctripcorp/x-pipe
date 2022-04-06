@@ -14,7 +14,8 @@ public interface Server extends Lifecycle, Observable{
 		MASTER,
 		SLAVE,
 		UNKNOWN,
-		KEEPER;
+		KEEPER,
+		APPLIER;
 		
 		public String toString() {
 			return super.toString().toLowerCase();

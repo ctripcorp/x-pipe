@@ -35,23 +35,18 @@ public class AbstractComparatorTest extends AbstractRedisTest{
 
 	protected KeeperMeta differentKeeper(ShardMeta current) {
 		
-		int maxPort = Integer.MIN_VALUE;
-		for(RedisMeta redis : current.getRedises()){
-			if(redis.getPort() > maxPort){
-				maxPort = redis.getPort();
-			}
-		}
-		
-		for(KeeperMeta keeper : current.getKeepers()){
-			if(keeper.getPort() > maxPort){
-				maxPort = keeper.getPort();
-			}
-		}
-		
 		KeeperMeta keeperMeta = new KeeperMeta();
 		keeperMeta.setIp("localhost");
-		keeperMeta.setPort(maxPort + 1);
+		keeperMeta.setPort(maxPort(current) + 1);
 		return keeperMeta;
+	}
+
+	protected ApplierMeta differentApplier(ShardMeta current) {
+
+		ApplierMeta applierMeta = new ApplierMeta();
+		applierMeta.setIp("localhost");
+		applierMeta.setPort(maxPort(current) + 1);
+		return applierMeta;
 	}
 
 	protected ShardMeta differentShard(ClusterMeta current) {
@@ -64,5 +59,28 @@ public class AbstractComparatorTest extends AbstractRedisTest{
 
 	protected SourceMeta differentSourceShard() {
 		return new SourceMeta();
+	}
+
+	private int maxPort(ShardMeta current) {
+		int maxPort = Integer.MIN_VALUE;
+		for(RedisMeta redis : current.getRedises()){
+			if(redis.getPort() > maxPort){
+				maxPort = redis.getPort();
+			}
+		}
+
+		for(KeeperMeta keeper : current.getKeepers()){
+			if(keeper.getPort() > maxPort){
+				maxPort = keeper.getPort();
+			}
+		}
+
+		for(ApplierMeta applier : current.getAppliers()){
+			if(applier.getPort() > maxPort){
+				maxPort = applier.getPort();
+			}
+		}
+
+		return maxPort;
 	}
 }

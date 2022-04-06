@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 
 
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
@@ -50,6 +52,12 @@ public class Production extends AbstractProfile{
 	public KeeperStateController getKeeperStateController(){
 		
 		return new DefaultKeeperStateController();
+	}
+
+	@Bean
+	public ApplierStateController getApplierStateController(){
+
+		return new DefaultApplierStateController();
 	}
 	
 	@Bean

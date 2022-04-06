@@ -5,5 +5,5 @@ package com.ctrip.xpipe.redis.core.entity;
  * <p>
  * 2022/3/30 00:00
  */
-public interface Applier {
+public interface Applier extends InstanceNode {
 }

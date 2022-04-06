@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
@@ -37,6 +34,8 @@ public interface CurrentMetaManager extends Observable {
 
 	Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId);
 
+	Pair<String, Integer> getApplierMaster(Long clusterDbId, Long shardDbId);
+
 	RouteMeta randomRoute(Long clusterDbId);
 
 	RedisMeta getRedisMaster(Long clusterDbId, Long shardDbId);
@@ -44,6 +43,8 @@ public interface CurrentMetaManager extends Observable {
 	ClusterMeta getClusterMeta(Long clusterDbId);
 
 	List<KeeperMeta> getSurviveKeepers(Long clusterDbId, Long shardDbId);
+
+	List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId);
 
 	String getCurrentMetaDesc();
 

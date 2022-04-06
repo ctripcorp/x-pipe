@@ -11,9 +11,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.util.OrgUtil;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentKeeperShardMeta;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.HashCodeChooseRouteStrategy;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.*;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -40,6 +38,8 @@ public class CurrentMeta implements Releasable {
 	private static final String CLUSTER_NOT_SUPPORT_KEEPER_TEMPLATE = "cluster: %d, type: %s not support keeper";
 
 	private static final String CLUSTER_NOT_SUPPORT_PEER_MASTER_TEMPLATE = "cluster: %d, type: %s not support peer master";
+
+	private static final String CLUSTER_NOT_SUPPORT_APPLIER_TEMPLATE = "cluster: %d, type: %s not support applier";
 
 	public Set<Long> allClusters() {
 		return new HashSet<>(currentMetas.keySet());
@@ -89,8 +89,16 @@ public class CurrentMeta implements Releasable {
 	public List<KeeperMeta> getSurviveKeepers(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportKeeper(clusterDbId);
 
+		//TODO ayq support hetero
 		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.getSurviveKeepers();
+	}
+
+	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportKeeper(clusterDbId);
+
+		CurrentHeteroShardMeta currentHeteroShardMeta = (CurrentHeteroShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentHeteroShardMeta.getApplierShardMeta().getSurviveAppliers();
 	}
 
 	public boolean setKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
@@ -117,8 +125,16 @@ public class CurrentMeta implements Releasable {
 	public Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportKeeper(clusterDbId);
 
+		//TODO ayq support hetero
 		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.getKeeperMaster();
+	}
+
+	public Pair<String, Integer> getApplierMaster(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentHeteroShardMeta currentShardMeta = (CurrentHeteroShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getApplierShardMeta().getApplierMaster();
 	}
 
 	public void setCurrentCRDTMaster(Long clusterDbId, Long shardDbId,  RedisMeta peerMaster) {
@@ -199,6 +215,15 @@ public class CurrentMeta implements Releasable {
 		String clusterType = currentMetas.get(clusterDbId).clusterType;
 		if (!ClusterType.lookup(clusterType).supportKeeper()) {
 			throw new IllegalArgumentException(String.format(CLUSTER_NOT_SUPPORT_KEEPER_TEMPLATE, clusterDbId, clusterType));
+		}
+	}
+
+	private void checkClusterSupportApplier(Long clusterDbId) {
+		if (!currentMetas.containsKey(clusterDbId)) return;
+
+		String clusterType = currentMetas.get(clusterDbId).clusterType;
+		if (!ClusterType.lookup(clusterType).supportApplier()) {
+			throw new IllegalArgumentException(String.format(CLUSTER_NOT_SUPPORT_APPLIER_TEMPLATE, clusterDbId, clusterType));
 		}
 	}
 
@@ -344,6 +369,12 @@ public class CurrentMeta implements Releasable {
 							logger.info("[addShard][default keeper master]{}", inetSocketAddress);
 							currentKeeperShardMeta.setKeeperMaster(inetSocketAddress);
 							return currentKeeperShardMeta;
+						case HETERO:
+							CurrentKeeperShardMeta keeperShardMeta = new CurrentKeeperShardMeta(clusterDbId, shardMeta.getDbId());
+							CurrentApplierShardMeta applierShardMeta = new CurrentApplierShardMeta(clusterDbId, shardMeta.getDbId());
+							CurrentHeteroShardMeta currentHeteroShardMeta = new CurrentHeteroShardMeta(clusterDbId, shardMeta.getDbId(),
+									keeperShardMeta, applierShardMeta);
+							return currentHeteroShardMeta;
 						default:
 							throw new IllegalArgumentException("unknow type:" + clusterType);
 					}

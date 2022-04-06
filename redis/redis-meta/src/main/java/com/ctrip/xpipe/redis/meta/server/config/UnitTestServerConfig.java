@@ -137,6 +137,11 @@ public class UnitTestServerConfig implements MetaServerConfig{
 		return 1;
 	}
 
+	@Override
+	public int getApplierInfoCheckInterval() {
+		return 1;
+	}
+
 	public UnitTestServerConfig setWaitforOffsetMilli(int waitforOffsetMilli) {
 		this.waitforOffsetMilli = waitforOffsetMilli;
 		return this;

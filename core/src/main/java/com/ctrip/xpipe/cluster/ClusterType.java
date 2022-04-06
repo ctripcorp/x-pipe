@@ -5,6 +5,8 @@ import com.ctrip.xpipe.utils.StringUtil;
 public enum ClusterType {
     ONE_WAY(true, true, true, false),
     BI_DIRECTION(false, false, true, true),
+    //TODO ayq ensure these variables
+    HETERO(true, true, true, false, false, true),
     // TODO: single_dc and local_dc support health check
     //
     // Currently, sentinel health check is on for single_dc & local_dc via config/console.sentinel.check.outer.clusters
@@ -21,17 +23,23 @@ public enum ClusterType {
     private boolean supportHealthCheck;
     private boolean supportMultiActiveDC;
     private boolean isCrossDc;
+    private boolean supportApplier;
 
     ClusterType(boolean supportKeeper, boolean supportMigration, boolean supportHealthCheck, boolean supportMultiActiveDC) {
-        this(supportKeeper, supportMigration, supportHealthCheck, supportMultiActiveDC, false);
+        this(supportKeeper, supportMigration, supportHealthCheck, supportMultiActiveDC, false, false);
     }
 
     ClusterType(boolean supportKeeper, boolean supportMigration, boolean supportHealthCheck, boolean supportMultiActiveDC, boolean isCrossDc) {
+        this(supportKeeper, supportMigration, supportHealthCheck, supportMultiActiveDC, isCrossDc, false);
+    }
+
+    ClusterType(boolean supportKeeper, boolean supportMigration, boolean supportHealthCheck, boolean supportMultiActiveDC, boolean isCrossDc, boolean supportApplier) {
         this.supportKeeper = supportKeeper;
         this.supportMigration = supportMigration;
         this.supportHealthCheck = supportHealthCheck;
         this.supportMultiActiveDC = supportMultiActiveDC;
         this.isCrossDc = isCrossDc;
+        this.supportApplier = supportApplier;
     }
 
     public boolean supportKeeper() {
@@ -52,6 +60,10 @@ public enum ClusterType {
 
     public boolean supportSingleActiveDC() {
         return !this.supportMultiActiveDC;
+    }
+
+    public boolean supportApplier() {
+        return this.supportApplier;
     }
 
     public boolean isCrossDc() {

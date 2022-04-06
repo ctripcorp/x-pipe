@@ -544,6 +544,17 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
+	public ApplierContainerMeta doGetApplierContainer(String dc, ApplierMeta applierMeta) {
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		for (ApplierContainerMeta applierContainerMeta : dcMeta.getApplierContainers()) {
+			if (applierContainerMeta.getId().equals(applierMeta.getApplierContainerId())) {
+				return clone(applierContainerMeta);
+			}
+		}
+		throw new IllegalArgumentException(String.format("[getApplierContainer][unfound appliercontainer]%s, %s", dc, applierMeta));
+    }
+
+	@Override
 	public void doUpdate(DcMeta dcMeta) {
 		
 		xpipeMeta.addDc(clone(dcMeta));
