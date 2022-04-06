@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
-import com.ctrip.xpipe.redis.core.entity.Redis;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.Shard;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.RedisComparator;
@@ -51,9 +48,9 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
         if (shardMetaComparator.isConfigChange()) {
             shardConfigChanged.accept(shardMetaComparator.getCurrent(), shardMetaComparator.getFuture());
         } else {
-            shardMetaComparator.accept(new MetaComparatorVisitor<Redis>() {
+            shardMetaComparator.accept(new MetaComparatorVisitor<InstanceNode>() {
                 @Override
-                public void visitAdded(Redis added) {
+                public void visitAdded(InstanceNode added) {
                     if(added instanceof RedisMeta) {
                         redisAdd.accept((RedisMeta) added);
                     }
@@ -70,7 +67,7 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
                 }
 
                 @Override
-                public void visitRemoved(Redis removed) {
+                public void visitRemoved(InstanceNode removed) {
                     if(removed instanceof RedisMeta) {
                         redisDelete.accept((RedisMeta) removed);
                     }

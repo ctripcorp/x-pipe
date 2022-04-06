@@ -37,6 +37,8 @@ public interface DcMetaCache extends Observable {
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
+	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
+
 	boolean isCurrentDcPrimary(Long clusterDbId, Long shardDbId);
 
 	boolean isCurrentDcPrimary(Long clusterDbId);

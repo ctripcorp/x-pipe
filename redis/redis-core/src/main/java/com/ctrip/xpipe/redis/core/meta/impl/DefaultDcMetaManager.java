@@ -150,7 +150,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta) {
 		return metaManager.getKeeperContainer(currentDc, keeperMeta);
 	}
-	
+
+	@Override
+	public ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta) {
+	    return metaManager.getApplierContainer(currentDc, applierMeta);
+	}
+
 	protected void update(DcMeta dcMeta) {
 		metaManager.update(dcMeta);
 	}

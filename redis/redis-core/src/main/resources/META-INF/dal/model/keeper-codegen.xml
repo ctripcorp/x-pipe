@@ -70,6 +70,7 @@
   <entity name="source">
     <attribute name="src-dc" value-type="String" />
     <attribute name="upstream-dc" value-type="String" />
+    <attribute name="downstream-dcs" value-type="String" />
     <attribute name="region" value-type="String" />
     <entity-ref name="shard" type="list" names="shards" />
   </entity>

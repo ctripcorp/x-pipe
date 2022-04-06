@@ -273,6 +273,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
+	public ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta) {
+	    return dcMetaManager.get().getApplierContainer(applierMeta);
+	}
+
+	@Override
 	public void clusterAdded(ClusterMeta clusterMeta) {
 
 		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("add:%s", clusterMeta.getId()));

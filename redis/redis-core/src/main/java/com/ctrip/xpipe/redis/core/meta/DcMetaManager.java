@@ -70,6 +70,8 @@ public interface DcMetaManager{
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);
 
+	ApplierContainerMeta getApplierContainer(ApplierMeta applierMeta);
+
 	DcMeta getDcMeta();
 	
 	List<KeeperMeta> getAllSurviveKeepers(String clusterId, String shardId);

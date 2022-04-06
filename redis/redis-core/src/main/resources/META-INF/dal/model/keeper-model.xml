@@ -22,6 +22,31 @@
 	<entity name="cluster" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Cluster">
 		<attribute name="id" key="true" />
 		<entity-ref name="shard" type="map" />
+		<snippet>
+			public Map&lt;String, ShardMeta&gt; getAllShards() {
+				Map &lt;String, ShardMeta&gt; map = new LinkedHashMap&lt;&gt;();
+				map.putAll(m_shards);
+				for (SourceMeta sourceMeta : m_sources) {
+					map.putAll(sourceMeta.getShards());
+				}
+				return map;
+			}
+		</snippet>
+		<snippet>
+			public ShardMeta findFromAllShards(String id) {
+				ShardMeta result = findShard(id);
+				if (result != null) {
+					return result;
+				}
+				for (SourceMeta sourceMeta : m_sources) {
+					result = sourceMeta.findShard(id);
+					if (result != null) {
+						return result;
+					}
+				}
+				return null;
+            }
+		</snippet>
 	</entity>
 	<entity name="source" implements="java.io.Serializable, com.ctrip.xpipe.redis.core.entity.Source">
 		<entity-ref name="shard" type="map" />

@@ -111,6 +111,9 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default KeeperContainerMeta getKeeperContainer(String dc, KeeperMeta keeperMeta) { return read(()->doGetKeeperContainer(dc, keeperMeta)); }
 	KeeperContainerMeta doGetKeeperContainer(String dc, KeeperMeta keeperMeta);
 
+	default ApplierContainerMeta getApplierContainer(String dc, ApplierMeta applierMeta) { return read(()->doGetApplierContainer(dc, applierMeta)); }
+	ApplierContainerMeta doGetApplierContainer(String dc, ApplierMeta applierMeta);
+
 	default DcMeta getDcMeta(String dc) { return read(()->doGetDcMeta(dc)); }
 	DcMeta doGetDcMeta(String dc);
 
