@@ -15,8 +15,8 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
     $scope.dstDcName = $stateParams.dstDcName;
 
     $scope.switchTag = switchTag;
-
-    $scope.doChangeRoute = doChangeRoute;
+    $scope.preDoSwitchRoute = preDoSwitchRoute;
+    $scope.doSwtichRoute = doSwtichRoute;
 
 
     showRoutes();
@@ -47,11 +47,17 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
         loadAllRouteDirectionInfoByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
     }
 
-    function doChangeRoute() {
-        console.log($scope.routes);
+    function preDoSwitchRoute() {
+        $('#doSwitchrConfirm').modal('show');
+    }
+
+    function doSwtichRoute() {
         RouteService.updateRoutes($scope.routes).then(function(result) {
+            $('#doSwitchrConfirm').modal('hide');
             toastr.success("切换成功");
-            $window.location.href = "/#/route_direction/route";
+            setTimeout(function () {
+                $window.location.href = '/#/route_direction/route';
+            },1000);
         }, function(result) {
             toastr.error(AppUtil.errorMsg(result), "切换失败");
         });

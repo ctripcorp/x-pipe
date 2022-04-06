@@ -187,7 +187,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.getAllRoutes());
 		if(changedDcs != null && !changedDcs.isEmpty())  {
-			if(clusterMeta.getType().equals(ClusterType.BI_DIRECTION.name())) {
+			if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
 				for (ShardMeta shard : clusterMeta.getShards().values()) {
 					changedDcs.forEach(dcId -> {
 						notifyPeerMasterChange(dcId, clusterMeta.getDbId(), shard.getDbId());
