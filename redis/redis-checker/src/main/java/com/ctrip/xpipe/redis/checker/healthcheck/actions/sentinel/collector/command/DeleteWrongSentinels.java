@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
+
 public class DeleteWrongSentinels extends AbstractSentinelHelloCollectCommand {
 
     private SentinelManager sentinelManager;
@@ -19,10 +21,15 @@ public class DeleteWrongSentinels extends AbstractSentinelHelloCollectCommand {
     @Override
     protected void doExecute() throws Throwable {
         context.getToDelete().addAll(checkWrongHellos(context.getSentinelMonitorName(), context.getSentinels(), context.getProcessedHellos()));
-        new DeleteSentinels(context, sentinelManager, false).execute().addListener(deleted -> {
-            context.getToDelete().clear();
+        if (context.getToDelete().isEmpty()) {
             future().setSuccess();
-        });
+        } else {
+            logger.info("[{}-{}+{}] {} to delete wrong sentinels : {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getToDelete());
+            new DeleteSentinels(context, sentinelManager, false).execute().addListener(deleted -> {
+                context.getToDelete().clear();
+                future().setSuccess();
+            });
+        }
     }
 
     protected Set<SentinelHello> checkWrongHellos(String sentinelMonitorName, Set<HostPort> sentinels,

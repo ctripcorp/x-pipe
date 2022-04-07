@@ -43,6 +43,8 @@ public class CheckMissingOrMasterSwitchedSentinels extends AbstractSentinelHello
             if (missingSentinels.isEmpty())
                 future().setSuccess();
             else {
+                logger.info("[{}-{}+{}] {} missing sentinels : {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), missingSentinels);
+
                 ParallelCommandChain chain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
                 missingSentinels.forEach(sentinel -> chain.add(sentinelMaster(sentinelManager, sentinel)));
                 chain.execute().addListener(future -> {
