@@ -70,18 +70,28 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
                 }
             }
         }
-        result.getAndSet(MigrationSystemAvailability.createAvailableResponse());
+
+        MigrationSystemAvailability systemAvailability = MigrationSystemAvailability.createAvailableResponse();
 
         SequenceCommandChain chain = new SequenceCommandChain(true);
-        chain.add(checkDatabase());
-        chain.add(checkOuterClient());
-        chain.add(checkMetaServer());
+        chain.add(checkDatabase(systemAvailability));
+        chain.add(checkOuterClient(systemAvailability));
+        chain.add(checkMetaServer(systemAvailability));
         chain.execute().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                updateCheckResult(systemAvailability);
                 checkIfCheckCommandDelay();
             }
         });
+    }
+
+    private void updateCheckResult(MigrationSystemAvailability newResult) {
+        synchronized (result) {
+            if (null == result.get() || result.get().getTimestamp() < newResult.getTimestamp()) {
+                result.set(newResult);
+            }
+        }
     }
 
     @Override
@@ -99,52 +109,53 @@ public class DefaultMigrationSystemAvailableChecker extends AbstractSiteLeaderIn
         return result.get();
     }
 
-    private Command<RetMessage> checkDatabase() {
-        Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_DATA_BASE);
-        checkCommandFuture("Database:", command, lastTimeCheckDatabase);
+    private Command<CheckResult> checkDatabase(MigrationSystemAvailability systemAvailability) {
+        Command<CheckResult> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_DATA_BASE);
+        checkCommandFuture("Database", command, systemAvailability, lastTimeCheckDatabase);
         return command;
     }
 
-    private Command<RetMessage> checkOuterClient() {
-        Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_OUTER_CLIENT);
-        checkCommandFuture("OuterClient:", command, lastTimeCheckOuterClient);
+    private Command<CheckResult> checkOuterClient(MigrationSystemAvailability systemAvailability) {
+        Command<CheckResult> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_OUTER_CLIENT);
+        checkCommandFuture("OuterClient", command, systemAvailability, lastTimeCheckOuterClient);
         return command;
     }
 
-    private Command<RetMessage> checkMetaServer() {
-        Command<RetMessage> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER);
-        checkCommandFuture("MetaServer:", command, lastTimeCheckMetaServer);
+    private Command<CheckResult> checkMetaServer(MigrationSystemAvailability systemAvailability) {
+        Command<CheckResult> command = builder.checkCommand(CHECK_MIGRATION_SYSTEM_STEP.CHECK_METASERVER);
+        checkCommandFuture("MetaServer", command, systemAvailability, lastTimeCheckMetaServer);
         return command;
     }
 
-    private void checkCommandFuture(final String title, final Command<RetMessage> command,
-                                    AtomicLong timestamp) {
-        command.future().addListener(new CommandFutureListener<RetMessage>() {
+    private void checkCommandFuture(final String title, final Command<CheckResult> command,
+                                    MigrationSystemAvailability systemAvailability, AtomicLong timestamp) {
+        command.future().addListener(new CommandFutureListener<CheckResult>() {
             @Override
-            public void operationComplete(CommandFuture<RetMessage> commandFuture) {
+            public void operationComplete(CommandFuture<CheckResult> commandFuture) {
                 timestamp.set(System.currentTimeMillis());
                 if(!commandFuture.isSuccess()) {
-                    warnOrError(title, commandFuture.cause());
+                    warnOrError(title, commandFuture.cause(), systemAvailability);
                 } else {
-                    RetMessage retMessage = commandFuture.getNow();
-                    if(retMessage.getState() != RetMessage.SUCCESS_STATE) {
-                        warnOrError(title, retMessage);
+                    CheckResult checkResult = commandFuture.getNow();
+                    systemAvailability.addCheckResult(title, checkResult);
+                    if(checkResult.getState() != RetMessage.SUCCESS_STATE) {
+                        warnOrError(title, checkResult, systemAvailability);
                     }
                 }
             }
         });
     }
 
-    private void warnOrError(final String title, final RetMessage message) {
+    private void warnOrError(final String title, final RetMessage message, MigrationSystemAvailability systemAvailability) {
         if(message.getState() == RetMessage.FAIL_STATE) {
-            getResult().addErrorMessage(title, message.getMessage());
+            systemAvailability.addErrorMessage(title, message.getMessage());
         } else {
-            getResult().addWarningMessage(title + message.getMessage());
+            systemAvailability.addWarningMessage(String.format("%s:%s", title, message.getMessage()));
         }
     }
 
-    private void warnOrError(final String title, final Throwable throwable) {
-        getResult().addErrorMessage(title, throwable);
+    private void warnOrError(final String title, final Throwable throwable, MigrationSystemAvailability systemAvailability) {
+        systemAvailability.addErrorMessage(title, throwable);
     }
 
     private void checkIfCheckCommandDelay() {
