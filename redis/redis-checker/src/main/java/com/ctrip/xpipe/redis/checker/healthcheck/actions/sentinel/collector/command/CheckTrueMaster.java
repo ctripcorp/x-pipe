@@ -6,9 +6,9 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.MasterSlavesInfo;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
+import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -47,14 +47,14 @@ public class CheckTrueMaster extends AbstractSentinelHelloCollectCommand {
             future().setSuccess();
         } else {
             logger.warn("[{}-{}+{}]collected masters not unique in CheckTrueMaster step: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getAllMasters());
-            Map<HostPort, MasterRole> trueMastersMap = new ConcurrentHashMap<>();
+            Map<HostPort, List<HostPort>> trueMastersMap = new ConcurrentHashMap<>();
             ParallelCommandChain roleCommandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-            context.getAllMasters().forEach(master -> roleCommandChain.add(roleCommand(trueMastersMap, master)));
+            context.getAllMasters().forEach(master -> roleCommandChain.add(checkMasterRoleAndSlaves(trueMastersMap, master)));
             roleCommandChain.execute().addListener(outerFuture -> {
                 try {
                     if (currentMasterConsistent(trueMastersMap.keySet())) {
                         HostPort trueMaster = trueMastersMap.keySet().iterator().next();
-                        List<HostPort> slaves = trueMastersMap.get(trueMaster).getSlaveHostPorts();
+                        List<HostPort> slaves = trueMastersMap.get(trueMaster);
                         context.setTrueMasterInfo(new Pair<>(trueMaster, slaves));
                         logger.info("[{}-{}+{}] {} true master info: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getSentinelMonitorName(), context.getTrueMasterInfo());
                         future().setSuccess();
@@ -72,19 +72,20 @@ public class CheckTrueMaster extends AbstractSentinelHelloCollectCommand {
         }
     }
 
-    RoleCommand roleCommand(Map<HostPort, MasterRole> trueMastersMap, HostPort master) {
-        RoleCommand roleCommand = new RoleCommand(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
-        roleCommand.future().addListener(innerFuture -> {
+    CheckMasterRoleAndSlaves checkMasterRoleAndSlaves(Map<HostPort, List<HostPort>> trueMastersMap, HostPort master) {
+        CheckMasterRoleAndSlaves checkMasterRoleAndSlaves = new CheckMasterRoleAndSlaves(keyedObjectPool.getKeyPool(new DefaultEndPoint(master.getHost(), master.getPort())), scheduled);
+        checkMasterRoleAndSlaves.future().addListener(innerFuture -> {
             if (innerFuture.isSuccess()) {
-                logger.info("[{}-{}+{}]instance {} role {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), master, innerFuture.get());
-                if (innerFuture.get() instanceof MasterRole) {
-                    trueMastersMap.put(master, (MasterRole) innerFuture.get());
+                RedisInfo redisInfo = innerFuture.get();
+                logger.info("[{}-{}+{}]instance {} role {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), master, redisInfo.getRole());
+                if (redisInfo instanceof MasterSlavesInfo) {
+                    trueMastersMap.put(master, ((MasterSlavesInfo) redisInfo).getSlaves());
                 }
             } else {
                 logger.warn("[{}-{}+{}]instance {} role failed", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), master, innerFuture.cause());
             }
         });
-        return roleCommand;
+        return checkMasterRoleAndSlaves;
     }
 
     @VisibleForTesting

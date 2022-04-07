@@ -230,8 +230,8 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                         public void go() throws Exception {
                             SequenceCommandChain chain = new SequenceCommandChain(false);
                             SentinelHelloCollectContext context = new SentinelHelloCollectContext(info, hellos, sentinelMonitorName, sentinels, metaMaster, shardInstances, clusterTypeSentinelConfig);
-                            chain.add(new CheckMissingOrMasterSwitchedSentinels(context, alertManager, checkerConfig, sentinelManager));
                             chain.add(new DeleteWrongSentinels(context, sentinelManager));
+                            chain.add(new CheckMissingOrMasterSwitchedSentinels(context, alertManager, checkerConfig, sentinelManager));
                             chain.add(new CheckFailoverInProgress(context, sentinelManager));
                             chain.add(new CheckTrueMaster(context, alertManager, keyedObjectPool, scheduled));
                             chain.add(new AnalyseHellos(context, checkerConfig));

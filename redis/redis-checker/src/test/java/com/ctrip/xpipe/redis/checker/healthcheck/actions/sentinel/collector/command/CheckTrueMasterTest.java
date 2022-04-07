@@ -71,7 +71,8 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
         SentinelHello hello4 = new SentinelHello(new HostPort(LOCAL_HOST, 5003), helloMaster, monitorName);
         SentinelHello hello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), helloMaster, monitorName);
         hellos = Sets.newHashSet(hello1, hello2, hello3, hello4, hello5);
-        context.setHellos(hellos);
+        context.setCollectedHellos(hellos);
+        context.setProcessedHellos(hellos);
         context.setTrueMasterInfo(null);
         context.setAllMasters(new HashSet<>());
         context.setShardInstances(Lists.newArrayList(slave, helloMaster));
@@ -95,25 +96,22 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
         Server metaMasterServer = startServer(metaMaster.getPort(), "*3\r\n"
                 + "$6\r\nmaster\r\n"
                 + ":0\r\n*0\r\n");
-        Server helloMasterServer = startServer(helloMaster.getPort(), "*3\r\n" +
-                "$6\r\nmaster\r\n" +
-                ":224016677\r\n" +
-                "*2\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$5\r\n" +
-                "20001\r\n" +
-                "$9\r\n" +
-                "224016497\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$4\r\n" +
-                "6380\r\n" +
-                "$9\r\n" +
-                "224016497\r\n"
-        );
+
+        Server helloMasterServer = startServer(helloMaster.getPort(),
+                "$481\r\n" +
+                        "# Replication\r\n" +
+                        "role:master\r\n" +
+                        "connected_slaves:2\r\n" +
+                        "slave0:ip=127.0.0.1,port=20001,state=online,offset=148954935,lag=1\r\n" +
+                        "slave1:ip=127.0.0.1,port=6380,state=online,offset=148955111,lag=1\r\n" +
+                        "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+                        "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+                        "master_repl_offset:148955111\r\n" +
+                        "second_repl_offset:120548767\r\n" +
+                        "repl_backlog_active:1\r\n" +
+                        "repl_backlog_size:104857600\r\n" +
+                        "repl_backlog_first_byte_offset:120501034\r\n" +
+                        "repl_backlog_histlen:28454078\r\n\r\n");
 
         metaMasterServer.stop();
         //single master
@@ -156,7 +154,8 @@ public class CheckTrueMasterTest extends AbstractCheckerTest {
         try {
             context.setTrueMasterInfo(null);
             context.setAllMasters(new HashSet<>());
-            context.setHellos(hellos);
+            context.setProcessedHellos(hellos);
+            context.setCollectedHellos(hellos);
             checkTrueMaster.execute().get();
             Assert.assertNull(context.getTrueMasterInfo());
             Assert.fail();

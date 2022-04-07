@@ -18,7 +18,7 @@ public class DeleteWrongSentinels extends AbstractSentinelHelloCollectCommand {
 
     @Override
     protected void doExecute() throws Throwable {
-        context.getToDelete().addAll(checkWrongHellos(context.getSentinelMonitorName(), context.getSentinels(), context.getHellos()));
+        context.getToDelete().addAll(checkWrongHellos(context.getSentinelMonitorName(), context.getSentinels(), context.getProcessedHellos()));
         new DeleteSentinels(context, sentinelManager, false).execute().addListener(deleted -> {
             context.getToDelete().clear();
             future().setSuccess();

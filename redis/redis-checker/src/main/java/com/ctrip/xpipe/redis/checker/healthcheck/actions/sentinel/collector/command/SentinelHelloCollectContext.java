@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SentinelHelloCollectContext {
     private RedisInstanceInfo info;
-    private Set<SentinelHello> hellos;
+    private Set<SentinelHello> collectedHellos;
+    private Set<SentinelHello> processedHellos;
     private String sentinelMonitorName;
     private Set<HostPort> sentinels;
     private List<HostPort> shardInstances;
@@ -35,7 +36,8 @@ public class SentinelHelloCollectContext {
                                        HostPort metaMaster, List<HostPort> shardInstances,
                                        Map<ClusterType, String[]> clusterTypeSentinelConfig) {
         this.info = info;
-        this.hellos = hellos;
+        this.collectedHellos = hellos;
+        this.processedHellos = new HashSet<>(hellos);
         this.sentinelMonitorName = sentinelMonitorName;
         this.sentinels = sentinels;
         this.metaMaster = metaMaster;
@@ -47,8 +49,22 @@ public class SentinelHelloCollectContext {
         return info;
     }
 
-    public Set<SentinelHello> getHellos() {
-        return hellos;
+    public Set<SentinelHello> getCollectedHellos() {
+        return new HashSet<>(collectedHellos);
+    }
+
+    public SentinelHelloCollectContext setCollectedHellos(Set<SentinelHello> collectedHellos) {
+        this.collectedHellos = collectedHellos;
+        return this;
+    }
+
+    public Set<SentinelHello> getProcessedHellos() {
+        return processedHellos;
+    }
+
+    public SentinelHelloCollectContext setProcessedHellos(Set<SentinelHello> processedHellos) {
+        this.processedHellos = processedHellos;
+        return this;
     }
 
     public String getSentinelMonitorName() {
@@ -113,10 +129,6 @@ public class SentinelHelloCollectContext {
 
     public SentinelHelloCollectContext setInfo(RedisInstanceInfo info) {
         this.info = info;return this;
-    }
-
-    public SentinelHelloCollectContext setHellos(Set<SentinelHello> hellos) {
-        this.hellos = hellos;return this;
     }
 
     public SentinelHelloCollectContext setSentinelMonitorName(String sentinelMonitorName) {

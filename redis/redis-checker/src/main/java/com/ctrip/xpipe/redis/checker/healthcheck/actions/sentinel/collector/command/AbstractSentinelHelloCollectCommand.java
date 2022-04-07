@@ -28,7 +28,7 @@ public abstract class AbstractSentinelHelloCollectCommand extends AbstractComman
 
     protected void collectAllMasters() {
         HostPort metaMaster = context.getMetaMaster();
-        context.getHellos().forEach(sentinelHello -> context.getAllMasters().add(sentinelHello.getMasterAddr()));
+        context.getProcessedHellos().forEach(sentinelHello -> context.getAllMasters().add(sentinelHello.getMasterAddr()));
         if (metaMaster != null)
             context.getAllMasters().add(metaMaster);
     }

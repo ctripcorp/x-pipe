@@ -29,7 +29,7 @@ public class CheckFailoverInProgress extends AbstractSentinelHelloCollectCommand
             logger.warn("[{}-{}+{}]collected masters not unique in CheckFailoverInProgress step: {}", LOG_TITLE, context.getInfo().getClusterId(), context.getInfo().getShardId(), context.getAllMasters());
 
             ParallelCommandChain sentinelMasterCommandChain = new ParallelCommandChain(MoreExecutors.directExecutor(), false);
-            context.getHellos().forEach(sentinelHello -> {
+            context.getProcessedHellos().forEach(sentinelHello -> {
                 if (notCollected(sentinelHello.getSentinelAddr())) {
                     sentinelMasterCommandChain.add(sentinelMaster(sentinelManager, sentinelHello.getSentinelAddr()));
                 }
@@ -59,7 +59,7 @@ public class CheckFailoverInProgress extends AbstractSentinelHelloCollectCommand
 
     void replaceHelloMastersWithSentinelMasters() {
         context.getSentinelMonitors().forEach((sentinel, sentinelMaster) -> {
-            context.getHellos().forEach(sentinelHello -> {
+            context.getProcessedHellos().forEach(sentinelHello -> {
                 if (sentinelHello.getSentinelAddr().equals(sentinel))
                     sentinelHello.setMasterAddr(sentinelMaster.getHostPort());
             });

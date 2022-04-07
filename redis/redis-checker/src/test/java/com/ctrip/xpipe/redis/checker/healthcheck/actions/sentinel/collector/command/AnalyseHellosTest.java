@@ -63,7 +63,8 @@ public class AnalyseHellosTest extends AbstractCheckerTest {
         SentinelHello hello_5004 = new SentinelHello(new HostPort("127.0.0.1", 5004), master, monitorName);
 
         Set<SentinelHello> hellos = Sets.newHashSet(hello_5000_wrong, hello_5001, hello_5002, hello_5003);
-        context.setHellos(hellos);
+        context.setCollectedHellos(hellos);
+        context.setProcessedHellos(hellos);
         context.setSentinelMonitorName(monitorName);
         Map<HostPort, Throwable> networkSentinels = new HashMap<>();
         networkSentinels.put(new HostPort("127.0.0.1", 5003), new SentinelsException("test"));

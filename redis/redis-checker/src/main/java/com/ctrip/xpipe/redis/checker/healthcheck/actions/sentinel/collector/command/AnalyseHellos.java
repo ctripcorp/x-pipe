@@ -25,15 +25,15 @@ public class AnalyseHellos extends AbstractSentinelHelloCollectCommand {
     @Override
     protected void doExecute() throws Throwable {
         // check wrong master hellos
-        context.getToDelete().addAll(checkWrongMasterHellos(context.getHellos(), context.getTrueMasterInfo().getKey()));
+        context.getToDelete().addAll(checkWrongMasterHellos(context.getProcessedHellos(), context.getTrueMasterInfo().getKey()));
 
         // to check reset
-        Set<SentinelHello> toCheckReset = Sets.newHashSet(context.getHellos());
+        Set<SentinelHello> toCheckReset = Sets.newHashSet(context.getProcessedHellos());
         context.setToCheckReset(ignoreNetWorkErrorHellos(toCheckReset));
 
         // check add,ignore network error sentinels
         Set<SentinelHello> toAdd = checkToAdd(context.getInfo().getClusterId(), context.getInfo().getShardId(),
-                context.getSentinelMonitorName(), context.getSentinels(), context.getHellos(), context.getTrueMasterInfo().getKey(),
+                context.getSentinelMonitorName(), context.getSentinels(), context.getProcessedHellos(), context.getTrueMasterInfo().getKey(),
                 checkerConfig.getDefaultSentinelQuorumConfig());
         context.setToAdd(ignoreNetWorkErrorHellos(toAdd));
 

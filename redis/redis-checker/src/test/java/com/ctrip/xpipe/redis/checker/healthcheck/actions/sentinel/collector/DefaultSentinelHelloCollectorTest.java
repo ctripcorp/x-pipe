@@ -91,6 +91,21 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
 
     private int originTimeout;
 
+    private static final String masterInfoReplication = "$481\r\n" +
+            "# Replication\r\n" +
+            "role:master\r\n" +
+            "connected_slaves:2\r\n" +
+            "slave0:ip=127.0.0.1,port=20001,state=online,offset=148954935,lag=1\r\n" +
+            "slave1:ip=127.0.0.1,port=6380,state=online,offset=148955111,lag=1\r\n" +
+            "master_replid:2e7638097f69cd5c3a7670dccceac87707512845\r\n" +
+            "master_replid2:2d825e622e73205c8130aabc2965d3656103b3ce\r\n" +
+            "master_repl_offset:148955111\r\n" +
+            "second_repl_offset:120548767\r\n" +
+            "repl_backlog_active:1\r\n" +
+            "repl_backlog_size:104857600\r\n" +
+            "repl_backlog_first_byte_offset:120501034\r\n" +
+            "repl_backlog_histlen:28454078\r\n\r\n";
+
     @Before
     public void beforeDefaultSentinelCollectorTest() throws Exception {
         originTimeout = AbstractRedisCommand.DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
@@ -628,88 +643,13 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         Sentinel sentinel4 = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
 
         Map<String,String> otherSentinelMasterInfo=new HashMap<>(sentinelMasterInfo);
-        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(otherSentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(otherSentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(otherSentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(otherSentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(otherSentinelMasterInfo)));
 
         sentinelMasterInfo.put("flags", SentinelFlag.master + "," + SentinelFlag.failover_in_progress);
-        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
@@ -835,24 +775,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         });
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
-        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
-                "$6\r\nmaster\r\n" +
-                ":224016677\r\n" +
-                "*2\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$5\r\n" +
-                "20001\r\n" +
-                "$9\r\n" +
-                "224016497\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$4\r\n" +
-                "6380\r\n" +
-                "$9\r\n" +
-                "224016497\r\n");
+        Server metaMasterServer = startServer(master.getPort(), masterInfoReplication);
 
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
@@ -897,106 +820,14 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelMasterInfo.put("port", String.valueOf(port));
 
 
-        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
-        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
-                "$6\r\nmaster\r\n" +
-                ":224016677\r\n" +
-                "*2\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$5\r\n" +
-                "20001\r\n" +
-                "$9\r\n" +
-                "224016497\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$4\r\n" +
-                "6380\r\n" +
-                "$9\r\n" +
-                "224016497\r\n");
+        Server metaMasterServer = startServer(master.getPort(), masterInfoReplication);
 
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
@@ -1038,110 +869,18 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelMasterInfo.put("flags", SentinelFlag.master.name());
         sentinelMasterInfo.put("port",String.valueOf(master.getPort()));
         Map<String, String> other = new HashMap<>(sentinelMasterInfo);
-        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(other));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(other)));
 
         HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
         int port = wrongMaster.getPort();
         sentinelMasterInfo.put("port", String.valueOf(port));
-        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
-        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
-                "$6\r\nmaster\r\n" +
-                ":224016677\r\n" +
-                "*2\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$5\r\n" +
-                "20001\r\n" +
-                "$9\r\n" +
-                "224016497\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$4\r\n" +
-                "6380\r\n" +
-                "$9\r\n" +
-                "224016497\r\n");
+        Server metaMasterServer = startServer(master.getPort(), masterInfoReplication);
 
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
@@ -1183,110 +922,18 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelMasterInfo.put("flags", SentinelFlag.master.name());
         sentinelMasterInfo.put("port",String.valueOf(master.getPort()));
         Map<String, String> other = new HashMap<>(sentinelMasterInfo);
-        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(other));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel2, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(other)));
 
         HostPort wrongMaster = new HostPort(LOCAL_HOST, randomPort());
         int port = wrongMaster.getPort();
         sentinelMasterInfo.put("port", String.valueOf(port));
-        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
-        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setSuccess(new DefaultSentinelMasterInstance(sentinelMasterInfo));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel0, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel1, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel3, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
+        when(sentinelManager.getMasterOfMonitor(sentinel4, monitorName)).thenReturn(createSuccessCommand(new DefaultSentinelMasterInstance(sentinelMasterInfo)));
 
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
-        Server metaMasterServer = startServer(master.getPort(), "*3\r\n" +
-                "$6\r\nmaster\r\n" +
-                ":224016677\r\n" +
-                "*2\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$5\r\n" +
-                "20001\r\n" +
-                "$9\r\n" +
-                "224016497\r\n" +
-                "*3\r\n" +
-                "$9\r\n" +
-                "127.0.0.1\r\n" +
-                "$4\r\n" +
-                "6380\r\n" +
-                "$9\r\n" +
-                "224016497\r\n");
+        Server metaMasterServer = startServer(master.getPort(), masterInfoReplication);
 
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), wrongMaster, monitorName),
@@ -1323,22 +970,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.setClusterTypeSentinelConfig(clusterTypeSentinelConfig);
 
         Sentinel sentinel = new Sentinel(new HostPort(LOCAL_HOST, 5004).toString(), LOCAL_HOST, 5004);
-        when(sentinelManager.getMasterOfMonitor(sentinel,monitorName)).thenReturn(new AbstractCommand<SentinelMasterInstance>() {
-            @Override
-            protected void doExecute() throws Throwable {
-                future().setFailure(new RedisError(NO_SUCH_MASTER));
-            }
-
-            @Override
-            protected void doReset() {
-
-            }
-
-            @Override
-            public String getName() {
-                return null;
-            }
-        });
+        when(sentinelManager.getMasterOfMonitor(sentinel,monitorName)).thenReturn(createFailedCommand(new RedisError(NO_SUCH_MASTER)));
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
         Set<SentinelHello> sentinelHellos = Sets.newHashSet(
                 new SentinelHello(new HostPort(LOCAL_HOST, 5000), master, monitorName),
@@ -1364,4 +996,42 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         verify(sentinelManager, times(1)).sentinelSet(any(), any(),any());
     }
 
+
+    AbstractCommand<SentinelMasterInstance> createSuccessCommand(SentinelMasterInstance instance){
+        return new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(instance);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        };
+    }
+
+    AbstractCommand<SentinelMasterInstance> createFailedCommand(Throwable e){
+       return new AbstractCommand<SentinelMasterInstance>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setFailure(e);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        };
+    }
 }

@@ -63,14 +63,14 @@ public class CheckMissingOrMasterSwitchedSentinels extends AbstractSentinelHello
     void addMissingSentinelMonitorsToHellos() {
         if (!context.getSentinelMonitors().isEmpty()) {
             context.getSentinelMonitors().forEach((sentinel, sentinelMater) -> {
-                context.getHellos().add(new SentinelHello(sentinel, sentinelMater.getHostPort(), context.getSentinelMonitorName()));
+                context.getProcessedHellos().add(new SentinelHello(sentinel, sentinelMater.getHostPort(), context.getSentinelMonitorName()));
             });
         }
     }
 
     boolean sentinelMasterSwitched() {
         Map<HostPort, Set<HostPort>> sentinelMasters = new HashMap<>();
-        context.getHellos().forEach(sentinelHello -> {
+        context.getProcessedHellos().forEach(sentinelHello -> {
             sentinelMasters.putIfAbsent(sentinelHello.getSentinelAddr(), Sets.newHashSet());
             sentinelMasters.get(sentinelHello.getSentinelAddr()).add(sentinelHello.getMasterAddr());
         });
@@ -98,7 +98,7 @@ public class CheckMissingOrMasterSwitchedSentinels extends AbstractSentinelHello
     }
 
     boolean foundInHellos(HostPort sentinel) {
-        for (SentinelHello sentinelHello : context.getHellos()) {
+        for (SentinelHello sentinelHello : context.getCollectedHellos()) {
             if (sentinelHello.getSentinelAddr().equals(sentinel))
                 return true;
         }
