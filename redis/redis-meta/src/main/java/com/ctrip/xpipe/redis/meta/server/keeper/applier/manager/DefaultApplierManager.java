@@ -8,9 +8,11 @@ import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CausalChain;
 import com.ctrip.xpipe.command.CausalCommand;
+import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.ApplierState;
@@ -21,6 +23,7 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.exception.ApplierStateInCorrectException;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
@@ -29,6 +32,7 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -322,7 +326,8 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         }
 
         protected void doCorrect(Long clusterDbId, Long shardDbId, List<ApplierMeta> survivedAppliers) {
-            //TODO ayq
+            //TODO ayq should stop always false
+            //TODO ayq change applier master when jvm restart
         }
     }
 
@@ -348,7 +353,7 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
         @Override
         protected boolean isMasterMatched() {
-            return getMasterHost().equals(extractor.extract(MASTER_HOST))
+            return null != master && getMasterHost().equals(extractor.extract(MASTER_HOST))
                     && getMasterPort() == Integer.parseInt(extractor.extract(MASTER_PORT));
         }
 
@@ -374,14 +379,13 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
 
         @Override
         protected boolean isMasterMatched() {
-            return true;
+            return (extractor.extract(MASTER_HOST) == null || extractor.extract(MASTER_HOST).equals("0")) &&
+                    (extractor.extract(MASTER_PORT) == null || extractor.extract(MASTER_PORT).equals("0"));
         }
     }
 
-    //TODO ayq rename
     protected abstract class AbstractApplierInfoChecker {
 
-        //TODO ayq info replication command -> which command?
         protected InfoResultExtractor extractor;
         protected Long clusterDbId, shardDbId;
 
@@ -419,13 +423,39 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         }
 
         @Override
-        protected void onSuccess(String s) {
+        protected void onSuccess(String info) {
+            InfoResultExtractor extractor = new InfoResultExtractor(info);
+            infoChecker = createApplierInfoChecker(applierMeta, clusterDbId, shardDbId, extractor);
+            if(infoChecker.isValid() || infoChecker.shouldStop()) {
+                future().setSuccess();
+            } else {
+                future().setFailure(new ApplierStateInCorrectException("Applier Role not correct"));
+            }
 
         }
 
         @Override
         protected void onFailure(Throwable throwable) {
-
+            if (ExceptionUtils.getRootCause(throwable) instanceof CommandTimeoutException) {
+                logger.debug("[onFailure][cluster_{}][shard_{}] ignore failure for command timeout", clusterDbId, shardDbId);
+                future().setSuccess();
+            } else {
+                future().setFailure(throwable);
+            }
         }
+    }
+
+    private AbstractApplierInfoChecker createApplierInfoChecker(ApplierMeta applier, Long clusterDbId, Long shardDbId,
+                                                                InfoResultExtractor extractor) {
+        if (applier.isActive()) {
+            return new ActiveApplierInfoChecker(extractor, clusterDbId, shardDbId);
+        } else {
+            return new BackupApplierInfoChecker(extractor, clusterDbId, shardDbId);
+        }
+    }
+
+    @VisibleForTesting
+    public void setApplierStateController(ApplierStateController applierStateController) {
+        this.applierStateController = applierStateController;
     }
 }

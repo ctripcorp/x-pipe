@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,5 +103,10 @@ public class DefaultApplierStateController extends AbstractLifecycle implements 
     protected Command<?> createDeleteApplierCommand(ApplierContainerService applierContainerService,
                                                  ApplierTransMeta applierTransMeta, ScheduledExecutorService scheduled, int removeApplierSuccessTimeoutMilli) {
         return new DeleteApplierCommand(applierContainerService, applierTransMeta, scheduled, removeApplierSuccessTimeoutMilli);
+    }
+
+    @VisibleForTesting
+    public void setExecutors(ExecutorService executors) {
+        this.executors = executors;
     }
 }
