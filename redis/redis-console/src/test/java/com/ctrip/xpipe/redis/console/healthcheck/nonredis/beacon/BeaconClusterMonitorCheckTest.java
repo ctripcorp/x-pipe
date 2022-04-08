@@ -62,21 +62,21 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     public void testDoCheck() {
         check.doCheck();
         sleep(1000);
-        Mockito.verify(monitorService0).fetchAllClusters();
-        Mockito.verify(monitorService1).fetchAllClusters();
+        Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
+        Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
     }
 
     @Test
     public void testTooManyClusterNeedExcluded() {
         check.MONITOR_UNREGISTER_PROTECT_COUNT = 1;
         Set<String> needExcludeClusters = Sets.newHashSet("clusterx", "clustery");
-        Mockito.when(monitorService0.fetchAllClusters()).thenReturn(Sets.newHashSet("clusterx", "clustery"));
+        Mockito.when(monitorService0.fetchAllClusters(Mockito.anyString())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
 
         check.doCheck();
         sleep(1000);
-        Mockito.verify(monitorService0).fetchAllClusters();
-        Mockito.verify(monitorService1).fetchAllClusters();
-        Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(Mockito.anyString());
+        Mockito.verify(monitorService0).fetchAllClusters(Mockito.anyString());
+        Mockito.verify(monitorService1).fetchAllClusters(Mockito.anyString());
+        Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(Mockito.anyString(), Mockito.anyString());
         Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, needExcludeClusters.toString());
     }
 

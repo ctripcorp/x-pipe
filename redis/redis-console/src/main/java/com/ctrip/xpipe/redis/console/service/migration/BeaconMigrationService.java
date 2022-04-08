@@ -12,4 +12,5 @@ public interface BeaconMigrationService {
 
     CommandFuture<?> migrate(BeaconMigrationRequest migrationRequest);
 
+    CommandFuture<?> biMigrate(BeaconMigrationRequest migrationRequest);
 }

@@ -2,7 +2,7 @@
 <xpipe>
     <dc id="jq" zone="SHA">
         <sentinel id="1" address="10.0.0.1:5000, 10.0.0.1:5001, 10.0.0.1:5002, 10.0.0.1:5003, 10.0.0.1:5004"/>
-        <cluster id="cluster1" phase ="1" type="bi_direction" dcs="jq,oy,rb">
+        <cluster id="cluster1" phase ="1" type="bi_direction" dcs="jq,oy,rb" org-id="1">
             <shard id="shard1" sentinelId="1" sentinelMonitorName="shard1">
                 <redis ip="127.0.0.1" port="6379" master=""/>
                 <redis ip="127.0.0.1" port="7379" master="127.0.0.1:6379"  />
@@ -11,7 +11,7 @@
     </dc>
     <dc id="oy" zone="SHA">
         <sentinel id="2" address="10.0.0.2:5000, 10.0.0.2:5001, 10.0.0.2:5002, 10.0.0.2:5003, 10.0.0.2:5004"/>
-        <cluster id="cluster1" phase = "1" type="bi_direction" dcs="jq,oy,rb">
+        <cluster id="cluster1" phase = "1" type="bi_direction" dcs="jq,oy,rb" org-id="1">
             <shard id="shard1" sentinelId="2" sentinelMonitorName="shard1">
                 <redis ip="127.0.0.2" port="6379" master=""/>
                 <redis ip="127.0.0.2" port="7379" master="127.0.0.2:6379"  />
@@ -20,7 +20,7 @@
     </dc>
     <dc id="rb" zone="SHA">
         <sentinel id="3" address="10.0.0.3:5000, 10.0.0.3:5001, 10.0.0.3:5002, 10.0.0.3:5003, 10.0.0.3:5004"/>
-        <cluster id="cluster1" phase = "1" type="bi_direction" dcs="jq,oy,rb">
+        <cluster id="cluster1" phase = "1" type="bi_direction" dcs="jq,oy,rb" org-id="1">
             <shard id="shard1" sentinelId="3" sentinelMonitorName="shard1">
                 <redis ip="127.0.0.3" port="6379" master=""/>
                 <redis ip="127.0.0.3" port="7379" master="127.0.0.3:6379"  />

@@ -24,17 +24,17 @@ public class DefaultMonitorService implements MonitorService {
     }
 
     @Override
-    public Set<String> fetchAllClusters() {
+    public Set<String> fetchAllClusters(String system) {
         return Collections.emptySet();
     }
 
     @Override
-    public void registerCluster(String clusterName, Set<MonitorGroupMeta> groups) {
+    public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups) {
         // do nothing
     }
 
     @Override
-    public void unregisterCluster(String clusterName) {
+    public void unregisterCluster(String systemm, String clusterName) {
         // do nothing
     }
 }
