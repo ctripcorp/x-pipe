@@ -5,6 +5,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -18,7 +19,7 @@ import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.Sentine
 
 public abstract class AbstractSentinelHelloCollectCommand extends AbstractCommand<Void> {
 
-    protected static Logger logger = LoggerFactory.getLogger("SentinelHelloCollectorCommand");
+    protected static Logger logger = LoggerFactory.getLogger(DefaultSentinelHelloCollector.SentinelHelloCollectorCommand.class);
 
     protected SentinelHelloCollectContext context;
 

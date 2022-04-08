@@ -122,6 +122,12 @@ public abstract class AbstractAggregationCollector<T extends SentinelHelloCollec
     }
 
     enum DowngradeStrategy {
+        noHello {
+            @Override
+            boolean needDowngrade(Set<SentinelHello> checkResult, QuorumConfig quorumConfig) {
+                return checkResult.isEmpty();
+            }
+        },
         lessThanHalf {
             @Override
             boolean needDowngrade(Set<SentinelHello> checkResult, QuorumConfig quorumConfig) {
