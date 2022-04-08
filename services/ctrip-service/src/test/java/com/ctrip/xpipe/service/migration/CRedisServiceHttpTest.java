@@ -82,4 +82,21 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
         Assert.assertEquals("POST", request.getMethod());
     }
 
+    @Test
+    public void testExcludeIdcs() throws Exception {
+        webServer.enqueue(new MockResponse().setBody("{\n" +
+                "    \"success\": true,\n" +
+                "    \"message\": \"success\"" +
+                "}")
+                .setHeader("Content-Type", "application/json"));
+
+        Assert.assertTrue(credisService.excludeIdcs("test-cluster", new String[]{}));
+        Assert.assertEquals(1, webServer.getRequestCount());
+
+        RecordedRequest request = webServer.takeRequest();
+        Assert.assertEquals("/keeperApi/excludedIdcs/test-cluster",
+                request.getPath());
+        Assert.assertEquals("POST", request.getMethod());
+    }
+
 }

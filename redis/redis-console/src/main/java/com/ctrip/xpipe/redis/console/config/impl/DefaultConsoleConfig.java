@@ -89,6 +89,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
 
+    private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
+
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -541,6 +543,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getRedisConfigCheckRules() {
         return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
+    }
+
+    @Override
+    public String getBiDirectionMigrationDcPriority() {
+        return getProperty(KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY, "SHARB,SHAXY");
     }
 
     public String crossDcSentinelMonitorNameSuffix() {
