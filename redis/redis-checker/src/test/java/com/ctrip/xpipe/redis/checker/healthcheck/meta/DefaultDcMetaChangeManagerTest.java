@@ -302,6 +302,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     public void testRouteChange() {
         Mockito.doNothing().when(factory).updateRoutes();
         prepareData("oy");
+        Mockito.verify(factory, times(1)).updateRoutes();
         DcMeta future = cloneDcMeta("oy");
         future.getRoutes().get(0).setIsPublic(false);
         manager.compare(future);

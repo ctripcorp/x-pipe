@@ -30,21 +30,6 @@ public class RouteInfoModel {
 
     }
 
-    public RouteInfoModel(long id, String orgName, List<String> srcProxies, List<String> optionalProxies, boolean isPublic,
-                          List<String> dstProxies, String srcDcName, String dstDcName, String tag, boolean active, String description) {
-        this.id = id;
-        this.orgName = orgName;
-        this.srcProxies = srcProxies;
-        this.optionalProxies = optionalProxies;
-        this.dstProxies = dstProxies;
-        this.srcDcName = srcDcName;
-        this.dstDcName = dstDcName;
-        this.tag = tag;
-        this.active = active;
-        this.description = description;
-        this.isPublic = isPublic;
-    }
-
     public long getId() {
         return id;
     }

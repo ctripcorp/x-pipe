@@ -23,11 +23,11 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
 
     function showRoutes() {
         if($scope.currentTag = 'true') $scope.currentTag = 'meta';
-        loadAllRouteDirectionInfoByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
+        loadAllRouteDirectionInfosByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
     }
 
-    function loadAllRouteDirectionInfoByTag(tag, srcDcName, dstDcName) {
-        RouteService.getAllActiveRouteRouteByTagAndDirection(tag, srcDcName, dstDcName)
+    function loadAllRouteDirectionInfosByTag(tag, srcDcName, dstDcName) {
+        RouteService.getAllActiveRoutesByTagAndDirection(tag, srcDcName, dstDcName)
             .then(function (data) {
                 if(Array.isArray(data)) $scope.routes = data;
                 $scope.tableParams = new NgTableParams({
@@ -43,7 +43,7 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
 
     function switchTag(tag) {
         $scope.currentTag = tag;
-        loadAllRouteDirectionInfoByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
+        loadAllRouteDirectionInfosByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
     }
 
     function preDoSwitchRoute() {
@@ -51,7 +51,8 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
     }
 
     function doSwtichRoute() {
-        RouteService.updateRoutes($scope.routes).then(function(result) {
+        RouteService.updateRoutes.apply(RouteService, $scope.routes)
+        .then(function(result) {
             $('#doSwitchrConfirm').modal('hide');
             toastr.success("切换成功");
             setTimeout(function () {

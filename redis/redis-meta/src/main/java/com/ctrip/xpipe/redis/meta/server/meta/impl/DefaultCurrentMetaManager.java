@@ -572,7 +572,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
-	private void notifyPeerMasterChange(String dcId, Long clusterDbId, Long shardDbId) {
+	@VisibleForTesting
+	protected void notifyPeerMasterChange(String dcId, Long clusterDbId, Long shardDbId) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
 				stateHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);

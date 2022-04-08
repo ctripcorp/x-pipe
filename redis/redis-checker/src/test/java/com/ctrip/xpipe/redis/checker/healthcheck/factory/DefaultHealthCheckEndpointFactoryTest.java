@@ -86,6 +86,50 @@ public class DefaultHealthCheckEndpointFactoryTest extends AbstractRedisTest {
         Assert.assertEquals(new String(proxyResourceManager.getProxyConnectProtocol()),
                 String.format("+PROXY ROUTE TCP://%s:%d;\r\n", hostport.getHost(), hostport.getPort()));
 
+        //route switch from route1 --->route2
+        routeMeta1.setIsPublic(false);
+        routeMeta2.setIsPublic(true);
+        factory.updateRoutes();
+        endpoint = factory.getOrCreateEndpoint(hostport);
+        Assert.assertEquals(hostport.getHost(), endpoint.getHost());
+        Assert.assertEquals(hostport.getPort(), endpoint.getPort());
+        expected = StringUtil.splitRemoveEmpty("\\s*,\\s*", routeInfo2);
+        Arrays.sort(expected);
+        proxyResourceManager = ProxyRegistry.getProxy(hostport.getHost(), hostport.getPort());
+        endpoints = proxyResourceManager.nextEndpoints();
+        actual = new String[endpoints.size()];
+        index = 0;
+        for(ProxyInetSocketAddress endpoint1 : endpoints) {
+            actual[index ++] = String.format("PROXYTCP://%s:%s" , endpoint1.getAddress().getHostAddress(), endpoint1.getPort());
+        }
+        Arrays.sort(actual);
+        Assert.assertTrue(Arrays.deepEquals(expected, actual));
+
+        Assert.assertEquals(new String(proxyResourceManager.getProxyConnectProtocol()),
+                String.format("+PROXY ROUTE TCP://%s:%d;\r\n", hostport.getHost(), hostport.getPort()));
+
+        //route switch from route2 --->route1
+        routeMeta1.setIsPublic(true);
+        routeMeta2.setIsPublic(false);
+        factory.updateRoutes();
+        endpoint = factory.getOrCreateEndpoint(hostport);
+        Assert.assertEquals(hostport.getHost(), endpoint.getHost());
+        Assert.assertEquals(hostport.getPort(), endpoint.getPort());
+        expected = StringUtil.splitRemoveEmpty("\\s*,\\s*", routeInfo1);
+        Arrays.sort(expected);
+        proxyResourceManager = ProxyRegistry.getProxy(hostport.getHost(), hostport.getPort());
+        endpoints = proxyResourceManager.nextEndpoints();
+        actual = new String[endpoints.size()];
+        index = 0;
+        for(ProxyInetSocketAddress endpoint1 : endpoints) {
+            actual[index ++] = String.format("PROXYTCP://%s:%s" , endpoint1.getAddress().getHostAddress(), endpoint1.getPort());
+        }
+        Arrays.sort(actual);
+        Assert.assertTrue(Arrays.deepEquals(expected, actual));
+
+        Assert.assertEquals(new String(proxyResourceManager.getProxyConnectProtocol()),
+                String.format("+PROXY ROUTE TCP://%s:%d;\r\n", hostport.getHost(), hostport.getPort()));
+
         logger.info("[endpoint] {}", endpoint);
         logger.info("[protocol] {}", new String(proxyResourceManager.getProxyConnectProtocol()));
         factory.remove(hostport);
