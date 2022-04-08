@@ -8,6 +8,8 @@ public class RedisCheckRule {
 
     private Map<String, String> params;
 
+    public RedisCheckRule() {
+    }
 
     public RedisCheckRule(String checkType, Map<String, String> params) {
         this.checkType = checkType;
