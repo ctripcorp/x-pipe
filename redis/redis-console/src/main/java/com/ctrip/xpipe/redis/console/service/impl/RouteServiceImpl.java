@@ -3,10 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.RouteDao;
-import com.ctrip.xpipe.redis.console.model.DcIdNameMapper;
-import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.RouteModel;
-import com.ctrip.xpipe.redis.console.model.RouteTbl;
+import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteDirectionModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -50,7 +47,7 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteTbl> getActiveRouteTbls() {
-        return routeDao.getAllAvailableRoutes();
+        return routeDao.getAllActiveRoutes();
     }
 
     @Override
@@ -68,7 +65,7 @@ public class RouteServiceImpl implements RouteService {
     @Override
     public List<RouteModel> getActiveRoutes() {
         DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
-        List<RouteModel> clone = Lists.transform(routeDao.getAllAvailableRoutes(), new Function<RouteTbl, RouteModel>() {
+        List<RouteModel> clone = Lists.transform(routeDao.getAllActiveRoutes(), new Function<RouteTbl, RouteModel>() {
             @Override
             public RouteModel apply(RouteTbl input) {
                 return RouteModel.fromRouteTbl(input, mapper);
@@ -79,7 +76,7 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public RouteInfoModel getRouteInfoById(long routeId) {
-        return combineRouteInfoByTbl(routeDao.getRouteById(routeId), new DcIdNameMapper.DefaultMapper(dcService), proxyService.proxyIdUriMap());
+        return convertRouteTblToRouteInfoModel(routeDao.getRouteById(routeId), new DcIdNameMapper.DefaultMapper(dcService), proxyService.proxyIdUriMap());
     }
 
     @Override
@@ -87,10 +84,10 @@ public class RouteServiceImpl implements RouteService {
         DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
         Map<Long, String> proxyIdUriMap = proxyService.proxyIdUriMap();
 
-        List<RouteInfoModel> clone = Lists.transform(routeDao.getAllAvailableRoutes(), new Function<RouteTbl, RouteInfoModel>() {
+        List<RouteInfoModel> clone = Lists.transform(routeDao.getAllActiveRoutes(), new Function<RouteTbl, RouteInfoModel>() {
             @Override
             public RouteInfoModel apply(RouteTbl routeTbl) {
-                return combineRouteInfoByTbl(routeTbl, mapper, proxyIdUriMap);
+                return convertRouteTblToRouteInfoModel(routeTbl, mapper, proxyIdUriMap);
             }
         });
 
@@ -99,31 +96,29 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteInfoModel> getAllActiveRouteInfosByTag(String tag) {
-        return converRouteTblsToRouteInfos(routeDao.getAllAvailableRoutesByTag(tag));
+        return convertRouteTblsToRouteInfos(routeDao.getAllActiveRoutesByTag(tag));
     }
 
     @Override
-    public List<RouteInfoModel> getAllRouteInfosByTagAndDirection(String tag, String srcDcName, String dstDcName) {
-        return converRouteTblsToRouteInfos(routeDao.getAllAvailableRoutesByTagAndDirection(tag, dcService.findByDcName(srcDcName).getId(), dcService.findByDcName(dstDcName).getId()));
+    public List<RouteInfoModel> getAllActiveRouteInfosByTagAndDirection(String tag, String srcDcName, String dstDcName) {
+        return convertRouteTblsToRouteInfos(routeDao.getAllActiveRoutesByTagAndDirection(tag, dcService.findByDcName(srcDcName).getId(), dcService.findByDcName(dstDcName).getId()));
     }
 
-    private List<RouteInfoModel> converRouteTblsToRouteInfos(List<RouteTbl> routeTbls) {
+    private List<RouteInfoModel> convertRouteTblsToRouteInfos(List<RouteTbl> routeTbls) {
         DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
         Map<Long, String> proxyIdUriMap = proxyService.proxyIdUriMap();
 
         List<RouteInfoModel> clone = Lists.transform(routeTbls, new Function<RouteTbl, RouteInfoModel>() {
             @Override
             public RouteInfoModel apply(RouteTbl routeTbl) {
-                return combineRouteInfoByTbl(routeTbl, mapper, proxyIdUriMap);
+                return convertRouteTblToRouteInfoModel(routeTbl, mapper, proxyIdUriMap);
             }
         });
 
         return Lists.newArrayList(clone);
     }
 
-
-
-    private RouteInfoModel combineRouteInfoByTbl(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap ) {
+    private RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap ) {
         RouteInfoModel routeInfoModel = new RouteInfoModel();
 
         routeInfoModel.setActive(routeTbl.isActive()).setId(routeTbl.getId()).setTag(routeTbl.getTag())
@@ -154,12 +149,12 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
-    public List<RouteDirectionModel> getRouteDirectionModesByTag(String tag) {
+    public List<RouteDirectionModel> getAllRouteDirectionModelsByTag(String tag) {
         DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
         Map<Long, String> proxyIdUriMap = proxyService.proxyIdUriMap();
 
         Map<SrcDest, RouteDirectionModel> result = new HashMap<>();
-        List<RouteTbl> allRoutesByTag = routeDao.getAllAvailableRoutesByTag(tag);
+        List<RouteTbl> allRoutesByTag = routeDao.getAllActiveRoutesByTag(tag);
         allRoutesByTag.forEach(routeTbl -> {
             String srcDcName = mapper.getName(routeTbl.getSrcDcId());
             String dstDcName = mapper.getName(routeTbl.getDstDcId());
@@ -167,7 +162,7 @@ public class RouteServiceImpl implements RouteService {
             RouteDirectionModel routeDirectionModel = MapUtils.getOrCreate(result, new SrcDest(srcDcName, dstDcName), () -> {
                 return new RouteDirectionModel(srcDcName, dstDcName);
             });
-            routeDirectionModel.getRoutes().add(combineRouteInfoByTbl(routeTbl, mapper,  proxyIdUriMap));
+            routeDirectionModel.getRoutes().add(convertRouteTblToRouteInfoModel(routeTbl, mapper,  proxyIdUriMap));
             routeDirectionModel.activeRouteNumIncrement();
             if(routeTbl.isIsPublic()) routeDirectionModel.publicRouteNumIncrement();
         });
@@ -191,7 +186,6 @@ public class RouteServiceImpl implements RouteService {
     public void updateRoutes(List<RouteInfoModel>models) {
         models.forEach(model -> updateRoute(model));
     }
-
 
     @Override
     public void deleteRoute(long id) {

@@ -39,7 +39,7 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
                 $scope.allDcs = result;
 
                 $scope.allDcs.forEach(function(dc){
-                    ProxyService.getAllProxyUriByDc(dc.dcName)
+                    ProxyService.getAllActiveProxyUrisByDc(dc.dcName)
                     .then(function(result) {
                         $scope.dcProxies[dc.dcName] = result;
                         result.forEach(function(proxy) {
@@ -53,7 +53,7 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
                 });
             });
 
-        RouteService.getOrganizations()
+        RouteService.getAllOrganizations()
             .then(function(result) {
                 $scope.organizations = result;
                 $scope.organizationNames = result.map(function (org) {

@@ -40,11 +40,11 @@ public interface RouteService {
 
     List<RouteInfoModel> getAllActiveRouteInfosByTag(String tag);
 
-    List<RouteInfoModel> getAllRouteInfosByTagAndDirection(String tag, String srcDcName, String dstDcName);
+    List<RouteInfoModel> getAllActiveRouteInfosByTagAndDirection(String tag, String srcDcName, String dstDcName);
 
     RouteInfoModel getRouteInfoById(long routeId);
 
-    public List<RouteDirectionModel> getRouteDirectionModesByTag(String tag);
+    List<RouteDirectionModel> getAllRouteDirectionModelsByTag(String tag);
 
 
 }

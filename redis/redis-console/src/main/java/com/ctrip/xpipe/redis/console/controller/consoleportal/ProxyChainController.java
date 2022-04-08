@@ -161,13 +161,13 @@ public class ProxyChainController extends AbstractConsoleController {
         return proxyService.deleteProxyChain(proxies);
     }
 
-    @RequestMapping(value = "/proxy/uri/{dcName}", method = RequestMethod.GET)
-    public List<String> getAllProxyUriByDc(@PathVariable String dcName) {
-        logger.info("[getAllProxyUriByDc]{}", dcName);
+    @RequestMapping(value = "/active/proxy/uri/{dcName}", method = RequestMethod.GET)
+    public List<String> getActiveProxyUriByDc(@PathVariable String dcName) {
+        logger.info("[getActiveProxyUriByDc]{}", dcName);
         try {
             return proxyService.getActiveProxyUrisByDc(dcName);
         } catch (Throwable th) {
-            logger.error("[getAllProxyUriByDc]:{}", dcName, th);
+            logger.error("[getActiveProxyUriByDc]:{}", dcName, th);
             return Collections.emptyList();
         }
     }

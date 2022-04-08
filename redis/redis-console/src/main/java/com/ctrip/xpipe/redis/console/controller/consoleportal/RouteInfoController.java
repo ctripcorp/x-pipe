@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteDirectionModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
-import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModels;
 import com.ctrip.xpipe.redis.console.service.RouteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,8 +22,7 @@ public class RouteInfoController extends AbstractConsoleController {
     public List<RouteInfoModel> getAllActiveRouteInfos() {
         logger.info("[getAllActiveRouteInfos]");
         try {
-            List<RouteInfoModel> routeInfoModels =  routeService.getAllActiveRouteInfos();
-            return routeInfoModels;
+            return routeService.getAllActiveRouteInfos();
         } catch (Throwable th) {
             logger.error("[getAllActiveRouteInfos]", th);
             return Collections.emptyList();
@@ -33,11 +31,11 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route/id/{routeId}", method = RequestMethod.GET)
     public RouteInfoModel getRouteInfoById(@PathVariable long routeId) {
-        logger.info("[getRouteInfoById]");
+        logger.info("[getRouteInfoById] id:{}", routeId);
         try {
             return routeService.getRouteInfoById(routeId);
         } catch (Throwable th) {
-            logger.error("[getRouteInfoById]", th);
+            logger.error("[getRouteInfoById id:{}]", routeId, th);
             return null;
         }
     }
@@ -46,7 +44,7 @@ public class RouteInfoController extends AbstractConsoleController {
     public List<RouteInfoModel> getAllActiveRoutesByTagAndDirection(@PathVariable String tag, @PathVariable String srcDcName, @PathVariable String dstDcName) {
         logger.info("[getAllActiveRoutesByTagAndDirection]srcDcName:{}, dstDcName:{}, tag:{}",srcDcName, dstDcName, tag);
         try {
-            return  routeService.getAllRouteInfosByTagAndDirection(tag, srcDcName, dstDcName);
+            return  routeService.getAllActiveRouteInfosByTagAndDirection(tag, srcDcName, dstDcName);
         } catch (Throwable th) {
             logger.error("[getAllActiveRoutesByTagAndDirection]srcDcName:{}, dstDcName:{}, tag:{}",srcDcName, dstDcName, tag, th);
             return Collections.emptyList();
@@ -55,11 +53,11 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route/tag/{tag}", method = RequestMethod.GET)
     public List<RouteInfoModel> getAllActiveRoutesByTag(@PathVariable String tag) {
-        logger.info("[getAllActiveRoutesByTag]：{}", tag);
+        logger.info("[getAllActiveRoutesByTag] tag:{}", tag);
         try {
             return  routeService.getAllActiveRouteInfosByTag(tag);
         } catch (Throwable th) {
-            logger.error("[getAllActiveRoutesByTag]", th);
+            logger.error("[getAllActiveRoutesByTag] tag:{}", tag, th);
             return Collections.emptyList();
         }
     }
@@ -68,21 +66,21 @@ public class RouteInfoController extends AbstractConsoleController {
     public List<RouteDirectionModel> getAllRouteDirectionInfosByTag(@PathVariable String tag) {
         logger.info("[getAllRouteDirectionsByTag]：{}", tag);
         try {
-            return  routeService.getRouteDirectionModesByTag(tag);
+            return  routeService.getAllRouteDirectionModelsByTag(tag);
         } catch (Throwable th) {
-            logger.error("[getAllRouteDirectionsByTag]", th);
+            logger.error("[getAllRouteDirectionsByTag] tag:{}", tag, th);
             return Collections.emptyList();
         }
     }
 
     @RequestMapping(value = "/route", method = RequestMethod.POST)
     public RetMessage addRoute(@RequestBody RouteInfoModel model) {
-        logger.info("[addRoute] {}", model);
+        logger.info("[addRoute] route:{}", model);
         try {
             routeService.addRoute(model);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
-            logger.error("[addRoute]", th);
+            logger.error("[addRoute] route:{}", model, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }
@@ -95,7 +93,7 @@ public class RouteInfoController extends AbstractConsoleController {
             routeService.deleteRoute(model.getId());
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
-            logger.error("[deleteRoute]", th);
+            logger.error("[deleteRoute] route:{}", model, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }
@@ -108,20 +106,20 @@ public class RouteInfoController extends AbstractConsoleController {
             routeService.updateRoute(model);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
-            logger.error("[updateRoute]", th);
+            logger.error("[updateRoute] route:{}", model, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }
 
     @RequestMapping(value = "/routes", method = RequestMethod.PUT)
-    public RetMessage updateRoutes(@RequestBody RouteInfoModels model) {
-        logger.info("[updateRoutes] {}", model.getRouteInfoModels());
+    public RetMessage updateRoutes(@RequestBody List<RouteInfoModel> models) {
+        logger.info("[updateRoutes] models:{}", models);
 
         try {
-            routeService.updateRoutes(model.getRouteInfoModels());
+            routeService.updateRoutes(models);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
-            logger.error("[updateRoutes]", th);
+            logger.error("[updateRoutes] model:{}", models, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }

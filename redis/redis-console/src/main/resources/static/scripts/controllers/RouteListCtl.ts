@@ -19,12 +19,12 @@ function RouteListCtl($scope, RouteService, NgTableParams, $stateParams) {
 
     function showAllRoutes() {
         $scope.currentTag = ['meta'];
-        loadAllRouteByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
+        loadAllRoutesByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
     }
 
-    function loadAllRouteByTag(tag, srcDcName, dstDcName) {
+    function loadAllRoutesByTag(tag, srcDcName, dstDcName) {
         if((srcDcName == 'true') && (dstDcName == 'true')) {
-            RouteService.getAllActiveRouteRouteByTag(tag).then(function (data) {
+            RouteService.getAllActiveRoutesByTag(tag).then(function (data) {
                 if(Array.isArray(data)) $scope.routes = data;
                 $scope.tableParams = new NgTableParams({
                     page : 1,
@@ -36,7 +36,7 @@ function RouteListCtl($scope, RouteService, NgTableParams, $stateParams) {
                 });
             });
         } else {
-            RouteService.getAllActiveRouteRouteByTagAndDirection(tag, srcDcName, dstDcName).then(function (data) {
+            RouteService.getAllActiveRoutesByTagAndDirection(tag, srcDcName, dstDcName).then(function (data) {
                 if(Array.isArray(data)) $scope.routes = data;
                 $scope.tableParams = new NgTableParams({
                     page : 1,
@@ -53,6 +53,6 @@ function RouteListCtl($scope, RouteService, NgTableParams, $stateParams) {
 
     function switchTag(tag) {
         $scope.currentTag = tag;
-        loadAllRouteByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
+        loadAllRoutesByTag($scope.currentTag, $scope.srcDcName, $scope.dstDcName);
     }
 }

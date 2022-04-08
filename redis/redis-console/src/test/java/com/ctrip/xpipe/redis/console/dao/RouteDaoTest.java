@@ -41,9 +41,9 @@ public class RouteDaoTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetAllAvailableRoutes() {
+    public void testGetAllActiveRoutes() {
 
-        List<RouteTbl> routes = routeDao.getAllAvailableRoutes();
+        List<RouteTbl> routes = routeDao.getAllActiveRoutes();
         Assert.assertEquals(1, routes.size());
         RouteTbl target = routes.get(0);
         Assert.assertEquals(proto1.getRouteOrgId(), target.getRouteOrgId());
@@ -64,24 +64,24 @@ public class RouteDaoTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetAllRouteByTagAndDirection() {
-        List<RouteTbl> routes = routeDao.getAllAvailableRoutesByTagAndDirection(Route.TAG_META,1,2);
+    public void testGetAllActiveRouteByTagAndDirection() {
+        List<RouteTbl> routes = routeDao.getAllActiveRoutesByTagAndDirection(Route.TAG_META,1,2);
         Assert.assertEquals(1, routes.size());
 
-        routes = routeDao.getAllAvailableRoutesByTagAndDirection(Route.TAG_META,1,3);
+        routes = routeDao.getAllActiveRoutesByTagAndDirection(Route.TAG_META,1,3);
         Assert.assertEquals(0, routes.size());
 
-        routes = routeDao.getAllAvailableRoutesByTagAndDirection(Route.TAG_CONSOLE,1,2);
+        routes = routeDao.getAllActiveRoutesByTagAndDirection(Route.TAG_CONSOLE,1,2);
         Assert.assertEquals(0, routes.size());
 
     }
 
     @Test
-    public void testGetAllAvailableRoutesByTag() {
-        List<RouteTbl> routes = routeDao.getAllAvailableRoutesByTag(Route.TAG_META);
+    public void testGetAllActiveRoutesByTag() {
+        List<RouteTbl> routes = routeDao.getAllActiveRoutesByTag(Route.TAG_META);
         Assert.assertEquals(1, routes.size());
 
-        routes = routeDao.getAllAvailableRoutesByTag(Route.TAG_CONSOLE);
+        routes = routeDao.getAllActiveRoutesByTag(Route.TAG_CONSOLE);
         Assert.assertEquals(0, routes.size());
     }
 

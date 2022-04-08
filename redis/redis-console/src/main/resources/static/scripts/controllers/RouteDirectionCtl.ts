@@ -16,11 +16,11 @@ function RouteDirectionCtl($scope, RouteService, NgTableParams) {
 
     function showAllRoutes() {
         $scope.currentTag = ['meta'];
-        loadAllRouteDirectionInfoByTag($scope.currentTag);
+        loadAllRouteDirectionInfosByTag($scope.currentTag);
     }
 
-    function loadAllRouteDirectionInfoByTag(tag) {
-        RouteService.getRoutesDirectionInfoByTag(tag)
+    function loadAllRouteDirectionInfosByTag(tag) {
+        RouteService.getAllRouteDirectionInfosByTag(tag)
             .then(function (data) {
                 if(Array.isArray(data)) $scope.routeDirectionInfos = data;
                 $scope.tableParams = new NgTableParams({
@@ -36,7 +36,7 @@ function RouteDirectionCtl($scope, RouteService, NgTableParams) {
 
     function switchTag(tag) {
         $scope.currentTag = tag;
-        loadAllRouteDirectionInfoByTag($scope.currentTag);
+        loadAllRouteDirectionInfosByTag($scope.currentTag);
     }
 
 }
