@@ -146,4 +146,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getBeaconSupportZone();
 
+	String getBiDirectionMigrationDcPriority();
+
 }

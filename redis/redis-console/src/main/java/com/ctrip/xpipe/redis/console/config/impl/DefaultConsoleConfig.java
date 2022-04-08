@@ -91,6 +91,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
+    private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
@@ -544,6 +545,11 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public String getRedisConfigCheckRules() {
         return getProperty(KEY_REDIS_CONFIG_CHECK_RULES);
+    }
+
+    @Override
+    public String getBiDirectionMigrationDcPriority() {
+        return getProperty(KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY, "SHARB,SHAXY");
     }
 
     public String crossDcSentinelMonitorNameSuffix() {
