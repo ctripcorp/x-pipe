@@ -168,26 +168,33 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     @VisibleForTesting
     String[] decideExcludes(Set<MonitorGroupMeta> groups) {
-        Map<String, MonitorGroupMeta> ups = new HashMap<>();
+        Set<String> downs = new HashSet<>();
+        Set<String> ups = new HashSet<>();
+        Set<String> all = new HashSet<>();
         for (MonitorGroupMeta group : groups) {
-            if (!group.getDown()) {
-                ups.put(group.getIdc().toLowerCase(), group);
+            if (group.getDown()) {
+                downs.add(group.getIdc().toLowerCase());
             }
+            ups.add(group.getIdc().toLowerCase());
+            all.add(group.getIdc().toLowerCase());
         }
+
+        //til this moment, ups means all
+        ups.removeAll(downs);
 
         String dcs = config.getBiDirectionMigrationDcPriority().toLowerCase();
         String[] dcArray = dcs.split(",");
 
         String choice = null;
         for (String dc : dcArray) {
-            if (ups.containsKey(dc)) {
+            if (ups.contains(dc)) {
                 choice = dc;
                 break;
             }
         }
 
         if (choice == null && !ups.isEmpty()) {
-            choice = ups.keySet().stream().findFirst().get();
+            choice = ups.stream().findFirst().get();
         }
 
         if (choice == null) {
@@ -195,14 +202,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
             throw new XpipeRuntimeException("[bi migrate] cannot make a choice");
         }
 
-        List<String> excludes = Lists.newArrayList();
-        for (MonitorGroupMeta group : groups) {
-            String dc = group.getIdc().toLowerCase();
-            if (!Objects.equals(dc, choice)) {
-                excludes.add(dc);
-            }
-        }
-
-        return excludes.toArray(new String[0]);
+        all.remove(choice);
+        return all.toArray(new String[0]);
     }
 }
