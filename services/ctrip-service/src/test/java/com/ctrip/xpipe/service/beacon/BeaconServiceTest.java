@@ -32,6 +32,8 @@ public class BeaconServiceTest extends AbstractServiceTest {
 
     private MockWebServer webServer;
 
+    private String system = "xpipe";
+
     @Before
     public void setupDefaultBeaconServiceTest() throws Exception {
         webServer = new MockWebServer();
@@ -53,25 +55,25 @@ public class BeaconServiceTest extends AbstractServiceTest {
                 "}")
                 .setHeader("Content-Type", "application/json"));
 
-        Set<String> clusters = beaconService.fetchAllClusters();
+        Set<String> clusters = beaconService.fetchAllClusters(system);
         Assert.assertEquals(Sets.newHashSet("cluster1", "cluster2"), clusters);
 
         RecordedRequest request = webServer.takeRequest();
-        Assert.assertEquals(PATH_GET_CLUSTERS, request.getPath());
+        Assert.assertEquals("/api/v1/monitor/xpipe/clusters", request.getPath());
         Assert.assertEquals("GET", request.getMethod());
     }
 
     @Test(expected = BeaconServiceException.class)
     public void testFetchAllClustersRespErr() {
         enqueueServerErr();
-        beaconService.fetchAllClusters();
+        beaconService.fetchAllClusters(system);
     }
 
     @Test
     public void testRegisterCluster() throws Exception {
         Set<MonitorGroupMeta> groups = mockGroups();
         enqueueServerSuccess();
-        beaconService.registerCluster("cluster1", groups);
+        beaconService.registerCluster(system, "cluster1", groups);
 
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/v1/monitor/xpipe/cluster/cluster1", request.getPath());
@@ -83,13 +85,13 @@ public class BeaconServiceTest extends AbstractServiceTest {
     @Test(expected = BeaconServiceException.class)
     public void testRegisterClusterRespErr() {
         enqueueServerErr();
-        beaconService.registerCluster("cluster1", Collections.emptySet());
+        beaconService.registerCluster(system, "cluster1", Collections.emptySet());
     }
 
     @Test
     public void testUnregisterCluster() throws Exception {
         enqueueServerSuccess();
-        beaconService.unregisterCluster("cluster1");
+        beaconService.unregisterCluster(system, "cluster1");
 
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/v1/monitor/xpipe/cluster/cluster1", request.getPath());
@@ -99,7 +101,7 @@ public class BeaconServiceTest extends AbstractServiceTest {
     @Test(expected = BeaconServiceException.class)
     public void testUnregisterClusterRespErr() {
         enqueueServerErr();
-        beaconService.unregisterCluster("cluster1");
+        beaconService.unregisterCluster(system, "cluster1");
     }
 
     private void enqueueServerSuccess() {

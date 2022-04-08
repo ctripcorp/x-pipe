@@ -12,10 +12,10 @@ public interface MonitorService {
 
     String getHost();
 
-    Set<String> fetchAllClusters();
+    Set<String> fetchAllClusters(String system);
 
-    void registerCluster(String clusterName, Set<MonitorGroupMeta> groups);
+    void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups);
 
-    void unregisterCluster(String clusterName);
+    void unregisterCluster(String system, String clusterName);
 
 }

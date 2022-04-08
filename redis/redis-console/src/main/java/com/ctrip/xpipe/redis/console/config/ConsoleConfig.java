@@ -142,6 +142,10 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getRedisConfigCheckRules();
 
+	Set<String> getClustersSupportBiMigration();
+
+	String getBeaconSupportZone();
+
 	String getBiDirectionMigrationDcPriority();
 
 }
