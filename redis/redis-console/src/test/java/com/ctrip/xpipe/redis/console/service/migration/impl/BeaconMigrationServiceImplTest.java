@@ -140,8 +140,8 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testExcludeChoiceNotInPriority() {
         Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("shaoy", false));
-        groups.add(buildSimpleGroup("shajq", true));
+        groups.add(buildSimpleGroup("A", "shaoy", false));
+        groups.add(buildSimpleGroup("B", "shajq", true));
 
         assertArrayEqualsDespiteOrder(new String[]{"shajq"}, migrationService.decideExcludes(groups));
     }
@@ -149,10 +149,10 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testExcludeChoiceInPriority() {
         Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("SHAFQ", false));
-        groups.add(buildSimpleGroup("SHARB", false));
-        groups.add(buildSimpleGroup("SHAXY", true));
-        groups.add(buildSimpleGroup("SHAJQ", false));
+        groups.add(buildSimpleGroup("A", "SHAFQ", false));
+        groups.add(buildSimpleGroup("B", "SHARB", false));
+        groups.add(buildSimpleGroup("C", "SHAXY", true));
+        groups.add(buildSimpleGroup("d", "SHAJQ", false));
 
         assertArrayEqualsDespiteOrder(new String[]{"shafq", "shajq", "shaxy"}, migrationService.decideExcludes(groups));
     }
@@ -160,10 +160,10 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test
     public void testExcludeChoiceDespiteOfCase() {
         Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("SHAFQ", false));
-        groups.add(buildSimpleGroup("sharb", false));
-        groups.add(buildSimpleGroup("SHAXY", true));
-        groups.add(buildSimpleGroup("shajq", false));
+        groups.add(buildSimpleGroup("A", "SHAFQ", false));
+        groups.add(buildSimpleGroup("B", "sharb", false));
+        groups.add(buildSimpleGroup("C", "SHAXY", true));
+        groups.add(buildSimpleGroup("d", "shajq", false));
 
         assertArrayEqualsDespiteOrder(new String[]{"shafq", "shajq", "shaxy"}, migrationService.decideExcludes(groups));
     }
@@ -171,16 +171,27 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
     @Test (expected = XpipeRuntimeException.class)
     public void testExcludeChoiceCannotMakeChoice() {
         Set<MonitorGroupMeta> groups = new HashSet<>();
-        groups.add(buildSimpleGroup("SHAFQ", true));
-        groups.add(buildSimpleGroup("sharb", true));
-        groups.add(buildSimpleGroup("shaXY", true));
-        groups.add(buildSimpleGroup("shajq", true));
+        groups.add(buildSimpleGroup("A", "SHAFQ", true));
+        groups.add(buildSimpleGroup("B", "sharb", true));
+        groups.add(buildSimpleGroup("C", "shaXY", true));
+        groups.add(buildSimpleGroup("d", "shajq", true));
 
         migrationService.decideExcludes(groups);
     }
 
-    private MonitorGroupMeta buildSimpleGroup(String idc, boolean isDown) {
-        MonitorGroupMeta group = new MonitorGroupMeta("", idc, null, true);
+    @Test
+    public void testExcludeMultiShard() {
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        groups.add(buildSimpleGroup("A","sharb", false));
+        groups.add(buildSimpleGroup("B","sharb", true));
+        groups.add(buildSimpleGroup("C","shaxy", false));
+        groups.add(buildSimpleGroup("d","shaxy", false));
+
+        assertArrayEqualsDespiteOrder(new String[]{"sharb"}, migrationService.decideExcludes(groups));
+    }
+
+    private MonitorGroupMeta buildSimpleGroup(String name, String idc, boolean isDown) {
+        MonitorGroupMeta group = new MonitorGroupMeta(name, idc, null, true);
         group.setDown(isDown);
         return group;
     }
