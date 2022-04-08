@@ -71,6 +71,13 @@ public class ExclusiveThreadsForMigrationTest extends AbstractConsoleTest {
                     future.setSuccess("OK");
                     return future;
                 }
+
+                @Override
+                public CommandFuture<?> biMigrate(BeaconMigrationRequest migrationRequest) {
+                    CommandFuture<String> future = new DefaultCommandFuture<>();
+                    future.setSuccess("OK");
+                    return future;
+                }
             };
         }
 
