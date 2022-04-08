@@ -89,6 +89,8 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_BIND_OUTER_CLUSTER_SHARD_SENTINEL = "checker.bind.outer.cluster.shard.sentinel";
 
+    private static final String KEY_BI_MIGRATION_CLUSTERS = "migration.bi.support.clusters";
+    private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
@@ -578,5 +580,17 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     @Override
     public long subscribeTimeoutMilli() {
         return getLongProperty(KEY_SUBSCRIBE_TIMEOUT_MILLI, 5000L);
+    }
+
+    @Override
+    public Set<String> getClustersSupportBiMigration() {
+        String raw = getProperty(KEY_BI_MIGRATION_CLUSTERS, "");
+
+        return getSplitStringSet(raw);
+    }
+
+    @Override
+    public String getBeaconSupportZone() {
+        return getProperty(KEY_BEACON_SUPPORT_ZONE, "");
     }
 }

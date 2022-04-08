@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import org.slf4j.Logger;
@@ -28,7 +29,7 @@ public class DefaultBeaconManager implements BeaconManager {
     }
 
     @Override
-    public void registerCluster(String clusterId, int orgId) {
+    public void registerCluster(String clusterId, ClusterType clusterType, int orgId) {
         MonitorService service = monitorServiceManager.getOrCreate(orgId);
         if (null == service) {
             logger.debug("[registerCluster][{}] no beacon service for org {}, skip", clusterId, orgId);
@@ -37,7 +38,8 @@ public class DefaultBeaconManager implements BeaconManager {
 
         try {
             logger.debug("[registerCluster][{}] register to {}", clusterId, service.getHost());
-            service.registerCluster(clusterId, beaconMetaService.buildBeaconGroups(clusterId));
+            BeaconSystem system = BeaconSystem.findByClusterType(clusterType);
+            service.registerCluster(system.getSystemName(), clusterId, beaconMetaService.buildBeaconGroups(clusterId));
         } catch (Throwable th) {
             logger.info("[registerCluster][{}] register meta fail", clusterId, th);
         }
