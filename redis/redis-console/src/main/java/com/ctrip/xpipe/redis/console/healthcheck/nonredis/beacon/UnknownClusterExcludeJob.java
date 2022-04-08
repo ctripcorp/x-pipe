@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +27,7 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
 
     @Override
     protected void doExecute() throws Throwable {
-        Set<String> realClusters = monitorService.fetchAllClusters();
+        Set<String> realClusters = monitorService.fetchAllClusters(BeaconSystem.getDefault().getSystemName());
         Set<String> needExcludeClusters = new HashSet<>(realClusters);
 
         needExcludeClusters.removeAll(expectClusters);
@@ -39,7 +40,7 @@ public class UnknownClusterExcludeJob extends AbstractCommand<Set<String>> {
         Set<String> excludeClusters = new HashSet<>();
         for (String cluster: needExcludeClusters) {
             try {
-                monitorService.unregisterCluster(cluster);
+                monitorService.unregisterCluster(BeaconSystem.getDefault().getSystemName(), cluster);
                 excludeClusters.add(cluster);
             } catch (Throwable th) {
                 getLogger().info("[doExecute][{}] unregister cluster {} fail", monitorService, cluster, th);

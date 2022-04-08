@@ -22,8 +22,8 @@ public class BeaconService implements MonitorService {
 
     RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplateWithRetry(1, 300);
 
-    protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/xpipe/clusters";
-    protected static final String PATH_CLUSTER = "/api/v1/monitor/xpipe/cluster/{cluster}";
+    protected static final String PATH_GET_CLUSTERS = "/api/v1/monitor/{system}/clusters";
+    protected static final String PATH_CLUSTER = "/api/v1/monitor/{system}/cluster/{cluster}";
 
     private String getAllClustersPath;
     private String clusterPath;
@@ -47,8 +47,8 @@ public class BeaconService implements MonitorService {
     }
 
     @Override
-    public Set<String> fetchAllClusters() {
-        ResponseEntity<BeaconResp<Set<String>>> responseEntity = restTemplate.exchange(getAllClustersPath, HttpMethod.GET, null, clustersRespTypeDef);
+    public Set<String> fetchAllClusters(String system) {
+        ResponseEntity<BeaconResp<Set<String>>> responseEntity = restTemplate.exchange(getAllClustersPath, HttpMethod.GET, null, clustersRespTypeDef, system);
         BeaconResp<Set<String>> beaconResp = responseEntity.getBody();
         if (!beaconResp.isSuccess()) {
             logger.info("[fetchAllClusters] fail, {}", beaconResp.getMsg());
@@ -59,11 +59,11 @@ public class BeaconService implements MonitorService {
     }
 
     @Override
-    public void registerCluster(String clusterName, Set<MonitorGroupMeta> groups) {
+    public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups), headers);
-        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.POST, entity, BeaconResp.class, clusterName);
+        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.POST, entity, BeaconResp.class, system, clusterName);
 
         BeaconResp beaconResp = respResponseEntity.getBody();
         if (!beaconResp.isSuccess()) {
@@ -73,8 +73,8 @@ public class BeaconService implements MonitorService {
     }
 
     @Override
-    public void unregisterCluster(String clusterName) {
-        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE, null, BeaconResp.class, clusterName);
+    public void unregisterCluster(String system, String clusterName) {
+        ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE, null, BeaconResp.class, system, clusterName);
         BeaconResp beaconResp = respResponseEntity.getBody();
         if (!beaconResp.isSuccess()) {
             logger.info("[unregisterCluster] fail, {}", beaconResp.getMsg());
