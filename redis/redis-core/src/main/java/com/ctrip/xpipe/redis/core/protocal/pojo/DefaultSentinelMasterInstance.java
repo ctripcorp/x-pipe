@@ -15,7 +15,7 @@ public class DefaultSentinelMasterInstance extends AbstractSentinelRedisInstance
 
     @Override
     public String toString() {
-        return "DefaultSentinelSlaveInstance{" +
+        return "DefaultSentinelMasterInstance{" +
                 ", hostPort=" + hostPort +
                 ", flags=" + (info == null ? "null" : info.get("flags")) +
                 '}';
