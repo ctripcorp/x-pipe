@@ -1,12 +1,15 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,9 +26,12 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     private MetaCache metaCache;
 
+    public ConsoleConfig config;
+
     @Autowired
-    public BeaconMetaServiceImpl(MetaCache metaCache) {
+    public BeaconMetaServiceImpl(MetaCache metaCache, ConsoleConfig config) {
         this.metaCache = metaCache;
+        this.config = config;
     }
 
     @Override
@@ -71,20 +77,32 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     private Set<MonitorGroupMeta> buildBeaconGroups(Map<String, ClusterMeta> dcClusterMetas) {
         Set<MonitorGroupMeta> groups = new HashSet<>();
         dcClusterMetas.forEach((dc, clusterMeta) -> {
-            String activeDc = clusterMeta.getActiveDc();
-            // no register cross region dcs to beacon
-            if (!metaCache.isCrossRegion(activeDc, dc)) {
+            if (isDcNeeded(dc, clusterMeta)) {
                 clusterMeta.getShards().forEach((shard, shardMeta) -> {
                     Set<HostPort> nodes = shardMeta.getRedises().stream()
                             .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
                             .collect(Collectors.toSet());
                     String groupName = String.join(BEACON_GROUP_SEPARATOR, shard, dc);
-                    groups.add(new MonitorGroupMeta(groupName, dc, nodes, activeDc.equals(dc)));
+                    groups.add(new MonitorGroupMeta(groupName, dc, nodes, dc.equalsIgnoreCase(clusterMeta.getActiveDc())));
                 });
             }
         });
 
         return groups;
+    }
+
+    private boolean isDcNeeded(String dc, ClusterMeta clusterMeta) {
+        if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) {
+            String activeDc = clusterMeta.getActiveDc();
+            // no register cross region dcs to beacon
+            return !metaCache.isCrossRegion(activeDc, dc);
+        } else {
+            XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+            String supportZone = config.getBeaconSupportZone();
+            if (null == xpipeMeta || StringUtil.isEmpty(supportZone)) return false;
+
+            return supportZone.equalsIgnoreCase(clusterMeta.parent().getZone());
+        }
     }
 
     @VisibleForTesting

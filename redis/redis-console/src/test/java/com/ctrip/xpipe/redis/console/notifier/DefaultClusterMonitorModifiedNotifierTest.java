@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
@@ -46,7 +47,7 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
         waitConditionUntilTimeOut(() -> Mockito.mockingDetails(monitorService).getInvocations().size() >= 1);
 
         Mockito.verify(beaconMetaService).buildCurrentBeaconGroups("cluster1");
-        Mockito.verify(monitorService).registerCluster("cluster1", Collections.singleton(new MonitorGroupMeta()));
+        Mockito.verify(monitorService).registerCluster(BeaconSystem.getDefault().getSystemName(), "cluster1", Collections.singleton(new MonitorGroupMeta()));
     }
 
     @Test
@@ -54,7 +55,7 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
         notifier.notifyClusterDelete("cluster1", 1);
         waitConditionUntilTimeOut(() -> Mockito.mockingDetails(monitorService).getInvocations().size() >= 1);
 
-        Mockito.verify(monitorService).unregisterCluster("cluster1");
+        Mockito.verify(monitorService).unregisterCluster(BeaconSystem.getDefault().getSystemName(), "cluster1");
     }
 
 }

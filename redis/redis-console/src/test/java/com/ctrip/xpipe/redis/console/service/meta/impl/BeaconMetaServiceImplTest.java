@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
@@ -25,6 +26,8 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
 
     private MetaCache metaCache;
 
+    private ConsoleConfig config;
+
     @Autowired
     private DcService dcService;
 
@@ -41,6 +44,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
     @Before
     public void setupBeaconMetaServiceImplTest() {
         metaCache = Mockito.mock(MetaCache.class);
+        config = Mockito.mock(ConsoleConfig.class);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.doAnswer(invocation -> {
             String activeDc = invocation.getArgument(0, String.class);
@@ -50,7 +54,9 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
-        beaconMetaService = new BeaconMetaServiceImpl(metaCache);
+        Mockito.when(config.getBeaconSupportZone()).thenReturn("SHA");
+
+        beaconMetaService = new BeaconMetaServiceImpl(metaCache, config);
     }
 
     @Test
