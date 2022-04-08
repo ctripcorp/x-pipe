@@ -64,11 +64,11 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route/direction/tag/{tag}", method = RequestMethod.GET)
     public List<RouteDirectionModel> getAllRouteDirectionInfosByTag(@PathVariable String tag) {
-        logger.info("[getAllRouteDirectionsByTag]：{}", tag);
+        logger.info("[getAllRouteDirectionInfosByTag]：{}", tag);
         try {
             return  routeService.getAllRouteDirectionModelsByTag(tag);
         } catch (Throwable th) {
-            logger.error("[getAllRouteDirectionsByTag] tag:{}", tag, th);
+            logger.error("[getAllRouteDirectionInfosByTag] tag:{}", tag, th);
             return Collections.emptyList();
         }
     }

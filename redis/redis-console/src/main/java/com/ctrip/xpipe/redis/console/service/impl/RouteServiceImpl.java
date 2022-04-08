@@ -96,15 +96,15 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteInfoModel> getAllActiveRouteInfosByTag(String tag) {
-        return convertRouteTblsToRouteInfos(routeDao.getAllActiveRoutesByTag(tag));
+        return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTag(tag));
     }
 
     @Override
     public List<RouteInfoModel> getAllActiveRouteInfosByTagAndDirection(String tag, String srcDcName, String dstDcName) {
-        return convertRouteTblsToRouteInfos(routeDao.getAllActiveRoutesByTagAndDirection(tag, dcService.findByDcName(srcDcName).getId(), dcService.findByDcName(dstDcName).getId()));
+        return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndDirection(tag, dcService.findByDcName(srcDcName).getId(), dcService.findByDcName(dstDcName).getId()));
     }
 
-    private List<RouteInfoModel> convertRouteTblsToRouteInfos(List<RouteTbl> routeTbls) {
+    private List<RouteInfoModel> convertRouteTblsToRouteInfoModels(List<RouteTbl> routeTbls) {
         DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
         Map<Long, String> proxyIdUriMap = proxyService.proxyIdUriMap();
 

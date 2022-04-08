@@ -162,12 +162,12 @@ public class ProxyChainController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/active/proxy/uri/{dcName}", method = RequestMethod.GET)
-    public List<String> getActiveProxyUriByDc(@PathVariable String dcName) {
-        logger.info("[getActiveProxyUriByDc]{}", dcName);
+    public List<String> getActiveProxyUrisByDc(@PathVariable String dcName) {
+        logger.info("[getActiveProxyUrisByDc]{}", dcName);
         try {
             return proxyService.getActiveProxyUrisByDc(dcName);
         } catch (Throwable th) {
-            logger.error("[getActiveProxyUriByDc]:{}", dcName, th);
+            logger.error("[getActiveProxyUrisByDc]:{}", dcName, th);
             return Collections.emptyList();
         }
     }
