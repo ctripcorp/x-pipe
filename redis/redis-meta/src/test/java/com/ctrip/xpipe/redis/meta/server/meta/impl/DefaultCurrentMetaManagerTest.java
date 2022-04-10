@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.meta.server.cluster.SlotManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -138,6 +139,28 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		verify(currentMetaServerMetaManager, never()).dcMetaChange(any());
 
 		verify(currentMetaServerMetaManager, times(1)).routeChanges();
+	}
+
+	@Test
+	public void testRouteChange2() {
+		currentMetaServerMetaManager = spy(currentMetaServerMetaManager);
+
+		when(currentMetaServerMetaManager.allClusters()).thenReturn(Sets.newHashSet(2L));
+
+		ShardMeta shardMeta1 = new ShardMeta().setId("bi_shard1").setDbId(2L);
+		ClusterMeta clusterMeta = new ClusterMeta().setId("bi_cluster").setDcs("jq,fra").setDbId(2L).setType("bi_direction")
+				.addShard(shardMeta1);
+		when(dcMetaCache.getClusterMeta(Mockito.anyLong())).thenReturn(clusterMeta);
+		currentMetaServerMetaManager.addCluster(2L);
+
+		String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
+		RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("fra").setIsPublic(true);
+		when(dcMetaCache.getAllRoutes()).thenReturn(Lists.newArrayList(routeMeta1));
+
+		doNothing().when(currentMetaServerMetaManager).notifyPeerMasterChange(Mockito.anyString(), Mockito.anyLong(), Mockito.anyLong());
+
+		currentMetaServerMetaManager.routeChanges();
+		verify(currentMetaServerMetaManager, times(1)).notifyPeerMasterChange(Mockito.anyString(), Mockito.anyLong(), Mockito.anyLong());
 	}
 
 	@Test

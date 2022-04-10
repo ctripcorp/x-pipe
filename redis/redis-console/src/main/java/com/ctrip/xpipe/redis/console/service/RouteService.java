@@ -36,13 +36,13 @@ public interface RouteService {
 
     boolean existPeerRoutes(String currentDc, String clusterId);
 
-    List<RouteInfoModel> getAllActiveRouteInfos();
+    List<RouteInfoModel> getAllActiveRouteInfoModels();
 
-    List<RouteInfoModel> getAllActiveRouteInfosByTag(String tag);
+    List<RouteInfoModel> getAllActiveRouteInfoModelsByTag(String tag);
 
-    List<RouteInfoModel> getAllActiveRouteInfosByTagAndDirection(String tag, String srcDcName, String dstDcName);
+    List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndDirection(String tag, String srcDcName, String dstDcName);
 
-    RouteInfoModel getRouteInfoById(long routeId);
+    RouteInfoModel getRouteInfoModelById(long routeId);
 
     List<RouteDirectionModel> getAllRouteDirectionModelsByTag(String tag);
 

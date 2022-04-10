@@ -22,7 +22,7 @@ public class RouteInfoController extends AbstractConsoleController {
     public List<RouteInfoModel> getAllActiveRouteInfos() {
         logger.info("[getAllActiveRouteInfos]");
         try {
-            return routeService.getAllActiveRouteInfos();
+            return routeService.getAllActiveRouteInfoModels();
         } catch (Throwable th) {
             logger.error("[getAllActiveRouteInfos]", th);
             return Collections.emptyList();
@@ -33,7 +33,7 @@ public class RouteInfoController extends AbstractConsoleController {
     public RouteInfoModel getRouteInfoById(@PathVariable long routeId) {
         logger.info("[getRouteInfoById] id:{}", routeId);
         try {
-            return routeService.getRouteInfoById(routeId);
+            return routeService.getRouteInfoModelById(routeId);
         } catch (Throwable th) {
             logger.error("[getRouteInfoById id:{}]", routeId, th);
             return null;
@@ -44,7 +44,7 @@ public class RouteInfoController extends AbstractConsoleController {
     public List<RouteInfoModel> getAllActiveRoutesByTagAndDirection(@PathVariable String tag, @PathVariable String srcDcName, @PathVariable String dstDcName) {
         logger.info("[getAllActiveRoutesByTagAndDirection]srcDcName:{}, dstDcName:{}, tag:{}",srcDcName, dstDcName, tag);
         try {
-            return  routeService.getAllActiveRouteInfosByTagAndDirection(tag, srcDcName, dstDcName);
+            return  routeService.getAllActiveRouteInfoModelsByTagAndDirection(tag, srcDcName, dstDcName);
         } catch (Throwable th) {
             logger.error("[getAllActiveRoutesByTagAndDirection]srcDcName:{}, dstDcName:{}, tag:{}",srcDcName, dstDcName, tag, th);
             return Collections.emptyList();
@@ -55,7 +55,7 @@ public class RouteInfoController extends AbstractConsoleController {
     public List<RouteInfoModel> getAllActiveRoutesByTag(@PathVariable String tag) {
         logger.info("[getAllActiveRoutesByTag] tag:{}", tag);
         try {
-            return  routeService.getAllActiveRouteInfosByTag(tag);
+            return  routeService.getAllActiveRouteInfoModelsByTag(tag);
         } catch (Throwable th) {
             logger.error("[getAllActiveRoutesByTag] tag:{}", tag, th);
             return Collections.emptyList();
