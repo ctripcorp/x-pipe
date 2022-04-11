@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteDirectionModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.service.RouteService;
@@ -116,11 +117,20 @@ public class RouteInfoController extends AbstractConsoleController {
         logger.info("[updateRoutes] models:{}", models);
 
         try {
+            if(!existPublicRouteInfoModel(models)) throw new BadRequestException("none public route in this direction");
+
             routeService.updateRoutes(models);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
             logger.error("[updateRoutes] model:{}", models, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
+    }
+
+    private boolean existPublicRouteInfoModel(List<RouteInfoModel> models) {
+        for(RouteInfoModel model : models) {
+            if (model.isPublic()) return true;
+        }
+        return false;
     }
 }

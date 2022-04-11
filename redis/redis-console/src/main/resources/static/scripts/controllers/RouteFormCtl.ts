@@ -82,8 +82,12 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
             RouteService.addRoute($scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
                                         $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
-                    toastr.success("添加成功");
-                    $window.location.href = "/#/route/overview?srcDcName&dstDcName";
+                    if(result.message == 'success' ) {
+                        toastr.success("添加成功");
+                        $window.location.href = "/#/route/overview?srcDcName&dstDcName";
+                    } else {
+                        toastr.error(result.message, "添加失败");
+                    }
                 }, function(result) {
                     toastr.error(AppUtil.errorMsg(result), "添加失败");
                 });
@@ -91,8 +95,12 @@ function RouteFormCtl($scope, $stateParams, $window, toastr, AppUtil, DcService,
             RouteService.updateRoute($scope.route.id, $scope.route.orgName, $scope.route.srcProxies, $scope.route.optionalProxies, $scope.route.dstProxies,
                                         $scope.route.srcDcName, $scope.route.dstDcName, $scope.route.tag, $scope.route.active, $scope.route.public, $scope.route.description)
                 .then(function(result) {
-                    toastr.success("更新成功");
-                    $window.location.href = "/#/route/overview?srcDcName&dstDcName";
+                    if(result.message == 'success' ) {
+                        toastr.success("修改成功");
+                        $window.location.href = "/#/route/overview?srcDcName&dstDcName";
+                    } else {
+                        toastr.error(result.message, "修改失败");
+                    }
                 }, function(result) {
                    toastr.error(AppUtil.errorMsg(result), "更新失败");
                 });
