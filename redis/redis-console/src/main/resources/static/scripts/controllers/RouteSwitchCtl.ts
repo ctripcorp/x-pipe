@@ -53,11 +53,16 @@ function RouteSwitchCtl($scope, $window, RouteService, toastr, AppUtil, NgTableP
     function doSwtichRoute() {
         RouteService.updateRoutes.apply(RouteService, $scope.routes)
         .then(function(result) {
-            $('#doSwitchrConfirm').modal('hide');
-            toastr.success("切换成功");
-            setTimeout(function () {
-                $window.location.href = '/#/route_direction/route';
-            },1000);
+            if(result.message == 'success' ) {
+                toastr.success("切换成功");
+                $('#doSwitchrConfirm').modal('hide');
+                setTimeout(function () {
+                    $window.location.href = '/#/route_direction/route';
+                },1000);
+            } else {
+                toastr.error(result.message, "切换失败");
+            }
+
         }, function(result) {
             toastr.error(AppUtil.errorMsg(result), "切换失败");
         });
