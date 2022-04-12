@@ -81,6 +81,7 @@ CREATE TABLE `CLUSTER_TBL` (
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
   `cluster_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of cluster',
   `cluster_admin_emails` varchar(1024) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
+  `cluster_designated_route_ids` varchar(1024) NOT NULL DEFAULT '' COMMENT 'designated routeIds',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
 
   PRIMARY KEY (`id`),
@@ -312,8 +313,10 @@ CREATE TABLE `route_tbl` (
   `src_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'source proxies ids',
   `dst_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'destination proxies ids',
   `optional_proxy_ids` varchar(128) NOT NULL DEFAULT '' COMMENT 'optional relay proxies, ids separated by whitespace',
+  `is_public` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'public or not, public means all cluster can use',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'active or not',
   `tag` varchar(128) NOT NULL DEFAULT '1' COMMENT 'tag for console or meta',
+  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description for route',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'data changed last time',
   `deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),

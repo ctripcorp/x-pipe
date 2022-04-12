@@ -298,6 +298,17 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         return instance;
     }
 
+    @Test
+    public void testRouteChange() {
+        Mockito.doNothing().when(factory).updateRoutes();
+        prepareData("oy");
+        Mockito.verify(factory, times(1)).updateRoutes();
+        DcMeta future = cloneDcMeta("oy");
+        future.getRoutes().get(0).setIsPublic(false);
+        manager.compare(future);
+        Mockito.verify(factory, times(2)).updateRoutes();
+
+    }
 
 
     protected String getXpipeMetaConfigFile() {

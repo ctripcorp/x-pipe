@@ -186,6 +186,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setStatus(ClusterStatus.Normal.toString());
 		proto.setIsXpipeInterested(true);
 		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
+		proto.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds() == null ? "" : cluster.getClusterDesignatedRouteIds());
 
 		if (clusterType.supportMultiActiveDC()) {
 			proto.setActivedcId(0L);

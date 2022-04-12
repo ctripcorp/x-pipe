@@ -10,4 +10,8 @@ public class OrgUtil {
     public static boolean isDefaultOrg(Integer orgId) {
         return orgId == null || orgId <= 0L;
     }
+
+    public static boolean isDefaultOrg(Long orgId) {
+        return orgId == null || orgId <= 0L;
+    }
 }

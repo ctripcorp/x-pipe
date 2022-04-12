@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.factory;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
@@ -18,7 +17,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -79,7 +77,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
         String routeInfo = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8009";
         local.addRoute(new RouteMeta().setSrcDc(FoundationService.DEFAULT.getDataCenter())
-                .setDstDc("target").setTag(Route.TAG_CONSOLE).setRouteInfo(routeInfo));
+                .setDstDc("target").setTag(Route.TAG_CONSOLE).setRouteInfo(routeInfo).setIsPublic(true));
 
         when(metaCache.getRoutes()).thenReturn(local.getRoutes());
         when(metaCache.getXpipeMeta()).thenReturn(meta);
