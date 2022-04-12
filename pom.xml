@@ -66,7 +66,7 @@
         <netty.boringssl.version>2.0.12.Final</netty.boringssl.version>
         <netty4.version>4.1.28.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
-        <jackson.version>2.10.3</jackson.version>
+        <jackson.version>2.12.6.1</jackson.version>
 
         <soa.version>2.21.17</soa.version>
         <sso.version>0.0.8</sso.version>
