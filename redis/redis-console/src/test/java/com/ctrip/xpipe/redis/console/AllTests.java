@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareReques
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTest;
+import com.ctrip.xpipe.redis.console.controller.consoleportal.RouteInfoControllerTest;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.ExclusiveThreadsForMigrationTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
@@ -210,7 +211,9 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisCheckRuleServiceImplTest.class,
         EmailSentCounterTest.class,
 
-        ClusterTypeUpdateEventListenerTest.class
+        ClusterTypeUpdateEventListenerTest.class,
+
+        RouteInfoControllerTest.class
 })
 public class AllTests {
 

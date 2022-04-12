@@ -175,6 +175,7 @@
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
 				<member name="cluster-admin-emails"/>
+				<member name="cluster-designated-route-ids"/>
 			</readset>
 			<readset name="FULL_WITH_MIGRATION_EVENT">
                 <readset-ref name="FULL"/>
@@ -2209,6 +2210,18 @@
 					]]>
 				</statement>
 			</query>
+			<query name="find-all-active-by-dc" type="SELECT" multiple="true">
+				<param name='dc-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
+					AND <FIELd name='dc-id'/> = ${dc-id}
+					]]>
+				</statement>
+			</query>
 			<query name="find-all-monitor-active" type="SELECT" multiple="true">
 				<statement>
 					<![CDATA[
@@ -2248,24 +2261,28 @@
 				<member name='id'/>
 				<member name="tag"/>
 				<member name="active"/>
+				<member name="is-public"/>
 				<member name='route_org_id'/>
 				<member name="src_dc_id"/>
 				<member name="dst_dc_id"/>
 				<member name="src_proxy_ids"/>
 				<member name="dst_proxy_ids"/>
 				<member name="optional_proxy_ids"/>
+				<member name="description"/>
 			</readset>
 		</readsets>
 		<updatesets>
 			<updateset name="main">
 				<member name="tag"/>
 				<member name="active"/>
+				<member name="is-public"/>
 				<member name='route_org_id'/>
 				<member name="src_dc_id"/>
 				<member name="dst_dc_id"/>
 				<member name="src_proxy_ids"/>
 				<member name="dst_proxy_ids"/>
 				<member name="optional_proxy_ids"/>
+				<member name="description"/>
 			</updateset>
 		</updatesets>
 		<query-defs>
@@ -2276,6 +2293,34 @@
 					FROM <TABLE/>
 					WHERE <FIELD name='deleted'/> = 0
 					AND <FIELD name='active'/> = 1
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-active-by-tag" type="SELECT" multiple="true">
+				<param name='tag'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
+					AND <FIELD name='tag'/> = ${tag}
+					]]>
+				</statement>
+			</query>
+			<query name="find-all-active-by-tag-direction" type="SELECT" multiple="true">
+				<param name='tag'/>
+				<param name="src-dc-id"/>
+				<param name="dst-dc-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					AND <FIELD name='active'/> = 1
+					AND <FIELD name='tag'/> = ${tag}
+					AND <FIELD name='src-dc-id'/> = ${src-dc-id}
+					AND <FIELD name='dst-dc-id'/> = ${dst-dc-id}
 					]]>
 				</statement>
 			</query>

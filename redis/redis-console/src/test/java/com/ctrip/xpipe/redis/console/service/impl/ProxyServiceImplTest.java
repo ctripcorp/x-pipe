@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -49,14 +48,14 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
 
     private static final String SHARD_NAME = "shard";
 
-    private ProxyChain rbChain = new DefaultProxyChain(DC_AWS,CLUSTER_NAME,SHARD_NAME,DC_RB,null);
+    private ProxyChain rbChain = new DefaultProxyChain(DC_AWS, CLUSTER_NAME, SHARD_NAME, DC_RB, null);
 
-    private ProxyChain oyChain = new DefaultProxyChain(DC_AWS,CLUSTER_NAME,SHARD_NAME,DC_RB,null);
+    private ProxyChain oyChain = new DefaultProxyChain(DC_AWS, CLUSTER_NAME, SHARD_NAME, DC_RB, null);
 
     @Before
     public void beforeProxyServiceImplTest() {
         proxy1 = new ProxyModel().setActive(true).setDcName(dcNames[0]).setId(1).setUri("PROXYTCP://127.0.0.1:8080");
-        proxy2 = new ProxyModel().setActive(false).setDcName(dcNames[0]).setId(2).setUri("PROXYTCP://127.0.0.1:8080");
+        proxy2 = new ProxyModel().setActive(false).setDcName(dcNames[0]).setId(2).setUri("PROXYTCP://127.0.0.2:8080");
 
         service.addProxy(proxy1);
         service.addProxy(proxy2);
@@ -108,8 +107,8 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
         service.updateProxy(proxy1);
 
         ProxyModel proxy = null;
-        for(ProxyModel mode : service.getAllProxies()) {
-            if(mode.getId() == proxy1.getId()) {
+        for (ProxyModel mode : service.getAllProxies()) {
+            if (mode.getId() == proxy1.getId()) {
                 proxy = mode;
                 break;
             }
@@ -133,7 +132,7 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
     @Test
     public void testGetActiveProxyTbls() {
         List<ProxyTbl> proxyTbls = service.getActiveProxyTbls();
-        for(ProxyTbl proto : proxyTbls) {
+        for (ProxyTbl proto : proxyTbls) {
             Assert.assertTrue(proto.isActive());
         }
     }
@@ -145,10 +144,31 @@ public class ProxyServiceImplTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testGetProxyChains() {
-        Map<String, List<ProxyChain>> chains =  service.getProxyChains(DC_AWS, CLUSTER_NAME);
+        Map<String, List<ProxyChain>> chains = service.getProxyChains(DC_AWS, CLUSTER_NAME);
         Assert.assertEquals(1, chains.size());
         Assert.assertTrue(chains.containsKey(SHARD_NAME));
         Assert.assertTrue(chains.get(SHARD_NAME).contains(rbChain));
         Assert.assertTrue(chains.get(SHARD_NAME).contains(oyChain));
     }
+
+    @Test
+    public void testGetActiveProxyUrisByDc() {
+        List<String> proxyUris = service.getActiveProxyUrisByDc(dcNames[0]);
+
+        Assert.assertEquals(1, proxyUris.size());
+        Assert.assertEquals(Lists.newArrayList(proxy1.getUri()), proxyUris);
+    }
+
+    @Test
+    public void testProxyIdUriMap () {
+        Map<Long, String> proxyUriMap = service.proxyIdUriMap();
+        Assert.assertEquals(proxy1.getUri(), proxyUriMap.get(proxy1.getId()));
+    }
+
+    @Test
+    public void testProxyUriIdMap () {
+        Map<String, Long> proxyUriIdMap = service.proxyUriIdMap();
+        Assert.assertEquals(Optional.ofNullable(proxy1.getId()), Optional.ofNullable(proxyUriIdMap.get(proxy1.getUri())));
+    }
+
 }

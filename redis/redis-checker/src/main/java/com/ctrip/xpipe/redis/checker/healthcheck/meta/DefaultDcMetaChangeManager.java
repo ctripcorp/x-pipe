@@ -6,10 +6,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -59,7 +56,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         // normal logic
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
-        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future);
+        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
+        dcRouteMetaComparator.compare();
         //change routes
         if(!dcRouteMetaComparator.getAdded().isEmpty()
                 || !dcRouteMetaComparator.getMofified().isEmpty()
