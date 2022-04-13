@@ -81,7 +81,7 @@ public class SentinelCommandTest extends AbstractCommandTest{
 		try {
 			HostPort master = new AbstractSentinelCommand.SentinelMaster(clientPool, scheduled, masterName)
 					.execute()
-					.get();
+					.get().getHostPort();
 			logger.info("[master]{}", master);
 			Assert.assertEquals("127.0.0.1", master.getHost());
 			Assert.assertEquals(6379, master.getPort());

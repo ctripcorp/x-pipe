@@ -77,14 +77,16 @@ public class DefaultHealthCheckEndpointFactory implements HealthCheckEndpointFac
         
         ConcurrentHashMap<String, List<RouteMeta>> newRoutes = new ConcurrentHashMap<>();
         allRoutes.forEach(routeMeta -> {
-            String dst = routeMeta.getDstDc();
-            List<RouteMeta> list =  MapUtils.getOrCreate(newRoutes,  dst, new ObjectFactory<List<RouteMeta>>() {
-                @Override
-                public List<RouteMeta> create() {
-                    return new CopyOnWriteArrayList();
-                }
-            });
-            list.add(routeMeta);
+            if(routeMeta.getIsPublic()) {
+                String dst = routeMeta.getDstDc();
+                List<RouteMeta> list = MapUtils.getOrCreate(newRoutes, dst, new ObjectFactory<List<RouteMeta>>() {
+                    @Override
+                    public List<RouteMeta> create() {
+                        return new CopyOnWriteArrayList();
+                    }
+                });
+                list.add(routeMeta);
+            }
         });
         routes = newRoutes;
         map.forEach((hostPort, endpoint) -> {

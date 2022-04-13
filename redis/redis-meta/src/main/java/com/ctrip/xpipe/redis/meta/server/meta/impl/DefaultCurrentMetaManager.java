@@ -187,7 +187,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.getAllRoutes());
 		if(changedDcs != null && !changedDcs.isEmpty())  {
-			if(clusterMeta.getType().equals(ClusterType.BI_DIRECTION.name())) {
+			if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
 				for (ShardMeta shard : clusterMeta.getShards().values()) {
 					changedDcs.forEach(dcId -> {
 						notifyPeerMasterChange(dcId, clusterMeta.getDbId(), shard.getDbId());
@@ -239,7 +239,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 
-	private synchronized void addCluster(Long clusterDbId) {
+	@VisibleForTesting
+	protected synchronized void addCluster(Long clusterDbId) {
 		if (currentMeta.hasCluster(clusterDbId)) {
 			logger.info("[addCluster][already exist]cluster_{}", clusterDbId);
 			return;
@@ -572,7 +573,8 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		}
 	}
 
-	private void notifyPeerMasterChange(String dcId, Long clusterDbId, Long shardDbId) {
+	@VisibleForTesting
+	protected void notifyPeerMasterChange(String dcId, Long clusterDbId, Long shardDbId) {
 		for(MetaServerStateChangeHandler stateHandler : stateHandlers){
 			try {
 				stateHandler.peerMasterChanged(dcId, clusterDbId, shardDbId);

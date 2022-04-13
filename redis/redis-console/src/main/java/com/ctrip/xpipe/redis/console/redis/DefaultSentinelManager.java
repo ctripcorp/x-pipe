@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractSentinelCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SentinelMasterInstance;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -100,7 +101,7 @@ public class DefaultSentinelManager implements SentinelManager, ShardEventHandle
     }
 
     @Override
-    public Command<HostPort> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
+    public Command<SentinelMasterInstance> getMasterOfMonitor(Sentinel sentinel, String sentinelMonitorName) {
         SimpleObjectPool<NettyClient> clientPool = keyedClientPool
                 .getKeyPool(new DefaultEndPoint(sentinel.getIp(), sentinel.getPort()));
         AbstractSentinelCommand.SentinelMaster sentinelMaster = new AbstractSentinelCommand

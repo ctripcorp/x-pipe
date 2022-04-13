@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class InfoReplicationCommand extends AbstractRedisCommand<RedisInfo> {
 
-    private static final String ROLE_PREFIX = "role";
+    protected static final String ROLE_PREFIX = "role";
 
     public InfoReplicationCommand(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
         super(clientPool, scheduled);
