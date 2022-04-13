@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.sso.UserInfoHolder;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApi4Beacon;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.MigrationController;
@@ -46,7 +47,7 @@ public class XPipeServletInvocableHandlerMethod extends ServletInvocableHandlerM
 
                 EventMonitor.DEFAULT.logEvent(EVENT_TYPE_SERVLET_HANDLER, "Async");
                 DeferredResult<Object> result = new DeferredResult<>(timeout);
-                Command<Object> command = new XPipeHandlerMethodCommand(getBridgedMethod(), getBean(), args);
+                Command<Object> command = new XPipeHandlerMethodCommand(getBridgedMethod(), getBean(), UserInfoHolder.DEFAULT, args);
                 command.execute(executor).addListener(commandFuture -> {
                     if (commandFuture.isSuccess()) {
                         result.setResult(commandFuture.get());
