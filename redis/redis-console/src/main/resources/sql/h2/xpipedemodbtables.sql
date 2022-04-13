@@ -69,6 +69,7 @@ create table CLUSTER_TBL
 	is_xpipe_interested tinyint(1) default 0,
 	cluster_org_id bigint unsigned not null default 0,
     cluster_admin_emails varchar(250) default ' ',
+    cluster_designated_route_ids varchar(1024) not null default '',
     `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
 );
 
@@ -245,8 +246,10 @@ CREATE TABLE `route_tbl` (
   `src_proxy_ids` varchar(128) not null default '',
   `dst_proxy_ids` varchar(128) not null default '',
   `optional_proxy_ids` varchar(128) not null default '',
+  `is_public` tinyint(1) not null default 1,
   `active` tinyint(1) not null default 1,
   `tag` varchar(128) not null default 'META',
+  `description` varchar(1024) NOT NULL DEFAULT '',
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
   `deleted` tinyint(4) not null default 0,
 );

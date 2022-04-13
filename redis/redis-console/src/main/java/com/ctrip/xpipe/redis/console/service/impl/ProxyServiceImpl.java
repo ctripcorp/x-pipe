@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.console.dao.ProxyDao;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.*;
-import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
@@ -21,11 +20,7 @@ import com.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +36,9 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
 
     @Autowired
     private DcService dcService;
+
+    @Autowired
+    private ProxyService proxyService;
 
     @Autowired
     private ProxyChainAnalyzer analyzer;
@@ -76,6 +74,28 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
             return ProxyModel.fromProxyTbl(input, mapper);
         }).collect(Collectors.toList());
         return Lists.newArrayList(clone);
+    }
+
+    @Override
+    public Map<Long, String> proxyIdUriMap(){
+        List<ProxyTbl> allProxies = proxyDao.getAllProxyTbls();
+        Map<Long, String> proxyIdUriMap = new HashMap<>();
+
+        allProxies.forEach((proxy -> {
+            proxyIdUriMap.put(proxy.getId(), proxy.getUri());
+        }));
+        return proxyIdUriMap;
+    }
+
+    @Override
+    public Map<String, Long> proxyUriIdMap(){
+        List<ProxyTbl> allProxies = proxyDao.getAllProxyTbls();
+        Map<String, Long> proxyUriIdMap = new HashMap<>();
+
+        allProxies.forEach((proxy -> {
+            proxyUriIdMap.put(proxy.getUri(), proxy.getId());
+        }));
+        return proxyUriIdMap;
     }
 
     @Override
@@ -169,6 +189,15 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
             result.add(new ProxyInfoModel(model.getHostPort().getHost(), model.getHostPort().getPort(), model.getDcName(), chainNum));
         }
         return result;
+    }
+
+    public List<String> getActiveProxyUrisByDc(String dcName) {
+        List<ProxyTbl> proxies = proxyDao.getActiveProxyTblsByDc(dcService.find(dcName).getId());
+        List<String> proxyUri = new ArrayList<>();
+        proxies.forEach((proxyTbl -> {
+            proxyUri.add(proxyTbl.getUri());
+        }));
+        return proxyUri;
     }
 
     @Override

@@ -107,11 +107,12 @@ public class AdvancedDcMetaServiceTestForRoute extends AbstractConsoleIntegratio
     public void testCombineRouteInfo() {
         List<RouteTbl> routes = Lists.newArrayList();
         routes.add(new RouteTbl().setSrcProxyIds("1,2").setDstProxyIds("4,5,6").setOptionalProxyIds("3")
-                .setSrcDcId(1L).setDstDcId(3L).setTag("console"));
+                .setSrcDcId(1L).setDstDcId(3L).setTag("console").setIsPublic(true));
         List<ProxyTbl> proxies = Lists.newArrayList();
         proxies.addAll(proxyTblMap.values());
         List<RouteMeta> routeMetas = service.combineRouteInfo(routes, proxies, new DcMeta().setId("jq"));
         logger.info("{}", routeMetas.get(0));
         Assert.assertEquals(PROXY1+","+PROXY2+" "+PROXY3+" "+PROXY4+","+PROXY5+","+PROXY6, routeMetas.get(0).getRouteInfo());
+        Assert.assertEquals(true, routeMetas.get(0).getIsPublic());
     }
 }
