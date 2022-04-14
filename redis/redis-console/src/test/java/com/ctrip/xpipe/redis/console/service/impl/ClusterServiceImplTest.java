@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
@@ -287,6 +288,66 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         migrationEventDao.createMigrationEvent(migrationRequest);
 
         Assert.assertEquals(Collections.singleton("cluster101"), clusterService.findMigratingClusterNames());
+    }
+
+    @Test
+    public void testClusterDesignateRouteChange() {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
+
+        //test addClusterDesignateRoute
+        clusterService.addClusterDesignateRoute(clusterName, 1L);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(Sets.newHashSet("1"), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
+
+        clusterService.addClusterDesignateRoute(clusterName, 2L);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(Sets.newHashSet("1", "2"), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
+
+        //test update
+        clusterService.updateClusterDesignateRoute(clusterName, 1L, 3L);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(Sets.newHashSet("2", "3"), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
+
+        clusterService.updateClusterDesignateRoute(clusterName, 3L, 4L);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(Sets.newHashSet("2", "4"), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
+
+        //test deleteClusterDesignateRoute
+        clusterService.deleteClusterDesignateRoute(clusterName, 2L);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(Sets.newHashSet("4"), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
+
+        //test deleteClusterDesignateRoute
+        clusterService.deleteClusterDesignateRoute(clusterName, 4L);
+        clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals(Sets.newHashSet(""), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testDeleteClusterDesignateRouteFail() {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
+
+        try {
+            clusterService.deleteClusterDesignateRoute(clusterName, 1L);
+        } catch (Exception e) {
+            Assert.assertEquals("this cluster has no designated routes!", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testUpdateClusterDesignateRouteFail() {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
+
+        try {
+            clusterService.updateClusterDesignateRoute(clusterName, 1L, 2L);
+        } catch (Exception e) {
+            Assert.assertEquals("this cluster has no designated routes!", e.getMessage());
+            throw e;
+        }
     }
 
     @Override

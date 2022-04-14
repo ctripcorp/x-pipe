@@ -38,6 +38,8 @@ public interface RouteService {
 
     List<RouteInfoModel> getAllActiveRouteInfoModels();
 
+    List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndSrcDcName(String tag, String srcDcName);
+
     List<RouteInfoModel> getAllActiveRouteInfoModelsByTag(String tag);
 
     List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndDirection(String tag, String srcDcName, String dstDcName);

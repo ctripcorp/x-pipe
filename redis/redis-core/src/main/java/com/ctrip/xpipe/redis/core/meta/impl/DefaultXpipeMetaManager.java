@@ -9,10 +9,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
-import com.ctrip.xpipe.redis.core.util.OrgUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Joiner;
 import org.xml.sax.SAXException;
@@ -662,48 +660,66 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		return result;
 	}
 
-	@Override
-	public RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc) {
-
-		logger.debug("[randomRoute]currentDc: {}, tag: {}, orgId: {}, dstDc: {}", currentDc, tag, orgId, dstDc);
-		List<RouteMeta> routes = routes(currentDc, tag);
-		if(routes == null || routes.isEmpty()){
-			return null;
-		}
-		logger.debug("[randomRoute]routes: {}", routes);
-		//for Same dstdc
-		List<RouteMeta> dstDcRoutes = new LinkedList<>();
-		routes.forEach(routeMeta -> {
-			if(routeMeta.getDstDc().equalsIgnoreCase(dstDc)){
-				dstDcRoutes.add(routeMeta);
-			}
-		});
-		if(dstDcRoutes.isEmpty()){
-			logger.debug("[randomRoute]dst dc empty: {}", routes);
-			return null;
-		}
-
-		//for same org id
-		List<RouteMeta> resultsCandidates = new LinkedList<>();
-		dstDcRoutes.forEach(routeMeta -> {
-			if(routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
-				resultsCandidates.add(routeMeta);
-			}
-		});
-
-		if(!resultsCandidates.isEmpty()){
-			return random(resultsCandidates);
-		}
-
-
-		dstDcRoutes.forEach(routeMeta -> {
-			if(routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
-				resultsCandidates.add(routeMeta);
-			}
-		});
-
-		return random(resultsCandidates);
-	}
+//	@Override
+//	public RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc, String clusterDesignatedRouteIds) {
+//
+//		logger.debug("[randomRoute]currentDc: {}, tag: {}, orgId: {}, dstDc: {}", currentDc, tag, orgId, dstDc);
+//		List<RouteMeta> routes = routes(currentDc, tag);
+//		if(routes == null || routes.isEmpty()){
+//			return null;
+//		}
+//		logger.debug("[randomRoute]routes: {}", routes);
+//		//for Same dstdc
+//		List<RouteMeta> dstDcRoutes = new LinkedList<>();
+//		routes.forEach(routeMeta -> {
+//			if(routeMeta.getDstDc().equalsIgnoreCase(dstDc)){
+//				dstDcRoutes.add(routeMeta);
+//			}
+//		});
+//		if(dstDcRoutes.isEmpty()){
+//			logger.debug("[randomRoute]dst dc empty: {}", routes);
+//			return null;
+//		}
+//
+//		List<RouteMeta> resultsCandidates = new LinkedList<>();
+//		//for cluster designated route
+//		Set<Integer> clusterDesiganateRoutes = Sets.newHashSet();
+//		if(!StringUtil.isEmpty(clusterDesignatedRouteIds)) {
+//			Sets.newHashSet(clusterDesignatedRouteIds.split(",")).forEach(id->clusterDesiganateRoutes.add(Integer.valueOf(id.trim())));
+//		}
+//
+//		if(!clusterDesiganateRoutes.isEmpty()) {
+//			dstDcRoutes.forEach(routeMeta -> {
+//				if(clusterDesiganateRoutes.contains(routeMeta.getId())){
+//					resultsCandidates.add(routeMeta);
+//				}
+//			});
+//
+//			if(!resultsCandidates.isEmpty()){
+//				return random(resultsCandidates);
+//			}
+//		}
+//
+//		//for same org id
+//		dstDcRoutes.forEach(routeMeta -> {
+//			if(routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
+//				resultsCandidates.add(routeMeta);
+//			}
+//		});
+//
+//		if(!resultsCandidates.isEmpty()){
+//			return random(resultsCandidates);
+//		}
+//
+//
+//		dstDcRoutes.forEach(routeMeta -> {
+//			if(routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
+//				resultsCandidates.add(routeMeta);
+//			}
+//		});
+//
+//		return random(resultsCandidates);
+//	}
 
 	@Override
 	public List<ClusterMeta> doGetSpecificActiveDcClusters(String currentDc, String clusterActiveDc) {

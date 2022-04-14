@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
@@ -26,6 +27,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -51,6 +53,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private DcClusterShardService dcClusterShardService;
 	@Autowired
 	private DelayService delayService;
+	@Autowired
+	private RouteService routeService;
+	@Autowired
+	private ProxyService proxyService;
 	@Autowired
 	private MetaCache metaCache;
 
@@ -674,4 +680,92 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return parts;
 	}
 
+	//	public List<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String dcName, String clusterName) {
+//		Map<String, List<ProxyChain>> proxyChains = proxyService.getProxyChains(dcName, clusterName);
+//
+////		proxyChains.put(shardId, peerChains);
+//
+//		for(Map.Entry<String, List<ProxyChain>> shardChains : proxyChains.entrySet()) {
+//			List<ProxyChain> peerChains = shardChains.getValue();
+//			List<ProxyChainModel> peerResult = Lists.newArrayListWithCapacity(peerChains.size());
+//			for (ProxyChain chain: peerChains) {
+//				peerResult.add(new ProxyChainModel(chain, chain.getPeerDcId() , backupDcId));
+//			}
+////			result.put(shardChains.getKey(), peerResult);
+//		}
+//
+//	}
+
+	@Override
+	public List<RouteInfoModel> findClusterDesignateRoutesByDcNameAndClusterName(String dcName, String clusterName) {
+		ClusterTbl clusterTbl = find(clusterName);
+		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
+		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) return Collections.emptyList();
+
+		List<RouteInfoModel> result = new ArrayList<>();
+
+		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
+		routeIds.forEach(routeId -> {;
+			RouteInfoModel routeInfoModel = routeService.getRouteInfoModelById(Long.parseLong(routeId));
+			if(routeInfoModel.getSrcDcName().equalsIgnoreCase(dcName)) {
+				result.add(routeInfoModel);
+			}
+		});
+
+		return result;
+	}
+
+	@Override
+	public void addClusterDesignateRoute(String clusterName, long toAddRouteId) {
+		ClusterTbl clusterTbl = find(clusterName);
+		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
+		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) {
+			updateClusterDesignatedRouteIds(clusterTbl.getId(), String.valueOf(toAddRouteId));
+			return;
+		}
+
+		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
+		routeIds.add(String.valueOf(toAddRouteId));
+
+		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, routeIds));
+	}
+
+	@Override
+	public void deleteClusterDesignateRoute(String clusterName, long toDeleteRouteId) {
+		ClusterTbl clusterTbl = find(clusterName);
+		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
+		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) throw new BadRequestException("this cluster has no designated routes!");
+
+		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
+		routeIds.remove(String.valueOf(toDeleteRouteId));
+
+		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, routeIds));
+	}
+
+	@Override
+	public void updateClusterDesignateRoute(String clusterName, long oldRouteId, long newRouteId) {
+		ClusterTbl clusterTbl = find(clusterName);
+		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
+		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) throw new BadRequestException("this cluster has no designated routes!");
+
+		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
+		routeIds.remove(String.valueOf(oldRouteId));
+		routeIds.add(String.valueOf(newRouteId));
+
+		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, routeIds));
+	}
+
+
+	private void updateClusterDesignatedRouteIds(long clusterId, String newClusterDesingnateRoutes) {
+		ClusterTbl proto = new ClusterTbl();
+		proto.setId(clusterId);
+		proto.setClusterDesignatedRouteIds(newClusterDesingnateRoutes);
+
+		queryHandler.handleUpdate(new DalQuery<Integer>() {
+			@Override
+			public Integer doQuery() throws DalException {
+				return dao.updateClusterDesignatedRouteIds(proto, ClusterTblEntity.UPDATESET_FULL);
+			}
+		});
+	}
 }

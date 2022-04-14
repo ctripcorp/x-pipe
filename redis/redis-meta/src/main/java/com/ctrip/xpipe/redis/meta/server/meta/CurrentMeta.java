@@ -11,14 +11,15 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.util.OrgUtil;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.Crc32HashChooseRouteStrategy;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentKeeperShardMeta;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.HashCodeChooseRouteStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -401,9 +402,26 @@ public class CurrentMeta implements Releasable {
 			return clusterType;
 		}
 
-		private RouteMeta chooseRoute(Integer orgId, List<RouteMeta> dstDcRoutes, ChooseRouteStrategy strategy) {
+		private RouteMeta chooseRoute(Integer orgId, List<RouteMeta> dstDcRoutes, ChooseRouteStrategy strategy, String clusterDesignatedRouteIds) {
 			if(dstDcRoutes == null) return null;
 			List<RouteMeta> resultsCandidates = new LinkedList<>();
+
+			Set<Integer> clusterDesiganateRoutes = Sets.newHashSet();
+			if(!StringUtil.isEmpty(clusterDesignatedRouteIds)) {
+				Sets.newHashSet(clusterDesignatedRouteIds.split(",")).forEach(id->clusterDesiganateRoutes.add(Integer.valueOf(id.trim())));
+			}
+
+			if(!clusterDesiganateRoutes.isEmpty()) {
+				dstDcRoutes.forEach(routeMeta -> {
+					if(clusterDesiganateRoutes.contains(routeMeta.getId())){
+						resultsCandidates.add(routeMeta);
+					}
+				});
+
+				if(!resultsCandidates.isEmpty()){
+					return strategy.choose(resultsCandidates);
+				}
+			}
 
 			dstDcRoutes.forEach(routeMeta -> {
 				if(routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
@@ -443,13 +461,13 @@ public class CurrentMeta implements Releasable {
 				if(StringUtil.isEmpty(dcs)) return allRoutes;
 				for (String dcId : dcs.split("\\s*,\\s*")) {
 					if (currentDcId.equalsIgnoreCase(dcId)) continue;
-					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
+					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy(), clusterMeta.getClusterDesignatedRouteIds());
 					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
 				}
 			} else {
 				String dcId = clusterMeta.getActiveDc();
 				if(!currentDcId.equalsIgnoreCase(dcId)) {
-					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy());
+					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy(), clusterMeta.getClusterDesignatedRouteIds());
 					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
 				}
 			}
@@ -500,7 +518,7 @@ public class CurrentMeta implements Releasable {
 
 		public ChooseRouteStrategy getChooseRouteStrategy() {
 			if(chooseRouteStrategy == null) {
-				this.chooseRouteStrategy = new HashCodeChooseRouteStrategy(clusterDbId.hashCode());
+				this.chooseRouteStrategy = new Crc32HashChooseRouteStrategy(clusterId);
 			}
 			return this.chooseRouteStrategy;
 		}

@@ -27,6 +27,7 @@ import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -186,6 +187,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	private void clusterRoutesChange(Long clusterDbId) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
 		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.getAllRoutes());
+
 		if(changedDcs != null && !changedDcs.isEmpty())  {
 			if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
 				for (ShardMeta shard : clusterMeta.getShards().values()) {
@@ -193,6 +195,9 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 						notifyPeerMasterChange(dcId, clusterMeta.getDbId(), shard.getDbId());
 					});
 				}
+			}
+			else if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)){
+				refreshKeeperMaster(clusterMeta);
 			}
 		}
 	}
@@ -208,12 +213,25 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 			logger.error("[unknown cluster type] cluster id: {}, type :{}", future.getId(), future.getType());
 			return false;
 		}
+
+		if(isClusterDesignatedRouteChanged(current.getClusterDesignatedRouteIds(), future.getClusterDesignatedRouteIds()))
+			return true;
+
 		if(clusterType.supportMultiActiveDC()) {
 			//arraylist join ","  
 			return !ObjectUtils.equals(current.getDcs(), future.getDcs());
 		} else {
 			return !ObjectUtils.equals(current.getActiveDc(), future.getActiveDc());
 		}
+	}
+
+	private boolean isClusterDesignatedRouteChanged(String currentDesignatedRoutes, String futureDesignatedRoutes) {
+		if(currentDesignatedRoutes == null && futureDesignatedRoutes == null) return false;
+		if(currentDesignatedRoutes == null || futureDesignatedRoutes == null) return true;
+
+		return Objects.equals(Sets.newHashSet(currentDesignatedRoutes.split(",")), Sets.newHashSet(futureDesignatedRoutes.split(",")));
+
+
 	}
 
 	private void handleClusterChanged(ClusterMetaComparator clusterMetaComparator) {
@@ -384,15 +402,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	@VisibleForTesting
 	protected void routeChanges() {
 		for(Long clusterDbId : allClusters()) {
-			ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
-			ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-			if(ClusterType.ONE_WAY.equals(clusterType)) {
-				if(randomRoute(clusterDbId) != null) {
-					refreshKeeperMaster(clusterMeta);
-				}
-			} else if(ClusterType.BI_DIRECTION.equals(clusterType)) {
-				clusterRoutesChange(clusterMeta.getDbId());
-			}
+			clusterRoutesChange(clusterDbId);
 		}
 	}
 
@@ -426,10 +436,10 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return dcMetaCache.getClusterMeta(clusterDbId);
 	}
 
-	@Override
-	public RouteMeta randomRoute(Long clusterDbId) {
-		return dcMetaCache.randomRoute(clusterDbId);
-	}
+//	@Override
+//	public RouteMeta randomRoute(Long clusterDbId, String dcId) {
+//		return dcMetaCache.randomRoute(clusterDbId);
+//	}
 
 
 	@Override

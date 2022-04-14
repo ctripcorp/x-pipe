@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
+import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -210,6 +211,65 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/cluster/hickwall/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public RetMessage getClusterHickwallUrl(@PathVariable String clusterName) {
         return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
+    }
+
+    @RequestMapping(value = "/cluster/used/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.PUT)
+    public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
+        logger.info("[getClusterUsedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
+        try {
+
+            return null;
+        } catch (Throwable th) {
+            logger.error("[getClusterUsedRoutesByClusterName]  dcName:{}, cluster:{}",dcName, clusterName, th);
+            return Collections.emptyList();
+        }
+    }
+
+    @RequestMapping(value = "/cluster/designated/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public List<RouteInfoModel> getClusterDesignatedRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
+        logger.info("[getClusterDesignatedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
+        try {
+            return clusterService.findClusterDesignateRoutesByDcNameAndClusterName(dcName, clusterName);
+        } catch (Throwable th) {
+            logger.error("[getClusterDesignatedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName, th);
+            return Collections.emptyList();
+        }
+    }
+
+    @RequestMapping(value = "/cluster/designated/routes/cluster/" + CLUSTER_NAME_PATH_VARIABLE + "/route/{routeId}", method = RequestMethod.POST)
+    public RetMessage addClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable long routeId) {
+        logger.info("[addClusterDesignatedRoutesByClusterName] cluster:{}, routeId:{}", clusterName, routeId);
+        try {
+            clusterService.addClusterDesignateRoute(clusterName, routeId);
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.error("[addClusterDesignatedRoutesByClusterName] cluster:{}, routeId:{}", clusterName, routeId, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/cluster/designated/routes/cluster/" + CLUSTER_NAME_PATH_VARIABLE + "/route/{routeId}", method = RequestMethod.DELETE)
+    public RetMessage deleteClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable long routeId) {
+        logger.info("[deleteClusterDesignatedRoutesByClusterName] cluster:{}, routeId:{}", clusterName, routeId);
+        try {
+            clusterService.deleteClusterDesignateRoute(clusterName, routeId);
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.error("[deleteClusterDesignatedRoutesByClusterName] cluster:{}, routeId:{}", clusterName, routeId, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/cluster/designated/routes/cluster/" + CLUSTER_NAME_PATH_VARIABLE + "/route/{oldRouteId}/{newRouteId}", method = RequestMethod.PUT)
+    public RetMessage updateClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable long oldRouteId, @PathVariable long newRouteId) {
+        logger.info("[updateClusterDesignatedRoutesByClusterName] cluster:{}, oldRouteId:{}, newRouteId:{}", clusterName, oldRouteId, newRouteId);
+        try {
+            clusterService.updateClusterDesignateRoute(clusterName, oldRouteId, newRouteId);
+            return RetMessage.createSuccessMessage();
+        } catch (Throwable th) {
+            logger.error("[updateClusterDesignatedRoutesByClusterName] cluster:{},  oldRouteId:{}, newRouteId:{}", clusterName, oldRouteId, newRouteId, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
     }
 
 }

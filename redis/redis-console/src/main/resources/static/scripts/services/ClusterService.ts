@@ -126,6 +126,23 @@ function ClusterService($resource, $q) {
         get_cluster_hickwall: {
             method: 'GET',
             url: '/console/cluster/hickwall/:clusterName'
+        },
+       get_cluster_designated_routes_by_dc_name_and_cluster_name: {
+            method: 'GET',
+            url: '/console/cluster/designated/routes/dc/:dcName/cluster/:clusterName',
+            isArray: true
+        },
+        delete_cluster_designated_routes_by_cluster_name: {
+            method: 'DELETE',
+            url: '/console/cluster/designated/routes/cluster/:clusterName/route/:routeId',
+        },
+        add_cluster_designated_routes_by_cluster_name: {
+            method: 'POST',
+            url: '/console/cluster/designated/routes/cluster/:clusterName/route/:routeId',
+        },
+        update_cluster_designated_routes_by_cluster_name: {
+            method: 'PUT',
+            url: '/console/cluster/designated/routes/cluster/:clusterName/route/:oldRouteId/:newRouteId',
         }
     });
     function getInvolvedOrgs() {
@@ -448,7 +465,64 @@ function ClusterService($resource, $q) {
             });
         return d.promise;
     }
-    
+
+  function getClusterDesignatedRoutesByDcNameAndClusterName(dcName, clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_designated_routes_by_dc_name_and_cluster_name({
+                dcName : dcName,
+                clusterName : clusterName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function deleteClusterDesignatedRoutes(clusterName, routeId) {
+        var d = $q.defer();
+        resource.delete_cluster_designated_routes_by_cluster_name({
+                clusterName : clusterName,
+                routeId : routeId
+             },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function addClusterDesinatedRoutes(clusterName, routeId) {
+        var d = $q.defer();
+        resource.add_cluster_designated_routes_by_cluster_name({
+                clusterName : clusterName,
+                routeId : routeId
+             },{},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function updateClusterDesinatedRoutes(clusterName, oldRouteId, newRouteId) {
+        var d = $q.defer();
+        resource.update_cluster_designated_routes_by_cluster_name({
+                clusterName : clusterName,
+                oldRouteId : oldRouteId,
+                newRouteId : newRouteId
+             },{},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -476,5 +550,9 @@ function ClusterService($resource, $q) {
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
         getClusterHickwallAddr: getClusterHickwallAddr,
+        getClusterDesignatedRoutesByDcNameAndClusterName : getClusterDesignatedRoutesByDcNameAndClusterName,
+        deleteClusterDesignatedRoutes : deleteClusterDesignatedRoutes,
+        addClusterDesinatedRoutes : addClusterDesinatedRoutes,
+        updateClusterDesinatedRoutes : updateClusterDesinatedRoutes
     }
 }

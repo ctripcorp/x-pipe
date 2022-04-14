@@ -37,7 +37,7 @@ public interface CurrentMetaManager extends Observable {
 
 	Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId);
 
-	RouteMeta randomRoute(Long clusterDbId);
+//	RouteMeta randomRoute(Long clusterDbId, String dcId);
 
 	RedisMeta getRedisMaster(Long clusterDbId, Long shardDbId);
 

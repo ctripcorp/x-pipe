@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteDirectionModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.service.RouteService;
+import com.ctrip.xpipe.redis.core.entity.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +39,17 @@ public class RouteInfoController extends AbstractConsoleController {
         } catch (Throwable th) {
             logger.error("[getRouteInfoById id:{}]", routeId, th);
             return null;
+        }
+    }
+
+    @RequestMapping(value = "/route/srcDcName/{srcDcName}", method = RequestMethod.GET)
+    public List<RouteInfoModel> getAllActiveRoutesByTagAndSrcDcName(@PathVariable String srcDcName) {
+        logger.info("[getAllActiveRoutesByTagAndSrcDcName]srcDcName:{}, tag:{}",srcDcName, Route.TAG_META);
+        try {
+            return  routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
+        } catch (Throwable th) {
+            logger.error("[getAllActiveRoutesByTagAndSrcDcName]srcDcName:{}, tag:{}",srcDcName, Route.TAG_META , th);
+            return Collections.emptyList();
         }
     }
 
