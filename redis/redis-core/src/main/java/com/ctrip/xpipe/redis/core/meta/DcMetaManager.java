@@ -19,7 +19,7 @@ public interface DcMetaManager{
 	 * @param clusterId
 	 * @return
 	 */
-	RouteMeta randomRoute(String clusterId);
+//	RouteMeta randomRoute(String clusterId);
 
 	List<RouteMeta> getAllMetaRoutes();
 
@@ -102,7 +102,7 @@ public interface DcMetaManager{
 
 	Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId);
 
-	RouteMeta randomRoute(Long clusterDbId);
+//	RouteMeta randomRoute(Long clusterDbId);
 
 	boolean hasCluster(Long clusterDbId);
 

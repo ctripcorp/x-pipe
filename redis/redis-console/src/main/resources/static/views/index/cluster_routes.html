@@ -1,0 +1,181 @@
+
+<div class="col-md-8 col-md-offset-2">
+    <h3 class="header smaller lighter blue">
+        <a href="/#/cluster_list">Cluster List</a>
+        <span> > </span>
+        <a href="/#/cluster_list?clusterName={{clusterName}}">{{clusterName}}</a>
+        <span> > </span>
+        <span>Cluster Routes</span>
+    </h3>
+    <div>
+        <div style="height:35px">
+            <ul style="float:left" class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+                <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}">
+                    <a ng-click="switchDc(dc)" data-toggle="tab">
+                        {{dc.dcName}}
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content" ng-if="dcs && dcs.length">
+            <div>
+                <div class="panel panel-primary" style="margin-top: 15px;" ng-reapeat="route in routes">
+                    <header class="panel-heading">
+                        <div class="row">
+                            <div class="col-md-6">集群指定路由</div>
+                            <div class="col-md-6 text-right">
+                                <a class="btn btn-primary btn-sm" ng-click="preAddClusterDesignatedRoute()" >增加指定路由</a>
+                            </div>
+                        </div>
+                    </header>
+                    <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+                        <tr ng-repeat="route in $data">
+                            <td data-title="'route_id'" ng-bind="route.id"></td>
+                            <td data-title="'org_name'" filter="{ orgName: 'text'}" sortable="'orgName'" ng-bind="route.orgName"></td>
+                            <td data-title="'public'" class="{{route.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></td>
+                            <td data-title="'src_infos'">
+                                <span>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 0cm;">DcName:</p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 2pt;">{{route.srcDcName}} </p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 0cm;"> Proxies:</p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 2pt;" ng-repeat="proxy in route.srcProxies">{{proxy}}</p>
+                                </span>
+                            </td>
+                            <td data-title="'optional_info'">
+                                <span>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 0cm;" ng-if="route.optionalProxies && route.optionalProxies.length"> Proxies:</p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 2pt;" ng-repeat="proxy in route.optionalProxies">{{proxy}}</p>
+                                </span>
+                            </td>
+                            <td data-title="'dst_proxies'">
+                                <span>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 0cm;">DcName:</p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 2pt;">{{route.dstDcName}} </p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 0pt;"> Proxies:</p>
+                                    <p align="left" style= "margin: 0cm 0cm 0pt 2pt;" ng-repeat="proxy in route.dstProxies">{{proxy}}</p>
+                                </span>
+                            </td>
+                            <td data-title="'操作'">
+                                <a ng-click="preUpdateClusterDesignatedRoute(route.id)" class="btn btn-warning btn-xs" type="button">修改</a>
+                                <p> </p>
+                                <a ng-click="preDeleteDesinatedRoute(route.id)" class="btn btn-danger btn-xs" type="button">删除</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <form class="modal fade form-horizontal" id="addClusterDesignatedRouteModal" tabindex="-1" role="dialog" novalidate
+              ng-submit="addClusterDesignatedRoute()">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header panel-primary">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                        <div class="modal-title">
+                            <span style="">新增集群指定路由</span>
+                        </div>
+                    </div>
+                    <div class="modal-body form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right">
+                                routeId
+                            </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toAddDesignatedRouteId"
+                                        allow_single_deselect=true
+                                        style="width:330px;"
+                                        ng-options="routeId for routeId in allRouteIds"
+                                        ng-required="true"
+                                        ng-changed="routeChanged()"
+                                >
+                                    <option value="toAddDesignatedRouteId"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <!--                        <div class="form-group">-->
+                        <!--                            <label class="col-sm-4 control-label">-->
+                        <!--                                srcDcName-->
+                        <!--                            </label>-->
+                        <!--                            <div class="col-sm-6">-->
+                        <!--                                <select-->
+                        <!--                                        ng-module="toAddDesignatedRoute.dstDcName"-->
+                        <!--                                        allow_single_deselect=true-->
+                        <!--                                        style="width:330px;"-->
+                        <!--                                        ng-disabled="true"-->
+                        <!--                                        ng-options="route for route in toAddDesignatedRoute"-->
+                        <!--                                >-->
+                        <!--                                    <option value="route.dstDcName"></option>-->
+                        <!--                                </select>-->
+                        <!--                            </div>-->
+                        <!--                        </div>-->
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary" >增加</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <form class="modal fade form-horizontal" id="updateClusterDesignatedRouteModal" tabindex="-1" role="dialog" novalidate
+              ng-submit="updateClusterDesignatedRoute()">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header panel-primary">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                                aria-hidden="true">&times;</span></button>
+                        <div class="modal-title">
+                            <span style="">更新集群指定路由</span>
+                        </div>
+                    </div>
+                    <div class="modal-body form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-4 control-label no-padding-right">
+                                routeId
+                            </label>
+                            <div class="col-sm-6">
+                                <select
+                                        ng-model="toAddDesignatedRouteId"
+                                        allow_single_deselect=true
+                                        style="width:330px;"
+                                        ng-options="routeId for routeId in allRouteIds"
+                                        ng-required="true"
+                                        ng-changed="routeChanged()"
+                                >
+                                    <option value="toAddDesignatedRouteId"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <!--                        <div class="form-group">-->
+                        <!--                            <label class="col-sm-4 control-label">-->
+                        <!--                                srcDcName-->
+                        <!--                            </label>-->
+                        <!--                            <div class="col-sm-6">-->
+                        <!--                                <select-->
+                        <!--                                        ng-module="toAddDesignatedRoute.dstDcName"-->
+                        <!--                                        allow_single_deselect=true-->
+                        <!--                                        style="width:330px;"-->
+                        <!--                                        ng-disabled="true"-->
+                        <!--                                        ng-options="route for route in toAddDesignatedRoute"-->
+                        <!--                                >-->
+                        <!--                                    <option value="route.dstDcName"></option>-->
+                        <!--                                </select>-->
+                        <!--                            </div>-->
+                        <!--                        </div>-->
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                            <button type="submit" class="btn btn-primary" >修改</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<xpipeconfirmdialog xpipe-dialog-id="'doDeleteDesinatedRoute'" xpipe-title="'删除集群指定路由'"
+                    xpipe-detail="'您确定要删除该集群的指定路由吗）?'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="deleteDesinatedRoute"></xpipeconfirmdialog>

@@ -5,7 +5,9 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.meta.impl.Crc32HashChooseRouteStrategy;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -334,7 +336,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		biClusterMeta.setOrgId(1);
 		currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
 		route = currentMeta.getClusterRouteByDcId(biClusterDbId,"fq");
-		Assert.assertEquals(route, allroutes.get(biClusterDbId.intValue() % allroutes.size()));
+		Assert.assertEquals(route, allroutes.get(new Crc32HashChooseRouteStrategy(biClusterId).getCode() % allroutes.size()));
 		//try update 	
 		for(int i = 0; i < 10; i++) {
 			dcs = currentMeta.updateClusterRoutes(biClusterMeta, allroutes);
@@ -401,6 +403,42 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		Assert.assertEquals(dcs.get(0), "fq");
 		route = currentMeta.getClusterRouteByDcId(biClusterDbId,"fq");
 		Assert.assertEquals(route, hadOrgIdRoute1);
+	}
+
+	@Test
+	public void testGetClusterDesinatedRoute() {
+		RouteMeta route = currentMeta.getClusterRouteByDcId(clusterDbId, "fq");
+		Assert.assertEquals(route, null);
+
+		clusterMeta.setActiveDc("fq").setBackupDcs("jq,oy");
+
+
+		List<RouteMeta> allroutes = new LinkedList<>();
+
+		RouteMeta noOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(1).setRouteInfo("PROXYTCP://127.0.0.1:1 PROXYTLS://127.0.0.1:2").setIsPublic(false);
+		RouteMeta noOrgIdRoute2 = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(2).setRouteInfo("PROXYTCP://127.0.0.2:2 PROXYTLS://127.0.0.2:2").setIsPublic(true);
+		RouteMeta hadOrgIdRoute = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(3).setOrgId(1).setRouteInfo("PROXYTCP://127.0.0.3:3 PROXYTLS://127.0.0.3:3").setIsPublic(true);
+		RouteMeta hadOrgIdRoute2 = new RouteMeta().setSrcDc("jq").setDstDc("fq").setId(4).setOrgId(1).setRouteInfo("PROXYTCP://127.0.0.4:4 PROXYTLS://127.0.0.4:4").setIsPublic(true);
+		allroutes.add(noOrgIdRoute);
+		allroutes.add(noOrgIdRoute2);
+		allroutes.add(hadOrgIdRoute);
+		allroutes.add(hadOrgIdRoute2);
+
+		clusterMeta.setClusterDesignatedRouteIds("1");
+
+		List<String> dcs = currentMeta.updateClusterRoutes(clusterMeta, allroutes);
+		Assert.assertEquals(dcs.size() , 1);
+		route = currentMeta.getClusterRouteByDcId(clusterDbId,"fq");
+		Assert.assertEquals(route, noOrgIdRoute);
+
+		clusterMeta.setClusterDesignatedRouteIds("2,3");
+		dcs = currentMeta.updateClusterRoutes(clusterMeta, allroutes);
+		Assert.assertEquals(1, dcs.size());
+
+		List<RouteMeta> candidateRoutes = Lists.newArrayList(noOrgIdRoute2, hadOrgIdRoute);
+		route = currentMeta.getClusterRouteByDcId(clusterDbId,"fq");
+		Assert.assertEquals(route, candidateRoutes.get(new Crc32HashChooseRouteStrategy(clusterMeta.getId()).getCode() % candidateRoutes.size()));
+
 	}
 	
 }

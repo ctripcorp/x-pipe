@@ -73,7 +73,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetAllActiveRouteInfos(){
+    public void testGetAllActiveRouteInfoModels(){
         List<RouteInfoModel> allActiveRouteInfos = service.getAllActiveRouteInfoModels();
         allActiveRouteInfos.forEach(routeInfoModel -> logger.info(routeInfoModel.getSrcProxies().toString()));
     }
@@ -120,7 +120,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetRouteInfoById() {
+    public void testGetRouteInfoModelById() {
         RouteInfoModel route = service.getRouteInfoModelById(route1.getId());
 
         Assert.assertEquals(route1.getSrcDcName(), route.getSrcDcName());
@@ -132,7 +132,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetAllActiveRouteInfosByTag() {
+    public void testGetAllActiveRouteInfoModelsByTag() {
         List<RouteInfoModel> routes = service.getAllActiveRouteInfoModelsByTag(Route.TAG_META);
         Assert.assertEquals(1, routes.size());
 
@@ -141,7 +141,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetAllActiveRouteInfosByTagAndDirection() {
+    public void testGetAllActiveRouteInfoModlesByTagAndDirection() {
         List<RouteInfoModel> routes = service.getAllActiveRouteInfoModelsByTagAndDirection(Route.TAG_META, dcNames[1], dcNames[0]);
         Assert.assertEquals(1, routes.size());
 
@@ -157,6 +157,15 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(dcNames[0], routeDirectionModes.get(0).getDestDcName());
         Assert.assertEquals(1, routeDirectionModes.get(0).getActiveRouteNum());
         Assert.assertEquals(1, routeDirectionModes.get(0).getPublicRouteNum());
+    }
+
+    @Test
+    public void testGetAllRouteInfoModelsByTagAndSrcDcName() {
+        List<RouteInfoModel> routes = service.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, dcNames[1]);
+        Assert.assertEquals(1, routes.size());
+
+        routes = service.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, dcNames[0]);
+        Assert.assertEquals(0, routes.size());
     }
 
     @Test

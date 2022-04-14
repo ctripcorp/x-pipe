@@ -129,16 +129,16 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<RouteMeta> routes(String currentDc, String tag) { return read(()->doGetRoutes(currentDc, tag)); }
 	List<RouteMeta> doGetRoutes(String currentDc, String tag);
 
-	default RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc) { return read(()->doGetRandomRoute(currentDc, tag, orgId, dstDc)); }
-	RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc);
+//	default RouteMeta randomRoute(String currentDc, String tag, Integer orgId, String dstDc, String clusterDesignatedRouteIds) { return read(()->doGetRandomRoute(currentDc, tag, orgId, dstDc, clusterDesignatedRouteIds)); }
+//	RouteMeta doGetRandomRoute(String currentDc, String tag, Integer orgId, String dstDc, String clusterDesignatedRouteIds);
 
 	default List<RouteMeta>  metaRoutes(String currentDc){
 		return routes(currentDc, Route.TAG_META);
 	}
 
-	default RouteMeta metaRandomRoutes(String currentDc, Integer orgId, String dstDc){
-		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc);
-	}
+//	default RouteMeta metaRandomRoutes(String currentDc, Integer orgId, String dstDc, String clusterDesignatedRouteIds){
+//		return randomRoute(currentDc, Route.TAG_META, orgId, dstDc, clusterDesignatedRouteIds);
+//	}
 
 	default List<RouteMeta> consoleRoutes(String currentDc) {
 		return routes(currentDc, Route.TAG_CONSOLE);
