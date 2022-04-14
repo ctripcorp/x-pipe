@@ -158,14 +158,14 @@ public class ClusterMetaSynchronizer {
 
     void update() {
         try {
-            long currentDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
+            long futureActiveDcId = dcService.find(DcMetaSynchronizer.currentDcId).getId();
             modified.forEach(metaComparator -> {
                 try {
                     ClusterSyncMetaComparator clusterMetaComparator = (ClusterSyncMetaComparator) metaComparator;
                     ClusterMeta future = clusterMetaComparator.getFuture();
                     ClusterTbl currentClusterTbl = clusterService.find(future.getId());
                     String currentClusterTye = currentClusterTbl.getClusterType();
-                    if (needUpdate(future, currentClusterTbl, currentDcId)) {
+                    if (needUpdate(future, currentClusterTbl, futureActiveDcId)) {
                         if (future.getOrgId() != null && currentClusterTbl.getClusterOrgId() != future.getOrgId()) {
                             currentClusterTbl.setClusterOrgId(future.getOrgId());
                             OrganizationTbl existedOrgTbl = organizationService.getOrganization(future.getOrgId());
@@ -174,7 +174,7 @@ public class ClusterMetaSynchronizer {
                         }
                         currentClusterTbl.setClusterType(future.getType()).setClusterAdminEmails(future.getAdminEmails());
                         if (ClusterType.lookup(future.getType()).supportSingleActiveDC()) {
-                            currentClusterTbl.setActivedcId(currentDcId);
+                            currentClusterTbl.setActivedcId(futureActiveDcId);
                         } else {
                             currentClusterTbl.setActivedcId(0);
                         }
@@ -204,12 +204,16 @@ public class ClusterMetaSynchronizer {
         }
     }
 
-    boolean needUpdate(ClusterMeta future, ClusterTbl current, long currentDcId) {
+    boolean needUpdate(ClusterMeta future, ClusterTbl current, long futureActiveDcId) {
         return !(Objects.equals(current.getClusterName(), future.getId()) &&
                 Objects.equals(current.getClusterOrgId(), Long.valueOf(future.getOrgId())) &&
                 Objects.equals(current.getClusterAdminEmails(), future.getAdminEmails()) &&
                 Objects.equals(current.getClusterType(), future.getType()) &&
-                Objects.equals(current.getActivedcId(), currentDcId));
+                activeDcIdUnChanged(future, current, futureActiveDcId));
+    }
+
+    boolean activeDcIdUnChanged(ClusterMeta future, ClusterTbl current, long futureActiveDcId) {
+        return !ClusterType.lookup(future.getType()).supportSingleActiveDC() || Objects.equals(current.getActivedcId(), futureActiveDcId);
     }
 
 }
