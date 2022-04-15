@@ -37,6 +37,16 @@ public class CtripUserInfoHolder implements UserInfoHolder {
     }
 
     @Override
+    public Object getContext() {
+        return AssertionHolder.getAssertion();
+    }
+
+    @Override
+    public void setContext(Object context) {
+        AssertionHolder.setAssertion((Assertion) context);
+    }
+
+    @Override
     public int getOrder() {
         return HIGHEST_PRECEDENCE;
     }

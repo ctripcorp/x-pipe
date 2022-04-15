@@ -17,6 +17,16 @@ public class DefaultUserInfoHolder implements UserInfoHolder {
     }
 
     @Override
+    public Object getContext() {
+        return new Object();
+    }
+
+    @Override
+    public void setContext(Object context) {
+
+    }
+
+    @Override
     public int getOrder() {
         return LOWEST_PRECEDENCE;
     }
