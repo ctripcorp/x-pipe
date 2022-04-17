@@ -127,6 +127,16 @@ function ClusterService($resource, $q) {
             method: 'GET',
             url: '/console/cluster/hickwall/:clusterName'
         },
+       get_cluster_choose_routes_by_dc_name_and_cluster_name: {
+            method: 'GET',
+            url: '/console/cluster/choose/routes/dc/:dcName/cluster/:clusterName',
+            isArray: true
+        },
+       get_cluster_used_routes_by_dc_name_and_cluster_name: {
+            method: 'GET',
+            url: '/console/cluster/used/routes/dc/:dcName/cluster/:clusterName',
+            isArray: true
+        },
        get_cluster_designated_routes_by_dc_name_and_cluster_name: {
             method: 'GET',
             url: '/console/cluster/designated/routes/dc/:dcName/cluster/:clusterName',
@@ -141,8 +151,8 @@ function ClusterService($resource, $q) {
             url: '/console/cluster/designated/routes/cluster/:clusterName/route/:routeId',
         },
         update_cluster_designated_routes_by_cluster_name: {
-            method: 'PUT',
-            url: '/console/cluster/designated/routes/cluster/:clusterName/route/:oldRouteId/:newRouteId',
+            method: 'POST',
+            url: '/console/cluster/designated/routes/cluster/:clusterName/dc/:srcDcName',
         }
     });
     function getInvolvedOrgs() {
@@ -466,7 +476,37 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-  function getClusterDesignatedRoutesByDcNameAndClusterName(dcName, clusterName) {
+
+
+    function getClusterChooseRoutesByDcNameAndClusterName(dcName, clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_choose_routes_by_dc_name_and_cluster_name({
+                dcName : dcName,
+                clusterName : clusterName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getClusterUsedRoutesByDcNameAndClusterName(dcName, clusterName) {
+        var d = $q.defer();
+        resource.get_cluster_used_routes_by_dc_name_and_cluster_name({
+                dcName : dcName,
+                clusterName : clusterName
+            },
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function getClusterDesignatedRoutesByDcNameAndClusterName(dcName, clusterName) {
         var d = $q.defer();
         resource.get_cluster_designated_routes_by_dc_name_and_cluster_name({
                 dcName : dcName,
@@ -494,7 +534,7 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function addClusterDesinatedRoutes(clusterName, routeId) {
+    function addClusterDesignatedRoutes(clusterName, routeId) {
         var d = $q.defer();
         resource.add_cluster_designated_routes_by_cluster_name({
                 clusterName : clusterName,
@@ -508,13 +548,12 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function updateClusterDesinatedRoutes(clusterName, oldRouteId, newRouteId) {
+    function updateClusterDesignatedRoutes(clusterName, srcDcName, designatedRouteInfoModels) {
         var d = $q.defer();
         resource.update_cluster_designated_routes_by_cluster_name({
                 clusterName : clusterName,
-                oldRouteId : oldRouteId,
-                newRouteId : newRouteId
-             },{},
+                srcDcName : srcDcName
+             }, designatedRouteInfoModels,
             function (result) {
                 d.resolve(result);
             }, function (result) {
@@ -550,9 +589,11 @@ function ClusterService($resource, $q) {
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
         getClusterHickwallAddr: getClusterHickwallAddr,
+        getClusterChooseRoutesByDcNameAndClusterName : getClusterChooseRoutesByDcNameAndClusterName,
+        getClusterUsedRoutesByDcNameAndClusterName : getClusterUsedRoutesByDcNameAndClusterName,
         getClusterDesignatedRoutesByDcNameAndClusterName : getClusterDesignatedRoutesByDcNameAndClusterName,
         deleteClusterDesignatedRoutes : deleteClusterDesignatedRoutes,
-        addClusterDesinatedRoutes : addClusterDesinatedRoutes,
-        updateClusterDesinatedRoutes : updateClusterDesinatedRoutes
+        addClusterDesignatedRoutes : addClusterDesignatedRoutes,
+        updateClusterDesignatedRoutes : updateClusterDesignatedRoutes
     }
 }

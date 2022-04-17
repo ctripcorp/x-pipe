@@ -96,6 +96,9 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndSrcDcName(String tag, String srcDcName) {
+        DcTbl byDcName = dcService.findByDcName(srcDcName);
+        long id = byDcName.getId();
+        List<RouteTbl> result = routeDao.getAllActiveRoutesByTagAndSrcDcId(tag, id);
         return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndSrcDcId(tag, dcService.findByDcName(srcDcName).getId()));
     }
 
@@ -123,7 +126,8 @@ public class RouteServiceImpl implements RouteService {
         return Lists.newArrayList(clone);
     }
 
-    private RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap ) {
+    @Override
+    public RouteInfoModel convertRouteTblToRouteInfoModel(RouteTbl routeTbl, DcIdNameMapper dcIdNameMapper, Map<Long, String> proxyIdUriMap) {
         RouteInfoModel routeInfoModel = new RouteInfoModel();
         if(routeTbl == null) return routeInfoModel;
 

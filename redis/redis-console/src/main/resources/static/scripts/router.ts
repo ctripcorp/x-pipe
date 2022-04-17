@@ -106,9 +106,14 @@ function router($stateProvider, $urlRouterProvider) {
             controller: 'RouteSwitchCtl'
         })
         .state('cluster_routes', {
-            url: '/cluster_routes?clusterName$dcName',
+            url: '/cluster_routes?clusterName&dcName',
             templateUrl: 'views/index/cluster_routes.html',
             controller: 'ClusterRoutesCtl'
+        })
+        .state('cluster_designated_routes_update', {
+        	url: '/cluster_designated_routes_update?clusterName&srcDcName',
+        	templateUrl: 'views/index/cluster_designated_routes_update.html',
+        	controller: 'ClusterDesignatedRoutesUpdateCtl'
         })
         .state('cluster_dc_shard_update', {
         	url: '/cluster_dc_shard_update?clusterName&shardName&currentDcName',
