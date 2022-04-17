@@ -20,10 +20,10 @@
 
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat="routeDirectionInfo in $data">
-                <td data-title="'方向'" >{{routeDirectionInfo.srcDcName}}---->{{routeDirectionInfo.destDcName}}</td>
-
+                <td data-title="'srcDcName'" filter="{srcDcName: 'text'}" sortable="'srcDcName'" ng-bind="routeDirectionInfo.srcDcName"></td>
+                <td>--------></td>
+                <td data-title="'dstDcName'" filter="{destDcName: 'text'}" sortable="'destDcName'" ng-bind="routeDirectionInfo.destDcName"></td>
                 <td data-title="'active_route'" ng-bind="routeDirectionInfo.activeRouteNum"></td>
-                <!--                <td data-title="'public_route'" class="{{route.public == true ? 'glyphicon glyphicon-ok-sign green' : 'glyphicon glyphicon-remove-sign red'}}"></td>-->
                 <td data-title="'public_route'" ng-bind="routeDirectionInfo.publicRouteNum"></td>
                 <td data-title="'操作'">
                     <a type="button" class="btn btn-info btn-xs" href="/#/route/overview?srcDcName={{routeDirectionInfo.srcDcName}}&dstDcName={{routeDirectionInfo.destDcName}}">详情</a>
