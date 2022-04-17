@@ -73,8 +73,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private MetaCache metaCache;
 
 	private static final String SPLITTER = "-";
-	private static final String PROXYTCP = "PROXYTCP://";
-	private static final String PROXYTLS = "PROXYTlS://";
+	private static final String PROXYTCP = "PROXYTCP://%s:80";
+	private static final String PROXYTLS = "PROXYTLS://%s:443";
 
 	private Random random = new Random();
 
@@ -761,7 +761,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		if(organizationTbl != null) {
 			dstDcRoutes.forEach(route -> {
-				if (route.isPublic() && ObjectUtils.equals(route.getOrgName(), cluster.getClusterOrgId())) {
+				if (route.isPublic() && ObjectUtils.equals(route.getOrgName(), organizationTbl.getOrgName())) {
 					resultsCandidates.add(route);
 				}
 			});
@@ -795,6 +795,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 
 		}
+		logger.info("[findClusterUsedRoutesByDcNameAndClusterName] cluster:{}, srcDc:{}, routes:{}", clusterName, srcDcName, result);
 		return result;
 		/*
 		List<RouteTbl> allDcRoutes = routeDao.getAllActiveRoutesByTagAndSrcDcId(Route.TAG_META, dcService.findByDcName(srcDcName).getId());
@@ -817,10 +818,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		 */
 	}
 
-	private RouteInfoModel getRouteInfoModelFromProxyChainModel(List<RouteInfoModel> allDcRoutes, ProxyChainModel proxyChainModel) {
+	@VisibleForTesting
+	protected RouteInfoModel getRouteInfoModelFromProxyChainModel(List<RouteInfoModel> allDcRoutes, ProxyChainModel proxyChainModel) {
 		String srcProxy = getSrcProxy(proxyChainModel);
 		String dstProxy = getDstProxy(proxyChainModel);
-
+		logger.info("getRouteInfoModelFromProxyChainModel[] srcProxy:{}, dstProxy:{}", srcProxy, dstProxy);
 		for(RouteInfoModel route : allDcRoutes) {
 			if(route.getSrcProxies().contains(srcProxy) && route.getDstProxies().contains(dstProxy))
 				return route;
@@ -829,18 +831,22 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private String getSrcProxy(ProxyChainModel proxyChainModel) {
-		String[] result = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getActiveDcTunnel().getTunnelId());
-		return PROXYTCP + result[2];
+		logger.info("[getSrcProxy] backupTunnel:{}", proxyChainModel.getBackupDcTunnel());
+		String[] ips = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getBackupDcTunnel().getTunnelId());
+		String[] results = ips[2].substring(2, ips[2].length()).split(":");
+
+		return String.format(PROXYTCP, results[0]);
 	}
 
 	private String getDstProxy(ProxyChainModel proxyChainModel) {
-		String[] result = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getActiveDcTunnel().getTunnelId());
-		if(proxyChainModel.getOptionalTunnel() == null)
-			result = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getOptionalTunnel().getTunnelId());
+		String[] ips = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getBackupDcTunnel().getTunnelId());
+		if(proxyChainModel.getOptionalTunnel() != null)
+			ips = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getOptionalTunnel().getTunnelId());
 
-		return PROXYTLS + result[3];
+		logger.info("[getdstProxy] tunnel:{}", proxyChainModel.getOptionalTunnel() == null ? proxyChainModel.getBackupDcTunnel() : proxyChainModel.getOptionalTunnel());
+		String[] results = ips[3].substring(3, ips[3].length()).split(":");
+		return String.format(PROXYTLS, results[0]);
 	}
-
 
 	private RouteInfoModel getRouteInfoModelFromProxyChainModel(DcIdNameMapper mapper, Map<Long, String> proxyIdUriMap, List<RouteTbl> allDcRoute, ProxyChainModel proxyChainModel) {
 		long srcProxyId = proxyChainModel.getActiveDcTunnel().getProxyModel().getId();
@@ -875,46 +881,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void addClusterDesignateRoute(String clusterName, long toAddRouteId) {
-		ClusterTbl clusterTbl = find(clusterName);
-		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
-		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) {
-			updateClusterDesignatedRouteIds(clusterTbl.getId(), String.valueOf(toAddRouteId));
-			return;
-		}
-
-		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
-		routeIds.add(String.valueOf(toAddRouteId));
-
-		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, routeIds));
-	}
-
-	@Override
-	public void deleteClusterDesignateRoute(String clusterName, long toDeleteRouteId) {
-		ClusterTbl clusterTbl = find(clusterName);
-		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
-		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) throw new BadRequestException("this cluster has no designated routes!");
-
-		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
-		routeIds.remove(String.valueOf(toDeleteRouteId));
-
-		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, routeIds));
-	}
-
-	@Override
-	public void updateClusterDesignateRoute(String clusterName, long oldRouteId, long newRouteId) {
-		ClusterTbl clusterTbl = find(clusterName);
-		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
-		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) throw new BadRequestException("this cluster has no designated routes!");
-
-		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
-		routeIds.remove(String.valueOf(oldRouteId));
-		routeIds.add(String.valueOf(newRouteId));
-
-		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, routeIds));
-	}
-
-	@Override
 	public void updateClusterDesignateRoute(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes) {
 
 		ClusterTbl clusterTbl = find(clusterName);
@@ -939,8 +905,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, newDesignatedRouteIds));
 	}
 
-
-
 	private void updateClusterDesignatedRouteIds(long clusterId, String newClusterDesingnateRoutes) {
 		ClusterTbl proto = new ClusterTbl();
 		proto.setId(clusterId);
@@ -954,7 +918,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 	}
 
-	class Crc32HashChooseRouteStrategy {
+	 static class Crc32HashChooseRouteStrategy {
 
 		private int hashCode;
 

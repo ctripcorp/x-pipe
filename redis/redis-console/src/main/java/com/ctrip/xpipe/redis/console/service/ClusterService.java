@@ -62,8 +62,5 @@ public interface ClusterService {
 	List<RouteInfoModel> findClusterChooseRoutesByDcNameAndClusterName(String backupDcId, String clusterName);
 	Set<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String backupDcId, String clusterName);
 	List<RouteInfoModel> findClusterDesignateRoutesByDcNameAndClusterName(String dcName, String clusterName);
-	void addClusterDesignateRoute(String clusterName, long toAddRouteId);
-	void deleteClusterDesignateRoute(String clusterName, long toDeleteRouteId);
-	void updateClusterDesignateRoute(String clusterName, long oldRouteId, long newRouteId);
 	void updateClusterDesignateRoute(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes);
 }
