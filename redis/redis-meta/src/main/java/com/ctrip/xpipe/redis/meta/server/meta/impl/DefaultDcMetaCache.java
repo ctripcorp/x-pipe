@@ -257,11 +257,6 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		return dcMetaManager.get().getClusterType(clusterDbId);
 	}
 
-//	@Override
-//	public RouteMeta randomRoute(Long clusterDbId) {
-//		return dcMetaManager.get().randomRoute(clusterDbId);
-//	}
-
 	@Override
 	public List<RouteMeta> getAllRoutes() {
 		return dcMetaManager.get().getAllMetaRoutes();

@@ -31,8 +31,6 @@ public interface DcMetaCache extends Observable {
 
 	ClusterType getClusterType(Long clusterDbId);
 
-//	RouteMeta randomRoute(Long clusterDbId);
-
 	List<RouteMeta> getAllRoutes();
 
 	KeeperContainerMeta getKeeperContainer(KeeperMeta keeperMeta);

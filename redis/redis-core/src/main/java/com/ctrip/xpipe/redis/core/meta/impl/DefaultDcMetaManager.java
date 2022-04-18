@@ -125,15 +125,6 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		return metaManager.getDcClusters(currentDc);
 	}
 
-//	@Override
-//	public RouteMeta randomRoute(String clusterId) {
-//
-//		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
-//		if(clusterMeta == null){
-//			throw new IllegalArgumentException("clusterId not exist:" + clusterId);
-//		}
-//		return metaManager.metaRandomRoutes(currentDc, clusterMeta.getOrgId(), clusterMeta.getActiveDc(), clusterMeta.getClusterDesignatedRouteIds());
-//	}
 
 	@Override
 	public List<RouteMeta> getAllMetaRoutes() {
@@ -313,11 +304,6 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
 		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
 	}
-
-//	@Override
-//	public RouteMeta randomRoute(Long clusterDbId) {
-//		return randomRoute(clusterDbId2Name(clusterDbId));
-//	}
 
 	@Override
 	public boolean hasCluster(Long clusterDbId) {

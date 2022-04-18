@@ -72,12 +72,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private MetaCache metaCache;
 
-	private static final String SPLITTER = "-";
-	private static final String PROXYTCP = "PROXYTCP://%s:80";
-	private static final String PROXYTLS = "PROXYTLS://%s:443";
-
-	private Random random = new Random();
-
 	@Autowired
 	private ClusterDeleteEventFactory clusterDeleteEventFactory;
 
@@ -92,6 +86,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
+
+	private static final String SPLITTER = "-";
+	private static final String PROXYTCP = "PROXYTCP://%s:80";
+	private static final String PROXYTLS = "PROXYTLS://%s:443";
+
+	private Random random = new Random();
 
 	@Override
 	public ClusterTbl find(final String clusterName) {
@@ -797,25 +797,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 		logger.info("[findClusterUsedRoutesByDcNameAndClusterName] cluster:{}, srcDc:{}, routes:{}", clusterName, srcDcName, result);
 		return result;
-		/*
-		List<RouteTbl> allDcRoutes = routeDao.getAllActiveRoutesByTagAndSrcDcId(Route.TAG_META, dcService.findByDcName(srcDcName).getId());
-		DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
-		Map<Long, String> proxyIdUriMap = proxyService.proxyIdUriMap();
-
-		Set<RouteInfoModel> result = new HashSet<>();
-
-		for(Map.Entry<String, List<ProxyChain>> shardChains : proxyChains.entrySet()) {
-			List<ProxyChain> peerChains = shardChains.getValue();
-			for (ProxyChain chain: peerChains) {
-				result.add(getRouteInfoModelFromProxyChainModel(mapper, proxyIdUriMap, allDcRoutes, new ProxyChainModel(chain, chain.getPeerDcId(), srcDcName)));
-			}
-
-		}
-		logger.info("[findClusterUsedRoutesByDcNameAndClusterName]{}", result);
-		result.add(routeService.getRouteInfoModelById(2L));
-		return result;
-
-		 */
 	}
 
 	@VisibleForTesting
@@ -831,7 +812,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private String getSrcProxy(ProxyChainModel proxyChainModel) {
-		logger.info("[getSrcProxy] backupTunnel:{}", proxyChainModel.getBackupDcTunnel());
+		logger.debug("[getSrcProxy] backupTunnel:{}", proxyChainModel.getBackupDcTunnel());
 		String[] ips = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getBackupDcTunnel().getTunnelId());
 		String[] results = ips[2].substring(2, ips[2].length()).split(":");
 
@@ -843,22 +824,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if(proxyChainModel.getOptionalTunnel() != null)
 			ips = StringUtil.splitRemoveEmpty(SPLITTER, proxyChainModel.getOptionalTunnel().getTunnelId());
 
-		logger.info("[getdstProxy] tunnel:{}", proxyChainModel.getOptionalTunnel() == null ? proxyChainModel.getBackupDcTunnel() : proxyChainModel.getOptionalTunnel());
+		logger.debug("[getdstProxy] tunnel:{}", proxyChainModel.getOptionalTunnel() == null ? proxyChainModel.getBackupDcTunnel() : proxyChainModel.getOptionalTunnel());
 		String[] results = ips[3].substring(3, ips[3].length()).split(":");
 		return String.format(PROXYTLS, results[0]);
-	}
-
-	private RouteInfoModel getRouteInfoModelFromProxyChainModel(DcIdNameMapper mapper, Map<Long, String> proxyIdUriMap, List<RouteTbl> allDcRoute, ProxyChainModel proxyChainModel) {
-		long srcProxyId = proxyChainModel.getActiveDcTunnel().getProxyModel().getId();
-		long dstProxyId = proxyChainModel.getBackupDcTunnel().getProxyModel().getId();
-
-		for (RouteTbl route : allDcRoute) {
-			if(route.getSrcProxyIds().contains(String.valueOf(srcProxyId))
-					&& route.getDstProxyIds().contains(String.valueOf(dstProxyId)))
-				return routeService.convertRouteTblToRouteInfoModel(route, mapper, proxyIdUriMap);
-		}
-
-		return null;
 	}
 
 	@Override
@@ -871,7 +839,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(","));
 		routeIds.forEach(routeId -> {;
-			RouteInfoModel routeInfoModel = routeService.getRouteInfoModelById(Long.parseLong(routeId));
+			RouteInfoModel routeInfoModel = routeService.getRouteInfoModelById(Long.parseLong(routeId.trim()));
 			if(routeInfoModel.getSrcDcName().equalsIgnoreCase(dcName)) {
 				result.add(routeInfoModel);
 			}

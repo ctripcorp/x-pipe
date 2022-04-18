@@ -141,7 +141,7 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
     }
 
     @Test
-    public void testGetAllActiveRouteInfoModlesByTagAndDirection() {
+    public void testGetAllActiveRouteInfoModelsByTagAndDirection() {
         List<RouteInfoModel> routes = service.getAllActiveRouteInfoModelsByTagAndDirection(Route.TAG_META, dcNames[1], dcNames[0]);
         Assert.assertEquals(1, routes.size());
 

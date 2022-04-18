@@ -436,12 +436,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		return dcMetaCache.getClusterMeta(clusterDbId);
 	}
 
-//	@Override
-//	public RouteMeta randomRoute(Long clusterDbId, String dcId) {
-//		return dcMetaCache.randomRoute(clusterDbId);
-//	}
-
-
 	@Override
 	public Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId) {
 		return currentMeta.getKeeperMaster(clusterDbId, shardDbId);
