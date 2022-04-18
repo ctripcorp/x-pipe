@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -32,6 +33,8 @@ public interface CurrentMetaManager extends Observable {
 
 	KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId);
 
+	ApplierMeta getApplierActive(Long clusterDbId, Long shardDbId);
+
 	Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId);
 
 	Pair<String, Integer> getApplierMaster(Long clusterDbId, Long shardDbId);
@@ -54,13 +57,21 @@ public interface CurrentMetaManager extends Observable {
 
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
 
+	void setSurviveAppliers(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids);
+
+	GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids);
+
 	boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper);
 
-	boolean watchIfNotWatched(Long clusterDbId, Long shardDbId);
+	boolean watchKeeperIfNotWatched(Long clusterDbId, Long shardDbId);
+
+	boolean watchApplierIfNotWatched(Long clusterDbId, Long shardDbId);
 
 	void setKeeperMaster(Long clusterDbId, Long shardDbId, String addr);
 
 	void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port);
+
+	void setApplierMasterAndNotify(Long clusterDbId, Long shardDbId, String ip, int port, String sids);
 
 	void setCurrentCRDTMaster(Long clusterDbId, Long shardDbId, long gid, String ip, int port);
 

@@ -51,6 +51,8 @@ public interface DcMetaManager{
 
 	List<KeeperMeta> getKeepers(String clusterId, String shardId);
 
+	List<ApplierMeta> getAppliers(String clusterId, String shardId);
+
 	List<RedisMeta> getRedises(String clusterId, String shardId);
 
 	KeeperMeta getKeeperActive(String clusterId, String shardId);
@@ -90,6 +92,10 @@ public interface DcMetaManager{
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
+	Set<String> getDownstreamDcs(String clusterId, String shardId);
+
+	String getUpstreamDc(String dc, String clusterId, String shardId);
+
 	Set<String> getRelatedDcs(String clusterId, String shardId);
 
 	void primaryDcChanged(String clusterId, String shardId, String newPrimaryDc);
@@ -124,6 +130,8 @@ public interface DcMetaManager{
 
 	List<KeeperMeta> getKeepers(Long clusterDbId, Long shardDbId);
 
+	List<ApplierMeta> getAppliers(Long clusterDbId, Long shardDbId);
+
 	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
 
 	KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId);
@@ -150,6 +158,10 @@ public interface DcMetaManager{
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers);
 
 	Set<String> getBackupDcs(Long clusterDbId, Long shardDbId);
+
+	Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId);
+
+	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.multidc;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.Map;
@@ -44,11 +46,20 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 	@Override
 	public void keeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
 
+		if (ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			handleOneWayKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
+		} else if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			handleHeteroKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
+		}
+	}
+
+	private void handleOneWayKeeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
+
 		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
 			logger.info("[keeperActiveElected][current dc backup, do nothing]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, activeKeeper);
 			return;
 		}
-		
+
 		if(activeKeeper == null){
 			return;
 		}
@@ -70,7 +81,33 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 					.getOrCreate(dcInfo.getMetaServerAddress());
 			executors.execute(new BackupDcNotifyTask(metaServerMultiDcService, clusterShard.getKey(), clusterShard.getValue(), activeKeeper));
 		}
+	}
 
+	private void handleHeteroKeeperActiveElected(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
+
+		Set<String> downstreamDcs = dcMetaCache.getDownstreamDcs(clusterDbId, shardDbId);
+		if (CollectionUtils.isEmpty(downstreamDcs)) {
+			logger.info("[keeperActiveElected][current dc doesn't have downstream dc, do nothing]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, activeKeeper);
+			return;
+		}
+
+		if(activeKeeper == null){
+			return;
+		}
+
+		Map<String, DcInfo> dcInfos = metaServerConfig.getDcInofs();
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		for (String downstreamDc : downstreamDcs) {
+			DcInfo dcInfo = dcInfos.get(downstreamDc);
+
+			if (dcInfo == null) {
+				logger.error("[keeperActiveElected][downstream dc, but can not find dcinfo]{}, {}", downstreamDc, dcInfos);
+				continue;
+			}
+			MetaServerMultiDcService metaServerMultiDcService = metaServerMultiDcServiceManager
+					.getOrCreate(dcInfo.getMetaServerAddress());
+			executors.execute(new BackupDcNotifyTask(metaServerMultiDcService, clusterShard.getKey(), clusterShard.getValue(), activeKeeper));
+		}
 	}
 
 	@Override

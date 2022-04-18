@@ -5,6 +5,7 @@ import com.ctrip.xpipe.exception.SIMPLE_RETURN_CODE;
 import com.ctrip.xpipe.exception.SimpleErrorMessage;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -28,6 +29,7 @@ import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -122,6 +124,30 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
+	public String getSids(String clusterId, String shardId, ForwardInfo forwardInfo) {
+		logger.debug("[getSids]{}, {}", clusterId, shardId);
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterShard.getKey(), clusterShard.getValue());
+
+		StringBuilder result = new StringBuilder();
+		if (redises == null) {
+			return result.toString();
+		}
+
+		for (RedisMeta redis : redises) {
+			if (redis.getSid() == null) {
+				continue;
+			}
+			if (result.length() != 0) {
+				result.append(",");
+			}
+			result.append(redis.getSid());
+		}
+
+		return result.toString();
+	}
+
+	@Override
 	public RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo) {
 		logger.debug("[getCurrentMaster]{}, {}", clusterId, shardId);
 		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
@@ -180,7 +206,18 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
-	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
+	public void updateUpstream(String clusterId, String shardId, String ip, int port, String sid, ForwardInfo forwardInfo) {
+
+		long clusterDbId = dcMetaCache.clusterId2DbId(clusterId);
+
+		if (ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			oneWayUpdateUpstream(clusterId, shardId, ip, port);
+		} else if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			heteroUpdateUpstream(clusterId, shardId, ip, port, sid);
+		}
+	}
+
+	private void oneWayUpdateUpstream(String clusterId, String shardId, String ip, int port) {
 
 		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
 		if (!dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())) {
@@ -190,6 +227,23 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		} else {
 			logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterShard.getKey(), clusterShard.getValue(), ip,
 					port);
+		}
+	}
+
+	private void heteroUpdateUpstream(String clusterId, String shardId, String ip, int port, String sid) {
+
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+		List<KeeperMeta> keepers = dcMetaCache.getShardKeepers(clusterShard.getKey(), clusterShard.getValue());
+		if (!CollectionUtils.isEmpty(keepers)) {
+			logger.info("[hetero][keeper][updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
+			currentMetaManager.setKeeperMaster(clusterShard.getKey(), clusterShard.getValue(), ip, port);
+			return;
+		}
+
+		List<ApplierMeta> appliers = dcMetaCache.getShardAppliers(clusterShard.getKey(), clusterShard.getValue());
+		if (!CollectionUtils.isEmpty(appliers)) {
+			logger.info("[hetero][applier][updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
+			currentMetaManager.setApplierMasterAndNotify(clusterShard.getKey(), clusterShard.getValue(), ip, port, sid);
 		}
 	}
 

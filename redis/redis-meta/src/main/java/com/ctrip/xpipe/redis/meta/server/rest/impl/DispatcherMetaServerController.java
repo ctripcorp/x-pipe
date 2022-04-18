@@ -57,10 +57,11 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_CHANGE, method = RequestMethod.PUT)
 	public void upstreamChange(@PathVariable String clusterId, @PathVariable String shardId, 
-			@PathVariable String ip, @PathVariable int port,@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+			@PathVariable String ip, @PathVariable int port, @PathVariable(required = false) String sid,
+		   	@ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
 		
 		logger.debug("[upstreamChange]{},{},{},{}", clusterId, shardId, ip, port);
-		metaServer.updateUpstream(clusterId, shardId, ip, port, forwardInfo);
+		metaServer.updateUpstream(clusterId, shardId, ip, port, sid, forwardInfo);
 	}
 
 	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_UPSTREAM_PEER_CHANGE, method = RequestMethod.PUT)
@@ -93,6 +94,19 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 			@Override
 			public RedisMeta apply(MetaServer metaServer) {
 				return metaServer.getCurrentCRDTMaster(clusterId, shardId, forwardInfo);
+			}
+		}, metaServer);
+	}
+
+	@GetMapping(path = META_SERVER_SERVICE.PATH.GET_SIDS, produces= MediaType.APPLICATION_JSON_VALUE)
+	public DeferredResult<String> getSids(@PathVariable String clusterId, @PathVariable String shardId,
+											   @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+
+		logger.debug("[getSids] {},{}", clusterId, shardId);
+		return createDeferredResult(new Function<MetaServer, String>() {
+			@Override
+			public String apply(MetaServer metaServer) {
+			    return metaServer.getSids(clusterId, shardId, forwardInfo);
 			}
 		}, metaServer);
 	}

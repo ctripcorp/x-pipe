@@ -80,6 +80,11 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<ApplierMeta> getAppliers(String clusterId, String shardId) {
+		return metaManager.getAppliers(currentDc, clusterId, shardId);
+	}
+
+	@Override
 	public List<RedisMeta> getRedises(String clusterId, String shardId) {
 		return metaManager.getRedises(currentDc, clusterId, shardId);
 	}
@@ -234,6 +239,18 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public Set<String> getDownstreamDcs(String clusterId, String shardId) {
+
+		return metaManager.getDownstreamDcs(clusterId, shardId);
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, String clusterId, String shardId) {
+
+	    return metaManager.getUpstreamDc(dc, clusterId, shardId);
+	}
+
+	@Override
 	public Set<String> getRelatedDcs(String clusterId, String shardId) {
 		return metaManager.getRelatedDcs(clusterId, shardId);
 	}
@@ -380,6 +397,12 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
+	public List<ApplierMeta> getAppliers(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getAppliers(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
 	public List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		return getRedises(clusterShard.getKey(), clusterShard.getValue());
@@ -442,6 +465,18 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	public Set<String> getBackupDcs(Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		return getBackupDcs(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getDownstreamDcs(clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getUpstreamDc(dc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override

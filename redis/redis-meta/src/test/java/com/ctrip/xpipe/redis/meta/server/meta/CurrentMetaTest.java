@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.meta;
 
 import com.ctrip.xpipe.api.lifecycle.Releasable;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -29,21 +30,27 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 	
 	private ClusterMeta clusterMeta;
 	private ClusterMeta biClusterMeta;
+	private ClusterMeta heteroClusterMeta;
 	private CurrentMeta currentMeta;
 	
 	private String clusterId, shardId;
 	private Long clusterDbId , shardDbId;
 	private String biClusterId, biShardId;
 	private Long biClusterDbId, bishardDbId;
+	private String heteroClusterId, heteroShardId;
+	private Long heteroClusterDbId, heteroShardDbId;
+
 	private AtomicInteger releaseCount = new AtomicInteger();
 	
 	@Before
 	public void beforeCurrentMetaTest(){
 		clusterMeta = (ClusterMeta) getDcMeta(getDc()).getClusters().values().toArray()[0];
 		biClusterMeta = (ClusterMeta) getDcMeta(getDc()).getClusters().values().toArray()[1];
+		heteroClusterMeta = (ClusterMeta) getDcMeta("fra").getClusters().values().toArray()[1];
 		currentMeta = new CurrentMeta();
 		currentMeta.addCluster(clusterMeta);
 		currentMeta.addCluster(biClusterMeta);
+		currentMeta.addCluster(heteroClusterMeta);
 		List<RouteMeta> routes = getDcMeta(getDc()).getRoutes(); 
 		currentMeta.updateClusterRoutes(biClusterMeta, routes);
 
@@ -56,6 +63,11 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		biShardId = biClusterMeta.getShards().keySet().iterator().next();
 		biClusterDbId = biClusterMeta.getDbId();
 		bishardDbId = biClusterMeta.getShards().get(biShardId).getDbId();
+
+		heteroClusterId = heteroClusterMeta.getId();
+		heteroShardId = heteroClusterMeta.getShards().keySet().iterator().next();
+		heteroClusterDbId = heteroClusterMeta.getDbId();
+		heteroShardDbId = heteroClusterMeta.getShards().get(heteroShardId).getDbId();
 	}
 
 	@Test
@@ -344,7 +356,34 @@ public class CurrentMetaTest extends AbstractMetaServerTest{
 		
 	}
 
-	
+	@Test
+	public void testGetGtidSet() {
+		List<RedisMeta> redises = heteroClusterMeta.getShards().get(heteroShardId).getRedises();
+		GtidSet gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, null);
+		Assert.assertNull(gtidSet);
+
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, null, "t");
+		Assert.assertNull(gtidSet);
+
+		setRedisesGtids(redises);
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, "a1");
+		Assert.assertEquals("a1:1-10:15-20", gtidSet.toString());
+
+		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, heteroShardDbId, redises, "b1");
+		Assert.assertEquals("", gtidSet.toString());
+	}
+
+	private void setRedisesGtids(List<RedisMeta> redises) {
+
+		RedisMeta redis1 = redises.get(0);
+		redis1.setGtid("a1:1-10:15-20,b1:1-8");
+
+		RedisMeta redis2 = redises.get(1);
+		redis2.setGtid("a1:1-10:15-21,b2:1-7");
+
+		redises.add(redis1);
+		redises.add(redis2);
+	}
 }
 	
 		

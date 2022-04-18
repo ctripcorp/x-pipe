@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +25,7 @@ public class DefaultDcKeeperMasterChooserTest extends AbstractDcKeeperMasterChoo
 	}
 	
 	@Test
-	public void testPrimaryAlgorithm(){
+	public void testMasterChooserAlgorithm(){
 		
 		Assert.assertNull(defaultDcKeeperMasterChooser.getKeeperMasterChooserAlgorithm());
 		
@@ -35,11 +36,18 @@ public class DefaultDcKeeperMasterChooserTest extends AbstractDcKeeperMasterChoo
 		Assert.assertTrue(defaultDcKeeperMasterChooser.getKeeperMasterChooserAlgorithm() instanceof PrimaryDcKeeperMasterChooserAlgorithm);
 		
 		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
-		
+		when(dcMetaCache.getClusterType(clusterDbId)).thenReturn(ClusterType.ONE_WAY);
+
 		defaultDcKeeperMasterChooser.chooseKeeperMaster();
 
 		Assert.assertTrue(defaultDcKeeperMasterChooser.getKeeperMasterChooserAlgorithm() instanceof BackupDcKeeperMasterChooserAlgorithm);
-		
+
+		when(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)).thenReturn(false);
+		when(dcMetaCache.getClusterType(clusterDbId)).thenReturn(ClusterType.HETERO);
+
+		defaultDcKeeperMasterChooser.chooseKeeperMaster();
+
+		Assert.assertTrue(defaultDcKeeperMasterChooser.getKeeperMasterChooserAlgorithm() instanceof HeteroDownStreamDcKeeperMasterChooserAlgorithm);
 	}
 	
 }
