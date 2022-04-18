@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.meta.comparator;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import com.google.common.collect.Sets;
 import org.unidal.tuple.Triple;
 
@@ -41,7 +42,7 @@ public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta> {
                 continue;
             }
             if(!currentRouteMeta.getRouteInfo().equalsIgnoreCase(futureRouteMeta.getRouteInfo())
-                    || currentRouteMeta.getIsPublic() != futureRouteMeta.getIsPublic()) {
+                    || !ObjectUtils.equals(currentRouteMeta.getIsPublic(), futureRouteMeta.getIsPublic())) {
                 modified.add(new RouteMetaComparator(currentRouteMeta, futureRouteMeta));
             }
         }
