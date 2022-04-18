@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
+import com.ctrip.xpipe.redis.core.entity.ApplierTransMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.TestZkClient;
@@ -62,6 +64,21 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 		};
 	}
 
+	@Bean
+	public ApplierStateController getApplierStateController(){
+		return new ApplierStateController() {
+
+			@Override
+			public void removeApplier(ApplierTransMeta applierTransMeta) {
+				logger.info("[removeApplier][test do nothing]{}", applierTransMeta);
+			}
+
+			@Override
+			public void addApplier(ApplierTransMeta applierTransMeta) {
+				logger.info("[addApplier][test do nothing]{}", applierTransMeta);
+			}
+		};
+	}
 
 	@Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {

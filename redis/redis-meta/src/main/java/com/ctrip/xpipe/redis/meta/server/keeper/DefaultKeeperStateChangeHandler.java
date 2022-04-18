@@ -3,19 +3,24 @@ package com.ctrip.xpipe.redis.meta.server.keeper;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.ConditionalCommand;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -56,6 +61,9 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	@Autowired
 	private CurrentMetaManager currentMetaManager;
+
+	@Autowired
+	private MultiDcService multiDcService;
 
 	@Override
 	protected void doInitialize() throws Exception {
@@ -108,15 +116,29 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterDbId, keepers, activeKeeperMaster);
 
-		if (!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
+		if (ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId)) && !dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)) {
 			List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
 			logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId,
 					slaves);
 			keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
 					new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors),
-					() -> !dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId), true));
+					() -> ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId))&&
+							!dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId), true));
 		}
-		
+
+		if (ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId))) {
+			List<ApplierMeta> appliers = dcMetaCache.getShardAppliers(clusterDbId, shardDbId);
+			if (appliers != null) {
+			    String sids = multiDcService.getSids(dcMetaCache.getCurrentDc(), clusterDbId,shardDbId);
+			    List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+			    GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
+			    keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
+			    		new ApplierStateChangeJob(appliers, new Pair<>(activeKeeper.getIp(), activeKeeper.getPort()),
+								sids, gtidSet, null, clientPool, scheduled, executors),
+					() -> ClusterType.HETERO.equals(dcMetaCache.getClusterType(clusterDbId)), true));
+			}
+		}
+
 		keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), keeperStateChangeJob);
 	}
 

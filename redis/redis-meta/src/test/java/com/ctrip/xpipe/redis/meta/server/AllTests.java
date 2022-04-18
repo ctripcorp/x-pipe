@@ -14,20 +14,21 @@ import com.ctrip.xpipe.redis.meta.server.dchange.impl.DefaultSentinelManagerTest
 import com.ctrip.xpipe.redis.meta.server.dchange.impl.FirstNewMasterChooserTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMasterTest;
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
-import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
-import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
-import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.DefaultApplierStateChangeHandlerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.appliermaster.impl.DefaultApplierMasterChooserManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.container.DefaultApplierContainerServiceTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.elect.DefaultApplierElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.AbstractClusterShardPeriodicTaskTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.BackupDcKeeperMasterChooserAlgorithmTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.DefaultDcKeeperMasterChooserTest;
-import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.PrimaryDcKeeperMasterChooserAlgorithmTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateControllerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DeleteKeeperCommandTest;
@@ -72,23 +73,31 @@ import org.junit.runners.Suite.SuiteClasses;
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
 	DefaultKeeperElectorManagerTest.class,
+	DefaultApplierElectorManagerTest.class,
 	MultiPathKeeperElectorManagerTest.class,
 	//AddKeeperCommandTest.class,
 	DeleteKeeperCommandTest.class,
 	BackupDcKeeperMasterChooserAlgorithmTest.class,
 	PrimaryDcKeeperMasterChooserAlgorithmTest.class,
+	HeteroDownStreamDcKeeperMasterChooserAlgorithmTest.class,
 	DefaultDcKeeperMasterChooserTest.class,
+	DefaultApplierMasterChooserManagerTest.class,
 	FirstNewMasterChooserTest.class,
 	DefaultOffsetwaiterTest.class,
 	DefaultSlaveOfJobTest.class,
 	DefaultKeeperStateControllerTest.class,
+	DefaultApplierStateControllerTest.class,
 	KeeperStateChangeJobTest.class,
+	ApplierStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
+	DefaultApplierStateChangeHandlerTest.class,
+	RedisGtidCollectJobTest.class,
 	DeferredResponseTest.class,
 	DefaultSentinelManagerTest.class,
 	DefaultDcMetaCacheRefreshTest.class,
 	DefaultChangePrimaryDcActionTest.class,
 	DefaultKeeperManagerTest.class,
+	DefaultApplierManagerTest.class,
 	PeerMasterChooserManagerTest.class,
 	MasterChooserTest.class,
 	CurrentMasterChooseCommandTest.class,
@@ -106,7 +115,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultMasterChooserManagerTest.class,
 	ClusterShardCachedNewMasterChooserTest.class,
 	BecomePrimaryActionTest.class,
-	DefaultKeeperContainerServiceTest.class
+	DefaultKeeperContainerServiceTest.class,
+	DefaultApplierContainerServiceTest.class,
 })
 public class AllTests {
 

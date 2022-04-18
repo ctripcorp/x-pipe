@@ -14,4 +14,5 @@ public interface MultiDcService {
 
 	RedisMeta getPeerMaster(String dcName, Long clusterDbId, Long shardDbId);
 
+	String getSids(String dcName, Long clusterDbId, Long shardDbId);
 }

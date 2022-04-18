@@ -331,6 +331,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
+	public List<ApplierMeta> getShardAppliers(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getAppliers(clusterDbId, shardDbId);
+	}
+
+	@Override
 	public List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId) {
 		return dcMetaManager.get().getRedises(clusterDbId, shardDbId);
 	}
@@ -339,6 +344,17 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public Set<String> getBakupDcs(Long clusterDbId, Long shardDbId) {
 		
 		return dcMetaManager.get().getBackupDcs(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId) {
+
+		return dcMetaManager.get().getDownstreamDcs(clusterDbId, shardDbId);
+	}
+
+	@Override
+	public String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId) {
+	    return dcMetaManager.get().getUpstreamDc(dc, clusterDbId, shardDbId);
 	}
 
 	@Override

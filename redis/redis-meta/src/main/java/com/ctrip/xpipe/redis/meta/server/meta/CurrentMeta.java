@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
@@ -66,8 +67,13 @@ public class CurrentMeta implements Releasable {
 		return getCurrentShardMeta(clusterDbId, shardDbId) != null;
 	}
 
-	public boolean watchIfNotWatched(Long clusterDbId, Long shardDbId) {
-		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+	public boolean watchKeeperIfNotWatched(Long clusterDbId, Long shardDbId) {
+		CurrentShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.watchIfNotWatched();
+	}
+
+	public boolean watchApplierIfNotWatched(Long clusterDbId, Long shardDbId) {
+		CurrentShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.watchIfNotWatched();
 	}
 
@@ -75,9 +81,41 @@ public class CurrentMeta implements Releasable {
 			KeeperMeta activeKeeper) {
 		checkClusterSupportKeeper(clusterDbId);
 
-		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		CurrentKeeperShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
 		currentShardMeta.setSurviveKeepers(surviveKeepers, activeKeeper);
 
+	}
+
+	public void setSurviveAppliers(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers,
+								  ApplierMeta activeApplier) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		currentShardMeta.setSurviveAppliers(surviveAppliers, activeApplier);
+	}
+
+	public GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids){
+
+		checkClusterSupportApplier(clusterDbId);
+		if (StringUtil.isEmpty(sids) || redises == null) {
+			return null;
+		}
+
+		GtidSet result = null;
+		for (RedisMeta redis : redises) {
+			GtidSet gtidSet = new GtidSet(redis.getGtid());
+			result = result == null? gtidSet: result.intersectionGtidSet(gtidSet);
+		}
+		if (result == null) {
+			logger.warn("[getGtidSet] null, cluster_{},shard_{}", clusterDbId, shardDbId);
+			return null;
+		}
+
+		Set<String> uuidSet = new HashSet<>();
+		String[] sidList = sids.split(",");
+		Collections.addAll(uuidSet, sidList);
+
+		return result.filterGtid(uuidSet);
 	}
 
 	public void addResource(Long clusterDbId, Long shardDbId, Releasable releasable) {
@@ -89,52 +127,64 @@ public class CurrentMeta implements Releasable {
 	public List<KeeperMeta> getSurviveKeepers(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportKeeper(clusterDbId);
 
-		//TODO ayq support hetero
-		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		CurrentKeeperShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.getSurviveKeepers();
 	}
 
 	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
-		checkClusterSupportKeeper(clusterDbId);
+		checkClusterSupportApplier(clusterDbId);
 
-		CurrentHeteroShardMeta currentHeteroShardMeta = (CurrentHeteroShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
-		return currentHeteroShardMeta.getApplierShardMeta().getSurviveAppliers();
+		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getSurviveAppliers();
 	}
 
 	public boolean setKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
 		checkClusterSupportKeeper(clusterDbId);
 
-		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		CurrentKeeperShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.setActiveKeeper(keeperMeta);
 	}
 
 	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportKeeper(clusterDbId);
 
-		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		CurrentKeeperShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.getActiveKeeper();
+	}
+
+	public ApplierMeta getApplierActive(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getActiveApplier();
 	}
 
 	public boolean setKeeperMaster(Long clusterDbId, Long shardDbId, Pair<String, Integer> keeperMaster) {
 		checkClusterSupportKeeper(clusterDbId);
 
-		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		CurrentKeeperShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.setKeeperMaster(keeperMaster);
+	}
+
+	public boolean setApplierMaster(Long clusterDbId, Long shardDbId, Pair<String, Integer> applierMaster) {
+		checkClusterSupportApplier(clusterDbId);
+
+		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.setApplierMaster(applierMaster);
 	}
 
 	public Pair<String, Integer> getKeeperMaster(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportKeeper(clusterDbId);
 
-		//TODO ayq support hetero
-		CurrentKeeperShardMeta currentShardMeta = (CurrentKeeperShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		CurrentKeeperShardMeta currentShardMeta = currentKeeperShardMetaOrThrowException(clusterDbId, shardDbId);
 		return currentShardMeta.getKeeperMaster();
 	}
 
 	public Pair<String, Integer> getApplierMaster(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportApplier(clusterDbId);
 
-		CurrentHeteroShardMeta currentShardMeta = (CurrentHeteroShardMeta) getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
-		return currentShardMeta.getApplierShardMeta().getApplierMaster();
+		CurrentApplierShardMeta currentShardMeta = currentApplierShardMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getApplierMaster();
 	}
 
 	public void setCurrentCRDTMaster(Long clusterDbId, Long shardDbId,  RedisMeta peerMaster) {
@@ -157,6 +207,14 @@ public class CurrentMeta implements Releasable {
 			return ((CurrentCRDTShardMeta) currentShardMeta).getCurrentMaster();
 		} else if (currentShardMeta instanceof CurrentKeeperShardMeta) {
 			Pair<String, Integer> master = ((CurrentKeeperShardMeta) currentShardMeta).getKeeperMaster();
+			if (null == master) return null;
+			return new RedisMeta().setIp(master.getKey()).setPort(master.getValue());
+		} else if (currentShardMeta instanceof CurrentHeteroShardMeta) {
+			CurrentHeteroShardMeta currentHeteroShardMeta = ((CurrentHeteroShardMeta) currentShardMeta);
+			Pair<String, Integer> master = currentHeteroShardMeta.getKeeperShardMeta().getKeeperMaster();
+			if (currentHeteroShardMeta.getKeeperShardMeta().getSurviveKeepers().isEmpty()) {
+				master = currentHeteroShardMeta.getApplierShardMeta().getApplierMaster();
+			}
 			if (null == master) return null;
 			return new RedisMeta().setIp(master.getKey()).setPort(master.getValue());
 		}
@@ -275,7 +333,7 @@ public class CurrentMeta implements Releasable {
 					}
 				});
 
-		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+		for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 			currentClusterMeta.addShard(shardMeta);
 		}
 	}
@@ -552,4 +610,17 @@ public class CurrentMeta implements Releasable {
 		return jsonCodec.decode(json, CurrentMeta.class);
 	}
 
+	private CurrentKeeperShardMeta currentKeeperShardMetaOrThrowException(Long clusterDbId, Long shardDbId) {
+		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		if (currentShardMeta instanceof CurrentKeeperShardMeta) {
+			return (CurrentKeeperShardMeta) currentShardMeta;
+		} else {
+			return ((CurrentHeteroShardMeta) currentShardMeta).getKeeperShardMeta();
+		}
+	}
+
+	private CurrentApplierShardMeta currentApplierShardMetaOrThrowException(Long clusterDbId, Long shardDbId) {
+		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
+		return ((CurrentHeteroShardMeta) currentShardMeta).getApplierShardMeta();
+	}
 }

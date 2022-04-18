@@ -18,6 +18,12 @@
 				<redis ip="127.0.0.1" port="8001" />
 			</shard>
 		</cluster>
+		<cluster id="cluster-hetero1" db-id="7" active-dc="jq" backup-dcs="fq" type="hetero">
+			<shard id="shard-hetero1" db-id="2">
+				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7000" active="false" />
+				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7001" active="false" />
+			</shard>
+		</cluster>
 	</dc>
 	<dc id="fq">
 		<zkServer address="127.0.0.1:2281"/>
@@ -52,5 +58,19 @@
 			<route id="1" org-id="0" tag="meta" src-dc="fra" dst-dc="jq" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.8:443,PROXYTLS://127.0.0.11:443"/>
 			<route id="2" org-id="0" tag="meta" src-dc="fra" dst-dc="fq" routeInfo="PROXYTCP://127.0.0.28:80,PROXYTCP://127.0.0.82:80,PROXYTCP://127.0.0.135:80,PROXYTCP://127.0.0.188:80 PROXYTLS://127.0.0.7:443,PROXYTLS://127.0.0.7:443"/>
 		</routes>
+		<cluster id="cluster-hetero1" db-id="7" active-dc="jq" backup-dcs="" type="hetero">
+			<source src-dc="jq" upstream-dc="jq" region="SHANGHAI">
+				<shard id="shard-hetero1" db-id="2">
+					<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7200" active="false" />
+					<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7201" active="false" />
+					<applier id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="9200" active="false" />
+					<applier id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="9201" active="false" />
+				</shard>
+			</source>
+            <shard id="shard1" db-id="3">
+				<redis ip="127.0.0.1" port="8200" />
+				<redis ip="127.0.0.1" port="8201" />
+			</shard>
+		</cluster>
 	</dc>
 </xpipe>

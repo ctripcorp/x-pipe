@@ -27,11 +27,13 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	RedisMeta getCurrentCRDTMaster(String clusterId, String shardId, ForwardInfo forwardInfo);
 
+	String getSids(String clusterId, String shardId, ForwardInfo forwardInfo);
+
 	RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo);
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
-	void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo);
+	void updateUpstream(String clusterId, String shardId, String ip, int port, String sid, ForwardInfo forwardInfo);
 
 	void upstreamPeerChange(String upstreamDcId, String clusterId, String shardId, ForwardInfo forwardInfo);
 

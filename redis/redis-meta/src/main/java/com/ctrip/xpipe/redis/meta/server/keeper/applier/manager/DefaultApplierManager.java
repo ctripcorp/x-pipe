@@ -11,8 +11,10 @@ import com.ctrip.xpipe.command.CausalCommand;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
+import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ExceptionUtils;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.ApplierState;
@@ -24,9 +26,12 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.exception.ApplierStateInCorrectException;
+import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
@@ -64,11 +69,20 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
     @Autowired
     private ApplierStateController applierStateController;
 
+    @Autowired
+    private DcMetaCache dcMetaCache;
+
+    @Autowired
+    private MultiDcService multiDcService;
+
     @Resource(name = AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
 
     @Resource(name = MetaServerContextConfig.CLIENT_POOL)
     private SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool;
+
+    @Resource(name = AbstractSpringConfigContext.CLUSTER_SHARD_ADJUST_EXECUTOR)
+    private KeyedOneThreadMutexableTaskExecutor<Pair<Long, Long>> clusterShardExecutor;
 
     private ExecutorService executors;
 
@@ -328,6 +342,17 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         protected void doCorrect(Long clusterDbId, Long shardDbId, List<ApplierMeta> survivedAppliers) {
             //TODO ayq should stop always false
             //TODO ayq change applier master when jvm restart
+
+            ApplierStateChangeJob job = createApplierStateChangeJob(clusterDbId, shardDbId, survivedAppliers,
+                    currentMetaManager.getApplierMaster(clusterDbId, shardDbId));
+            job.future().addListener(new CommandFutureListener<Void>() {
+                @Override
+                public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
+                    logger.info("[{}][ApplierInfoCorrect]cluster_{}, shard_{}, result: {}",
+                            getClass(), clusterDbId, shardDbId, commandFuture.isSuccess());
+                }
+            });
+            clusterShardExecutor.execute(Pair.from(clusterDbId, shardDbId), job);
         }
     }
 
@@ -364,6 +389,16 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
         private int getMasterPort() {
             return master.getValue();
         }
+    }
+
+    private ApplierStateChangeJob createApplierStateChangeJob(Long clusterDbId, Long shardDbId, List<ApplierMeta> appliers,
+                                                            Pair<String, Integer> master) {
+
+        RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
+        String sids = multiDcService.getSids(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
+        GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
+        return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);
     }
 
     public class BackupApplierInfoChecker extends AbstractApplierInfoChecker {

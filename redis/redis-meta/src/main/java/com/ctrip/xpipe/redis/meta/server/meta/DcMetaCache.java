@@ -45,11 +45,17 @@ public interface DcMetaCache extends Observable {
 
 	Set<String> getBakupDcs(Long clusterDbId, Long shardDbId);
 
+	Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId);
+
+	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 
 	String getPrimaryDc(Long clusterDbId, Long shardDbId);
 
 	List<KeeperMeta> getShardKeepers(Long clusterDbId, Long shardDbId);
+
+	List<ApplierMeta> getShardAppliers(Long clusterDbId, Long shardDbId);
 
 	List<RedisMeta> getShardRedises(Long clusterDbId, Long shardDbId);
 

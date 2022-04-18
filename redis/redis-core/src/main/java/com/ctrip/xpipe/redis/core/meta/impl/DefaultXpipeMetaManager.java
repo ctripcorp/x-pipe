@@ -118,6 +118,53 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
+	public Set<String> doGetDownstreamDcs(String clusterId, String shardId) {
+
+		boolean found = false;
+
+		//TODO ayq why loop
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+			if(clusterMeta == null){
+				continue;
+			}
+
+			found = true;
+
+			if(StringUtil.isEmpty(clusterMeta.getDownstreamDcs())){
+				logger.info("[getDownstreamDcs][downstream dcs empty]{}, {}", dcMeta.getId(), clusterMeta);
+				continue;
+			}
+
+
+			Set<String> downstreamDcs = expandDcs(clusterMeta.getDownstreamDcs());
+			return downstreamDcs;
+		}
+
+		if(found){
+			return new HashSet<>();
+		}
+		throw new MetaException("clusterId " + clusterId + " not found!");
+	}
+
+	@Override
+	public String doGetUpstreamDc(String dc, String clusterId, String shardId) {
+
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+		if (clusterMeta == null) {
+			throw new MetaException("clusterId " + clusterId + " not found!");
+		}
+
+		ShardMeta shardMeta = clusterMeta.findFromAllShards(shardId);
+		if (shardMeta == null || !(shardMeta.parent() instanceof SourceMeta)) {
+			throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
+		}
+
+		return ((SourceMeta)shardMeta.parent()).getUpstreamDc();
+	}
+
+	@Override
 	public Set<String> doGetRelatedDcs(String clusterId, String shardId) {
 		boolean found = false;
 
@@ -214,7 +261,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		if(clusterMeta == null){
 			return null;
 		}
-		return clusterMeta.getShards().get(shardId);
+		return clusterMeta.getAllShards().get(shardId);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -225,12 +272,28 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	protected List<KeeperMeta> getDirectKeepers(String dc, String clusterId, String shardId) {
-		
+
 		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
 		if(shardMeta == null){
 			return null;
 		}
 		return shardMeta.getKeepers();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<ApplierMeta> doGetAppliers(String dc, String clusterId, String shardId) {
+
+		return (List<ApplierMeta>) clone((Serializable) getDirectAppliers(dc, clusterId, shardId));
+	}
+
+	protected List<ApplierMeta> getDirectAppliers(String dc, String clusterId, String shardId) {
+
+		ShardMeta shardMeta = getDirectShardMeta(dc, clusterId, shardId);
+		if(shardMeta == null){
+			return null;
+		}
+		return shardMeta.getAppliers();
 	}
 
 	@SuppressWarnings("unchecked")

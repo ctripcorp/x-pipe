@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateContro
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcNotifier;
 import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
 import com.ctrip.xpipe.redis.meta.server.redis.impl.DefaultRedisStateManager;
+import com.ctrip.xpipe.redis.meta.server.redis.impl.gtid.DefaultRedisGtidCollector;
+import com.ctrip.xpipe.redis.meta.server.redis.impl.gtid.RedisGtidCollector;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.zk.ZkClient;
 import org.springframework.context.annotation.Bean;
@@ -68,5 +70,10 @@ public class Production extends AbstractProfile{
 	@Bean
 	public RedisStateManager getRedisStateManager(){
 		return new DefaultRedisStateManager();
+	}
+
+	@Bean
+	public RedisGtidCollector getRedisGtidCollector(){
+		return new DefaultRedisGtidCollector();
 	}
 }
