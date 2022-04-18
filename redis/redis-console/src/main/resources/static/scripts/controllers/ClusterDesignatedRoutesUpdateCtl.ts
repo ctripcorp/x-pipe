@@ -2,10 +2,9 @@ angular
     .module('index')
     .controller('ClusterDesignatedRoutesUpdateCtl', ClusterDesignatedRoutesUpdateCtl);
 
-ClusterDesignatedRoutesUpdateCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location',
-    'toastr', 'AppUtil', 'ClusterService', 'ShardService', 'HealthCheckService', 'ProxyService', 'RouteService', 'ClusterType', 'NgTableParams'];
+ClusterDesignatedRoutesUpdateCtl.$inject = ['$scope', '$stateParams', '$window', '$location', 'toastr', 'AppUtil', 'ClusterService', 'RouteService'];
 
-function ClusterDesignatedRoutesUpdateCtl($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService, ShardService, HealthCheckService, ProxyService, RouteService,  ClusterType, NgTableParams) {
+function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $location, toastr, AppUtil, ClusterService, RouteService) {
 
     $scope.clusterName = $stateParams.clusterName;
     $scope.currentDcName = $stateParams.srcDcName;

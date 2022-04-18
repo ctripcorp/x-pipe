@@ -92,7 +92,6 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 		
 		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers,
 				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()),
-//				currentMetaManager.randomRoute(clusterDbId, currentMetaManager.getClusterMeta(clusterDbId).getActiveDc()),
 				currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId),
 				keyedObjectPool, 1000, 1, scheduled, executors);
 		try {

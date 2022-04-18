@@ -49,140 +49,6 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Assert.assertEquals(0, routeMetas2.size());
 	}
 
-//	@Test
-//	public void testRandomRoute(){
-//		//for dcBak2 cluster1
-//		ClusterMeta clusterMeta1 = metaManager.getClusterMeta(dcBak2, clusterId1);
-//		Set<RouteMeta> routes = new HashSet<>();
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//			routes.add(routeMeta);
-//			Assert.assertTrue(routeMeta.getId() >= 1 && routeMeta.getId() <=2 );
-//		}
-//		Assert.assertEquals(2, routes.size());
-//
-//		//for dcBak2 cluster2
-//		ClusterMeta clusterMeta2 = metaManager.getClusterMeta(dcBak2, clusterId2);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta2.getOrgId(), clusterMeta2.getActiveDc(), clusterMeta2.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(new Integer(4), routeMeta.getId());
-//		}
-//
-//		//for dcBak1 cluster1
-//		clusterMeta1 = metaManager.getClusterMeta(dcBak1, clusterId1);
-//		RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak1, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//		Assert.assertNull(routeMeta);
-//	}
-
-//	@Test
-//	public void testRandomRouteSwitch() {
-//		metaManager = spy(metaManager);
-//		List<RouteMeta> routeMetas = metaManager.metaRoutes(dcBak2);
-//		Assert.assertEquals(5, routeMetas.size());
-//		routeMetas.sort((o1, o2) -> o1.getId()  - o2.getId());
-//		Assert.assertEquals(Integer.valueOf(1), routeMetas.get(0).getId());
-//		Assert.assertEquals(Integer.valueOf(2), routeMetas.get(1).getId());
-//		Assert.assertEquals(Integer.valueOf(3), routeMetas.get(2).getId());
-//		Assert.assertEquals(Integer.valueOf(4), routeMetas.get(3).getId());
-//		Assert.assertEquals(Integer.valueOf(5), routeMetas.get(4).getId());
-//
-//		routeMetas.get(0).setIsPublic(true);
-//		routeMetas.get(1).setIsPublic(false);
-//		routeMetas.get(2).setIsPublic(false);
-//		routeMetas.get(3).setIsPublic(false);
-//		routeMetas.get(4).setIsPublic(true);
-//		Mockito.when(metaManager.doGetRoutes(dcBak2, Route.TAG_META)).thenReturn(routeMetas);
-//
-//		//for dcBak2 cluster1 orgid=1
-//		ClusterMeta clusterMeta1 = metaManager.getClusterMeta(dcBak2, clusterId1);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(1), routeMeta.getId());
-//		}
-//		//for dcBak2 cluster2 no orgId
-//		ClusterMeta clusterMeta2 = metaManager.getClusterMeta(dcBak2, clusterId2);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta2.getOrgId(), clusterMeta2.getActiveDc(), clusterMeta2.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(5), routeMeta.getId());
-//		}
-//
-//		//route switch
-//		routeMetas.get(0).setIsPublic(false);
-//		routeMetas.get(1).setIsPublic(true);
-//		routeMetas.get(2).setIsPublic(false);
-//		routeMetas.get(3).setIsPublic(true);
-//		routeMetas.get(4).setIsPublic(false);
-//		//for dcBak2 cluster1 orgid=1
-//		clusterMeta1 = metaManager.getClusterMeta(dcBak2, clusterId1);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(2), routeMeta.getId());
-//		}
-//		//for dcBak2 cluster2 no orgId
-//		clusterMeta2 = metaManager.getClusterMeta(dcBak2, clusterId2);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta2.getOrgId(), clusterMeta2.getActiveDc(), clusterMeta2.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(4), routeMeta.getId());
-//		}
-//
-//		//route switch back
-//		routeMetas.get(0).setIsPublic(true);
-//		routeMetas.get(1).setIsPublic(false);
-//		routeMetas.get(2).setIsPublic(false);
-//		routeMetas.get(3).setIsPublic(false);
-//		routeMetas.get(4).setIsPublic(true);
-//		Mockito.when(metaManager.doGetRoutes(dcBak2, Route.TAG_META)).thenReturn(routeMetas);
-//
-//		//for dcBak2 cluster1 orgid=1
-//		clusterMeta1 = metaManager.getClusterMeta(dcBak2, clusterId1);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(1), routeMeta.getId());
-//		}
-//		//for dcBak2 cluster2 no orgId
-//		clusterMeta2 = metaManager.getClusterMeta(dcBak2, clusterId2);
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta2.getOrgId(), clusterMeta2.getActiveDc(), clusterMeta2.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(5), routeMeta.getId());
-//		}
-//	}
-
-//	@Test
-//	public void testRandomRouteWithClusterDesignatedRoutes() {
-//		metaManager = spy(metaManager);
-//		List<RouteMeta> routeMetas = metaManager.metaRoutes(dcBak2);
-//		Assert.assertEquals(5, routeMetas.size());
-//		routeMetas.sort((o1, o2) -> o1.getId()  - o2.getId());
-//		Assert.assertEquals(Integer.valueOf(1), routeMetas.get(0).getId());
-//		Assert.assertEquals(Integer.valueOf(2), routeMetas.get(1).getId());
-//		Assert.assertEquals(Integer.valueOf(3), routeMetas.get(2).getId());
-//		Assert.assertEquals(Integer.valueOf(4), routeMetas.get(3).getId());
-//		Assert.assertEquals(Integer.valueOf(5), routeMetas.get(4).getId());
-//
-//		ClusterMeta clusterMeta1 = metaManager.getClusterMeta(dcBak2, clusterId1);
-//		clusterMeta1.setClusterDesignatedRouteIds("4");
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(4), routeMeta.getId());
-//		}
-//
-//		ClusterMeta clusterMeta2 = metaManager.getClusterMeta(dcBak2, clusterId2);
-//		clusterMeta2.setClusterDesignatedRouteIds("2");
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta2.getOrgId(), clusterMeta2.getActiveDc(), clusterMeta2.getClusterDesignatedRouteIds());
-//			Assert.assertEquals(Integer.valueOf(2), routeMeta.getId());
-//		}
-//
-//		clusterMeta1.setClusterDesignatedRouteIds("3,4,5");
-//		Set<RouteMeta> routes = new HashSet<>();
-//		for(int i=0;i<100;i++){
-//			RouteMeta routeMeta = metaManager.metaRandomRoutes(dcBak2, clusterMeta1.getOrgId(), clusterMeta1.getActiveDc(), clusterMeta1.getClusterDesignatedRouteIds());
-//			Assert.assertTrue(routeMeta.getId() >= 3 && routeMeta.getId() <= 5);
-//			routes.add(routeMeta);
-//		}
-//		Assert.assertEquals(Sets.newHashSet(routeMetas.get(2), routeMetas.get(3), routeMetas.get(4)), routes);
-//	}
-
 	@Test
 	public void testGetSpecificActiveDcClusters(){
 
@@ -199,8 +65,6 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		//empty test
 		List<ClusterMeta> specificActiveDcClusters3 = metaManager.getSpecificActiveDcClusters(dcBak2, "empty");
 		Assert.assertEquals(0, specificActiveDcClusters3.size());
-
-
 	}
 
 	@Test
@@ -323,8 +187,6 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Assert.assertFalse(metaManager.hasShard(dc, randomString(), shardId));
 
 		Assert.assertFalse(metaManager.hasShard(randomString(), clusterId1, shardId));
-
-
 	}
 
 	@Test
