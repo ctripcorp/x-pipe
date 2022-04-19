@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.store;
+package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
