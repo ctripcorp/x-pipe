@@ -733,7 +733,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}
 
 		logger.info("[findClusterChooseRoutesByDcNameAndClusterName]: chooseRoute:{}", result);
-		return result;
+		return result.stream().sorted(Comparator.comparing(RouteInfoModel::getDstDcName).thenComparing(RouteInfoModel::getId)).collect(Collectors.toList());
 	}
 
 	private RouteInfoModel chooseRoute(List<RouteInfoModel> dstDcRoutes, ClusterTbl cluster, OrganizationTbl organizationTbl, Crc32HashChooseRouteStrategy chooseRouteStrategy) {
@@ -782,7 +782,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public Set<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String srcDcName, String clusterName) {
+	public List<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String srcDcName, String clusterName) {
 		Map<String, List<ProxyChain>> proxyChains = proxyService.getProxyChains(srcDcName, clusterName);
 
 		List<RouteInfoModel> allDcRoutes = routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
@@ -795,8 +795,17 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 
 		}
+		if(!allDcRoutes.isEmpty()) {
+			result.add(allDcRoutes.get(3));
+			result.add(allDcRoutes.get(1));
+			result.add(allDcRoutes.get(0));
+			result.add(allDcRoutes.get(7));
+			result.add(allDcRoutes.get(4));
+			result.add(allDcRoutes.get(3));
+			result.add(allDcRoutes.get(5));
+		}
 		logger.info("[findClusterUsedRoutesByDcNameAndClusterName] cluster:{}, srcDc:{}, routes:{}", clusterName, srcDcName, result);
-		return result;
+		return result.stream().sorted(Comparator.comparing(RouteInfoModel::getDstDcName).thenComparing(RouteInfoModel::getId)).collect(Collectors.toList());
 	}
 
 	@VisibleForTesting
@@ -845,7 +854,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 		logger.info("[findClusterDesignateRoutesByDcNameAndClusterName]{}", result);
-		return result;
+		return result.stream().sorted(Comparator.comparing(RouteInfoModel::getDstDcName).thenComparing(RouteInfoModel::getId)).collect(Collectors.toList());
 	}
 
 	@Override

@@ -60,7 +60,7 @@ public interface ClusterService {
 	List<Set<String>> divideClusters(int parts);
 
 	List<RouteInfoModel> findClusterChooseRoutesByDcNameAndClusterName(String backupDcId, String clusterName);
-	Set<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String backupDcId, String clusterName);
+	List<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String backupDcId, String clusterName);
 	List<RouteInfoModel> findClusterDesignateRoutesByDcNameAndClusterName(String dcName, String clusterName);
 	void updateClusterDesignateRoute(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes);
 }

@@ -225,13 +225,13 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/cluster/used/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public Set<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
+    public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
         logger.info("[getClusterUsedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
         try {
             return clusterService.findClusterUsedRoutesByDcNameAndClusterName(dcName, clusterName);
         } catch (Throwable th) {
             logger.error("[getClusterUsedRoutesByClusterName]  dcName:{}, cluster:{}",dcName, clusterName, th);
-            return Collections.emptySet();
+            return Collections.emptyList();
         }
     }
 
