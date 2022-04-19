@@ -795,15 +795,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 
 		}
-		if(!allDcRoutes.isEmpty()) {
-			result.add(allDcRoutes.get(3));
-			result.add(allDcRoutes.get(1));
-			result.add(allDcRoutes.get(0));
-			result.add(allDcRoutes.get(7));
-			result.add(allDcRoutes.get(4));
-			result.add(allDcRoutes.get(3));
-			result.add(allDcRoutes.get(5));
-		}
+
 		logger.info("[findClusterUsedRoutesByDcNameAndClusterName] cluster:{}, srcDc:{}, routes:{}", clusterName, srcDcName, result);
 		return result.stream().sorted(Comparator.comparing(RouteInfoModel::getDstDcName).thenComparing(RouteInfoModel::getId)).collect(Collectors.toList());
 	}
