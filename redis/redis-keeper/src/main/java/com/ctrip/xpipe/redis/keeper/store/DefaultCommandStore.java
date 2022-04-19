@@ -6,7 +6,9 @@ import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
+import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -14,9 +16,7 @@ import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -50,7 +50,11 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 
 	private final IntSupplier maxTimeSecondKeeperCmdFileAfterModified;
 
-	private final FilenameFilter fileFilter;
+	private final FilenameFilter cmdFileFilter;
+
+	private final FilenameFilter idxFileFilter;
+
+	private final FilenameFilter allFileFilter;
 
 	private final ConcurrentMap<CommandReader, Boolean> readers = new ConcurrentHashMap<>();
 
@@ -67,6 +71,10 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 	private CommandReaderWriterFactory<OffsetReplicationProgress> cmdReaderWriterFactory;
 
 	private CommandWriter cmdWriter;
+
+	private List<CommandFileOffsetGtidIndex> cmdIndexList = new LinkedList<>();
+
+	private static final String INDEX_FILE_PREFIX = "idx_";
 
 	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory<OffsetReplicationProgress> cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
 		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor);
@@ -86,8 +94,10 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 		this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;
 		this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
-		
-		fileFilter = new PrefixFileFilter(fileNamePrefix);
+
+		cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
+		idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
+		allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
 		long currentStartOffset = findMaxStartOffset();
 		File currentFile = fileForStartOffset(currentStartOffset);
@@ -96,6 +106,26 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 		cmdWriter = cmdReaderWriterFactory.createCmdWriter(cmdFileCtx, this, maxFileSize, delayTraceLogger);
 
 		offsetNotifier = new OffsetNotifier(cmdFileCtx.totalLength() - 1);
+		intiCmdFileIndex();
+	}
+
+	private void intiCmdFileIndex() {
+		File[] files = allIndexFiles();
+		for (File idxFile: files) {
+			String cmdFileName = idxFile.getName().substring(INDEX_FILE_PREFIX.length());
+			File cmdFile = new File(baseDir, cmdFileName);
+			if (!cmdFile.exists()) {
+				logger.info("[intiCmdFileIndex][{}] skip for no cmd file", idxFile);
+				continue;
+			}
+
+			FileUtils.readFileAsStringLineByLine(idxFile, idxStr -> {
+				CommandFileOffsetGtidIndex idx = CommandFileOffsetGtidIndex.createFromRawString(idxStr, cmdFile);
+				if (null != idx) this.cmdIndexList.add(idx);
+			});
+		}
+
+		Collections.sort(cmdIndexList);
 	}
 
 	private File fileForStartOffset(long startOffset) {
@@ -105,7 +135,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 	private long findMaxStartOffset() {
 		
 		long maxStartOffset = 0;
-		File[] files = allFiles();
+		File[] files = allCmdFiles();
 		if (files != null) {
 			for (File file : files) {
 				long startOffset = extractStartOffset(file);
@@ -117,12 +147,43 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 		return maxStartOffset;
 	}
 
-	private File[] allFiles() {
-		File []files = baseDir.listFiles((FilenameFilter) fileFilter);
+	private File[] allCmdFiles() {
+		File []files = baseDir.listFiles(cmdFileFilter);
 		if(files == null){
 			files = new File[0];
 		}
 		return files;
+	}
+
+	private File[] allIndexFiles() {
+		File []files = baseDir.listFiles(idxFileFilter);
+		if(files == null){
+			files = new File[0];
+		}
+		return files;
+	}
+
+	private File[] allFiles() {
+		File []files = baseDir.listFiles(allFileFilter);
+		if(files == null){
+			files = new File[0];
+		}
+		return files;
+	}
+
+	private boolean delCmdFile(File cmdFile) {
+		File idxFile = new File(baseDir, INDEX_FILE_PREFIX + cmdFile.getName());
+		if (idxFile.exists()) {
+			if (!idxFile.delete()) {
+				logger.warn("[delCmdFile][{}] del idx file fail", idxFile);
+			}
+			// TODO: addLock
+			this.cmdIndexList = cmdIndexList.stream()
+					.filter(index -> !index.getFile().equals(cmdFile))
+					.collect(Collectors.toCollection(LinkedList::new));
+		}
+
+		return cmdFile.delete();
 	}
 
 	private long extractStartOffset(File file) {
@@ -167,7 +228,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 	}
 
 	public CommandFile findFileForOffset(long targetStartOffset) throws IOException {
-		File[] files = baseDir.listFiles((FilenameFilter) fileFilter);
+		File[] files = baseDir.listFiles(cmdFileFilter);
 		if (files != null) {
 			for (File file : files) {
 				long startOffset = extractStartOffset(file);
@@ -347,7 +408,7 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 	public long lowestAvailableOffset() {
 		
 		long minCmdOffset = Long.MAX_VALUE; // start from zero
-		File[] files = allFiles();
+		File[] files = allCmdFiles();
 
 		if (files == null || files.length == 0) {
 			logger.info("[minCmdKeeperOffset][no cmd files][start offset 0]");
@@ -409,12 +470,12 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 			timeoutGuarantees();
 			finishGuarantees();
 
-			for (File cmdFile : allFiles()) {
+			for (File cmdFile : allCmdFiles()) {
 				long fileStartOffset = extractStartOffset(cmdFile);
 				if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
 						cmdFile.lastModified())) {
 					logger.info("[GC] delete command file {}", cmdFile);
-					cmdFile.delete();
+					delCmdFile(cmdFile);
 				}
 			}
 		} finally {
@@ -454,6 +515,11 @@ public class DefaultCommandStore extends AbstractStore implements CommandStore<O
 			return false;
 		}
 		return true;
+	}
+
+	@VisibleForTesting
+	protected List<CommandFileOffsetGtidIndex> getIndexList() {
+		return cmdIndexList;
 	}
 	
 }
