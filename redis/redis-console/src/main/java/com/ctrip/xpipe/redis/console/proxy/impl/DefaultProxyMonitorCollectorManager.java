@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
 import com.ctrip.xpipe.redis.console.proxy.Ruler;
 import com.ctrip.xpipe.redis.console.service.ProxyService;
-import com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -70,7 +69,7 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
         return MapUtils.getOrCreate(proxySamples, proxyModel, new ObjectFactory<ProxyMonitorCollector>() {
             @Override
             public ProxyMonitorCollector create() {
-                logger.info("[create proxy monitor collector] {}", proxyModel);
+                logger.info("[create proxy monitor collector] {}, time interval:{}", proxyModel, consoleConfig.getProxyInfoCollectInterval());
                 ProxyMonitorCollector result = new DefaultProxyMonitorCollector(
                         scheduled, keyedObjectPool, proxyModel,
                         ()->consoleConfig.getProxyInfoCollectInterval()

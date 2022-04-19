@@ -4,7 +4,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
@@ -135,6 +134,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 			clusterMeta.setDbId(clusterInfo.getId());
 			clusterMeta.setType(clusterInfo.getClusterType());
 			clusterMeta.setActiveRedisCheckRules(dcClusterInfo.getActiveRedisCheckRules());
+			clusterMeta.setClusterDesignatedRouteIds(clusterInfo.getClusterDesignatedRouteIds());
 			clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 
 			for (DcTbl dc : clusterRelatedDc) {
