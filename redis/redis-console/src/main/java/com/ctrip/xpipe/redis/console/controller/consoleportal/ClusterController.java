@@ -251,7 +251,7 @@ public class ClusterController extends AbstractConsoleController {
                                                                  @RequestBody(required = false) List<RouteInfoModel> newDesignatedRoutes) {
         logger.info("[updateClusterDesignatedRoutesByClusterName] cluster:{}, srcDcName:{}, newDesignatedRoutes:{}", clusterName, srcDcName, newDesignatedRoutes);
         try {
-            clusterService.updateClusterDesignateRoute(clusterName, srcDcName, newDesignatedRoutes);
+            clusterService.updateClusterDesignateRoutes(clusterName, srcDcName, newDesignatedRoutes);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
             logger.error("[updateClusterDesignatedRoutesByClusterName] cluster:{}, srcDcName:{}, newDesignatedRoutes:{}", clusterName, srcDcName, newDesignatedRoutes, th);

@@ -699,7 +699,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public List<RouteInfoModel> findClusterChooseRoutesByDcNameAndClusterName(String srcDcName, String clusterName) {
 		ClusterTbl cluster = find(clusterName);
-		logger.info("[findClusterChooseRoutesByDcNameAndClusterName] {}", clusterName);
+		if (null == cluster) throw new BadRequestException("not exist cluster " + clusterName);
 		DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
 
 		List<RouteInfoModel> allRoutes = routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
@@ -841,6 +841,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Override
 	public List<RouteInfoModel> findClusterDesignateRoutesByDcNameAndClusterName(String dcName, String clusterName) {
 		ClusterTbl clusterTbl = find(clusterName);
+		if (null == clusterTbl) throw new BadRequestException("not exist cluster " + clusterName);
+
 		String clusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
 		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) return Collections.emptyList();
 
@@ -858,9 +860,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public void updateClusterDesignateRoute(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes) {
+	public void updateClusterDesignateRoutes(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes) {
 
 		ClusterTbl clusterTbl = find(clusterName);
+		if (null == clusterTbl) throw new BadRequestException("not exist cluster " + clusterName);
+
 		String oldClusterDesignatedRouteIds = clusterTbl.getClusterDesignatedRouteIds();
 		Set<String> newDesignatedRouteIds = new HashSet<>();
 
@@ -880,6 +884,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		logger.info("[updateClusterDesignateRoute] newDesignatedRoutes:{}", newDesignatedRouteIds);
 
 		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, newDesignatedRouteIds));
+
+		ClusterType type = ClusterType.lookup(clusterTbl.getClusterType());
+		if (consoleConfig.shouldNotifyClusterTypes().contains(type.name())) {
+			notifier.notifyClusterUpdate(clusterName, Collections.singletonList(srcDcName));
+		}
 	}
 
 	private void updateClusterDesignatedRouteIds(long clusterId, String newClusterDesingnateRoutes) {
