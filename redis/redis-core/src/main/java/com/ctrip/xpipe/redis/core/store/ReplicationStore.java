@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * @author wenchao.meng

@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import org.junit.Before;
@@ -33,12 +35,14 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 
 	private DefaultCommandFuture<?> future = new DefaultCommandFuture<>();
 
+	private OffsetCommandReaderWriterFactory commandReaderWriterFactory = new OffsetCommandReaderWriterFactory();
+
 	@Before
 	public void beforeDefaultCommandStoreTest() throws IOException {
 
 		String testDir = getTestFileDir();
 		File commandTemplate = new File(testDir, getTestName());
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitor());
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
 	}
 
 	@Test
@@ -65,7 +69,7 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 		protected void doRun() {
 
 			try {
-				commandStore.addCommandsListener(0, new CommandsListener() {
+				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
 					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {

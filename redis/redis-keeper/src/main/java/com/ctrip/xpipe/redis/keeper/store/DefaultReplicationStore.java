@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.utils.FileUtils;
 import io.netty.buffer.ByteBuf;
@@ -57,12 +59,16 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private int commandsRetainTimeoutMilli = Integer.parseInt(System.getProperty(KEY_CMD_RETAIN_TIMEOUT_MILLI, "1800000"));
 
+	private OffsetCommandReaderWriterFactory cmdReaderWriterFactory;
+
 	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 			KeeperMonitor keeperMonitor) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.config = config;
 		this.keeperMonitor = keeperMonitor;
+		// TODO: as init parameter
+		this.cmdReaderWriterFactory = new OffsetCommandReaderWriterFactory();
 
 		metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -80,7 +86,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 					config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 					config::getReplicationStoreCommandFileNumToKeep,
 					config.getCommandReaderFlyingThreshold(),
-					keeperMonitor);
+					cmdReaderWriterFactory, keeperMonitor);
 		}
 
 		removeUnusedRdbFiles();
@@ -129,7 +135,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(), 
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
-				keeperMonitor);
+				cmdReaderWriterFactory, keeperMonitor);
 
 		return rdbStoreRef.get();
 	}
@@ -149,7 +155,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
-				keeperMonitor);
+				cmdReaderWriterFactory, keeperMonitor);
 	}
 
 	@Override
@@ -339,7 +345,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 
 		long realOffset = offset - metaStore.beginOffset();
-		getCommandStore().addCommandsListener(realOffset, commandsListener);
+		getCommandStore().addCommandsListener(new OffsetReplicationProgress(realOffset), commandsListener);
 	}
 
 	@Override

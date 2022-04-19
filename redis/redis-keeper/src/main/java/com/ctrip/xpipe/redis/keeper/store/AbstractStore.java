@@ -16,7 +16,7 @@ public abstract class AbstractStore {
 		return isClosed.compareAndSet(false, true);
 	}
 	
-	protected void makeSureOpen(){
+	public void makeSureOpen(){
 		
 		if(isClosed.get()){
 			throw new IllegalStateException("[makeSureOpen][closed]" + this);

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 
+import java.io.File;
 import java.io.IOException;
 
 public interface CommandReader {
@@ -11,5 +12,7 @@ public interface CommandReader {
 	ReferenceFileRegion read() throws IOException;
 
 	void flushed(ReferenceFileRegion referenceFileRegion);
+
+	File getCurFile();
 
 }

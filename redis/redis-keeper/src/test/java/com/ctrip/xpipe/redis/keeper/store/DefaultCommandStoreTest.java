@@ -5,6 +5,8 @@ import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandsGuarantee;
 import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetReplicationProgress;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -45,12 +47,14 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 	private int minWritten = (1 << 13);
 
+	private OffsetCommandReaderWriterFactory commandReaderWriterFactory = new OffsetCommandReaderWriterFactory();
+
 	@Before
 	public void beforeDefaultCommandStoreTest() throws IOException {
 
 		String testDir = getTestFileDir();
 		commandTemplate = new File(testDir, getTestName());
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, createkeeperMonitor());
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
 	}
 
 	@Test
@@ -61,7 +65,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int gcAfterCreateMilli = 60000;
 		File commandTemplate = new File(getTestFileDir(), getTestName());
 
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor()){
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD,
+				commandReaderWriterFactory, createkeeperMonitor()){
 			@Override
 			public long totalLength() {
 				return initDataKeep * maxFileSize;
@@ -173,7 +178,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 			@Override
 			protected void doRun() throws Exception {
-				commandStore.addCommandsListener(0, new CommandsListener() {
+				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
 					public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
@@ -225,7 +230,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		try {
 			String testDir = getTestFileDir();
 			File commandTemplate = new File(testDir, getTestName());
-			commandStore.set(new DefaultCommandStore(commandTemplate, 1, createkeeperMonitor()));
+			commandStore.set(new DefaultCommandStore(commandTemplate, 1, commandReaderWriterFactory, createkeeperMonitor()));
 			final AtomicBoolean appendResult = new AtomicBoolean(false);
 			final SettableFuture<Void> future = SettableFuture.create();
 
@@ -311,7 +316,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			@Override
 			public void run() {
 				try {
-					commandStore.addCommandsListener(offset, new CommandsListener() {
+					commandStore.addCommandsListener(new OffsetReplicationProgress(offset), new CommandsListener() {
 
 						@Override
 						public ChannelFuture onCommand(ReferenceFileRegion referenceFileRegion) {
@@ -381,7 +386,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			
 			commandStore.appendCommands(Unpooled.wrappedBuffer(randomString(maxFileSize).getBytes()));
 			total += maxFileSize;
-			commandStore.beginRead(total);
+			commandStore.beginRead(new OffsetReplicationProgress(total));
 		}
 		
 	}
@@ -392,7 +397,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		AtomicInteger maxSecondsKeepCmdFile = new AtomicInteger(60);
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, maxSecondsKeepCmdFile::get, 0,
-				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
 		appendCommandsToStore(10, 100);
 
 		commandStore.gc();
@@ -410,7 +415,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int fileNumToKeep = 2;
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
 		commandStore.gc();
@@ -426,7 +431,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int fileNumToKeep = 2;
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> true, () -> 0));
@@ -440,7 +445,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int fileNumToKeep = 2;
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 1, () -> true, () -> 0));
@@ -455,7 +460,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int fileNumToKeep = 2;
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> false, () -> 0));
@@ -470,7 +475,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int fileNumToKeep = 2;
 
 		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, createkeeperMonitor());
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, commandReaderWriterFactory, createkeeperMonitor());
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 0, 100000, () -> true, () -> 10));

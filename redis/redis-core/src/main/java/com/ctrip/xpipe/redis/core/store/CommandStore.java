@@ -4,13 +4,14 @@ import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
-public interface CommandStore extends Closeable, Destroyable{
+public interface CommandStore<P extends ReplicationProgress<?,?>> extends Closeable, Destroyable{
 
 	int appendCommands(ByteBuf byteBuf) throws IOException;
 
-	CommandReader beginRead(long startOffset) throws IOException;
+	CommandReader beginRead(P replicationProgress) throws IOException;
 
 	boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException;
 	
@@ -23,13 +24,29 @@ public interface CommandStore extends Closeable, Destroyable{
 	 * Files with lower offsets can be GCed.
 	 */
 	long lowestReadingOffset();
-	
-	void addCommandsListener(long offset, CommandsListener commandsListener) throws IOException;
+
+	void addCommandsListener(P replicationProgress, CommandsListener commandsListener) throws IOException;
 
 	boolean retainCommands(CommandsGuarantee commandsGuarantee);
 
 	long getCommandsLastUpdatedAt();
 	
 	void gc();
+
+	void rotateFileIfNecessary() throws IOException;
+
+	CommandFile newCommandFile(long startOffset) throws IOException;
+
+	CommandFile findFileForOffset(long offset) throws IOException;
+
+	String simpleDesc();
+
+	void addReader(CommandReader reader);
+
+	void removeReader(CommandReader reader);
+
+	CommandFile findNextFile(File file);
+
+	void makeSureOpen();
 	
 }
