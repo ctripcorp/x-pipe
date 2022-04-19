@@ -20,9 +20,9 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
     $scope.addOtherDesignatedRoutes = addOtherDesignatedRoutes;
     $scope.removeOtherDesignatedRoutes = removeOtherDesignatedRoutes;
 
-    $scope.preDeleteDesignatedRoute = preDeleteDesignatedRoute;
     $scope.deleteDesignatedRoute = deleteDesignatedRoute;
 
+    $scope.preSubmitUpdates = preSubmitUpdates;
     $scope.submitUpdates = submitUpdates;
 
     if ($scope.clusterName) {
@@ -100,15 +100,12 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
         return ;
     }
 
-    function preDeleteDesignatedRoute(id) {
+    function deleteDesignatedRoute(id) {
         $scope.toDeleteRouteId = [];
         $scope.toDeleteRouteId = id;
-        $('#doDeleteDesignatedRoute').modal('show');
-    }
 
-    function deleteDesignatedRoute() {
-        var routes = $scope.designatedRoutes;
         var index = -1;
+        var routes = $scope.designatedRoutes;
         for(var cnt_route = 0; cnt_route != routes.length; ++cnt_route) {
             if($scope.toDeleteRouteId == routes[cnt_route].id) {
                 index = cnt_route;
@@ -119,6 +116,10 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
             $scope.designatedRoutes.splice(index, 1);
             return;
         }
+    }
+
+    function preSubmitUpdates() {
+        $('#doSubmitUpdates').modal('show');
     }
 
     function submitUpdates() {
