@@ -18,6 +18,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
@@ -55,6 +56,18 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		String testDir = getTestFileDir();
 		commandTemplate = new File(testDir, getTestName());
 		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
+	}
+
+
+	@Test
+	public void testLoadIdxFromFile() throws Exception {
+		File baseDir = new File("./src/test/resources/DefaultCommandStoreTest");
+		String prefix = "abcdefg_";
+		commandStore = new DefaultCommandStore(new File(baseDir, prefix), maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
+		List<CommandFileOffsetGtidIndex> idxList = commandStore.getIndexList();
+		logger.info("[testLoadIdxFromFile] idxList {}", idxList);
+
+		Assert.assertEquals(6, idxList.size());
 	}
 
 	@Test
