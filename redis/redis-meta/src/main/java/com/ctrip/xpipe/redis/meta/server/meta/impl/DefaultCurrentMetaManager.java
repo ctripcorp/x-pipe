@@ -229,7 +229,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		if(currentDesignatedRoutes == null && futureDesignatedRoutes == null) return false;
 		if(currentDesignatedRoutes == null || futureDesignatedRoutes == null) return true;
 
-		return Objects.equals(Sets.newHashSet(currentDesignatedRoutes.split(",")), Sets.newHashSet(futureDesignatedRoutes.split(",")));
+		return !Objects.equals(Sets.newHashSet(currentDesignatedRoutes.split(",")), Sets.newHashSet(futureDesignatedRoutes.split(",")));
 
 
 	}
