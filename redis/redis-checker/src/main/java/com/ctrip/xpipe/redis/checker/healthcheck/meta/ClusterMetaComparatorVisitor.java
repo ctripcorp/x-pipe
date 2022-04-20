@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
-import com.ctrip.xpipe.redis.core.meta.comparator.RedisComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.InstanceNodeComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +59,10 @@ public class ClusterMetaComparatorVisitor implements MetaComparatorVisitor<Shard
                 @Override
                 public void visitModified(MetaComparator comparator) {
                     logger.info("[visitModified][redis] {}", comparator);
-                    RedisComparator redisComparator = (RedisComparator) comparator;
-                    Redis future = redisComparator.getFuture();
+                    InstanceNodeComparator instanceNodeComparator = (InstanceNodeComparator) comparator;
+                    InstanceNode future = instanceNodeComparator.getFuture();
                     if (future instanceof RedisMeta) {
-                        redisChanged.accept((RedisMeta) redisComparator.getFuture());
+                        redisChanged.accept((RedisMeta) instanceNodeComparator.getFuture());
                     }
                 }
 

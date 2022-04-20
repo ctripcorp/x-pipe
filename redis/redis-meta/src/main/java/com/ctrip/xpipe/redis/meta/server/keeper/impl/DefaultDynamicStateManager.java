@@ -83,7 +83,7 @@ public class DefaultDynamicStateManager implements DynamicStateManager{
 		
 		clusterMetas.put(clusterMeta.getDbId(), clusterMeta);
 		
-		for(ShardMeta shardMeta : clusterMeta.getShards().values()){
+		for(ShardMeta shardMeta : clusterMeta.getAllShards().values()){
 			for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
 				
 				final KeeperKey keeperKey = createKeeperKey(clusterMeta.getDbId(), shardMeta.getDbId(), keeperMeta);

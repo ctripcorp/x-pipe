@@ -312,7 +312,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			for (Long clusterDbId : currentMetaManager.allClusters()) {
 				ClusterMeta clusterMeta = currentMetaManager.getClusterMeta(clusterDbId);
 				if (!supportCluster(clusterMeta)) continue;
-				for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+				for (ShardMeta shardMeta : clusterMeta.getAllShards().values()) {
 					doCheckShard(clusterMeta, shardMeta);
 				}
 			}

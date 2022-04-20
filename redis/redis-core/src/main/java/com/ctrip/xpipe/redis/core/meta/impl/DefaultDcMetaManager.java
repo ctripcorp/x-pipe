@@ -289,7 +289,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		DcMeta dcMeta = this.metaManager.getDcMeta(currentDc);
 		for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
 			ClusterSummary clusterSummary = new ClusterSummary(clusterMeta.getId());
-			for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+			for (ShardMeta shardMeta: clusterMeta.getAllShards().values()) {
 				clusterSummary.shards.put(shardMeta.getDbId(), shardMeta.getId());
 			}
 
@@ -329,10 +329,10 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public Pair<Long, Long> clusterShardId2DbId(String clusterId, String shardId) {
 		ClusterMeta clusterMeta = getClusterMeta(clusterId);
-		if (null == clusterMeta || !clusterMeta.getShards().containsKey(shardId)) {
+		if (null == clusterMeta || !clusterMeta.getAllShards().containsKey(shardId)) {
 			throw new IllegalArgumentException(String.format("unknown clusterId shardId %s %s", clusterId, shardId));
 		}
-		ShardMeta shardMeta = clusterMeta.getShards().get(shardId);
+		ShardMeta shardMeta = clusterMeta.getAllShards().get(shardId);
 		return Pair.of(clusterMeta.getDbId(), shardMeta.getDbId());
 	}
 
