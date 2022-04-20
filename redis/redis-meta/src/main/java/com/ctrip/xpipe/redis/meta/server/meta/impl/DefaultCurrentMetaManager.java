@@ -399,7 +399,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	@VisibleForTesting
 	protected void refreshKeeperMaster(ClusterMeta clusterMeta) {
-		Collection<ShardMeta> shards = clusterMeta.getShards().values();
+		Collection<ShardMeta> shards = clusterMeta.getAllShards().values();
 		Long clusterDbId = clusterMeta.getDbId();
 		for (ShardMeta shard : shards) {
 			notifyKeeperMasterChanged(clusterDbId, shard.getDbId(), getKeeperMaster(clusterDbId, shard.getDbId()));

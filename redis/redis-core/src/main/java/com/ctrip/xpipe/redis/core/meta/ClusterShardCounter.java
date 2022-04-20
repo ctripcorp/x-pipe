@@ -40,7 +40,7 @@ public class ClusterShardCounter implements IVisitor{
     public void visitCluster(ClusterMeta cluster) {
 
         getOrCreate(cluster);
-        cluster.getShards().forEach((shardName, shardMeta) -> shardMeta.accept(this));
+        cluster.getAllShards().forEach((shardName, shardMeta) -> shardMeta.accept(this));
 
     }
 
