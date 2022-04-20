@@ -42,7 +42,7 @@ public class DcRouteMetaComparator extends AbstractMetaComparator<RouteMeta> {
                 continue;
             }
             if(!currentRouteMeta.getRouteInfo().equalsIgnoreCase(futureRouteMeta.getRouteInfo())
-                    || ObjectUtils.equals(currentRouteMeta.getIsPublic(), futureRouteMeta.getIsPublic())) {
+                    || !ObjectUtils.equals(currentRouteMeta.getIsPublic(), futureRouteMeta.getIsPublic())) {
                 modified.add(new RouteMetaComparator(currentRouteMeta, futureRouteMeta));
             }
         }
