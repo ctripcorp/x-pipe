@@ -137,14 +137,24 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 			clusterMeta.setClusterDesignatedRouteIds(clusterInfo.getClusterDesignatedRouteIds());
 			clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 
-			for (DcTbl dc : clusterRelatedDc) {
-				if (dc.getId() == clusterInfo.getActivedcId()) {
-					clusterMeta.setActiveDc(dc.getDcName());
-				} else {
-					if (Strings.isNullOrEmpty(clusterMeta.getBackupDcs())) {
-						clusterMeta.setBackupDcs(dc.getDcName());
+			if(ClusterType.lookup(clusterInfo.getClusterType()).supportMultiActiveDC()) {
+				for (DcTbl dc : clusterRelatedDc) {
+					if (Strings.isNullOrEmpty(clusterMeta.getDcs())) {
+						clusterMeta.setDcs(dc.getDcName());
 					} else {
-						clusterMeta.setBackupDcs(clusterMeta.getBackupDcs() + "," + dc.getDcName());
+						clusterMeta.setDcs(clusterMeta.getDcs() + "," + dc.getDcName());
+					}
+				}
+			} else {
+				for (DcTbl dc : clusterRelatedDc) {
+					if (dc.getId() == clusterInfo.getActivedcId()) {
+						clusterMeta.setActiveDc(dc.getDcName());
+					} else {
+						if (Strings.isNullOrEmpty(clusterMeta.getBackupDcs())) {
+							clusterMeta.setBackupDcs(dc.getDcName());
+						} else {
+							clusterMeta.setBackupDcs(clusterMeta.getBackupDcs() + "," + dc.getDcName());
+						}
 					}
 				}
 			}
