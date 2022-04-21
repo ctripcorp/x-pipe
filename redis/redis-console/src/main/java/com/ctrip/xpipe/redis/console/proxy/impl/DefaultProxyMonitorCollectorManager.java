@@ -69,7 +69,7 @@ public class DefaultProxyMonitorCollectorManager extends AbstractStartStoppable 
         return MapUtils.getOrCreate(proxySamples, proxyModel, new ObjectFactory<ProxyMonitorCollector>() {
             @Override
             public ProxyMonitorCollector create() {
-                logger.info("[create proxy monitor collector] {}, time interval:{}", proxyModel, consoleConfig.getProxyInfoCollectInterval());
+                logger.info("[create proxy monitor collector] {}", proxyModel);
                 ProxyMonitorCollector result = new DefaultProxyMonitorCollector(
                         scheduled, keyedObjectPool, proxyModel,
                         ()->consoleConfig.getProxyInfoCollectInterval()

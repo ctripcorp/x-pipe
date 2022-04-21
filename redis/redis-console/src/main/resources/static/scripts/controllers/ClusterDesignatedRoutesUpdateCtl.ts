@@ -84,7 +84,6 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
 
     function addOtherDesignatedRoutes() {
         $scope.toAddDesignatedRoutes.push({});
-        console.log($scope.toAddDesignatedRoutes);
     }
 
     function removeOtherDesignatedRoutes(index) {

@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.redis.core.entity.Route;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -58,6 +59,9 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     @Autowired
     private RouteService routeService;
+
+    @Autowired
+    private MetaCache metaCache;
 
     @Test
     public void testCreateOneWayCluster(){
@@ -392,82 +396,108 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testFindChooseRoutesByDcNameAndClusterNameWithOneWay() {
+    public void testFindDefaultRoutesByDcNameAndClusterNameWithOneWay() {
         RouteInfoModel routeInfoModel1 = new RouteInfoModel().setId(1L);
         RouteInfoModel routeInfoModel3 = new RouteInfoModel().setId(3L);
+        RouteInfoModel routeInfoModel4 = new RouteInfoModel().setId(4L);
+        RouteInfoModel routeInfoModel5 = new RouteInfoModel().setId(5L);
         RouteInfoModel routeInfoModel6 = new RouteInfoModel().setId(6L);
 
         String clusterName101 = "cluster101";
         ClusterTbl clusterTbl = clusterService.find("cluster101");
         Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
-        List<RouteInfoModel> chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[0], clusterName101);
-        Assert.assertEquals(0, chooseRoutes.size());
 
         //test same org_id
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(3L, chooseRoutes.get(0).getId());
+        List<RouteInfoModel> defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(3L, defaultRoutes.get(0).getId());
+
+        //test Hash strategy
+        routeService.updateRoute(new RouteModel().setId(4L).setActive(true).setTag(Route.TAG_META).setPublic(true).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(clusterName101).choose(Lists.newArrayList(routeInfoModel3, routeInfoModel4)).getId(),
+                defaultRoutes.get(0).getId());
+
+        routeService.updateRoute(new RouteModel().setId(3L).setActive(true).setTag(Route.TAG_META).setPublic(false).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
+
+        routeService.updateRoute(new RouteModel().setId(4L).setActive(true).setTag(Route.TAG_META).setPublic(false).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
 
         //test default org_id
-        routeService.updateRoute(new RouteModel().setId(3L).setActive(true).setTag(Route.TAG_META).setPublic(false).setDstDcName("jq").setOrgId(1L)
-                                    .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(6L, chooseRoutes.get(0).getId());
+        defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(6L, defaultRoutes.get(0).getId());
 
-        //test designated route
+        //test hash strategy
+        routeService.updateRoute(new RouteModel().setId(5L).setActive(true).setTag(Route.TAG_META).setPublic(true).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
+        defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(clusterName101).choose(Lists.newArrayList(routeInfoModel5, routeInfoModel6)).getId(),
+                defaultRoutes.get(0).getId());
+
+
+        //test designated route has no effect
         clusterService.updateClusterDesignateRoutes(clusterName101, dcNames[0], Lists.newArrayList(routeInfoModel1, routeInfoModel3));
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(3L, chooseRoutes.get(0).getId());
-
-
-        //test designated route
-        clusterService.updateClusterDesignateRoutes(clusterName101, dcNames[0], Lists.newArrayList(routeInfoModel6, routeInfoModel3));
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(clusterName101).choose(Lists.newArrayList(routeInfoModel3, routeInfoModel6)).getId(),
-                chooseRoutes.get(0).getId());
+        defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], clusterName101);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(clusterName101).choose(Lists.newArrayList(routeInfoModel5, routeInfoModel6)).getId(),
+                defaultRoutes.get(0).getId());
     }
 
     @Test
-    public void testFindChooseRoutesByDcNameAndClusterNameWithBiDirection() {
+    public void testFindDefaultRoutesByDcNameAndClusterNameWithBiDirection() {
         RouteInfoModel routeInfoModel1 = new RouteInfoModel().setId(1L);
         RouteInfoModel routeInfoModel3 = new RouteInfoModel().setId(3L);
+        RouteInfoModel routeInfoModel4 = new RouteInfoModel().setId(4L);
+        RouteInfoModel routeInfoModel5 = new RouteInfoModel().setId(5L);
         RouteInfoModel routeInfoModel6 = new RouteInfoModel().setId(6L);
 
         String biClusterName = "bi-cluster1";
-        ClusterTbl clusterTbl = clusterService.find("cluster101");
+        ClusterTbl clusterTbl = clusterService.find(biClusterName);
         Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
-        List<RouteInfoModel> chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[0], biClusterName);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(1L, chooseRoutes.get(0).getId());
 
         //test same org_id
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(3L, chooseRoutes.get(0).getId());
+        List<RouteInfoModel> defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(3L, defaultRoutes.get(0).getId());
 
-        //test default org_id
+        //test Hash strategy
+        routeService.updateRoute(new RouteModel().setId(4L).setActive(true).setTag(Route.TAG_META).setPublic(true).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(biClusterName).choose(Lists.newArrayList(routeInfoModel4, routeInfoModel3)).getId(),
+                defaultRoutes.get(0).getId());
+
         routeService.updateRoute(new RouteModel().setId(3L).setActive(true).setTag(Route.TAG_META).setPublic(false).setDstDcName("jq").setOrgId(1L)
                 .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(6L, chooseRoutes.get(0).getId());
 
-        //test designated route
+        routeService.updateRoute(new RouteModel().setId(4L).setActive(true).setTag(Route.TAG_META).setPublic(false).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
+
+        //test default org_id
+        defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(6L, defaultRoutes.get(0).getId());
+
+        //test hash strategy
+        routeService.updateRoute(new RouteModel().setId(5L).setActive(true).setTag(Route.TAG_META).setPublic(true).setDstDcName("jq").setOrgId(1L)
+                .setSrcProxyIds("5").setDstProxyIds("6").setSrcDcName("oy"));
+        defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(biClusterName).choose(Lists.newArrayList(routeInfoModel6, routeInfoModel5)).getId(),
+                defaultRoutes.get(0).getId());
+
+
+        //test designated route has no effect
         clusterService.updateClusterDesignateRoutes(biClusterName, dcNames[0], Lists.newArrayList(routeInfoModel1, routeInfoModel3));
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(3L, chooseRoutes.get(0).getId());
+        defaultRoutes = clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
+        Assert.assertEquals(1, defaultRoutes.size());
+        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(biClusterName).choose(Lists.newArrayList(routeInfoModel5, routeInfoModel5)).getId(),
+                defaultRoutes.get(0).getId());
 
-
-        //test designated route
-        clusterService.updateClusterDesignateRoutes(biClusterName, dcNames[0], Lists.newArrayList(routeInfoModel6, routeInfoModel3));
-        chooseRoutes = clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcNames[1], biClusterName);
-        Assert.assertEquals(1, chooseRoutes.size());
-        Assert.assertEquals(new ClusterServiceImpl.Crc32HashChooseRouteStrategy(biClusterName).choose(Lists.newArrayList(routeInfoModel3, routeInfoModel6)).getId(),
-                chooseRoutes.get(0).getId());
     }
 
     @Test
@@ -499,6 +529,10 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
     }
 
+    @Test
+    public void testFindUnmatchedClusterRoutes() {
+        clusterService.findUnmatchedClusterRoutes();
+    }
 
     @Override
     protected String prepareDatas() throws IOException {
