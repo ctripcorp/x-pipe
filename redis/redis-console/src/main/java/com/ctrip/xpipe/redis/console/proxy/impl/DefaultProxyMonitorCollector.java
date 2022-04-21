@@ -123,7 +123,7 @@ public class DefaultProxyMonitorCollector extends AbstractStartStoppable impleme
 
             @Override
             protected void doRun() {
-
+                logger.debug("[doStart] proxy:{}, time interval:{}", model.getUri(), checkInterval.getAsInt());
                 SequenceCommandChain serial = new SequenceCommandChain(
                         new PingResultsUpdater().command(),
                         new TunnelStatsResultsUpdater().command(),

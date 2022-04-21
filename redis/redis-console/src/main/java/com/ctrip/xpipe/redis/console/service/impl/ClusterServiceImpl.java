@@ -24,6 +24,8 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -42,7 +44,6 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -697,13 +698,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
-	public List<RouteInfoModel> findClusterChooseRoutesByDcNameAndClusterName(String srcDcName, String clusterName) {
+	public List<RouteInfoModel> findClusterDefaultRoutesByDcNameAndClusterName(String srcDcName, String clusterName) {
 		ClusterTbl cluster = find(clusterName);
 		if (null == cluster) throw new BadRequestException("not exist cluster " + clusterName);
 		DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
 
 		List<RouteInfoModel> allRoutes = routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
-		Map<String, List<RouteInfoModel>> allDcRoutes = new ConcurrentHashMap<>();
+		Map<String, List<RouteInfoModel>> allDcRoutes = new HashMap<>();
 		allRoutes.forEach(route -> {
 			String dcName = route.getDstDcName();
 			List<RouteInfoModel> dcRoutes = MapUtils.getOrCreate(allDcRoutes, dcName, LinkedList::new);
@@ -721,43 +722,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 			for (DcClusterTbl dcClusterTbl : clusterRelated) {
 				if (srcDcName.equalsIgnoreCase(mapper.getName(dcClusterTbl.getDcId()))) continue;
-				RouteInfoModel route = chooseRoute(allDcRoutes.get(mapper.getName(dcClusterTbl.getDcId())), cluster, organizationTbl, chooseRouteStrategy);
+				RouteInfoModel route = findDefaultRoute(allDcRoutes.get(mapper.getName(dcClusterTbl.getDcId())), cluster, organizationTbl, chooseRouteStrategy);
 				if(route != null) result.add(route);
 			}
 		} else {
 			String activeDcName = mapper.getName(cluster.getActivedcId());
 			if(!srcDcName.equalsIgnoreCase(activeDcName)) {
-				RouteInfoModel route = chooseRoute(allDcRoutes.get(activeDcName), cluster, organizationTbl, chooseRouteStrategy);
+				RouteInfoModel route = findDefaultRoute(allDcRoutes.get(activeDcName), cluster, organizationTbl, chooseRouteStrategy);
 				if(route != null) result.add(route);
 			}
 		}
 
-		logger.info("[findClusterChooseRoutesByDcNameAndClusterName]: chooseRoute:{}", result);
+		logger.info("[findClusterDefaultRoutesByDcNameAndClusterName]: chooseRoute:{}", result);
 		return result.stream().sorted(Comparator.comparing(RouteInfoModel::getDstDcName).thenComparing(RouteInfoModel::getId)).collect(Collectors.toList());
 	}
 
-	private RouteInfoModel chooseRoute(List<RouteInfoModel> dstDcRoutes, ClusterTbl cluster, OrganizationTbl organizationTbl, Crc32HashChooseRouteStrategy chooseRouteStrategy) {
+	private RouteInfoModel findDefaultRoute(List<RouteInfoModel> dstDcRoutes, ClusterTbl cluster, OrganizationTbl organizationTbl, Crc32HashChooseRouteStrategy chooseRouteStrategy) {
 		if(dstDcRoutes == null || dstDcRoutes.isEmpty()) return null;
 
 		List<RouteInfoModel> resultsCandidates = new LinkedList<>();
-
-		Set<Long> clusterDesiganateRoutes = Sets.newHashSet();
-		String clusterDesignatedRouteIds = cluster.getClusterDesignatedRouteIds();
-		if(!StringUtil.isEmpty(clusterDesignatedRouteIds)) {
-			Sets.newHashSet(clusterDesignatedRouteIds.split(",")).forEach(id->clusterDesiganateRoutes.add(Long.valueOf(id.trim())));
-		}
-
-		if(!clusterDesiganateRoutes.isEmpty()) {
-			dstDcRoutes.forEach(route -> {
-				if(clusterDesiganateRoutes.contains(route.getId())){
-					resultsCandidates.add(route);
-				}
-			});
-
-			if(!resultsCandidates.isEmpty()){
-				return chooseRouteStrategy.choose(resultsCandidates);
-			}
-		}
 
 		if(organizationTbl != null) {
 			dstDcRoutes.forEach(route -> {
@@ -780,6 +763,51 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return chooseRouteStrategy.choose(resultsCandidates);
 
 	}
+
+//	private RouteInfoModel chooseRoute(List<RouteInfoModel> dstDcRoutes, ClusterTbl cluster, OrganizationTbl organizationTbl, Crc32HashChooseRouteStrategy chooseRouteStrategy) {
+//		if(dstDcRoutes == null || dstDcRoutes.isEmpty()) return null;
+//
+//		List<RouteInfoModel> resultsCandidates = new LinkedList<>();
+//
+//		Set<Long> clusterDesignatedRoutes = Sets.newHashSet();
+//		String clusterDesignatedRouteIds = cluster.getClusterDesignatedRouteIds();
+//		if(!StringUtil.isEmpty(clusterDesignatedRouteIds)) {
+//			Sets.newHashSet(clusterDesignatedRouteIds.split(",")).forEach(id->clusterDesignatedRoutes.add(Long.valueOf(id.trim())));
+//		}
+//
+//		if(!clusterDesignatedRoutes.isEmpty()) {
+//			dstDcRoutes.forEach(route -> {
+//				if(clusterDesignatedRoutes.contains(route.getId())){
+//					resultsCandidates.add(route);
+//				}
+//			});
+//
+//			if(!resultsCandidates.isEmpty()){
+//				return chooseRouteStrategy.choose(resultsCandidates);
+//			}
+//		}
+//
+//		if(organizationTbl != null) {
+//			dstDcRoutes.forEach(route -> {
+//				if (route.isPublic() && ObjectUtils.equals(route.getOrgName(), organizationTbl.getOrgName())) {
+//					resultsCandidates.add(route);
+//				}
+//			});
+//
+//			if (!resultsCandidates.isEmpty()) {
+//				return chooseRouteStrategy.choose(resultsCandidates);
+//			}
+//		}
+//
+//		dstDcRoutes.forEach(route -> {
+//			if(route.isPublic() && (route.getOrgName() == null || route.getOrgName().isEmpty())){
+//				resultsCandidates.add(route);
+//			}
+//		});
+//
+//		return chooseRouteStrategy.choose(resultsCandidates);
+//
+//	}
 
 	@Override
 	public List<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String srcDcName, String clusterName) {
@@ -849,6 +877,51 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		});
 		logger.info("[findClusterDesignateRoutesByDcNameAndClusterName]{}", result);
 		return result.stream().sorted(Comparator.comparing(RouteInfoModel::getDstDcName).thenComparing(RouteInfoModel::getId)).collect(Collectors.toList());
+	}
+
+	public List<UnmatchedClusterRouteInfoModel> findUnmatchedClusterRoutes() {
+		XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+		if(xpipeMeta == null || xpipeMeta.getDcs() == null) {
+			return Collections.emptyList();
+		}
+
+		List<UnmatchedClusterRouteInfoModel> result = new ArrayList<>();
+		for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+				Map<String, Long> defaultDcRoutes = new HashMap<>();
+				List<RouteInfoModel> defaultRoutes = findClusterDefaultRoutesByDcNameAndClusterName(dcMeta.getId(), clusterMeta.getId());
+				if(!defaultRoutes.isEmpty()) {
+					defaultRoutes.forEach(route -> {
+						defaultDcRoutes.put(route.getDstDcName(), route.getId());
+					});
+				}
+
+				Map<String, Long> designatedDcRoutes = new HashMap<>();
+				List<RouteInfoModel> designatedRoutes = findClusterDesignateRoutesByDcNameAndClusterName(dcMeta.getId(), clusterMeta.getId());
+				if(!designatedRoutes.isEmpty()) {
+					designatedRoutes.forEach(route -> {
+						designatedDcRoutes.put(route.getDstDcName(), route.getId());
+					});
+				}
+
+				Map<String, Long> usedDcRoutes = new HashMap<>();
+				List<RouteInfoModel> usedRoutes = findClusterUsedRoutesByDcNameAndClusterName(dcMeta.getId(), clusterMeta.getId());
+				if(!usedRoutes.isEmpty()) {
+					usedRoutes.forEach(route -> {
+						usedDcRoutes.put(route.getDstDcName(), route.getId());
+					});
+				}
+
+				for(String dstDcName : defaultDcRoutes.keySet()) {
+					Long chooseRouteId = designatedDcRoutes.get(dstDcName) == null ? defaultDcRoutes.get(dstDcName) : designatedDcRoutes.get(dstDcName);
+					if(!ObjectUtils.equals(usedDcRoutes.get(dstDcName), chooseRouteId)) {
+						result.add(new UnmatchedClusterRouteInfoModel(clusterMeta.getId(), dcMeta.getId(), dstDcName, usedDcRoutes.get(dstDcName), chooseRouteId));
+					}
+				}
+			}
+		}
+
+		return result;
 	}
 
 	@Override

@@ -127,9 +127,9 @@ function ClusterService($resource, $q) {
             method: 'GET',
             url: '/console/cluster/hickwall/:clusterName'
         },
-       get_cluster_choose_routes_by_dc_name_and_cluster_name: {
+       get_cluster_default_routes_by_dc_name_and_cluster_name: {
             method: 'GET',
-            url: '/console/cluster/choose/routes/dc/:dcName/cluster/:clusterName',
+            url: '/console/cluster/default/routes/dc/:dcName/cluster/:clusterName',
             isArray: true
         },
        get_cluster_used_routes_by_dc_name_and_cluster_name: {
@@ -478,9 +478,9 @@ function ClusterService($resource, $q) {
 
 
 
-    function getClusterChooseRoutesByDcNameAndClusterName(dcName, clusterName) {
+    function getClusterDefaultRoutesByDcNameAndClusterName(dcName, clusterName) {
         var d = $q.defer();
-        resource.get_cluster_choose_routes_by_dc_name_and_cluster_name({
+        resource.get_cluster_default_routes_by_dc_name_and_cluster_name({
                 dcName : dcName,
                 clusterName : clusterName
             },
@@ -589,7 +589,7 @@ function ClusterService($resource, $q) {
         getMasterUnhealthyClusters : getMasterUnhealthyClusters,
         findAllByKeeperContainer: findAllByKeeperContainer,
         getClusterHickwallAddr: getClusterHickwallAddr,
-        getClusterChooseRoutesByDcNameAndClusterName : getClusterChooseRoutesByDcNameAndClusterName,
+        getClusterDefaultRoutesByDcNameAndClusterName : getClusterDefaultRoutesByDcNameAndClusterName,
         getClusterUsedRoutesByDcNameAndClusterName : getClusterUsedRoutesByDcNameAndClusterName,
         getClusterDesignatedRoutesByDcNameAndClusterName : getClusterDesignatedRoutesByDcNameAndClusterName,
         deleteClusterDesignatedRoutes : deleteClusterDesignatedRoutes,

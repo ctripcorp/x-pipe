@@ -213,13 +213,13 @@ public class ClusterController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
     }
 
-    @RequestMapping(value = "/cluster/choose/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<RouteInfoModel>  getClusterChooseRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
-        logger.info("[getClusterChooseRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
+    @RequestMapping(value = "/cluster/default/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public List<RouteInfoModel>  getClusterDefaultRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
+        logger.info("[getClusterDefaultRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
         try {
-            return clusterService.findClusterChooseRoutesByDcNameAndClusterName(dcName, clusterName);
+            return clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcName, clusterName);
         } catch (Throwable th) {
-            logger.error("[getClusterChooseRoutesByClusterName]  dcName:{}, cluster:{}",dcName, clusterName, th);
+            logger.error("[getClusterDefaultRoutesByClusterName]  dcName:{}, cluster:{}",dcName, clusterName, th);
             return Collections.emptyList();
         }
     }

@@ -12,7 +12,7 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
     $scope.dcs;
     $scope.designatedRoutes=[];
     $scope.usedRoutes=[];
-    $scope.chooseRoutes=[];
+    $scope.defaultRoutes=[];
 
     $scope.switchDc = switchDc;
     $scope.loadDcClusterRoutes = loadDcClusterRoutes;
@@ -57,9 +57,9 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
              }, function (result) {
                  toastr.error(AppUtil.errorMsg(result));
              });
-         ClusterService.getClusterChooseRoutesByDcNameAndClusterName(dcName, clusterName)
+         ClusterService.getClusterDefaultRoutesByDcNameAndClusterName(dcName, clusterName)
               .then(function (result) {
-                  $scope.chooseRoutes = result;
+                  $scope.defaultRoutes = result;
               }, function (result) {
                   toastr.error(AppUtil.errorMsg(result));
               });

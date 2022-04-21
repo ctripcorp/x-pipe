@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -138,13 +139,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
 			clusterInfo.setActivedcId(getClusterMetaCurrentPrimaryDc(dcInfo, clusterInfo));
 
 			if(ClusterType.lookup(clusterInfo.getClusterType()).supportMultiActiveDC()) {
-				for (DcTbl dc : clusterRelatedDc) {
-					if (Strings.isNullOrEmpty(clusterMeta.getDcs())) {
-						clusterMeta.setDcs(dc.getDcName());
-					} else {
-						clusterMeta.setDcs(clusterMeta.getDcs() + "," + dc.getDcName());
-					}
-				}
+				clusterMeta.setDcs(StringUtil.join(",", dcTbl -> dcTbl.getDcName() ,clusterRelatedDc));
 			} else {
 				for (DcTbl dc : clusterRelatedDc) {
 					if (dc.getId() == clusterInfo.getActivedcId()) {
