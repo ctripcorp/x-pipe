@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
-import com.ctrip.xpipe.redis.console.model.UnmatchedClusterRouteInfoModel;
+import com.ctrip.xpipe.redis.console.model.WrongRouteUsedInfoModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 
@@ -64,5 +64,5 @@ public interface ClusterService {
 	List<RouteInfoModel> findClusterUsedRoutesByDcNameAndClusterName(String backupDcId, String clusterName);
 	List<RouteInfoModel> findClusterDesignateRoutesByDcNameAndClusterName(String dcName, String clusterName);
 	void updateClusterDesignateRoutes(String clusterName, String srcDcName, List<RouteInfoModel> newDesignatedRoutes);
-	List<UnmatchedClusterRouteInfoModel> findUnmatchedClusterRoutes();
+	WrongRouteUsedInfoModel findUnmatchedClusterRoutes();
 }

@@ -843,31 +843,94 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 
-	public List<UnmatchedClusterRouteInfoModel> findUnmatchedClusterRoutes() {
+	public WrongRouteUsedInfoModel findUnmatchedClusterRoutes() {
+		WrongRouteUsedInfoModel wrongRouteUsedInfoModel = new WrongRouteUsedInfoModel();
+
 		XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
 		if(xpipeMeta == null || xpipeMeta.getDcs() == null) {
-			return Collections.emptyList();
+			return wrongRouteUsedInfoModel;
 		}
 
-		List<UnmatchedClusterRouteInfoModel> result = new ArrayList<>();
 		for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-			List<RouteMeta> allRoutes = dcMeta.getRoutes();
-			Map<String, List<RouteMeta>> allDcRoutes = new HashMap<>();
+			Map<String, List<RouteMeta>> dstDcRoutes = new HashMap<>();
 			dcMeta.getRoutes().forEach((routeMeta -> {
 				if(routeMeta.getTag().equalsIgnoreCase(Route.TAG_META)) {
-					List<RouteMeta> routeMetas =  MapUtils.getOrCreate(allDcRoutes, routeMeta.getDstDc(), LinkedList::new);
+					List<RouteMeta> routeMetas =  MapUtils.getOrCreate(dstDcRoutes, routeMeta.getDstDc(), LinkedList::new);
 					routeMetas.add(routeMeta);
 				}
 			}));
 
 			for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
-				List<UnmatchedClusterRouteInfoModel> unmatchedClusterRoutes =
-						findUnmatchedClusterRoutes(clusterMeta, dcMeta.getId(), allDcRoutes);
-				if(null != unmatchedClusterRoutes && !unmatchedClusterRoutes.isEmpty()) result.addAll(unmatchedClusterRoutes);
+				findUnmatchedClusterRoutes(clusterMeta, dcMeta.getId(), dstDcRoutes, wrongRouteUsedInfoModel);
 			}
 		}
-		if(result.isEmpty()) result.add(new UnmatchedClusterRouteInfoModel("cluster1", "UAT-AWS", "UAT", 1, 4));
-		return result;
+//		wrongRouteUsedInfoModel.addWrongRouteUsedCluster("cluster1", "UAT-AWS", "UAT", Sets.newHashSet(1, 2), 4);
+		return wrongRouteUsedInfoModel;
+	}
+
+	private void findUnmatchedClusterRoutes(ClusterMeta clusterMeta, String srcDcName, Map<String, List<RouteMeta>> dstDcRoutes, WrongRouteUsedInfoModel wrongRouteUsedInfoModel) {
+
+
+		Map<String, Integer> chooseDcRoutes = getDstDcRoutes(srcDcName, clusterMeta, dstDcRoutes);
+		if(chooseDcRoutes.isEmpty()) return;
+
+		Map<String, Set<Integer>> usedDcRoutes = getUsedDcRoutes(srcDcName, clusterMeta, dstDcRoutes);
+
+		for(String dstDcName : chooseDcRoutes.keySet()) {
+			if(usedDcRoutes.get(dstDcName) == null || usedDcRoutes.get(dstDcName).size() != 1
+					|| !ObjectUtils.equals(usedDcRoutes.get(dstDcName).iterator().next(), chooseDcRoutes.get(dstDcName))) {
+				wrongRouteUsedInfoModel.addWrongRouteUsedCluster(clusterMeta.getId(), srcDcName, dstDcName, usedDcRoutes.get(dstDcName), chooseDcRoutes.get(dstDcName));
+			}
+		}
+	}
+
+	private Map<String, Set<Integer>> getUsedDcRoutes(String srcDcName, ClusterMeta clusterMeta, Map<String, List<RouteMeta>> dstDcRoutes) {
+		Map<String, Set<Integer>> usedDcRoutes = new HashMap<>();
+
+		List<String> peerDcs = new ArrayList<>();
+		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+			Arrays.stream(clusterMeta.getDcs().split(",")).forEach((peerDc) -> peerDcs.add(peerDc));
+		} else {
+			peerDcs.add(clusterMeta.getActiveDc());
+		}
+
+		for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+			for (String peerDc : peerDcs) {
+				if (peerDc.equals(srcDcName)) continue;
+
+				ProxyChain chain = proxyService.getProxyChain(srcDcName, clusterMeta.getId(), shardMeta.getId(), peerDc);
+				if(chain != null) {
+					RouteMeta usedRoute = getRouteMetaFromProxyChainModel(dstDcRoutes.get(chain.getPeerDcId()), new ProxyChainModel(chain, chain.getPeerDcId(), srcDcName));
+					if(usedRoute != null)
+						MapUtils.getOrCreate(usedDcRoutes, usedRoute.getDstDc(), () -> Sets.newHashSet()).add(usedRoute.getId());
+				}
+			}
+		}
+
+		return usedDcRoutes;
+	}
+
+
+	private Map<String, Integer> getDstDcRoutes(String srcDcName, ClusterMeta clusterMeta, Map<String, List<RouteMeta>> dstDcRoutes) {
+		Map<String, Integer> chooseDcRoutes = new HashMap<>();
+
+		Crc32HashChooseRouteStrategy chooseRouteStrategy = new Crc32HashChooseRouteStrategy(clusterMeta.getId());
+		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+			List<String> relatedDcs = Arrays.stream(clusterMeta.getDcs().split(",")).collect(Collectors.toList());
+			for (String dc : relatedDcs) {
+				String dstDcName = dc.trim();
+				if (srcDcName.equalsIgnoreCase(dstDcName)) continue;
+				RouteMeta route = chooseRoute(dstDcRoutes.get(dstDcName), clusterMeta, chooseRouteStrategy);
+				if(route != null) chooseDcRoutes.put(dstDcName, route.getId());
+			}
+		} else {
+			if(!srcDcName.equalsIgnoreCase(clusterMeta.getActiveDc())) {
+				RouteMeta route = chooseRoute(dstDcRoutes.get(clusterMeta.getActiveDc()), clusterMeta, chooseRouteStrategy);
+				if(route != null) chooseDcRoutes.put(clusterMeta.getActiveDc(), route.getId());
+			}
+		}
+
+		return chooseDcRoutes;
 	}
 
 	private RouteMeta chooseRoute(List<RouteMeta> dstDcRoutes, ClusterMeta cluster, Crc32HashChooseRouteStrategy chooseRouteStrategy) {
@@ -912,47 +975,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		return chooseRouteStrategy.chooseRouteMeta(resultsCandidates);
 
-	}
-
-	private List<UnmatchedClusterRouteInfoModel> findUnmatchedClusterRoutes(ClusterMeta clusterMeta, String dcName, Map<String, List<RouteMeta>> allDcRoutes) {
-		List<UnmatchedClusterRouteInfoModel> result = new ArrayList<>();
-
-		Crc32HashChooseRouteStrategy chooseRouteStrategy = new Crc32HashChooseRouteStrategy(clusterMeta.getId());
-
-		Map<String, Integer> chooseDcRoutes = new HashMap<>();
-		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
-			List<String> relatedDcs = Arrays.stream(clusterMeta.getDcs().split(",")).collect(Collectors.toList());
-			for (String dc : relatedDcs) {
-				String dstDcName = dc.trim();
-				if (dcName.equalsIgnoreCase(dstDcName)) continue;
-				RouteMeta route = chooseRoute(allDcRoutes.get(dstDcName), clusterMeta, chooseRouteStrategy);
-				if(route != null) chooseDcRoutes.put(dstDcName, route.getId());
-			}
-		} else {
-			if(!dcName.equalsIgnoreCase(clusterMeta.getActiveDc())) {
-				RouteMeta route = chooseRoute(allDcRoutes.get(clusterMeta.getActiveDc()), clusterMeta, chooseRouteStrategy);
-				if(route != null) chooseDcRoutes.put(clusterMeta.getActiveDc(), route.getId());
-			}
-		}
-
-		if(chooseDcRoutes.isEmpty()) return null;
-
-		Map<String, Integer> usedDcRoutes = new HashMap<>();
-		Map<String, List<ProxyChain>> proxyChains = proxyService.getProxyChains(dcName, clusterMeta.getId());
-		for(Map.Entry<String, List<ProxyChain>> shardChains : proxyChains.entrySet()) {
-			List<ProxyChain> peerChains = shardChains.getValue();
-			for (ProxyChain chain: peerChains) {
-				RouteMeta usedRoute = getRouteMetaFromProxyChainModel(allDcRoutes.get(chain.getPeerDcId()), new ProxyChainModel(chain, chain.getPeerDcId(), dcName));
-				if(usedRoute != null) usedDcRoutes.put(usedRoute.getDstDc(), usedRoute.getId());
-			}
-		}
-
-		for(String dstDcName : chooseDcRoutes.keySet()) {
-			if(!ObjectUtils.equals(usedDcRoutes.get(dstDcName), chooseDcRoutes.get(dstDcName))) {
-				result.add(new UnmatchedClusterRouteInfoModel(clusterMeta.getId(), dcName, dstDcName, usedDcRoutes.get(dstDcName), chooseDcRoutes.get(dstDcName)));
-			}
-		}
-		return result;
 	}
 
 	@Override
