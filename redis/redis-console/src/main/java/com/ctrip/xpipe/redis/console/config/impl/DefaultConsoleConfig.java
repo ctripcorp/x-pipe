@@ -93,6 +93,10 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
+    private static final String KEY_ROUTE_CHOOSE_STRATEGY = "route.choose.strategy";
+
+    private String defaultRouteChooseStrategy = "crc32Hash";
+
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
     @Override
@@ -593,4 +597,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public String getBeaconSupportZone() {
         return getProperty(KEY_BEACON_SUPPORT_ZONE, "");
     }
+
+    @Override
+    public String getChooseRouteStrategy() { return getProperty(KEY_ROUTE_CHOOSE_STRATEGY ,defaultRouteChooseStrategy);}
 }

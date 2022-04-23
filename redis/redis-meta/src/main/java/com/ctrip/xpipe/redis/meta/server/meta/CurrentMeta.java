@@ -10,16 +10,11 @@ import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
-import com.ctrip.xpipe.redis.core.util.OrgUtil;
-import com.ctrip.xpipe.redis.meta.server.meta.impl.Crc32HashChooseRouteStrategy;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentKeeperShardMeta;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
-import com.ctrip.xpipe.utils.ObjectUtils;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,7 +163,7 @@ public class CurrentMeta implements Releasable {
 		return clusterMeta.getRouteByDcId(dcId);
 	}
 
-	public List<String> updateClusterRoutes(ClusterMeta clusterMeta, List<RouteMeta> routes) {
+	public List<String> updateClusterRoutes(ClusterMeta clusterMeta, Map<String, RouteMeta> routes) {
 		CurrentClusterMeta currentClusterMeta = currentMetas.get(clusterMeta.getDbId());
 		return currentClusterMeta.updateRoutes(routes, clusterMeta);
 	}
@@ -304,8 +299,8 @@ public class CurrentMeta implements Releasable {
 		private Map<Long, CurrentShardMeta> clusterMetas = new ConcurrentHashMap<>();
 		//map<dc, RouteMeta>
 		private Map<String, RouteMeta> outgoingRoutes = new ConcurrentHashMap<>();
-		@JsonIgnore
-		private ChooseRouteStrategy chooseRouteStrategy;
+//		@JsonIgnore
+//		private ChooseRouteStrategy chooseRouteStrategy;
 		public CurrentClusterMeta() {
 
 		}
@@ -402,78 +397,6 @@ public class CurrentMeta implements Releasable {
 			return clusterType;
 		}
 
-		private RouteMeta chooseRoute(Integer orgId, List<RouteMeta> dstDcRoutes, ChooseRouteStrategy strategy, String clusterDesignatedRouteIds) {
-			if(dstDcRoutes == null) return null;
-			List<RouteMeta> resultsCandidates = new LinkedList<>();
-
-			Set<Integer> clusterDesiganateRoutes = Sets.newHashSet();
-			if(!StringUtil.isEmpty(clusterDesignatedRouteIds)) {
-				Sets.newHashSet(clusterDesignatedRouteIds.split(",")).forEach(id->clusterDesiganateRoutes.add(Integer.valueOf(id.trim())));
-			}
-
-			if(!clusterDesiganateRoutes.isEmpty()) {
-				dstDcRoutes.forEach(routeMeta -> {
-					if(clusterDesiganateRoutes.contains(routeMeta.getId())){
-						resultsCandidates.add(routeMeta);
-					}
-				});
-
-				if(!resultsCandidates.isEmpty()){
-					return strategy.choose(resultsCandidates);
-				}
-			}
-
-			dstDcRoutes.forEach(routeMeta -> {
-				if(routeMeta.getIsPublic() && ObjectUtils.equals(routeMeta.getOrgId(), orgId)){
-					resultsCandidates.add(routeMeta);
-				}
-			});
-
-			if(!resultsCandidates.isEmpty()){
-				return strategy.choose(resultsCandidates);
-			}
-
-
-			dstDcRoutes.forEach(routeMeta -> {
-				if(routeMeta.getIsPublic() && OrgUtil.isDefaultOrg(routeMeta.getOrgId())){
-					resultsCandidates.add(routeMeta);
-				}
-			});
-
-			return strategy.choose(resultsCandidates);
-		}
-
-		private Map<String, RouteMeta> chooseRoutes(List<RouteMeta> routes, ClusterMeta clusterMeta) {
-			Map<String, RouteMeta> allRoutes = new ConcurrentHashMap<>();
-			if(routes == null || routes.isEmpty()){
-				return allRoutes;
-			}
-			logger.debug("routes: {}", routes);
-			Map<String, List<RouteMeta>> allDcRoutes = new ConcurrentHashMap<>();
-			routes.forEach(routeMeta -> {
-				String dcName = routeMeta.getDstDc();
-				List<RouteMeta> dcRoutes = MapUtils.getOrCreate(allDcRoutes, dcName, LinkedList::new);
-				dcRoutes.add(routeMeta);
-			});
-			Integer orgId = clusterMeta.getOrgId();
-			if(ClusterType.lookup(clusterType).supportMultiActiveDC()) {
-				String dcs = clusterMeta.getDcs();
-				if(StringUtil.isEmpty(dcs)) return allRoutes;
-				for (String dcId : dcs.split("\\s*,\\s*")) {
-					if (currentDcId.equalsIgnoreCase(dcId)) continue;
-					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy(), clusterMeta.getClusterDesignatedRouteIds());
-					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
-				}
-			} else {
-				String dcId = clusterMeta.getActiveDc();
-				if(!currentDcId.equalsIgnoreCase(dcId)) {
-					RouteMeta route = chooseRoute(orgId, allDcRoutes.get(dcId), this.getChooseRouteStrategy(), clusterMeta.getClusterDesignatedRouteIds());
-					if(route != null) allRoutes.put(dcId.toLowerCase(), route);
-				}
-			}
-			return allRoutes;
-		}
-
 		//callback changed dc list
 		List<String> diffRoutes(Map<String, RouteMeta> current, Map<String, RouteMeta> future) {
 			if(current == null || current.size() == 0) return new ArrayList<>(future.keySet());
@@ -497,10 +420,9 @@ public class CurrentMeta implements Releasable {
 			return changedDcs;
 		}
 
-		public List<String> updateRoutes(List<RouteMeta> routes, ClusterMeta clusterMeta) {
-			Map<String, RouteMeta> outgoingRoutes = chooseRoutes(routes, clusterMeta);
-			List<String> changedDcs = diffRoutes(this.outgoingRoutes, outgoingRoutes);
-			this.outgoingRoutes = outgoingRoutes;
+		public List<String> updateRoutes(Map<String, RouteMeta> newOutgoingRoutes, ClusterMeta clusterMeta) {
+			List<String> changedDcs = diffRoutes(this.outgoingRoutes, newOutgoingRoutes);
+			this.outgoingRoutes = newOutgoingRoutes;
 			return changedDcs;
 		}
 
@@ -510,17 +432,6 @@ public class CurrentMeta implements Releasable {
 
 		public void setOutgoingRoutes(Map<String, RouteMeta> outgoingRoutes) {
 			this.outgoingRoutes = outgoingRoutes;
-		}
-
-		public void setChooseRouteStrategy(ChooseRouteStrategy chooseRouteStrategy) {
-			this.chooseRouteStrategy = chooseRouteStrategy;
-		}
-
-		public ChooseRouteStrategy getChooseRouteStrategy() {
-			if(chooseRouteStrategy == null) {
-				this.chooseRouteStrategy = new Crc32HashChooseRouteStrategy(clusterId);
-			}
-			return this.chooseRouteStrategy;
 		}
 
 		public Map<String, RouteMeta> getOutgoingRoutes() {

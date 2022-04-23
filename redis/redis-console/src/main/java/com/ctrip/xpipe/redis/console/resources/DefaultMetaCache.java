@@ -13,8 +13,11 @@ import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
@@ -136,6 +139,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
         } catch (Throwable th) {
             logger.warn("[refreshClusterParts] fail", th);
         }
+    }
+
+    @Override
+    public Map<String, RouteMeta> chooseRoute(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes){
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+
+        return xpipeMetaManager.chooseMetaRoute(backUpDcName, peerDcs, orgId, clusterDesignatedRoutes,
+                RouteChooseStrategyFactory.DEFAULT.createRouteStrategy(consoleConfig.getChooseRouteStrategy(), clusterName));
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.model.WrongRouteUsedInfoModel;
+import com.ctrip.xpipe.redis.console.model.UseWrongRouteClusterInfoModel;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +20,8 @@ public class WrongRouteUsedCheckController extends AbstractConsoleController{
     ClusterService clusterService;
 
     @RequestMapping(value = "/wrong/route/used/all", method = RequestMethod.GET)
-    public WrongRouteUsedInfoModel getWrongRouteUsedInfoModel() {
+    public UseWrongRouteClusterInfoModel getWrongRouteUsedInfoModel() {
         logger.info("[getWrongRouteUsedInfoModel]");
-        return clusterService.findUnmatchedClusterRoutes();
+        return clusterService.findUseWrongRouteClusterInfos();
     }
 }

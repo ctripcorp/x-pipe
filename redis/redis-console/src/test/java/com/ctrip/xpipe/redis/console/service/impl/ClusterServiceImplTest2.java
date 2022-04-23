@@ -47,7 +47,7 @@ public class ClusterServiceImplTest2 extends AbstractServiceImplTest{
 
     @Test
     public void testFindUnmatchedClusterRoutes() {
-        clusterService.findUnmatchedClusterRoutes();
+        clusterService.findUseWrongRouteClusterInfos();
     }
 
     private XpipeMeta mockXpipeMeta() {

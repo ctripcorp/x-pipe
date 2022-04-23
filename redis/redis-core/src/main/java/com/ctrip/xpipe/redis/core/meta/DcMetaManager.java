@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,12 +15,9 @@ import java.util.Set;
  */
 public interface DcMetaManager{
 
-	/**
-	 * if no route found return null
-	 * @param clusterId
-	 * @return
-	 */
 	List<RouteMeta> getAllMetaRoutes();
+
+	Map<String, RouteMeta> chooseRoute(String clusterId, String strategy);
 
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc

@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.assertj.core.util.Maps;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -155,7 +156,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 		String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
 		RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("fra").setIsPublic(true);
-		when(dcMetaCache.getAllRoutes()).thenReturn(Lists.newArrayList(routeMeta1));
+		when(dcMetaCache.chooseRoute(Mockito.anyLong())).thenReturn(Maps.newHashMap("fra", routeMeta1));
 
 		doNothing().when(currentMetaServerMetaManager).notifyPeerMasterChange(Mockito.anyString(), Mockito.anyLong(), Mockito.anyLong());
 
@@ -179,13 +180,14 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 		String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
 		RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("jq").setIsPublic(true).setTag(Route.TAG_META);
-		when(dcMetaCache.getAllRoutes()).thenReturn(Lists.newArrayList(routeMeta1));
 		when(dcMetaCache.getClusterMeta(clusterDbId)).thenReturn(clusterMeta);
+		when(dcMetaCache.chooseRoute(Mockito.anyLong())).thenReturn(Maps.newHashMap("jq", routeMeta1));
 
 		int times = getCluster(getDcs()[0], clusterId).getShards().size();
 		currentMetaServerMetaManager.addMetaServerStateChangeHandler(handler);
 		currentMetaServerMetaManager.addCluster(clusterMeta.getDbId());
 		routeMeta1.setDstDc("oy");
+		when(dcMetaCache.chooseRoute(Mockito.anyLong())).thenReturn(Maps.newHashMap("oy", routeMeta1));
 		currentMetaServerMetaManager.routeChanges();
 
 		verify(handler, times(times)).keeperMasterChanged(eq(clusterDbId), anyLong(), any());
@@ -530,7 +532,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		DcMetaComparator dcMetaComparator = new DcMetaComparator(currentDcMeta, futureDcMeta);
 		dcMetaComparator.compare();
 		Mockito.when(currentMeta.hasCluster(clusterDbId)).thenReturn(true);
-		Mockito.when(currentMeta.updateClusterRoutes(Mockito.any(ClusterMeta.class), Mockito.anyList())).thenReturn(Lists.newArrayList("oy"));
+		Mockito.when(currentMeta.updateClusterRoutes(Mockito.any(ClusterMeta.class), Mockito.anyMap())).thenReturn(Lists.newArrayList("oy"));
 		doNothing().when(currentMetaServerMetaManager).refreshKeeperMaster(futureClusterMeta);
 		doAnswer(invocation -> {
 			Object clusterMetaComparator = invocation.getArgument(0, Object.class);
@@ -590,7 +592,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		DcMetaComparator dcMetaComparator = new DcMetaComparator(currentDcMeta, futureDcMeta);
 		dcMetaComparator.compare();
 		Mockito.when(currentMeta.hasCluster(clusterDbId)).thenReturn(true);
-		Mockito.when(currentMeta.updateClusterRoutes(Mockito.any(ClusterMeta.class), Mockito.anyList())).thenReturn(Lists.newArrayList("oy"));
+		Mockito.when(currentMeta.updateClusterRoutes(Mockito.any(ClusterMeta.class), Mockito.anyMap())).thenReturn(Lists.newArrayList("oy"));
 		doNothing().when(currentMetaServerMetaManager).notifyPeerMasterChange("oy", clusterDbId, shardDbId);
 		doAnswer(invocation -> {
 			Object clusterMetaComparator = invocation.getArgument(0, Object.class);

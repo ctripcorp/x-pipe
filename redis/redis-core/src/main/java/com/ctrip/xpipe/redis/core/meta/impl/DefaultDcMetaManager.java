@@ -6,14 +6,16 @@ import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author wenchao.meng
@@ -129,6 +131,39 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public List<RouteMeta> getAllMetaRoutes() {
 		return metaManager.metaRoutes(currentDc);
+	}
+
+	@Override
+	public Map<String, RouteMeta> chooseRoute(String clusterId, String strategy) {
+		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
+		List<String> peerDcs = getPeerDcs(clusterMeta);
+
+		Map<String, List<RouteMeta>> clusterDesignatedRoutes = getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
+
+		return metaManager.chooseMetaRoute(currentDc, peerDcs, clusterMeta.getOrgId(), clusterDesignatedRoutes,
+				RouteChooseStrategyFactory.DEFAULT.createRouteStrategy(strategy, clusterMeta.getId()));
+	}
+
+	private List<String> getPeerDcs(ClusterMeta clusterMeta) {
+		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+			return Lists.newArrayList(clusterMeta.getDcs().split("\\s*,\\s*"));
+		} else {
+			return Lists.newArrayList(clusterMeta.getActiveDc());
+		}
+	}
+
+	private Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterDesignatedRouteIds) {
+		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
+
+		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new ConcurrentHashMap<>();
+		List<RouteMeta> allMetaRoutes = getAllMetaRoutes();
+
+		allMetaRoutes.forEach((routeMeta -> {
+			if(clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId())))
+				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc(), ArrayList::new).add(routeMeta);
+		}));
+
+		return clusterDesignatedRoutes;
 	}
 
 	@Override
