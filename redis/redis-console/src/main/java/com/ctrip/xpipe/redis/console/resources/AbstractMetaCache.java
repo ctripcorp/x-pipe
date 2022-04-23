@@ -241,6 +241,10 @@ public abstract class AbstractMetaCache implements MetaCache {
                 .consoleRoutes(CURRENT_IDC);
     }
 
+    public Map<String, RouteMeta> chooseRoute(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
+        return null;
+    }
+
     @Override
     public boolean isCrossRegion(String activeDc, String backupDc) {
 

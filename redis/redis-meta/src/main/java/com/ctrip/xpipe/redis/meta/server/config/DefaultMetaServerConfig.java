@@ -51,7 +51,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	private static final String KEY_CORRECT_PEER_MASTER_PERIODICALLY = "meta.cluster.peermaster.correct.periodically";
 
+	private static final String KEY_ROUTE_CHOOSE_STRATEGY = "route.choose.strategy";
+
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
+
+	private String defaultRouteChooseStrategy = "crc32Hash";
 	
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));
@@ -184,6 +188,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public long getNewMasterCacheTimeoutMilli() {
 		return getLongProperty(KEY_NEW_MASTER_CACHE_TIMEOUT_MILLI, 5000L);
+	}
+
+	@Override
+	public String getChooseRouteStrategy() {
+		return getProperty(KEY_ROUTE_CHOOSE_STRATEGY ,defaultRouteChooseStrategy);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {

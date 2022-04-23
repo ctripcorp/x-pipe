@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -260,6 +261,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@Override
 	public List<RouteMeta> getAllRoutes() {
 		return dcMetaManager.get().getAllMetaRoutes();
+	}
+
+	@Override
+	public Map<String, RouteMeta> chooseRoute(long clusterDbId) {
+		return dcMetaManager.get().chooseRoute(clusterDbId2Name(clusterDbId), metaServerConfig.getChooseRouteStrategy());
 	}
 
 	@Override

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -82,6 +83,11 @@ public class TestMetaCache implements MetaCache {
 
     @Override
     public List<RouteMeta> getRoutes() {
+        return null;
+    }
+
+    @Override
+    public Map<String, RouteMeta> chooseRoute(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
         return null;
     }
 

@@ -4,9 +4,11 @@ package com.ctrip.xpipe.redis.core.meta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -136,6 +138,11 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default List<RouteMeta> consoleRoutes(String currentDc) {
 		return routes(currentDc, Route.TAG_CONSOLE);
 	}
+
+	default Map<String, RouteMeta> chooseMetaRoute(String currentDc, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy) { return chooseRoute(currentDc, peerDcs, orgId, clusterDesignatedRoutes, strategy, Route.TAG_META);}
+
+	default Map<String, RouteMeta> chooseRoute(String currentDc, List<String> peerDcs,  int orgId, Map<String, List<RouteMeta>>  clusterDesignatedRoutes, RouteChooseStrategy strategy, String tag) { return read(() -> doChooseRoute(currentDc, peerDcs, orgId, clusterDesignatedRoutes, strategy, tag));}
+	Map<String, RouteMeta> doChooseRoute(String currentDc, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy, String tag);
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;
 
