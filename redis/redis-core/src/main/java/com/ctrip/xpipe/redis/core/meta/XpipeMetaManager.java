@@ -139,10 +139,11 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 		return routes(currentDc, Route.TAG_CONSOLE);
 	}
 
-	default Map<String, RouteMeta> chooseMetaRoute(String currentDc, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy) { return chooseRoute(currentDc, peerDcs, orgId, clusterDesignatedRoutes, strategy, Route.TAG_META);}
+	default Map<String, RouteMeta> chooseMetaRoute(String currentDc, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy) { return chooseRoute(currentDc, peerDcs, orgId, strategy, Route.TAG_META, clusterDesignatedRoutes);}
 
-	default Map<String, RouteMeta> chooseRoute(String currentDc, List<String> peerDcs,  int orgId, Map<String, List<RouteMeta>>  clusterDesignatedRoutes, RouteChooseStrategy strategy, String tag) { return read(() -> doChooseRoute(currentDc, peerDcs, orgId, clusterDesignatedRoutes, strategy, tag));}
-	Map<String, RouteMeta> doChooseRoute(String currentDc, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy, String tag);
+	default Map<String, RouteMeta> chooseRoute(String currentDc, List<String> peerDcs,  int orgId, RouteChooseStrategy strategy, String tag, Map<String, List<RouteMeta>>  clusterDesignatedRoutes) {
+		return read(() -> doChooseRoute(currentDc, peerDcs, orgId, strategy, tag, clusterDesignatedRoutes));}
+	Map<String, RouteMeta> doChooseRoute(String currentDc, List<String> peerDcs, int orgId,RouteChooseStrategy strategy, String tag, Map<String, List<RouteMeta>> clusterDesignatedRoutes);
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;
 

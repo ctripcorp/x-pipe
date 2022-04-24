@@ -21,6 +21,6 @@ public class UseWrongRouteClusterCheckController extends AbstractConsoleControll
     @RequestMapping(value = "/use/wrong/route/clusters/all", method = RequestMethod.GET)
     public UseWrongRouteClusterInfoModel getUseWrongRouteClusterInfoModel() {
         logger.info("[getUseWrongRouteClusterInfoModel]");
-        return clusterService.findUseWrongRouteClusterInfos();
+        return clusterService.findUseWrongRouteClusterInfoModels();
     }
 }

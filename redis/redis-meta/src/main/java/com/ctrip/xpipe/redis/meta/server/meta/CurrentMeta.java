@@ -299,8 +299,7 @@ public class CurrentMeta implements Releasable {
 		private Map<Long, CurrentShardMeta> clusterMetas = new ConcurrentHashMap<>();
 		//map<dc, RouteMeta>
 		private Map<String, RouteMeta> outgoingRoutes = new ConcurrentHashMap<>();
-//		@JsonIgnore
-//		private ChooseRouteStrategy chooseRouteStrategy;
+
 		public CurrentClusterMeta() {
 
 		}

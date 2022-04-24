@@ -666,7 +666,8 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public Map<String, RouteMeta> doChooseRoute(String currentDc, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy, String tag) {
+	public Map<String, RouteMeta> doChooseRoute(String currentDc, List<String> peerDcs, int orgId, RouteChooseStrategy strategy,
+													String tag, Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
 		Map<String, RouteMeta> chooseRoutes = new ConcurrentHashMap<>();
 		if(peerDcs == null || peerDcs.isEmpty()) return chooseRoutes;
 
@@ -674,28 +675,32 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		routes(currentDc, tag).forEach((routeMeta -> {
 			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc().toLowerCase(), LinkedList::new).add(routeMeta);
 		}));
-		logger.debug("[doChooseRoute] peerDcs:{},orgId:{}, clusterDesignatedRoutes:{}, routes:{}", peerDcs, orgId, clusterDesignatedRoutes, dstDcRouteMap);
+		logger.debug("[doChooseRoute] peerDcs:{},orgId:{}, clusterDesignatedRoutes:{}, routes:{}",
+						peerDcs, orgId, clusterDesignatedRoutes, dstDcRouteMap);
 		if(dstDcRouteMap.isEmpty()) return chooseRoutes;
 
 		for(String peerDc : peerDcs) {
 			if(currentDc.equalsIgnoreCase(peerDc)) continue;
 
-			RouteMeta chooseRoute = chooseOneDirectionRoute(peerDc, orgId, dstDcRouteMap.get(peerDc.toLowerCase()), clusterDesignatedRoutes, strategy);
+			RouteMeta chooseRoute = chooseOneDirectionRoute(peerDc, orgId, dstDcRouteMap.get(peerDc.toLowerCase()), strategy, clusterDesignatedRoutes);
 			logger.debug("[doChooseRoute] peerDc:{}, chooseRoute:{}", peerDc, chooseRoute);
 			if(chooseRoute != null) chooseRoutes.put(peerDc.toLowerCase(), chooseRoute);
 		}
 		return chooseRoutes;
 	}
 
-	private RouteMeta chooseOneDirectionRoute(String peerDc, int orgId, List<RouteMeta> routes, Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy) {
+	private RouteMeta chooseOneDirectionRoute(String peerDc, int orgId, List<RouteMeta> routes, RouteChooseStrategy strategy,
+											  Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
 		if(routes == null || routes.isEmpty()) return null;
 
-		RouteMeta designatedRoute = clusterDesignatedRoutes == null ? null : chooseRouteFromClusterDesignatedRoute(peerDc, routes, clusterDesignatedRoutes.get(peerDc.toLowerCase()), strategy);;
+		RouteMeta designatedRoute = clusterDesignatedRoutes == null ?
+					null : chooseRouteFromClusterDesignatedRoute(peerDc, routes, clusterDesignatedRoutes.get(peerDc.toLowerCase()), strategy);;
 
 		return designatedRoute != null ? designatedRoute : chooseDefaultRoute(orgId, routes, strategy);
 	}
 
-	private RouteMeta chooseRouteFromClusterDesignatedRoute(String peerDc, List<RouteMeta> routes, List<RouteMeta> clusterDcDesignatedRoutes, RouteChooseStrategy strategy) {
+	private RouteMeta chooseRouteFromClusterDesignatedRoute(String peerDc, List<RouteMeta> routes,
+															List<RouteMeta> clusterDcDesignatedRoutes, RouteChooseStrategy strategy) {
 		if(clusterDcDesignatedRoutes == null || clusterDcDesignatedRoutes.isEmpty() ) return null;
 		List<RouteMeta> routeCandidates = new LinkedList<>();
 
