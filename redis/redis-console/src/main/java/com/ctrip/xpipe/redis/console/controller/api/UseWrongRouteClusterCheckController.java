@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(AbstractConsoleController.API_PREFIX)
 public class UseWrongRouteClusterCheckController extends AbstractConsoleController{
-
     private static final Logger logger = LoggerFactory.getLogger(UseWrongRouteClusterCheckController.class);
 
     @Autowired

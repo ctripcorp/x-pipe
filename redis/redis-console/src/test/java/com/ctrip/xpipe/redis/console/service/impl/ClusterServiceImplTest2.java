@@ -103,7 +103,7 @@ public class ClusterServiceImplTest2 {
         useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfos();
         Assert.assertEquals(1, useWrongRouteClusterInfos.getUseWrongRouteClusterNum());
         String direction = String.format("%s------>%s", mockDcs.get(0), mockDcs.get(2));
-        Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getWrongRouteUsedDirection().get(direction));
+        Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getUseWrongRouteClusterNumWithDirection().get(direction));
         UseWrongRouteClusterInfoModel.UseWrongRouteClusterDetail clusterDetail = useWrongRouteClusterInfos.getUseWrongRouteClusterDetails().get(mockClusters.get(0)).get(0);
         Assert.assertEquals(mockClusters.get(0), clusterDetail.getClusterName());
         Assert.assertEquals(1, clusterDetail.getChooseRouteId());

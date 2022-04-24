@@ -1,14 +1,17 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.util.*;
 
+@JsonPropertyOrder({"useWrongRouteClusterNum", "useWrongRouteClusterNumWithDirection", "useWrongRouteClusterDetails"})
 public class UseWrongRouteClusterInfoModel {
 
     private int useWrongRouteClusterNum;
 
     private Map<String, Integer> useWrongRouteClusterNumWithDirection;
 
-    private Map<String, List<UseWrongRouteClusterDetail> > useWrongRouteClusterDetails;
+    private Map<String, List<UseWrongRouteClusterDetail>> useWrongRouteClusterDetails;
 
     public UseWrongRouteClusterInfoModel() {
         this.useWrongRouteClusterDetails = new HashMap<>();
@@ -39,12 +42,12 @@ public class UseWrongRouteClusterInfoModel {
         return this;
     }
 
-    public Map<String, Integer> getWrongRouteUsedDirection() {
+    public Map<String, Integer> getUseWrongRouteClusterNumWithDirection() {
         return useWrongRouteClusterNumWithDirection;
     }
 
-    public UseWrongRouteClusterInfoModel setWrongRouteUsedDirection(Map<String, Integer> wrongRouteUsedDirectionInfos) {
-        this.useWrongRouteClusterNumWithDirection = wrongRouteUsedDirectionInfos;
+    public UseWrongRouteClusterInfoModel setUseWrongRouteClusterNumWithDirection(Map<String, Integer> useWrongRouteClusterNumWithDirection) {
+        this.useWrongRouteClusterNumWithDirection = useWrongRouteClusterNumWithDirection;
         return this;
     }
 
