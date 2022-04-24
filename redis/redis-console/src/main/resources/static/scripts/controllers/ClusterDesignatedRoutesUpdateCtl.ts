@@ -136,8 +136,5 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
             }, function(result) {
                  toastr.error(AppUtil.errorMsg(result), "更新失败");
             });
-
-
     }
-
 }

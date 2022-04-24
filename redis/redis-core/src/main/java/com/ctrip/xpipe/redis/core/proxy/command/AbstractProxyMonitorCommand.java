@@ -40,7 +40,6 @@ public abstract class AbstractProxyMonitorCommand<T> extends AbstractProxyComman
 
     @Override
     public ByteBuf getRequest() {
-        getLogger().debug("command:{}, target:{}", String.format("%s %s", MONITOR_PREFIX, getType().name()), getClientPool());
         return new SimpleStringParser(String.format("%s %s", MONITOR_PREFIX, getType().name())).format();
     }
 

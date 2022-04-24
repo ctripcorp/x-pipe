@@ -41,7 +41,6 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
-
     }
 
     function loadDcClusterRoutes(dcName, clusterName) {
@@ -51,12 +50,14 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
+
         ClusterService.getClusterUsedRoutesByDcNameAndClusterName(dcName, clusterName)
              .then(function (result) {
                  $scope.usedRoutes = result;
              }, function (result) {
                  toastr.error(AppUtil.errorMsg(result));
              });
+
          ClusterService.getClusterDefaultRoutesByDcNameAndClusterName(dcName, clusterName)
               .then(function (result) {
                   $scope.defaultRoutes = result;

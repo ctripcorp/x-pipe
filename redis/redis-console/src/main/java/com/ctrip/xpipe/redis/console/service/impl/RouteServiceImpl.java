@@ -96,8 +96,8 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public List<RouteInfoModel> getAllActiveRouteInfoModelsByTagAndSrcDcName(String tag, String srcDcName) {
-        DcTbl byDcName = dcService.findByDcName(srcDcName);
-        long id = byDcName.getId();
+        DcTbl dcTbl = dcService.findByDcName(srcDcName);
+        long id = dcTbl.getId();
         List<RouteTbl> result = routeDao.getAllActiveRoutesByTagAndSrcDcId(tag, id);
         return convertRouteTblsToRouteInfoModels(routeDao.getAllActiveRoutesByTagAndSrcDcId(tag, dcService.findByDcName(srcDcName).getId()));
     }

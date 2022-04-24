@@ -35,7 +35,6 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ClusterServiceImplTest2 {
-
     @InjectMocks
     private ClusterServiceImpl clusterService;
 
@@ -92,7 +91,7 @@ public class ClusterServiceImplTest2 {
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), routeMeta1));
         // test use right route
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
-        UseWrongRouteClusterInfoModel useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfos();
+        UseWrongRouteClusterInfoModel useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfoModels();
         Assert.assertEquals(0, useWrongRouteClusterInfos.getUseWrongRouteClusterNum());
 
         //test use wrong route
@@ -100,7 +99,7 @@ public class ClusterServiceImplTest2 {
         tunnelInfos = Lists.newArrayList(tunnelInfo1);
         proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
-        useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfos();
+        useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfoModels();
         Assert.assertEquals(1, useWrongRouteClusterInfos.getUseWrongRouteClusterNum());
         String direction = String.format("%s------>%s", mockDcs.get(0), mockDcs.get(2));
         Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getUseWrongRouteClusterNumWithDirection().get(direction));
