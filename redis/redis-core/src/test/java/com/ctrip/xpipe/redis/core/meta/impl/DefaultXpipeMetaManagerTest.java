@@ -318,7 +318,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 	@Test
 	public void testChooseRouteBiDirection() {
-		List<String> peerDcs = Lists.newArrayList("jq", "oy");
+		List<String> peerDcs = Lists.newArrayList("jq", "OY");
 		String currentDc = "fra";
 		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(clusterId1);
 		RouteMeta routeMeta1 = new RouteMeta().setId(1);

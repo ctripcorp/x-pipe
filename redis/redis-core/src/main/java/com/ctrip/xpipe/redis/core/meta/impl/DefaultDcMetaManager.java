@@ -160,7 +160,7 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 		allMetaRoutes.forEach((routeMeta -> {
 			if(clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId())))
-				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc(), ArrayList::new).add(routeMeta);
+				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
 		}));
 
 		return clusterDesignatedRoutes;

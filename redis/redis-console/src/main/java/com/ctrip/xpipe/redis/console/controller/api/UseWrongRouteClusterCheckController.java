@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(AbstractConsoleController.API_PREFIX)
-public class WrongRouteUsedCheckController extends AbstractConsoleController{
+public class UseWrongRouteClusterCheckController extends AbstractConsoleController{
 
-    private static final Logger logger = LoggerFactory.getLogger(WrongRouteUsedCheckController.class);
+    private static final Logger logger = LoggerFactory.getLogger(UseWrongRouteClusterCheckController.class);
 
     @Autowired
     ClusterService clusterService;
 
-    @RequestMapping(value = "/wrong/route/used/all", method = RequestMethod.GET)
-    public UseWrongRouteClusterInfoModel getWrongRouteUsedInfoModel() {
-        logger.info("[getWrongRouteUsedInfoModel]");
+    @RequestMapping(value = "/use/wrong/route/clusters/all", method = RequestMethod.GET)
+    public UseWrongRouteClusterInfoModel getUseWrongRouteClusterInfoModel() {
+        logger.info("[getUseWrongRouteClusterInfoModel]");
         return clusterService.findUseWrongRouteClusterInfos();
     }
 }
