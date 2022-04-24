@@ -59,6 +59,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
 
         // normal logic
+        configChangedClusters.clear();
+        shardOrRedisChangedClusters.clear();
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
         DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
         dcRouteMetaComparator.compare();
