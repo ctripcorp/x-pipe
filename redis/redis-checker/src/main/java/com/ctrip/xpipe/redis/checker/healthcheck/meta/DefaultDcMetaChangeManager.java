@@ -59,8 +59,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
 
         // normal logic
-        configChangedClusters.clear();
-        shardOrRedisChangedClusters.clear();
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
         DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
         dcRouteMetaComparator.compare();
@@ -88,6 +86,9 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             clusterMetaComparatorVisitor.getShardsToAdd().forEach(this::addShard);
             clusterMetaComparatorVisitor.getRedisToAdd().forEach(this::addRedis);
         });
+
+        configChangedClusters.clear();
+        shardOrRedisChangedClusters.clear();
     }
 
     private void removeCluster(ClusterMeta removed) {
