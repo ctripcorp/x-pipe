@@ -108,11 +108,14 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	default Set<String> getBackupDcs(String clusterId, String shardId) { return read(()->doGetBackupDcs(clusterId, shardId)); }
 	Set<String> doGetBackupDcs(String clusterId, String shardId);
 
-	default Set<String> getDownstreamDcs(String clusterId, String shardId) { return read(()->doGetDownstreamDcs(clusterId, shardId)); }
-	Set<String> doGetDownstreamDcs(String clusterId, String shardId);
+	default Set<String> getDownstreamDcs(String dc, String clusterId, String shardId) { return read(()->doGetDownstreamDcs(dc, clusterId, shardId)); }
+	Set<String> doGetDownstreamDcs(String dc, String clusterId, String shardId);
 
 	default String getUpstreamDc(String dc, String clusterId, String shardId){ return read(()->doGetUpstreamDc(dc, clusterId, shardId)); }
 	String doGetUpstreamDc(String dc, String clusterId, String shardId);
+
+	default String getSrcDc(String dc, String clusterId, String shardId){ return read(()->doGetSrcDc(dc, clusterId, shardId)); }
+	String doGetSrcDc(String dc, String clusterId, String shardId);
 
 	default Set<String> getRelatedDcs(String clusterId, String shardId) { return read(()->doGetRelatedDcs(clusterId, shardId)); }
 	Set<String> doGetRelatedDcs(String clusterId, String shardId);

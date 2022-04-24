@@ -50,8 +50,8 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	}
 
 	@Override
-	public String getSids(String clusterId, String shardId) {
-	    return restTemplate.getForObject(sidsPath, String.class, clusterId, shardId);
+	public String getSids(String dcId, String clusterId, String shardId) {
+	    return restTemplate.getForObject(sidsPath, String.class, dcId, clusterId, shardId);
 	}
 
 	@Override

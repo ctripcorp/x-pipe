@@ -118,37 +118,33 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	}
 
 	@Override
-	public Set<String> doGetDownstreamDcs(String clusterId, String shardId) {
+	public Set<String> doGetDownstreamDcs(String dc, String clusterId, String shardId) {
 
-		boolean found = false;
+		DcMeta dcMeta = getDirectDcMeta(dc);
+		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
 
-		//TODO ayq why loop
-		for(DcMeta dcMeta : xpipeMeta.getDcs().values()){
-			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
-			if(clusterMeta == null){
-				continue;
-			}
-
-			found = true;
-
-			if(StringUtil.isEmpty(clusterMeta.getDownstreamDcs())){
-				logger.info("[getDownstreamDcs][downstream dcs empty]{}, {}", dcMeta.getId(), clusterMeta);
-				continue;
-			}
-
-
-			Set<String> downstreamDcs = expandDcs(clusterMeta.getDownstreamDcs());
-			return downstreamDcs;
+		if (clusterMeta == null) {
+			throw new MetaException("clusterId " + clusterId + " not found!");
 		}
 
-		if(found){
-			return new HashSet<>();
-		}
-		throw new MetaException("clusterId " + clusterId + " not found!");
+		return expandDcs(clusterMeta.getDownstreamDcs());
 	}
 
 	@Override
 	public String doGetUpstreamDc(String dc, String clusterId, String shardId) {
+
+		SourceMeta source = getSourceOrThrow(dc, clusterId, shardId);
+		return source.getUpstreamDc();
+	}
+
+	@Override
+	public String doGetSrcDc(String dc, String clusterId, String shardId) {
+
+	    SourceMeta source = getSourceOrThrow(dc, clusterId, shardId);
+	    return source.getSrcDc();
+	}
+
+	private SourceMeta getSourceOrThrow(String dc, String clusterId, String shardId) {
 
 		DcMeta dcMeta = getDirectDcMeta(dc);
 		ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
@@ -161,7 +157,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 			throw new MetaException("clusterId " + clusterId + "shardId" + shardId + " not found!");
 		}
 
-		return ((SourceMeta)shardMeta.parent()).getUpstreamDc();
+		return shardMeta.parent();
 	}
 
 	@Override

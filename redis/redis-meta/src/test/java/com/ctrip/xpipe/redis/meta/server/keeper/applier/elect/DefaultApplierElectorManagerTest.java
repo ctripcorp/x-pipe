@@ -87,8 +87,7 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
         dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-03", null, JsonCodec.INSTANCE.encodeAsBytes(new ApplierMeta().setId("127.0.0.1").setPort(portBegin + 2))));
         dataList.add(new ChildData(prefix + "/"+ randomString(10) + "-latch-01", null, JsonCodec.INSTANCE.encodeAsBytes(new ApplierMeta().setId("127.0.0.1").setPort(portBegin))));
 
-        when(dcMetaCache.getUpstreamDc(anyString(), anyLong(), anyLong())).thenReturn("upstreamDc");
-        when(multiDcService.getSids(anyString(), anyLong(), anyLong())).thenReturn("a1");
+        when(multiDcService.getSids(any(), any(), anyLong(), anyLong())).thenReturn("a1");
 
         applierElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
 
@@ -125,14 +124,14 @@ public class DefaultApplierElectorManagerTest extends AbstractApplierElectorMana
         applierElectorManager.observerShardLeader(clusterDbId, shardDbId);
         addApplierZkNode(clusterDbId, shardDbId, getZkClient());
         waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager).setSurviveAppliers(anyLong(), anyLong(), anyList(), any(ApplierMeta.class), any());
+            verify(currentMetaManager).setSurviveAppliersAndNotify(anyLong(), anyLong(), anyList(), any(ApplierMeta.class), any());
             verify(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
         }));
 
         when(currentMetaManager.watchApplierIfNotWatched(anyLong(), anyLong())).thenReturn(false);
         applierElectorManager.observerShardLeader(clusterDbId, shardDbId);
         waitConditionUntilTimeOut(()->assertSuccess(()->{
-            verify(currentMetaManager).setSurviveAppliers(anyLong(), anyLong(), anyList(), any(ApplierMeta.class), any());
+            verify(currentMetaManager).setSurviveAppliersAndNotify(anyLong(), anyLong(), anyList(), any(ApplierMeta.class), any());
             verify(currentMetaManager).addResource(anyLong(), anyLong(), any(Releasable.class));
         }));
     }

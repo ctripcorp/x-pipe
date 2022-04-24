@@ -395,7 +395,11 @@ public class DefaultApplierManager extends AbstractCurrentMetaObserver implement
                                                             Pair<String, Integer> master) {
 
         RouteMeta routeMeta = currentMetaManager.randomRoute(clusterDbId);
-        String sids = multiDcService.getSids(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+
+        String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId, shardDbId);
+
         List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
         GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, shardDbId, redises, sids);
         return new ApplierStateChangeJob(appliers, master, sids, gtidSet, routeMeta, clientPool, scheduled, executors);

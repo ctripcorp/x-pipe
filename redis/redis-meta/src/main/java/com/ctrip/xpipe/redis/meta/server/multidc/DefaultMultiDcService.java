@@ -4,7 +4,6 @@ package com.ctrip.xpipe.redis.meta.server.multidc;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
@@ -53,12 +52,13 @@ public class DefaultMultiDcService implements MultiDcService{
 	}
 
 	@Override
-	public String getSids(String dcName, Long clusterDbId, Long shardDbId) {
+	public String getSids(String dcName, String srcDc, Long clusterDbId, Long shardDbId) {
+
 		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
 		if (null == metaServerMultiDcService) return null;
 
 		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
-		return metaServerMultiDcService.getSids(clusterShard.getKey(), clusterShard.getValue());
+		return metaServerMultiDcService.getSids(srcDc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	private MetaServerMultiDcService getMetaServerMultiDcService(String dcName) {

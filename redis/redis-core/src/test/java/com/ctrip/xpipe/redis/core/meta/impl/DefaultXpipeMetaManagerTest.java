@@ -203,7 +203,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	@Test
 	public void testGetDownstreamDcs() {
 
-		Set<String> real = metaManager.getDownstreamDcs(clusterHeteroId1, shardId);
+		Set<String> real = metaManager.getDownstreamDcs(dc, clusterHeteroId1, shardId);
 
 		logger.info("[testGetDownstreamDcs]{}", real);
 
@@ -213,7 +213,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Assert.assertEquals(expected, real);
 
 		try {
-			metaManager.getDownstreamDcs(randomString(), shardId);
+			metaManager.getDownstreamDcs(dc, randomString(), shardId);
 			Assert.fail();
 		} catch (Exception e) {
 
