@@ -43,11 +43,19 @@ public interface DcMetaCache extends Observable {
 
 	boolean isCurrentDcPrimary(Long clusterDbId);
 
+	boolean isCurrentDcBackUp(Long clusterDbId, Long shardDbId);
+
+	boolean isCurrentDcBackUp(Long clusterDbId);
+
+	boolean isCurrentShardParentCluster(Long clusterDbId, Long shardDbId);
+
 	Set<String> getBakupDcs(Long clusterDbId, Long shardDbId);
 
-	Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId);
+	Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId);
 
 	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
+	String getSrcDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 

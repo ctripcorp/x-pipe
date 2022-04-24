@@ -24,6 +24,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
@@ -324,6 +325,25 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		return isCurrentDcPrimary(clusterDbId, null);
 	}
 
+	@Override
+	public boolean isCurrentDcBackUp(Long clusterDbId, Long shardDbId) {
+	    Set<String> dcSet = dcMetaManager.get().getBackupDcs(clusterDbId, shardDbId);
+		if (CollectionUtils.isEmpty(dcSet)) {
+			return false;
+		}
+
+		return dcSet.contains(currentDc.toLowerCase());
+	}
+
+	@Override
+	public boolean isCurrentDcBackUp(Long clusterDbId) {
+		return isCurrentDcBackUp(clusterDbId, null);
+	}
+
+	@Override
+	public boolean isCurrentShardParentCluster(Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getShardMeta(clusterDbId, shardDbId).parent() instanceof ClusterMeta;
+	}
 
 	@Override
 	public List<KeeperMeta> getShardKeepers(Long clusterDbId, Long shardDbId) {
@@ -347,14 +367,19 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId) {
+	public Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId) {
 
-		return dcMetaManager.get().getDownstreamDcs(clusterDbId, shardDbId);
+		return dcMetaManager.get().getDownstreamDcs(dc, clusterDbId, shardDbId);
 	}
 
 	@Override
 	public String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId) {
 	    return dcMetaManager.get().getUpstreamDc(dc, clusterDbId, shardDbId);
+	}
+
+	@Override
+	public String getSrcDc(String dc, Long clusterDbId, Long shardDbId) {
+		return dcMetaManager.get().getSrcDc(dc, clusterDbId, shardDbId);
 	}
 
 	@Override

@@ -42,7 +42,7 @@ public abstract class AbstractApplierMasterChooser extends AbstractClusterShardP
             return;
         }
 
-        String sid = getUpstreamSids();
+        String sid = getSrcSids();
         logger.debug("[doRun][set]cluster_{}, shard_{}, {}, sid_{}", clusterDbId, shardDbId, applierMaster, sid);
 
         currentMetaManager.setApplierMasterAndNotify(clusterDbId, shardDbId, applierMaster.getKey(), applierMaster.getValue(), sid);
@@ -55,5 +55,5 @@ public abstract class AbstractApplierMasterChooser extends AbstractClusterShardP
 
     protected abstract Pair<String, Integer> chooseApplierMaster();
 
-    protected abstract String getUpstreamSids();
+    protected abstract String getSrcSids();
 }

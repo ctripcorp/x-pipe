@@ -57,13 +57,15 @@ public class DefaultDcApplierMasterChooser extends AbstractApplierMasterChooser 
     }
 
     @Override
-    protected String getUpstreamSids() {
-        String dcName = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+    protected String getSrcSids() {
 
-        String upstreamSids = multiDcService.getSids(dcName, clusterDbId, shardDbId);
-        logger.debug("[getUpstreamSids] upstreamDc_{}, cluster_{}, shard_{}, sids_{}", dcName, clusterDbId, shardDbId, upstreamSids);
+        String srcDc = dcMetaCache.getSrcDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+        String upstreamDc = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
 
-        return upstreamSids;
+        String sids = multiDcService.getSids(upstreamDc, srcDc, clusterDbId, shardDbId);
+        logger.debug("[getSrcSids] upstreamDc_{}, srcDc_{}, cluster_{}, shard_{}, sids_{}", upstreamDc, srcDc, clusterDbId, shardDbId, sids);
+
+        return sids;
     }
 
     protected ApplierMasterChooserAlgorithm getApplierMasterChooserAlgorithm() {

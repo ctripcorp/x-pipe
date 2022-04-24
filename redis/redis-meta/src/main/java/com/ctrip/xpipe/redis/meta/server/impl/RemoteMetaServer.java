@@ -81,13 +81,12 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public String getSids(String clusterId, String shardId, ForwardInfo forwardInfo) {
-		//TODO ayq defaultmetaserver and remoteMetaserver 怎么区分用哪个？
+	public String getSids(String srcDcId, String clusterId, String shardId, ForwardInfo forwardInfo) {
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo);
 		logger.debug("[getSids][forward]{},{},{} --> {}", clusterId, shardId, forwardInfo, this);
 
 		HttpEntity<Void> entity = new HttpEntity<>(headers);
-		ResponseEntity<String> response = restTemplate.exchange(getSidsPath, HttpMethod.GET, entity, String.class, clusterId, shardId);
+		ResponseEntity<String> response = restTemplate.exchange(getSidsPath, HttpMethod.GET, entity, String.class, srcDcId, clusterId, shardId);
 		return response.getBody();
 	}
 
@@ -139,13 +138,13 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public void updateUpstream(String clusterId, String shardId, String ip, int port, String sid, ForwardInfo forwardInfo) {
+	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.UPSTREAM_CHANGE.getForwardType());
 		logger.info("[updateUpstream][forward]{},{},{}:{}, {}--> {}", clusterId, shardId, ip, port, forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
-		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port, sid);
+		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port);
 		
 	}
 

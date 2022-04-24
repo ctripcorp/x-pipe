@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.KeeperMasterChooserAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -38,27 +37,21 @@ public class DefaultDcKeeperMasterChooser extends AbstractKeeperMasterChooser {
 	@Override
 	protected Pair<String, Integer> chooseKeeperMaster() {
 
-		//TODO ayq how to ensure current dc is hetero dr or hetero downstream: sources is empty?
-		/*
-			if 主机房: PrimaryDcKeeperMasterChooserAlgorithm
-			if 单向 备机房或 异构DR机房： BackupDcKeeperMasterChooserAlgorithm
-			if 异构下游机房：HeteroDownStreamDcKeeperMasterChooserAlgorithm
-		 */
-		if(dcMetaCache.isCurrentDcPrimary(clusterDbId, shardDbId)){
-			
-			if(keeperMasterChooserAlgorithm == null || !(keeperMasterChooserAlgorithm instanceof PrimaryDcKeeperMasterChooserAlgorithm)){
-				
-				logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
-				keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
+		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+		    if (dcMetaCache.isCurrentDcBackUp(clusterDbId)){
+				if(!(keeperMasterChooserAlgorithm instanceof BackupDcKeeperMasterChooserAlgorithm)){
+					logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+					keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
+				}
+			}else{
+				if(!(keeperMasterChooserAlgorithm instanceof PrimaryDcKeeperMasterChooserAlgorithm)){
+
+					logger.info("[chooseKeeperMaster][current dc become primary, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
+					keeperMasterChooserAlgorithm = new PrimaryDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, keyedObjectPool, checkIntervalSeconds/2, scheduled);
+				}
 			}
-		}else if (ClusterType.ONE_WAY.equals(dcMetaCache.getClusterType(clusterDbId)) ||
-				dcMetaCache.getBakupDcs(clusterDbId, shardDbId).contains(dcMetaCache.getCurrentDc())) {
-			if(keeperMasterChooserAlgorithm == null || !(keeperMasterChooserAlgorithm instanceof BackupDcKeeperMasterChooserAlgorithm)){
-				logger.info("[chooseKeeperMaster][current dc become backup, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
-				keeperMasterChooserAlgorithm = new BackupDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
-			}
-		}else {
-			if(keeperMasterChooserAlgorithm == null || !(keeperMasterChooserAlgorithm instanceof HeteroDownStreamDcKeeperMasterChooserAlgorithm)){
+		} else {
+			if(!(keeperMasterChooserAlgorithm instanceof HeteroDownStreamDcKeeperMasterChooserAlgorithm)){
 				logger.info("[chooseKeeperMaster][current dc hetero downstream, change algorithm]cluster_{}, shard_{}", clusterDbId, shardDbId);
 				keeperMasterChooserAlgorithm = new HeteroDownStreamDcKeeperMasterChooserAlgorithm(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, multiDcService, scheduled);
 			}

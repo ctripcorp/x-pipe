@@ -239,15 +239,19 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public Set<String> getDownstreamDcs(String clusterId, String shardId) {
-
-		return metaManager.getDownstreamDcs(clusterId, shardId);
+	public Set<String> getDownstreamDcs(String dc, String clusterId, String shardId) {
+		return metaManager.getDownstreamDcs(dc, clusterId, shardId);
 	}
 
 	@Override
 	public String getUpstreamDc(String dc, String clusterId, String shardId) {
 
 	    return metaManager.getUpstreamDc(dc, clusterId, shardId);
+	}
+
+	public String getSrcDc(String dc, String clusterId, String shardId) {
+
+		return metaManager.getSrcDc(dc, clusterId, shardId);
 	}
 
 	@Override
@@ -463,20 +467,25 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 
 	@Override
 	public Set<String> getBackupDcs(Long clusterDbId, Long shardDbId) {
-		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return getBackupDcs(clusterShard.getKey(), clusterShard.getValue());
+		return getBackupDcs(clusterDbId2Name(clusterDbId), null);
 	}
 
 	@Override
-	public Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId) {
+	public Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
-		return getDownstreamDcs(clusterShard.getKey(), clusterShard.getValue());
+		return getDownstreamDcs(dc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override
 	public String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId) {
 		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
 		return getUpstreamDc(dc, clusterShard.getKey(), clusterShard.getValue());
+	}
+
+	@Override
+	public String getSrcDc(String dc, Long clusterDbId, Long shardDbId) {
+		Pair<String, String> clusterShard = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return getSrcDc(dc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
 	@Override

@@ -92,7 +92,7 @@ public interface DcMetaManager{
 
 	Set<String> getBackupDcs(String clusterId, String shardId);
 
-	Set<String> getDownstreamDcs(String clusterId, String shardId);
+	Set<String> getDownstreamDcs(String dc, String clusterId, String shardId);
 
 	String getUpstreamDc(String dc, String clusterId, String shardId);
 
@@ -159,9 +159,11 @@ public interface DcMetaManager{
 
 	Set<String> getBackupDcs(Long clusterDbId, Long shardDbId);
 
-	Set<String> getDownstreamDcs(Long clusterDbId, Long shardDbId);
+	Set<String> getDownstreamDcs(String dc, Long clusterDbId, Long shardDbId);
 
 	String getUpstreamDc(String dc, Long clusterDbId, Long shardDbId);
+
+	String getSrcDc(String dc, Long clusterDbId, Long shardDbId);
 
 	Set<String> getRelatedDcs(Long clusterDbId, Long shardDbId);
 

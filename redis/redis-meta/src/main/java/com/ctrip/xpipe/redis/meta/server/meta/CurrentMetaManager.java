@@ -57,7 +57,7 @@ public interface CurrentMetaManager extends Observable {
 
 	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
 
-	void setSurviveAppliers(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids);
+	void setSurviveAppliersAndNotify(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids);
 
 	GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids);
 

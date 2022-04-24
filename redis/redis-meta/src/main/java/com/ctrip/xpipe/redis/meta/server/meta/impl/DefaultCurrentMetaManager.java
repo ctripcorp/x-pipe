@@ -499,7 +499,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public void setSurviveAppliers(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids) {
+	public void setSurviveAppliersAndNotify(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids) {
 		currentMeta.setSurviveAppliers(clusterDbId, shardDbId, surviveAppliers, activeApplier);
 		notifyApplierActiveElected(clusterDbId, shardDbId, activeApplier, sids);
 	}
