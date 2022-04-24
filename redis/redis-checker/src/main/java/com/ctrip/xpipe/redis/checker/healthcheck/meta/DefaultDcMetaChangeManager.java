@@ -16,8 +16,9 @@ import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.function.BiConsumer;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -38,6 +39,9 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
     private final String dcId;
+
+    private List<ClusterMetaComparator> configChangedClusters = new ArrayList<>();
+    private List<ClusterMetaComparatorVisitor> shardOrRedisChangedClusters = new ArrayList<>();
 
     public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory) {
         this.dcId = dcId;
@@ -65,18 +69,23 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             healthCheckEndpointFactory.updateRoutes();
         }
         comparator.accept(this);
+        removeAndAdd();
 
         this.current = future;
     }
 
-    private void reloadCluster(ClusterMeta current, ClusterMeta future) {
-        this.removeCluster(current);
-        this.addCluster(future);
-    }
+    private void removeAndAdd() {
+        this.shardOrRedisChangedClusters.forEach(clusterMetaComparatorVisitor -> {
+            clusterMetaComparatorVisitor.getRedisToDelete().forEach(this::removeRedis);
+            clusterMetaComparatorVisitor.getShardsToDelete().forEach(this::removeShard);
+        });
+        this.configChangedClusters.forEach(clusterMetaComparator -> removeCluster(clusterMetaComparator.getCurrent()));
 
-    private void reloadShard(ShardMeta current, ShardMeta future) {
-        this.removeShard(current);
-        this.addShard(future);
+        this.configChangedClusters.forEach(clusterMetaComparator -> addCluster(clusterMetaComparator.getFuture()));
+        this.shardOrRedisChangedClusters.forEach(clusterMetaComparatorVisitor -> {
+            clusterMetaComparatorVisitor.getShardsToAdd().forEach(this::addShard);
+            clusterMetaComparatorVisitor.getRedisToAdd().forEach(this::addRedis);
+        });
     }
 
     private void removeCluster(ClusterMeta removed) {
@@ -143,9 +152,11 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     public void visitModified(MetaComparator comparator) {
         ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
         if (comparator.isConfigChange()) {
-            reloadCluster(clusterMetaComparator.getCurrent(), clusterMetaComparator.getFuture());
+            this.configChangedClusters.add(clusterMetaComparator);
         } else {
-            clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged, shardConfigChanged));
+            ClusterMetaComparatorVisitor clusterMetaComparatorVisitor = new ClusterMetaComparatorVisitor();
+            clusterMetaComparator.accept(clusterMetaComparatorVisitor);
+            this.shardOrRedisChangedClusters.add(clusterMetaComparatorVisitor);
         }
     }
 
@@ -171,29 +182,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return true;
     }
 
-    private BiConsumer<ShardMeta, ShardMeta> shardConfigChanged = new BiConsumer<ShardMeta, ShardMeta>() {
-        @Override
-        public void accept(ShardMeta current, ShardMeta future) {
-            if (!isInterestedInCluster(current.parent())) {
-                logger.debug("[shardConfigChanged][{}][{}][skip] cluster not interested", current.parent().getId(), current.getId());
-                return;
-            }
-            reloadShard(current, future);
-        }
-    };
-
-    private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
-        @Override
-        public void accept(RedisMeta redisMeta) {
-            if (!isInterestedInCluster(redisMeta.parent().parent())) {
-                logger.debug("[redisChanged][{}:{}][skip] cluster not interested", redisMeta.getIp(), redisMeta.getPort());
-                return;
-            }
-            logger.info("[redisChanged][{}:{}] {}", redisMeta.getIp(), redisMeta.getPort(), redisMeta);
-            removeRedis(redisMeta);
-            addRedis(redisMeta);
-        }
-    };
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
         @Override

@@ -22,7 +22,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.Matchers.any;
@@ -73,7 +75,11 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     private DcMeta cloneDcMeta(String dc) {
-        DcMeta dcMeta = MetaClone.clone(getDcMeta(dc));
+        return cloneDcMeta(getDcMeta(dc));
+    }
+
+    private DcMeta cloneDcMeta(DcMeta source){
+        DcMeta dcMeta = MetaClone.clone(source);
         for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
             clusterMeta.setParent(dcMeta);
             for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
@@ -308,6 +314,68 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager.compare(future);
         Mockito.verify(factory, times(2)).updateRoutes();
 
+    }
+
+    @Test
+    public void testSwitchClusterName() throws Exception {
+        prepareData("oy");
+        DcMeta future = cloneDcMeta("oy");
+        ClusterMeta cluster1 = future.findCluster("cluster1");
+        ClusterMeta cluster2 = future.findCluster("cluster2");
+
+        future.addCluster(cluster1.setId("cluster2"));
+        future.addCluster(cluster2.setId("cluster1"));
+        manager.compare(future);
+
+        Mockito.verify(instanceManager, times(1)).getOrCreate(any(ClusterMeta.class));
+        Mockito.verify(instanceManager, times(4)).getOrCreate(any(RedisMeta.class));
+        Mockito.verify(instanceManager, times(4)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, never()).remove(anyString());
+    }
+
+    private void changeClusterShardId(ClusterMeta clusterMeta) {
+        Map<String, ShardMeta> modified = new HashMap<>();
+        for (ShardMeta value : clusterMeta.getShards().values()) {
+            String id = value.getId();
+            String newId = clusterMeta.getId() + id;
+            modified.put(newId, value.setId(newId));
+        }
+        changeClusterShards(clusterMeta, modified);
+    }
+
+    private void changeClusterShards(ClusterMeta clusterMeta, Map<String, ShardMeta> shards) {
+        clusterMeta.getShards().clear();
+        for (ShardMeta value : shards.values()) {
+            clusterMeta.addShard(value);
+        }
+    }
+
+    @Test
+    public void testSwitchClusterShards() throws Exception {
+       DcMeta dcMeta= getDcMeta("oy");
+        ClusterMeta cluster1 = dcMeta.findCluster("cluster1");
+        changeClusterShardId(cluster1);
+
+        ClusterMeta cluster2 = dcMeta.findCluster("cluster2");
+        changeClusterShardId(cluster2);
+
+        manager.compare(dcMeta);
+
+        DcMeta future = cloneDcMeta(dcMeta);
+        ClusterMeta cluster1Future = future.findCluster("cluster1");
+        Map<String, ShardMeta> cluster1ShardsCopy = new HashMap<>(cluster1Future.getShards());
+        ClusterMeta cluster2Future = future.findCluster("cluster2");
+        Map<String, ShardMeta> cluster2ShardsCopy = new HashMap<>(cluster2Future.getShards());
+
+        changeClusterShards(cluster1Future,cluster2ShardsCopy);
+        changeClusterShards(cluster2Future,cluster1ShardsCopy);
+
+        manager.compare(future);
+
+        Mockito.verify(instanceManager, never()).getOrCreate(any(ClusterMeta.class));
+        Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
+        Mockito.verify(instanceManager, times(4)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, never()).remove(anyString());
     }
 
 
