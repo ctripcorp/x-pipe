@@ -852,7 +852,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				findUseWrongRouteClusters(clusterMeta, dcMeta.getId(), dcMeta.getRoutes(), useWrongRouteClusterInfoModel);
 			}
 		}
-		useWrongRouteClusterInfoModel.addUsedWrongRouteCluster("cluster1", "UAT-AWS", "UAT", Sets.newHashSet(1, 2), 4);
 		return useWrongRouteClusterInfoModel;
 	}
 
