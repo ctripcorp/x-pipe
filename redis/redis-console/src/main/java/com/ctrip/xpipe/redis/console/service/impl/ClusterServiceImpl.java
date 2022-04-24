@@ -862,8 +862,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Map<String, Set<Integer>> usedDcRoutes = getUsedRoutes(srcDcName, clusterMeta, allDcRoutes);
 
 		for(String dstDcName : chooseDcRoutes.keySet()) {
-			if(usedDcRoutes.get(dstDcName) == null
-					|| !ObjectUtils.equals(usedDcRoutes.get(dstDcName), Sets.newHashSet(chooseDcRoutes.get(dstDcName).getId()))) {
+			if(usedDcRoutes.get(dstDcName.toLowerCase()) == null
+					|| !ObjectUtils.equals(usedDcRoutes.get(dstDcName.toLowerCase()), Sets.newHashSet(chooseDcRoutes.get(dstDcName.toLowerCase()).getId()))) {
 				useWrongRouteClusterInfoModel.addUsedWrongRouteCluster(clusterMeta.getId(), srcDcName, dstDcName,
 						usedDcRoutes.get(dstDcName), chooseDcRoutes.get(dstDcName).getId());
 			}
@@ -880,7 +880,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 				RouteMeta usedRoute = getShardUsedRouteByDirection(srcDcName, peerDc, clusterMeta.getId(), shardMeta.getId(), allDcRoutes);
 				if(usedRoute != null)
-					MapUtils.getOrCreate(usedDcRoutes, usedRoute.getDstDc(), () -> Sets.newHashSet()).add(usedRoute.getId());
+					MapUtils.getOrCreate(usedDcRoutes, usedRoute.getDstDc().toLowerCase(), () -> Sets.newHashSet()).add(usedRoute.getId());
 			}
 		}
 
@@ -923,7 +923,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		routes.forEach((routeMeta -> {
 			if(clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId())))
-				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc(), ArrayList::new).add(routeMeta);
+				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
 		}));
 
 		return clusterDesignatedRoutes;
