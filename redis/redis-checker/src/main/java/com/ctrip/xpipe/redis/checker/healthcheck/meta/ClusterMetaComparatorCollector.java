@@ -10,15 +10,11 @@ import com.ctrip.xpipe.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author chen.zhu
- * <p>
- * Aug 28, 2018
- */
-public class ClusterMetaComparatorCollector implements MetaComparatorCollector<ShardMeta, Pair<List<RedisMeta>,List<RedisMeta>>> {
 
-    private List<RedisMeta> redisToAdd = new ArrayList<>();
-    private List<RedisMeta> redisToDelete = new ArrayList<>();
+public class ClusterMetaComparatorCollector implements MetaComparatorCollector<ShardMeta, Pair<List<RedisMeta>, List<RedisMeta>>> {
+
+    private final List<RedisMeta> redisToAdd = new ArrayList<>();
+    private final List<RedisMeta> redisToDelete = new ArrayList<>();
 
     @Override
     public void visitAdded(ShardMeta added) {
@@ -36,8 +32,8 @@ public class ClusterMetaComparatorCollector implements MetaComparatorCollector<S
             ShardMetaComparatorCollector shardMetaComparatorCollector = new ShardMetaComparatorCollector();
             shardMetaComparator.accept(shardMetaComparatorCollector);
             Pair<List<RedisMeta>, List<RedisMeta>> modifiedRedises=shardMetaComparatorCollector.collect();
-            this.redisToAdd.addAll(modifiedRedises.getValue());
             this.redisToDelete.addAll(modifiedRedises.getKey());
+            this.redisToAdd.addAll(modifiedRedises.getValue());
         }
     }
 

@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
-import com.ctrip.xpipe.redis.core.meta.MetaComparatorCollector;
+import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  * <p>
  * Aug 28, 2018
  */
-public class DefaultDcMetaChangeManager extends AbstractStartStoppable implements DcMetaChangeManager, MetaComparatorCollector<ClusterMeta, Pair<List<RedisMeta>,List<RedisMeta>>> {
+public class DefaultDcMetaChangeManager extends AbstractStartStoppable implements DcMetaChangeManager, MetaComparatorVisitor<ClusterMeta> {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDcMetaChangeManager.class);
 
@@ -211,8 +211,4 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         }
     }
 
-    @Override
-    public Pair<List<RedisMeta>, List<RedisMeta>> collect() {
-        return new Pair<>(redisListToDelete, redisListToAdd);
-    }
 }
