@@ -3,19 +3,20 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
-import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
+import com.ctrip.xpipe.redis.core.meta.MetaComparatorCollector;
 import com.ctrip.xpipe.redis.core.meta.comparator.RedisComparator;
+import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ShardMetaComparatorVisitor implements MetaComparatorVisitor<Redis> {
-    private static final Logger logger = LoggerFactory.getLogger(ShardMetaComparatorVisitor.class);
+public class ShardMetaComparatorCollector implements MetaComparatorCollector<Redis, Pair<List<RedisMeta>, List<RedisMeta>>> {
+    private static final Logger logger = LoggerFactory.getLogger(ShardMetaComparatorCollector.class);
 
-    private List<RedisMeta> toAdd = new ArrayList<>();
-    private List<RedisMeta> toDelete = new ArrayList<>();
+    private final List<RedisMeta> toAdd = new ArrayList<>();
+    private final List<RedisMeta> toDelete = new ArrayList<>();
 
     @Override
     public void visitAdded(Redis added) {
@@ -42,11 +43,9 @@ public class ShardMetaComparatorVisitor implements MetaComparatorVisitor<Redis> 
         }
     }
 
-    public List<RedisMeta> getToAdd() {
-        return toAdd;
+    @Override
+    public Pair<List<RedisMeta>, List<RedisMeta>> collect() {
+        return new Pair<>(toDelete, toAdd);
     }
 
-    public List<RedisMeta> getToDelete() {
-        return toDelete;
-    }
 }

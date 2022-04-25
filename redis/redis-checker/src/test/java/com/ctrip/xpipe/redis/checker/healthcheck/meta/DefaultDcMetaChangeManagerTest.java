@@ -95,34 +95,6 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         return dcMeta;
     }
 
-    @Test
-    public void visitAddOneWayCluster() {
-        manager.visitAdded(getDcMeta("oy").findCluster("cluster2"));
-        verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
-
-        Set<HostPort> expectedRedises = Sets.newHashSet(new HostPort("127.0.0.1", 8100),
-                new HostPort("127.0.0.1", 8101), new HostPort("127.0.0.1", 16479),
-                new HostPort("127.0.0.1", 17479));
-        manager.visitAdded(getDcMeta("oy").findCluster("cluster1"));
-        verify(instanceManager, times(4)).getOrCreate(any(RedisMeta.class));
-        Assert.assertEquals(expectedRedises, addedRedises);
-    }
-
-    @Test
-    public void visitAddBiDirectionCluster() {
-        // add cluster not in current dc
-        manager.visitAdded(getDcMeta("oy").findCluster("cluster4"));
-        verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
-
-        // add cluster in current dc
-        Set<HostPort> expectedRedises = Sets.newHashSet(new HostPort("10.0.0.1", 6379),
-                new HostPort("10.0.0.2", 6379));
-        manager.visitAdded(getDcMeta("jq").findCluster("cluster3"));
-        manager.visitAdded(getDcMeta("oy").findCluster("cluster3"));
-
-        verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
-        Assert.assertEquals(expectedRedises, addedRedises);
-    }
 
     @Test
     public void visitModified() {
@@ -374,7 +346,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         Mockito.verify(instanceManager, never()).getOrCreate(any(ClusterMeta.class));
         Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
-        Mockito.verify(instanceManager, times(4)).remove(any(HostPort.class));
+        Mockito.verify(instanceManager, times(6)).remove(any(HostPort.class));
         Mockito.verify(instanceManager, never()).remove(anyString());
     }
 
