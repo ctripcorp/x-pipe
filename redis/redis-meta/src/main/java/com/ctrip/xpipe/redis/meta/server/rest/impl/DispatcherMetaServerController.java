@@ -97,6 +97,15 @@ public class DispatcherMetaServerController extends AbstractDispatcherMetaServer
 		}, metaServer);
 	}
 
+
+	@RequestMapping(path = META_SERVER_SERVICE.PATH.PATH_SIDS_CHANGE, method = RequestMethod.PUT)
+	public void sidsChange(@PathVariable String clusterId, @PathVariable String shardId, @PathVariable String sids,
+								   @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {
+
+		logger.debug("[sidsChange]{},{},{}", clusterId, shardId, sids);
+		metaServer.sidsChange(clusterId, shardId, sids, forwardInfo);
+	}
+
 	@GetMapping(path = META_SERVER_SERVICE.PATH.GET_SIDS, produces= MediaType.APPLICATION_JSON_VALUE)
 	public DeferredResult<String> getSids(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId,
 											   @ModelAttribute ForwardInfo forwardInfo, @ModelAttribute(MODEL_META_SERVER) MetaServer metaServer) {

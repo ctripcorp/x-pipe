@@ -118,6 +118,30 @@ public class CurrentMeta implements Releasable {
 		return result.filterGtid(uuidSet);
 	}
 
+	public String getSids(Long clusterDbId, Long shardDbId, List<RedisMeta> redises){
+
+		checkClusterSupportApplier(clusterDbId);
+
+		logger.debug("[getSids]{}, {}", clusterDbId, shardDbId);
+
+		StringBuilder result = new StringBuilder();
+		if (redises == null) {
+			return result.toString();
+		}
+
+		for (RedisMeta redis : redises) {
+			if (redis.getSid() == null) {
+				continue;
+			}
+			if (result.length() != 0) {
+				result.append(",");
+			}
+			result.append(redis.getSid());
+		}
+
+		return result.toString();
+	}
+
 	public void addResource(Long clusterDbId, Long shardDbId, Releasable releasable) {
 		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
 		currentShardMeta.addResource(releasable);

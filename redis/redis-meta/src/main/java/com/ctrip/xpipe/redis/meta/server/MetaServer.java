@@ -29,6 +29,8 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	String getSids(String srcDcId, String clusterId, String shardId, ForwardInfo forwardInfo);
 
+	void sidsChange(String clusterId, String shardId, String sids, ForwardInfo forwardInfo);
+
 	RedisMeta getCurrentMaster(String clusterId, String shardId, ForwardInfo forwardInfo);
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);

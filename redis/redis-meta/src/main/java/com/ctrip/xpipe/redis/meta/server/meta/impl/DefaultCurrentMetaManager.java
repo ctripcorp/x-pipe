@@ -510,6 +510,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public String getSids(Long clusterDbId, Long shardDbId, List<RedisMeta> redises) {
+	    return currentMeta.getSids(clusterDbId, shardDbId, redises);
+	}
+
+	@Override
 	public void setKeeperMaster(Long clusterDbId, Long shardDbId, String ip, int port) {
 		
 		

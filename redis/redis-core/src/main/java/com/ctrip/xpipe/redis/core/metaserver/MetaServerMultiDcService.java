@@ -24,4 +24,6 @@ public interface MetaServerMultiDcService extends MetaServerService{
 	RedisMeta getPeerMaster(String clusterId, String shardId);
 
 	String getSids(String dcId, String clusterId, String shardId);
+
+	void sidsChange(String clusterId, String shardId, String sids);
 }
