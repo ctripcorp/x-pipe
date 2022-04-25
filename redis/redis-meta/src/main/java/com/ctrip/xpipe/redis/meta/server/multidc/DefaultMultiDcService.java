@@ -61,6 +61,16 @@ public class DefaultMultiDcService implements MultiDcService{
 		return metaServerMultiDcService.getSids(srcDc, clusterShard.getKey(), clusterShard.getValue());
 	}
 
+	@Override
+	public void sidsChange(String dcName, Long clusterDbId, Long shardDbId, String sids) {
+
+		MetaServerMultiDcService metaServerMultiDcService = getMetaServerMultiDcService(dcName);
+		if (null == metaServerMultiDcService) return;
+
+		Pair<String, String> clusterShard = dcMetaCache.clusterShardDbId2Name(clusterDbId, shardDbId);
+		metaServerMultiDcService.sidsChange(clusterShard.getKey(), clusterShard.getValue(), sids);
+	}
+
 	private MetaServerMultiDcService getMetaServerMultiDcService(String dcName) {
 		dcName = dcName.toLowerCase();
 		DcInfo dcInfo = metaServerConfig.getDcInofs().get(dcName);

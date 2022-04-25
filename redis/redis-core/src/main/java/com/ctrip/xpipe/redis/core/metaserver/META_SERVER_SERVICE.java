@@ -31,7 +31,8 @@ public enum META_SERVER_SERVICE {
     UPSTREAM_CHANGE(PATH.PATH_UPSTREAM_CHANGE, ForwardType.FORWARD),
     GET_PEER_MASTER(PATH.GET_PEER_MASTER, ForwardType.FORWARD),
     UPSTREAM_PEER_CHANGE(PATH.PATH_UPSTREAM_PEER_CHANGE, ForwardType.FORWARD),
-    GET_SIDS(PATH.GET_SIDS, ForwardType.FORWARD);
+    GET_SIDS(PATH.GET_SIDS, ForwardType.FORWARD),
+    SIDS_CHANGE(PATH.PATH_SIDS_CHANGE, ForwardType.FORWARD);
 
     private String path;
     private ForwardType forwardType;
@@ -122,6 +123,7 @@ public enum META_SERVER_SERVICE {
         public static final String GET_PEER_MASTER = "/getpeermaster/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
         public static final String PATH_UPSTREAM_PEER_CHANGE = "/upstreampeerchange/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
         public static final String GET_SIDS = "/getsids/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
+        public static final String PATH_SIDS_CHANGE = "/sidschange/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE + "/{sids}";
 
     }
 

@@ -34,6 +34,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -141,22 +142,27 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		logger.debug("[getSids]{}, {}", clusterId, shardId);
 		List<RedisMeta> redises = dcMetaCache.getShardRedises(clusterShard.getKey(), clusterShard.getValue());
 
-		StringBuilder result = new StringBuilder();
-		if (redises == null) {
-			return result.toString();
+		return currentMetaManager.getSids(clusterShard.getKey(), clusterShard.getValue(), redises);
+	}
+
+	@Override
+	public void sidsChange(String clusterId, String shardId, String sids, ForwardInfo forwardInfo) {
+
+		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
+
+		ApplierMeta applier = currentMetaManager.getApplierActive(clusterShard.getKey(), clusterShard.getValue());
+		if (applier != null) {
+			Pair<String, Integer> applierMaster = currentMetaManager.getApplierMaster(clusterShard.getKey(), clusterShard.getValue());
+
+			logger.info("[sidsChange][applier]{},{},{},{},{}", clusterId, shardId, applierMaster.getKey(), applierMaster.getValue(), sids);
+			currentMetaManager.setApplierMasterAndNotify(clusterShard.getKey(), clusterShard.getValue(), applierMaster.getKey(), applierMaster.getValue(), sids);
 		}
 
-		for (RedisMeta redis : redises) {
-			if (redis.getSid() == null) {
-				continue;
-			}
-			if (result.length() != 0) {
-				result.append(",");
-			}
-			result.append(redis.getSid());
+		Set<String> downstreamDcs = dcMetaCache.getDownstreamDcs(dcMetaCache.getCurrentDc(), clusterShard.getKey(), clusterShard.getValue());
+		for (String downstreamDc : downstreamDcs) {
+			logger.debug("[sidsChange]downstream dc {}, cluster_{}, shard_{}", downstreamDc, clusterId, shardId);
+			multiDcService.sidsChange(downstreamDc, clusterShard.getKey(), clusterShard.getValue(), sids);
 		}
-
-		return result.toString();
 	}
 
 	@Override
@@ -223,13 +229,12 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
 
 		if (dcMetaCache.isCurrentShardParentCluster(clusterShard.getKey(), clusterShard.getValue())) {
-			if (!dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())) {
-
-				logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
-				currentMetaManager.setKeeperMaster(clusterShard.getKey(), clusterShard.getValue(), ip, port);
-			} else {
+		    if (dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())) {
 				logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterShard.getKey(), clusterShard.getValue(), ip,
 						port);
+			} else {
+				logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
+				currentMetaManager.setKeeperMaster(clusterShard.getKey(), clusterShard.getValue(), ip, port);
 			}
 		} else {
 			List<KeeperMeta> keepers = dcMetaCache.getShardKeepers(clusterShard.getKey(), clusterShard.getValue());

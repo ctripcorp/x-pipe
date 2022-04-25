@@ -61,6 +61,8 @@ public interface CurrentMetaManager extends Observable {
 
 	GtidSet getGtidSet(Long clusterDbId, Long shardDbId, List<RedisMeta> redises, String sids);
 
+	String getSids(Long clusterDbId, Long shardDbId, List<RedisMeta> redises);
+
 	boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper);
 
 	boolean watchKeeperIfNotWatched(Long clusterDbId, Long shardDbId);
