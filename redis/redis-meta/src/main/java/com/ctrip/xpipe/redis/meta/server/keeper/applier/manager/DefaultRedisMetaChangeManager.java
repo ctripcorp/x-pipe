@@ -8,9 +8,9 @@ import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.RedisMetaChangeManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
-import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -29,9 +29,6 @@ public class DefaultRedisMetaChangeManager extends AbstractCurrentMetaObserver i
 
     @Autowired
     private DcMetaCache dcMetaCache;
-
-    @Autowired
-    private CurrentMetaManager currentMetaManager;
 
     @Autowired
     private MultiDcService multiDcService;
@@ -73,5 +70,15 @@ public class DefaultRedisMetaChangeManager extends AbstractCurrentMetaObserver i
     @Override
     public Set<ClusterType> getSupportClusterTypes() {
         return Collections.singleton(ClusterType.HETERO);
+    }
+
+    @VisibleForTesting
+    public void setMultiDcService(MultiDcService multiDcService) {
+        this.multiDcService = multiDcService;
+    }
+
+    @VisibleForTesting
+    public void setDcMetaCache(DcMetaCache dcMetaCache) {
+        this.dcMetaCache = dcMetaCache;
     }
 }
