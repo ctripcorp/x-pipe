@@ -13,6 +13,8 @@ public interface AlertConfig {
 
     String KEY_ALERT_WHITE_LIST = "console.alert.whitelist";
 
+    String KEY_ALERT_CLUSTER_EXCLUDED_REGEX = "console.alert.excluded.regex";
+
     String KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE = "no.alarm.minute.for.cluster.update";
 
     String KEY_XPIPE_ADMIN_EMAILS = "xpipe.admin.emails";
@@ -48,5 +50,7 @@ public interface AlertConfig {
     String getRedisAlertSenderEmail();
 
     String getConsoleDomain();
+
+    String getClusterExcludedRegex();
 
 }
