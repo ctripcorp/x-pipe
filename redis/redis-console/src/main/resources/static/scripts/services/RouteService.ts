@@ -17,9 +17,9 @@ function RouteService($resource, $q) {
             url: '/console/route/tag/:tag',
             isArray: true
         },
-        get_route_by_tag_and_src_dc:{
+        get_route_by_tag_and_src_dc_name:{
             method: 'GET',
-            url: 'console/route/srcDcName/:srcDcName/',
+            url: 'console/route/src-dc-name/:srcDcName/',
             isArray: true
         },
         get_all_active_routes_by_tag_and_direction:{
@@ -80,9 +80,9 @@ function RouteService($resource, $q) {
         return d.promise;
     }
 
-    function getAllActiveRoutesBySrcDc(srcDcName) {
+    function getAllActiveRoutesBySrcDcName(srcDcName) {
         var d = $q.defer();
-        resource.get_route_by_tag_and_src_dc({
+        resource.get_route_by_tag_and_src_dc_name({
             srcDcName : srcDcName
         }, function(result) {
             d.resolve(result);
@@ -205,7 +205,7 @@ function RouteService($resource, $q) {
     return {
         getAllActiveRoutes : getAllActiveRoutes,
         getAllActiveRoutesByTag : getAllActiveRoutesByTag,
-        getAllActiveRoutesBySrcDc : getAllActiveRoutesBySrcDc,
+        getAllActiveRoutesBySrcDcName : getAllActiveRoutesBySrcDcName,
         getAllActiveRoutesByTagAndDirection : getAllActiveRoutesByTagAndDirection,
         getRouteById : getRouteById,
         getAllRouteDirectionInfosByTag : getAllRouteDirectionInfosByTag,

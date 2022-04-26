@@ -1,15 +1,12 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.model.UseWrongRouteClusterInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
-import com.ctrip.xpipe.redis.console.service.DcClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Sets;
@@ -42,34 +39,25 @@ public class ClusterServiceImplTest2 {
     private ProxyServiceImpl proxyService;
 
     @Mock
-    private DcClusterService dcClusterService;
-
-    @Mock
-    private DcService dcService;
-
-    @Mock
-    private ClusterDao clusterDao;
-
-    @Mock
     private MetaCache metaCache;
 
-    private List<String> mockDcs = Arrays.asList("fra", "oy", "jq");
+    private final List<String> mockDcs = Arrays.asList("fra", "oy", "jq");
 
-    private List<String> mockClusters = Arrays.asList("cluster1", "cluster2", "bi-cluster1", "bi-cluster2");
+    private final List<String> mockClusters = Arrays.asList("cluster1", "cluster2", "bi-cluster1", "bi-cluster2");
 
-    private List<String> mockShards = Arrays.asList("shard1", "shard2");
+    private final List<String> mockShards = Arrays.asList("shard1", "shard2");
 
-    private RouteMeta routeMeta1 = new RouteMeta().setId(1).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(2)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.1:80 PROXYTLS://1.1.1.2:443");
-    private RouteMeta routeMeta2 = new RouteMeta().setId(2).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(2)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.3:80 PROXYTLS://1.1.1.4:443");
-    private RouteMeta routeMeta3 = new RouteMeta().setId(3).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(1)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.5:80 PROXYTLS://1.1.1.6:443");
-    private RouteMeta routeMeta4 = new RouteMeta().setId(4).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(1)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.7:80 PROXYTLS://1.1.1.8:443");
+    private final RouteMeta routeMeta1 = new RouteMeta().setId(1).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(2)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.1:80 PROXYTLS://1.1.1.2:443");
+    private final RouteMeta routeMeta2 = new RouteMeta().setId(2).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(2)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.3:80 PROXYTLS://1.1.1.4:443");
+    private final RouteMeta routeMeta3 = new RouteMeta().setId(3).setOrgId(1).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(1)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.5:80 PROXYTLS://1.1.1.6:443");
+    private final RouteMeta routeMeta4 = new RouteMeta().setId(4).setOrgId(0).setTag("meta").setSrcDc(mockDcs.get(0)).setDstDc(mockDcs.get(1)).setIsPublic(true).setRouteInfo("PROXYTCP://1.1.1.7:80 PROXYTLS://1.1.1.8:443");
 
-    private ShardMeta shardMeta = new ShardMeta().setId(mockShards.get(0));
+    private final ShardMeta shardMeta = new ShardMeta().setId(mockShards.get(0));
 
-    private ClusterMeta clusterMeta1 = new ClusterMeta().setId(mockClusters.get(0)).setActiveDc(mockDcs.get(2)).setPhase(1).setOrgId(1).setClusterDesignatedRouteIds("").setType(ClusterType.ONE_WAY.name()).addShard(shardMeta);
-    private ClusterMeta clusterMeta2 = new ClusterMeta().setId(mockClusters.get(1)).setActiveDc(mockDcs.get(2)).setPhase(1).setOrgId(0).setClusterDesignatedRouteIds("").setType(ClusterType.ONE_WAY.name()).addShard(shardMeta);
-    private ClusterMeta clusterMeta3 = new ClusterMeta().setId(mockClusters.get(2)).setDcs("jq, oy, fra").setPhase(1).setOrgId(0).setClusterDesignatedRouteIds("1,3").setType(ClusterType.BI_DIRECTION.name()).addShard(shardMeta);
-    private ClusterMeta clusterMeta4 = new ClusterMeta().setId(mockClusters.get(3)).setDcs("jq, oy, fra").setPhase(1).setOrgId(1).setClusterDesignatedRouteIds("").setType(ClusterType.BI_DIRECTION.name()).addShard(shardMeta);
+    private final ClusterMeta clusterMeta1 = new ClusterMeta().setId(mockClusters.get(0)).setActiveDc(mockDcs.get(2)).setPhase(1).setOrgId(1).setClusterDesignatedRouteIds("").setType(ClusterType.ONE_WAY.name()).addShard(shardMeta);
+    private final ClusterMeta clusterMeta2 = new ClusterMeta().setId(mockClusters.get(1)).setActiveDc(mockDcs.get(2)).setPhase(1).setOrgId(0).setClusterDesignatedRouteIds("").setType(ClusterType.ONE_WAY.name()).addShard(shardMeta);
+    private final ClusterMeta clusterMeta3 = new ClusterMeta().setId(mockClusters.get(2)).setDcs("jq, oy, fra").setPhase(1).setOrgId(0).setClusterDesignatedRouteIds("1,3").setType(ClusterType.BI_DIRECTION.name()).addShard(shardMeta);
+    private final ClusterMeta clusterMeta4 = new ClusterMeta().setId(mockClusters.get(3)).setDcs("jq, oy, fra").setPhase(1).setOrgId(1).setClusterDesignatedRouteIds("").setType(ClusterType.BI_DIRECTION.name()).addShard(shardMeta);
 
     @Before
     public void beforeTest() {

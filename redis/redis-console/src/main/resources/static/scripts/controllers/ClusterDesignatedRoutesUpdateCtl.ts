@@ -48,7 +48,7 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
     }
 
     function loadDcClusterRoutes(dcName, clusterName) {
-        ClusterService.getClusterDesignatedRoutesByDcNameAndClusterName(dcName, clusterName)
+        ClusterService.getClusterDesignatedRoutesBySrcDcNameAndClusterName(dcName, clusterName)
             .then(function (result) {
                 $scope.designatedRoutes = result;
             }, function (result) {
@@ -67,7 +67,7 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
     function preAddClusterDesignatedRoute() {
         $scope.toAddDesignatedRoutes = [];
 
-        RouteService.getAllActiveRoutesBySrcDc($scope.currentDcName)
+        RouteService.getAllActiveRoutesBySrcDcName($scope.currentDcName)
             .then(function (result) {
                 $scope.allRouteIds=[];
                 result.forEach(function (route) {
@@ -122,7 +122,7 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
     }
 
     function submitUpdates() {
-        ClusterService.updateClusterDesignatedRoutes($scope.clusterName, $scope.currentDcName, $scope.designatedRoutes)
+        ClusterService.updateClusterDesignatedRoutes($scope.currentDcName, $scope.clusterName, $scope.designatedRoutes)
             .then(function(result){
                 if(result.message == 'success' ) {
                     toastr.success("更新成功");

@@ -281,7 +281,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 	@Test
 	public void testChooseRouteOneWay() {
-		List<String> peerDcs = Lists.newArrayList("jq");
+		List<String> dstDcs = Lists.newArrayList("jq");
 		String currentDc = "fra";
 		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(clusterId1);
 		RouteMeta routeMeta1 = new RouteMeta().setId(1);
@@ -291,26 +291,26 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		RouteMeta routeMeta9 = new RouteMeta().setId(9);
 
 		//test same org-id
-		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, null, strategy);
+		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, null, strategy);
 		Assert.assertEquals(1, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta2)).getId(), chooseRoute.get("jq").getId());
 
 		//test default org-id
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 0, null, strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 0, null, strategy);
 		Assert.assertEquals(1, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta4)).getId(), chooseRoute.get("jq").getId());
 
 
 		//test cluster designated route
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, Maps.newHashMap("jq", Lists.newArrayList(routeMeta3, routeMeta9)), strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, Maps.newHashMap("jq", Lists.newArrayList(routeMeta3, routeMeta9)), strategy);
 		Assert.assertEquals(1, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3)).getId(), chooseRoute.get("jq").getId());
 
 		//test cluster designated route wrong
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, Maps.newHashMap("jq", Lists.newArrayList(routeMeta9)), strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, Maps.newHashMap("jq", Lists.newArrayList(routeMeta9)), strategy);
 		Assert.assertEquals(1, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta2)).getId(), chooseRoute.get("jq").getId());
@@ -318,7 +318,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 	@Test
 	public void testChooseRouteBiDirection() {
-		List<String> peerDcs = Lists.newArrayList("jq", "OY");
+		List<String> dstDcs = Lists.newArrayList("jq", "OY");
 		String currentDc = "fra";
 		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(clusterId1);
 		RouteMeta routeMeta1 = new RouteMeta().setId(1);
@@ -329,14 +329,14 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		RouteMeta routeMeta10 = new RouteMeta().setId(10);
 
 		//test same org-id
-		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, null, strategy);
+		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, null, strategy);
 		Assert.assertEquals(2, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq", "oy"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta2)).getId(), chooseRoute.get("jq").getId());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9)).getId(), chooseRoute.get("oy").getId());
 
 		//test default org-id
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 0, null, strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 0, null, strategy);
 		Assert.assertEquals(2, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq", "oy"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta4)).getId(), chooseRoute.get("jq").getId());
@@ -344,14 +344,14 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 
 		//test cluster designated route
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, Maps.newHashMap("oy", Lists.newArrayList(routeMeta10)), strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, Maps.newHashMap("oy", Lists.newArrayList(routeMeta10)), strategy);
 		Assert.assertEquals(2, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq", "oy"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta2)).getId(), chooseRoute.get("jq").getId());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10)).getId(), chooseRoute.get("oy").getId());
 
 		//test cluster designated route wrong
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, Maps.newHashMap("oy", Lists.newArrayList(routeMeta3)), strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, Maps.newHashMap("oy", Lists.newArrayList(routeMeta3)), strategy);
 		Assert.assertEquals(2, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq", "oy"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta2)).getId(), chooseRoute.get("jq").getId());
@@ -360,7 +360,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Map<String, List<RouteMeta>> designatedRoute = new HashMap<>();
 		designatedRoute.put("oy", Lists.newArrayList(routeMeta10, routeMeta3));
 		designatedRoute.put("jq", Lists.newArrayList(routeMeta1));
-		chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 0, designatedRoute, strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 0, designatedRoute, strategy);
 		Assert.assertEquals(2, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq", "oy"), chooseRoute.keySet());
 		Assert.assertEquals(routeMeta1.getId(), chooseRoute.get("jq").getId());
@@ -369,11 +369,11 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 
 	@Test
 	public void testChooseRouteWithoutRoute() {
-		List<String> peerDcs = Lists.newArrayList( "oy", "fra");
+		List<String> dstDcs = Lists.newArrayList( "oy", "fra");
 		String currentDc = "jq";
 		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(clusterId1);
 
-		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoute(currentDc, peerDcs, 1, null, strategy);
+		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 1, null, strategy);
 		Assert.assertEquals(0, chooseRoute.size());
 	}
 }
