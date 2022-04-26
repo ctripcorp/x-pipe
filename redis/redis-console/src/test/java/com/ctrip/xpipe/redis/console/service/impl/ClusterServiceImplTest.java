@@ -87,7 +87,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertFalse(dcTbls.isEmpty());
         dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName)));
 
-        //test clusterDesignterRoute
+        //test clusterDesignatedRoute
         String clusterName2 = randomString(10);
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setActivedcId(1)
@@ -129,7 +129,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
         Assert.assertFalse(dcTbls.isEmpty());
         dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName)));
 
-        //test clusterDesinated route
+        //test clusterDesignated route
         String clusterName2 = randomString(10);
         clusterModel.setClusterTbl(new ClusterTbl()
                 .setClusterName(clusterName2)
@@ -149,7 +149,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
     @Test
-    public void testUpdateActivedcId(){
+    public void testUpdateActiveDcId(){
 
         ClusterTbl clusterTbl = clusterService.find(clusterName);
 
@@ -256,7 +256,7 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     public void testGetClusterRelatedDcs() {
         List<DcTbl> dcTbls = clusterService.getClusterRelatedDcs("cluster101");
         Set<Long> dcSet = Sets.newHashSet();
-        dcTbls.forEach(dcTbl -> {dcSet.add(dcTbl.getId());});
+        dcTbls.forEach(dcTbl -> dcSet.add(dcTbl.getId()));
         Assert.assertEquals(2, dcSet.size());
         Assert.assertTrue(dcSet.contains(1L));
         Assert.assertTrue(dcSet.contains(2L));
@@ -344,8 +344,6 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     @Test
     public void testUpdateClusterDesignateRoutesWithOneWayNotify() {
         RouteInfoModel routeInfoModel1 = new RouteInfoModel().setId(1L);
-        RouteInfoModel routeInfoModel2 = new RouteInfoModel().setId(2L);
-        RouteInfoModel routeInfoModel3 = new RouteInfoModel().setId(3L);
 
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
@@ -378,17 +376,17 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         ClusterTbl clusterTbl = clusterService.find(clusterName);
         Assert.assertEquals("", clusterTbl.getClusterDesignatedRouteIds());
-        List<RouteInfoModel> designatedRoutes = clusterService.findClusterDesignateRoutesByDcNameAndClusterName(dcNames[0], clusterName);
+        List<RouteInfoModel> designatedRoutes = clusterService.findClusterDesignateRoutesBySrcDcNameAndClusterName(dcNames[0], clusterName);
         Assert.assertEquals(0, designatedRoutes.size());
 
         clusterService.updateClusterDesignateRoutes(clusterName, dcNames[0], Lists.newArrayList(routeInfoModel1, routeInfoModel3));
         clusterTbl = clusterService.find(clusterName);
         Assert.assertEquals(Sets.newHashSet("1", "3"), Sets.newHashSet(clusterTbl.getClusterDesignatedRouteIds().split(",")));
-        designatedRoutes = clusterService.findClusterDesignateRoutesByDcNameAndClusterName(dcNames[0], clusterName);
+        designatedRoutes = clusterService.findClusterDesignateRoutesBySrcDcNameAndClusterName(dcNames[0], clusterName);
         Assert.assertEquals(1, designatedRoutes.size());
         Assert.assertEquals(1L, designatedRoutes.get(0).getId());
 
-        designatedRoutes = clusterService.findClusterDesignateRoutesByDcNameAndClusterName(dcNames[1], clusterName);
+        designatedRoutes = clusterService.findClusterDesignateRoutesBySrcDcNameAndClusterName(dcNames[1], clusterName);
         Assert.assertEquals(1, designatedRoutes.size());
         Assert.assertEquals(3L, designatedRoutes.get(0).getId());
     }

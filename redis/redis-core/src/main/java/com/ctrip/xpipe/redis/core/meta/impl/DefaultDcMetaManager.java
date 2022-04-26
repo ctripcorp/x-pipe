@@ -136,15 +136,15 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	@Override
 	public Map<String, RouteMeta> chooseRoute(String clusterId, String strategy) {
 		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
-		List<String> peerDcs = getPeerDcs(clusterMeta);
+		List<String> dstDcs = parseDstDcs(clusterMeta);
 		Map<String, List<RouteMeta>> clusterDesignatedRoutes = getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
 		int orgId = clusterMeta.getOrgId() == null ? 0 : clusterMeta.getOrgId();
 
-		return metaManager.chooseMetaRoute(currentDc, peerDcs, orgId, clusterDesignatedRoutes,
+		return metaManager.chooseMetaRoutes(currentDc, dstDcs, orgId, clusterDesignatedRoutes,
 				RouteChooseStrategyFactory.DEFAULT.createRouteStrategy(strategy, clusterMeta.getId()));
 	}
 
-	private List<String> getPeerDcs(ClusterMeta clusterMeta) {
+	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
 		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
 			return Lists.newArrayList(clusterMeta.getDcs().split("\\s*,\\s*"));
 		} else {

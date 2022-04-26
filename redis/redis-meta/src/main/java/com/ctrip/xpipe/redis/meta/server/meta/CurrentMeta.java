@@ -165,7 +165,7 @@ public class CurrentMeta implements Releasable {
 
 	public List<String> updateClusterRoutes(ClusterMeta clusterMeta, Map<String, RouteMeta> routes) {
 		CurrentClusterMeta currentClusterMeta = currentMetas.get(clusterMeta.getDbId());
-		return currentClusterMeta.updateRoutes(routes, clusterMeta);
+		return currentClusterMeta.updateRoutes(routes);
 	}
 
 	public void removePeerMaster(String dcId, Long clusterDbId, Long shardDbId) {
@@ -419,7 +419,7 @@ public class CurrentMeta implements Releasable {
 			return changedDcs;
 		}
 
-		public List<String> updateRoutes(Map<String, RouteMeta> newOutgoingRoutes, ClusterMeta clusterMeta) {
+		public List<String> updateRoutes(Map<String, RouteMeta> newOutgoingRoutes) {
 			List<String> changedDcs = diffRoutes(this.outgoingRoutes, newOutgoingRoutes);
 			logger.debug("[updateRoutes] newOutgoingRoutes:{}, oldOutgoingRoutes:{}",  newOutgoingRoutes, this.outgoingRoutes);
 			this.outgoingRoutes = newOutgoingRoutes;

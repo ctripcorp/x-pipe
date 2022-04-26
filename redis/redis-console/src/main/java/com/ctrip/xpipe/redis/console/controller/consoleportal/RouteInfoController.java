@@ -42,7 +42,7 @@ public class RouteInfoController extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/route/srcDcName/{srcDcName}", method = RequestMethod.GET)
+    @RequestMapping(value = "/route/src-dc-name/{srcDcName}", method = RequestMethod.GET)
     public List<RouteInfoModel> getAllActiveRoutesByTagAndSrcDcName(@PathVariable String srcDcName) {
         logger.info("[getAllActiveRoutesByTagAndSrcDcName]srcDcName:{}, tag:{}",srcDcName, Route.TAG_META);
         try {

@@ -213,48 +213,33 @@ public class ClusterController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
     }
 
-    @RequestMapping(value = "/cluster/default/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<RouteInfoModel>  getClusterDefaultRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
-        logger.info("[getClusterDefaultRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
-        try {
-            return clusterService.findClusterDefaultRoutesByDcNameAndClusterName(dcName, clusterName);
-        } catch (Throwable th) {
-            logger.error("[getClusterDefaultRoutesByClusterName]  dcName:{}, cluster:{}",dcName, clusterName, th);
-            return Collections.emptyList();
-        }
+    @RequestMapping(value = "/clusters/default-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public List<RouteInfoModel>  getClusterDefaultRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
+        logger.info("[getClusterDefaultRoutesByClusterName] srcDcName:{}, clusterName:{}", srcDcName, clusterName);
+        return clusterService.findClusterDefaultRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
-    @RequestMapping(value = "/cluster/used/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
-        logger.info("[getClusterUsedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
-        try {
-            return clusterService.findClusterUsedRoutesByDcNameAndClusterName(dcName, clusterName);
-        } catch (Throwable th) {
-            logger.error("[getClusterUsedRoutesByClusterName]  dcName:{}, cluster:{}",dcName, clusterName, th);
-            return Collections.emptyList();
-        }
+    @RequestMapping(value = "/clusters/used-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
+        logger.info("[getClusterUsedRoutesByClusterName] srcDcName:{}, clusterName:{}", srcDcName, clusterName);
+
+        return clusterService.findClusterUsedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
-    @RequestMapping(value = "/cluster/designated/routes/dc/{dcName}/cluster/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
-    public List<RouteInfoModel> getClusterDesignatedRoutesByClusterName(@PathVariable String dcName, @PathVariable String clusterName) {
-        logger.info("[getClusterDesignatedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName);
-        try {
-            return clusterService.findClusterDesignateRoutesByDcNameAndClusterName(dcName, clusterName);
-        } catch (Throwable th) {
-            logger.error("[getClusterDesignatedRoutesByClusterName] dcName:{}, cluster:{}",dcName, clusterName, th);
-            return Collections.emptyList();
-        }
+    @RequestMapping(value = "/clusters/designated-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    public List<RouteInfoModel> getClusterDesignatedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
+        logger.info("[getClusterDesignatedRoutesByClusterName] srcDcName:{}, clusterName:{}", srcDcName, clusterName);
+
+        return clusterService.findClusterDesignateRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
-    @RequestMapping(value = "/cluster/designated/routes/cluster/" + CLUSTER_NAME_PATH_VARIABLE + "/dc/{srcDcName}", method = RequestMethod.POST)
+    @RequestMapping(value = "/clusters/designated-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
     public RetMessage updateClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable String srcDcName,
                                                                  @RequestBody(required = false) List<RouteInfoModel> newDesignatedRoutes) {
-        logger.info("[updateClusterDesignatedRoutesByClusterName] cluster:{}, srcDcName:{}, newDesignatedRoutes:{}", clusterName, srcDcName, newDesignatedRoutes);
         try {
             clusterService.updateClusterDesignateRoutes(clusterName, srcDcName, newDesignatedRoutes);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
-            logger.error("[updateClusterDesignatedRoutesByClusterName] cluster:{}, srcDcName:{}, newDesignatedRoutes:{}", clusterName, srcDcName, newDesignatedRoutes, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }

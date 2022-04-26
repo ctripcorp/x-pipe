@@ -29,11 +29,6 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
     function loadClusterRoutes() {
         ClusterService.findClusterDCs($scope.clusterName)
             .then(function (result) {
-                if (!result || result.length === 0) {
-                    $scope.dcs = [];
-                    $scope.currentDcName = [];
-                    return;
-                }
                 $scope.dcs = result;
                 if($scope.currentDcName == 'true')
                     $scope.currentDcName = $scope.dcs[0].dcName;
@@ -43,22 +38,22 @@ function ClusterRoutesCtl($scope, $stateParams, ClusterService, toastr, AppUtil)
             });
     }
 
-    function loadDcClusterRoutes(dcName, clusterName) {
-        ClusterService.getClusterDesignatedRoutesByDcNameAndClusterName(dcName, clusterName)
+    function loadDcClusterRoutes(srcDcName, clusterName) {
+        ClusterService.getClusterDesignatedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName)
             .then(function (result) {
                 $scope.designatedRoutes = result;
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
 
-        ClusterService.getClusterUsedRoutesByDcNameAndClusterName(dcName, clusterName)
+        ClusterService.getClusterUsedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName)
              .then(function (result) {
                  $scope.usedRoutes = result;
              }, function (result) {
                  toastr.error(AppUtil.errorMsg(result));
              });
 
-         ClusterService.getClusterDefaultRoutesByDcNameAndClusterName(dcName, clusterName)
+         ClusterService.getClusterDefaultRoutesBySrcDcNameAndClusterName(srcDcName, clusterName)
               .then(function (result) {
                   $scope.defaultRoutes = result;
               }, function (result) {
