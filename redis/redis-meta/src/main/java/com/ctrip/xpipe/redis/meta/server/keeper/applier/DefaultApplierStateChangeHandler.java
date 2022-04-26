@@ -65,6 +65,14 @@ public class DefaultApplierStateChangeHandler extends AbstractLifecycle implemen
     }
 
     @Override
+    protected void doDispose() throws Exception {
+
+        keyedOneThreadTaskExecutor.destroy();
+        executors.shutdown();
+        super.doDispose();
+    }
+
+    @Override
     public void applierMasterChanged(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster, String sids) {
 
         logger.info("[applierMasterChanged]cluster_{},shard_{},{}", clusterDbId, shardDbId, newMaster);
