@@ -96,7 +96,7 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
 
     private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
-    private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash.name();
+    private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 

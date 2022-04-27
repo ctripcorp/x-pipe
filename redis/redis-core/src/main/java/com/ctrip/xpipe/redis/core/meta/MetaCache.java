@@ -51,7 +51,7 @@ public interface MetaCache {
 
     List<RouteMeta> getRoutes();
 
-    Map<String, RouteMeta> chooseRoute(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes);
+    Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes);
 
     boolean isCrossRegion(String activeDc, String backupDc);
 

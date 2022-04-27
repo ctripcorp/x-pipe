@@ -186,7 +186,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 	private void clusterRoutesChange(Long clusterDbId) {
 		ClusterMeta clusterMeta = dcMetaCache.getClusterMeta(clusterDbId);
-		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.chooseRoute(clusterDbId));
+		List<String> changedDcs = currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.chooseRoutes(clusterDbId));
 
 		if(changedDcs != null && !changedDcs.isEmpty())  {
 			if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION)) {
@@ -271,7 +271,7 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 		logger.info("[addCluster]{}:{}, {}", clusterMeta.getId(), clusterDbId, clusterMeta);
 		currentMeta.addCluster(clusterMeta);
-		currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.chooseRoute(clusterDbId));
+		currentMeta.updateClusterRoutes(clusterMeta, dcMetaCache.chooseRoutes(clusterDbId));
 		notifyObservers(new NodeAdded<ClusterMeta>(clusterMeta));
 	}
 

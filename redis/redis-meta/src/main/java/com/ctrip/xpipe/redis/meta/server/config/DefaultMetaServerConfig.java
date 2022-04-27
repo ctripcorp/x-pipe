@@ -56,7 +56,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
-	private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash.name();
+	private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 	
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));

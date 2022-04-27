@@ -27,7 +27,7 @@ public class Crc32HashRouteChooseStrategy implements RouteChooseStrategy {
 
     @Override
     public RouteMeta choose(List<RouteMeta> routeMetas) {
-        if(routeMetas == null || routeMetas.isEmpty()) {
+        if (routeMetas == null || routeMetas.isEmpty()) {
             return null;
         }
         return routeMetas.get(Math.abs(hashCode) % routeMetas.size());

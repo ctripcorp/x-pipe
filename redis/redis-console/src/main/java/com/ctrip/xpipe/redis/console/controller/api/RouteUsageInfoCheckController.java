@@ -17,7 +17,7 @@ public class RouteUsageInfoCheckController extends AbstractConsoleController{
 
     @RequestMapping(value = "/unexpected-route/usage/infos/all", method = RequestMethod.GET)
     public UnexpectedRouteUsageInfoModel getUnexpectedRouteUsageInfoModel() {
-        return clusterService.findUnexpectedRouteUsageInfoModels();
+        return clusterService.findUnexpectedRouteUsageInfoModel();
     }
 
 }
