@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.model.consoleportal;
 import java.util.List;
 import java.util.Objects;
 
-public class RouteInfoModel {
+public class RouteInfoModel implements Comparable<RouteInfoModel> {
 
     private long id;
 
@@ -25,7 +25,7 @@ public class RouteInfoModel {
 
     private boolean isPublic;
 
-    private String description="";
+    private String description = "";
 
     public RouteInfoModel() {
 
@@ -135,7 +135,7 @@ public class RouteInfoModel {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RouteInfoModel that = (RouteInfoModel) o;
-        return  id == that.id
+        return id == that.id
                 && active == that.active
                 && isPublic == that.isPublic
                 && Objects.equals(orgName, that.orgName)
@@ -169,4 +169,11 @@ public class RouteInfoModel {
                 ", description='" + description + '\'' +
                 '}';
     }
+
+    @Override
+    public int compareTo(RouteInfoModel o) {
+        int i = this.dstDcName.compareTo(o.getDstDcName());
+        return i != 0 ? i : Long.compare(this.id, o.id);
+    }
+
 }

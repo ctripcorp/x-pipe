@@ -54,6 +54,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
     @Autowired
     private ConsoleConfig consoleConfig;
 
+    @Autowired
+    private RouteChooseStrategyFactory routeChooseStrategyFactory;
+
     private List<Set<String>> clusterParts;
 
     private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1);
@@ -142,11 +145,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Map<String, RouteMeta> chooseRoute(String clusterName, String srcDc, List<String> dstDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes){
+    public Map<String, RouteMeta> chooseRoute(String clusterName, String srcDc, List<String> dstDcs, int orgId,
+                                              Map<String, List<RouteMeta>> clusterDesignatedRoutes){
         XpipeMetaManager xpipeMetaManager = meta.getValue();
+        RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
+                RouteChooseStrategyFactory.RouteStrategyType.valueOf(consoleConfig.getChooseRouteStrategyType());
 
         return xpipeMetaManager.chooseMetaRoutes(srcDc, dstDcs, orgId, clusterDesignatedRoutes,
-                RouteChooseStrategyFactory.DEFAULT.createRouteStrategy(consoleConfig.getChooseRouteStrategy(), clusterName));
+                    routeChooseStrategyFactory.create(routeStrategyType, clusterName));
     }
 
     @Override

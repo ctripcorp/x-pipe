@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.util.HickwallMetricInfo;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
@@ -93,9 +94,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_BI_DIRECTION_MIGRATION_DC_PRIORITY = "bi.direction.migration.dc.priority";
 
-    private static final String KEY_ROUTE_CHOOSE_STRATEGY = "route.choose.strategy";
+    private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy";
 
-    private String defaultRouteChooseStrategy = "crc32Hash";
+    private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash.name();
 
     private Map<String, List<ConfigChangeListener>> listeners = Maps.newConcurrentMap();
 
@@ -599,5 +600,5 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     }
 
     @Override
-    public String getChooseRouteStrategy() { return getProperty(KEY_ROUTE_CHOOSE_STRATEGY ,defaultRouteChooseStrategy);}
+    public String getChooseRouteStrategyType() { return getProperty(KEY_ROUTE_CHOOSE_STRATEGY_TYPE, defaultRouteChooseStrategyType);}
 }

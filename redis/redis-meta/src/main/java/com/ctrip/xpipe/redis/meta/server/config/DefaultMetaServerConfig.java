@@ -11,6 +11,7 @@ import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
@@ -51,11 +52,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	private static final String KEY_CORRECT_PEER_MASTER_PERIODICALLY = "meta.cluster.peermaster.correct.periodically";
 
-	private static final String KEY_ROUTE_CHOOSE_STRATEGY = "route.choose.strategy";
+	private static final String KEY_ROUTE_CHOOSE_STRATEGY_TYPE = "route.choose.strategy.type";
 
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
-	private String defaultRouteChooseStrategy = "crc32Hash";
+	private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash.name();
 	
 	private int defaultMetaServerId = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "1"));
 	private int defaultServerPort = Integer.parseInt(System.getProperty(KEY_SERVER_ID, "8080"));
@@ -191,8 +192,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	}
 
 	@Override
-	public String getChooseRouteStrategy() {
-		return getProperty(KEY_ROUTE_CHOOSE_STRATEGY ,defaultRouteChooseStrategy);
+	public String getChooseRouteStrategyType() {
+		return getProperty(KEY_ROUTE_CHOOSE_STRATEGY_TYPE, defaultRouteChooseStrategyType);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {

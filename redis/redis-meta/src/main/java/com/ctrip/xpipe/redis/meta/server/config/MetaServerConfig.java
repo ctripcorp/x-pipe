@@ -45,5 +45,5 @@ public interface MetaServerConfig extends CoreConfig {
 
 	long getNewMasterCacheTimeoutMilli();
 
-	String getChooseRouteStrategy();
+	String getChooseRouteStrategyType();
 }

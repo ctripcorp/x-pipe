@@ -9,8 +9,10 @@ import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -43,6 +45,9 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
 
     @Mock
     private RedisCheckRuleServiceImpl redisCheckRuleService;
+
+    @Mock
+    private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
     @InjectMocks
     private DefaultMetaCache metaCache = new DefaultMetaCache();
@@ -185,6 +190,11 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertEquals("jq", jqCluster.getActiveDc());
     }
 
+    @Test
+    public void testChooseRoute() {
+        when(consoleConfig.getChooseRouteStrategyType()).thenReturn(RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash.name());
+        metaCache.chooseRoute("cluster1", "fra", Lists.newArrayList("jq"), 1, null);
+    }
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";
     }
