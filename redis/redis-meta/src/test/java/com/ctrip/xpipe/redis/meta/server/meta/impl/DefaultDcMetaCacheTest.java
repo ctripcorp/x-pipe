@@ -5,11 +5,18 @@ import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
+import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -21,6 +28,9 @@ import static org.mockito.Mockito.*;
 public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
 
     private DefaultDcMetaCache dcMetaCache;
+
+    @Autowired
+    private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
     @Before
     public void beforeDefaultDcMetaCacheTest(){
@@ -155,4 +165,52 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         dcMetaCache.checkRouteChange(current, future);
         verify(observer, times(1)).update(any(DcRouteMetaComparator.class), any());
     }
+
+    @Test
+    public void testGetClusterDesignatedRoutes() {
+        RouteMeta routeMeta1 = new RouteMeta().setId(1);
+        RouteMeta routeMeta3 = new RouteMeta().setId(3);
+        RouteMeta routeMeta4 = new RouteMeta().setId(4);
+        RouteMeta routeMeta5 = new RouteMeta().setId(5);
+        RouteMeta routeMeta9 = new RouteMeta().setId(9);
+        RouteMeta routeMeta10 = new RouteMeta().setId(10);
+
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        UnitTestServerConfig localConfig = new UnitTestServerConfig();
+        localConfig.setWaitForMetaSyncDelayMilli(5000);
+        dcMetaCache.setMetaServerConfig(localConfig);
+        RouteChooseStrategyFactory routeChooseStrategyFactory = new DefaultRouteChooseStrategyFactory();
+        dcMetaCache.setRouteChooseStrategyFactory(routeChooseStrategyFactory);
+        RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
+                RouteChooseStrategyFactory.RouteStrategyType.lookup(config.getChooseRouteStrategyType());
+        RouteChooseStrategy strategy = routeChooseStrategyFactory.create(routeStrategyType, "cluster1");
+
+        // init DcMetaManager
+        DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[2];
+        DcMeta future = MetaClone.clone(dcMeta);
+        dcMetaCache.changeDcMeta(dcMeta, future, System.currentTimeMillis() + 10000);
+
+        Map<String, RouteMeta> routes = dcMetaCache.chooseRoutes(1L);
+        Assert.assertEquals(1, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta4)).getId(), routes.get("jq").getId());
+
+        strategy = routeChooseStrategyFactory.create(routeStrategyType, "cluster2");
+        routes = dcMetaCache.chooseRoutes(2L);
+        Assert.assertEquals(1, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3)).getId(), routes.get("jq").getId());
+
+        strategy = routeChooseStrategyFactory.create(routeStrategyType, "bi-cluster1");
+        routes = dcMetaCache.chooseRoutes(4L);
+        Assert.assertEquals(2, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3, routeMeta5)).getId(), routes.get("jq").getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10)).getId(), routes.get("oy").getId());
+
+        strategy = routeChooseStrategyFactory.create(routeStrategyType, "bi-cluster2");
+        routes = dcMetaCache.chooseRoutes(5L);
+        Assert.assertEquals(2, routes.size());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta5)).getId(), routes.get("jq").getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9)).getId(), routes.get("oy").getId());
+
+    }
+
 }

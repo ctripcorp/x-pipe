@@ -166,6 +166,6 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	@Override
 	public String getChooseRouteStrategyType() {
-		return "crc32hash";
+		return "crc32_hash";
 	}
 }

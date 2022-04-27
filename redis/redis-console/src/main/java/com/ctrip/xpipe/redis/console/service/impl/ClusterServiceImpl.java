@@ -42,6 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.ctrip.xpipe.utils.StringUtil.COMMA_SPLITTER;
+
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
 
@@ -82,8 +84,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
-
-	private static final String COMMA_SPLITTER = "\\s*,\\s*";
 
 	private static final String PROXY_SPLITTER = "\\s*-\\s*";
 	private static final String PROXYTCP = "PROXYTCP://%s:80";
@@ -712,7 +712,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return defaultRoutes;
 	}
 
-	private List<String> parseDstDcs(ClusterTbl clusterTbl) {
+	@VisibleForTesting
+	protected List<String> parseDstDcs(ClusterTbl clusterTbl) {
 		DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
 
 		List<String> dstDcs = new ArrayList<>();
@@ -741,7 +742,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		}
 
-		List<RouteInfoModel> usedRoutes = Lists.newArrayList();
+		List<RouteInfoModel> usedRoutes = Lists.newArrayList(result);
 		Collections.sort(usedRoutes);
 		logger.debug("cluster {} exists used routes {} at source dc {}", clusterName, usedRoutes, srcDcName);
 
@@ -916,10 +917,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		String srcProxy = getSrcProxy(proxyChainModel);
 		String dstProxy = getDstProxy(proxyChainModel);
 
-		Set<String> proxies = Sets.newHashSet(COMMA_SPLITTER);
-
 		for (RouteMeta route : allDcRoutes) {
-			if (proxies.contains(srcProxy) && proxies.contains(dstProxy))
+			String[] allProxyInfos = route.getRouteInfo().split("\\h");
+			Set<String> srcProxies = Sets.newHashSet(allProxyInfos[0].split(COMMA_SPLITTER));
+			Set<String> dstProxies = Sets.newHashSet(allProxyInfos[allProxyInfos.length - 1].split(COMMA_SPLITTER));
+
+			if (srcProxies.contains(srcProxy) && dstProxies.contains(dstProxy))
 				return route;
 		}
 		return null;

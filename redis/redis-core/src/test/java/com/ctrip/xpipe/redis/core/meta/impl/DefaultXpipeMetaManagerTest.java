@@ -336,7 +336,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta9)).getId(), chooseRoute.get("oy").getId());
 
 		//test default org-id
-		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, 0, null, strategy);
+		chooseRoute = metaManager.chooseMetaRoutes(currentDc, dstDcs, -1, null, strategy);
 		Assert.assertEquals(2, chooseRoute.size());
 		Assert.assertEquals(Sets.newHashSet("jq", "oy"), chooseRoute.keySet());
 		Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta4)).getId(), chooseRoute.get("jq").getId());
