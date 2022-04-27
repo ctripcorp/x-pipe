@@ -192,8 +192,8 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
 
     @Test
     public void testChooseRoute() {
-        when(consoleConfig.getChooseRouteStrategyType()).thenReturn(RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash.name());
-        metaCache.chooseRoute("cluster1", "fra", Lists.newArrayList("jq"), 1, null);
+        when(consoleConfig.getChooseRouteStrategyType()).thenReturn(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name());
+        metaCache.chooseRoutes("cluster1", "fra", Lists.newArrayList("jq"), 1, null);
     }
     protected String getXpipeMetaConfigFile() {
         return "dc-meta-test.xml";

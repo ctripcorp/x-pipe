@@ -12,7 +12,7 @@ public class DefaultRouteChooseStrategyFactory implements RouteChooseStrategyFac
 
     public RouteChooseStrategy create(RouteStrategyType routeStrategyType, String clusterName) {
         switch (routeStrategyType) {
-            case Crc32Hash:
+            case CRC32_HASH:
             default:
                 return new Crc32HashRouteChooseStrategy(clusterName);
         }

@@ -140,16 +140,16 @@ public interface XpipeMetaManager extends MetaRefUpdateOperation, MetaFieldUpdat
 	}
 
 	default Map<String, RouteMeta> chooseMetaRoutes(String srcDc, List<String> dstDcs, int orgId,
-												   Map<String, List<RouteMeta>> clusterDesignatedRoutes, RouteChooseStrategy strategy) {
-		return chooseRoutes(srcDc, dstDcs, orgId, strategy, Route.TAG_META, clusterDesignatedRoutes);
+												   Map<String, List<RouteMeta>> clusterHighPriorityRoutes, RouteChooseStrategy strategy) {
+		return chooseRoutes(srcDc, dstDcs, orgId, strategy, Route.TAG_META, clusterHighPriorityRoutes);
 	}
 
 	default Map<String, RouteMeta> chooseRoutes(String srcDc, List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
-											   String tag, Map<String, List<RouteMeta>>  clusterDesignatedRoutes) {
-		return read(() -> doChooseRoutes(srcDc, dstDcs, orgId, strategy, tag, clusterDesignatedRoutes));
+											   String tag, Map<String, List<RouteMeta>>  clusterHighPriorityRoutes) {
+		return read(() -> doChooseRoutes(srcDc, dstDcs, orgId, strategy, tag, clusterHighPriorityRoutes));
 	}
 	Map<String, RouteMeta> doChooseRoutes(String srcDc, List<String> dstDcs, int orgId,RouteChooseStrategy strategy,
-										 String tag, Map<String, List<RouteMeta>> clusterDesignatedRoutes);
+										 String tag, Map<String, List<RouteMeta>> clusterHighPriorityRoutes);
 
 	Integer ORG_ID_FOR_SHARED_ROUTES = 0;
 

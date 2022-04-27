@@ -25,7 +25,7 @@ public class Crc32HashRouteChooseStrategyTest {
     @Test
     public void testCrc32HashRouteChooseStrategy() {
         RouteChooseStrategy strategy = new DefaultRouteChooseStrategyFactory()
-                .create(RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash, "cluster");
+                .create(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH, "cluster");
 
         RouteMeta first = strategy.choose(routes);
 

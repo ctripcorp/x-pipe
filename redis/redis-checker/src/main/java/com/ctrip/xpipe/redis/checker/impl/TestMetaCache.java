@@ -87,7 +87,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public Map<String, RouteMeta> chooseRoute(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
+    public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
         return null;
     }
 

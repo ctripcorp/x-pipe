@@ -269,21 +269,22 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public Map<String, RouteMeta> chooseRoute(long clusterDbId) {
+	public Map<String, RouteMeta> chooseRoutes(long clusterDbId) {
 		ClusterMeta clusterMeta = getClusterMeta(clusterDbId);
 		List<String> dstDcs = parseDstDcs(clusterMeta);
-		Map<String, List<RouteMeta>> clusterDesignatedRoutes = getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
+		Map<String, List<RouteMeta>> clusterDesignatedRoutes =
+				getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
 		int orgId = clusterMeta.getOrgId() == null ? 0 : clusterMeta.getOrgId();
 
 		RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
-				RouteChooseStrategyFactory.RouteStrategyType.valueOf(metaServerConfig.getChooseRouteStrategyType());
+				RouteChooseStrategyFactory.RouteStrategyType.lookup(metaServerConfig.getChooseRouteStrategyType());
 		RouteChooseStrategy strategy = routeChooseStrategyFactory.create(routeStrategyType, clusterMeta.getId());
 
-		return dcMetaManager.get().chooseRoute(dstDcs, orgId, strategy, clusterDesignatedRoutes);
+		return dcMetaManager.get().chooseRoutes(dstDcs, orgId, strategy, clusterDesignatedRoutes);
 	}
 
 	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
-		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
+		if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
 			return Lists.newArrayList(clusterMeta.getDcs().split("\\s*,\\s*"));
 		} else {
 			return Lists.newArrayList(clusterMeta.getActiveDc());
@@ -291,14 +292,15 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	private Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterDesignatedRouteIds) {
-		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
+		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
 
 		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new ConcurrentHashMap<>();
 		List<RouteMeta> allMetaRoutes = getAllRoutes();
 
 		allMetaRoutes.forEach((routeMeta -> {
-			if(clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId())))
+			if (clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId()))) {
 				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
+			}
 		}));
 
 		return clusterDesignatedRoutes;

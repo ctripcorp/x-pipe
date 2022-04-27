@@ -32,11 +32,6 @@ function ClusterDesignatedRoutesUpdateCtl($scope, $stateParams, $window, $locati
     function loadClusterRoutes() {
         ClusterService.findClusterDCs($scope.clusterName)
             .then(function (result) {
-                if (!result || result.length === 0) {
-                    $scope.dcs = [];
-                    $scope.currentDcName = [];
-                    return;
-                }
                 $scope.dcs = result;
                 if($scope.currentDcName == 'true')
                     $scope.currentDcName = $scope.dcs[0].dcName;

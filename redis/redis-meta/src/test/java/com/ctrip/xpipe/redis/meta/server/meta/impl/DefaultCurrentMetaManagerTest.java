@@ -156,7 +156,7 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 
 		String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
 		RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("fra").setIsPublic(true);
-		when(dcMetaCache.chooseRoute(Mockito.anyLong())).thenReturn(Maps.newHashMap("fra", routeMeta1));
+		when(dcMetaCache.chooseRoutes(Mockito.anyLong())).thenReturn(Maps.newHashMap("fra", routeMeta1));
 
 		doNothing().when(currentMetaServerMetaManager).notifyPeerMasterChange(Mockito.anyString(), Mockito.anyLong(), Mockito.anyLong());
 
@@ -181,13 +181,13 @@ public class DefaultCurrentMetaManagerTest extends AbstractMetaServerContextTest
 		String routeInfo1 = "PROXYTCP://127.0.0.1:8008,PROXYTCP://127.0.0.1:8998";
 		RouteMeta routeMeta1 = new RouteMeta().setRouteInfo(routeInfo1).setDstDc("jq").setIsPublic(true).setTag(Route.TAG_META);
 		when(dcMetaCache.getClusterMeta(clusterDbId)).thenReturn(clusterMeta);
-		when(dcMetaCache.chooseRoute(Mockito.anyLong())).thenReturn(Maps.newHashMap("jq", routeMeta1));
+		when(dcMetaCache.chooseRoutes(Mockito.anyLong())).thenReturn(Maps.newHashMap("jq", routeMeta1));
 
 		int times = getCluster(getDcs()[0], clusterId).getShards().size();
 		currentMetaServerMetaManager.addMetaServerStateChangeHandler(handler);
 		currentMetaServerMetaManager.addCluster(clusterMeta.getDbId());
 		routeMeta1.setDstDc("oy");
-		when(dcMetaCache.chooseRoute(Mockito.anyLong())).thenReturn(Maps.newHashMap("oy", routeMeta1));
+		when(dcMetaCache.chooseRoutes(Mockito.anyLong())).thenReturn(Maps.newHashMap("oy", routeMeta1));
 		currentMetaServerMetaManager.routeChanges();
 
 		verify(handler, times(times)).keeperMasterChanged(eq(clusterDbId), anyLong(), any());

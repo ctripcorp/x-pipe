@@ -75,11 +75,11 @@ public class ClusterServiceImplTest2 {
         TunnelInfo tunnelInfo1 = new DefaultTunnelInfo(proxyModel1, tunnelId1);
         List<TunnelInfo> tunnelInfos = Lists.newArrayList(tunnelInfo1);
         ProxyChain proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
-        when(metaCache.chooseRoute(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1, null))
+        when(metaCache.chooseRoutes(mockClusters.get(0), mockDcs.get(0), Lists.newArrayList(mockDcs.get(2)), 1, null))
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), routeMeta1));
         // test use right route
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
-        UnexpectedRouteUsageInfoModel useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModels();
+        UnexpectedRouteUsageInfoModel useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModel();
         Assert.assertEquals(0, useWrongRouteClusterInfos.getUnExpectedRouteUsedClusterNum());
 
         //test use wrong route
@@ -87,7 +87,7 @@ public class ClusterServiceImplTest2 {
         tunnelInfos = Lists.newArrayList(tunnelInfo1);
         proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
-        useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModels();
+        useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModel();
         Assert.assertEquals(1, useWrongRouteClusterInfos.getUnExpectedRouteUsedClusterNum());
         String direction = String.format("%s------>%s", mockDcs.get(0), mockDcs.get(2));
         Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getUnexpectedRouteUsageDirectionInfos().get(direction));
