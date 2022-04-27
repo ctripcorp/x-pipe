@@ -707,7 +707,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			defaultRoutes.add(routeService.getRouteInfoModelById(routeMeta.getId()));
 		}
 		Collections.sort(defaultRoutes);
-		logger.debug("cluster {} exist default routes {} at source dc {}", clusterName, defaultRoutes, srcDcName);
+		logger.debug("cluster {} exists default routes {} at source dc {}", clusterName, defaultRoutes, srcDcName);
 
 		return defaultRoutes;
 	}
@@ -743,7 +743,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		List<RouteInfoModel> usedRoutes = Lists.newArrayList();
 		Collections.sort(usedRoutes);
-		logger.debug("cluster {} exist used routes {} at source dc {}", clusterName, usedRoutes, srcDcName);
+		logger.debug("cluster {} exists used routes {} at source dc {}", clusterName, usedRoutes, srcDcName);
 
 		return usedRoutes;
 	}
@@ -796,7 +796,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 		Collections.sort(designatedRoutes);
-		logger.debug("cluster {} exist designated routes {} at source dc {}", clusterName, designatedRoutes, srcDcName);
+		logger.debug("cluster {} exists designated routes {} at source dc {}", clusterName, designatedRoutes, srcDcName);
 
 		return designatedRoutes;
 	}
