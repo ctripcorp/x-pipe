@@ -264,4 +264,9 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public long subscribeTimeoutMilli() {
         return 5000L;
     }
+
+    @Override
+    public String getClusterExcludedRegex() {
+        return null;
+    }
 }

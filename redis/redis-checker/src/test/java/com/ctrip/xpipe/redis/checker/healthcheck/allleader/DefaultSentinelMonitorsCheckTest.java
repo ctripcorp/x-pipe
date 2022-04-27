@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
@@ -192,6 +193,44 @@ public class DefaultSentinelMonitorsCheckTest {
                 new HostPort("127.0.0.1", 5000));
         verify(alertManager, never()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
+    }
+
+    @Test
+    public void testFindUnexpectedMonitor() throws Exception {
+        String cluster = "test-cluster";
+        String shard = "test-shard";
+        String idc = "jq";
+
+        String monitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, idc);
+        String result = "sentinel_masters:82\n" +
+                "sentinel_tilt:0\n" +
+                "sentinel_running_scripts:0\n" +
+                "sentinel_scripts_queue_length:0\n" +
+                "master0:name=" + monitorName + ",status=ok,address=10.5.109.151:6447,slaves=2,sentinels=5";
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+
+        when(metaCache.getClusterType(any())).thenReturn(ClusterType.ONE_WAY);
+        when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
+        when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(null);
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
+                new HostPort("127.0.0.1", 5000));
+        verify(alertManager).alert(eq(cluster), eq(shard), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
+        verify(sentinelManager).removeSentinelMonitor(any(), any());
     }
 
 }

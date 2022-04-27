@@ -134,7 +134,12 @@ public class SentinelMonitorsCheckCrossDc extends AbstractAllCheckerLeaderTask {
 
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Monitors.Check.Remove", monitorName);
                 String message = String.format("Sentinel monitor: %s not exist in Xpipe", monitorName);
-                alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
+                if (sentinelInfo.isAvailable()) {
+                    alertManager.alert(sentinelInfo.getClusterName(), sentinelInfo.getShardName(), null,
+                            ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
+                } else {
+                    alertManager.alert(null, null, null, ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
+                }
             }
         }
     }
