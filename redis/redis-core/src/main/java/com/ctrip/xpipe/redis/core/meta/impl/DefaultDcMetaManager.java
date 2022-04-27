@@ -6,16 +6,15 @@ import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaClone;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
-import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.MapUtils;
-import com.ctrip.xpipe.utils.StringUtil;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -38,7 +37,6 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 		this.buildClusterDbIdMap();
 	}
 
-	
 	public static DcMetaManager buildFromFile(String dcId, String fileName){
 		
 		return new DefaultDcMetaManager(dcId, DefaultXpipeMetaManager.buildFromFile(fileName));
@@ -134,36 +132,9 @@ public final class DefaultDcMetaManager implements DcMetaManager{
 	}
 
 	@Override
-	public Map<String, RouteMeta> chooseRoute(String clusterId, String strategy) {
-		ClusterMeta clusterMeta = metaManager.getClusterMeta(currentDc, clusterId);
-		List<String> dstDcs = parseDstDcs(clusterMeta);
-		Map<String, List<RouteMeta>> clusterDesignatedRoutes = getClusterDesignatedRoutes(clusterMeta.getClusterDesignatedRouteIds());
-		int orgId = clusterMeta.getOrgId() == null ? 0 : clusterMeta.getOrgId();
-
-		return metaManager.chooseMetaRoutes(currentDc, dstDcs, orgId, clusterDesignatedRoutes,
-				RouteChooseStrategyFactory.DEFAULT.createRouteStrategy(strategy, clusterMeta.getId()));
-	}
-
-	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
-		if(ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
-			return Lists.newArrayList(clusterMeta.getDcs().split("\\s*,\\s*"));
-		} else {
-			return Lists.newArrayList(clusterMeta.getActiveDc());
-		}
-	}
-
-	private Map<String, List<RouteMeta>> getClusterDesignatedRoutes(String clusterDesignatedRouteIds) {
-		if(StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
-
-		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new ConcurrentHashMap<>();
-		List<RouteMeta> allMetaRoutes = getAllMetaRoutes();
-
-		allMetaRoutes.forEach((routeMeta -> {
-			if(clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId())))
-				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
-		}));
-
-		return clusterDesignatedRoutes;
+	public Map<String, RouteMeta> chooseRoute(List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+											  Map<String, List<RouteMeta>> clusterDesignatedRoutes) {
+		return metaManager.chooseMetaRoutes(currentDc, dstDcs, orgId, clusterDesignatedRoutes, strategy);
 	}
 
 	@Override

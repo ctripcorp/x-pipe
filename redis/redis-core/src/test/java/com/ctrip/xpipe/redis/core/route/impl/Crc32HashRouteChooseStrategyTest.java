@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class Crc32HashRouteChooseStrategyTest {
+
     private List<RouteMeta> routes;
 
     @Before
@@ -23,7 +24,9 @@ public class Crc32HashRouteChooseStrategyTest {
 
     @Test
     public void testCrc32HashRouteChooseStrategy() {
-        RouteChooseStrategy strategy = RouteChooseStrategyFactory.DEFAULT.createRouteStrategy("crc32Hash", "cluster");
+        RouteChooseStrategy strategy = new DefaultRouteChooseStrategyFactory()
+                .create(RouteChooseStrategyFactory.RouteStrategyType.Crc32Hash, "cluster");
+
         RouteMeta first = strategy.choose(routes);
 
         for(int i = 0; i < 100; i++) {

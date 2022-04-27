@@ -673,7 +673,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 
 		Map<String, List<RouteMeta>> dstDcRouteMap = new ConcurrentHashMap<>();
 		routes(srcDc, tag).forEach((routeMeta -> {
-			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc(), LinkedList::new).add(routeMeta);
+			MapUtils.getOrCreate(dstDcRouteMap, routeMeta.getDstDc().toLowerCase(), LinkedList::new).add(routeMeta);
 		}));
 		logger.debug("[doChooseRoute] dstDc:{},orgId:{}, clusterDesignatedRoutes:{}, routes:{}",
 						dstDcs, orgId, clusterDesignatedRoutes, dstDcRouteMap);
@@ -682,7 +682,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 		for(String dstDc : dstDcs) {
 			if(srcDc.equalsIgnoreCase(dstDc)) continue;
 
-			RouteMeta chooseRoute = chooseRoute(dstDc, orgId, dstDcRouteMap.get(dstDc), strategy, clusterDesignatedRoutes);
+			RouteMeta chooseRoute = chooseRoute(dstDc, orgId, dstDcRouteMap.get(dstDc.toLowerCase()), strategy, clusterDesignatedRoutes);
 			logger.debug("[doChooseRoute] dstDc:{}, chooseRoute:{}", dstDc, chooseRoute);
 			if(chooseRoute != null) chooseRoutes.put(dstDc.toLowerCase(), chooseRoute);
 		}

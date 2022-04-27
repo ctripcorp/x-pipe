@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.meta;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
@@ -17,7 +18,8 @@ public interface DcMetaManager{
 
 	List<RouteMeta> getAllMetaRoutes();
 
-	Map<String, RouteMeta> chooseRoute(String clusterId, String strategy);
+	Map<String, RouteMeta> chooseRoute(List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
+									   Map<String, List<RouteMeta>> clusterDesignatedRoutes);
 
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc

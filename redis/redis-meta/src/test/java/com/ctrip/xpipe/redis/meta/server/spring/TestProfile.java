@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
@@ -31,6 +33,12 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 	public MetaServerConfig  getMetaServerConfig(){
 		return new UnitTestServerConfig();
 	}
+
+	@Bean
+	public RouteChooseStrategyFactory getRouteChooseStrategyFactory() {
+		return new DefaultRouteChooseStrategyFactory();
+	}
+
 	
 	@Bean
 	public ZkClient getZkClient() throws Exception{

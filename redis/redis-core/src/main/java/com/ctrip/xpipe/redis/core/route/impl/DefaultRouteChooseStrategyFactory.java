@@ -2,16 +2,19 @@ package com.ctrip.xpipe.redis.core.route.impl;
 
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DefaultRouteChooseStrategyFactory implements RouteChooseStrategyFactory {
 
-    public static final String CRC32_HASH_ROUTE_CHOOSE_STRATEGY = "crc32Hash";
+    public DefaultRouteChooseStrategyFactory() {
+    }
 
-    public RouteChooseStrategy createRouteStrategy(String strategyName, String clusterName) {
-        if (strategyName.equalsIgnoreCase(CRC32_HASH_ROUTE_CHOOSE_STRATEGY)) {
-            return new Crc32HashRouteChooseStrategy(clusterName);
-        } else {
-            return new Crc32HashRouteChooseStrategy(clusterName);
+    public RouteChooseStrategy create(RouteStrategyType routeStrategyType, String clusterName) {
+        switch (routeStrategyType) {
+            case Crc32Hash:
+            default:
+                return new Crc32HashRouteChooseStrategy(clusterName);
         }
     }
 }

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.model.ProxyModel;
-import com.ctrip.xpipe.redis.console.model.UseWrongRouteClusterInfoModel;
+import com.ctrip.xpipe.redis.console.model.UnexpectedRouteUsageInfoModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.TunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
@@ -79,19 +79,19 @@ public class ClusterServiceImplTest2 {
                 .thenReturn(Maps.newHashMap(mockDcs.get(2), routeMeta1));
         // test use right route
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
-        UseWrongRouteClusterInfoModel useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfoModels();
-        Assert.assertEquals(0, useWrongRouteClusterInfos.getUseWrongRouteClusterNum());
+        UnexpectedRouteUsageInfoModel useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModels();
+        Assert.assertEquals(0, useWrongRouteClusterInfos.getUnExpectedRouteUsedClusterNum());
 
         //test use wrong route
         tunnelInfo1 = new DefaultTunnelInfo(proxyModel2, tunnelId2);
         tunnelInfos = Lists.newArrayList(tunnelInfo1);
         proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
-        useWrongRouteClusterInfos = clusterService.findUseWrongRouteClusterInfoModels();
-        Assert.assertEquals(1, useWrongRouteClusterInfos.getUseWrongRouteClusterNum());
+        useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModels();
+        Assert.assertEquals(1, useWrongRouteClusterInfos.getUnExpectedRouteUsedClusterNum());
         String direction = String.format("%s------>%s", mockDcs.get(0), mockDcs.get(2));
-        Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getUseWrongRouteClusterNumWithDirection().get(direction));
-        UseWrongRouteClusterInfoModel.UseWrongRouteClusterDetail clusterDetail = useWrongRouteClusterInfos.getUseWrongRouteClusterDetails().get(mockClusters.get(0)).get(0);
+        Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getUnexpectedRouteUsedDirectionInfo().get(direction));
+        UnexpectedRouteUsageInfoModel.UnexpectedRouteUsageInfo clusterDetail = useWrongRouteClusterInfos.getUnexpectedRouteUsageInfos().get(mockClusters.get(0)).get(0);
         Assert.assertEquals(mockClusters.get(0), clusterDetail.getClusterName());
         Assert.assertEquals(1, clusterDetail.getChooseRouteId());
         Assert.assertEquals(Sets.newHashSet(2), clusterDetail.getUsedRouteId());

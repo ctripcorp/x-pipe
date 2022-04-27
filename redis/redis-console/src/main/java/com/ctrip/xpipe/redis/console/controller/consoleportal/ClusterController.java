@@ -215,21 +215,16 @@ public class ClusterController extends AbstractConsoleController {
 
     @RequestMapping(value = "/clusters/default-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public List<RouteInfoModel>  getClusterDefaultRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
-        logger.info("[getClusterDefaultRoutesByClusterName] srcDcName:{}, clusterName:{}", srcDcName, clusterName);
         return clusterService.findClusterDefaultRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
     @RequestMapping(value = "/clusters/used-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
-        logger.info("[getClusterUsedRoutesByClusterName] srcDcName:{}, clusterName:{}", srcDcName, clusterName);
-
         return clusterService.findClusterUsedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
     @RequestMapping(value = "/clusters/designated-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
     public List<RouteInfoModel> getClusterDesignatedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
-        logger.info("[getClusterDesignatedRoutesByClusterName] srcDcName:{}, clusterName:{}", srcDcName, clusterName);
-
         return clusterService.findClusterDesignateRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
