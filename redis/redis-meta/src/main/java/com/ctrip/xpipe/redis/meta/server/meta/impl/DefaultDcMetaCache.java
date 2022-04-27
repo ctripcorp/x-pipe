@@ -342,7 +342,8 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 	@Override
 	public boolean isCurrentShardParentCluster(Long clusterDbId, Long shardDbId) {
-		return dcMetaManager.get().getShardMeta(clusterDbId, shardDbId).parent() instanceof ClusterMeta;
+	    Pair<String, String> clusterShardDbId2Name = clusterShardDbId2Name(clusterDbId, shardDbId);
+		return dcMetaManager.get().getClusterMeta(clusterDbId).getShards().containsKey(clusterShardDbId2Name.getValue());
 	}
 
 	@Override
