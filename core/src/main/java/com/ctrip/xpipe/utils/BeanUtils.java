@@ -3,14 +3,12 @@ package com.ctrip.xpipe.utils;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.*;
 
-@Service
 public class BeanUtils {
 
   /**

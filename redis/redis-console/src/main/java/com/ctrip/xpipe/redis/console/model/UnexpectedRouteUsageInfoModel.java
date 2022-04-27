@@ -4,32 +4,32 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.*;
 
-@JsonPropertyOrder({"unExpectedRouteUsedClusterNum", "unexpectedRouteUsedDirectionInfo", "unexpectedRouteUsageInfos"})
+@JsonPropertyOrder({"unExpectedRouteUsedClusterNum", "unexpectedRouteUsageDirectionInfos", "unexpectedRouteUsageDetailInfos"})
 public class UnexpectedRouteUsageInfoModel {
 
     private int unExpectedRouteUsedClusterNum;
 
-    private Map<String, Integer> unexpectedRouteUsedDirectionInfo;
+    private Map<String, Integer> unexpectedRouteUsageDirectionInfos;
 
-    private Map<String, List<UnexpectedRouteUsageInfo>> unexpectedRouteUsageInfos;
+    private Map<String, List<UnexpectedRouteUsageInfo>> unexpectedRouteUsageDetailInfos;
 
     public UnexpectedRouteUsageInfoModel() {
-        this.unexpectedRouteUsageInfos = new HashMap<>();
-        this.unexpectedRouteUsedDirectionInfo = new HashMap<>();
+        this.unexpectedRouteUsageDetailInfos = new HashMap<>();
+        this.unexpectedRouteUsageDirectionInfos = new HashMap<>();
     }
 
     public void addUsedWrongRouteCluster(String clusterName, String srcDcName, String dstDcName, Set<Integer> usedRouteId, Integer chooseRouteId) {
-        if(!unexpectedRouteUsageInfos.containsKey(clusterName)) {
+        if(!unexpectedRouteUsageDetailInfos.containsKey(clusterName)) {
             unExpectedRouteUsedClusterNum++;
-            this.unexpectedRouteUsageInfos.put(clusterName, new ArrayList<>());
+            this.unexpectedRouteUsageDetailInfos.put(clusterName, new ArrayList<>());
         }
-        this.unexpectedRouteUsageInfos.get(clusterName).add(new UnexpectedRouteUsageInfo(clusterName, srcDcName, dstDcName, usedRouteId, chooseRouteId))
+        this.unexpectedRouteUsageDetailInfos.get(clusterName).add(new UnexpectedRouteUsageInfo(clusterName, srcDcName, dstDcName, usedRouteId, chooseRouteId))
 ;
         String direction = String.format("%s------>%s", srcDcName, dstDcName);
-        if(!unexpectedRouteUsedDirectionInfo.containsKey(direction)) {
-            this.unexpectedRouteUsedDirectionInfo.put(direction, 1);
+        if(!unexpectedRouteUsageDirectionInfos.containsKey(direction)) {
+            this.unexpectedRouteUsageDirectionInfos.put(direction, 1);
         } else {
-            this.unexpectedRouteUsedDirectionInfo.put(direction, this.unexpectedRouteUsedDirectionInfo.get(direction) + 1);
+            this.unexpectedRouteUsageDirectionInfos.put(direction, this.unexpectedRouteUsageDirectionInfos.get(direction) + 1);
         }
     }
 
@@ -42,21 +42,21 @@ public class UnexpectedRouteUsageInfoModel {
         return this;
     }
 
-    public Map<String, Integer> getUnexpectedRouteUsedDirectionInfo() {
-        return unexpectedRouteUsedDirectionInfo;
+    public Map<String, Integer> getUnexpectedRouteUsageDirectionInfos() {
+        return unexpectedRouteUsageDirectionInfos;
     }
 
-    public UnexpectedRouteUsageInfoModel setUnexpectedRouteUsedDirectionInfo(Map<String, Integer> unexpectedRouteUsedDirectionInfo) {
-        this.unexpectedRouteUsedDirectionInfo = unexpectedRouteUsedDirectionInfo;
+    public UnexpectedRouteUsageInfoModel setUnexpectedRouteUsageDirectionInfos(Map<String, Integer> unexpectedRouteUsageDirectionInfos) {
+        this.unexpectedRouteUsageDirectionInfos = unexpectedRouteUsageDirectionInfos;
         return this;
     }
 
-    public Map<String, List<UnexpectedRouteUsageInfo>> getUnexpectedRouteUsageInfos() {
-        return unexpectedRouteUsageInfos;
+    public Map<String, List<UnexpectedRouteUsageInfo>> getUnexpectedRouteUsageDetailInfos() {
+        return unexpectedRouteUsageDetailInfos;
     }
 
-    public UnexpectedRouteUsageInfoModel setUnexpectedRouteUsageInfos(Map<String, List<UnexpectedRouteUsageInfo>> unexpectedRouteUsageInfos) {
-        this.unexpectedRouteUsageInfos = unexpectedRouteUsageInfos;
+    public UnexpectedRouteUsageInfoModel setUnexpectedRouteUsageDetailInfos(Map<String, List<UnexpectedRouteUsageInfo>> unexpectedRouteUsageDetailInfos) {
+        this.unexpectedRouteUsageDetailInfos = unexpectedRouteUsageDetailInfos;
         return this;
     }
 
