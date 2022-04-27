@@ -593,4 +593,9 @@ public class DefaultConsoleConfig extends AbstractCoreConfig implements ConsoleC
     public String getBeaconSupportZone() {
         return getProperty(KEY_BEACON_SUPPORT_ZONE, "");
     }
+
+    @Override
+    public String getClusterExcludedRegex() {
+        return getProperty(KEY_ALERT_CLUSTER_EXCLUDED_REGEX, "");
+    }
 }
