@@ -26,6 +26,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -296,9 +297,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new ConcurrentHashMap<>();
 		List<RouteMeta> allMetaRoutes = getAllRoutes();
-
+		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split("\\s*,\\s*"));
 		allMetaRoutes.forEach((routeMeta -> {
-			if (clusterDesignatedRouteIds.contains(String.valueOf(routeMeta.getId()))) {
+			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId()))) {
 				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
 			}
 		}));
@@ -443,5 +444,10 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	@VisibleForTesting
 	protected void setMetaServerConfig(MetaServerConfig metaServerConfig) {
 		this.metaServerConfig = metaServerConfig;
+	}
+
+	@VisibleForTesting
+	protected void setRouteChooseStrategyFactory(RouteChooseStrategyFactory routeChooseStrategyFactory) {
+		this.routeChooseStrategyFactory = routeChooseStrategyFactory;
 	}
 }

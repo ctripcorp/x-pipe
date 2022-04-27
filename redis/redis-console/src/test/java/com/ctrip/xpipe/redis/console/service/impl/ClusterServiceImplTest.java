@@ -421,6 +421,21 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     }
 
 
+    @Test
+    public void testParseDstDcs() {
+        //test one_way
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        List<String> dstDcs = clusterService.parseDstDcs(clusterTbl);
+        Assert.assertEquals(1, dstDcs.size());
+        Assert.assertEquals("jq", dstDcs.get(0));
+
+        String biClusterName = "bi-cluster1";
+        clusterTbl = clusterService.find(biClusterName);
+        dstDcs = clusterService.parseDstDcs(clusterTbl);
+        Assert.assertEquals(2, dstDcs.size());
+        Assert.assertEquals(Lists.newArrayList("jq", "oy"), dstDcs);
+    }
+
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/cluster-service-impl-test2.sql");
