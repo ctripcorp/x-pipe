@@ -83,8 +83,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Autowired
 	private ConsoleConfig consoleConfig;
 
-	private static final String PROXY_SPLITTER = "\\s*-\\s*";
 	private static final String COMMA_SPLITTER = "\\s*,\\s*";
+
+	private static final String PROXY_SPLITTER = "\\s*-\\s*";
 	private static final String PROXYTCP = "PROXYTCP://%s:80";
 	private static final String PROXYTLS = "PROXYTLS://%s:443";
 
@@ -711,14 +712,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return defaultRoutes;
 	}
 
-	private RouteInfoModel convertRouteMetaToRouteInfoModel(RouteMeta routeMeta) {
-		RouteInfoModel routeInfoModel = new RouteInfoModel();
-		routeInfoModel.setId(routeMeta.getId()).setTag(routeMeta.getTag()).setTag(routeMeta.getTag())
-				.setSrcDcName(routeMeta.getSrcDc()).setDstDcName(routeMeta.getDstDc()).setPublic(routeMeta.getIsPublic());
-
-		return routeInfoModel;
-	}
-
 	private List<String> parseDstDcs(ClusterTbl clusterTbl) {
 		DcIdNameMapper mapper = new DcIdNameMapper.DefaultMapper(dcService);
 
@@ -834,7 +827,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		newDesignatedRoutes.forEach(route -> newDesignatedRouteIds.add(String.valueOf(route.getId())));
 
-		logger.debug("change designated routes cluster {} from {} to {} at source dc {}",
+		logger.debug("change designated routes of cluster {} from {} to {} at source dc {}",
 				clusterName, oldClusterDesignatedRouteIds, newDesignatedRouteIds, srcDcName);
 
 		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, newDesignatedRouteIds));
@@ -953,8 +946,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split(COMMA_SPLITTER));
 
 		routes.forEach((routeMeta -> {
-			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId())))
+			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId()))) {
 				MapUtils.getOrCreate(clusterDesignatedRoutes, routeMeta.getDstDc().toLowerCase(), ArrayList::new).add(routeMeta);
+			}
 		}));
 
 		return clusterDesignatedRoutes;
