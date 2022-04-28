@@ -34,6 +34,13 @@ public class CRedisServiceTest extends AbstractServiceTest {
 
 	}
 
+	@Test
+	public void testExcludeIdcs() throws Exception {
+
+		logger.info("{}", outerClientService.excludeIdcs("test_aula", new String[]{"shaxy"}));
+		logger.info("{}", outerClientService.excludeIdcs("SingleDCHasMultiDcInstancesCluster", new String[]{}));
+	}
+
 	@Test(expected =  IllegalStateException.class)
 	public void testGet() throws Exception {
 

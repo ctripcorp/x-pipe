@@ -42,6 +42,8 @@ public interface OuterClientService extends Ordered{
 
 	DcMeta getOutClientDcMeta(String dc) throws Exception;
 
+	boolean excludeIdcs(String clusterName, String[] idcs) throws Exception;
+
 	abstract class AbstractInfo {
 
 		protected Logger logger = LoggerFactory.getLogger(getClass());

@@ -3,19 +3,22 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.ClusterModel;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcTbl;
+import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author wenchao.meng
@@ -71,6 +74,25 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         Assert.assertFalse(dcTbls.isEmpty());
         dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName)));
+
+        //test clusterDesignterRoute
+        String clusterName2 = randomString(10);
+        clusterModel.setClusterTbl(new ClusterTbl()
+                .setActivedcId(1)
+                .setClusterName(clusterName2)
+                .setClusterType(ClusterType.ONE_WAY.toString())
+                .setClusterAdminEmails("test@ctrip.com")
+                .setClusterDescription(randomString(20))
+                .setClusterDesignatedRouteIds("1,2")
+        );
+        clusterModel.setDcs(dcTbls);
+        clusterService.createCluster(clusterModel);
+        clusterTbl = clusterService.find(clusterName2);
+        Assert.assertTrue(clusterTbl.isIsXpipeInterested());
+
+        Assert.assertFalse(dcTbls.isEmpty());
+        dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName2)));
+
     }
 
     @Test
@@ -94,6 +116,24 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
 
         Assert.assertFalse(dcTbls.isEmpty());
         dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName)));
+
+        //test clusterDesinated route
+        String clusterName2 = randomString(10);
+        clusterModel.setClusterTbl(new ClusterTbl()
+                .setClusterName(clusterName2)
+                .setClusterType(ClusterType.BI_DIRECTION.toString())
+                .setClusterAdminEmails("test@ctrip.com")
+                .setClusterDescription(randomString(20))
+                .setClusterDesignatedRouteIds("1,2")
+        );
+
+        clusterModel.setDcs(dcTbls);
+        clusterService.createCluster(clusterModel);
+        clusterTbl = clusterService.find(clusterName2);
+        Assert.assertTrue(clusterTbl.isIsXpipeInterested());
+
+        Assert.assertFalse(dcTbls.isEmpty());
+        dcTbls.forEach(dcTbl -> Assert.assertNotNull(dcClusterService.find(dcTbl.getDcName(), clusterName2)));
     }
 
     @Test

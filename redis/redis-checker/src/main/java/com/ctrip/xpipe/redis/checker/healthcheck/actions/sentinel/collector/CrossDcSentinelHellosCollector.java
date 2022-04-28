@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -15,7 +14,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class CrossDcSentinelHellosCollector extends DefaultSentinelHelloCollector {
@@ -52,18 +53,6 @@ public class CrossDcSentinelHellosCollector extends DefaultSentinelHelloCollecto
         return crossDcSentinels;
     }
 
-    @Override
-    protected boolean isKeeperOrDead(HostPort hostPort) {
-        // no keeper for cross dc cluster
-        return false;
-    }
-
-    @Override
-    protected boolean isHelloMasterInWrongDc(SentinelHello hello) {
-//      master of cross dc cluster may in any dc
-        return false;
-    }
-
 
     private boolean checkDcClusterShardExist(String dcId, String clusterId, String shardId) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
@@ -73,4 +62,9 @@ public class CrossDcSentinelHellosCollector extends DefaultSentinelHelloCollecto
                 && xpipeMeta.getDcs().get(dcId).getClusters().get(clusterId).getShards().containsKey(shardId);
     }
 
+
+    @Override
+    protected List<HostPort> getShardInstances(RedisInstanceInfo info) {
+        return metaCache.getAllInstancesOfShard(info.getClusterId(),info.getShardId()).stream().map(redisMeta -> new HostPort(redisMeta.getIp(),redisMeta.getPort())).collect(Collectors.toList());
+    }
 }

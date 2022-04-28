@@ -65,5 +65,4 @@ public interface MetaCache {
 
     boolean isMetaChain(HostPort src, HostPort dst);
 
-    Pair<String, Integer> getMaxMasterCountDc(String clusterName, Set<String> excludedDcs);
 }

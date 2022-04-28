@@ -30,7 +30,7 @@ public class BeaconMetaCheckAction extends AbstractLeaderAwareHealthCheckAction<
         String clusterId = info.getClusterId();
         int orgId = info.getOrgId();
 
-        beaconManager.registerCluster(clusterId, orgId);
+        beaconManager.registerCluster(clusterId, info.getClusterType(), orgId);
     }
 
     @Override

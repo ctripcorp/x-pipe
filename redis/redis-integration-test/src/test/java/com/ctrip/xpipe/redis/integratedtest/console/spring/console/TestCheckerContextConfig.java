@@ -29,7 +29,6 @@ import com.ctrip.xpipe.redis.console.resources.CheckerAllMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerMetaCache;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
-import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterShardServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
@@ -130,8 +129,8 @@ public class TestCheckerContextConfig {
     }
 
     @Bean
-    public BeaconMetaService beaconMetaService(MetaCache metaCache) {
-        return new BeaconMetaServiceImpl(metaCache);
+    public BeaconMetaService beaconMetaService(MetaCache metaCache, ConsoleConfig config) {
+        return new BeaconMetaServiceImpl(metaCache, config);
     }
 
     @Bean

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.notifier;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.migration.auto.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorServiceManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -70,7 +71,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
             @Override
             protected void doExecute() {
-                monitorService.registerCluster(clusterName, beaconMetaService.buildCurrentBeaconGroups(clusterName));
+                monitorService.registerCluster(BeaconSystem.getDefault().getSystemName(), clusterName, beaconMetaService.buildCurrentBeaconGroups(clusterName));
                 future().setSuccess();
             }
 
@@ -97,7 +98,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
 
             @Override
             protected void doExecute() {
-                monitorService.unregisterCluster(clusterName);
+                monitorService.unregisterCluster(BeaconSystem.getDefault().getSystemName(), clusterName);
                 future().setSuccess();
             }
 

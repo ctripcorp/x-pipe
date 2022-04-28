@@ -46,7 +46,7 @@
                         </exclusion>
                         <exclusion>
                             <groupId>com.ctrip.infosec</groupId>
-                            <artifactId>sso-client-qconfig</artifactId>
+                            <artifactId>sso-client-new</artifactId>
                         </exclusion>
                         <exclusion>
                             <groupId>com.dianping.cat</groupId>

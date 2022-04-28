@@ -41,7 +41,7 @@ public class OneWaySentinelHelloCheckController implements OneWaySupport, Sentin
     @Override
     public boolean shouldCheck(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getCheckInfo();
-        return getCheckCollectorController(info.getClusterId(), info.getShardId()).shouldCheck(instance);
+        return getCheckCollectorController(info.getClusterId(), info.getShardId()).shouldCheckFromRedis(instance);
     }
 
     @Override

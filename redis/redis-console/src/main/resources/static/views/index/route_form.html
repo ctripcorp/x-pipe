@@ -1,0 +1,180 @@
+<div class="col-md-10 col-md-offset-1">
+    <h3 class="header smaller lighter blue" ng-if="operateType !== 'create'">
+        <a href="/#/route/overview?srcDcName&dstDcName">Route List</a>
+        <span> > </span>
+        <span>Route信息</span>
+    </h3>
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <span ng-if="operateType == 'create'">创建Route</span>
+            <h4 ng-if="operateType == 'update'">更新Route</h4>
+        </div>
+
+        <div class="panel-body">
+            <form class="form-horizontal" ng-submit="doAddRoute()">
+
+                <div class="form-group" >
+                    <label class="col-sm-4 control-label no-padding-right">tag</label>
+                    <div class="col-sm-7">
+                        <select
+                                ng-model="route.tag"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-disabled="operateType == 'update'"
+                                ng-options="tag for tag in tags"
+                        >
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">orgName</label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.orgName"
+                                allow_single_deselect=true
+                                ng-options="orgName for orgName in organizationNames"
+                                style="width:330px;"
+                        >
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> active </label>
+
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.active"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-options="bool for bool in bools"
+                        >
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> public </label>
+
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.public"
+                                allow_single_deselect=true
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-options="bool for bool in bools"
+                        >
+                            <option value="bools[0]"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> src_dc </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.srcDcName"
+                                allow_single_deselect=true
+                                ng-disabled="operateType == 'update'"
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-options="srcDcName for srcDcName in dcNames"
+                        >
+                            <option value=""/>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> src_proxies </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.srcProxies"
+                                multiple = "multiple"
+                                style="width:330px;"
+                                chosen="directiveOptions"
+                                ng-options="proxy for proxy in dcProxies[route.srcDcName]"
+                        >
+                            <option value=""/>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> optional_proxies </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.optionalProxies"
+                                multiple = "multiple"
+                                chosen="directiveOptions"
+                                style="width:330px;"
+                                ng-options="proxy for proxy in allProxies"
+                        >
+                            <option value=""/>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> dst_dc </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.dstDcName"
+                                allow_single_deselect=true
+                                ng-disabled="operateType == 'update'"
+                                style="width:330px;"
+                                ng-required="true"
+                                ng-options="dstDcName for dstDcName in dcNames"
+                        >
+                            <option value=""/>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> dst_proxies </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="route.dstProxies"
+                                multiple = "true"
+                                style="width:330px;"
+                                ng-required="true"
+                                chosen="directiveOptions"
+                                ng-options="proxy for proxy in dcProxies[route.dstDcName]"
+                        >
+                            <option placeholder="必选" value=""></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">desc</label>
+
+                    <div class="col-sm-7">
+                        <textarea rows="1" style="width: 330px;" placeholder="单/双向说明，optionalIdc或其他特殊部署"
+                                  ng-model="route.description" ng-required="false"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"></label>
+                    <div class="col-sm-7">
+                        <button class="btn btn-info" type="submit">
+                            <i class="icon-ok bigger-110"></i>
+                            提交
+                        </button>
+                        <a href="/#/route/overview?srcDcName&dstDcName" class="btn btn-warning"
+                           type="button" ng-show="operateType == 'update'">
+                            返回
+                        </a>
+                        <a href="/#/route/overview?srcDcName&dstDcName" class="btn btn-warning"
+                           type="button" ng-show="operateType == 'create'">
+                            撤销
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>

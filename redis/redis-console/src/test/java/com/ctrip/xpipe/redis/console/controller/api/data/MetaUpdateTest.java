@@ -32,6 +32,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                                             .setActivedcId(1)
                                             .setIsXpipeInterested(true)
                                             .setStatus("normal")
+                                            .setClusterDesignatedRouteIds("")
                                             .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
         clusterDao.createCluster(clusterTbl);
 
@@ -71,6 +72,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setActivedcId(1)
                 .setIsXpipeInterested(true)
                 .setStatus("normal")
+                .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
         clusterDao.createCluster(clusterTbl);
 
@@ -100,6 +102,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setActivedcId(1)
                 .setIsXpipeInterested(true)
                 .setStatus("normal")
+                .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
         clusterDao.createCluster(clusterTbl);
 
@@ -127,6 +130,7 @@ public class MetaUpdateTest extends AbstractConsoleIntegrationTest {
                 .setActivedcId(1)
                 .setIsXpipeInterested(true)
                 .setStatus("normal")
+                .setClusterDesignatedRouteIds("")
                 .setClusterLastModifiedTime(DateTimeUtils.currentTimeAsString());
         clusterDao.createCluster(clusterTbl);
         clusterTbl.setId(LATTER_ID).setClusterName(LATTER_NAME);
