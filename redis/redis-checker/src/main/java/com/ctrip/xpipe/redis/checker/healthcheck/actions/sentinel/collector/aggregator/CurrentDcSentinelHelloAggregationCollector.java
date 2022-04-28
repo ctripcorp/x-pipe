@@ -31,11 +31,11 @@ public class CurrentDcSentinelHelloAggregationCollector extends AbstractAggregat
     }
 
     private boolean needDowngradeSubBothMasterAndSlavesInCurrentDc(RedisHealthCheckInstance instance) {
-        return needDowngrade.get() && instance.getCheckInfo().getDcId().equalsIgnoreCase(dcId);
+        return needDowngrade && instance.getCheckInfo().getDcId().equalsIgnoreCase(dcId);
     }
 
     private boolean noNeedDowngradeSubOnlySlavesInCurrentDc(RedisHealthCheckInstance instance) {
-        return !needDowngrade.get() && !instance.getCheckInfo().isMaster() &&
+        return !needDowngrade && !instance.getCheckInfo().isMaster() &&
                 instance.getCheckInfo().getDcId().equalsIgnoreCase(dcId);
     }
 

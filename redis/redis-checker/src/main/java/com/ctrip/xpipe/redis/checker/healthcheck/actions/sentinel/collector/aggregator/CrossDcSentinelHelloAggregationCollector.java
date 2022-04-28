@@ -26,11 +26,11 @@ public class CrossDcSentinelHelloAggregationCollector extends AbstractAggregatio
     }
 
     private boolean needDowngradeSubBothMasterAndSlaves() {
-        return needDowngrade.get();
+        return needDowngrade;
     }
 
     private boolean noNeedDowngradeSubOnlySlaves(RedisHealthCheckInstance instance) {
-        return !needDowngrade.get() && !instance.getCheckInfo().isMaster();
+        return !needDowngrade && !instance.getCheckInfo().isMaster();
     }
 
     @Override

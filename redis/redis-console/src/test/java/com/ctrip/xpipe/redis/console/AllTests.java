@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareReques
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.controller.config.ClusterCheckInterceptorTest;
+import com.ctrip.xpipe.redis.console.controller.consoleportal.RouteInfoControllerTest;
 import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.ExclusiveThreadsForMigrationTest;
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
@@ -55,7 +56,10 @@ import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
-import com.ctrip.xpipe.redis.console.resources.*;
+import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
+import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
+import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
+import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
 import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
@@ -172,7 +176,6 @@ import org.junit.runners.Suite.SuiteClasses;
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
-        CheckerMetaCacheTest.class,
         DcMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,
@@ -208,7 +211,9 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisCheckRuleServiceImplTest.class,
         EmailSentCounterTest.class,
 
-        ClusterTypeUpdateEventListenerTest.class
+        ClusterTypeUpdateEventListenerTest.class,
+
+        RouteInfoControllerTest.class
 })
 public class AllTests {
 

@@ -14,6 +14,7 @@
     <member name="is-xpipe-interested" field="is_xpipe_interested" value-type="boolean" nullable="false" />
     <member name="cluster-org-id" field="cluster_org_id" value-type="long" length="20" nullable="false" />
     <member name="cluster-admin-emails" field="cluster_admin_emails" value-type="String" length="1024" />
+    <member name="cluster-designated-route-ids" field="cluster_designated_route_ids" value-type="String" length="1024" nullable="false" />
     <member name="create-time" field="create_time" value-type="Date" />
     <var name="key-id" value-type="long" key-member="id" />
     <primary-key name="PRIMARY" members="id" />
@@ -839,8 +840,10 @@
     <member name="src-proxy-ids" field="src_proxy_ids" value-type="String" length="128" nullable="false" />
     <member name="dst-proxy-ids" field="dst_proxy_ids" value-type="String" length="128" nullable="false" />
     <member name="optional-proxy-ids" field="optional_proxy_ids" value-type="String" length="128" nullable="false" />
+    <member name="is-public" field="is_public" value-type="boolean" nullable="false" />
     <member name="active" field="active" value-type="boolean" nullable="false" />
     <member name="tag" field="tag" value-type="String" length="128" nullable="false" />
+    <member name="description" field="description" value-type="String" length="1024" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="int" length="3" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

@@ -4,11 +4,12 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -19,8 +20,9 @@ import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.function.BiConsumer;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -32,8 +34,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultDcMetaChangeManager.class);
 
-    private MetaCache metaCache;
-
     private DcMeta current;
 
     private HealthCheckInstanceManager instanceManager;
@@ -42,15 +42,17 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     
     private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
-    private CheckerConfig checkerConfig;
-
     private final String dcId;
-    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory, MetaCache metaCache, CheckerConfig checkerConfig) {
+
+    private final List<ClusterMeta> clustersToDelete = new ArrayList<>();
+    private final List<ClusterMeta> clustersToAdd = new ArrayList<>();
+    private final List<RedisMeta> redisListToDelete = new ArrayList<>();
+    private final List<RedisMeta> redisListToAdd = new ArrayList<>();
+
+    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager, HealthCheckEndpointFactory healthCheckEndpointFactory) {
         this.dcId = dcId;
         this.instanceManager = instanceManager;
         this.healthCheckEndpointFactory = healthCheckEndpointFactory;
-        this.metaCache = metaCache;
-        this.checkerConfig = checkerConfig;
     }
 
     @Override
@@ -64,7 +66,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
         // normal logic
         DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
-        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future);
+        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
+        dcRouteMetaComparator.compare();
         //change routes
         if(!dcRouteMetaComparator.getAdded().isEmpty()
                 || !dcRouteMetaComparator.getMofified().isEmpty()
@@ -72,18 +75,25 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             healthCheckEndpointFactory.updateRoutes();
         }
         comparator.accept(this);
+        removeAndAdd();
+        clearUp();
 
         this.current = future;
     }
 
-    private void reloadCluster(ClusterMeta current, ClusterMeta future) {
-        this.removeCluster(current);
-        this.addCluster(future);
+    private void removeAndAdd() {
+        this.redisListToDelete.forEach(this::removeRedis);
+        this.clustersToDelete.forEach(this::removeCluster);
+
+        this.clustersToAdd.forEach(this::addCluster);
+        this.redisListToAdd.forEach(this::addRedis);
     }
 
-    private void reloadShard(ShardMeta current, ShardMeta future) {
-        this.removeShard(current);
-        this.addShard(future);
+    private void clearUp() {
+        clustersToAdd.clear();
+        clustersToDelete.clear();
+        redisListToAdd.clear();
+        redisListToDelete.clear();
     }
 
     private void removeCluster(ClusterMeta removed) {
@@ -109,23 +119,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         clusterMetaVisitor.accept(added);
     }
 
-    private void removeShard(ShardMeta removed) {
-        logger.info("[removeShard][{}][{}][{}] remove health check", dcId, ((ClusterMeta) removed.parent()).getId(), removed.getId());
-        ShardMetaVisitor shardMetaVisitor = new ShardMetaVisitor(new RedisMetaVisitor(removeConsumer));
-        shardMetaVisitor.accept(removed);
-    }
-
-    private void addShard(ShardMeta added) {
-        if (!isInterestedInCluster(added.parent())) {
-            logger.info("[addShard][{}][{}][{}] cluster not interested", dcId, ((ClusterMeta) added.parent()).getId(), added.getId());
-            return;
-        }
-
-        logger.info("[addShard][{}][{}][{}] add health check", dcId, ((ClusterMeta) added.parent()).getId(), added.getId());
-        ShardMetaVisitor shardMetaVisitor = new ShardMetaVisitor(new RedisMetaVisitor(addConsumer));
-        shardMetaVisitor.accept(added);
-    }
-
     private void removeRedis(RedisMeta removed) {
         if (null != instanceManager.remove(new HostPort(removed.getIp(), removed.getPort()))) {
             logger.info("[removeRedis][{}:{}] {}", removed.getIp(), removed.getPort(), removed);
@@ -143,16 +136,21 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     @Override
     public void visitAdded(ClusterMeta added) {
         logger.debug("[visitAdded][{}][{}]", dcId, added.getId());
-        addCluster(added);
+        this.clustersToAdd.add(added);
     }
 
     @Override
     public void visitModified(MetaComparator comparator) {
         ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
         if (comparator.isConfigChange()) {
-            reloadCluster(clusterMetaComparator.getCurrent(), clusterMetaComparator.getFuture());
+            this.clustersToDelete.add(clusterMetaComparator.getCurrent());
+            this.clustersToAdd.add(clusterMetaComparator.getFuture());
         } else {
-            clusterMetaComparator.accept(new ClusterMetaComparatorVisitor(addConsumer, removeConsumer, redisChanged, shardConfigChanged));
+            ClusterMetaComparatorCollector clusterMetaComparatorCollector = new ClusterMetaComparatorCollector();
+            clusterMetaComparator.accept(clusterMetaComparatorCollector);
+            Pair<List<RedisMeta>, List<RedisMeta>> modifiedRedises = clusterMetaComparatorCollector.collect();
+            this.redisListToDelete.addAll(modifiedRedises.getKey());
+            this.redisListToAdd.addAll(modifiedRedises.getValue());
         }
     }
 
@@ -160,15 +158,13 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     @Override
     public void visitRemoved(ClusterMeta removed) {
         logger.debug("[visitRemoved][{}][{}]", dcId, removed.getId());
-        removeCluster(removed);
+        this.clustersToDelete.add(removed);
     }
 
     private boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
-        if (clusterType.equals(ClusterType.CROSS_DC)) {
-            return isMaxMasterCountInCurrentDc(cluster);
-        }
-        if (clusterType.supportSingleActiveDC()) {
+
+        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
             return cluster.getActiveDc().equalsIgnoreCase(currentDcId);
         }
         if (clusterType.supportMultiActiveDC()) {
@@ -180,34 +176,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         return true;
     }
 
-    private BiConsumer<ShardMeta, ShardMeta> shardConfigChanged = new BiConsumer<ShardMeta, ShardMeta>() {
-        @Override
-        public void accept(ShardMeta current, ShardMeta future) {
-            if (!isInterestedInCluster(current.parent())) {
-                logger.debug("[shardConfigChanged][{}][{}][skip] cluster not interested", ((ClusterMeta) current.parent()).getId(), current.getId());
-                return;
-            }
-            reloadShard(current, future);
-        }
-    };
-
-    private Consumer<RedisMeta> redisChanged = new Consumer<RedisMeta>() {
-        @Override
-        public void accept(RedisMeta redisMeta) {
-            if (!isInterestedInCluster(redisMeta.parent().parent())) {
-                logger.debug("[redisChanged][{}:{}][skip] cluster not interested", redisMeta.getIp(), redisMeta.getPort());
-                return;
-            }
-            logger.info("[redisChanged][{}:{}] {}", redisMeta.getIp(), redisMeta.getPort(), redisMeta);
-            removeRedis(redisMeta);
-            addRedis(redisMeta);
-        }
-    };
-
-    boolean isMaxMasterCountInCurrentDc(ClusterMeta clusterMeta) {
-        Pair<String, Integer> maxMasterCountDc = metaCache.getMaxMasterCountDc(clusterMeta.getId(), checkerConfig.getIgnoredHealthCheckDc());
-        return maxMasterCountDc != null && maxMasterCountDc.getValue() > 0 && maxMasterCountDc.getKey().equalsIgnoreCase(currentDcId);
-    }
 
     private Consumer<RedisMeta> removeConsumer = new Consumer<RedisMeta>() {
         @Override

@@ -39,4 +39,10 @@ public class RedisMasterCheckAction extends AbstractLeaderAwareHealthCheckAction
     protected Logger getHealthCheckLogger() {
         return logger;
     }
+
+    @Override
+    protected int getCheckInitialDelay(int baseInterval) {
+        return Math.abs(random.nextInt(baseInterval) % baseInterval);
+    }
+
 }

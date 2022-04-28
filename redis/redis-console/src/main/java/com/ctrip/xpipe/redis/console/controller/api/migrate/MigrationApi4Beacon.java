@@ -85,4 +85,36 @@ public class MigrationApi4Beacon {
         return response;
     }
 
+    @PostMapping(value = "/bi/sync")
+    public DeferredResult<BeaconMigrationResponse> biSyncMigrate(@RequestBody BeaconMigrationRequest migrationRequest) {
+        DeferredResult<BeaconMigrationResponse> response = new DeferredResult<>(config.getMigrationTimeoutMilli());
+
+        try {
+            beaconMigrationService.biMigrate(migrationRequest).addListener((commandFuture) -> {
+                if (commandFuture.isSuccess()) {
+                    response.setResult(BeaconMigrationResponse.success());
+                    return;
+                } else if (commandFuture.isCancelled()) {
+                    response.setResult(BeaconMigrationResponse.fail("timeout"));
+                    return;
+                }
+
+                Throwable cause = commandFuture.cause();
+                if (cause instanceof CommandChainException) {
+                    cause = cause.getCause();
+                }
+
+                response.setResult(BeaconMigrationResponse.fail(cause.getMessage()));
+            });
+        } catch (RejectedExecutionException e) {
+            logger.info("[biSyncMigrate] reject, skip this round", e);
+            response.setResult(BeaconMigrationResponse.skip(e.getMessage()));
+        } catch (Throwable th) {
+            logger.info("[biSyncMigrate] execute fail", th);
+            response.setResult(BeaconMigrationResponse.fail(th.getMessage()));
+        }
+
+        return response;
+    }
+
 }

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.agg
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelActionController;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.DefaultSentinelHelloCollector;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -13,18 +13,13 @@ import com.ctrip.xpipe.utils.StringUtil;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.LOG_TITLE;
 
-public class OneWaySentinelCheckAggregationCollector extends AbstractAggregationCollector<DefaultSentinelHelloCollector> implements OneWaySupport, SentinelActionController {
+public class OneWaySentinelCheckAggregationCollector extends AbstractAggregationCollector<DefaultSentinelHelloCollector> implements OneWaySupport, SentinelHelloCollector {
 
     private MetaCache metaCache;
 
     public OneWaySentinelCheckAggregationCollector(MetaCache metaCache, DefaultSentinelHelloCollector sentinelHelloCollector, String clusterId, String shardId, CheckerConfig checkerConfig) {
         super(sentinelHelloCollector, clusterId, shardId, checkerConfig);
         this.metaCache = metaCache;
-    }
-
-    @Override
-    public boolean shouldCheck(RedisHealthCheckInstance instance) {
-        return shouldCheckFromRedis(instance);
     }
 
     @Override
@@ -42,19 +37,19 @@ public class OneWaySentinelCheckAggregationCollector extends AbstractAggregation
     }
 
     private boolean noNeedDowngradeAndIsDrSlave(RedisHealthCheckInstance instance) {
-        boolean shouldCheck = !needDowngrade.get() && !instance.getCheckInfo().isMaster() && !instance.getCheckInfo().isInActiveDc();
+        boolean shouldCheck = !needDowngrade && !instance.getCheckInfo().isMaster() && !instance.getCheckInfo().isInActiveDc();
 
         logger.debug("[{}-{}+{}][{}]noNeedDowngradeAndIsDrSlave:{}, needDowngrade:{}, isMaster:{}, isInActiveDc:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
-                shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster(), instance.getCheckInfo().isInActiveDc());
+                shouldCheck, needDowngrade, instance.getCheckInfo().isMaster(), instance.getCheckInfo().isInActiveDc());
 
         return shouldCheck;
     }
 
     private boolean needDowngradeAndIsSlave(RedisHealthCheckInstance instance) {
-        boolean shouldCheck = needDowngrade.get() && !instance.getCheckInfo().isMaster();
+        boolean shouldCheck = needDowngrade && !instance.getCheckInfo().isMaster();
 
         logger.debug("[{}-{}+{}][{}]needDowngradeAndIsSlave:{}, needDowngrade:{}, isMaster:{}", LOG_TITLE, clusterId, shardId, instance.getCheckInfo().getHostPort(),
-                shouldCheck, needDowngrade.get(), instance.getCheckInfo().isMaster());
+                shouldCheck, needDowngrade, instance.getCheckInfo().isMaster());
 
         return shouldCheck;
     }

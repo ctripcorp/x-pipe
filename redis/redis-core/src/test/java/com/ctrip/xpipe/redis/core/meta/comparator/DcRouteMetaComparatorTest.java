@@ -75,4 +75,48 @@ public class DcRouteMetaComparatorTest extends AbstractComparatorTest {
 
         Assert.assertEquals(1, comparator.getMofified().size());
     }
+
+    @Test
+    public void testCompareWithModifiedWithPublic() {
+        future.getRoutes().get(0).setIsPublic(true);
+        comparator = new DcRouteMetaComparator(current, future);
+        comparator.compare();
+
+        Assert.assertTrue(comparator.getAdded().isEmpty());
+        Assert.assertTrue(comparator.getRemoved().isEmpty());
+        Assert.assertFalse(comparator.getMofified().isEmpty());
+
+        Assert.assertEquals(1, comparator.getMofified().size());
+    }
+
+    @Test
+    public void testCompareWithModifiedWithPublic2() {
+        RouteMeta routeMeta1 = new RouteMeta().setId(4).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443").setIsPublic(new Boolean(true)).setTag(Route.TAG_META);
+        RouteMeta routeMeta2 = new RouteMeta().setId(4).setRouteInfo("PROXYTCP://127.0.0.1:80 PROXYTLS://127.0.0.2:443").setIsPublic(new Boolean(true)).setTag(Route.TAG_META);
+
+
+        DcMeta currentMeta = new DcMeta().addRoute(routeMeta1);
+        DcMeta futureMeta = new DcMeta().addRoute(routeMeta2);
+        comparator = new DcRouteMetaComparator(currentMeta, futureMeta);
+        comparator.compare();
+
+        Assert.assertTrue(comparator.getAdded().isEmpty());
+        Assert.assertTrue(comparator.getRemoved().isEmpty());
+        Assert.assertTrue(comparator.getMofified().isEmpty());
+
+        Assert.assertEquals(0, comparator.getMofified().size());
+
+        futureMeta.getRoutes().get(0).setIsPublic(new Boolean(false));
+
+        comparator = new DcRouteMetaComparator(currentMeta, futureMeta);
+        comparator.compare();
+
+        Assert.assertTrue(comparator.getAdded().isEmpty());
+        Assert.assertTrue(comparator.getRemoved().isEmpty());
+        Assert.assertFalse(comparator.getMofified().isEmpty());
+
+        Assert.assertEquals(1, comparator.getMofified().size());
+    }
+
+
 }

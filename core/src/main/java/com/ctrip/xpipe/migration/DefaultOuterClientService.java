@@ -90,4 +90,9 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	public DcMeta getOutClientDcMeta(String dc) throws Exception {
 		return new DcMeta();
 	}
+
+	@Override
+	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
+		return true;
+	}
 }

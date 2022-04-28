@@ -7,6 +7,7 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -181,6 +182,25 @@ public class CRedisService extends AbstractOuterClientService {
 		});
 	}
 
+	@Override
+	public boolean excludeIdcs(String clusterName, String[] idcs) throws Exception {
+		String NAME = "exclude idcs: " + String.join(",", idcs);
+		return catTransactionMonitor.logTransaction(TYPE, NAME, new Callable<Boolean>() {
+
+			@Override
+			public Boolean call() throws Exception {
+			    String address = CREDIS_SERVICE.EXCLUDE_IDCS.getRealPath(credisConfig.getCredisServiceAddress());
+				SimpleResult result = restOperations.postForObject(address, idcs, SimpleResult.class, clusterName);
+				if (result != null && result.getSuccess()) {
+					CatEventMonitor.DEFAULT.logEvent(TYPE, NAME + " - success");
+					return true;
+				}
+				CatEventMonitor.DEFAULT.logEvent(TYPE, NAME + " - " + result.getMessage());
+				return false;
+			}
+		});
+	}
+
 	String convertDcName(String dc) {
 		return DcMapper.INSTANCE.getDc(dc);
 	}
@@ -205,6 +225,36 @@ public class CRedisService extends AbstractOuterClientService {
 		}
 	}
 
+	public static class SimpleResult extends AbstractInfo {
+
+		private boolean success;
+		private String message;
+
+		public SimpleResult() {
+
+		}
+
+		public SimpleResult(boolean success, String message) {
+			this.success = success;
+			this.message = message;
+		}
+
+		public boolean getSuccess() {
+			return success;
+		}
+
+		public void setSuccess(boolean success) {
+			this.success = success;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public void setMessage(String message) {
+			this.message = message;
+		}
+	}
 
 	public static class MarkInstanceRequest{
 

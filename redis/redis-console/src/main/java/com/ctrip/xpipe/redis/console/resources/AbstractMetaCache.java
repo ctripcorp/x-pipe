@@ -75,12 +75,77 @@ public abstract class AbstractMetaCache implements MetaCache {
             xpipeMeta.addDc(dcMeta);
         }
 
+        setActiveDcForCrossDcClusters(xpipeMeta);
+
         for(RedisCheckRuleMeta redisCheckRuleMeta : redisCheckRuleMetas) {
             xpipeMeta.addRedisCheckRule(redisCheckRuleMeta);
         }
 
         return xpipeMeta;
 
+    }
+
+    void setActiveDcForCrossDcClusters(XpipeMeta xpipeMeta) {
+        try {
+            Map<String, Map<String, ClusterMeta>> crossDcClusters = typeDcClusterMap(xpipeMeta, ClusterType.CROSS_DC);
+
+            if (crossDcClusters.isEmpty())
+                return;
+
+            crossDcClusters.values().forEach(dcClusters -> {
+                Map<String, Integer> dcMasterNums = countDcMaster(dcClusters);
+                String activeDc = maxMasterCountDc(dcMasterNums);
+                dcClusters.values().forEach(dcCluster -> dcCluster.setActiveDc(activeDc));
+            });
+
+        } catch (Throwable e) {
+            logger.error("[setActiveDcForCrossDcClusters]", e);
+        }
+    }
+
+    Map<String, Integer> countDcMaster(Map<String, ClusterMeta> dcClusters) {
+        Map<String, Integer> dcMasterCountMap = new HashMap<>();
+        dcClusters.forEach((dc, clusterMeta) -> {
+            dcMasterCountMap.put(dc, dcMasterCount(clusterMeta));
+        });
+        return dcMasterCountMap;
+    }
+
+    Map<String, Map<String, ClusterMeta>> typeDcClusterMap(XpipeMeta xpipeMeta, ClusterType clusterType) {
+        Map<String, Map<String, ClusterMeta>> typeDcClusterMetaMap = new HashMap<>();
+        xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
+            dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
+                if (ClusterType.lookup(clusterMeta.getType()).equals(clusterType)) {
+                    typeDcClusterMetaMap.putIfAbsent(clusterName, new HashMap<>());
+                    typeDcClusterMetaMap.get(clusterName).put(dc, clusterMeta.setActiveDc(""));
+                }
+            });
+        });
+        return typeDcClusterMetaMap;
+    }
+
+    String maxMasterCountDc(Map<String, Integer> dcMasterNumMap) {
+        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
+        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+                return o2.getValue().compareTo(o1.getValue());
+            }
+        });
+        return entryList.get(0).getKey();
+    }
+
+    private int dcMasterCount(ClusterMeta dcCluster) {
+        Map<String, ShardMeta> shards = dcCluster.getShards();
+        AtomicInteger masterCount = new AtomicInteger();
+        shards.forEach((shardId, shardMeta) -> {
+            shardMeta.getRedises().forEach(redisMeta -> {
+                if (redisMeta.isMaster()) {
+                    masterCount.incrementAndGet();
+                }
+            });
+        });
+        return masterCount.get();
     }
 
     protected XpipeMeta createDividedMeta(XpipeMeta full, Set<String> reqClusters) {
@@ -397,57 +462,6 @@ public abstract class AbstractMetaCache implements MetaCache {
             return true;
         }
         return false;
-    }
-
-
-    private Map<String, Integer> getDcMasterCnt(String clusterName, Set<String> excludedDcs) {
-
-        XpipeMeta xpipeMeta = meta.getKey();
-        Map<String, ClusterMeta> dcClusters = new HashMap<>();
-        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (excludedDcs.contains(dcMeta.getId()))
-                continue;
-            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
-            if (clusterMeta != null)
-                dcClusters.put(dcMeta.getId(), clusterMeta);
-        }
-
-        Map<String, Integer> dcMasterNumMap = new HashMap<>();
-        dcClusters.forEach((dc, clusterMeta) -> {
-            dcMasterNumMap.put(dc, dcMastersCount(clusterMeta));
-        });
-
-        return dcMasterNumMap;
-    }
-
-    @Override
-    public  Pair<String, Integer> getMaxMasterCountDc(String clusterName, Set<String> excludedDcs) {
-        Map<String, Integer> dcMasterNumMap = getDcMasterCnt(clusterName, excludedDcs);
-
-        if (dcMasterNumMap.isEmpty())
-            return null;
-
-        List<Map.Entry<String, Integer>> entryList = new ArrayList<>(dcMasterNumMap.entrySet());
-        entryList.sort(new Comparator<Map.Entry<String, Integer>>() {
-            public int compare(Map.Entry<String, Integer> o1,
-                               Map.Entry<String, Integer> o2) {
-                return o2.getValue().compareTo(o1.getValue());
-            }
-        });
-        return new Pair<>(entryList.get(0).getKey(), entryList.get(0).getValue());
-    }
-
-    private int dcMastersCount(ClusterMeta dcCluster) {
-        Map<String, ShardMeta> shards = dcCluster.getShards();
-        AtomicInteger masterCount = new AtomicInteger();
-        shards.forEach((shardId, shardMeta) -> {
-            shardMeta.getRedises().forEach(redisMeta -> {
-                if (redisMeta.isMaster()) {
-                    masterCount.incrementAndGet();
-                }
-            });
-        });
-        return masterCount.get();
     }
 
     @VisibleForTesting

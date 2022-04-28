@@ -44,5 +44,10 @@ public class SentinelUtil {
         public String getIdc() {
             return idc;
         }
+
+        public boolean isAvailable() {
+            return !StringUtil.isEmpty(clusterName) && !StringUtil.isEmpty(shardName) && !StringUtil.isEmpty(idc);
+        }
+
     }
 }
