@@ -13,7 +13,8 @@ public class CurrentHeteroShardMeta extends AbstractCurrentShardMeta {
     private CurrentApplierShardMeta applierShardMeta;
 
     public CurrentHeteroShardMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId,
-                                  CurrentKeeperShardMeta keeperShardMeta, CurrentApplierShardMeta applierShardMeta) {
+                                  @JsonProperty("keeperShardMeta") CurrentKeeperShardMeta keeperShardMeta,
+                                  @JsonProperty("applierShardMeta") CurrentApplierShardMeta applierShardMeta) {
         super(clusterDbId, shardDbId);
         this.keeperShardMeta = keeperShardMeta;
         this.applierShardMeta = applierShardMeta;

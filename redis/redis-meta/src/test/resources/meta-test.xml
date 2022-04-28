@@ -19,7 +19,7 @@
 			</shard>
 		</cluster>
 		<cluster id="cluster-hetero1" db-id="7" active-dc="jq" backup-dcs="fq" type="hetero">
-			<shard id="shard-hetero1" db-id="2">
+			<shard id="shard-hetero1" db-id="7">
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7000" active="false" />
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7001" active="false" />
 			</shard>
@@ -60,7 +60,7 @@
 		</routes>
 		<cluster id="cluster-hetero1" db-id="7" active-dc="jq" backup-dcs="" type="hetero">
 			<source src-dc="jq" upstream-dc="jq" region="SHANGHAI">
-				<shard id="shard-hetero1" db-id="2">
+				<shard id="shard-hetero1" db-id="7">
 					<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7200" active="false" />
 					<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="7201" active="false" />
 					<applier id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="9200" active="false" />
