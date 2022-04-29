@@ -19,7 +19,7 @@ public interface DcMetaManager{
 	List<RouteMeta> getAllMetaRoutes();
 
 	Map<String, RouteMeta> chooseRoutes(List<String> dstDcs, int orgId, RouteChooseStrategy strategy,
-										Map<String, List<RouteMeta>> clusterDesignatedRoutes);
+										Map<String, List<RouteMeta>> clusterPrioritizedRoutes);
 
 	/**
 	 * find all clusters in currentDc whose active dc is clusterActiveDc
