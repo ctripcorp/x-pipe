@@ -421,7 +421,7 @@ public class CurrentMeta implements Releasable {
 
 		public List<String> updateRoutes(Map<String, RouteMeta> newOutgoingRoutes) {
 			List<String> changedDcs = diffRoutes(this.outgoingRoutes, newOutgoingRoutes);
-			logger.debug("[updateRoutes] newOutgoingRoutes:{}, oldOutgoingRoutes:{}",  newOutgoingRoutes, this.outgoingRoutes);
+			logger.debug("[updateRoutes] update outgoingRoutes from {} to {} ", this.outgoingRoutes, newOutgoingRoutes);
 			this.outgoingRoutes = newOutgoingRoutes;
 			return changedDcs;
 		}

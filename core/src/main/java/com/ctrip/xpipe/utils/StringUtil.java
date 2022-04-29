@@ -13,8 +13,6 @@ import java.util.function.Function;
  */
 public class StringUtil {
 
-    public static final String COMMA_SPLITTER = "\\s*,\\s*";
-
     public static String makeSimpleName(String first, String second){
 
         String desc;

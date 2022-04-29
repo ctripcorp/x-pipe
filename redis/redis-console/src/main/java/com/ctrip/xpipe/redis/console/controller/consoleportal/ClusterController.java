@@ -27,7 +27,8 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
-public class ClusterController extends AbstractConsoleController {
+public class
+ClusterController extends AbstractConsoleController {
 
     @Autowired
     private ConsoleConfig config;
@@ -213,22 +214,22 @@ public class ClusterController extends AbstractConsoleController {
         return RetMessage.createSuccessMessage(String.format(config.getHickwallClusterMetricFormat(), clusterName));
     }
 
-    @RequestMapping(value = "/clusters/default-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/default-routes/{srcDcName}", method = RequestMethod.GET)
     public List<RouteInfoModel>  getClusterDefaultRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
         return clusterService.findClusterDefaultRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
-    @RequestMapping(value = "/clusters/used-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/used-routes/{srcDcName}", method = RequestMethod.GET)
     public List<RouteInfoModel>  getClusterUsedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
         return clusterService.findClusterUsedRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
-    @RequestMapping(value = "/clusters/designated-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/designated-routes/{srcDcName}", method = RequestMethod.GET)
     public List<RouteInfoModel> getClusterDesignatedRoutesByClusterName(@PathVariable String srcDcName, @PathVariable String clusterName) {
         return clusterService.findClusterDesignateRoutesBySrcDcNameAndClusterName(srcDcName, clusterName);
     }
 
-    @RequestMapping(value = "/clusters/designated-routes/{srcDcName}/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.POST)
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/designated-routes/{srcDcName}", method = RequestMethod.POST)
     public RetMessage updateClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable String srcDcName,
                                                                  @RequestBody(required = false) List<RouteInfoModel> newDesignatedRoutes) {
         try {
