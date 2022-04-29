@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.entity.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -22,12 +21,7 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route/status/all", method = RequestMethod.GET)
     public List<RouteInfoModel> getAllActiveRouteInfos() {
-        try {
-            return routeService.getAllActiveRouteInfoModels();
-        } catch (Throwable th) {
-            logger.error("[getAllActiveRouteInfos] get all active routes fail", th);
-            return Collections.emptyList();
-        }
+        return routeService.getAllActiveRouteInfoModels();
     }
 
     @RequestMapping(value = "/route/id/{routeId}", method = RequestMethod.GET)
@@ -37,17 +31,18 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route/src-dc-name/{srcDcName}", method = RequestMethod.GET)
     public List<RouteInfoModel> getAllActiveRoutesByTagAndSrcDcName(@PathVariable String srcDcName) {
-        return  routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
+        return routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
     }
 
     @RequestMapping(value = "/route/tag/{tag}/direction/{srcDcName}/{dstDcName}", method = RequestMethod.GET)
-    public List<RouteInfoModel> getAllActiveRoutesByTagAndDirection(@PathVariable String tag, @PathVariable String srcDcName, @PathVariable String dstDcName) {
-        return  routeService.getAllActiveRouteInfoModelsByTagAndDirection(tag, srcDcName, dstDcName);
+    public List<RouteInfoModel> getAllActiveRoutesByTagAndDirection(@PathVariable String tag,
+                                                   @PathVariable String srcDcName, @PathVariable String dstDcName) {
+        return routeService.getAllActiveRouteInfoModelsByTagAndDirection(tag, srcDcName, dstDcName);
     }
 
     @RequestMapping(value = "/route/tag/{tag}", method = RequestMethod.GET)
     public List<RouteInfoModel> getAllActiveRoutesByTag(@PathVariable String tag) {
-        return  routeService.getAllActiveRouteInfoModelsByTag(tag);
+        return routeService.getAllActiveRouteInfoModelsByTag(tag);
     }
 
     @RequestMapping(value = "/route/direction/tag/{tag}", method = RequestMethod.GET)
@@ -91,7 +86,7 @@ public class RouteInfoController extends AbstractConsoleController {
     @RequestMapping(value = "/routes", method = RequestMethod.PUT)
     public RetMessage updateRoutes(@RequestBody List<RouteInfoModel> models) {
         try {
-            if(!existPublicRouteInfoModel(models)) throw new BadRequestException("none public route in this direction");
+            if (!existPublicRouteInfoModel(models)) throw new BadRequestException("none public route in this direction");
 
             routeService.updateRoutes(models);
             return RetMessage.createSuccessMessage();
@@ -102,7 +97,7 @@ public class RouteInfoController extends AbstractConsoleController {
     }
 
     private boolean existPublicRouteInfoModel(List<RouteInfoModel> models) {
-        for(RouteInfoModel model : models) {
+        for (RouteInfoModel model : models) {
             if (model.isPublic()) return true;
         }
         return false;

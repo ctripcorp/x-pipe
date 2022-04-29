@@ -27,8 +27,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping(AbstractConsoleController.CONSOLE_PREFIX)
-public class
-ClusterController extends AbstractConsoleController {
+public class ClusterController extends AbstractConsoleController {
 
     @Autowired
     private ConsoleConfig config;
