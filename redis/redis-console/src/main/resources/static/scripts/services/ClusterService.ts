@@ -129,22 +129,22 @@ function ClusterService($resource, $q) {
         },
        get_cluster_default_routes_by_src_dc_name_and_cluster_name: {
             method: 'GET',
-            url: '/console/clusters/default-routes/:srcDcName/:clusterName',
+            url: '/console/clusters/:clusterName/default-routes/:srcDcName',
             isArray: true
         },
        get_cluster_used_routes_by_src_dc_name_and_cluster_name: {
             method: 'GET',
-            url: '/console/clusters/used-routes/:srcDcName/:clusterName',
+            url: '/console/clusters/:clusterName/used-routes/:srcDcName',
             isArray: true
         },
        get_cluster_designated_routes_by_src_dc_name_and_cluster_name: {
             method: 'GET',
-            url: '/console/clusters/designated-routes/:srcDcName/:clusterName',
+            url: '/console/clusters/:clusterName/designated-routes/:srcDcName',
             isArray: true
         },
         update_cluster_designated_routes_by_cluster_name: {
             method: 'POST',
-            url: '/console/clusters/designated-routes/:srcDcName/:clusterName',
+            url: '/console/clusters/:clusterName/designated-routes/:srcDcName',
         }
     });
     function getInvolvedOrgs() {

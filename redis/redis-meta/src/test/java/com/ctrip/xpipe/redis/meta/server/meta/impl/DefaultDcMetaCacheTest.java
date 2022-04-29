@@ -172,6 +172,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         RouteMeta routeMeta3 = new RouteMeta().setId(3);
         RouteMeta routeMeta4 = new RouteMeta().setId(4);
         RouteMeta routeMeta5 = new RouteMeta().setId(5);
+        RouteMeta routeMeta6 = new RouteMeta().setId(6);
         RouteMeta routeMeta9 = new RouteMeta().setId(9);
         RouteMeta routeMeta10 = new RouteMeta().setId(10);
 
@@ -202,7 +203,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         strategy = routeChooseStrategyFactory.create(routeStrategyType, "bi-cluster1");
         routes = dcMetaCache.chooseRoutes(4L);
         Assert.assertEquals(2, routes.size());
-        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3, routeMeta5)).getId(), routes.get("jq").getId());
+        Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta6)).getId(), routes.get("jq").getId());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10)).getId(), routes.get("oy").getId());
 
         strategy = routeChooseStrategyFactory.create(routeStrategyType, "bi-cluster2");

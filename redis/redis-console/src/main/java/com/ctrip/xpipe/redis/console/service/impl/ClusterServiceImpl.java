@@ -42,8 +42,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.ctrip.xpipe.utils.StringUtil.COMMA_SPLITTER;
-
 @Service
 public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> implements ClusterService {
 
@@ -84,6 +82,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
+
+	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
 	private static final String PROXY_SPLITTER = "\\s*-\\s*";
 	private static final String PROXYTCP = "PROXYTCP://%s:80";
@@ -762,7 +762,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	private String getSrcProxy(ProxyChainModel proxyChainModel) {
-		logger.debug("[getSrcProxy] backupTunnel:{}", proxyChainModel.getBackupDcTunnel());
+		logger.debug("[getSrcProxy] get src proxy from tunnel:{}", proxyChainModel.getBackupDcTunnel());
 		String[] ips = StringUtil.splitRemoveEmpty(PROXY_SPLITTER, proxyChainModel.getBackupDcTunnel().getTunnelId());
 		String[] results = ips[2].substring(2).split(":");
 
@@ -774,7 +774,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (proxyChainModel.getOptionalTunnel() != null)
 			ips = StringUtil.splitRemoveEmpty(PROXY_SPLITTER, proxyChainModel.getOptionalTunnel().getTunnelId());
 
-		logger.debug("[getDstProxy] tunnel:{}", proxyChainModel.getOptionalTunnel() == null ?
+		logger.debug("[getDstProxy] get dst proxy from tunnel:{}", proxyChainModel.getOptionalTunnel() == null ?
 					proxyChainModel.getBackupDcTunnel() : proxyChainModel.getOptionalTunnel());
 		String[] results = ips[3].substring(3).split(":");
 		return String.format(PROXYTLS, results[0]);
@@ -789,7 +789,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return Collections.emptyList();
 
 		List<RouteInfoModel> designatedRoutes = new ArrayList<>();
-		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(COMMA_SPLITTER));
+		Set<String> routeIds = Sets.newHashSet(clusterDesignatedRouteIds.split(DESIGNATED_ROUTE_ID_SPLITTER));
 		routeIds.forEach(routeId -> {
 			RouteInfoModel routeInfoModel = routeService.getRouteInfoModelById(Long.parseLong(routeId));
 			if (routeInfoModel != null && srcDcName.equalsIgnoreCase(routeInfoModel.getSrcDcName())) {
@@ -816,7 +816,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		}));
 
 		if (!StringUtil.isEmpty(oldClusterDesignatedRouteIds)) {
-			Set<String> oldClusterDesignatedRoutes = Sets.newHashSet(oldClusterDesignatedRouteIds.split(COMMA_SPLITTER));
+			Set<String> oldClusterDesignatedRoutes = Sets.newHashSet(oldClusterDesignatedRouteIds.split(DESIGNATED_ROUTE_ID_SPLITTER));
 			for (String routeId : oldClusterDesignatedRoutes) {
 				RouteInfoModel routeInfoModel = allRoutesMap.get(Long.parseLong(routeId));
 				if (routeInfoModel == null) continue;
@@ -919,8 +919,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		for (RouteMeta route : allDcRoutes) {
 			String[] allProxyInfos = route.getRouteInfo().split("\\h");
-			Set<String> srcProxies = Sets.newHashSet(allProxyInfos[0].split(COMMA_SPLITTER));
-			Set<String> dstProxies = Sets.newHashSet(allProxyInfos[allProxyInfos.length - 1].split(COMMA_SPLITTER));
+			Set<String> srcProxies = Sets.newHashSet(allProxyInfos[0].split(DESIGNATED_ROUTE_ID_SPLITTER));
+			Set<String> dstProxies = Sets.newHashSet(allProxyInfos[allProxyInfos.length - 1].split(DESIGNATED_ROUTE_ID_SPLITTER));
 
 			if (srcProxies.contains(srcProxy) && dstProxies.contains(dstProxy))
 				return route;
@@ -936,7 +936,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	private List<String> parseDstDcs(ClusterMeta clusterMeta) {
 		if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
-			return Lists.newArrayList(clusterMeta.getDcs().split(COMMA_SPLITTER));
+			return Lists.newArrayList(clusterMeta.getDcs().split(DESIGNATED_ROUTE_ID_SPLITTER));
 		} else {
 			return Lists.newArrayList(clusterMeta.getActiveDc());
 		}
@@ -946,7 +946,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
 
 		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new ConcurrentHashMap<>();
-		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split(COMMA_SPLITTER));
+		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split(DESIGNATED_ROUTE_ID_SPLITTER));
 
 		routes.forEach((routeMeta -> {
 			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId()))) {

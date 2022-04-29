@@ -146,12 +146,12 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     @Override
     public Map<String, RouteMeta> chooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
-                                               Map<String, List<RouteMeta>> clusterHighPriorityRoutes){
+                                               Map<String, List<RouteMeta>> clusterPrioritizedRoutes){
         XpipeMetaManager xpipeMetaManager = meta.getValue();
         RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
                 RouteChooseStrategyFactory.RouteStrategyType.lookup(consoleConfig.getChooseRouteStrategyType());
 
-        return xpipeMetaManager.chooseMetaRoutes(srcDc, dstDcs, orgId, clusterHighPriorityRoutes,
+        return xpipeMetaManager.chooseMetaRoutes(srcDc, dstDcs, orgId, clusterPrioritizedRoutes,
                     routeChooseStrategyFactory.create(routeStrategyType, clusterName));
     }
 
