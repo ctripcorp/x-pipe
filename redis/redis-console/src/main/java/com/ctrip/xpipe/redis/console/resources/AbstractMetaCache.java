@@ -241,6 +241,7 @@ public abstract class AbstractMetaCache implements MetaCache {
                 .consoleRoutes(CURRENT_IDC);
     }
 
+    @Override
     public Map<String, RouteMeta> chooseRoutes(String clusterName, String backUpDcName, List<String> peerDcs, int orgId, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
         return null;
     }

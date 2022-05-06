@@ -8,6 +8,8 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerMultiDcServiceManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.spring.AbstractRedisConfigContext;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.spring.DomainValidateFilter;
@@ -90,6 +92,11 @@ public class MetaServerContextConfig extends AbstractRedisConfigContext {
     public MetaServerMultiDcServiceManager getMetaServerMultiDcServiceManager() {
 
         return new DefaultMetaServerMultiDcServiceManager();
+    }
+
+    @Bean
+    public RouteChooseStrategyFactory getRouteChooseStrategyFactory() {
+        return new DefaultRouteChooseStrategyFactory();
     }
 
     @Bean
