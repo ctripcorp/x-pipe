@@ -833,7 +833,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 		updateClusterDesignatedRouteIds(clusterTbl.getId(), StringUtil.join(",", arg -> arg, newDesignatedRouteIds));
 
-		if (consoleConfig.shouldNotifyClusterTypes().contains(clusterTbl.getClusterType())) {
+		ClusterType clusterType = ClusterType.lookup(clusterTbl.getClusterType());
+		if (consoleConfig.shouldNotifyClusterTypes().contains(clusterType.name())) {
 			notifier.notifyClusterUpdate(clusterName, Collections.singletonList(srcDcName));
 		}
 	}
