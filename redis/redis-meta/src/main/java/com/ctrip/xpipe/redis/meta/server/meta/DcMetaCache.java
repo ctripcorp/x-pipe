@@ -32,7 +32,7 @@ public interface DcMetaCache extends Observable {
 
 	ClusterType getClusterType(Long clusterDbId);
 
-	List<RouteMeta> getAllRoutes();
+	List<RouteMeta> getAllMetaRoutes();
 
 	Map<String, RouteMeta> chooseRoutes(long clusterDbId);
 

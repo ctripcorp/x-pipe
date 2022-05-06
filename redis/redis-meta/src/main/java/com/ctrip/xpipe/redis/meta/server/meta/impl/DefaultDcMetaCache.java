@@ -265,7 +265,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	}
 
 	@Override
-	public List<RouteMeta> getAllRoutes() {
+	public List<RouteMeta> getAllMetaRoutes() {
 		return dcMetaManager.get().getAllMetaRoutes();
 	}
 
@@ -296,7 +296,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 		if (StringUtil.isEmpty(clusterDesignatedRouteIds)) return null;
 
 		Map<String, List<RouteMeta>> clusterDesignatedRoutes = new ConcurrentHashMap<>();
-		List<RouteMeta> allMetaRoutes = getAllRoutes();
+		List<RouteMeta> allMetaRoutes = getAllMetaRoutes();
 		Set<String> clusterDesignatedRouteIdSets = Sets.newHashSet(clusterDesignatedRouteIds.split("\\s*,\\s*"));
 		allMetaRoutes.forEach((routeMeta -> {
 			if (clusterDesignatedRouteIdSets.contains(String.valueOf(routeMeta.getId()))) {

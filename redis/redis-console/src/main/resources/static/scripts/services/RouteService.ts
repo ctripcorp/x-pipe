@@ -19,7 +19,7 @@ function RouteService($resource, $q) {
         },
         get_route_by_tag_and_src_dc_name:{
             method: 'GET',
-            url: 'console/route/src-dc-name/:srcDcName/',
+            url: 'console/route/src-dc/:srcDcName/',
             isArray: true
         },
         get_all_active_routes_by_tag_and_direction:{
