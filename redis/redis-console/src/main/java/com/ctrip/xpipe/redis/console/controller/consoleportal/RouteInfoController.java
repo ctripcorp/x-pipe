@@ -29,7 +29,7 @@ public class RouteInfoController extends AbstractConsoleController {
         return routeService.getRouteInfoModelById(routeId);
     }
 
-    @RequestMapping(value = "/route/src-dc-name/{srcDcName}", method = RequestMethod.GET)
+    @RequestMapping(value = "/route/src-dc/{srcDcName}", method = RequestMethod.GET)
     public List<RouteInfoModel> getAllActiveRoutesByTagAndSrcDcName(@PathVariable String srcDcName) {
         return routeService.getAllActiveRouteInfoModelsByTagAndSrcDcName(Route.TAG_META, srcDcName);
     }
@@ -52,6 +52,7 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route", method = RequestMethod.POST)
     public RetMessage addRoute(@RequestBody RouteInfoModel model) {
+        logger.info("[addRoute] add route:{}", model);
         try {
             routeService.addRoute(model);
             return RetMessage.createSuccessMessage();
@@ -63,6 +64,7 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route", method = RequestMethod.DELETE)
     public RetMessage deleteRoute(@RequestBody RouteInfoModel model) {
+        logger.info("[deleteRoute] delete route:{}", model);
         try {
             routeService.deleteRoute(model.getId());
             return RetMessage.createSuccessMessage();
@@ -74,6 +76,7 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/route", method = RequestMethod.PUT)
     public RetMessage updateRoute(@RequestBody RouteInfoModel model) {
+        logger.info("[updateRoute] update route:{}", model);
         try {
             routeService.updateRoute(model);
             return RetMessage.createSuccessMessage();
@@ -85,6 +88,7 @@ public class RouteInfoController extends AbstractConsoleController {
 
     @RequestMapping(value = "/routes", method = RequestMethod.PUT)
     public RetMessage updateRoutes(@RequestBody List<RouteInfoModel> models) {
+        logger.info("[updateRoute] update routes:{}", models);
         try {
             if (!existPublicRouteInfoModel(models)) throw new BadRequestException("none public route in this direction");
 

@@ -232,9 +232,13 @@ public class ClusterController extends AbstractConsoleController {
     public RetMessage updateClusterDesignatedRoutesByClusterName(@PathVariable String clusterName, @PathVariable String srcDcName,
                                                                  @RequestBody(required = false) List<RouteInfoModel> newDesignatedRoutes) {
         try {
+            if(newDesignatedRoutes == null) newDesignatedRoutes = new ArrayList<>();
+
             clusterService.updateClusterDesignateRoutes(clusterName, srcDcName, newDesignatedRoutes);
             return RetMessage.createSuccessMessage();
         } catch (Throwable th) {
+            logger.info("[updateClusterDesignatedRoutesByClusterName] update designate routes {} of cluster:{} at dc:{} fail",
+                    newDesignatedRoutes, clusterName, srcDcName, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }
