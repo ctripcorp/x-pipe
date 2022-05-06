@@ -21,7 +21,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -31,12 +30,12 @@ import com.ctrip.xpipe.redis.console.service.impl.DefaultCrossMasterDelayService
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
 
 /**
@@ -83,6 +82,11 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 	public MetaCache metaCache() {
 		return new DefaultMetaCache();
+	}
+
+	@Bean
+	public RouteChooseStrategyFactory getRouteChooseStrategyFactory() {
+		return new DefaultRouteChooseStrategyFactory();
 	}
 
 	@Bean
