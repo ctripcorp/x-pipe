@@ -189,7 +189,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         dcMetaCache.setRouteChooseStrategyFactory(routeChooseStrategyFactory);
         RouteChooseStrategyFactory.RouteStrategyType routeStrategyType =
                 RouteChooseStrategyFactory.RouteStrategyType.lookup(config.getChooseRouteStrategyType());
-        RouteChooseStrategy strategy = routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType);
+        RouteChooseStrategy strategy = routeChooseStrategyFactory.create(routeStrategyType);
 
         // init DcMetaManager
         DcMeta dcMeta = (DcMeta) xpipeMeta.getDcs().values().toArray()[2];
@@ -200,18 +200,18 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         Assert.assertEquals(1, routes.size());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta1, routeMeta4), clusterName1).getId(), routes.get("jq").getId());
 
-        strategy = routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType);
+        strategy = routeChooseStrategyFactory.create(routeStrategyType);
         routes = dcMetaCache.chooseRoutes(2L);
         Assert.assertEquals(1, routes.size());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta3), clusterName2).getId(), routes.get("jq").getId());
 
-        strategy = routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType);
+        strategy = routeChooseStrategyFactory.create(routeStrategyType);
         routes = dcMetaCache.chooseRoutes(4L);
         Assert.assertEquals(2, routes.size());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta6), biClusterName1).getId(), routes.get("jq").getId());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta10), biClusterName1).getId(), routes.get("oy").getId());
 
-        strategy = routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType);
+        strategy = routeChooseStrategyFactory.create(routeStrategyType);
         routes = dcMetaCache.chooseRoutes(5L);
         Assert.assertEquals(2, routes.size());
         Assert.assertEquals(strategy.choose(Lists.newArrayList(routeMeta5), biClusterName2).getId(), routes.get("jq").getId());

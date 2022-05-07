@@ -13,5 +13,5 @@ public interface RouteChooseStrategyFactory {
         }
     }
 
-    RouteChooseStrategy getRouteChooseStrategy(RouteStrategyType routeStrategyType);
+    RouteChooseStrategy create(RouteStrategyType routeStrategyType);
 }

@@ -230,8 +230,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 		if(currentDesignatedRoutes == null || futureDesignatedRoutes == null) return true;
 
 		return !Objects.equals(Sets.newHashSet(currentDesignatedRoutes.split(",")), Sets.newHashSet(futureDesignatedRoutes.split(",")));
-
-
 	}
 
 	private void handleClusterChanged(ClusterMetaComparator clusterMetaComparator) {
