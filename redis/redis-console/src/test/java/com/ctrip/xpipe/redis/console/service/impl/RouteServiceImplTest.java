@@ -52,9 +52,9 @@ public class RouteServiceImplTest extends AbstractConsoleIntegrationTest {
         proxyService.addProxy(proxy6);
 
         route1 = new RouteModel().setActive(true).setDstDcName(dcNames[0]).setSrcDcName(dcNames[1]).setPublic(true)
-                .setId(1).setOrgId(0L).setTag(Route.TAG_META).setSrcProxyIds("1,2,3").setDstProxyIds("4,5,6");
+                .setId(1).setOrgId(0L).setTag(Route.TAG_META).setSrcProxyIds("1,2, 3").setDstProxyIds("4,5,6");
         route2 = new RouteModel().setActive(false).setDstDcName(dcNames[0]).setSrcDcName(dcNames[1]).setPublic(false)
-                .setId(2).setOrgId(3L).setTag(Route.TAG_META).setSrcProxyIds("1,2,3").setDstProxyIds("4,5,6");
+                .setId(2).setOrgId(3L).setTag(Route.TAG_META).setSrcProxyIds("1,2, 3").setDstProxyIds("4,5,6");
 
         service.addRoute(route1);
         service.addRoute(route2);

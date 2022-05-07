@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -668,7 +667,7 @@ public class DefaultXpipeMetaManager extends AbstractMetaManager implements Xpip
 	@Override
 	public Map<String, RouteMeta> doChooseRoutes(String clusterName, String srcDc, List<String> dstDcs, int orgId,
 					RouteChooseStrategy strategy, String tag, Map<String, List<RouteMeta>> clusterPrioritizedRoutes) {
-		Map<String, RouteMeta> chooseRoutes = new ConcurrentHashMap<>();
+		Map<String, RouteMeta> chooseRoutes = new HashMap<>();
 		if (dstDcs == null || dstDcs.isEmpty()) return chooseRoutes;
 
 		Map<String, List<RouteMeta>> dstDcRouteMap = new HashMap<>();

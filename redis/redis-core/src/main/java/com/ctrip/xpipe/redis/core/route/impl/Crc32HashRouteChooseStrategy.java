@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.route.impl;
 
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -16,8 +17,15 @@ public class Crc32HashRouteChooseStrategy implements RouteChooseStrategy {
 
     private static HashFunction crc32HashFunction = Hashing.crc32();
 
-    public Crc32HashRouteChooseStrategy() {
+    private RouteChooseStrategyFactory.RouteStrategyType routeStrategyType;
 
+    public Crc32HashRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {
+        this.routeStrategyType = routeStrategyType;
+    }
+
+    @Override
+    public RouteChooseStrategyFactory.RouteStrategyType getRouteStrategyType() {
+        return routeStrategyType;
     }
 
     @Override

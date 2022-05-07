@@ -17,7 +17,9 @@ import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
@@ -56,6 +58,8 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
 
     @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
+
+    private RouteChooseStrategy strategy = null;
 
     private List<Set<String>> clusterParts;
 
@@ -152,7 +156,17 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache {
                 RouteChooseStrategyFactory.RouteStrategyType.lookup(consoleConfig.getChooseRouteStrategyType());
 
         return xpipeMetaManager.chooseMetaRoutes(clusterName, srcDc, dstDcs, orgId, clusterPrioritizedRoutes,
-                    routeChooseStrategyFactory.getRouteChooseStrategy(routeStrategyType));
+                getRouteChooseStrategy(routeStrategyType));
+    }
+
+    private RouteChooseStrategy getRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType routeStrategyType) {
+        RouteChooseStrategy localStrategy = strategy;
+        if(null == localStrategy || !ObjectUtils.equals(routeStrategyType, localStrategy.getRouteStrategyType())) {
+            localStrategy = routeChooseStrategyFactory.create(routeStrategyType);
+            strategy = localStrategy;
+        }
+
+        return localStrategy;
     }
 
     @Override

@@ -151,7 +151,7 @@ public class RouteServiceImpl implements RouteService {
                 .setDescription(routeTbl.getDescription());
 
         if (!OrgUtil.isDefaultOrg(routeTbl.getRouteOrgId())) {
-            routeInfoModel.setOrgName(organizationService.getOrganizationTblByCMSOrganiztionId(routeTbl.getRouteOrgId()).getOrgName());
+            routeInfoModel.setOrgName(organizationService.getOrganization(routeTbl.getRouteOrgId()).getOrgName());
         }
         return routeInfoModel;
     }
@@ -162,7 +162,7 @@ public class RouteServiceImpl implements RouteService {
         List<String> proxyUris = new ArrayList<>();
 
         proxys.forEach((proxyId) -> {
-            proxyUris.add(proxyIdUriMap.get(Long.parseLong(proxyId)));
+            proxyUris.add(proxyIdUriMap.get(Long.parseLong(proxyId.trim())));
         });
 
         return proxyUris;
@@ -229,7 +229,7 @@ public class RouteServiceImpl implements RouteService {
         Map<String, Long> proxyUriIdMap = proxyService.proxyUriIdMap();
 
         if(model.getId() != 0)  routeTbl.setId(model.getId());
-        if(model.getOrgName() != null) routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getOrgId());
+        if(model.getOrgName() != null) routeTbl.setRouteOrgId(organizationService.getOrgByName(model.getOrgName()).getId());
 
         routeTbl.setSrcProxyIds(model.getSrcProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getSrcProxies()));
         routeTbl.setOptionalProxyIds(model.getOptionalProxies() == null ? "" : StringUtil.join(",", (arg) -> proxyUriIdMap.get(arg).toString(), model.getOptionalProxies()));

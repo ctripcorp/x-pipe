@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaException;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
+import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.Crc32HashRouteChooseStrategy;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
@@ -283,7 +284,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testChooseRouteOneWay() {
 		List<String> dstDcs = Lists.newArrayList("jq");
 		String currentDc = "fra";
-		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy();
+		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH);
 		RouteMeta routeMeta1 = new RouteMeta().setId(1L);
 		RouteMeta routeMeta2 = new RouteMeta().setId(2L);
 		RouteMeta routeMeta3 = new RouteMeta().setId(3L);
@@ -320,7 +321,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testChooseRouteBiDirection() {
 		List<String> dstDcs = Lists.newArrayList("jq", "OY");
 		String currentDc = "fra";
-		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy();
+		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH);
 		RouteMeta routeMeta1 = new RouteMeta().setId(1L);
 		RouteMeta routeMeta2 = new RouteMeta().setId(2L);
 		RouteMeta routeMeta3 = new RouteMeta().setId(3L);
@@ -371,7 +372,7 @@ public class DefaultXpipeMetaManagerTest extends AbstractRedisTest {
 	public void testChooseRouteWithoutRoute() {
 		List<String> dstDcs = Lists.newArrayList( "oy", "fra");
 		String currentDc = "jq";
-		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy();
+		RouteChooseStrategy strategy = new Crc32HashRouteChooseStrategy(RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH);
 
 		Map<String, RouteMeta> chooseRoute = metaManager.chooseMetaRoutes(clusterId1, currentDc, dstDcs, 1, null, strategy);
 		Assert.assertEquals(0, chooseRoute.size());
