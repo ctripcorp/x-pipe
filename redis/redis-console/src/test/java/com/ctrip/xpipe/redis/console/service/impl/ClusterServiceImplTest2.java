@@ -97,7 +97,7 @@ public class ClusterServiceImplTest2 {
         // test use right route
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
         UnexpectedRouteUsageInfoModel useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModel();
-        Assert.assertEquals(0, useWrongRouteClusterInfos.getUnExpectedRouteUsedClusterNum());
+        Assert.assertEquals(0, useWrongRouteClusterInfos.getUnexpectedRouteUsedClusterNum());
 
         //test use wrong route
         tunnelInfo1 = new DefaultTunnelInfo(proxyModel2, tunnelId2);
@@ -105,7 +105,7 @@ public class ClusterServiceImplTest2 {
         proxyChain = new DefaultProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2), tunnelInfos);
         when(proxyService.getProxyChain(mockDcs.get(0), mockClusters.get(0), mockShards.get(0), mockDcs.get(2))).thenReturn(proxyChain);
         useWrongRouteClusterInfos = clusterService.findUnexpectedRouteUsageInfoModel();
-        Assert.assertEquals(1, useWrongRouteClusterInfos.getUnExpectedRouteUsedClusterNum());
+        Assert.assertEquals(1, useWrongRouteClusterInfos.getUnexpectedRouteUsedClusterNum());
         String direction = String.format("%s------>%s", mockDcs.get(0), mockDcs.get(2));
         Assert.assertEquals(Integer.valueOf(1), useWrongRouteClusterInfos.getUnexpectedRouteUsageDirectionInfos().get(direction));
         UnexpectedRouteUsageInfoModel.UnexpectedRouteUsageInfo clusterDetail

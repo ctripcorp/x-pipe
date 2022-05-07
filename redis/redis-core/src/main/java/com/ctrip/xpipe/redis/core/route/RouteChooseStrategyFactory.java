@@ -13,5 +13,5 @@ public interface RouteChooseStrategyFactory {
         }
     }
 
-    RouteChooseStrategy create(RouteStrategyType routeStrategyType, String clusterName);
+    RouteChooseStrategy getRouteChooseStrategy(RouteStrategyType routeStrategyType);
 }
